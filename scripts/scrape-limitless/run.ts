@@ -42,11 +42,21 @@ interface Flags {
   set: string | null;
   delayMs: number | null;
   jitterMs: number | null;
+  concurrency: number;
   images: boolean;
 }
 
 function parseFlags(argv: string[]): Flags {
-  const f: Flags = { refresh: false, force: false, limit: null, set: null, delayMs: null, jitterMs: null, images: true };
+  const f: Flags = {
+    refresh: false,
+    force: false,
+    limit: null,
+    set: null,
+    delayMs: null,
+    jitterMs: null,
+    concurrency: DEFAULTS.concurrency,
+    images: true,
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--refresh') f.refresh = true;
@@ -57,6 +67,7 @@ function parseFlags(argv: string[]): Flags {
     else if (a === '--set') f.set = (argv[++i] ?? '').toUpperCase();
     else if (a === '--delay') f.delayMs = Number(argv[++i]);
     else if (a === '--jitter') f.jitterMs = Number(argv[++i]);
+    else if (a === '--concurrency') f.concurrency = Math.max(1, Number(argv[++i]) || DEFAULTS.concurrency);
   }
   return f;
 }
@@ -124,14 +135,26 @@ async function main(): Promise<void> {
   if (!flags.force) targets = targets.filter((n) => !completedSet.has(n));
   if (flags.limit !== null) targets = targets.slice(0, flags.limit);
 
-  console.log(`[limitless] ${targets.length} card(s) to scrape this run.`);
+  const concurrency = Math.min(flags.concurrency, Math.max(1, targets.length));
+  console.log(`[limitless] ${targets.length} card(s) to scrape this run @ concurrency ${concurrency}.`);
   let processed = 0;
   let failedThisRun = 0;
   let imagesDownloaded = 0;
 
-  for (const cardNumber of targets) {
-    if (stopping) break;
+  // Single-writer guard so parallel workers never write progress.json at once.
+  let saving = false;
+  async function maybeSaveProgress(): Promise<void> {
+    if (saving) return;
+    saving = true;
+    try {
+      progress.completed = [...completedSet].sort();
+      await saveProgress(progress);
+    } finally {
+      saving = false;
+    }
+  }
 
+  async function processCard(cardNumber: string): Promise<void> {
     const enRes = await client.getHtml(`${SITE_BASE}/cards/en/${cardNumber}`);
     const jpRes = await client.getHtml(`${SITE_BASE}/cards/jp/${cardNumber}`);
 
@@ -144,45 +167,56 @@ async function main(): Promise<void> {
       progress.failed[cardNumber] = reason;
       failedThisRun++;
       console.warn(`[limitless] FAIL ${cardNumber} (${reason})`);
-    } else {
-      try {
-        // Download both-language art (resumable: skips files already on disk).
-        let images: { en?: ImageResult; jp?: ImageResult } | undefined;
-        if (flags.images) {
-          const setCode = setCodeOf(cardNumber);
-          const en = await downloadImage(cdnClient, imageUrl(setCode, cardNumber, 'en'), setCode, cardNumber, 'en');
-          const jp = await downloadImage(cdnClient, imageUrl(setCode, cardNumber, 'jp'), setCode, cardNumber, 'jp');
-          if (en.status === 'downloaded') imagesDownloaded++;
-          if (jp.status === 'downloaded') imagesDownloaded++;
-          images = { en, jp };
-        }
-
-        const card = buildLimitlessCard(cardNumber, structural, enParse, jpParse, fetchedAt, images);
-        const entry = await writeLimitlessCard(card);
-        indexEntries.set(cardNumber, entry);
-        completedSet.add(cardNumber);
-        delete progress.failed[cardNumber];
-        const imgTag = flags.images ? `img ${card.en.imageStatus[0]}/${card.jp.imageStatus[0]}` : null; // e.g. "img d/d"
-        const flags2 = [card.jp.missing ? 'no-jp' : null, card.effectParse.needsReview ? 'review' : null, imgTag]
-          .filter(Boolean)
-          .join(',');
-        console.log(`[limitless] ok   ${cardNumber} ${card.en.name ?? card.jp.name ?? ''}${flags2 ? ` [${flags2}]` : ''}`);
-      } catch (err) {
-        const reason = err instanceof Error ? err.message : String(err);
-        progress.failed[cardNumber] = `write: ${reason}`;
-        failedThisRun++;
-        console.warn(`[limitless] FAIL ${cardNumber} (write: ${reason})`);
-      }
+      return;
     }
 
-    processed++;
-    if (processed % 10 === 0) {
-      progress.completed = [...completedSet].sort();
-      await saveProgress(progress);
+    try {
+      // Download both-language art (resumable: skips files already on disk).
+      let images: { en?: ImageResult; jp?: ImageResult } | undefined;
+      if (flags.images) {
+        const setCode = setCodeOf(cardNumber);
+        const [en, jp] = await Promise.all([
+          downloadImage(cdnClient, imageUrl(setCode, cardNumber, 'en'), setCode, cardNumber, 'en'),
+          downloadImage(cdnClient, imageUrl(setCode, cardNumber, 'jp'), setCode, cardNumber, 'jp'),
+        ]);
+        if (en.status === 'downloaded') imagesDownloaded++;
+        if (jp.status === 'downloaded') imagesDownloaded++;
+        images = { en, jp };
+      }
+
+      const card = buildLimitlessCard(cardNumber, structural, enParse, jpParse, fetchedAt, images);
+      const entry = await writeLimitlessCard(card);
+      indexEntries.set(cardNumber, entry);
+      completedSet.add(cardNumber);
+      delete progress.failed[cardNumber];
+      const imgTag = flags.images ? `img ${card.en.imageStatus[0]}/${card.jp.imageStatus[0]}` : null; // e.g. "img d/d"
+      const flags2 = [card.jp.missing ? 'no-jp' : null, card.effectParse.needsReview ? 'review' : null, imgTag]
+        .filter(Boolean)
+        .join(',');
+      console.log(`[limitless] ok   ${cardNumber} ${card.en.name ?? card.jp.name ?? ''}${flags2 ? ` [${flags2}]` : ''}`);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      progress.failed[cardNumber] = `write: ${reason}`;
+      failedThisRun++;
+      console.warn(`[limitless] FAIL ${cardNumber} (write: ${reason})`);
     }
   }
 
-  // Persist final progress.
+  // Worker pool: `concurrency` workers each pull the next card off a shared cursor.
+  let cursor = 0;
+  async function worker(): Promise<void> {
+    while (!stopping) {
+      const i = cursor++;
+      if (i >= targets.length) break;
+      await processCard(targets[i]);
+      processed++;
+      if (processed % DEFAULTS.saveEvery === 0) await maybeSaveProgress();
+    }
+  }
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+  // Persist final progress (wait out any in-flight save first).
+  while (saving) await new Promise((r) => setTimeout(r, 10));
   progress.completed = [...completedSet].sort();
   await saveProgress(progress);
 

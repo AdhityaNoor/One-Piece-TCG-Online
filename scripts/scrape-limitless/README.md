@@ -24,7 +24,8 @@ npm run scrape:limitless:window
 npm run scrape:limitless -- --refresh        # re-enumerate sets/cards before scraping
 npm run scrape:limitless -- --set OP01        # only one set
 npm run scrape:limitless -- --limit 20        # cap cards this run (good for a first test)
-npm run scrape:limitless -- --delay 2000      # ms between requests (default 1200 + jitter)
+npm run scrape:limitless -- --concurrency 24  # cards fetched in parallel (default 12)
+npm run scrape:limitless -- --delay 500        # re-add an inter-request throttle (default 0 = none)
 npm run scrape:limitless -- --force           # re-scrape even already-completed cards
 npm run scrape:limitless -- --no-images       # skip downloading card art (data only)
 ```
@@ -92,13 +93,19 @@ never executed.
 
 ## Failsafe & resumable (respecting their ToS)
 
-`robots.txt` allows crawling (`Disallow:` is empty), but the tool is still built
-to be a good citizen and to survive interruptions:
+`robots.txt` allows crawling (`Disallow:` is empty). The tool runs **fast by
+default** (no inter-request delay, `concurrency` cards in parallel) but is still
+built to survive interruptions and to avoid getting itself banned:
 
-- **Polite:** one request at a time, a delay + random jitter between every
-  request, an identifying `User-Agent`, and retry-with-backoff that honors
-  `Retry-After` on `429`/`5xx`.
-- **Resumable:** progress is checkpointed to `progress.json` (atomic writes).
+- **Fast:** no artificial throttle (`--delay 0`), 12 cards fetched in parallel
+  by default (`--concurrency`). Raise it for more speed, or add `--delay`/lower
+  `--concurrency` to be gentler on the site.
+- **Self-protecting:** an identifying `User-Agent`, and retry-with-backoff that
+  honors `Retry-After` on `429`/`5xx` is kept ON regardless of speed — if the
+  site rate-limits you, the crawl backs off instead of failing or getting your
+  IP blocked. (This is robustness, not a speed throttle.)
+- **Resumable:** progress is checkpointed to `progress.json` (atomic, single-
+  writer even under concurrency).
   Re-running skips already-scraped cards. **Ctrl+C** stops after the current
   card and saves — the next run continues where it left off. A second Ctrl+C
   force-exits.

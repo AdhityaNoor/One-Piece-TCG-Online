@@ -28,12 +28,22 @@ export const IMAGES_DIR = resolve(OUTPUT_DIR, 'images');
 export const INDEX_FILE = resolve(OUTPUT_DIR, 'index.json');
 export const PROGRESS_FILE = resolve(OUTPUT_DIR, 'progress.json');
 
-/** Politeness defaults (overridable via CLI flags). */
+/**
+ * Speed / robustness defaults (overridable via CLI flags).
+ *
+ * Pacing delays default to 0 (no artificial throttle) and the crawl runs many
+ * cards in parallel (`concurrency`) for speed. Retry/backoff + Retry-After are
+ * KEPT regardless of speed — that's not a throttle, it's what prevents an IP
+ * ban if the site pushes back, so it's in your interest to leave it on.
+ * Re-add throttling any time with `--delay <ms>` / `--concurrency <n>`.
+ */
 export const DEFAULTS = {
-  /** Base delay between requests, ms. Jitter is added on top. */
-  delayMs: 1200,
+  /** Base delay between requests, ms (0 = no throttle). Jitter is added on top. */
+  delayMs: 0,
   /** Random extra delay 0..jitterMs added to each request. */
-  jitterMs: 600,
+  jitterMs: 0,
+  /** How many cards to fetch in parallel. */
+  concurrency: 12,
   /** Per-request timeout, ms. */
   timeoutMs: 20000,
   /** Max attempts per URL (1 try + retries). */
@@ -42,13 +52,10 @@ export const DEFAULTS = {
   backoffBaseMs: 1000,
   backoffCapMs: 15000,
   /** Save progress to disk every N cards. */
-  saveEvery: 10,
-  /**
-   * Image CDN (DigitalOcean Spaces) pacing — faster than the site pages
-   * because it's a robust CDN, not the site's self-funded VPS. Still polite.
-   */
-  cdnDelayMs: 350,
-  cdnJitterMs: 250,
+  saveEvery: 25,
+  /** Image CDN pacing (also 0 by default). */
+  cdnDelayMs: 0,
+  cdnJitterMs: 0,
 } as const;
 
 /** Identifying, honest User-Agent so the site owner can see/contact about the crawl. */
