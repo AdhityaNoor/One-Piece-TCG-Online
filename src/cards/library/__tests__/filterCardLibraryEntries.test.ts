@@ -12,6 +12,10 @@ function makeEntry(definitionOverrides: Partial<CardDefinition>): CardLibraryEnt
     types: ['Straw Hat Crew'],
     text: '',
     hasTrigger: false,
+    hasRush: false,
+    hasBlocker: false,
+    hasDoubleAttack: false,
+    isUnblockable: false,
     cardNumber: 'OP01-001',
     ...definitionOverrides,
   };

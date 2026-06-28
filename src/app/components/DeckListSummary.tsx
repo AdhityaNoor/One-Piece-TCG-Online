@@ -49,9 +49,9 @@ export function DeckListSummary({ name, updatedAt, leaderName, leaderImageUrl, c
           : undefined
       }
       className={[
-        'flex items-center gap-3 rounded-2xl bg-surface-card p-3 transition-colors',
-        onSelect ? 'cursor-pointer hover:bg-surface-cardHover' : '',
-        selected ? 'ring-2 ring-brand ring-offset-2 ring-offset-white' : '',
+        'flex items-center gap-3 rounded-[1.4rem] border border-white/10 bg-gradient-to-br from-white/12 to-white/5 p-3 text-slate-100 shadow-[0_14px_30px_rgba(0,0,0,0.18)] transition-all',
+        onSelect ? 'cursor-pointer hover:-translate-y-0.5 hover:border-white/20 hover:from-white/16 hover:to-white/8' : '',
+        selected ? 'ring-2 ring-amber-300 ring-offset-2 ring-offset-navy-950' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -60,8 +60,8 @@ export function DeckListSummary({ name, updatedAt, leaderName, leaderImageUrl, c
         <CardImage src={leaderImageUrl ?? null} alt={leaderName ?? name} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-navy-900">{name}</p>
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-navy-900/50">
+        <p className="truncate text-sm font-bold uppercase tracking-[0.08em] text-white">{name}</p>
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-200/60">
           {leaderName && <span className="truncate">{leaderName}</span>}
           {cardCount !== undefined && <span>{cardCount}/50 cards</span>}
           {formattedDate && <span>Updated {formattedDate}</span>}

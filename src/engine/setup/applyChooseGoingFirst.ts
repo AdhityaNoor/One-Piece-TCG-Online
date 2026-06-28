@@ -65,6 +65,11 @@ export function executeChooseGoingFirst(state: GameState, action: ChooseGoingFir
   // exists; revisit once effect templates land.
 
   const players = { ...state.players };
+  // The Zone helpers (and the inline slices below) only move ids between
+  // zone.cardIds arrays — each CardInstance's own currentZone field has to
+  // be kept in sync too, or every dealt opening-hand card fails the
+  // PLAY_*'s "is not in hand" currentZone check the moment it's played.
+  let cardsById = { ...state.cardsById };
   for (const player of Object.values(state.players)) {
     const dealt = player.deck.cardIds.slice(0, 5);
     const remaining = player.deck.cardIds.slice(5);
@@ -74,6 +79,9 @@ export function executeChooseGoingFirst(state: GameState, action: ChooseGoingFir
       deck: { ...player.deck, cardIds: remaining },
       hand: { ...player.hand, cardIds: [...player.hand.cardIds, ...dealt] },
     };
+    for (const id of dealt) {
+      cardsById[id] = { ...cardsById[id], currentZone: 'hand' };
+    }
     pushLog({
       actorPlayerId: player.playerId,
       type: 'CARD_DRAWN',
@@ -97,6 +105,7 @@ export function executeChooseGoingFirst(state: GameState, action: ChooseGoingFir
   const newState: GameState = {
     ...state,
     players,
+    cardsById,
     activePlayerId: goingFirstPlayerId, // 5-2-1-6: mulligan decisions begin with the player going first
     setupState: {
       decidingPlayerId: setupState.decidingPlayerId,

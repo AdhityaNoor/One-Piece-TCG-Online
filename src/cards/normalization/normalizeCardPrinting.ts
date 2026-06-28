@@ -46,18 +46,19 @@ const ATTRIBUTE_MAP: Record<string, Attribute> = {
 };
 
 /**
- * card_color delimiter for multicolor cards (2-3-5) is UNCONFIRMED — no
- * multicolor row has been observed live yet (see api/types.ts). Splitting on
- * "/" is the best-guess placeholder; every unmapped token is dropped with a
- * warning rather than guessed at, so an unrecognized delimiter degrades to
- * "missing colors + warning" instead of a silently wrong color list.
+ * The live API represents some multicolor cards as space-separated values
+ * (for example OP01-061 Kaido: "Blue Purple"). Slash/comma delimiters are
+ * accepted too so saved/imported snapshots remain tolerant.
  */
 function parseColors(cardColor: string, cardNumber: string, warnings: NormalizationWarning[]): Color[] {
-  const tokens = cardColor.split('/').map((t) => t.trim().toLowerCase());
+  const tokens = cardColor
+    .split(/[\/,\s]+/)
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
   const colors: Color[] = [];
   for (const token of tokens) {
     const mapped = COLOR_MAP[token];
-    if (mapped) {
+    if (mapped && !colors.includes(mapped)) {
       colors.push(mapped);
     } else if (token.length > 0) {
       warnings.push(warn('unrecognized-color', cardNumber, `Unrecognized card_color token "${token}" (raw value: "${cardColor}").`, 'card_color'));
@@ -84,7 +85,8 @@ function parseAttributes(attribute: string | null, cardNumber: string, warnings:
  * CardDefinition.types and always flag it, so callers know tribal-type
  * filtering in the deck builder is not yet reliable for multi-type cards.
  */
-function parseTypes(subTypes: string, cardNumber: string, warnings: NormalizationWarning[]): string[] {
+function parseTypes(subTypes: string | null, cardNumber: string, warnings: NormalizationWarning[]): string[] {
+  if (subTypes === null) return [];
   const trimmed = subTypes.trim();
   if (trimmed.length === 0) return [];
   warnings.push(
@@ -124,6 +126,14 @@ export function normalizeCardPrintings(printings: CardPrintingDto[]): NormalizeC
     counter: coerceCounterAmount(canonical.counter_amount),
     hasTrigger: canonical.card_text.includes('[Trigger]'),
     triggerText: extractTriggerText(canonical.card_text, cardNumber, warnings),
+    // Plain keyword-presence substring checks — same category of detection as
+    // hasTrigger above, never an interpretation of the keyword's effect. See
+    // CardDefinition's doc comment (engine/state/card.ts) for why the rules
+    // engine is allowed to branch on these four specifically.
+    hasRush: canonical.card_text.includes('[Rush]') || canonical.card_text.includes('[Rush: Character]'),
+    hasBlocker: canonical.card_text.includes('[Blocker]'),
+    hasDoubleAttack: canonical.card_text.includes('[Double Attack]'),
+    isUnblockable: canonical.card_text.includes('[Unblockable]'),
     cardNumber,
     rarity: canonical.rarity,
     // blockSymbol, illustration, illustrator: not exposed by the OPTCG API at all (no source field) —
@@ -148,6 +158,10 @@ export function normalizeDonCard(don: DonCardDto): { definition: CardDefinition;
     types: [],
     text: don.card_text,
     hasTrigger: false,
+    hasRush: false,
+    hasBlocker: false,
+    hasDoubleAttack: false,
+    isUnblockable: false,
     cardNumber,
     rarity: don.rarity,
   };

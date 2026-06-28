@@ -13,7 +13,12 @@ function v1Snapshot(cardNumber: string): Omit<SavedDeckCardSnapshot, 'variant' |
       category: 'character',
       colors: ['red'],
       types: [],
+      text: '',
       hasTrigger: false,
+      hasRush: false,
+      hasBlocker: false,
+      hasDoubleAttack: false,
+      isUnblockable: false,
       cardNumber,
     },
     rawPrinting: {} as any, // shape irrelevant to migration — passed through untouched

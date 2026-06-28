@@ -58,6 +58,11 @@ export function executeMulliganDecision(state: GameState, action: MulliganDecisi
   const players = { ...state.players };
   const decidingPlayer = players[action.playerId];
   let rng = state.rng;
+  // Kept in sync alongside `players` below — every id that lands in
+  // deck.cardIds or hand.cardIds also needs its own CardInstance.currentZone
+  // updated, since that field (not zone-array membership) is what PLAY_*
+  // validators check for "is this card in the hand."
+  let cardsById = { ...state.cardsById };
 
   if (action.redraw) {
     const combined = [...decidingPlayer.deck.cardIds, ...decidingPlayer.hand.cardIds];
@@ -72,6 +77,12 @@ export function executeMulliganDecision(state: GameState, action: MulliganDecisi
       deck: { ...decidingPlayer.deck, cardIds: remaining },
       hand: { ...decidingPlayer.hand, cardIds: dealt },
     };
+    for (const id of dealt) {
+      cardsById[id] = { ...cardsById[id], currentZone: 'hand' };
+    }
+    for (const id of remaining) {
+      cardsById[id] = { ...cardsById[id], currentZone: 'deck' };
+    }
     pushLog({
       actorPlayerId: action.playerId,
       type: 'CARD_MOVED',
@@ -121,6 +132,7 @@ export function executeMulliganDecision(state: GameState, action: MulliganDecisi
     newState = {
       ...state,
       players,
+      cardsById,
       rng,
       activePlayerId: goingSecondPlayerId,
       pendingChoices: [...pendingChoicesAfterResolve, nextChoice],
@@ -143,6 +155,9 @@ export function executeMulliganDecision(state: GameState, action: MulliganDecisi
         deck: { ...player.deck, cardIds: remaining },
         lifeArea: { ...player.lifeArea, cardIds: lifeIds },
       };
+      for (const id of dealt) {
+        cardsById[id] = { ...cardsById[id], currentZone: 'lifeArea' };
+      }
       pushLog({
         actorPlayerId: player.playerId,
         type: 'CARD_MOVED',
@@ -165,6 +180,7 @@ export function executeMulliganDecision(state: GameState, action: MulliganDecisi
     newState = {
       ...state,
       players,
+      cardsById,
       rng,
       turnNumber: 1,
       currentPhase: 'refresh',

@@ -76,7 +76,7 @@ export interface CardPrintingDto {
    * alone). Do not auto-split this without a maintained type-name dictionary
    * — see normalization warnings.
    */
-  sub_types: string;
+  sub_types: string | null;
   counter_amount: number | null;
   attribute: string | null; // e.g. "Slash", "Special"; null for Event/Stage. "?" attribute (2-5-2) not yet observed.
   /** Date the pricing snapshot was last scraped — NOT a rules field. Excluded from normalized CardDefinition. */

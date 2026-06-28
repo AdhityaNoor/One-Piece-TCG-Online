@@ -58,9 +58,20 @@ export interface BattleState {
   attackerInstanceId: string;
   /** Leader or Character CardInstance id; re-targeted if [Blocker] activates (7-1-2-1). */
   targetInstanceId: string;
+  /** The DECLARE_ATTACK action's original target, kept for log/UI clarity even after a Blocker re-targets (above). */
+  originalTargetInstanceId: string;
   step: BattleStep;
   /** [Blocker] used this battle? Capped at one activation (7-1-2-1). */
   blockerUsed: boolean;
+  /**
+   * Power granted "during this battle" by ACTIVATE_COUNTER_CHARACTER
+   * (7-1-3-2-1), keyed by the boosted CardInstance id. A Counter Character's
+   * boost target ("1 of your Leader or Character cards") is not necessarily
+   * the card currently under attack, so this is tracked per-instance rather
+   * than as a single defender bonus. Cleared (the whole BattleState is
+   * discarded) at End of Battle (7-1-5) — the duration expires naturally.
+   */
+  battlePowerBonuses: Record<string, number>;
 }
 
 /** 1-2-1-1, 9-2-1, 1-2-3 (concession), 1-2-5 (card-effect win/loss). */
@@ -110,4 +121,12 @@ export interface GameState {
   gameOver: { winnerId: string | null; reason: GameOverReason } | null;
   /** Gates 6-3-1 (no draw), 6-4-1 (1 DON!!), 6-5-6-1 (no battle) first-turn exceptions. */
   isFirstTurnOfGame: boolean;
+  /**
+   * Monotonic counter used to mint a fresh CardInstance id whenever a
+   * Character/Stage/Event card changes zones mid-game (3-1-6 — "treated as
+   * a brand-new card", see card.ts's CardInstance doc comment). Setup-minted
+   * ids (leader/deck/DON!!) never touch this counter — see
+   * setup/instanceIds.ts. Starts at 0 the moment setup hands off to turn 1.
+   */
+  nextInstanceSeq: number;
 }

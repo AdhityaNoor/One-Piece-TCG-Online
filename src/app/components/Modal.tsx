@@ -1,16 +1,9 @@
 /**
- * Generic modal shell — backdrop + centered panel, Esc-to-close, click
- * outside to close. Used directly for confirmation dialogs and as the base
- * for CardDetailModal. Rendered via a portal into `document.body` so it
- * never gets clipped by a scrolling board/grid container underneath it.
- *
- * Pure UI plumbing: a Modal never knows what's inside it, so it can never
- * become a place game-rule logic accidentally leaks into (project rule:
- * the UI must never decide legality/outcome).
+ * Generic modal shell with a more dramatic game-panel style.
  */
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export interface ModalProps {
   open: boolean;
@@ -18,9 +11,11 @@ export interface ModalProps {
   title?: string;
   children: ReactNode;
   maxWidthClassName?: string;
+  panelStyle?: CSSProperties;
+  bodyClassName?: string;
 }
 
-export function Modal({ open, onClose, title, children, maxWidthClassName = 'max-w-lg' }: ModalProps) {
+export function Modal({ open, onClose, title, children, maxWidthClassName = 'max-w-lg', panelStyle, bodyClassName = 'max-h-[80vh] overflow-y-auto' }: ModalProps) {
   useEffect(() => {
     if (!open) return;
     function handleKeyDown(event: KeyboardEvent) {
@@ -34,16 +29,19 @@ export function Modal({ open, onClose, title, children, maxWidthClassName = 'max
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-navy-950/60" onClick={onClose} aria-hidden="true" />
-      <div className={['relative z-10 w-full overflow-hidden rounded-2xl bg-white shadow-2xl', maxWidthClassName].join(' ')}>
+      <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div
+        className={['relative z-10 w-full overflow-hidden rounded-[1.5rem] border border-white/10 bg-gradient-to-b from-navy-900 to-navy-950 text-slate-100 shadow-[0_30px_80px_rgba(0,0,0,0.55)]', maxWidthClassName].join(' ')}
+        style={panelStyle}
+      >
         {title ? (
-          <div className="flex items-center justify-between border-b border-navy-900/10 px-5 py-4">
-            <h2 className="text-base font-bold text-navy-900">{title}</h2>
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+            <h2 className="text-base font-bold uppercase tracking-[0.16em] text-white">{title}</h2>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-navy-900/50 hover:bg-surface-panel hover:text-navy-900"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
             >
               ✕
             </button>
@@ -53,12 +51,12 @@ export function Modal({ open, onClose, title, children, maxWidthClassName = 'max
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-navy-900/60 shadow hover:text-navy-900"
+            className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white/70 shadow hover:text-white"
           >
             ✕
           </button>
         )}
-        <div className="max-h-[80vh] overflow-y-auto">{children}</div>
+        <div className={bodyClassName}>{children}</div>
       </div>
     </div>,
     document.body,

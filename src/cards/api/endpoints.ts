@@ -5,7 +5,7 @@
  * unauthenticated GET per project facts).
  *
  * Operational facts that drive how these are USED (see api/cache.ts):
- * - The "all*" endpoints (allSets, allSetCards, allSTCards, allPromoCards,
+ * - The "all*" endpoints (allSets, allSetCards, allSTCards, allPromos,
  *   allDonCards) return their ENTIRE table in one unpaginated response —
  *   allDonCards alone is 70KB+ of JSON today and will only grow. The site
  *   owner explicitly asks API consumers to go easy on call volume (it's a
@@ -54,8 +54,8 @@ export const optcgEndpoints = {
   deckCardPrintings: (cardId: string) => `${OPTCG_API_BASE_URL}/decks/card/${encodeURIComponent(cardId)}/`,
   deckCardTwoWeeks: () => `${OPTCG_API_BASE_URL}/decks/card/twoweeks/`,
 
-  /** All promo cards, unpaginated. */
-  allPromoCards: () => `${OPTCG_API_BASE_URL}/allPromoCards/`,
+  /** All promo cards, unpaginated. Docs tab label says allPromoCards, but the live documented endpoint is allPromos. */
+  allPromoCards: () => `${OPTCG_API_BASE_URL}/allPromos/`,
   /** All printings of one promo card number, e.g. "P-001". */
   promoCardPrintings: (cardId: string) => `${OPTCG_API_BASE_URL}/promos/card/${encodeURIComponent(cardId)}/`,
   promoCardTwoWeeks: () => `${OPTCG_API_BASE_URL}/promos/card/twoweeks/`,

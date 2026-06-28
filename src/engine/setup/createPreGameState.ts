@@ -230,6 +230,7 @@ export function createPreGameState(p1Input: PlayerSetupInput, p2Input: PlayerSet
     log: logger.log,
     gameOver: null,
     isFirstTurnOfGame: true,
+    nextInstanceSeq: 0,
   };
 
   return { ok: true, state };

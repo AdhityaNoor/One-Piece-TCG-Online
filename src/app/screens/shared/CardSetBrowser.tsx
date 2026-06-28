@@ -1,135 +1,236 @@
-/**
- * Shared "pick a set → filter → paginated grid" browsing surface, backed by
- * cardLibraryStore (the one live-API store both the Card Library screen,
- * Task 9, and the Deck Builder's Browse tab, Task 10, read from — see that
- * store's module doc). Owns set selection, text/color/category filters, and
- * pagination; delegates how each result RENDERS to the caller via
- * `renderEntry`, since Card Library (tap opens a zoom modal) and Deck
- * Builder Browse (tap opens zoom, a separate button adds/removes/sets
- * leader) need different per-tile behavior over identical underlying data.
- *
- * Extracted during Task 10 specifically to avoid a second ~100-line copy of
- * this set-picker/filter/pagination block living in BrowseTab.tsx — see
- * project "single source of truth, derive don't duplicate".
- */
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import type { CardLibraryEntry } from '../../../cards/library';
 import type { CardCategory, Color } from '../../../engine/state/card';
-import { Button, CategoryChip, ColorChip, SetChip } from '../../components';
+import { Button } from '../../components';
 import { ALL_CARD_COLORS } from '../../lib/cardColors';
 import { formatCardApiError } from '../../lib/formatCardApiError';
 import { useCardLibraryStore, useFilteredCardLibraryCount, useVisibleCardLibraryEntries } from '../../store/cardLibraryStore';
+import { CARD_COLOR_TOKENS } from '../../lib/cardColors';
 
 export interface CardSetBrowserProps {
-  /** Renders one result tile — caller decides what tapping/adding/zooming does. Must include its own `key`. */
   renderEntry: (entry: CardLibraryEntry) => ReactNode;
-  /** Category filter chips to offer. Defaults to every category cardLibraryStore can actually return (no 'don' — see CardLibraryScreen's prior note: DON!! cards are a separate API family this store never fetches). */
   categories?: CardCategory[];
+}
+
+export interface CardSetBrowserControlsProps {
+  categories?: CardCategory[];
+  lockedColors?: Color[];
+  lockedColorReason?: string;
+  lockedCategories?: CardCategory[];
+  lockedCategoryReason?: string;
+  lockSetSelection?: boolean;
+}
+
+export interface CardSetBrowserResultsProps {
+  renderEntry: (entry: CardLibraryEntry) => ReactNode;
+  gridClassName?: string;
 }
 
 const DEFAULT_CATEGORIES: CardCategory[] = ['leader', 'character', 'event', 'stage'];
 
 export function CardSetBrowser({ renderEntry, categories = DEFAULT_CATEGORIES }: CardSetBrowserProps) {
+  return (
+    <div className="grid gap-3 xl:grid-cols-[280px_minmax(0,1fr)]">
+      <CardSetBrowserControls categories={categories} />
+      <CardSetBrowserResults renderEntry={renderEntry} />
+    </div>
+  );
+}
+
+export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, lockedColors, lockedColorReason, lockedCategories, lockedCategoryReason, lockSetSelection }: CardSetBrowserControlsProps) {
   const sets = useCardLibraryStore((state) => state.sets);
   const setsStatus = useCardLibraryStore((state) => state.setsStatus);
   const setsError = useCardLibraryStore((state) => state.setsError);
   const selectedSetId = useCardLibraryStore((state) => state.selectedSetId);
-  const setStatusById = useCardLibraryStore((state) => state.setStatusById);
-  const setErrorById = useCardLibraryStore((state) => state.setErrorById);
   const filter = useCardLibraryStore((state) => state.filter);
-  const visibleCount = useCardLibraryStore((state) => state.visibleCount);
   const loadSets = useCardLibraryStore((state) => state.loadSets);
   const selectSet = useCardLibraryStore((state) => state.selectSet);
-  const loadSetCards = useCardLibraryStore((state) => state.loadSetCards);
   const setFilter = useCardLibraryStore((state) => state.setFilter);
-  const loadMore = useCardLibraryStore((state) => state.loadMore);
-
-  const visibleEntries = useVisibleCardLibraryEntries();
-  const filteredCount = useFilteredCardLibraryCount();
 
   useEffect(() => {
     loadSets();
   }, [loadSets]);
 
-  const selectedSetStatus = selectedSetId ? setStatusById[selectedSetId] : undefined;
-  const selectedSetError = selectedSetId ? setErrorById[selectedSetId] : undefined;
-  const hasActiveFilter = Boolean(filter.query) || (filter.colors?.length ?? 0) > 0 || (filter.categories?.length ?? 0) > 0;
+  const categoryFilterIsLocked = Boolean(lockedCategories?.length);
+  const colorFilterIsLocked = Boolean(lockedColors?.length);
+  const visibleColors = colorFilterIsLocked ? lockedColors! : ALL_CARD_COLORS;
+  const unlockedColorFilterIsActive = !colorFilterIsLocked && (filter.colors?.length ?? 0) > 0;
+  const unlockedCategoryFilterIsActive = !categoryFilterIsLocked && (filter.categories?.length ?? 0) > 0;
+  const hasActiveFilter = Boolean(filter.query) || unlockedColorFilterIsActive || unlockedCategoryFilterIsActive;
 
   function toggleColor(color: Color) {
+    if (colorFilterIsLocked) return;
     const current = filter.colors ?? [];
     setFilter({ ...filter, colors: current.includes(color) ? current.filter((c) => c !== color) : [...current, color] });
   }
 
   function toggleCategory(category: CardCategory) {
+    if (categoryFilterIsLocked) return;
     const current = filter.categories ?? [];
     setFilter({ ...filter, categories: current.includes(category) ? current.filter((c) => c !== category) : [...current, category] });
   }
 
+  function clearUnlockedFilters() {
+    setFilter({
+      ...(colorFilterIsLocked ? { colors: lockedColors } : {}),
+      ...(categoryFilterIsLocked ? { categories: lockedCategories } : {}),
+    });
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <section className="flex flex-col gap-2">
-        {setsStatus === 'loading' && <p className="text-xs text-navy-900/40">Loading sets…</p>}
+    <aside className="flex flex-col gap-3">
+      <div>
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Set Library</label>
+        {setsStatus === 'loading' && <p className="mt-1 text-xs text-slate-200/60">Loading sets...</p>}
         {setsStatus === 'error' && (
-          <div className="flex items-center gap-2">
-            <p className="text-xs text-red-600">{setsError ? formatCardApiError(setsError) : 'Failed to load sets.'}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <p className="text-xs text-red-200">{setsError ? formatCardApiError(setsError) : 'Failed to load sets.'}</p>
             <Button variant="secondary" size="sm" onClick={() => loadSets()}>
               Retry
             </Button>
           </div>
         )}
         {sets.length > 0 && (
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          <select
+            className="op-input mt-1.5 w-full px-3 py-2 font-heading text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+            value={selectedSetId}
+            disabled={lockSetSelection}
+            title={lockSetSelection ? lockedCategoryReason : undefined}
+            onChange={(event) => selectSet(event.target.value)}
+          >
             {sets.map((s) => (
-              <SetChip key={s.set_id} setName={s.set_name} selected={selectedSetId === s.set_id} onSelect={() => selectSet(s.set_id)} />
+              <option key={s.set_id} value={s.set_id}>
+                {s.set_name}
+              </option>
             ))}
-          </div>
-        )}
-      </section>
-
-      <input
-        type="search"
-        value={filter.query ?? ''}
-        onChange={(event) => setFilter({ ...filter, query: event.target.value })}
-        placeholder="Search by name or card number…"
-        className="w-full rounded-full border border-navy-900/15 bg-white px-4 py-2 text-sm text-navy-900 placeholder:text-navy-900/40 focus:border-navy-900/40 focus:outline-none"
-      />
-
-      <div className="flex flex-wrap gap-2">
-        {ALL_CARD_COLORS.map((color) => (
-          <ColorChip key={color} color={color} selected={filter.colors?.includes(color) ?? false} onToggle={toggleColor} />
-        ))}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        {categories.map((category) => (
-          <CategoryChip key={category} category={category} selected={filter.categories?.includes(category) ?? false} onToggle={toggleCategory} />
-        ))}
-        {hasActiveFilter && (
-          <Button variant="ghost" size="sm" onClick={() => setFilter({})}>
-            Clear filters
-          </Button>
+          </select>
         )}
       </div>
 
+      <div>
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Search</label>
+        <input
+          type="search"
+          value={filter.query ?? ''}
+          onChange={(event) => setFilter({ ...filter, query: event.target.value })}
+          placeholder="Search by name or card number..."
+          className="op-input mt-1.5 w-full px-3 py-2 text-sm placeholder:text-slate-300/35"
+        />
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Color</p>
+          {colorFilterIsLocked && <p className="font-heading text-[10px] font-semibold uppercase tracking-[0.12em] text-gold/65">Locked</p>}
+        </div>
+        <div className="mt-1.5 grid grid-cols-6 gap-1.5">
+          {visibleColors.map((color) => {
+            const token = CARD_COLOR_TOKENS[color];
+            const selected = filter.colors?.includes(color) ?? false;
+            return (
+              <button
+                key={color}
+                type="button"
+                aria-pressed={selected}
+                disabled={colorFilterIsLocked}
+                title={colorFilterIsLocked ? lockedColorReason : token.label}
+                onClick={() => toggleColor(color)}
+                className={[
+                  'flex h-8 items-center justify-center border transition',
+                  selected ? 'border-gold bg-gold/18 shadow-[0_0_0_2px_rgba(255,211,74,0.12)]' : 'border-gold/15 bg-black/35 hover:bg-white/10',
+                  colorFilterIsLocked ? 'cursor-not-allowed opacity-80' : '',
+                ].join(' ')}
+              >
+                <span className={['h-4 w-4 ring-2 ring-white/50', token.dotClassName].join(' ')} />
+              </button>
+            );
+          })}
+        </div>
+        {colorFilterIsLocked && lockedColorReason && <p className="mt-1.5 text-xs leading-5 text-slate-200/50">{lockedColorReason}</p>}
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Card Type</p>
+          {categoryFilterIsLocked && <p className="font-heading text-[10px] font-semibold uppercase tracking-[0.12em] text-gold/65">Locked</p>}
+        </div>
+        <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+          {categories.map((category) => {
+            const selected = filter.categories?.includes(category) ?? false;
+            return (
+              <button
+                key={category}
+                type="button"
+                aria-pressed={selected}
+                disabled={categoryFilterIsLocked}
+                title={categoryFilterIsLocked ? lockedCategoryReason : undefined}
+                onClick={() => toggleCategory(category)}
+                className={[
+                  'h-8 border px-2 font-heading text-[11px] font-black uppercase tracking-[0.08em] transition',
+                  selected ? 'border-gold bg-gold text-black shadow-[0_4px_0_rgba(68,39,0,0.75)]' : 'border-gold/15 bg-black/35 text-slate-100/80 hover:bg-white/10',
+                  categoryFilterIsLocked ? 'cursor-not-allowed opacity-70' : '',
+                ].join(' ')}
+              >
+                {category}
+              </button>
+            );
+          })}
+        </div>
+        {categoryFilterIsLocked && lockedCategoryReason && <p className="mt-1.5 text-xs leading-5 text-slate-200/50">{lockedCategoryReason}</p>}
+      </div>
+
+      {hasActiveFilter && (
+        <Button variant="ghost" size="sm" onClick={clearUnlockedFilters}>
+          Clear filters
+        </Button>
+      )}
+    </aside>
+  );
+}
+
+export function CardSetBrowserResults({ renderEntry, gridClassName }: CardSetBrowserResultsProps) {
+  const selectedSetId = useCardLibraryStore((state) => state.selectedSetId);
+  const setStatusById = useCardLibraryStore((state) => state.setStatusById);
+  const setErrorById = useCardLibraryStore((state) => state.setErrorById);
+  const loadSetCards = useCardLibraryStore((state) => state.loadSetCards);
+  const visibleCount = useCardLibraryStore((state) => state.visibleCount);
+  const loadMore = useCardLibraryStore((state) => state.loadMore);
+
+  const visibleEntries = useVisibleCardLibraryEntries();
+  const filteredCount = useFilteredCardLibraryCount();
+
+  useEffect(() => {
+    if (selectedSetId && (setStatusById[selectedSetId] === undefined || setStatusById[selectedSetId] === 'idle')) {
+      void loadSetCards(selectedSetId);
+    }
+  }, [loadSetCards, selectedSetId, setStatusById]);
+
+  const selectedSetStatus = selectedSetId ? setStatusById[selectedSetId] : undefined;
+  const selectedSetError = selectedSetId ? setErrorById[selectedSetId] : undefined;
+
+  return (
+    <section className="op-card-well min-h-0 min-w-0 p-3">
       {selectedSetId === null ? (
-        <p className="rounded-2xl bg-surface-panel p-4 text-center text-sm text-navy-900/50">Choose a set above to browse its cards.</p>
+        <p className="border border-gold/15 bg-black/30 p-3 text-center text-sm text-slate-200/60">Choose a set above to browse its cards.</p>
       ) : selectedSetStatus === 'loading' ? (
-        <p className="rounded-2xl bg-surface-panel p-4 text-center text-sm text-navy-900/50">Loading cards…</p>
+        <p className="border border-gold/15 bg-black/30 p-3 text-center text-sm text-slate-200/60">Loading cards...</p>
       ) : selectedSetStatus === 'error' ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl bg-surface-panel p-4 text-center">
-          <p className="text-sm text-red-600">{selectedSetError ? formatCardApiError(selectedSetError) : 'Failed to load this set.'}</p>
+        <div className="flex flex-col items-center gap-2 border border-red-400/35 bg-red-950/40 p-3 text-center">
+          <p className="text-sm text-red-200">{selectedSetError ? formatCardApiError(selectedSetError) : 'Failed to load this set.'}</p>
           <Button variant="secondary" size="sm" onClick={() => loadSetCards(selectedSetId)}>
             Retry
           </Button>
         </div>
       ) : visibleEntries.length === 0 ? (
-        <p className="rounded-2xl bg-surface-panel p-4 text-center text-sm text-navy-900/50">No cards match your filters.</p>
+        <p className="border border-gold/15 bg-black/30 p-3 text-center text-sm text-slate-200/60">No cards match your filters.</p>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">{visibleEntries.map(renderEntry)}</div>
+          <div className="pr-1">
+            <div className={gridClassName ?? 'grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'}>{visibleEntries.map(renderEntry)}</div>
+          </div>
           {visibleCount < filteredCount && (
-            <div className="flex justify-center">
+            <div className="mt-3 flex justify-center">
               <Button variant="secondary" size="sm" onClick={loadMore}>
                 Load more ({filteredCount - visibleCount} left)
               </Button>
@@ -137,6 +238,6 @@ export function CardSetBrowser({ renderEntry, categories = DEFAULT_CATEGORIES }:
           )}
         </>
       )}
-    </div>
+    </section>
   );
 }

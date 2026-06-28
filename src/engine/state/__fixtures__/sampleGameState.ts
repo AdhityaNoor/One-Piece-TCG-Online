@@ -80,5 +80,6 @@ export function createSampleGameState(): GameState {
     log: [],
     gameOver: null,
     isFirstTurnOfGame: true,
+    nextInstanceSeq: 0,
   };
 }

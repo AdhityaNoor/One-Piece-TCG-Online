@@ -25,6 +25,10 @@ export function makeLeaderDefinition(overrides: Partial<CardDefinition> = {}): C
     text: '',
     life: 5,
     hasTrigger: false,
+    hasRush: false,
+    hasBlocker: false,
+    hasDoubleAttack: false,
+    isUnblockable: false,
     cardNumber: nextId('TEST-L'),
     ...overrides,
   };
@@ -41,6 +45,10 @@ export function makeCharacterDefinition(overrides: Partial<CardDefinition> = {})
     baseCost: 1,
     text: '',
     hasTrigger: false,
+    hasRush: false,
+    hasBlocker: false,
+    hasDoubleAttack: false,
+    isUnblockable: false,
     cardNumber: nextId('TEST-C'),
     ...overrides,
   };
@@ -55,6 +63,10 @@ export function makeDonDefinition(overrides: Partial<CardDefinition> = {}): Card
     types: [],
     text: '',
     hasTrigger: false,
+    hasRush: false,
+    hasBlocker: false,
+    hasDoubleAttack: false,
+    isUnblockable: false,
     cardNumber: 'DON-CARD',
     ...overrides,
   };

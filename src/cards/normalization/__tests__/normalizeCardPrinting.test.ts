@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeCardPrintings, normalizeDonCard } from '../normalizeCardPrinting';
+import type { CardPrintingDto } from '../../api/types';
 import {
   sampleCharacterPrintings,
   sampleDonCard,
   sampleEventPrinting,
   sampleLeaderPrintings,
+  samplePromoPrintingWithMissingImage,
 } from '../../api/__fixtures__/sampleApiResponses';
 
 describe('normalizeCardPrintings — Leader (OP01-001)', () => {
@@ -39,6 +41,13 @@ describe('normalizeCardPrintings — Leader (OP01-001)', () => {
   it('has no triggerText when hasTrigger is false', () => {
     expect(definition.hasTrigger).toBe(false);
     expect(definition.triggerText).toBeUndefined();
+  });
+
+  it('has every keyword flag false when none of the keywords appear in text', () => {
+    expect(definition.hasRush).toBe(false);
+    expect(definition.hasBlocker).toBe(false);
+    expect(definition.hasDoubleAttack).toBe(false);
+    expect(definition.isUnblockable).toBe(false);
   });
 
   it('produces no text-mismatch warning when both printings agree (still warns about unsplit sub_types, which is unrelated)', () => {
@@ -102,6 +111,26 @@ describe('normalizeCardPrintings — Event with ambiguous multi-word sub_types (
   });
 });
 
+describe('normalizeCardPrintings - multicolor leader color parsing', () => {
+  it('parses live API space-separated colors, e.g. OP01-061 Kaido "Blue Purple"', () => {
+    const kaido: CardPrintingDto = {
+      ...sampleLeaderPrintings[0],
+      card_name: 'Kaido (061)',
+      card_set_id: 'OP01-061',
+      card_image_id: 'OP01-061',
+      card_color: 'Blue Purple',
+      life: '4',
+      sub_types: 'Animal Kingdom Pirates The Four Emperors',
+      attribute: 'Strike',
+    };
+
+    const { definition, warnings } = normalizeCardPrintings([kaido]);
+
+    expect(definition.colors).toEqual(['blue', 'purple']);
+    expect(warnings.some((warning) => warning.code === 'unrecognized-color')).toBe(false);
+  });
+});
+
 describe('normalizeDonCard', () => {
   const { definition } = normalizeDonCard(sampleDonCard);
 
@@ -113,5 +142,48 @@ describe('normalizeDonCard', () => {
 
   it('uses card_image_id as the stable identifier since DON!! rows have no card_set_id', () => {
     expect(definition.cardDefinitionId).toBe('don_166');
+  });
+
+  it('has every keyword flag false (DON!! cards never carry battle keywords)', () => {
+    expect(definition.hasTrigger).toBe(false);
+    expect(definition.hasRush).toBe(false);
+    expect(definition.hasBlocker).toBe(false);
+    expect(definition.hasDoubleAttack).toBe(false);
+    expect(definition.isUnblockable).toBe(false);
+  });
+});
+
+describe('normalizeCardPrintings — battle keyword detection (10-1, 10-2)', () => {
+  it('detects [Rush] presence (real API row, P-001 Egghead promo)', () => {
+    const { definition } = normalizeCardPrintings([samplePromoPrintingWithMissingImage]);
+    expect(definition.hasRush).toBe(true);
+    expect(definition.hasBlocker).toBe(false);
+    expect(definition.hasDoubleAttack).toBe(false);
+    expect(definition.isUnblockable).toBe(false);
+  });
+
+  function withText(card_text: string): CardPrintingDto {
+    return { ...sampleCharacterPrintings[0], card_text };
+  }
+
+  it('detects [Rush: Character] as hasRush too', () => {
+    const { definition } = normalizeCardPrintings([withText('[Rush: Character] This card can attack the turn it is played.')]);
+    expect(definition.hasRush).toBe(true);
+  });
+
+  it('detects [Blocker] presence', () => {
+    const { definition } = normalizeCardPrintings([withText('[Blocker]')]);
+    expect(definition.hasBlocker).toBe(true);
+    expect(definition.hasRush).toBe(false);
+  });
+
+  it('detects [Double Attack] presence', () => {
+    const { definition } = normalizeCardPrintings([withText('[Double Attack]')]);
+    expect(definition.hasDoubleAttack).toBe(true);
+  });
+
+  it('detects [Unblockable] presence', () => {
+    const { definition } = normalizeCardPrintings([withText('[Unblockable]')]);
+    expect(definition.isUnblockable).toBe(true);
   });
 });

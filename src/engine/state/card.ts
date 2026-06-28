@@ -46,6 +46,29 @@ export interface CardDefinition {
    * Undefined whenever hasTrigger is false. Never parsed into behavior here.
    */
   triggerText?: string;
+  /**
+   * Keyword PRESENCE flags (10-1, 10-2) — same category of detection as
+   * hasTrigger above: a plain substring check of `text`, never an
+   * interpretation of what the keyword's effect does. These four are
+   * mechanically load-bearing for core battle flow (blueprint Section 5)
+   * rather than card-specific behavior, which is why the rules engine is
+   * allowed to branch on them directly (unlike free-text effects):
+   * - hasRush: card may attack the turn it's played, overriding
+   *   CardInstance.summoningSick (3-7-4, 10-1-6). True for either "[Rush]" or
+   *   "[Rush: Character]" — blueprint TODO #7 (targeting-restriction nuance
+   *   between the two) is NOT resolved by this flag and remains open.
+   * - hasBlocker: card is eligible to activate as a Blocker in the Block
+   *   Step (7-1-2-1).
+   * - hasDoubleAttack: a successful Leader-targeted attack from this card
+   *   deals 2 damage instead of 1 (7-1-4-1-1-3).
+   * - isUnblockable: the Block Step is skipped for attacks made BY this
+   *   card — read from the attacker's definition, not the defender's
+   *   (10-1 keyword list).
+   */
+  hasRush: boolean;
+  hasBlocker: boolean;
+  hasDoubleAttack: boolean;
+  isUnblockable: boolean;
   cardNumber: string; // 2-14, deck-construction max-4-copies key
   // 2-12, 2-13, 2-15, 2-16, 2-17: explicitly no gameplay effect — metadata only.
   rarity?: string;
@@ -70,6 +93,22 @@ export interface CardInstance {
   currentZone: ZoneId;
   /** null for DON!! cards (4-4-2). */
   orientation: Orientation | null;
+  /**
+   * DON!! cards do not use the formal Active/Rested vocabulary (4-4-2,
+   * hence `orientation` is null for them above), but cost payment still
+   * requires "resting active DON!! from the cost area" (2-7-2–2-7-4) and
+   * Refresh Phase still needs to undo that (6-2-4, "field" includes the
+   * cost area per 3-1-2). This tracks that DON!!-specific tapped state
+   * separately rather than overloading `orientation`. undefined for every
+   * non-DON!! card.
+   *
+   * FLAGGED ASSUMPTION (not re-verified against the raw PDF this session —
+   * see docs/01 Section 19 TODO #10): the exact wording of 4-4-2 and 3-9-3
+   * was not re-read; this field exists to reconcile what looked like a
+   * contradiction between them. Revisit once the source PDF is available
+   * again.
+   */
+  donRested?: boolean;
   faceState: FaceState;
   /** DON!! cards "given" to this Leader/Character (6-5-5-1). +1000 power each, for the turn (6-5-5-2). */
   donAttached: string[]; // CardInstance ids of attached DON!! cards

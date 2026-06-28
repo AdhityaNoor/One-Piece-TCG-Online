@@ -32,6 +32,11 @@ export default {
           panel: '#e8edfb',
         },
       },
+      fontFamily: {
+        display: ['Poppins', 'system-ui', 'sans-serif'],
+        heading: ['Poppins', 'system-ui', 'sans-serif'],
+        body: ['Poppins', 'Segoe UI', 'sans-serif'],
+      },
     },
   },
   plugins: [],

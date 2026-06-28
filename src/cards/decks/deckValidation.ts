@@ -53,6 +53,13 @@ export function validateDeckConstruction(leader: CardDefinition, mainDeck: DeckC
     reasons.push(`Leader slot must contain a Leader card; got category "${leader.category}".`);
   }
 
+  if (leader.colors.length > 1) {
+    reasons.push(
+      `Multicolor Leader legality is not supported yet; color matching for multicolor leaders needs a separate ruling-confirmed rule path.`,
+    );
+    return { legal: false, reasons };
+  }
+
   const totalCount = mainDeck.reduce((sum, e) => sum + e.quantity, 0);
   if (totalCount !== MAIN_DECK_SIZE) {
     reasons.push(`Main deck must contain exactly ${MAIN_DECK_SIZE} cards (5-1-2); got ${totalCount}.`);

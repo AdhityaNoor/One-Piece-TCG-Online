@@ -35,6 +35,24 @@ export interface CardLibraryEntry {
   warnings: NormalizationWarning[];
 }
 
+export function groupPrintingsIntoLibraryEntries(printings: CardPrintingDto[]): CardLibraryEntry[] {
+  const grouped = new Map<string, CardPrintingDto[]>();
+  const order: string[] = [];
+
+  for (const printing of printings) {
+    const key = printing.card_set_id;
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.push(printing);
+    } else {
+      grouped.set(key, [printing]);
+      order.push(key);
+    }
+  }
+
+  return order.map((cardNumber) => buildCardLibraryEntry(grouped.get(cardNumber)!));
+}
+
 function toPrintingRef(p: CardPrintingDto): CardPrintingRef {
   return {
     printingImageId: p.card_image_id,

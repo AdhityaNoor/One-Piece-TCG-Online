@@ -102,6 +102,15 @@ describe('validateChooseGoingFirst / executeChooseGoingFirst', () => {
     expect(next.players.p1.hand.cardIds).toHaveLength(5);
     expect(next.players.p2.hand.cardIds).toHaveLength(5);
     expect(next.players.p1.deck.cardIds).toHaveLength(45);
+    // Regression: zone-array membership (hand.cardIds) and the CardInstance's
+    // own currentZone field must agree — PLAY_CHARACTER/PLAY_STAGE/
+    // ACTIVATE_EVENT_MAIN all gate on currentZone, not on cardIds.includes().
+    for (const id of next.players.p1.hand.cardIds) {
+      expect(next.cardsById[id].currentZone).toBe('hand');
+    }
+    for (const id of next.players.p2.hand.cardIds) {
+      expect(next.cardsById[id].currentZone).toBe('hand');
+    }
     expect(next.players.p1.hasGoneFirst).toBe(true);
     expect(next.players.p2.hasGoneFirst).toBe(false);
     expect(next.activePlayerId).toBe('p1');
@@ -164,6 +173,13 @@ describe('validateMulliganDecision / executeMulliganDecision', () => {
     const allAfter = [...next.players.p1.deck.cardIds, ...next.players.p1.hand.cardIds].sort();
     const allBefore = [...state.players.p1.deck.cardIds, ...handBefore].sort();
     expect(allAfter).toEqual(allBefore);
+    // Regression: redrawn hand/deck cards must have currentZone synced too.
+    for (const id of next.players.p1.hand.cardIds) {
+      expect(next.cardsById[id].currentZone).toBe('hand');
+    }
+    for (const id of next.players.p1.deck.cardIds) {
+      expect(next.cardsById[id].currentZone).toBe('deck');
+    }
   });
 
   it('rejects a second mulligan decision from the same player', () => {
@@ -190,6 +206,15 @@ describe('validateMulliganDecision / executeMulliganDecision', () => {
       expect(player.lifeArea.cardIds).toHaveLength(player.leaderLifeValue);
       expect(player.deck.cardIds).toHaveLength(50 - 5 - player.leaderLifeValue);
       expect(player.hand.cardIds).toHaveLength(5);
+      // Regression: Life cards dealt off the deck must have currentZone
+      // synced to 'lifeArea' too (damageStep.ts later flips it to 'hand'
+      // when that Life card is actually dealt as damage).
+      for (const id of player.lifeArea.cardIds) {
+        expect(final.cardsById[id].currentZone).toBe('lifeArea');
+      }
+      for (const id of player.hand.cardIds) {
+        expect(final.cardsById[id].currentZone).toBe('hand');
+      }
     }
   });
 });

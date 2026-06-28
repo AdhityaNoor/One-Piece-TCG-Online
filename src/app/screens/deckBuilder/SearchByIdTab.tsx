@@ -30,7 +30,7 @@ export function SearchByIdTab() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Exact card number, e.g. OP01-016"
-          className="flex-1 rounded-full border border-navy-900/15 bg-white px-4 py-2 text-sm text-navy-900 placeholder:text-navy-900/40 focus:border-navy-900/40 focus:outline-none"
+          className="flex-1 border border-navy-900/15 bg-white px-4 py-2 text-sm text-navy-900 placeholder:text-navy-900/40 focus:border-navy-900/40 focus:outline-none"
         />
         <Button type="submit" size="md">
           Search
@@ -38,20 +38,22 @@ export function SearchByIdTab() {
       </form>
 
       {searchById.status === 'idle' && (
-        <p className="rounded-2xl bg-surface-panel p-4 text-center text-sm text-navy-900/50">Enter an exact card number above to look it up.</p>
+        <p className="bg-surface-panel p-4 text-center text-sm text-navy-900/50">Enter an exact card number above to look it up.</p>
       )}
       {searchById.status === 'loading' && <p className="text-sm text-navy-900/50">Searching…</p>}
       {searchById.status === 'not-found' && (
-        <p className="rounded-2xl bg-surface-panel p-4 text-center text-sm text-navy-900/50">No card found for "{searchById.queryId}".</p>
+        <p className="bg-surface-panel p-4 text-center text-sm text-navy-900/50">No card found for "{searchById.queryId}".</p>
       )}
       {searchById.status === 'error' && (
-        <p className="rounded-2xl bg-surface-panel p-4 text-center text-sm text-red-600">
+        <p className="bg-surface-panel p-4 text-center text-sm text-red-600">
           {searchById.error ? formatCardApiError(searchById.error) : 'Search failed.'}
         </p>
       )}
       {searchById.status === 'found' && searchById.result && (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
-          <DeckBuilderResultTile entry={searchById.result} />
+        <div className="grid justify-items-start">
+          <div className="w-[8.5rem]">
+            <DeckBuilderResultTile entry={searchById.result} />
+          </div>
         </div>
       )}
     </div>

@@ -22,8 +22,8 @@ export function ColorChip({ color, selected, onToggle }: ColorChipProps) {
       aria-pressed={selected}
       onClick={() => onToggle(color)}
       className={[
-        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-        selected ? 'border-navy-900 bg-navy-900 text-white' : 'border-navy-900/15 bg-white text-navy-900/80 hover:bg-surface-panel',
+        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.08em] transition-all',
+        selected ? 'border-white/15 bg-white/16 text-white shadow-[0_8px_18px_rgba(255,255,255,0.08)]' : 'border-white/10 bg-white/8 text-slate-100/80 hover:bg-white/12',
       ].join(' ')}
     >
       <span className={['h-2.5 w-2.5 rounded-full', token.dotClassName].join(' ')} aria-hidden="true" />

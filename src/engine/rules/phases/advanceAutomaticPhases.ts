@@ -1,0 +1,70 @@
+/**
+ * Orchestrates the fully-automatic phases (6-1-1): Refresh -> Draw -> DON!!
+ * -> Main (stop, awaits player input) | End -> handoff -> Refresh (loop for
+ * the new turn player). Called by the dispatcher (actions/dispatch.ts) after
+ * EVERY executeAction, including setup's last step — it's a no-op whenever
+ * currentPhase is already 'main' or 'setup', so it's always safe to call.
+ *
+ * Stops immediately if gameOver becomes set mid-loop (e.g. a Draw Phase
+ * deck-out) — never advances a phase once the game has ended.
+ */
+import type { GameState } from '../../state/game';
+import type { GameLogEntry } from '../../logs/logEntry';
+import { runRefreshPhase } from './runRefreshPhase';
+import { runDrawPhase } from './runDrawPhase';
+import { runDonPhase } from './runDonPhase';
+import { runEndPhaseAndHandoff } from './runEndPhaseAndHandoff';
+
+export interface AdvanceAutomaticPhasesResult {
+  state: GameState;
+  log: GameLogEntry[];
+}
+
+export function advanceAutomaticPhases(state: GameState): AdvanceAutomaticPhasesResult {
+  let current = state;
+  const log: GameLogEntry[] = [];
+
+  // Safety valve: a real game can never legitimately loop more than a
+  // handful of times per call (one pass per phase, per turn). A much higher
+  // ceiling guards against an actual infinite loop turning into a hang
+  // without ever tripping during normal play.
+  const MAX_ITERATIONS = 1000;
+  let iterations = 0;
+
+  while (!current.gameOver && iterations < MAX_ITERATIONS) {
+    iterations += 1;
+    switch (current.currentPhase) {
+      case 'refresh': {
+        const result = runRefreshPhase(current);
+        current = result.state;
+        log.push(...result.log);
+        break;
+      }
+      case 'draw': {
+        const result = runDrawPhase(current);
+        current = result.state;
+        log.push(...result.log);
+        break;
+      }
+      case 'don': {
+        const result = runDonPhase(current);
+        current = result.state;
+        log.push(...result.log);
+        break;
+      }
+      case 'end': {
+        const result = runEndPhaseAndHandoff(current);
+        current = result.state;
+        log.push(...result.log);
+        break;
+      }
+      case 'main':
+      case 'setup':
+        return { state: current, log };
+      default:
+        return { state: current, log };
+    }
+  }
+
+  return { state: current, log };
+}

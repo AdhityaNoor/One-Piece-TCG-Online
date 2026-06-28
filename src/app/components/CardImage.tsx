@@ -1,13 +1,5 @@
 /**
  * Renders one card's art, or a graceful placeholder when there isn't any.
- * `src === null` is a real, expected case (see cards/library/cardPrintingSummary.ts
- * CardPrintingRef.imageUrl doc) — e.g. promos/decks rows that never carried
- * art, or art not yet resolved — so this is not an error state, just a
- * fallback. A failed network load (broken URL) degrades to the same
- * placeholder via onError, rather than showing a broken-image icon.
- *
- * Fixed aspect ratio matches a physical OPTCG card (63mm x 88mm ≈ 0.716)
- * so grids never jump around as images load in.
  */
 import { useState } from 'react';
 
@@ -15,7 +7,6 @@ export interface CardImageProps {
   src: string | null;
   alt: string;
   className?: string;
-  /** Skip native lazy-loading for the one image that's already in view (e.g. inside CardDetailModal). */
   eager?: boolean;
 }
 
@@ -26,27 +17,19 @@ export function CardImage({ src, alt, className, eager }: CardImageProps) {
   return (
     <div
       className={[
-        'relative aspect-[63/88] w-full overflow-hidden rounded-xl bg-surface-card',
+        'relative aspect-[63/88] w-full overflow-hidden border border-gold/20 bg-[linear-gradient(180deg,_rgba(255,255,255,0.14),_rgba(255,255,255,0.05))] shadow-[0_12px_26px_rgba(0,0,0,0.24)]',
         className ?? '',
       ]
         .filter(Boolean)
         .join(' ')}
     >
       {showPlaceholder ? (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-navy-900/30">
-          <span className="text-2xl" aria-hidden="true">
-            🂠
-          </span>
-          <span className="px-2 text-center text-[10px] font-medium leading-tight">No image available</span>
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-100/35">
+          <span className="h-8 w-5 border-2 border-current shadow-[3px_3px_0_rgba(255,255,255,0.08)]" aria-hidden="true" />
+          <span className="px-2 text-center font-heading text-[10px] font-bold uppercase leading-tight tracking-[0.14em]">No image available</span>
         </div>
       ) : (
-        <img
-          src={src}
-          alt={alt}
-          loading={eager ? 'eager' : 'lazy'}
-          onError={() => setFailed(true)}
-          className="h-full w-full object-cover"
-        />
+        <img src={src} alt={alt} loading={eager ? 'eager' : 'lazy'} onError={() => setFailed(true)} className="h-full w-full object-cover" />
       )}
     </div>
   );

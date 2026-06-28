@@ -16,6 +16,7 @@
  * must never be able to break the app if it changes or goes down.
  */
 import type { CardPrintingDto, DonCardDto, SetSummaryDto } from './types';
+import { optcgEndpoints } from './endpoints';
 
 /** Subset of the real `fetch` signature this module needs — deliberately not `typeof fetch`, see module doc. */
 export type FetchLike = (url: string) => Promise<{
@@ -115,4 +116,28 @@ export async function fetchDonCards(fetchImpl: FetchLike, url: string): Promise<
   const result = await getJson(url, fetchImpl);
   if (!result.ok) return result;
   return filterValidRows(url, result.data, isDonCardDtoShape);
+}
+
+/**
+ * GET every playable non-DON card family the API documents:
+ * - /api/allSetCards/
+ * - /api/allSTCards/
+ * - /api/allPromos/
+ *
+ * OPTCG API has no single unified "all cards" endpoint. The deck builder's
+ * "All Sets" option needs all three families so leaders/cards from Starter
+ * Decks and Promos are not silently missing.
+ */
+export async function fetchAllPlayableCardPrintings(fetchImpl: FetchLike): Promise<CardApiResult<CardPrintingDto[]>> {
+  const [setCards, starterDeckCards, promoCards] = await Promise.all([
+    fetchCardPrintings(fetchImpl, optcgEndpoints.allSetCards()),
+    fetchCardPrintings(fetchImpl, optcgEndpoints.allSTCards()),
+    fetchCardPrintings(fetchImpl, optcgEndpoints.allPromoCards()),
+  ]);
+
+  if (!setCards.ok) return setCards;
+  if (!starterDeckCards.ok) return starterDeckCards;
+  if (!promoCards.ok) return promoCards;
+
+  return { ok: true, data: [...setCards.data, ...starterDeckCards.data, ...promoCards.data] };
 }

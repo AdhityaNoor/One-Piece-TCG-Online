@@ -1,10 +1,6 @@
 /**
- * Card zoom/preview — project requirement "Card zoom/preview required for
- * small screens". Shows the full-size art plus every CardDefinition display
- * field (2-1 through 2-17). `text`/`triggerText` are rendered as plain
- * strings only — this component never parses or executes card text (project
- * rule: card text is data, not logic; see /src/cards/effectTemplates for
- * where behavior actually lives, once it exists).
+ * Card zoom/preview. Shows raw card text as display data only; effect logic
+ * is mapped separately later through authored templates.
  */
 import type { CardDefinition } from '../../engine/state/card';
 import { CARD_COLOR_TOKENS } from '../lib/cardColors';
@@ -38,26 +34,33 @@ export function CardDetailModal({ open, onClose, definition, imageUrl, setName }
   const stats = definition ? collectStats(definition) : [];
 
   return (
-    <Modal open={open && definition !== null} onClose={onClose} maxWidthClassName="max-w-2xl">
+    <Modal
+      open={open && definition !== null}
+      onClose={onClose}
+      maxWidthClassName="max-w-none rounded-none"
+      bodyClassName="h-full max-h-full overflow-hidden"
+      panelStyle={{ width: '50vw', maxWidth: '50vw', height: '80vh', maxHeight: '80vh', borderRadius: 0 }}
+    >
       {definition && (
-        <div className="flex flex-col gap-4 p-5 sm:flex-row">
-          <div className="w-full sm:w-56 sm:flex-shrink-0">
-            <CardImage src={imageUrl} alt={definition.name} eager />
+        <div className="grid h-full min-h-0 grid-cols-[38%_minmax(0,1fr)] gap-4 overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(255,210,97,0.12),_transparent_34%),linear-gradient(135deg,_#07101f,_#0d1830_52%,_#111827)] p-4 text-slate-100">
+          <div className="flex min-h-0 items-center justify-center border border-white/10 bg-black/35 p-3">
+            <CardImage src={imageUrl} alt={definition.name} eager className="h-full max-h-full !w-auto max-w-full rounded-none" />
           </div>
-          <div className="flex flex-1 flex-col gap-3">
-            <div>
-              <h2 className="text-lg font-bold text-navy-900">{definition.name}</h2>
-              <p className="text-xs text-navy-900/50">
+
+          <div className="flex min-h-0 flex-col gap-4 overflow-hidden">
+            <div className="border-b border-white/10 pb-3 pr-9">
+              <h2 className="text-2xl font-black uppercase tracking-[0.08em] text-white">{definition.name}</h2>
+              <p className="mt-1 text-sm font-semibold text-slate-300/75">
                 {definition.cardNumber}
-                {setName ? ` · ${setName}` : ''}
-                {definition.rarity ? ` · ${definition.rarity}` : ''}
+                {setName ? ` - ${setName}` : ''}
+                {definition.rarity ? ` - ${definition.rarity}` : ''}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <Pill tone="navy">{definition.category}</Pill>
               {definition.colors.map((color) => (
-                <span key={color} className="inline-flex items-center gap-1 text-xs font-medium text-navy-900/70">
+                <span key={color} className="inline-flex items-center gap-1 border border-white/10 bg-white/8 px-2 py-1 text-xs font-bold uppercase tracking-[0.08em] text-slate-100">
                   <span className={['h-2.5 w-2.5 rounded-full', CARD_COLOR_TOKENS[color].dotClassName].join(' ')} aria-hidden="true" />
                   {CARD_COLOR_TOKENS[color].label}
                 </span>
@@ -70,22 +73,25 @@ export function CardDetailModal({ open, onClose, definition, imageUrl, setName }
             </div>
 
             {stats.length > 0 && (
-              <div className="flex gap-4 rounded-xl bg-surface-panel px-3 py-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {stats.map((stat) => (
-                  <div key={stat.label} className="text-center">
-                    <p className="text-[10px] uppercase tracking-wide text-navy-900/40">{stat.label}</p>
-                    <p className="text-sm font-bold text-navy-900">{stat.value}</p>
+                  <div key={stat.label} className="border border-white/10 bg-black/30 px-3 py-2 text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-100/55">{stat.label}</p>
+                    <p className="text-lg font-black text-white">{stat.value}</p>
                   </div>
                 ))}
               </div>
             )}
 
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-navy-900/80">{definition.text || 'No card text.'}</p>
+            <div className="min-h-0 flex-1 overflow-y-auto border border-white/10 bg-slate-950/75 p-4">
+              <p className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-amber-100/70">Effect Text</p>
+              <p className="whitespace-pre-wrap text-base leading-7 text-slate-50">{definition.text || 'No card text.'}</p>
+            </div>
 
             {definition.hasTrigger && (
-              <div className="rounded-xl border border-gold/40 bg-gold/10 px-3 py-2">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-gold-600">Trigger</p>
-                <p className="text-sm text-navy-900/80">{definition.triggerText ?? definition.text}</p>
+              <div className="border border-amber-300/40 bg-amber-300/10 px-3 py-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-100">Trigger</p>
+                <p className="text-sm leading-6 text-slate-50">{definition.triggerText ?? definition.text}</p>
               </div>
             )}
           </div>

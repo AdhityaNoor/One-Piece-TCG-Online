@@ -1,10 +1,5 @@
 /**
- * One card tile in a grid — Card Library results (Task 9) and the Deck
- * Builder's Browse/selected-cards lists (Task 10) all render this. Takes a
- * deliberately minimal `CardTileData` shape rather than `CardLibraryEntry`
- * or `SavedDeckCardSnapshot` directly, so this component stays reusable for
- * both (each screen adapts its own data shape to this one — see
- * cardLibraryStore.ts / deckBuilderStore.ts for the richer source shapes).
+ * One card tile in a grid.
  */
 import type { ReactNode } from 'react';
 import type { CardCategory, Color } from '../../engine/state/card';
@@ -21,19 +16,16 @@ export interface CardTileData {
 
 export interface CardTileProps {
   card: CardTileData;
-  /** Shown as a small badge in the corner — main-deck copy count, omitted entirely when undefined (e.g. Card Library browsing has no count). */
   quantity?: number;
   selected?: boolean;
   onClick?: () => void;
-  /** Rendered below the name/number — e.g. an Add/Remove Button or "Custom This Card"-style action. */
   actionSlot?: ReactNode;
+  size?: 'default' | 'compact';
 }
 
-export function CardTile({ card, quantity, selected, onClick, actionSlot }: CardTileProps) {
-  // Deliberately a <div>, not a dynamic button/div tag: a union prop type
-  // for an interactive vs. static tile gets awkward in TSX (each tag allows
-  // different prop sets). A div + role="button" + keyboard handler gives the
-  // same tap-to-select + keyboard accessibility without that complexity.
+export function CardTile({ card, quantity, selected, onClick, actionSlot, size = 'default' }: CardTileProps) {
+  const compact = size === 'compact';
+
   return (
     <div
       role={onClick ? 'button' : undefined}
@@ -50,29 +42,30 @@ export function CardTile({ card, quantity, selected, onClick, actionSlot }: Card
           : undefined
       }
       className={[
-        'flex flex-col gap-2 rounded-2xl bg-surface-card p-2.5 text-left transition-colors',
-        onClick ? 'cursor-pointer hover:bg-surface-cardHover' : '',
-        selected ? 'ring-2 ring-brand ring-offset-2 ring-offset-white' : '',
+        'flex flex-col rounded-[1.4rem] border border-white/10 bg-gradient-to-br from-white/12 to-white/5 text-left text-slate-100 shadow-[0_14px_30px_rgba(0,0,0,0.18)] transition-all',
+        compact ? 'gap-1 p-1.5' : 'gap-2 p-2.5',
+        onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:border-white/20 hover:from-white/16 hover:to-white/8' : '',
+        selected ? 'ring-2 ring-amber-300 ring-offset-2 ring-offset-navy-950' : '',
       ]
         .filter(Boolean)
         .join(' ')}
     >
       <div className="relative">
-        <CardImage src={card.imageUrl} alt={card.name} />
+        <CardImage src={card.imageUrl} alt={card.name} className={compact ? 'max-h-20' : undefined} />
         {quantity !== undefined && (
-          <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-navy-900 px-1.5 text-xs font-bold text-white shadow">
+          <span className={['absolute -right-1 -top-1 flex min-w-6 items-center justify-center rounded-full border border-white/10 bg-navy-950 px-1.5 font-bold text-white shadow', compact ? 'h-4 text-[9px]' : 'h-6 text-xs'].join(' ')}>
             ×{quantity}
           </span>
         )}
         <div className="absolute bottom-1 left-1 flex gap-1">
           {card.colors.map((color) => (
-            <span key={color} className={['h-2.5 w-2.5 rounded-full ring-1 ring-white/70', CARD_COLOR_TOKENS[color].dotClassName].join(' ')} aria-hidden="true" />
+            <span key={color} className={['rounded-full ring-1 ring-white/70', compact ? 'h-1.5 w-1.5' : 'h-2.5 w-2.5', CARD_COLOR_TOKENS[color].dotClassName].join(' ')} aria-hidden="true" />
           ))}
         </div>
       </div>
       <div className="min-h-0">
-        <p className="truncate text-sm font-bold text-navy-900">{card.name}</p>
-        <p className="text-[11px] text-navy-900/50">{card.cardNumber}</p>
+        <p className={['truncate font-bold uppercase tracking-[0.08em] text-white', compact ? 'text-[9px] leading-3' : 'text-sm'].join(' ')}>{card.name}</p>
+        <p className={compact ? 'text-[8px] leading-3 text-slate-200/60' : 'text-[11px] text-slate-200/60'}>{card.cardNumber}</p>
       </div>
       {actionSlot}
     </div>

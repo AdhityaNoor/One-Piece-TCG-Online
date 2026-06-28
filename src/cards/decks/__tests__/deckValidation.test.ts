@@ -11,6 +11,10 @@ function makeDef(cardNumber: string, category: CardDefinition['category'], color
     types: [],
     text: '',
     hasTrigger: false,
+    hasRush: false,
+    hasBlocker: false,
+    hasDoubleAttack: false,
+    isUnblockable: false,
     cardNumber,
   };
 }

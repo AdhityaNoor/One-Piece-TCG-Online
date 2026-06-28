@@ -28,7 +28,7 @@ export function ClipboardImportTab() {
         onChange={(event) => setText(event.target.value)}
         rows={8}
         placeholder={'1xOP01-001\n4xOP01-016_p1\n...'}
-        className="w-full resize-none rounded-2xl border border-navy-900/15 bg-white p-3 font-mono text-xs text-navy-900 placeholder:text-navy-900/30 focus:border-navy-900/40 focus:outline-none"
+        className="w-full resize-none border border-navy-900/15 bg-white p-3 font-mono text-xs text-navy-900 placeholder:text-navy-900/30 focus:border-navy-900/40 focus:outline-none"
       />
 
       <Button
@@ -41,7 +41,7 @@ export function ClipboardImportTab() {
       </Button>
 
       {clipboardImportSummary && (
-        <div className="flex flex-col gap-2 rounded-2xl bg-surface-panel p-3 text-sm">
+        <div className="flex flex-col gap-2 bg-surface-panel p-3 text-sm">
           <p className="font-semibold text-navy-900">{clipboardImportSummary.resolvedCount} card line(s) resolved.</p>
 
           {clipboardImportSummary.issues.length > 0 && (
