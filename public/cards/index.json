@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-28T20:51:08.000Z",
+  "total": 2558,
+  "sets": [
+    {
+      "code": "EB01",
+      "name": "EB01",
+      "count": 61
+    },
+    {
+      "code": "EB02",
+      "name": "EB02",
+      "count": 61
+    },
+    {
+      "code": "EB03",
+      "name": "EB03",
+      "count": 62
+    },
+    {
+      "code": "EB04",
+      "name": "EB04",
+      "count": 61
+    },
+    {
+      "code": "OP01",
+      "name": "OP01",
+      "count": 121
+    },
+    {
+      "code": "OP02",
+      "name": "OP02",
+      "count": 121
+    },
+    {
+      "code": "OP03",
+      "name": "OP03",
+      "count": 123
+    },
+    {
+      "code": "OP04",
+      "name": "OP04",
+      "count": 119
+    },
+    {
+      "code": "OP05",
+      "name": "OP05",
+      "count": 119
+    },
+    {
+      "code": "OP06",
+      "name": "OP06",
+      "count": 119
+    },
+    {
+      "code": "OP07",
+      "name": "OP07",
+      "count": 119
+    },
+    {
+      "code": "OP08",
+      "name": "OP08",
+      "count": 119
+    },
+    {
+      "code": "OP09",
+      "name": "OP09",
+      "count": 119
+    },
+    {
+      "code": "OP10",
+      "name": "OP10",
+      "count": 119
+    },
+    {
+      "code": "OP11",
+      "name": "OP11",
+      "count": 119
+    },
+    {
+      "code": "OP12",
+      "name": "OP12",
+      "count": 119
+    },
+    {
+      "code": "OP13",
+      "name": "OP13",
+      "count": 120
+    },
+    {
+      "code": "OP14",
+      "name": "OP14",
+      "count": 120
+    },
+    {
+      "code": "OP15",
+      "name": "OP15",
+      "count": 119
+    },
+    {
+      "code": "OP16",
+      "name": "OP16",
+      "count": 119
+    },
+    {
+      "code": "P",
+      "name": "P",
+      "count": 28
+    },
+    {
+      "code": "PRB01",
+      "name": "PRB01",
+      "count": 1
+    },
+    {
+      "code": "PRB02",
+      "name": "PRB02",
+      "count": 18
+    },
+    {
+      "code": "ST01",
+      "name": "ST01",
+      "count": 17
+    },
+    {
+      "code": "ST02",
+      "name": "ST02",
+      "count": 17
+    },
+    {
+      "code": "ST03",
+      "name": "ST03",
+      "count": 17
+    },
+    {
+      "code": "ST04",
+      "name": "ST04",
+      "count": 17
+    },
+    {
+      "code": "ST05",
+      "name": "ST05",
+      "count": 17
+    },
+    {
+      "code": "ST06",
+      "name": "ST06",
+      "count": 17
+    },
+    {
+      "code": "ST07",
+      "name": "ST07",
+      "count": 17
+    },
+    {
+      "code": "ST08",
+      "name": "ST08",
+      "count": 15
+    },
+    {
+      "code": "ST09",
+      "name": "ST09",
+      "count": 15
+    },
+    {
+      "code": "ST10",
+      "name": "ST10",
+      "count": 17
+    },
+    {
+      "code": "ST11",
+      "name": "ST11",
+      "count": 5
+    },
+    {
+      "code": "ST12",
+      "name": "ST12",
+      "count": 17
+    },
+    {
+      "code": "ST13",
+      "name": "ST13",
+      "count": 19
+    },
+    {
+      "code": "ST14",
+      "name": "ST14",
+      "count": 17
+    },
+    {
+      "code": "ST15",
+      "name": "ST15",
+      "count": 5
+    },
+    {
+      "code": "ST16",
+      "name": "ST16",
+      "count": 5
+    },
+    {
+      "code": "ST17",
+      "name": "ST17",
+      "count": 5
+    },
+    {
+      "code": "ST18",
+      "name": "ST18",
+      "count": 5
+    },
+    {
+      "code": "ST19",
+      "name": "ST19",
+      "count": 5
+    },
+    {
+      "code": "ST20",
+      "name": "ST20",
+      "count": 5
+    },
+    {
+      "code": "ST21",
+      "name": "ST21",
+      "count": 17
+    },
+    {
+      "code": "ST22",
+      "name": "ST22",
+      "count": 17
+    },
+    {
+      "code": "ST23",
+      "name": "ST23",
+      "count": 5
+    },
+    {
+      "code": "ST24",
+      "name": "ST24",
+      "count": 5
+    },
+    {
+      "code": "ST25",
+      "name": "ST25",
+      "count": 5
+    },
+    {
+      "code": "ST26",
+      "name": "ST26",
+      "count": 5
+    },
+    {
+      "code": "ST27",
+      "name": "ST27",
+      "count": 5
+    },
+    {
+      "code": "ST28",
+      "name": "ST28",
+      "count": 5
+    },
+    {
+      "code": "ST29",
+      "name": "ST29",
+      "count": 17
+    },
+    {
+      "code": "ST30",
+      "name": "ST30",
+      "count": 17
+    }
+  ]
+}
