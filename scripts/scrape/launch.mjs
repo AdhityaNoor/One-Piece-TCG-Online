@@ -1,8 +1,12 @@
 /**
- * Launches `npm run scrape` in a SEPARATE, external terminal window so the
- * scrape can be monitored on its own, outside the IDE's integrated terminal.
+ * Launches a scrape npm script in a SEPARATE, external terminal window so it
+ * can be monitored on its own, outside the IDE's integrated terminal.
  *
- *   npm run scrape:window
+ *   npm run scrape:window             # launches `npm run scrape`
+ *   npm run scrape:limitless:window   # launches `npm run scrape:limitless`
+ *
+ * The target npm script defaults to "scrape" and can be overridden by passing
+ * its name as the first argument (see package.json wiring).
  *
  * - Windows: opens Windows Terminal FULLSCREEN (`wt -F`). If Windows Terminal
  *   isn't installed, falls back to a normal pop-out console window (classic
@@ -21,6 +25,10 @@ import { fileURLToPath } from 'node:url';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(SCRIPT_DIR, '..', '..');
 
+/** npm script to run in the new window (default "scrape"). Validated to a safe token. */
+const RAW_TARGET = process.argv[2] || 'scrape';
+const TARGET = /^[a-z0-9:_-]+$/i.test(RAW_TARGET) ? RAW_TARGET : 'scrape';
+
 /** Spawn fully detached so the new window outlives this launcher process. */
 function detached(command, args, options = {}) {
   const child = spawn(command, args, { detached: true, stdio: 'ignore', ...options });
@@ -31,7 +39,7 @@ function detached(command, args, options = {}) {
 function launchWindows() {
   // Preferred: Windows Terminal, fullscreen, starting in the repo, keeping the
   // window open after the scrape finishes (cmd /k).
-  const wt = detached('wt.exe', ['-F', '-d', REPO_ROOT, 'cmd', '/k', 'npm', 'run', 'scrape']);
+  const wt = detached('wt.exe', ['-F', '-d', REPO_ROOT, 'cmd', '/k', 'npm', 'run', TARGET]);
 
   wt.on('error', () => {
     // Windows Terminal not found -> fall back to a normal new console window.
@@ -39,7 +47,7 @@ function launchWindows() {
     console.warn('[scrape:window] For true fullscreen, install Windows Terminal, or press Alt+Enter in the new window.');
     detached(
       'cmd.exe',
-      ['/c', 'start', '', 'cmd', '/k', `cd /d "${REPO_ROOT}" && npm run scrape`],
+      ['/c', 'start', '', 'cmd', '/k', `cd /d "${REPO_ROOT}" && npm run ${TARGET}`],
       { windowsHide: false },
     );
   });
@@ -48,15 +56,15 @@ function launchWindows() {
 function launchMac() {
   // AppleScript: open a new Terminal window running the scrape, then activate it.
   const script = `tell application "Terminal"
-  do script "cd ${JSON.stringify(REPO_ROOT)} && npm run scrape"
+  do script "cd ${JSON.stringify(REPO_ROOT)} && npm run ${TARGET}"
   activate
 end tell`;
   detached('osascript', ['-e', script]);
-  console.log('[scrape:window] Opened Terminal.app. Use ⌃⌘F in that window for fullscreen.');
+  console.log('[scrape:window] Opened Terminal.app. Use Ctrl+Cmd+F in that window for fullscreen.');
 }
 
 function launchLinux() {
-  const cmd = `cd '${REPO_ROOT}' && npm run scrape; exec bash`;
+  const cmd = `cd '${REPO_ROOT}' && npm run ${TARGET}; exec bash`;
   const candidates = [
     ['x-terminal-emulator', ['-e', `bash -lc "${cmd}"`]],
     ['gnome-terminal', ['--full-screen', '--', 'bash', '-lc', cmd]],
@@ -66,7 +74,7 @@ function launchLinux() {
   let i = 0;
   const tryNext = () => {
     if (i >= candidates.length) {
-      console.error('[scrape:window] No supported terminal emulator found. Run `npm run scrape` manually.');
+      console.error('[scrape:window] No supported terminal emulator found. Run the scrape script manually.');
       return;
     }
     const [bin, args] = candidates[i++];

@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.app.json",
     "test": "vitest run",
     "scrape": "tsx scripts/scrape/run.ts",
-    "scrape:window": "node scripts/scrape/launch.mjs"
+    "scrape:window": "node scripts/scrape/launch.mjs scrape",
+    "scrape:limitless": "tsx scripts/scrape-limitless/run.ts",
+    "scrape:limitless:window": "node scripts/scrape/launch.mjs scrape:limitless"
   },
   "dependencies": {
     "react": "^18.3.1",
