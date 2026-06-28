@@ -1,0 +1,1 @@
+(stray debug file from environment verification — safe to delete, has no effect on the build)

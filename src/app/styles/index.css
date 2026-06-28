@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Landscape-first gameplay, per project spec — portrait gets a simplified
+   layout via Tailwind's orientation/breakpoint variants in board components,
+   not here. This file stays minimal: structural resets only, no game
+   visuals (those are Tailwind utility classes on components, kept out of
+   global CSS so animation/3D layers never need to fight a stylesheet). */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
