@@ -115,8 +115,10 @@ function selectedDonInstanceIds(mode: BoardSelectionMode): Set<string> {
 // style do we wrap it in cqh(), so it scales with the board's live height.
 const FIELD_CARD_WIDTH_PX = 150;
 const FIELD_CARD_HEIGHT_PX = 210;
+const BOARD_ZONE_TRACK_PX = 210;
 const FIELD_CARD_WIDTH = cqh(FIELD_CARD_WIDTH_PX);
 const FIELD_CARD_HEIGHT = cqh(FIELD_CARD_HEIGHT_PX);
+const BOARD_ZONE_TRACK = cqh(BOARD_ZONE_TRACK_PX);
 // DON!! Deck visual (inside LifeStack) reads 20% smaller than a Life/field
 // card — it's a sealed pile a player barely touches, so it doesn't need to
 // read at full card size the way Active/Rested DON!! chips now do.
@@ -259,7 +261,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   // Deck stays visually stacked above Stage/Trash rather than landing on a
   // disconnected side.
   const deckCell = (
-    <MatCell label="Deck" className="flex-shrink-0" labelClassName="sr-only">
+    <MatCell label="Deck" className="flex-shrink-0" labelClassName="sr-only" style={{ width: BOARD_ZONE_TRACK }}>
       <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" />
     </MatCell>
   );
@@ -386,7 +388,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   const stageTrashGroup = (
     <div
       className={['absolute inset-y-0 grid gap-2', reverseRows ? 'left-0' : 'right-0'].join(' ')}
-      style={{ gridTemplateColumns: `${cqh(210)} ${cqh(210)}` }}
+      style={{ gridTemplateColumns: `${BOARD_ZONE_TRACK} ${BOARD_ZONE_TRACK}` }}
     >
       {reverseRows ? (
         <>
@@ -403,7 +405,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   );
 
   const leaderGroup = (
-    <div className="absolute inset-y-0 left-1/2 z-10 grid -translate-x-1/2" style={{ gridTemplateColumns: cqh(210) }}>
+    <div className="absolute inset-y-0 left-1/2 z-10 grid -translate-x-1/2" style={{ gridTemplateColumns: BOARD_ZONE_TRACK }}>
       {leaderCell}
     </div>
   );
