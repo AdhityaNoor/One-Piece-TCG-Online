@@ -67,6 +67,7 @@ export interface PlayerBoardPanelProps {
   mode: BoardSelectionMode;
   onCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea', card: CardView) => void;
   onCardZoom: (card: CardView) => void;
+  onAttackTargetHover?: (card: CardView | null) => void;
 }
 
 function leaderCharacterSelectable(mode: BoardSelectionMode, isOwn: boolean, isOpponent: boolean, zone: 'leaderArea' | 'characterArea', card: CardView): boolean {
@@ -135,7 +136,7 @@ function EmptySlot({ label }: { size: 'leader' | 'board'; label: string }) {
   );
 }
 
-function LifeStack({ count, donDeckCount }: { count: number; donDeckCount: number }) {
+function LifeStack({ count, donDeckCount, donDeckFirst = false }: { count: number; donDeckCount: number; donDeckFirst?: boolean }) {
   const visibleCards = Math.max(0, Math.min(count, 5));
   const cards = Array.from({ length: visibleCards });
 
@@ -150,7 +151,7 @@ function LifeStack({ count, donDeckCount }: { count: number; donDeckCount: numbe
           key={index}
           className="absolute left-0 right-0 mx-auto aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.38)]"
           style={{
-            top: cqh(index * 18),
+            [donDeckFirst ? 'bottom' : 'top']: cqh(index * 18),
             width: FIELD_CARD_WIDTH,
             zIndex: index,
           }}
@@ -173,7 +174,7 @@ function LifeStack({ count, donDeckCount }: { count: number; donDeckCount: numbe
           viewports — z-index keeps the DON!! card on top, but this hasn't
           been measured/avoided dynamically. */}
       <div
-        className="absolute inset-x-0 bottom-0 mx-auto aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.45)]"
+        className={['absolute inset-x-0 mx-auto aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.45)]', donDeckFirst ? 'top-0' : 'bottom-0'].join(' ')}
         style={{ width: DON_DECK_CARD_WIDTH, zIndex: 10 }}
         aria-label={`${donDeckCount} DON!! Deck`}
       >
@@ -219,7 +220,7 @@ function MatCell({
   );
 }
 
-export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, onCardTap, onCardZoom }: PlayerBoardPanelProps) {
+export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, onCardTap, onCardZoom, onAttackTargetHover }: PlayerBoardPanelProps) {
   const attackerSelected = selectedAttackerIds(mode);
   const leaderCard: CardView | null = board.leader;
   const stageCard: CardView | null = board.stageArea[0] ?? null;
@@ -236,6 +237,8 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
       selected={attackerSelected.has(leaderCard.instanceId)}
       onSelect={() => onCardTap('leaderArea', leaderCard)}
       onZoom={() => onCardZoom(leaderCard)}
+      onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(leaderCard) : undefined}
+      onHoverEnd={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(null) : undefined}
     />
   ) : (
     <EmptySlot size="leader" label="Leader" />
@@ -278,6 +281,8 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
             selected={attackerSelected.has(card.instanceId)}
             onSelect={() => onCardTap('characterArea', card)}
             onZoom={() => onCardZoom(card)}
+            onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(card) : undefined}
+            onHoverEnd={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(null) : undefined}
           />
         ))}
         {board.characterArea.length === 0 && <span className="font-display text-xl font-black uppercase tracking-[0.08em] text-white/20">Character Area</span>}
@@ -428,7 +433,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
           <>
             {boardRow}
             <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only">
-              <LifeStack count={board.lifeAreaCount} donDeckCount={board.donDeckCount} />
+              <LifeStack count={board.lifeAreaCount} donDeckCount={board.donDeckCount} donDeckFirst />
             </MatCell>
             <div className="min-h-0">{characterRow}</div>
           </>
@@ -446,7 +451,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   );
 
   return (
-    <div className={['flex min-h-0 min-w-0 flex-1 flex-col gap-1 rounded-xl border border-white/10 bg-navy-950/60 p-2 shadow-inner shadow-black/30', isOwn ? 'ring-1 ring-gold/30' : ''].join(' ')}>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       {mat}
       <TrashGalleryModal
         open={trashGalleryOpen}

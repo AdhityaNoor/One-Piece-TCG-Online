@@ -20,7 +20,7 @@
  * scannable text list is more useful than card art. Card zoom/preview
  * (small-screen requirement) reuses the existing CardDetailModal as-is.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { CardDefinition } from '../../engine/state/card';
 import { getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
@@ -49,6 +49,7 @@ export function MatchScreen() {
   const [pauseOpen, setPauseOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [zoomDefinitionId, setZoomDefinitionId] = useState<string | null>(null);
+  const [hoveredAttackTargetId, setHoveredAttackTargetId] = useState<string | null>(null);
 
   const isMatchScreen = current.screen === 'match';
   const deckIdA = current.screen === 'match' ? current.deckIdA : null;
@@ -74,6 +75,10 @@ export function MatchScreen() {
   // early returns below, even though its result is only used once we know
   // we're actually on the match screen with a live GameState.
   const selection = useBoardSelection(matchState ? getActingPlayerId(matchState) : null);
+
+  useEffect(() => {
+    if (selection.mode.kind !== 'selectAttackTarget') setHoveredAttackTargetId(null);
+  }, [selection.mode.kind]);
 
   if (!isMatchScreen) {
     return null;
@@ -137,6 +142,19 @@ export function MatchScreen() {
   const actingBoard = actingPlayerId === turnPlayerId ? turnPlayerBoard : otherPlayerBoard;
 
   const battleLabel = matchState.currentBattle ? ` · Battle: ${matchState.currentBattle.step}` : '';
+  const attackArrow = matchState.currentBattle
+    ? {
+        attackerInstanceId: matchState.currentBattle.attackerInstanceId,
+        targetInstanceId: matchState.currentBattle.targetInstanceId,
+        committed: true,
+      }
+    : selection.mode.kind === 'selectAttackTarget' && hoveredAttackTargetId
+      ? {
+          attackerInstanceId: selection.mode.attackerInstanceId,
+          targetInstanceId: hoveredAttackTargetId,
+          committed: false,
+        }
+      : null;
 
   return (
     <ScreenShell
@@ -195,7 +213,7 @@ export function MatchScreen() {
             </div>
           </aside>
 
-          <div className="min-h-0 overflow-hidden rounded-xl border border-gold/20 bg-[linear-gradient(180deg,_rgba(5,9,20,0.9),_rgba(3,7,16,0.96))] p-2 shadow-inner shadow-black/40">
+          <div className="relative min-h-0 overflow-hidden rounded-xl border border-gold/20 bg-[linear-gradient(180deg,_rgba(5,9,20,0.9),_rgba(3,7,16,0.96))] p-2 shadow-inner shadow-black/40">
             {/* ScaleToFit no longer scales anything itself — it just turns this
                 block into a CSS containment context (container-type: size) so
                 every card-sized leaf inside (PlayerBoardPanel/DonChip/
@@ -224,6 +242,7 @@ export function MatchScreen() {
                   onHandCardTap={(card) => selection.handleCardTap(otherPlayerId, 'hand', card)}
                   onMatCardTap={(zone, card) => selection.handleCardTap(otherPlayerId, zone, card)}
                   onCardZoom={openZoom}
+                  onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
                 />
 
                 <div className="flex flex-shrink-0 items-center justify-center gap-3 py-0.5">
@@ -241,9 +260,15 @@ export function MatchScreen() {
                   onHandCardTap={(card) => selection.handleCardTap(turnPlayerId, 'hand', card)}
                   onMatCardTap={(zone, card) => selection.handleCardTap(turnPlayerId, zone, card)}
                   onCardZoom={openZoom}
+                  onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
                 />
               </div>
             </ScaleToFit>
+            <AttackArrowOverlay
+              attackerInstanceId={attackArrow?.attackerInstanceId ?? null}
+              targetInstanceId={attackArrow?.targetInstanceId ?? null}
+              committed={attackArrow?.committed ?? false}
+            />
           </div>
         </div>
       </div>
@@ -289,6 +314,132 @@ function DeckLoadErrorScreen({ reason, onBack }: { reason: string; onBack: () =>
 
 type MatchSelectionMode = ReturnType<typeof useBoardSelection>['mode'];
 
+interface AttackArrowOverlayProps {
+  attackerInstanceId: string | null;
+  targetInstanceId: string | null;
+  committed: boolean;
+}
+
+interface AttackArrowPoints {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+function buildAttackArrowPath(points: AttackArrowPoints): string {
+  const dx = points.x2 - points.x1;
+  const dy = points.y2 - points.y1;
+  const length = Math.hypot(dx, dy);
+  const startInset = 22;
+  const endInset = 34;
+  if (length <= startInset + endInset) return `M ${points.x1} ${points.y1} L ${points.x2} ${points.y2}`;
+
+  const ux = dx / length;
+  const uy = dy / length;
+  const x1 = points.x1 + ux * startInset;
+  const y1 = points.y1 + uy * startInset;
+  const x2 = points.x2 - ux * endInset;
+  const y2 = points.y2 - uy * endInset;
+  return `M ${x1} ${y1} L ${x2} ${y2}`;
+}
+
+function AttackArrowOverlay({ attackerInstanceId, targetInstanceId, committed }: AttackArrowOverlayProps) {
+  const overlayRef = useRef<SVGSVGElement | null>(null);
+  const pathId = useId().replace(/:/g, '-');
+  const [points, setPoints] = useState<AttackArrowPoints | null>(null);
+
+  useLayoutEffect(() => {
+    const overlay = overlayRef.current;
+    const board = overlay?.parentElement;
+    if (!overlay || !board || !attackerInstanceId || !targetInstanceId) {
+      setPoints(null);
+      return;
+    }
+
+    let frame = 0;
+
+    const findCard = (instanceId: string): HTMLElement | null => {
+      const cards = board.querySelectorAll<HTMLElement>('[data-card-instance-id]');
+      for (const card of cards) {
+        if (card.dataset.cardInstanceId === instanceId) return card;
+      }
+      return null;
+    };
+
+    const measure = (): void => {
+      frame = 0;
+      const attacker = findCard(attackerInstanceId);
+      const target = findCard(targetInstanceId);
+      if (!attacker || !target) {
+        setPoints(null);
+        return;
+      }
+
+      const boardRect = board.getBoundingClientRect();
+      const attackerRect = attacker.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+
+      setPoints({
+        x1: attackerRect.left + attackerRect.width / 2 - boardRect.left,
+        y1: attackerRect.top + attackerRect.height / 2 - boardRect.top,
+        x2: targetRect.left + targetRect.width / 2 - boardRect.left,
+        y2: targetRect.top + targetRect.height / 2 - boardRect.top,
+      });
+    };
+
+    const scheduleMeasure = (): void => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(measure);
+    };
+
+    scheduleMeasure();
+
+    const observer = new ResizeObserver(scheduleMeasure);
+    observer.observe(board);
+    window.addEventListener('resize', scheduleMeasure);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', scheduleMeasure);
+    };
+  }, [attackerInstanceId, targetInstanceId]);
+
+  const stroke = committed ? '#f43f5e' : '#fbbf24';
+  const glow = committed ? '#fb7185' : '#facc15';
+  const arrowPath = points ? buildAttackArrowPath(points) : null;
+  const headShadowOpacity = 0.32;
+  const arrowHeads = [0, 1, 2, 3, 4, 5, 6];
+  const durationSeconds = 1.15;
+
+  return (
+    <svg ref={overlayRef} className="pointer-events-none absolute inset-0 z-40 h-full w-full overflow-visible" aria-hidden="true">
+      <defs>
+        <filter id="attack-arrow-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor={glow} floodOpacity="0.85" />
+          <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000000" floodOpacity="0.5" />
+        </filter>
+      </defs>
+      {arrowPath && (
+        <>
+          <path id={pathId} d={arrowPath} fill="none" stroke="none" />
+          {arrowHeads.map((index) => (
+            <g key={index} opacity="0">
+              <polygon points="24,0 -18,-14 -8,0 -18,14" fill="#000000" opacity={headShadowOpacity} transform="translate(2 4)" />
+              <polygon points="24,0 -18,-14 -8,0 -18,14" fill={stroke} filter="url(#attack-arrow-glow)" />
+              <animateMotion dur={`${durationSeconds}s`} repeatCount="indefinite" rotate="auto" begin={`${index * -0.16}s`}>
+                <mpath href={`#${pathId}`} />
+              </animateMotion>
+              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.12;0.88;1" dur={`${durationSeconds}s`} repeatCount="indefinite" begin={`${index * -0.16}s`} />
+            </g>
+          ))}
+        </>
+      )}
+    </svg>
+  );
+}
+
 function handSelectable(mode: MatchSelectionMode, isOwn: boolean, card: CardView): boolean {
   if (!isOwn) return false;
   if (mode.kind === 'idle') {
@@ -315,6 +466,7 @@ function PlayerSideRow({
   onHandCardTap,
   onMatCardTap,
   onCardZoom,
+  onAttackTargetHover,
 }: {
   board: ReturnType<typeof projectPlayerBoard>;
   isOwn: boolean;
@@ -324,6 +476,7 @@ function PlayerSideRow({
   onHandCardTap: (card: CardView) => void;
   onMatCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea', card: CardView) => void;
   onCardZoom: (card: CardView) => void;
+  onAttackTargetHover: (card: CardView | null) => void;
 }) {
   const selectedIds = selectedHandIds(mode);
 
@@ -366,6 +519,7 @@ function PlayerSideRow({
       mode={mode}
       onCardTap={onMatCardTap}
       onCardZoom={onCardZoom}
+      onAttackTargetHover={onAttackTargetHover}
     />
   );
 

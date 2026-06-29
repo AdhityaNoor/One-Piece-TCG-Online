@@ -44,6 +44,8 @@ export interface BoardCardTileProps {
   selected?: boolean;
   onSelect?: () => void;
   onZoom?: () => void;
+  onHoverStart?: () => void;
+  onHoverEnd?: () => void;
 }
 
 function MiniBadge({ tone = 'dark', children }: { tone?: 'dark' | 'gold'; children: ReactNode }) {
@@ -59,7 +61,7 @@ function MiniBadge({ tone = 'dark', children }: { tone?: 'dark' | 'gold'; childr
   );
 }
 
-export function BoardCardTile({ card, size = 'board', selectable, selected, onSelect, onZoom }: BoardCardTileProps) {
+export function BoardCardTile({ card, size = 'board', selectable, selected, onSelect, onZoom, onHoverStart, onHoverEnd }: BoardCardTileProps) {
   const dims = SIZE_PX[size];
   const isField = size === 'field';
   const rested = card.orientation === 'rested';
@@ -67,6 +69,9 @@ export function BoardCardTile({ card, size = 'board', selectable, selected, onSe
 
   return (
     <div
+      data-card-instance-id={card.instanceId}
+      onPointerEnter={onHoverStart}
+      onPointerLeave={onHoverEnd}
       className={['group relative flex-shrink-0', isField ? 'aspect-square h-full max-h-full max-w-full' : ''].join(' ')}
       style={isField ? undefined : { width: dims.box, height: dims.box }}
     >
