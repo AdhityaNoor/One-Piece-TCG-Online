@@ -8,6 +8,8 @@
  * rotate-90-when-rested convention as BoardCardTile, for the same reason:
  * that's how a DON!! used to pay a cost actually looks on a real table.
  */
+import { cqh } from './boardScale';
+
 const DON_TOKEN_SRC = '/ui/don-token.png';
 
 export interface DonChipProps {
@@ -20,9 +22,11 @@ export interface DonChipProps {
 // Same footprint as every other field card (BoardCardTile's 'field' size,
 // PlayerBoardPanel's FIELD_CARD_WIDTH/HEIGHT) — DON!! chips used to be a
 // smaller token, but the design now wants them reading as full-size cards.
-const CARD_WIDTH = 150;
-const CARD_HEIGHT = 210;
-const BOX = CARD_HEIGHT;
+// cqh-based (see boardScale.ts) so chips shrink/grow with the board's
+// height instead of staying a fixed pixel size.
+const CARD_WIDTH = cqh(150);
+const CARD_HEIGHT = cqh(210);
+const BOX = cqh(210);
 
 export function DonChip({ card, selectable, selected, onSelect }: DonChipProps) {
   const rested = card.donRested;

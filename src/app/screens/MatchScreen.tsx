@@ -24,8 +24,8 @@ import { useEffect, useState } from 'react';
 import type { CardDefinition } from '../../engine/state/card';
 import { getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
-import { Button, CardDetailModal, Modal, ScreenShell } from '../components';
-import { ActionBar, ActionLogPanel, BoardCardTile, CardRow, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, useBoardSelection } from '../components/match';
+import { Button, CardDetailModal, Modal, ScaleToFit, ScreenShell } from '../components';
+import { ActionBar, ActionLogPanel, BoardCardTile, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, useBoardSelection } from '../components/match';
 import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -196,35 +196,54 @@ export function MatchScreen() {
           </aside>
 
           <div className="min-h-0 overflow-hidden rounded-xl border border-gold/20 bg-[linear-gradient(180deg,_rgba(5,9,20,0.9),_rgba(3,7,16,0.96))] p-2 shadow-inner shadow-black/40">
-            <div className="flex h-full min-h-0 w-full flex-col justify-start gap-2 overflow-hidden">
-              <PlayerSideRow
-                board={otherPlayerBoard}
-                isOwn={actingPlayerId === otherPlayerId}
-                isOpponent={actingPlayerId !== otherPlayerId}
-                reverseRows={true}
-                mode={selection.mode}
-                onHandCardTap={(card) => selection.handleCardTap(otherPlayerId, 'hand', card)}
-                onMatCardTap={(zone, card) => selection.handleCardTap(otherPlayerId, zone, card)}
-                onCardZoom={openZoom}
-              />
+            {/* ScaleToFit no longer scales anything itself — it just turns this
+                block into a CSS containment context (container-type: size) so
+                every card-sized leaf inside (PlayerBoardPanel/DonChip/
+                DonStack/PileStack/BoardCardTile) can size itself in `cqh`
+                units (see boardScale.ts) instead of a literal px constant.
+                Width stays completely fluid: PlayerSideRow's own grid
+                (180px / minmax(0,1fr) / 180px) already stretches the board
+                column to fill 100% of whatever width is available, which is
+                what was being suppressed by the three earlier JS-transform
+                attempts (frozen-measurement uniform scaling caused
+                dead-space letterbox bars; per-axis stretching removed the
+                dead space but visibly distorted DON!! chip art; reverting to
+                a single uniform factor fixed the distortion but reintroduced
+                the letterbox bars whenever the container was wider than the
+                fixed reference ratio) — see ScaleToFit.tsx for the full
+                history. Height is the one dimension cqh ties card size to,
+                per the project's landscape-first requirement. */}
+            <ScaleToFit>
+              <div className="flex h-full min-h-0 w-full flex-col justify-start gap-2 overflow-hidden">
+                <PlayerSideRow
+                  board={otherPlayerBoard}
+                  isOwn={actingPlayerId === otherPlayerId}
+                  isOpponent={actingPlayerId !== otherPlayerId}
+                  reverseRows={true}
+                  mode={selection.mode}
+                  onHandCardTap={(card) => selection.handleCardTap(otherPlayerId, 'hand', card)}
+                  onMatCardTap={(zone, card) => selection.handleCardTap(otherPlayerId, zone, card)}
+                  onCardZoom={openZoom}
+                />
 
-              <div className="flex flex-shrink-0 items-center justify-center gap-3 py-0.5">
-                <span className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-gold/60">Battle Line</span>
-                <span className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+                <div className="flex flex-shrink-0 items-center justify-center gap-3 py-0.5">
+                  <span className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-gold/60">Battle Line</span>
+                  <span className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+                </div>
+
+                <PlayerSideRow
+                  board={turnPlayerBoard}
+                  isOwn={actingPlayerId === turnPlayerId}
+                  isOpponent={actingPlayerId !== turnPlayerId}
+                  reverseRows={false}
+                  mode={selection.mode}
+                  onHandCardTap={(card) => selection.handleCardTap(turnPlayerId, 'hand', card)}
+                  onMatCardTap={(zone, card) => selection.handleCardTap(turnPlayerId, zone, card)}
+                  onCardZoom={openZoom}
+                />
               </div>
-
-              <PlayerSideRow
-                board={turnPlayerBoard}
-                isOwn={actingPlayerId === turnPlayerId}
-                isOpponent={actingPlayerId !== turnPlayerId}
-                reverseRows={false}
-                mode={selection.mode}
-                onHandCardTap={(card) => selection.handleCardTap(turnPlayerId, 'hand', card)}
-                onMatCardTap={(zone, card) => selection.handleCardTap(turnPlayerId, zone, card)}
-                onCardZoom={openZoom}
-              />
-            </div>
+            </ScaleToFit>
           </div>
         </div>
       </div>
@@ -308,24 +327,26 @@ function PlayerSideRow({
 }) {
   const selectedIds = selectedHandIds(mode);
 
-  // Hand/Trash mirror right along with everything inside PlayerBoardPanel:
-  // for the top/opponent row, Trash sits on the LEFT (reversed from the
-  // bottom row's right-side Trash) so it lines up with whichever edge of the
-  // mat is actually adjacent to it — see PlayerBoardPanel.tsx's boardRow
-  // comment for the matching internal half. The hover-preview side panel
-  // that used to sit at the outer edge has been removed; card zoom
-  // (onCardZoom) is the one remaining card-detail affordance.
+  // The standalone Trash list column that used to flank the board on its
+  // outer edge is gone (Trash is now a face-up pile inside PlayerBoardPanel
+  // itself, in the old Deck slot — see TrashPile.tsx/PlayerBoardPanel.tsx).
+  // That column used to exist specifically so Hand could mirror sides
+  // (Hand left/Trash right on the bottom row, flipped on the top row) while
+  // still giving the board column the SAME fixed-width flanking on both
+  // sides — which is what kept both players' Leaders landing on the same
+  // screen X (PlayerBoardPanel.tsx centers Leader at the literal middle of
+  // its own board column; that column only lines up across rows if its
+  // start-X is identical on both rows).
   //
-  // Hand and Trash must use the SAME fixed column width (180px, set on the
-  // grid below) on both rows. PlayerBoardPanel.tsx now centers each player's
-  // Leader at the literal horizontal center of that player's own board
-  // column (absolute, independent of DON!! pile width) — but that only
-  // makes both players' Leaders land on the same screen X if the board
-  // column itself starts at the same X on both rows. Since the board column
-  // is the middle one here, its left edge is offset by exactly the leftmost
-  // fixed column's width; if Hand and Trash had different widths (they used
-  // to: 172px vs 190px), the two boards — and therefore both Leaders — would
-  // sit at different X coordinates and not align across the Battle Line.
+  // With Trash gone, mirroring Hand's side per-row would break that exact
+  // invariant again (a single fixed Hand column at one end means the board
+  // column's start-X differs by 180px depending on which side Hand sits on
+  // for a given row) — so Hand no longer mirrors; it's pinned to the same
+  // physical edge for both rows, and the board column always starts right
+  // after it. The board also gets to fully reclaim the old Trash column's
+  // width instead of leaving a dead 180px gap. The one visible consequence:
+  // the opponent's (top row's) hand now renders on the same side as the
+  // turn player's, instead of the mirrored opposite side it used to.
   const handCell = (
     <HandSection
       board={board}
@@ -347,52 +368,12 @@ function PlayerSideRow({
       onCardZoom={onCardZoom}
     />
   );
-  const trashCell = <TrashColumn board={board} onCardZoom={onCardZoom} />;
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)_180px] gap-2 overflow-hidden">
-      {reverseRows ? (
-        <>
-          {trashCell}
-          {boardCell}
-          {handCell}
-        </>
-      ) : (
-        <>
-          {handCell}
-          {boardCell}
-          {trashCell}
-        </>
-      )}
+    <div className="grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)] gap-2 overflow-hidden">
+      {handCell}
+      {boardCell}
     </div>
-  );
-}
-
-function TrashColumn({
-  board,
-  onCardZoom,
-}: {
-  board: ReturnType<typeof projectPlayerBoard>;
-  onCardZoom: (card: CardView) => void;
-}) {
-  return (
-    <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-white/[0.03]">
-      <div className="flex items-center justify-between border-b border-white/10 px-2 py-1">
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">Trash</h3>
-        <span className="text-[10px] font-bold text-white/35">{board.trash.length}</span>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-2">
-        {board.trash.length === 0 ? (
-          <p className="py-8 text-center text-[10px] text-white/25">Empty</p>
-        ) : (
-          <div className="flex flex-col gap-1">
-            {board.trash.map((card) => (
-              <CardRow key={card.instanceId} card={card} onZoom={() => onCardZoom(card)} />
-            ))}
-          </div>
-        )}
-      </div>
-    </section>
   );
 }
 

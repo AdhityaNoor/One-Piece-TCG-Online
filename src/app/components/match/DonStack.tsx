@@ -9,6 +9,7 @@
  * component only controls the offset axis/amount between multiple chips in
  * the same pile.
  */
+import { cqh } from './boardScale';
 import { CountBadge } from './CountBadge';
 import { DonChip } from './DonChip';
 import type { CardView } from '../../../board/projection';
@@ -27,6 +28,9 @@ export interface DonStackProps {
 
 // DonChip's own fixed mounting box (see DonChip.tsx's BOX) — square so a
 // rested (rotated) chip and an active (upright) chip take the same footprint.
+// Kept as a raw px-equivalent number (not cqh yet) so the `span` arithmetic
+// below stays exact; cqh() is applied only where a value is actually
+// assigned to a style — see boardScale.ts.
 const CHIP_BOX = 210;
 // Offset scales with the full pile size, uncapped — stacking used to stop
 // growing past 6 cards (MAX_OFFSET_INDEX clamp), but the wrapper cell is now
@@ -42,7 +46,7 @@ export function DonStack({ label, cards, direction, selectable, selectedIds, onD
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="text-[9px] font-black uppercase tracking-[0.14em] text-white/40">{label}</span>
-      <div className="relative" style={isVertical ? { width: CHIP_BOX, height: span } : { width: span, height: CHIP_BOX }}>
+      <div className="relative" style={isVertical ? { width: cqh(CHIP_BOX), height: cqh(span) } : { width: cqh(span), height: cqh(CHIP_BOX) }}>
         {cards.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center rounded-md border border-dashed border-white/15 text-[8px] font-bold uppercase text-white/20">
             None
@@ -55,7 +59,7 @@ export function DonStack({ label, cards, direction, selectable, selectedIds, onD
                 <div
                   key={don.instanceId}
                   className="absolute"
-                  style={isVertical ? { left: 0, top: offset, zIndex: index } : { left: offset, top: 0, zIndex: index }}
+                  style={isVertical ? { left: 0, top: cqh(offset), zIndex: index } : { left: cqh(offset), top: 0, zIndex: index }}
                 >
                   <DonChip
                     card={don}

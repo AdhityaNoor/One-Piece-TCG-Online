@@ -13,3 +13,5 @@ export * from './PlayerBoardPanel';
 export * from './ActionBar';
 export * from './PendingChoicePrompt';
 export * from './ActionLogPanel';
+export * from './TrashPile';
+export * from './TrashGalleryModal';

@@ -1,13 +1,18 @@
 /**
  * One player's half of the playmat, matching the official play sheet:
- * Character Area across the top, Life down the left side, and the leader's
- * row in the middle-right holding Leader/Stage/Deck plus the Active/Rested
- * DON!! piles as further columns (moved in from a standalone column outside
- * the mat — see MatchScreen.tsx history — so the whole "my own resources"
- * row reads left-to-right in one place). Cost Area taps still route through
- * onCardTap('costArea', card) exactly like Leader/Character taps; only the
- * visual position moved. The hand is not printed on the sheet, so it stays
- * outside the mat edge for playability.
+ * Character Area across the top (Deck now sits beside it as its own sibling
+ * box, pinned to one edge — see characterRow below), Life down the left
+ * side, and the
+ * leader's row in the middle-right holding Leader/Stage/Trash plus the
+ * Active/Rested DON!! piles as further columns (moved in from a standalone
+ * column outside the mat — see MatchScreen.tsx history — so the whole "my
+ * own resources" row reads left-to-right in one place). Cost Area taps
+ * still route through onCardTap('costArea', card) exactly like
+ * Leader/Character taps; only the visual position moved. The hand is not
+ * printed on the sheet, so it stays outside the mat edge for playability.
+ * There's no separate "P1 / Life" label row anymore — Life is the count
+ * badge on the Life pile itself, and player identity is shown by
+ * MatchScreen.tsx's HandSection header instead.
  *
  * The DON!! Deck pile no longer lives in this row — it's rendered inside the
  * Life cell instead (see LifeStack), pinned to that cell's bottom edge,
@@ -15,28 +20,40 @@
  * The Active/Rested DON!! piles both stack sideways now and render at full
  * card size (DonChip.tsx), with their MatCell wrappers made visually
  * invisible (variant="invisible") so only the chips themselves show on the
- * mat — see donGroup below.
+ * mat — see donGroup below. Leader's MatCell is invisible for a different
+ * reason: BoardCardTile's stat badges (cost/power/counter) sit on negative
+ * offsets just outside the card's own box, and MatCell's default chrome
+ * clips anything past its edge via overflow-hidden — variant="invisible"
+ * drops that clipping the same way it already does for the DON!! cells.
  *
- * Within boardRow, the DON!! group and the Stage+Deck group are each
+ * Within boardRow, the DON!! group and the Stage+Trash group are each
  * independently anchored to the screen edge they thematically belong next to
- * (DON!! near Life, Stage+Deck near Trash) rather than living inside one
- * centered block — see the boardRow assembly below for exactly how.
+ * (DON!! near Life, Stage+Trash on the opposite edge) rather than living
+ * inside one centered block — see the boardRow assembly below for exactly
+ * how. Trash now sits in the slot Deck used to occupy here (Deck moved up to
+ * the Character Area row instead); see TrashPile.tsx for why it shows real
+ * face-up card art rather than a sealed back like Deck/DON!! Deck.
  *
  * This component is presentational. It keeps the same tap/zoom callbacks and
  * selection predicates as before; rules still live in the engine. The
  * hover/focus card-preview side panel that used to live in MatchScreen.tsx
  * has been removed; card zoom (onCardZoom) is the one remaining detail-view
- * affordance.
+ * affordance. The Trash gallery popup (TrashGalleryModal) is the one other
+ * piece of local-only UI state this component owns — opening/closing it
+ * never touches game state, exactly like onCardZoom.
  */
-import type { ReactNode } from 'react';
+import { useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { BoardCardTile } from './BoardCardTile';
 import { CardBackArt } from './CardBackArt';
+import { cqh } from './boardScale';
 import { CountBadge } from './CountBadge';
 import { DonStack } from './DonStack';
 import { PileStack } from './PileStack';
+import { TrashGalleryModal } from './TrashGalleryModal';
+import { TrashPile } from './TrashPile';
 import type { BoardSelectionMode } from './useBoardSelection';
 import type { CardView, PlayerBoardView } from '../../../board/projection';
-import { Pill } from '../Pill';
 
 export interface PlayerBoardPanelProps {
   board: PlayerBoardView;
@@ -92,12 +109,18 @@ function selectedDonInstanceIds(mode: BoardSelectionMode): Set<string> {
   return new Set();
 }
 
-const FIELD_CARD_WIDTH = 150;
-const FIELD_CARD_HEIGHT = 210;
+// Raw px-equivalent constants, kept as plain numbers so ratio math (the
+// DON!! Deck's 0.8x, the Life fan's per-card offset, etc.) stays exact —
+// see boardScale.ts. Only at the point a value is actually assigned to a
+// style do we wrap it in cqh(), so it scales with the board's live height.
+const FIELD_CARD_WIDTH_PX = 150;
+const FIELD_CARD_HEIGHT_PX = 210;
+const FIELD_CARD_WIDTH = cqh(FIELD_CARD_WIDTH_PX);
+const FIELD_CARD_HEIGHT = cqh(FIELD_CARD_HEIGHT_PX);
 // DON!! Deck visual (inside LifeStack) reads 20% smaller than a Life/field
 // card — it's a sealed pile a player barely touches, so it doesn't need to
 // read at full card size the way Active/Rested DON!! chips now do.
-const DON_DECK_CARD_WIDTH = Math.round(FIELD_CARD_WIDTH * 0.8);
+const DON_DECK_CARD_WIDTH = cqh(FIELD_CARD_WIDTH_PX * 0.8);
 
 function EmptySlot({ label }: { size: 'leader' | 'board'; label: string }) {
   return (
@@ -125,7 +148,7 @@ function LifeStack({ count, donDeckCount }: { count: number; donDeckCount: numbe
           key={index}
           className="absolute left-0 right-0 mx-auto aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.38)]"
           style={{
-            top: `${index * 18}px`,
+            top: cqh(index * 18),
             width: FIELD_CARD_WIDTH,
             zIndex: index,
           }}
@@ -165,6 +188,7 @@ function MatCell({
   className = '',
   variant = 'light',
   labelClassName = '',
+  style,
 }: {
   label: string;
   children?: ReactNode;
@@ -172,11 +196,14 @@ function MatCell({
   /** 'invisible' drops the border/background chrome but keeps the same layout box (used for the Active/Rested DON!! cells, which should show only the chips). */
   variant?: 'light' | 'dark' | 'invisible';
   labelClassName?: string;
+  /** Explicit sizing (e.g. a fixed cqh() width) for cells that must match another cell's box exactly rather than shrink-to-fit their content — see deckCell. */
+  style?: CSSProperties;
 }) {
   const isInvisible = variant === 'invisible';
 
   return (
     <section
+      style={style}
       className={[
         'relative flex min-h-0 min-w-0 items-center justify-center rounded-lg p-2',
         isInvisible ? 'border-0 bg-transparent' : 'overflow-hidden border',
@@ -197,16 +224,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   const activeDon = board.costArea.filter((don) => !don.donRested);
   const restedDon = board.costArea.filter((don) => don.donRested);
   const selectedDon = selectedDonInstanceIds(mode);
-
-  const statsRow = (
-    <div className="flex items-center justify-center gap-2 px-1 py-1">
-      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/60">
-        {board.playerId}
-        {isOpponent ? ' - Opponent' : ''}
-      </span>
-      <Pill tone="navy">Life {board.leaderLifeValue}</Pill>
-    </div>
-  );
+  const [trashGalleryOpen, setTrashGalleryOpen] = useState(false);
 
   const leaderSlot = leaderCard ? (
     <BoardCardTile
@@ -227,8 +245,27 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
     <EmptySlot size="board" label="Stage" />
   );
 
+  // Deck used to sit in boardRow next to Stage; it now lives in the
+  // Character Area's own row instead, as a separate MatCell sitting BESIDE
+  // characterZone (own border/box, own panel) rather than layered inside
+  // it — characterZone keeps its own complete bordered box for just the
+  // character cards, and deckCell is a plain flex sibling next to it (see
+  // the characterRow assembly in `mat` below). flex-shrink-0 keeps Deck at
+  // its natural card-pile size while characterZone (flex-1) takes the rest
+  // of the row; items-stretch on their shared row makes both boxes match
+  // the row's full height, with Deck's own MatCell centering the pile
+  // vertically inside that height exactly like every other MatCell does.
+  // Anchored to the same edge stageTrashGroup sits on in boardRow below, so
+  // Deck stays visually stacked above Stage/Trash rather than landing on a
+  // disconnected side.
+  const deckCell = (
+    <MatCell label="Deck" className="flex-shrink-0" labelClassName="sr-only">
+      <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" />
+    </MatCell>
+  );
+
   const characterZone = (
-    <MatCell label="Character Area" className="h-full" labelClassName="sr-only">
+    <MatCell label="Character Area" className="h-full flex-1" labelClassName="sr-only">
       <div className="flex h-full w-full min-w-0 items-center justify-center gap-2 overflow-hidden">
         {board.characterArea.map((card) => (
           <BoardCardTile
@@ -246,11 +283,27 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
     </MatCell>
   );
 
-  const leaderCell = <MatCell label="Leader Card" labelClassName="sr-only">{leaderSlot}</MatCell>;
+  const characterRow = (
+    <div className="flex h-full min-h-0 items-stretch gap-2 overflow-hidden">
+      {reverseRows ? (
+        <>
+          {deckCell}
+          {characterZone}
+        </>
+      ) : (
+        <>
+          {characterZone}
+          {deckCell}
+        </>
+      )}
+    </div>
+  );
+
+  const leaderCell = <MatCell label="Leader Card" variant="invisible" labelClassName="sr-only">{leaderSlot}</MatCell>;
   const stageCell = <MatCell label="Stage Card" labelClassName="sr-only">{stageSlot}</MatCell>;
-  const deckCell = (
-    <MatCell label="Deck" labelClassName="sr-only">
-      <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" />
+  const trashCell = (
+    <MatCell label="Trash" labelClassName="sr-only">
+      <TrashPile cards={board.trash} onClick={() => setTrashGalleryOpen(true)} />
     </MatCell>
   );
   // Active and Rested DON!! both stack sideways now (see DonStack.tsx) and
@@ -283,7 +336,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   );
 
   // boardRow used to be a flex row where leaderGroup claimed flex-1 and
-  // centered itself in whatever space donGroup/stageDeckGroup left behind.
+  // centered itself in whatever space donGroup/stageTrashGroup left behind.
   // That broke once DON!! stacking went uncapped (DonStack.tsx): a growing
   // donGroup ate into the "leftover space" leaderGroup centers in, so Leader
   // visually slid sideways every time a DON!! was added/removed. Leader's
@@ -298,46 +351,59 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   // - donGroup pins to the edge next to Life (right for reversed/top, left
   //   for bottom — same mirroring as before) via left-0/right-0. Being
   //   absolute, it can grow with the pile (DonStack.tsx's now-uncapped span)
-  //   without pushing on anything else in the row.
-  // - stageDeckGroup pins to the opposite edge (next to Trash, external
-  //   mirror via reverseRows) the same way.
+  //   without pushing on anything else in the row. Active/Rested swap their
+  //   left-right order specifically for the reversed/top row, so the visual
+  //   scan order mirrors rather than repeats between the two players.
+  // - stageTrashGroup pins to the opposite edge the same way.
   // - leaderGroup pins to left-1/2 + -translate-x-1/2 — dead center of
   //   boardRow's own box, which is sized purely by the mat's grid track, not
   //   by sibling content. That's what makes Leader's position independent of
   //   donGroup's width, and identical between the top and bottom panel
   //   (assuming both panels' boardRow boxes are the same width, which
-  //   MatchScreen.tsx's PlayerSideRow now guarantees by giving Hand and
-  //   Trash the same fixed column width on both rows).
-  // Known limitation: because donGroup/stageDeckGroup no longer participate
+  //   MatchScreen.tsx's PlayerSideRow now guarantees by giving both rows'
+  //   Hand the same fixed column width and pinning it to the same edge).
+  // Known limitation: because donGroup/stageTrashGroup no longer participate
   // in flex flow, a very large DON!! pile can grow inward far enough to
-  // visually overlap Leader or Stage/Deck instead of pushing them aside.
+  // visually overlap Leader or Stage/Trash instead of pushing them aside.
   // leaderGroup gets z-10 so Leader stays on top if that happens; this is an
   // accepted trade-off for keeping Leader's position stable.
   const donGroup = (
     <div className={['absolute inset-y-0 flex items-stretch gap-2', reverseRows ? 'right-0' : 'left-0'].join(' ')}>
-      {activeDonCell}
-      {restedDonCell}
+      {reverseRows ? (
+        <>
+          {restedDonCell}
+          {activeDonCell}
+        </>
+      ) : (
+        <>
+          {activeDonCell}
+          {restedDonCell}
+        </>
+      )}
     </div>
   );
 
-  const stageDeckGroup = (
-    <div className={['absolute inset-y-0 grid grid-cols-[210px_210px] gap-2', reverseRows ? 'left-0' : 'right-0'].join(' ')}>
+  const stageTrashGroup = (
+    <div
+      className={['absolute inset-y-0 grid gap-2', reverseRows ? 'left-0' : 'right-0'].join(' ')}
+      style={{ gridTemplateColumns: `${cqh(210)} ${cqh(210)}` }}
+    >
       {reverseRows ? (
         <>
-          {deckCell}
+          {trashCell}
           {stageCell}
         </>
       ) : (
         <>
           {stageCell}
-          {deckCell}
+          {trashCell}
         </>
       )}
     </div>
   );
 
   const leaderGroup = (
-    <div className="absolute inset-y-0 left-1/2 z-10 grid -translate-x-1/2 grid-cols-[210px]">
+    <div className="absolute inset-y-0 left-1/2 z-10 grid -translate-x-1/2" style={{ gridTemplateColumns: cqh(210) }}>
       {leaderCell}
     </div>
   );
@@ -346,27 +412,30 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
     <div className="relative min-h-0 h-full w-full">
       {donGroup}
       {leaderGroup}
-      {stageDeckGroup}
+      {stageTrashGroup}
     </div>
   );
 
   const mat = (
     <div className="flex min-h-0 flex-1 items-stretch justify-center overflow-hidden">
-      <div className={['grid h-full w-full max-w-full flex-1 grid-rows-2 gap-2 overflow-hidden rounded-xl border border-white/10 bg-[linear-gradient(135deg,_rgba(255,255,255,0.08),_rgba(255,255,255,0.02))] p-2 shadow-inner shadow-black/30', reverseRows ? 'grid-cols-[minmax(0,1fr)_170px]' : 'grid-cols-[170px_minmax(0,1fr)]'].join(' ')}>
+      <div
+        className="grid h-full w-full max-w-full flex-1 grid-rows-2 gap-2 overflow-hidden rounded-xl border border-white/10 bg-[linear-gradient(135deg,_rgba(255,255,255,0.08),_rgba(255,255,255,0.02))] p-2 shadow-inner shadow-black/30"
+        style={{ gridTemplateColumns: reverseRows ? `minmax(0,1fr) ${cqh(170)}` : `${cqh(170)} minmax(0,1fr)` }}
+      >
         {reverseRows ? (
           <>
             {boardRow}
             <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only">
               <LifeStack count={board.lifeAreaCount} donDeckCount={board.donDeckCount} />
             </MatCell>
-            <div className="min-h-0">{characterZone}</div>
+            <div className="min-h-0">{characterRow}</div>
           </>
         ) : (
           <>
             <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only">
               <LifeStack count={board.lifeAreaCount} donDeckCount={board.donDeckCount} />
             </MatCell>
-            <div className="min-h-0">{characterZone}</div>
+            <div className="min-h-0">{characterRow}</div>
             {boardRow}
           </>
         )}
@@ -376,18 +445,14 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
 
   return (
     <div className={['flex min-h-0 min-w-0 flex-1 flex-col gap-1 rounded-xl border border-white/10 bg-navy-950/60 p-2 shadow-inner shadow-black/30', isOwn ? 'ring-1 ring-gold/30' : ''].join(' ')}>
-      {reverseRows ? (
-        <>
-          {statsRow}
-          {mat}
-        </>
-      ) : (
-        <>
-          {mat}
-          {statsRow}
-        </>
-      )}
-
+      {mat}
+      <TrashGalleryModal
+        open={trashGalleryOpen}
+        onClose={() => setTrashGalleryOpen(false)}
+        playerId={board.playerId}
+        cards={board.trash}
+        onCardZoom={onCardZoom}
+      />
     </div>
   );
 }

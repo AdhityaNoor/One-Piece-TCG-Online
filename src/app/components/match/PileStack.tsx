@@ -12,6 +12,7 @@
  * gradient, so Deck and Life read as the same physical card back.
  */
 import { CardBackArt } from './CardBackArt';
+import { cqh } from './boardScale';
 import { CountBadge } from './CountBadge';
 
 export type PileStackVariant = 'deck' | 'don' | 'trash';
@@ -39,7 +40,7 @@ export function PileStack({ label, count, variant, size = 'compact', onClick }: 
         type="button"
         disabled={!onClick}
         onClick={onClick}
-        style={isFieldDeck ? { width: 150, height: 210 } : { width: 40, height: 56 }}
+        style={isFieldDeck ? { width: cqh(150), height: cqh(210) } : { width: cqh(40), height: cqh(56) }}
         className={[
           'relative flex items-center justify-center overflow-hidden rounded-md border text-[10px] font-extrabold text-white/70 shadow-[0_4px_10px_rgba(0,0,0,0.3)] transition-transform',
           isFieldDeck ? 'border-none' : `bg-gradient-to-br ${VARIANT_CLASSES[variant]}`,

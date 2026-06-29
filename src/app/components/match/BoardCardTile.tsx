@@ -20,16 +20,21 @@
  */
 import type { ReactNode } from 'react';
 import { CardImage } from '../CardImage';
+import { cqh } from './boardScale';
 import type { CardView } from '../../../board/projection';
 
 export type BoardCardTileSize = 'leader' | 'board' | 'field';
 
-const SIZE_PX: Record<BoardCardTileSize, { width: number; box: number }> = {
-  // box = ceil(width * 88/63), i.e. the upright card's own height — large
-  // enough to also fit the same card rotated 90° (where width/height swap).
-  leader: { width: 116, box: 162 },
-  board: { width: 116, box: 162 },
-  field: { width: 150, box: 210 },
+// box = ceil(width * 88/63), i.e. the upright card's own height — large
+// enough to also fit the same card rotated 90° (where width/height swap).
+// cqh-based (see boardScale.ts) so every size variant shrinks/grows with
+// the board's live height, including 'leader'/'board' (used by Hand cards
+// in MatchScreen.tsx) — 'field' is left functionally equivalent to before,
+// it already also sizes itself relatively via aspect-square + h-full below.
+const SIZE_PX: Record<BoardCardTileSize, { width: string; box: string }> = {
+  leader: { width: cqh(116), box: cqh(162) },
+  board: { width: cqh(116), box: cqh(162) },
+  field: { width: cqh(150), box: cqh(210) },
 };
 
 export interface BoardCardTileProps {
