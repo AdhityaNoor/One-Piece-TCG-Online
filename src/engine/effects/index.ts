@@ -18,4 +18,4 @@ export type {
 } from './effectIr';
 export { EffectContextImpl } from './effectContext';
 export { runTriggers, resumeProgram } from './interpreter';
-export { fireOnPlay, resumeChoice } from './fireTiming';
+export { fireOnPlay, fireActivate, resumeChoice } from './fireTiming';

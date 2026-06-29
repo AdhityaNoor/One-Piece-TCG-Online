@@ -159,9 +159,13 @@ export function MatchScreen() {
   return (
     <ScreenShell
       title="Match"
-      bodyClassName="overflow-hidden p-2"
+      bodyClassName="overflow-hidden p-0"
       headerRight={
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <p className="hidden text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/70 md:block">
+            Turn {matchState.turnNumber} · {matchState.activePlayerId}'s turn · {matchState.currentPhase}
+            {battleLabel}
+          </p>
           <Button variant="ghost" size="sm" onClick={() => setLogOpen(true)} className="text-slate-200/75">
             Log
           </Button>
@@ -171,8 +175,8 @@ export function MatchScreen() {
         </div>
       }
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-2">
-        <p className="flex-shrink-0 text-center text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/70">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <p className="hidden">
           Turn {matchState.turnNumber} · {matchState.activePlayerId}'s turn · {matchState.currentPhase}
           {battleLabel}
         </p>

@@ -20,6 +20,7 @@ import { createActionLogger } from '../../rules/shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { resumeChoice, type EffectTemplateRegistry } from '../../effects';
+import type { CardDefinitionLookup } from '../../rules/shared/definitions';
 
 function findChoice(state: GameState, action: ResolvePendingChoiceAction) {
   return state.pendingChoices.find((c) => c.id === action.choiceId);
@@ -74,6 +75,7 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
 export function executeResolvePendingChoice(
   state: GameState,
   action: ResolvePendingChoiceAction,
+  defs: CardDefinitionLookup = {},
   registry: EffectTemplateRegistry = {},
 ): ActionExecuteResult {
   const choice = findChoice(state, action);
@@ -83,7 +85,7 @@ export function executeResolvePendingChoice(
 
   // Interpreter-suspended card effect: resume the program with the selection.
   if (choice.sourceEffectId === 'ir') {
-    return resumeChoice(state, action.choiceId, action.response as string[], registry, action.actionId);
+    return resumeChoice(state, action.choiceId, action.response as string[], registry, defs, action.actionId);
   }
 
   const logger = createActionLogger(state, action.actionId);

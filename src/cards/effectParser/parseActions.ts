@@ -120,7 +120,9 @@ function hintOps(sentence: string, flags: SentenceFlags): EffectAction[] {
   }
   const donDeck = c.match(/add up to (\d+) don!! cards? from your don!! deck/);
   if (donDeck) out.push({ op: 'donFromDeck', amount: Number(donDeck[1]), rested: /and rest it|rest them|set it as rested/.test(c), ...base });
-  const giveDon = c.match(/give up to (\d+) (?:rested )?don!! cards?/);
+  const giveDon =
+    c.match(/give up to (\d+) (?:rested )?don!! cards?/) ||
+    c.match(/give\b.{1,60}?\bup to (\d+) (?:rested )?don!! cards?/); // "give <target> up to N DON!!"
   if (giveDon) out.push({ op: 'giveDon', amount: Number(giveDon[1]), target: detectTarget(sentence), ...base });
   if (/return .*to (?:the |its |their )?(?:owner'?s? |your )?hand|return up to \d+/.test(c)) out.push({ op: 'returnToHand', target: detectTarget(sentence), amount: upTo(), ...base });
   const look = c.match(/look at (\d+) cards? from the top of your deck/);

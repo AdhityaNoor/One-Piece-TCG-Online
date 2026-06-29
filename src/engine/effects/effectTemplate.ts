@@ -24,10 +24,14 @@ export interface EffectContext {
   /** Read-only view of the current working state, for conditions/selectors. */
   state(): GameState;
 
-  // --- selectors ---
+  // --- selectors / queries ---
   controllerLeaderId(): string;
   controllerCharacterIds(): string[];
   opponentCharacterIds(): string[];
+  /** Current power of an instance (2-6, incl. modifiers) — for cost/power-threshold target filters. */
+  powerOf(instanceId: string): number;
+  /** Current cost of an instance (2-7). */
+  costOf(instanceId: string): number;
 
   // --- instruction set (one per IR op) ---
   /** Draw `n` cards for `playerId` (6-3; empty-deck draw loses, 9-2-1). */
@@ -44,6 +48,8 @@ export interface EffectContext {
   giveDon(targetInstanceId: string, count: number): void;
   /** K.O. a Character: move it to its owner's trash, dropping attachments/continuous effects (7-1-4-1-2). */
   ko(targetInstanceId: string): void;
+  /** Rest a card (4-4-1). */
+  rest(targetInstanceId: string): void;
   /** Emit a fully-built PendingChoice (the interpreter uses this to suspend; carries its resume point). */
   emitChoice(choice: PendingChoice): void;
 }

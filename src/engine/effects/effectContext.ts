@@ -10,6 +10,8 @@ import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import { createActionLogger, type ActionLogger } from '../rules/shared/actionLogger';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 import { getOpponentId } from '../rules/shared/players';
+import { computeCurrentCost, computeCurrentPower } from '../rules/shared/power';
+import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import type { EffectContext } from './effectTemplate';
 
 export class EffectContextImpl implements EffectContext {
@@ -18,11 +20,13 @@ export class EffectContextImpl implements EffectContext {
   readonly opponentId: string;
 
   private working: GameState;
+  private readonly defs: CardDefinitionLookup;
   private readonly logger: ActionLogger;
   private readonly pending: PendingChoice[] = [];
 
-  constructor(state: GameState, sourceInstanceId: string, actionId: string | null) {
+  constructor(state: GameState, sourceInstanceId: string, defs: CardDefinitionLookup, actionId: string | null) {
     this.working = state;
+    this.defs = defs;
     this.sourceInstanceId = sourceInstanceId;
     const source = state.cardsById[sourceInstanceId];
     this.controllerId = source ? source.controllerId : state.activePlayerId;
@@ -42,6 +46,12 @@ export class EffectContextImpl implements EffectContext {
   }
   opponentCharacterIds(): string[] {
     return [...this.working.players[this.opponentId].characterArea.cardIds];
+  }
+  powerOf(instanceId: string): number {
+    return computeCurrentPower(this.defs, this.working, instanceId);
+  }
+  costOf(instanceId: string): number {
+    return computeCurrentCost(this.defs, this.working, instanceId);
   }
 
   draw(playerId: string, n: number): void {
@@ -160,6 +170,20 @@ export class EffectContextImpl implements EffectContext {
       actorPlayerId: this.controllerId,
       type: 'CHARACTER_KO',
       message: `${targetInstanceId} was K.O.'d and moved to trash (7-1-4-1-2).`,
+      data: { targetInstanceId },
+      relatedCardInstanceIds: [targetInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  rest(targetInstanceId: string): void {
+    const inst = this.working.cardsById[targetInstanceId];
+    if (!inst || inst.orientation === 'rested') return;
+    this.working = { ...this.working, cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, orientation: 'rested' } } };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${targetInstanceId} was rested by an effect (4-4-1).`,
       data: { targetInstanceId },
       relatedCardInstanceIds: [targetInstanceId],
       visibility: 'public',

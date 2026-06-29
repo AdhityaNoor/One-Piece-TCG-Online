@@ -19,7 +19,7 @@ export type Selector =
   | { sel: 'controllerLeader' }
   | { sel: 'controllerCharacters' }
   | { sel: 'controllerLeaderOrCharacters' }
-  | { sel: 'opponentCharacters' }
+  | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number } // optional "cost/power N or less" filter
   | { sel: 'var'; name: string }; // ids bound by a prior chooseTargets op
 
 export type IrCondition = ContinuousPowerCondition; // { donAttachedAtLeast?, turn? }
@@ -34,6 +34,7 @@ export type EffectOp =
   | { op: 'addPower'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition }
   | { op: 'giveDon'; target: Selector; count: number }
   | { op: 'ko'; target: Selector }
+  | { op: 'rest'; target: Selector }
   | { op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string };
 
 /** When the ability is exposed/fires (mirrors EffectTimingKeyword). */
@@ -43,6 +44,8 @@ export interface Ability {
   trigger: IrTrigger;
   /** Gate for whether a TRIGGERED ability fires at all ([DON!! xN] / [Your/Opponent's Turn]). */
   condition?: IrCondition;
+  /** 10-2-13 [Once Per Turn] — an activated ability may only be used once per turn per source. */
+  oncePerTurn?: boolean;
   ops: EffectOp[];
 }
 

@@ -93,7 +93,12 @@ function pendingChoiceGateAllowedTypes(state: GameState): GameActionType[] {
   return ['RESOLVE_PENDING_CHOICE', 'CONCEDE'];
 }
 
-export function validateAction(state: GameState, action: GameAction, defs: CardDefinitionLookup): ValidationResult {
+export function validateAction(
+  state: GameState,
+  action: GameAction,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+): ValidationResult {
   if (state.gameOver) {
     return { legal: false, reasons: ['The game has already ended — no further actions are legal (1-2-1-1).'] };
   }
@@ -118,7 +123,7 @@ export function validateAction(state: GameState, action: GameAction, defs: CardD
     case 'ACTIVATE_EVENT_MAIN':
       return validateActivateEventMain(state, action, defs);
     case 'ACTIVATE_CARD_EFFECT':
-      return validateActivateCardEffect(state, action);
+      return validateActivateCardEffect(state, action, registry);
     case 'GIVE_DON':
       return validateGiveDon(state, action);
     case 'DECLARE_ATTACK':
@@ -154,7 +159,7 @@ export function executeAction(
   defs: CardDefinitionLookup,
   registry: EffectTemplateRegistry = {},
 ): ActionExecuteResult {
-  const validation = validateAction(state, action, defs);
+  const validation = validateAction(state, action, defs, registry);
   if (!validation.legal) {
     throw new Error(`executeAction: action '${action.type}' (actionId '${action.actionId}') failed validation: ${validation.reasons.join('; ')}`);
   }
@@ -171,7 +176,7 @@ export function executeAction(
       result = executeActivateEventMain(state, action, defs);
       break;
     case 'ACTIVATE_CARD_EFFECT':
-      result = executeActivateCardEffect();
+      result = executeActivateCardEffect(state, action, defs, registry);
       break;
     case 'GIVE_DON':
       result = executeGiveDon(state, action);
@@ -192,7 +197,7 @@ export function executeAction(
       result = executePassStep(state, action, defs);
       break;
     case 'RESOLVE_PENDING_CHOICE':
-      result = executeResolvePendingChoice(state, action, registry);
+      result = executeResolvePendingChoice(state, action, defs, registry);
       break;
     case 'END_MAIN_PHASE':
       result = executeEndMainPhase(state, action);

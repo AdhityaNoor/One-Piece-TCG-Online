@@ -6,6 +6,7 @@
  */
 import type { GameState } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
+import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { runTriggers, resumeProgram } from './interpreter';
 import type { EffectTemplateRegistry } from './effectTemplate';
 
@@ -21,13 +22,32 @@ export function fireOnPlay(
   state: GameState,
   instanceId: string,
   registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
   actionId: string | null,
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTriggers(program, ['onEnterPlay', 'onPlay'], state, instanceId, actionId);
+  return runTriggers(program, ['onEnterPlay', 'onPlay'], state, instanceId, defs, actionId);
+}
+
+/**
+ * Fires a card's [Activate: Main] ability (8-1-3-2). Called by the
+ * ACTIVATE_CARD_EFFECT handler after its structural validation passes.
+ */
+export function fireActivate(
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const instance = state.cardsById[instanceId];
+  if (!instance) return noop(state);
+  const program = registry[instance.cardDefinitionId];
+  if (!program) return noop(state);
+  return runTriggers(program, ['activateMain'], state, instanceId, defs, actionId);
 }
 
 /**
@@ -39,6 +59,7 @@ export function resumeChoice(
   choiceId: string,
   selectedInstanceIds: string[],
   registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
   actionId: string | null,
 ): ActionExecuteResult {
   const choice = state.pendingChoices.find((c) => c.id === choiceId);
@@ -47,5 +68,5 @@ export function resumeChoice(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return resumeProgram(program, state, choice, selectedInstanceIds, actionId);
+  return resumeProgram(program, state, choice, selectedInstanceIds, defs, actionId);
 }

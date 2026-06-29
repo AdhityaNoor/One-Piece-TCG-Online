@@ -11,6 +11,7 @@
 import type { GameState } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { PendingChoice } from '../events/pendingChoice';
+import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { EffectContextImpl } from './effectContext';
 import type { Ability, EffectOp, EffectProgram, IrCondition, IrTrigger, Selector } from './effectIr';
 
@@ -42,8 +43,12 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return ctx.controllerCharacterIds();
     case 'controllerLeaderOrCharacters':
       return [ctx.controllerLeaderId(), ...ctx.controllerCharacterIds()];
-    case 'opponentCharacters':
-      return ctx.opponentCharacterIds();
+    case 'opponentCharacters': {
+      let ids = ctx.opponentCharacterIds();
+      if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
+      return ids;
+    }
     case 'var':
       return bindings[sel.name] ?? [];
   }
@@ -64,6 +69,9 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' }>, ctx: EffectCont
       return;
     case 'ko':
       for (const id of resolveSelector(op.target, ctx, bindings)) ctx.ko(id);
+      return;
+    case 'rest':
+      for (const id of resolveSelector(op.target, ctx, bindings)) ctx.rest(id);
       return;
   }
 }
@@ -104,6 +112,7 @@ export function runTriggers(
   triggers: IrTrigger[],
   state: GameState,
   sourceInstanceId: string,
+  defs: CardDefinitionLookup,
   actionId: string | null,
 ): ActionExecuteResult {
   const matching = program.abilities
@@ -111,7 +120,7 @@ export function runTriggers(
     .filter(({ ability }) => triggers.includes(ability.trigger));
   if (matching.length === 0) return noop(state);
 
-  const ctx = new EffectContextImpl(state, sourceInstanceId, actionId);
+  const ctx = new EffectContextImpl(state, sourceInstanceId, defs, actionId);
   for (const { ability, index } of matching) {
     if (!evalCondition(ability.condition, ctx)) continue;
     const suspended = runOps(ability, index, 0, {}, ctx);
@@ -126,6 +135,7 @@ export function resumeProgram(
   state: GameState,
   choice: PendingChoice,
   selection: string[],
+  defs: CardDefinitionLookup,
   actionId: string | null,
 ): ActionExecuteResult {
   const rs = choice.resumeState;
@@ -135,7 +145,7 @@ export function resumeProgram(
   if (!ability || !op || op.op !== 'chooseTargets') return noop(state);
 
   const stateWithoutChoice: GameState = { ...state, pendingChoices: state.pendingChoices.filter((c) => c.id !== choice.id) };
-  const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, actionId);
+  const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
   const bindings: Record<string, string[]> = { ...rs.bindings, [op.var]: selection };
   runOps(ability, rs.abilityIndex, rs.opIndex + 1, bindings, ctx);
   return ctx.finish();

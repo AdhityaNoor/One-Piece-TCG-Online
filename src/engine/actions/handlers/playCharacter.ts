@@ -158,7 +158,7 @@ export function executePlayCharacter(
 
   // [On Play] (8-1-3-1) fires now that the Character has resolved into play.
   // No-op when the card has no authored template — see effects/fireTiming.ts.
-  const fired = fireOnPlay(nextState, newInstanceId, registry, action.actionId);
+  const fired = fireOnPlay(nextState, newInstanceId, registry, defs, action.actionId);
   return {
     state: fired.state,
     log: [...logger.log, ...fired.log],

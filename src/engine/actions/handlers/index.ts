@@ -11,4 +11,5 @@ export * from './giveDon';
 export * from './endMainPhase';
 export * from './resolvePendingChoice';
 export * from './concede';
+export * from './activateCardEffect';
 export * from './stubbedRejections';
