@@ -1,12 +1,15 @@
 /**
  * Layer 3 board leaf for a single DON!! card in a player's Cost Area. DON!!
  * has no card art in the API (it's a generic resource card, see
- * cards/decks/genericDonCard.ts), so it renders as a simple token rather
- * than forcing CardImage's "no image available" placeholder for every one
- * in the row. Same rotate-90-when-rested convention as BoardCardTile, for
- * the same reason: that's how a DON!! used to pay a cost actually looks on
- * a real table.
+ * cards/decks/genericDonCard.ts), so it renders the real DON!! token artwork
+ * (provided by the user, stored as static UI chrome at public/ui/don-token.png
+ * — NOT fetched from any card API at runtime) rather than forcing CardImage's
+ * "no image available" placeholder for every one in the row. Same
+ * rotate-90-when-rested convention as BoardCardTile, for the same reason:
+ * that's how a DON!! used to pay a cost actually looks on a real table.
  */
+const DON_TOKEN_SRC = '/ui/don-token.png';
+
 export interface DonChipProps {
   card: { instanceId: string; donRested: boolean };
   selectable?: boolean;
@@ -14,11 +17,16 @@ export interface DonChipProps {
   onSelect?: () => void;
 }
 
-const CARD_WIDTH = 54;
-const CARD_HEIGHT = 76;
+// Same footprint as every other field card (BoardCardTile's 'field' size,
+// PlayerBoardPanel's FIELD_CARD_WIDTH/HEIGHT) — DON!! chips used to be a
+// smaller token, but the design now wants them reading as full-size cards.
+const CARD_WIDTH = 150;
+const CARD_HEIGHT = 210;
 const BOX = CARD_HEIGHT;
 
 export function DonChip({ card, selectable, selected, onSelect }: DonChipProps) {
+  const rested = card.donRested;
+
   return (
     <div className="relative flex-shrink-0" style={{ width: BOX, height: BOX }}>
       <div
@@ -28,20 +36,18 @@ export function DonChip({ card, selectable, selected, onSelect }: DonChipProps) 
         onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') onSelect?.(); } : undefined}
         className={[
           'absolute inset-0 flex items-center justify-center transition-transform duration-200',
+          rested ? 'rotate-90' : '',
           selectable ? 'cursor-pointer' : '',
         ].join(' ')}
       >
         <div
           className={[
-            'relative overflow-hidden rounded-md border border-emerald-500/45 bg-white text-[10px] font-black uppercase tracking-tight text-emerald-900 shadow-[0_5px_12px_rgba(0,0,0,0.28)]',
-            selected ? 'ring-2 ring-emerald-200' : '',
+            'relative overflow-hidden rounded-md shadow-[0_5px_12px_rgba(0,0,0,0.5)]',
+            selected ? 'ring-2 ring-white/80' : '',
           ].join(' ')}
           style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}
         >
-          <div className="absolute inset-1 rounded border border-emerald-500/35" />
-          <div className="absolute left-1/2 top-2 h-8 w-8 -translate-x-1/2 rounded-full border-2 border-emerald-500/45" />
-          <div className="absolute inset-x-1 bottom-2 h-2 rounded-full bg-emerald-500/20" />
-          <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center">DON!!</span>
+          <img src={DON_TOKEN_SRC} alt="" aria-hidden="true" className="block h-full w-full object-cover" draggable={false} />
         </div>
       </div>
     </div>

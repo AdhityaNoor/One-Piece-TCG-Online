@@ -39,8 +39,6 @@ export interface BoardCardTileProps {
   selected?: boolean;
   onSelect?: () => void;
   onZoom?: () => void;
-  onPreviewStart?: (card: CardView) => void;
-  onPreviewEnd?: () => void;
 }
 
 function MiniBadge({ tone = 'dark', children }: { tone?: 'dark' | 'gold'; children: ReactNode }) {
@@ -56,7 +54,7 @@ function MiniBadge({ tone = 'dark', children }: { tone?: 'dark' | 'gold'; childr
   );
 }
 
-export function BoardCardTile({ card, size = 'board', selectable, selected, onSelect, onZoom, onPreviewStart, onPreviewEnd }: BoardCardTileProps) {
+export function BoardCardTile({ card, size = 'board', selectable, selected, onSelect, onZoom }: BoardCardTileProps) {
   const dims = SIZE_PX[size];
   const isField = size === 'field';
   const rested = card.orientation === 'rested';
@@ -71,10 +69,6 @@ export function BoardCardTile({ card, size = 'board', selectable, selected, onSe
         role={selectable ? 'button' : undefined}
         tabIndex={selectable ? 0 : undefined}
         onClick={selectable ? onSelect : undefined}
-        onMouseEnter={() => onPreviewStart?.(card)}
-        onMouseLeave={onPreviewEnd}
-        onFocus={() => onPreviewStart?.(card)}
-        onBlur={onPreviewEnd}
         onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') onSelect?.(); } : undefined}
         className={[
           'absolute inset-0 flex items-center justify-center transition-transform duration-200',

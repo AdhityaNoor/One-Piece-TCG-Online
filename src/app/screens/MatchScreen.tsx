@@ -11,18 +11,21 @@
  * zones out the way a real OPTCG table reads (Leader facing the opponent's
  * Leader across the middle ActionBar, Character/DON!!/Hand rows fanning out
  * behind it) and renders cards as real card-art tiles (BoardCardTile/
- * DonChip/PileStack) instead of text rows. CardRow/ZoneSection still exist
- * for compact list contexts (Trash inspector, Character Area overflow
- * choice) where a scannable text list is more useful than card art. Card
- * zoom/preview (small-screen requirement) reuses the existing
- * CardDetailModal as-is.
+ * DonChip/PileStack) instead of text rows. The DON!! Deck pile and the
+ * Active/Rested DON!! piles used to live in their own standalone column here
+ * (DonManagementColumn/DonCardStack, now removed) — they're now columns
+ * inside PlayerBoardPanel's own leader's row (boardRow), so see that file for
+ * DON!! layout/selection logic. CardRow/ZoneSection still exist for compact
+ * list contexts (Trash inspector, Character Area overflow choice) where a
+ * scannable text list is more useful than card art. Card zoom/preview
+ * (small-screen requirement) reuses the existing CardDetailModal as-is.
  */
 import { useEffect, useState } from 'react';
 import type { CardDefinition } from '../../engine/state/card';
 import { getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
-import { Button, CardDetailModal, CardImage, Modal, ScreenShell } from '../components';
-import { ActionBar, ActionLogPanel, BoardCardTile, CardRow, DonChip, PendingChoicePrompt, PhaseIndicator, PileStack, PlayerBoardPanel, useBoardSelection } from '../components/match';
+import { Button, CardDetailModal, Modal, ScreenShell } from '../components';
+import { ActionBar, ActionLogPanel, BoardCardTile, CardRow, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, useBoardSelection } from '../components/match';
 import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -46,7 +49,6 @@ export function MatchScreen() {
   const [pauseOpen, setPauseOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [zoomDefinitionId, setZoomDefinitionId] = useState<string | null>(null);
-  const [previewCardsByPlayerId, setPreviewCardsByPlayerId] = useState<Record<string, CardView | null>>({});
 
   const isMatchScreen = current.screen === 'match';
   const deckIdA = current.screen === 'match' ? current.deckIdA : null;
@@ -83,9 +85,6 @@ export function MatchScreen() {
   const zoomDefinition: CardDefinition | null = zoomDefinitionId ? defs[zoomDefinitionId] ?? null : null;
   const zoomImageUrl = zoomDefinitionId ? images[zoomDefinitionId] ?? null : null;
   const openZoom = (card: CardView) => setZoomDefinitionId(card.cardDefinitionId);
-  const setPreviewForPlayer = (playerId: string, card: CardView | null): void => {
-    setPreviewCardsByPlayerId((currentPreviews) => ({ ...currentPreviews, [playerId]: card }));
-  };
 
   function handleQuit(): void {
     resetMatch();
@@ -204,14 +203,9 @@ export function MatchScreen() {
                 isOpponent={actingPlayerId !== otherPlayerId}
                 reverseRows={true}
                 mode={selection.mode}
-                defs={defs}
-                images={images}
-                previewCard={previewCardsByPlayerId[otherPlayerId] ?? null}
                 onHandCardTap={(card) => selection.handleCardTap(otherPlayerId, 'hand', card)}
                 onMatCardTap={(zone, card) => selection.handleCardTap(otherPlayerId, zone, card)}
                 onCardZoom={openZoom}
-                onCardPreviewStart={(card) => setPreviewForPlayer(otherPlayerId, card)}
-                onCardPreviewEnd={() => setPreviewForPlayer(otherPlayerId, null)}
               />
 
               <div className="flex flex-shrink-0 items-center justify-center gap-3 py-0.5">
@@ -226,14 +220,9 @@ export function MatchScreen() {
                 isOpponent={actingPlayerId !== turnPlayerId}
                 reverseRows={false}
                 mode={selection.mode}
-                defs={defs}
-                images={images}
-                previewCard={previewCardsByPlayerId[turnPlayerId] ?? null}
                 onHandCardTap={(card) => selection.handleCardTap(turnPlayerId, 'hand', card)}
                 onMatCardTap={(zone, card) => selection.handleCardTap(turnPlayerId, zone, card)}
                 onCardZoom={openZoom}
-                onCardPreviewStart={(card) => setPreviewForPlayer(turnPlayerId, card)}
-                onCardPreviewEnd={() => setPreviewForPlayer(turnPlayerId, null)}
               />
             </div>
           </div>
@@ -298,194 +287,83 @@ function selectedHandIds(mode: MatchSelectionMode): Set<string> {
   return new Set();
 }
 
-function costAreaSelectable(mode: MatchSelectionMode, isOwn: boolean, card: CardView): boolean {
-  if (!isOwn) return false;
-  if (mode.kind === 'payingCost' || mode.kind === 'selectDonToGive') {
-    return !card.donRested;
-  }
-  return false;
-}
-
-function selectedDonIds(mode: MatchSelectionMode): Set<string> {
-  if (mode.kind === 'payingCost') return new Set(mode.selectedDonIds);
-  if (mode.kind === 'selectGiveDonTarget') return new Set([mode.donInstanceId]);
-  return new Set();
-}
-
 function PlayerSideRow({
   board,
   isOwn,
   isOpponent,
   reverseRows,
   mode,
-  defs,
-  images,
-  previewCard,
   onHandCardTap,
   onMatCardTap,
   onCardZoom,
-  onCardPreviewStart,
-  onCardPreviewEnd,
 }: {
   board: ReturnType<typeof projectPlayerBoard>;
   isOwn: boolean;
   isOpponent: boolean;
   reverseRows: boolean;
   mode: MatchSelectionMode;
-  defs: Record<string, CardDefinition>;
-  images: Record<string, string | null>;
-  previewCard: CardView | null;
   onHandCardTap: (card: CardView) => void;
   onMatCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea', card: CardView) => void;
   onCardZoom: (card: CardView) => void;
-  onCardPreviewStart: (card: CardView) => void;
-  onCardPreviewEnd: () => void;
 }) {
   const selectedIds = selectedHandIds(mode);
-  const selectedDon = selectedDonIds(mode);
-  const previewDefinition = previewCard ? defs[previewCard.cardDefinitionId] ?? null : null;
-  const previewImageUrl = previewCard ? images[previewCard.cardDefinitionId] ?? previewCard.imageUrl : null;
 
-  return (
-    <div className="grid min-h-0 flex-1 grid-cols-[172px_116px_minmax(0,1fr)_190px_300px] gap-2 overflow-hidden">
-      <HandSection
-        board={board}
-        isOwn={isOwn}
-        selectedIds={selectedIds}
-        mode={mode}
-        onCardTap={onHandCardTap}
-        onCardZoom={onCardZoom}
-        onCardPreviewStart={onCardPreviewStart}
-        onCardPreviewEnd={onCardPreviewEnd}
-      />
-      <DonManagementColumn
-        board={board}
-        isOwn={isOwn}
-        mode={mode}
-        selectedIds={selectedDon}
-        onDonSelect={(card) => onMatCardTap('costArea', card)}
-      />
-      <PlayerBoardPanel
-        board={board}
-        isOwn={isOwn}
-        isOpponent={isOpponent}
-        reverseRows={reverseRows}
-        mode={mode}
-        onCardTap={onMatCardTap}
-        onCardZoom={onCardZoom}
-        onCardPreviewStart={onCardPreviewStart}
-        onCardPreviewEnd={onCardPreviewEnd}
-      />
-      <TrashColumn
-        board={board}
-        onCardZoom={onCardZoom}
-        onCardPreviewStart={onCardPreviewStart}
-        onCardPreviewEnd={onCardPreviewEnd}
-      />
-      <CardPreviewPanel definition={previewDefinition} imageUrl={previewImageUrl} fallbackCard={previewCard} />
-    </div>
+  // Hand/Trash mirror right along with everything inside PlayerBoardPanel:
+  // for the top/opponent row, Trash sits on the LEFT (reversed from the
+  // bottom row's right-side Trash) so it lines up with whichever edge of the
+  // mat is actually adjacent to it — see PlayerBoardPanel.tsx's boardRow
+  // comment for the matching internal half. The hover-preview side panel
+  // that used to sit at the outer edge has been removed; card zoom
+  // (onCardZoom) is the one remaining card-detail affordance.
+  //
+  // Hand and Trash must use the SAME fixed column width (180px, set on the
+  // grid below) on both rows. PlayerBoardPanel.tsx now centers each player's
+  // Leader at the literal horizontal center of that player's own board
+  // column (absolute, independent of DON!! pile width) — but that only
+  // makes both players' Leaders land on the same screen X if the board
+  // column itself starts at the same X on both rows. Since the board column
+  // is the middle one here, its left edge is offset by exactly the leftmost
+  // fixed column's width; if Hand and Trash had different widths (they used
+  // to: 172px vs 190px), the two boards — and therefore both Leaders — would
+  // sit at different X coordinates and not align across the Battle Line.
+  const handCell = (
+    <HandSection
+      board={board}
+      isOwn={isOwn}
+      selectedIds={selectedIds}
+      mode={mode}
+      onCardTap={onHandCardTap}
+      onCardZoom={onCardZoom}
+    />
   );
-}
-
-function DonManagementColumn({
-  board,
-  isOwn,
-  mode,
-  selectedIds,
-  onDonSelect,
-}: {
-  board: ReturnType<typeof projectPlayerBoard>;
-  isOwn: boolean;
-  mode: MatchSelectionMode;
-  selectedIds: Set<string>;
-  onDonSelect: (card: CardView) => void;
-}) {
-  const activeDon = board.costArea.filter((don) => !don.donRested);
-  const restedDon = board.costArea.filter((don) => don.donRested);
-
-  return (
-    <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-white/[0.03]">
-      <div className="border-b border-white/10 px-2 py-1">
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">DON!!</h3>
-      </div>
-      <div className="flex flex-shrink-0 justify-center border-b border-white/10 p-2">
-        <PileStack label="DON!! Deck" count={board.donDeckCount} variant="don" />
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-2">
-        {board.costArea.length === 0 ? (
-          <p className="py-6 text-center text-[10px] text-white/25">No DON!!</p>
-        ) : (
-          <div className="flex h-full min-h-[180px] flex-col justify-center gap-3">
-            <DonCardStack
-              label="Active"
-              cards={activeDon}
-              isOwn={isOwn}
-              mode={mode}
-              selectedIds={selectedIds}
-              onDonSelect={onDonSelect}
-            />
-            <DonCardStack
-              label="Rested"
-              cards={restedDon}
-              isOwn={isOwn}
-              mode={mode}
-              selectedIds={selectedIds}
-              onDonSelect={onDonSelect}
-            />
-          </div>
-        )}
-      </div>
-    </section>
+  const boardCell = (
+    <PlayerBoardPanel
+      board={board}
+      isOwn={isOwn}
+      isOpponent={isOpponent}
+      reverseRows={reverseRows}
+      mode={mode}
+      onCardTap={onMatCardTap}
+      onCardZoom={onCardZoom}
+    />
   );
-}
+  const trashCell = <TrashColumn board={board} onCardZoom={onCardZoom} />;
 
-function DonCardStack({
-  label,
-  cards,
-  isOwn,
-  mode,
-  selectedIds,
-  onDonSelect,
-}: {
-  label: string;
-  cards: CardView[];
-  isOwn: boolean;
-  mode: MatchSelectionMode;
-  selectedIds: Set<string>;
-  onDonSelect: (card: CardView) => void;
-}) {
   return (
-    <div className="rounded-lg border border-white/10 bg-black/15 p-2">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-[9px] font-black uppercase tracking-[0.14em] text-white/40">{label}</span>
-        <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-black text-white/45">{cards.length}</span>
-      </div>
-      <div className="relative mx-auto h-[112px] w-[92px]">
-        {cards.length === 0 ? (
-          <div className="absolute inset-x-0 top-4 mx-auto flex h-[76px] w-[54px] items-center justify-center rounded-md border border-dashed border-white/15 text-[9px] font-bold uppercase text-white/20">
-            Empty
-          </div>
-        ) : (
-          cards.map((don, index) => (
-            <div
-              key={don.instanceId}
-              className="absolute"
-              style={{
-                left: `${Math.min(index, 5) * 5}px`,
-                top: `${Math.min(index, 5) * 4}px`,
-                zIndex: index,
-              }}
-            >
-              <DonChip
-                card={don}
-                selectable={costAreaSelectable(mode, isOwn, don)}
-                selected={selectedIds.has(don.instanceId)}
-                onSelect={() => onDonSelect(don)}
-              />
-            </div>
-          ))
-        )}
-      </div>
+    <div className="grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)_180px] gap-2 overflow-hidden">
+      {reverseRows ? (
+        <>
+          {trashCell}
+          {boardCell}
+          {handCell}
+        </>
+      ) : (
+        <>
+          {handCell}
+          {boardCell}
+          {trashCell}
+        </>
+      )}
     </div>
   );
 }
@@ -493,13 +371,9 @@ function DonCardStack({
 function TrashColumn({
   board,
   onCardZoom,
-  onCardPreviewStart,
-  onCardPreviewEnd,
 }: {
   board: ReturnType<typeof projectPlayerBoard>;
   onCardZoom: (card: CardView) => void;
-  onCardPreviewStart: (card: CardView) => void;
-  onCardPreviewEnd: () => void;
 }) {
   return (
     <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-white/[0.03]">
@@ -513,13 +387,7 @@ function TrashColumn({
         ) : (
           <div className="flex flex-col gap-1">
             {board.trash.map((card) => (
-              <CardRow
-                key={card.instanceId}
-                card={card}
-                onZoom={() => onCardZoom(card)}
-                onPreviewStart={onCardPreviewStart}
-                onPreviewEnd={onCardPreviewEnd}
-              />
+              <CardRow key={card.instanceId} card={card} onZoom={() => onCardZoom(card)} />
             ))}
           </div>
         )}
@@ -535,8 +403,6 @@ function HandSection({
   mode,
   onCardTap,
   onCardZoom,
-  onCardPreviewStart,
-  onCardPreviewEnd,
 }: {
   board: ReturnType<typeof projectPlayerBoard>;
   isOwn: boolean;
@@ -544,8 +410,6 @@ function HandSection({
   mode: MatchSelectionMode;
   onCardTap: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
-  onCardPreviewStart: (card: CardView) => void;
-  onCardPreviewEnd: () => void;
 }) {
   return (
     <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-white/[0.03]">
@@ -567,39 +431,11 @@ function HandSection({
                 selected={selectedIds.has(card.instanceId)}
                 onSelect={() => onCardTap(card)}
                 onZoom={() => onCardZoom(card)}
-                onPreviewStart={onCardPreviewStart}
-                onPreviewEnd={onCardPreviewEnd}
               />
             ))}
           </div>
         )}
       </div>
     </section>
-  );
-}
-
-function CardPreviewPanel({ definition, imageUrl, fallbackCard }: { definition: CardDefinition | null; imageUrl: string | null; fallbackCard: CardView | null }) {
-  return (
-    <aside className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-black/25">
-      <div className="border-b border-white/10 px-4 py-3">
-        <h2 className="font-display text-sm font-extrabold uppercase tracking-[0.12em] text-white">Preview</h2>
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3">
-        {definition || fallbackCard ? (
-          <>
-            <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-white/10 bg-black/35 p-3">
-              <CardImage src={imageUrl} alt={definition?.name ?? fallbackCard?.name ?? 'Card preview'} eager className="max-h-full w-full max-w-[210px] rounded-none" />
-            </div>
-            <div className="flex-shrink-0 rounded-lg border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-sm font-black uppercase tracking-[0.08em] text-white">{definition?.name ?? fallbackCard?.name}</p>
-              <p className="mt-1 text-xs font-semibold text-white/45">{definition?.cardNumber ?? fallbackCard?.cardDefinitionId}</p>
-              {definition?.text && <p className="mt-2 max-h-28 overflow-y-auto text-xs leading-5 text-white/70">{definition.text}</p>}
-            </div>
-          </>
-        ) : (
-          <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-dashed border-white/10 text-center text-xs text-white/30">Hover a card</div>
-        )}
-      </div>
-    </aside>
   );
 }

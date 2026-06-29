@@ -17,8 +17,6 @@ export interface CardRowProps {
   selected?: boolean;
   onSelect?: () => void;
   onZoom?: () => void;
-  onPreviewStart?: (card: CardView) => void;
-  onPreviewEnd?: () => void;
 }
 
 function StatBadge({ label, value }: { label: string; value: number | string }) {
@@ -30,7 +28,7 @@ function StatBadge({ label, value }: { label: string; value: number | string }) 
   );
 }
 
-export function CardRow({ card, selectable, selected, onSelect, onZoom, onPreviewStart, onPreviewEnd }: CardRowProps) {
+export function CardRow({ card, selectable, selected, onSelect, onZoom }: CardRowProps) {
   const isRested = card.orientation === 'rested';
 
   return (
@@ -38,10 +36,6 @@ export function CardRow({ card, selectable, selected, onSelect, onZoom, onPrevie
       role={selectable ? 'button' : undefined}
       tabIndex={selectable ? 0 : undefined}
       onClick={selectable ? onSelect : undefined}
-      onMouseEnter={() => onPreviewStart?.(card)}
-      onMouseLeave={onPreviewEnd}
-      onFocus={() => onPreviewStart?.(card)}
-      onBlur={onPreviewEnd}
       onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') onSelect?.(); } : undefined}
       className={[
         'flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-colors',

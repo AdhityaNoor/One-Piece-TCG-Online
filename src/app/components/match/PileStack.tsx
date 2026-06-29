@@ -6,7 +6,14 @@
  * the caller), since "what got KO'd" is useful debug/board info; Deck/DON!!
  * Deck stay sealed — no card-order info should ever leak to the UI from a
  * secret zone just because we're in a debug build.
+ *
+ * The field-size Deck pile (isFieldDeck below) uses the same CardBackArt
+ * illustration as the Life cards (tone="navy") instead of a hand-drawn
+ * gradient, so Deck and Life read as the same physical card back.
  */
+import { CardBackArt } from './CardBackArt';
+import { CountBadge } from './CountBadge';
+
 export type PileStackVariant = 'deck' | 'don' | 'trash';
 
 const VARIANT_CLASSES: Record<PileStackVariant, string> = {
@@ -35,18 +42,20 @@ export function PileStack({ label, count, variant, size = 'compact', onClick }: 
         style={isFieldDeck ? { width: 150, height: 210 } : { width: 40, height: 56 }}
         className={[
           'relative flex items-center justify-center overflow-hidden rounded-md border text-[10px] font-extrabold text-white/70 shadow-[0_4px_10px_rgba(0,0,0,0.3)] transition-transform',
-          isFieldDeck ? 'border-blue-200/20 bg-[linear-gradient(145deg,_#17233f,_#0b1228)]' : `bg-gradient-to-br ${VARIANT_CLASSES[variant]}`,
+          isFieldDeck ? 'border-none' : `bg-gradient-to-br ${VARIANT_CLASSES[variant]}`,
           onClick ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default',
         ].join(' ')}
       >
-        {isFieldDeck && (
+        {isFieldDeck ? (
           <>
-            <div className="absolute inset-[10%] rounded border border-gold/25" />
-            <div className="absolute inset-[23%] rounded-full border border-gold/40" />
-            <div className="absolute bottom-[10%] left-1/2 h-px w-1/2 -translate-x-1/2 bg-gold/35" />
+            <div className="absolute inset-0">
+              <CardBackArt tone="navy" />
+            </div>
+            <CountBadge count={count} />
           </>
+        ) : (
+          <span className="relative z-10">{count}</span>
         )}
-        <span className={isFieldDeck ? 'relative z-10 rounded-md bg-black/35 px-2 py-1 text-xs' : 'relative z-10'}>{count}</span>
       </button>
       <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-white/30">{label}</span>
     </div>
