@@ -37,6 +37,6 @@ export const deckStore: DeckStore = createLocalStorageDeckStore(browserStorage);
 
 export const nowIso = (): string => new Date().toISOString();
 
-/** Local-only id generator for new SavedDeck.deckId values — never sent to optcgapi.com, just a local primary key. */
+/** Local-only id generator for new SavedDeck.deckId values — just a local primary key. */
 export const generateDeckId = (): string =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `deck-${Date.now()}-${Math.random().toString(36).slice(2)}`;

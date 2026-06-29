@@ -1,16 +1,31 @@
 /**
  * Power/cost resolution. Source of truth: 2-6 (power), 2-7 (cost),
  * 6-5-5-2 (+1000 per attached DON!!), 7-1-3-2-1 (Counter Character "during
- * this battle" boost).
+ * this battle" boost), 8-1-3-3 (permanent/continuous effects).
  *
- * Card-effect power/cost modifiers (continuous effects, [On Play] boosts,
- * cost reduction, etc.) are NOT implemented — card effects are fully stubbed
- * this milestone (project decision: "stub everything" for effect text).
- * `continuousEffects` exists on GameState but nothing here reads it yet;
- * documented as a known limitation, not silently ignored.
+ * Card-effect power modifiers ARE now read, via GameState.continuousEffects'
+ * structured `powerModifier` payload (see game.ts). Each modifier's optional
+ * condition ([DON!! xN], [Your Turn]/[Opponent's Turn]) is re-evaluated here on
+ * every read, so a conditional buff turns on/off as DON!! attaches or the turn
+ * flips, with no extra bookkeeping. Cost modifiers remain future work.
  */
-import type { GameState } from '../../state/game';
+import type { ContinuousEffectRecord, GameState } from '../../state/game';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
+
+function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string): boolean {
+  const mod = record.powerModifier;
+  if (!mod || mod.appliesToInstanceId !== instanceId) return false;
+  const cond = mod.condition;
+  if (!cond) return true;
+  const instance = state.cardsById[instanceId];
+  if (cond.donAttachedAtLeast !== undefined && instance.donAttached.length < cond.donAttachedAtLeast) return false;
+  if (cond.turn !== undefined) {
+    const isOwnersTurn = state.activePlayerId === instance.ownerId;
+    if (cond.turn === 'your' && !isOwnersTurn) return false;
+    if (cond.turn === 'opponent' && isOwnersTurn) return false;
+  }
+  return true;
+}
 
 export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState, instanceId: string): number {
   const instance = state.cardsById[instanceId];
@@ -18,7 +33,11 @@ export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState
   const base = def.basePower ?? 0;
   const donBonus = instance.donAttached.length * 1000; // 6-5-5-2
   const battleBonus = state.currentBattle?.battlePowerBonuses[instanceId] ?? 0; // 7-1-3-2-1
-  return base + donBonus + battleBonus;
+  let continuousBonus = 0; // 8-1-3-3 card-effect power modifiers
+  for (const record of state.continuousEffects) {
+    if (powerModifierApplies(record, state, instanceId)) continuousBonus += record.powerModifier!.amount;
+  }
+  return base + donBonus + battleBonus + continuousBonus;
 }
 
 export function computeCurrentCost(defs: CardDefinitionLookup, state: GameState, instanceId: string): number {

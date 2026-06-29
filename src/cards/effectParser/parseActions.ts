@@ -1,25 +1,28 @@
 /**
  * Draft "action atom" recognizers.
  *
- * Philosophy: recognize ONLY tight, unambiguous patterns. Everything else
- * becomes a single `{ op: 'unrecognized', rawText }` atom — the parser never
- * guesses what an unmatched clause does (project rule: don't assume rules).
- * Currently recognized, because their phrasing is stable across the card pool:
- *   - draw N card(s)
- *   - <target> gains +N power [duration]
- *   - <target> gains [Keyword]
- * KO / search / rest / give-DON / cost-payment recognizers are intentionally
- * NOT here yet — their targeting/phrasing varies too much to structure without
- * guessing. They surface as `unrecognized` and are tracked as future work.
+ * Pipeline: split an ability body into sentences, normalize each ("You may …"
+ * optionality, leading bracket tags, "Then,"), then run a recognizer chain.
+ *
+ * Two tiers (see types.ts EffectAction):
+ *  - COUNT-CLEARING (draw / modifyPower / grantKeyword): emitted only when the
+ *    action AND target are confidently pinned, so the card can leave
+ *    needsReview. A leading "If …" precondition forces needsReview (the
+ *    condition would otherwise be silently dropped — a guess we refuse to make).
+ *  - HINTS (ko / rest / trash / donFromDeck / giveDon / returnToHand /
+ *    modifyCost / lookTopDeck / playCard / lifeChange): verb+amount recognized
+ *    to accelerate authoring, but always needsReview (surrounding restrictions
+ *    aren't modeled). A sentence matching NO recognizer becomes `unrecognized`.
  */
 import { collapseSpaces } from './tags';
 import type { EffectAction, EffectDuration, EffectTarget } from './types';
 
-const POWER_RE = /\bgains?\s*\+\s*(\d+)\s*power\b/i;
-const DRAW_RE = /\bdraws?\s+(\d+)\s+cards?\b/i;
-const GRANT_KEYWORD_RE = /\bgains?\s*\[(Rush|Rush: Character|Blocker|Double Attack|Banish|Unblockable)\]/i;
+const WORD_NUM: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7 };
+function toNum(w: string): number {
+  const n = Number(w);
+  return Number.isFinite(n) ? n : (WORD_NUM[w.toLowerCase()] ?? NaN);
+}
 
-/** Detects a duration phrase anywhere in the clause. */
 function detectDuration(clause: string, conditionGated: boolean): EffectDuration {
   if (/during this battle/i.test(clause)) return 'thisBattle';
   if (/during this turn/i.test(clause)) return 'thisTurn';
@@ -27,84 +30,132 @@ function detectDuration(clause: string, conditionGated: boolean): EffectDuration
   return 'unspecified';
 }
 
-/**
- * Best-effort target from the words leading up to (or surrounding) an action
- * phrase. Conservative: unmatched => { kind: 'unspecified', raw }.
- */
+/** Best-effort target. Conservative: unmatched => { kind: 'unspecified', raw }. */
 function detectTarget(clause: string): EffectTarget {
   const c = clause.toLowerCase();
-  if (/\ball of your characters\b/.test(c)) return { kind: 'allYourCharacters' };
-  if (/\ball characters\b/.test(c)) return { kind: 'allCharacters' };
-  // "this card" / "this Character" — self-reference.
-  if (/\bthis (card|character|leader)\b/.test(c)) return { kind: 'self' };
-  if (/\byour leader\b/.test(c) && !/character/.test(c)) return { kind: 'yourLeader' };
+  if (/all of your characters/.test(c)) return { kind: 'allYourCharacters' };
+  if (/all characters/.test(c)) return { kind: 'allCharacters' };
+  if (/this (card|character|leader)/.test(c)) return { kind: 'self' };
+  if (/(your )?opponent'?s? leader/.test(c)) return { kind: 'opponentLeader' };
+  if (/(your )?opponent'?s? characters?/.test(c)) return { kind: 'opponentCharacters' };
   const upTo = c.match(/up to (\d+)\b/);
   if (upTo) return { kind: 'upTo', count: Number(upTo[1]), raw: collapseSpaces(clause) };
+  if (/your leader/.test(c)) return { kind: 'yourLeader' };
+  if (/your characters?/.test(c)) return { kind: 'yourCharacters' };
   return { kind: 'unspecified', raw: collapseSpaces(clause) };
 }
 
+interface SentenceFlags {
+  optional: boolean;
+  conditional: boolean;
+  conditionGated: boolean;
+}
+
 /**
- * Parses a single cleaned clause body (reminder text already stripped) into
- * draft atoms. `conditionGated` = the ability carried a [DON!! xN]/[Your Turn]
- * style condition, which informs default duration for an otherwise open-ended
- * power buff.
+ * Splits an ability body into sentence-ish clauses. Splits only on a
+ * period/semicolon FOLLOWED by whitespace, so the "K.O." abbreviation
+ * (normalized to "KO" first) and dotted card names like "Monkey.D.Luffy" are
+ * not fragmented. A leading "Then," on a clause is stripped.
+ */
+function splitSentences(body: string): string[] {
+  return body
+    .replace(/K\.O\./gi, 'KO')
+    .split(/(?<=[.;])\s+/)
+    .map((s) => collapseSpaces(s).replace(/^then,?\s*/i, ''))
+    .filter((s) => s.length > 0);
+}
+
+/** Recognize the count-clearing ops on one normalized sentence; null if none. */
+function clearingOps(sentence: string, flags: SentenceFlags): EffectAction[] {
+  const out: EffectAction[] = [];
+  const c = sentence.toLowerCase();
+  const needs = flags.conditional || undefined;
+  const opt = flags.optional || undefined;
+
+  const draw = c.match(/\bdraws?\s+(\d+|a|an|one|two|three)\s+cards?\b/);
+  if (draw) out.push({ op: 'draw', amount: toNum(draw[1]), ...(opt ? { optional: true } : {}), ...(needs ? { conditional: true, needsReview: true } : {}) });
+
+  const power = sentence.match(/([+\-−])\s?(\d{3,4})\s*power\b/i);
+  if (power) {
+    const target = detectTarget(sentence);
+    const amount = (power[1] === '+' ? 1 : -1) * Number(power[2]);
+    const review = needs || target.kind === 'unspecified' || undefined;
+    out.push({ op: 'modifyPower', amount, target, duration: detectDuration(c, flags.conditionGated), ...(opt ? { optional: true } : {}), ...(flags.conditional ? { conditional: true } : {}), ...(review ? { needsReview: true } : {}) });
+  }
+
+  const cost = c.match(/([+\-−])\s?(\d+)\s*cost\b/) || (/costs?\s+(\d+)\s+less/.test(c) ? ['', '-', (c.match(/costs?\s+(\d+)\s+less/) as RegExpMatchArray)[1]] : null);
+  if (cost) {
+    const target = detectTarget(sentence);
+    const amount = (cost[1] === '+' ? 1 : -1) * Number(cost[2]);
+    const review = needs || target.kind === 'unspecified' || undefined;
+    out.push({ op: 'modifyCost', amount, target, duration: detectDuration(c, flags.conditionGated), ...(opt ? { optional: true } : {}), ...(flags.conditional ? { conditional: true } : {}), ...(review ? { needsReview: true } : {}) });
+  }
+
+  const grant = sentence.match(/\bgains?\s*\[(Rush|Rush: Character|Blocker|Double Attack|Banish|Unblockable)\]/i);
+  if (grant) {
+    const target = detectTarget(sentence);
+    const review = needs || target.kind === 'unspecified' || undefined;
+    out.push({ op: 'grantKeyword', keyword: grant[1], target, duration: detectDuration(c, flags.conditionGated), ...(opt ? { optional: true } : {}), ...(flags.conditional ? { conditional: true } : {}), ...(review ? { needsReview: true } : {}) });
+  }
+  return out;
+}
+
+/** Recognize the HINT ops (always needsReview). */
+function hintOps(sentence: string, flags: SentenceFlags): EffectAction[] {
+  const out: EffectAction[] = [];
+  const c = sentence.toLowerCase();
+  const base = { ...(flags.optional ? { optional: true as const } : {}), ...(flags.conditional ? { conditional: true as const } : {}), needsReview: true as const };
+  const upTo = (): number | undefined => {
+    const m = c.match(/up to (\d+)/);
+    return m ? Number(m[1]) : undefined;
+  };
+
+  if (/\bko\b\.?\s+(?:up to|\d|a |an |that|this|the |all|one|your|chosen)/.test(c)) out.push({ op: 'ko', target: detectTarget(sentence), amount: upTo(), ...base });
+  // "rest" but not "the rest" (= remainder) and not "rested" alone.
+  if (/\brest (up to \d+|\d+|it|that|this|your|all|one|the chosen)/.test(c)) out.push({ op: 'rest', target: detectTarget(sentence), amount: upTo(), ...base });
+  if (/\btrash\b/.test(c)) {
+    const from = /from your hand/.test(c) ? 'hand' : /this card/.test(c) ? 'self' : /from .* deck|top of your deck/.test(c) ? 'deck' : 'unspecified';
+    const m = c.match(/trash\s+(\d+|a|an|one|two|three)\b/);
+    out.push({ op: 'trash', from, ...(m ? { amount: toNum(m[1]) } : {}), ...base });
+  }
+  const donDeck = c.match(/add up to (\d+) don!! cards? from your don!! deck/);
+  if (donDeck) out.push({ op: 'donFromDeck', amount: Number(donDeck[1]), rested: /and rest it|rest them|set it as rested/.test(c), ...base });
+  const giveDon = c.match(/give up to (\d+) (?:rested )?don!! cards?/);
+  if (giveDon) out.push({ op: 'giveDon', amount: Number(giveDon[1]), target: detectTarget(sentence), ...base });
+  if (/return .*to (?:the |its |their )?(?:owner'?s? |your )?hand|return up to \d+/.test(c)) out.push({ op: 'returnToHand', target: detectTarget(sentence), amount: upTo(), ...base });
+  const look = c.match(/look at (\d+) cards? from the top of your deck/);
+  if (look) out.push({ op: 'lookTopDeck', amount: Number(look[1]), ...base });
+  if (/\bplay (up to \d+|this card|\d+|a |1 )/.test(c)) out.push({ op: 'playCard', amount: upTo(), ...base });
+  if (/add (?:\d+|up to \d+|the top) .*to (?:the top of )?your life|to your life area/.test(c)) out.push({ op: 'lifeChange', direction: 'add', amount: upTo(), ...base });
+  if (/trash .*(?:from .* life|life cards?)/.test(c)) out.push({ op: 'lifeChange', direction: 'trash', amount: upTo(), ...base });
+  return out;
+}
+
+/**
+ * Parses a cleaned clause body (reminder text already stripped) into draft
+ * atoms. `conditionGated` = the ability carried a [DON!! xN]/[Your Turn]-style
+ * bracket condition (informs default duration; distinct from inline "If …").
  */
 export function parseActions(clauseBody: string, conditionGated: boolean): EffectAction[] {
   const body = collapseSpaces(clauseBody);
   if (body.length === 0) return [];
 
   const actions: EffectAction[] = [];
-  let matchedAny = false;
+  for (const sentenceRaw of splitSentences(body)) {
+    const optional = /\byou may\b/i.test(sentenceRaw);
+    const conditional = /\bif (you|your|this|the|an?|there|a )/i.test(sentenceRaw);
+    // Strip optionality wording for matching; keep everything else verbatim.
+    const sentence = collapseSpaces(sentenceRaw.replace(/\byou may\b/gi, ''));
+    const flags: SentenceFlags = { optional, conditional, conditionGated };
 
-  const draw = body.match(DRAW_RE);
-  if (draw) {
-    matchedAny = true;
-    actions.push({ op: 'draw', amount: Number(draw[1]) });
+    const matched = [...clearingOps(sentence, flags), ...hintOps(sentence, flags)];
+    if (matched.length > 0) actions.push(...matched);
+    else actions.push({ op: 'unrecognized', rawText: sentenceRaw });
   }
-
-  const power = body.match(POWER_RE);
-  if (power) {
-    matchedAny = true;
-    const target = detectTarget(body);
-    actions.push({
-      op: 'modifyPower',
-      amount: Number(power[1]),
-      target,
-      duration: detectDuration(body, conditionGated),
-      ...(target.kind === 'unspecified' ? { needsReview: true } : {}),
-    });
-  }
-
-  const grant = body.match(GRANT_KEYWORD_RE);
-  if (grant) {
-    matchedAny = true;
-    const target = detectTarget(body);
-    actions.push({
-      op: 'grantKeyword',
-      keyword: grant[1],
-      target,
-      duration: detectDuration(body, conditionGated),
-      ...(target.kind === 'unspecified' ? { needsReview: true } : {}),
-    });
-  }
-
-  // If a recognizer fired but the clause clearly continues into other
-  // sentences ("Then, ..."), the remainder is not structured — flag the whole
-  // clause as still needing a template by also emitting an unrecognized atom
-  // for the leftover, so partial recognition never masquerades as complete.
-  if (matchedAny && /\bthen\b/i.test(body)) {
-    const afterThen = body.slice(body.toLowerCase().indexOf('then'));
-    actions.push({ op: 'unrecognized', rawText: collapseSpaces(afterThen) });
-  }
-
-  if (!matchedAny) {
-    actions.push({ op: 'unrecognized', rawText: body });
-  }
-
   return actions;
 }
 
-/** True if any action is unrecognized or flagged for review (=> the ability still needs a hand-authored template). */
+/** True if any action is unrecognized or flagged for review (=> still needs a hand-authored template). */
 export function actionsNeedTemplate(actions: EffectAction[]): boolean {
   if (actions.length === 0) return true;
   return actions.some((a) => a.op === 'unrecognized' || ('needsReview' in a && a.needsReview === true));

@@ -30,18 +30,42 @@ export interface ActionLogPanelProps {
   log: GameLogEntry[];
 }
 
+export interface ActionLogDockProps {
+  log: GameLogEntry[];
+}
+
 function isSecret(entry: GameLogEntry): boolean {
   return entry.visibility !== 'public';
 }
 
 export function ActionLogPanel({ open, onClose, log }: ActionLogPanelProps) {
+  return (
+    <Modal open={open} onClose={onClose} title="Action Log" maxWidthClassName="max-w-xl">
+      <ActionLogContent log={log} />
+    </Modal>
+  );
+}
+
+export function ActionLogDock({ log }: ActionLogDockProps) {
+  return (
+    <aside className="flex h-full min-h-0 flex-col rounded-xl border border-white/10 bg-black/25">
+      <div className="border-b border-white/10 px-4 py-3">
+        <h2 className="font-display text-sm font-extrabold uppercase tracking-[0.12em] text-white">Log</h2>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <ActionLogContent log={log} />
+      </div>
+    </aside>
+  );
+}
+
+function ActionLogContent({ log }: { log: GameLogEntry[] }) {
   const [publicOnly, setPublicOnly] = useState(false);
   const visible = publicOnly ? log.filter((e) => !isSecret(e)) : log;
   const ordered = [...visible].reverse();
 
   return (
-    <Modal open={open} onClose={onClose} title="Action Log" maxWidthClassName="max-w-xl">
-      <div className="flex flex-col gap-3 p-5">
+      <div className="flex flex-col gap-3 p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs text-white/50">{log.length} entries</p>
           <Button variant="ghost" size="sm" onClick={() => setPublicOnly((v) => !v)}>
@@ -78,6 +102,5 @@ export function ActionLogPanel({ open, onClose, log }: ActionLogPanelProps) {
           </ul>
         )}
       </div>
-    </Modal>
   );
 }

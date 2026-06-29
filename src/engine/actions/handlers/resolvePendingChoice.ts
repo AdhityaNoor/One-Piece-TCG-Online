@@ -19,6 +19,7 @@ import type { ResolvePendingChoiceAction, ValidationResult } from '../action';
 import { createActionLogger } from '../../rules/shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import type { ActionExecuteResult } from '../actionExecuteResult';
+import { resumeChoice, type EffectTemplateRegistry } from '../../effects';
 
 function findChoice(state: GameState, action: ResolvePendingChoiceAction) {
   return state.pendingChoices.find((c) => c.id === action.choiceId);
@@ -45,6 +46,24 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
         reasons.push(`'${String(chosenId)}' is not currently in ${action.playerId}'s Character Area.`);
       }
     }
+  } else if (choice.sourceEffectId === 'ir') {
+    // Interpreter-suspended card effect: validate the selection against the
+    // choice's own candidate set + min/max (no registry needed for validation).
+    const sel = action.response;
+    const { min, max, candidateInstanceIds } = choice.constraints;
+    if (!Array.isArray(sel)) {
+      reasons.push('A card-effect choice expects an array of selected instance ids.');
+    } else {
+      if (sel.length < min || sel.length > max) {
+        reasons.push(`Select between ${min} and ${max} target(s) (got ${sel.length}) (8-4-4-1).`);
+      }
+      const candidates = new Set(candidateInstanceIds ?? []);
+      for (const id of sel) {
+        if (typeof id !== 'string' || !candidates.has(id)) {
+          reasons.push(`'${String(id)}' is not an eligible target for this effect.`);
+        }
+      }
+    }
   } else {
     reasons.push(`Unrecognized PendingChoice sourceEffectId '${choice.sourceEffectId}' — no resolver implemented.`);
   }
@@ -52,11 +71,21 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
   return { legal: reasons.length === 0, reasons };
 }
 
-export function executeResolvePendingChoice(state: GameState, action: ResolvePendingChoiceAction): ActionExecuteResult {
+export function executeResolvePendingChoice(
+  state: GameState,
+  action: ResolvePendingChoiceAction,
+  registry: EffectTemplateRegistry = {},
+): ActionExecuteResult {
   const choice = findChoice(state, action);
   if (!choice) {
     throw new Error('executeResolvePendingChoice requires validateResolvePendingChoice to pass first.');
   }
+
+  // Interpreter-suspended card effect: resume the program with the selection.
+  if (choice.sourceEffectId === 'ir') {
+    return resumeChoice(state, action.choiceId, action.response as string[], registry, action.actionId);
+  }
+
   const logger = createActionLogger(state, action.actionId);
   const remainingChoices = state.pendingChoices.filter((c) => c.id !== action.choiceId);
 

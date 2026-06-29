@@ -201,17 +201,31 @@ export function parseEffect(cardNumber: string, cardText: string): ParsedEffect 
     return { cardNumber, abilities: [], warnings, needsReview: false };
   }
 
-  // 3. Segment at ability-start tags; the first ability absorbs any leading condition tags.
+  // 3. Segment at EVERY ability-start tag. The chunk before the first timing
+  //    tag is its own ability UNLESS it's only condition tags (no body), in
+  //    which case those leading conditions merge forward into the first real
+  //    ability (e.g. "[Once Per Turn] [On Play] ..." stays one ability, but a
+  //    permanent "[DON!! x2] <effect>. [Activate: Main] ..." becomes two).
   const starts = abilityStartIndices(working);
-  const cuts = starts.length === 0 ? [0] : [0, ...starts.slice(1)];
+  let segments: string[];
+  if (starts.length === 0) {
+    segments = [working];
+  } else {
+    const bounds = [0, ...starts, working.length];
+    const slices: string[] = [];
+    for (let i = 0; i < bounds.length - 1; i++) slices.push(working.slice(bounds[i], bounds[i + 1]));
+    if (slices.length >= 2 && collapseSpaces(peelLeadingTags(slices[0]).body).length === 0) {
+      slices[1] = slices[0] + slices[1];
+      slices.shift();
+    }
+    segments = slices;
+  }
 
   const abilities: ParsedAbility[] = [];
-  for (let i = 0; i < cuts.length; i++) {
-    const from = cuts[i];
-    const to = i + 1 < cuts.length ? cuts[i + 1] : working.length;
-    const segment = working.slice(from, to);
+  let abilityIndex = 0;
+  for (const segment of segments) {
     if (collapseSpaces(segment).length === 0) continue;
-    abilities.push(parseSegment(segment, i, cardNumber, warnings));
+    abilities.push(parseSegment(segment, abilityIndex++, cardNumber, warnings));
   }
 
   const needsReview = abilities.some((a) => a.needsTemplate) || (abilities.length === 0 && working.length > 0);

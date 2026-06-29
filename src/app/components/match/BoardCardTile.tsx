@@ -22,13 +22,14 @@ import type { ReactNode } from 'react';
 import { CardImage } from '../CardImage';
 import type { CardView } from '../../../board/projection';
 
-export type BoardCardTileSize = 'leader' | 'board';
+export type BoardCardTileSize = 'leader' | 'board' | 'field';
 
 const SIZE_PX: Record<BoardCardTileSize, { width: number; box: number }> = {
   // box = ceil(width * 88/63), i.e. the upright card's own height — large
   // enough to also fit the same card rotated 90° (where width/height swap).
-  leader: { width: 84, box: 118 },
-  board: { width: 60, box: 84 },
+  leader: { width: 116, box: 162 },
+  board: { width: 116, box: 162 },
+  field: { width: 150, box: 210 },
 };
 
 export interface BoardCardTileProps {
@@ -38,6 +39,8 @@ export interface BoardCardTileProps {
   selected?: boolean;
   onSelect?: () => void;
   onZoom?: () => void;
+  onPreviewStart?: (card: CardView) => void;
+  onPreviewEnd?: () => void;
 }
 
 function MiniBadge({ tone = 'dark', children }: { tone?: 'dark' | 'gold'; children: ReactNode }) {
@@ -53,17 +56,25 @@ function MiniBadge({ tone = 'dark', children }: { tone?: 'dark' | 'gold'; childr
   );
 }
 
-export function BoardCardTile({ card, size = 'board', selectable, selected, onSelect, onZoom }: BoardCardTileProps) {
+export function BoardCardTile({ card, size = 'board', selectable, selected, onSelect, onZoom, onPreviewStart, onPreviewEnd }: BoardCardTileProps) {
   const dims = SIZE_PX[size];
+  const isField = size === 'field';
   const rested = card.orientation === 'rested';
   const primaryStat = card.power ?? card.life;
 
   return (
-    <div className="relative flex-shrink-0" style={{ width: dims.box, height: dims.box }}>
+    <div
+      className={['group relative flex-shrink-0', isField ? 'aspect-square h-full max-h-full max-w-full' : ''].join(' ')}
+      style={isField ? undefined : { width: dims.box, height: dims.box }}
+    >
       <div
         role={selectable ? 'button' : undefined}
         tabIndex={selectable ? 0 : undefined}
         onClick={selectable ? onSelect : undefined}
+        onMouseEnter={() => onPreviewStart?.(card)}
+        onMouseLeave={onPreviewEnd}
+        onFocus={() => onPreviewStart?.(card)}
+        onBlur={onPreviewEnd}
         onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') onSelect?.(); } : undefined}
         className={[
           'absolute inset-0 flex items-center justify-center transition-transform duration-200',
@@ -71,8 +82,9 @@ export function BoardCardTile({ card, size = 'board', selectable, selected, onSe
           selectable ? 'cursor-pointer' : '',
         ].join(' ')}
       >
-        <div className="relative" style={{ width: dims.width }}>
-          <CardImage src={card.imageUrl} alt={card.name} className={selected ? 'ring-2 ring-amber-300' : undefined} />
+        <div className="relative" style={isField ? { height: '100%', aspectRatio: '63 / 88' } : { width: dims.width }}>
+          <CardImage src={card.imageUrl} alt={card.name} className={[isField ? 'h-full w-full' : '', selected ? 'ring-2 ring-amber-300' : ''].filter(Boolean).join(' ')} />
+          {onZoom && <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100 group-focus-within:bg-black/45 group-focus-within:opacity-100" />}
 
           {card.cost !== null && (
             <div className="absolute -top-1 -left-1 z-10">
@@ -106,7 +118,7 @@ export function BoardCardTile({ card, size = 'board', selectable, selected, onSe
           type="button"
           onClick={(e) => { e.stopPropagation(); onZoom(); }}
           aria-label={`Preview ${card.name}`}
-          className="absolute -top-1.5 -right-1.5 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-[10px] text-white/80 hover:bg-black/80 hover:text-white"
+          className="absolute left-1/2 top-1/2 z-30 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/75 text-sm text-white opacity-0 shadow-lg transition hover:bg-black/90 group-hover:opacity-100 group-focus-within:opacity-100"
         >
           🔍
         </button>

@@ -115,7 +115,7 @@ export function createSavedDeck(input: CreateSavedDeckInput): CreateSavedDeckRes
     donDeckSize: 10,
     createdAt: timestamp,
     updatedAt: timestamp,
-    source: { provider: 'optcgapi', fetchedAt: timestamp },
+    source: { provider: 'local-catalog', fetchedAt: timestamp },
   };
 
   return { ok: true, deck };

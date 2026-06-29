@@ -5,267 +5,267 @@
   "sets": [
     {
       "code": "EB01",
-      "name": "EB01",
+      "name": "EB01 - Memorial Collection",
       "count": 61
     },
     {
       "code": "EB02",
-      "name": "EB02",
+      "name": "EB02 - Anime 25th Collection",
       "count": 61
     },
     {
       "code": "EB03",
-      "name": "EB03",
+      "name": "EB03 - One Piece Heroines Edition",
       "count": 62
     },
     {
       "code": "EB04",
-      "name": "EB04",
+      "name": "EB04 - Adventure on Kami's Island",
       "count": 61
     },
     {
       "code": "OP01",
-      "name": "OP01",
+      "name": "OP01 - Romance Dawn",
       "count": 121
     },
     {
       "code": "OP02",
-      "name": "OP02",
+      "name": "OP02 - Paramount War",
       "count": 121
     },
     {
       "code": "OP03",
-      "name": "OP03",
+      "name": "OP03 - Pillars of Strength",
       "count": 123
     },
     {
       "code": "OP04",
-      "name": "OP04",
+      "name": "OP04 - Kingdoms of Intrigue",
       "count": 119
     },
     {
       "code": "OP05",
-      "name": "OP05",
+      "name": "OP05 - Awakening of the New Era",
       "count": 119
     },
     {
       "code": "OP06",
-      "name": "OP06",
+      "name": "OP06 - Wings of the Captain",
       "count": 119
     },
     {
       "code": "OP07",
-      "name": "OP07",
+      "name": "OP07 - 500 Years in the Future",
       "count": 119
     },
     {
       "code": "OP08",
-      "name": "OP08",
+      "name": "OP08 - Two Legends",
       "count": 119
     },
     {
       "code": "OP09",
-      "name": "OP09",
+      "name": "OP09 - Emperors in the New World",
       "count": 119
     },
     {
       "code": "OP10",
-      "name": "OP10",
+      "name": "OP10 - Royal Blood",
       "count": 119
     },
     {
       "code": "OP11",
-      "name": "OP11",
+      "name": "OP11 - A Fist of Divine Speed",
       "count": 119
     },
     {
       "code": "OP12",
-      "name": "OP12",
+      "name": "OP12 - Legacy of the Master",
       "count": 119
     },
     {
       "code": "OP13",
-      "name": "OP13",
+      "name": "OP13 - Carrying on His Will",
       "count": 120
     },
     {
       "code": "OP14",
-      "name": "OP14",
+      "name": "OP14 - The Azure Sea's Seven",
       "count": 120
     },
     {
       "code": "OP15",
-      "name": "OP15",
+      "name": "OP15 - Adventure on Kami's Island",
       "count": 119
     },
     {
       "code": "OP16",
-      "name": "OP16",
+      "name": "OP16 - The Time of Battle",
       "count": 119
     },
     {
       "code": "P",
-      "name": "P",
+      "name": "Promo Cards",
       "count": 28
     },
     {
       "code": "PRB01",
-      "name": "PRB01",
+      "name": "PRB01 - One Piece Card The Best",
       "count": 1
     },
     {
       "code": "PRB02",
-      "name": "PRB02",
+      "name": "PRB02 - One Piece Card The Best Vol.2",
       "count": 18
     },
     {
       "code": "ST01",
-      "name": "ST01",
+      "name": "ST01 - Straw Hat Crew",
       "count": 17
     },
     {
       "code": "ST02",
-      "name": "ST02",
+      "name": "ST02 - Worst Generation",
       "count": 17
     },
     {
       "code": "ST03",
-      "name": "ST03",
+      "name": "ST03 - The Seven Warlords of the Sea",
       "count": 17
     },
     {
       "code": "ST04",
-      "name": "ST04",
+      "name": "ST04 - Animal Kingdom Pirates",
       "count": 17
     },
     {
       "code": "ST05",
-      "name": "ST05",
+      "name": "ST05 - One Piece Film Edition",
       "count": 17
     },
     {
       "code": "ST06",
-      "name": "ST06",
+      "name": "ST06 - Absolute Justice",
       "count": 17
     },
     {
       "code": "ST07",
-      "name": "ST07",
+      "name": "ST07 - Big Mom Pirates",
       "count": 17
     },
     {
       "code": "ST08",
-      "name": "ST08",
+      "name": "ST08 - Monkey D. Luffy",
       "count": 15
     },
     {
       "code": "ST09",
-      "name": "ST09",
+      "name": "ST09 - Yamato",
       "count": 15
     },
     {
       "code": "ST10",
-      "name": "ST10",
+      "name": "ST10 - The Three Captains",
       "count": 17
     },
     {
       "code": "ST11",
-      "name": "ST11",
+      "name": "ST11 - Uta",
       "count": 5
     },
     {
       "code": "ST12",
-      "name": "ST12",
+      "name": "ST12 - Zoro and Sanji",
       "count": 17
     },
     {
       "code": "ST13",
-      "name": "ST13",
+      "name": "ST13 - The Three Brothers",
       "count": 19
     },
     {
       "code": "ST14",
-      "name": "ST14",
+      "name": "ST14 - 3D2Y",
       "count": 17
     },
     {
       "code": "ST15",
-      "name": "ST15",
+      "name": "ST15 - Red Edward.Newgate",
       "count": 5
     },
     {
       "code": "ST16",
-      "name": "ST16",
+      "name": "ST16 - Green Uta",
       "count": 5
     },
     {
       "code": "ST17",
-      "name": "ST17",
+      "name": "ST17 - Blue Donquixote Doflamingo",
       "count": 5
     },
     {
       "code": "ST18",
-      "name": "ST18",
+      "name": "ST18 - Purple Monkey.D.Luffy",
       "count": 5
     },
     {
       "code": "ST19",
-      "name": "ST19",
+      "name": "ST19 - Black Smoker",
       "count": 5
     },
     {
       "code": "ST20",
-      "name": "ST20",
+      "name": "ST20 - Yellow Charlotte Katakuri",
       "count": 5
     },
     {
       "code": "ST21",
-      "name": "ST21",
+      "name": "ST21 - Gear5",
       "count": 17
     },
     {
       "code": "ST22",
-      "name": "ST22",
+      "name": "ST22 - Ace & Newgate",
       "count": 17
     },
     {
       "code": "ST23",
-      "name": "ST23",
+      "name": "ST23 - Red Shanks",
       "count": 5
     },
     {
       "code": "ST24",
-      "name": "ST24",
+      "name": "ST24 - Green Jewelry Bonney",
       "count": 5
     },
     {
       "code": "ST25",
-      "name": "ST25",
+      "name": "ST25 - Blue Buggy",
       "count": 5
     },
     {
       "code": "ST26",
-      "name": "ST26",
+      "name": "ST26 - Purple/Black Monkey.D.Luffy",
       "count": 5
     },
     {
       "code": "ST27",
-      "name": "ST27",
+      "name": "ST27 - Black Marshall.D.Teach",
       "count": 5
     },
     {
       "code": "ST28",
-      "name": "ST28",
+      "name": "ST28 - Green/Yellow Yamato",
       "count": 5
     },
     {
       "code": "ST29",
-      "name": "ST29",
+      "name": "ST29 - Egghead",
       "count": 17
     },
     {
       "code": "ST30",
-      "name": "ST30",
+      "name": "ST30 - Luffy & Ace",
       "count": 17
     }
   ]

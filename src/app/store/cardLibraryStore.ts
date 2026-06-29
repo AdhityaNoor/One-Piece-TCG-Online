@@ -2,8 +2,7 @@ import { create } from 'zustand';
 import {
   fetchAllSets,
   fetchAllPlayableCardPrintings,
-  fetchCardPrintings,
-  optcgEndpoints,
+  fetchSetCards,
   resolveCardPrintingsById,
   withCache,
   type CardApiError,
@@ -64,7 +63,7 @@ export const useCardLibraryStore = create<CardLibraryState>((set, get) => ({
   loadSets: async () => {
     if (get().setsStatus === 'loading' || get().setsStatus === 'loaded') return;
     set({ setsStatus: 'loading', setsError: undefined });
-    const result = await withCache<SetSummaryDto[]>(cardLibraryCache, 'allSets', () => fetchAllSets(browserFetch, optcgEndpoints.allSets()), {
+    const result = await withCache<SetSummaryDto[]>(cardLibraryCache, 'allSets', () => fetchAllSets(browserFetch), {
       ttlMs: CARD_LIBRARY_CACHE_TTL_MS,
     });
     if (result.ok) set({ sets: [ALL_SETS_ENTRY, ...[...result.data].reverse()], setsStatus: 'loaded' });
@@ -84,7 +83,7 @@ export const useCardLibraryStore = create<CardLibraryState>((set, get) => ({
         ? await withCache<CardPrintingDto[]>(cardLibraryCache, 'allPlayableCardPrintings', () => fetchAllPlayableCardPrintings(browserFetch), {
             ttlMs: CARD_LIBRARY_CACHE_TTL_MS,
           })
-        : await withCache<CardPrintingDto[]>(cardLibraryCache, `setCards:${setId}`, () => fetchCardPrintings(browserFetch, optcgEndpoints.setCards(setId)), {
+        : await withCache<CardPrintingDto[]>(cardLibraryCache, `setCards:${setId}`, () => fetchSetCards(browserFetch, setId), {
             ttlMs: CARD_LIBRARY_CACHE_TTL_MS,
           });
     if (result.ok) {

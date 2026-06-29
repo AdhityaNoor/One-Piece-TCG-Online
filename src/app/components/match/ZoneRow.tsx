@@ -15,12 +15,12 @@ export interface ZoneRowProps {
 
 export function ZoneRow({ label, children, isEmpty, emptyLabel = 'Empty' }: ZoneRowProps) {
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-center text-[9px] font-bold uppercase tracking-[0.18em] text-white/30">{label}</p>
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">{label}</p>
       {isEmpty ? (
-        <p className="rounded-lg border border-dashed border-white/10 px-2 py-2 text-center text-[10px] text-white/25">{emptyLabel}</p>
+        <p className="rounded-lg border border-dashed border-white/10 px-2 py-4 text-center text-[10px] text-white/25">{emptyLabel}</p>
       ) : (
-        <div className="flex flex-wrap items-end justify-center gap-1.5 px-1">{children}</div>
+        <div className="flex flex-wrap items-end justify-center gap-2 px-1">{children}</div>
       )}
     </div>
   );

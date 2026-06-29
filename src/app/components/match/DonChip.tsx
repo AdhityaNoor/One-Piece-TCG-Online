@@ -14,11 +14,11 @@ export interface DonChipProps {
   onSelect?: () => void;
 }
 
-const BOX = 44;
+const CARD_WIDTH = 54;
+const CARD_HEIGHT = 76;
+const BOX = CARD_HEIGHT;
 
 export function DonChip({ card, selectable, selected, onSelect }: DonChipProps) {
-  const rested = card.donRested;
-
   return (
     <div className="relative flex-shrink-0" style={{ width: BOX, height: BOX }}>
       <div
@@ -28,18 +28,20 @@ export function DonChip({ card, selectable, selected, onSelect }: DonChipProps) 
         onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') onSelect?.(); } : undefined}
         className={[
           'absolute inset-0 flex items-center justify-center transition-transform duration-200',
-          rested ? 'rotate-90' : '',
           selectable ? 'cursor-pointer' : '',
         ].join(' ')}
       >
         <div
           className={[
-            'flex h-7 w-9 items-center justify-center rounded-md border text-[9px] font-extrabold uppercase tracking-tight shadow',
-            rested ? 'border-white/10 bg-white/5 text-white/30' : 'border-amber-300/40 bg-gradient-to-b from-amber-400 to-amber-600 text-navy-950',
-            selected ? 'ring-2 ring-amber-200' : '',
+            'relative overflow-hidden rounded-md border border-emerald-500/45 bg-white text-[10px] font-black uppercase tracking-tight text-emerald-900 shadow-[0_5px_12px_rgba(0,0,0,0.28)]',
+            selected ? 'ring-2 ring-emerald-200' : '',
           ].join(' ')}
+          style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}
         >
-          DON!!
+          <div className="absolute inset-1 rounded border border-emerald-500/35" />
+          <div className="absolute left-1/2 top-2 h-8 w-8 -translate-x-1/2 rounded-full border-2 border-emerald-500/45" />
+          <div className="absolute inset-x-1 bottom-2 h-2 rounded-full bg-emerald-500/20" />
+          <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center">DON!!</span>
         </div>
       </div>
     </div>

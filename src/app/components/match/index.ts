@@ -4,6 +4,7 @@ export * from './ZoneSection';
 export * from './BoardCardTile';
 export * from './DonChip';
 export * from './PileStack';
+export * from './PhaseIndicator';
 export * from './ZoneRow';
 export * from './PlayerBoardPanel';
 export * from './ActionBar';

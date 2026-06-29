@@ -52,7 +52,7 @@ function makeDeck(deckId: string, name: string, updatedAt: string): SavedDeck {
     donDeckSize: 10,
     createdAt: updatedAt,
     updatedAt,
-    source: { provider: 'optcgapi', fetchedAt: updatedAt },
+    source: { provider: 'local-catalog', fetchedAt: updatedAt },
   };
 }
 
@@ -111,7 +111,7 @@ describe('createLocalStorageDeckStore', () => {
       donDeckSize: 10,
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
-      source: { provider: 'optcgapi', fetchedAt: '2026-01-01T00:00:00.000Z' },
+      source: { provider: 'local-catalog', fetchedAt: '2026-01-01T00:00:00.000Z' },
     });
     storage.setItem('optcg.deck.deck-1', v1Raw);
 

@@ -1,7 +1,7 @@
 /**
  * The local, stable deck snapshot. This is the project's core resilience
  * guarantee (requirement #4: "must not break if the API changes later") —
- * once a deck is saved, it never needs optcgapi.com again. Every selected
+ * once a deck is saved, it never needs the remote card API again. Every selected
  * card's full raw API row AND its derived CardDefinition are embedded
  * in-place, not referenced by id.
  *
@@ -13,7 +13,7 @@
  *   normalizeCardPrintings is found and fixed later, OR the API's field
  *   meanings turn out to differ from what was assumed, every existing saved
  *   deck can be RE-normalized offline from data already on disk — without
- *   ever re-fetching optcgapi.com, which may have changed or gone away by
+ *   ever re-fetching a remote provider, which may have changed or gone away by
  *   then. Re-deriving from a frozen raw row is strictly safer than trusting
  *   a frozen derived value forever.
  *
@@ -76,7 +76,7 @@ export interface SavedDeck {
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
   /** Provenance, for debugging/staleness display only — never read by the engine. */
-  source: { provider: 'optcgapi'; fetchedAt: string };
+  source: { provider: 'local-catalog'; fetchedAt: string };
 }
 
 /**

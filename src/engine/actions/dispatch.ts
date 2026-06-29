@@ -43,6 +43,7 @@ import type { GameState } from '../state/game';
 import type { GameAction, GameActionType, ValidationResult } from './action';
 import type { ActionExecuteResult } from './actionExecuteResult';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
+import type { EffectTemplateRegistry } from '../effects';
 import { advanceAutomaticPhases } from '../rules/phases';
 import {
   validatePlayCharacter,
@@ -147,7 +148,12 @@ export function validateAction(state: GameState, action: GameAction, defs: CardD
   }
 }
 
-export function executeAction(state: GameState, action: GameAction, defs: CardDefinitionLookup): ActionExecuteResult {
+export function executeAction(
+  state: GameState,
+  action: GameAction,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+): ActionExecuteResult {
   const validation = validateAction(state, action, defs);
   if (!validation.legal) {
     throw new Error(`executeAction: action '${action.type}' (actionId '${action.actionId}') failed validation: ${validation.reasons.join('; ')}`);
@@ -156,7 +162,7 @@ export function executeAction(state: GameState, action: GameAction, defs: CardDe
   let result: ActionExecuteResult;
   switch (action.type) {
     case 'PLAY_CHARACTER':
-      result = executePlayCharacter(state, action, defs);
+      result = executePlayCharacter(state, action, defs, registry);
       break;
     case 'PLAY_STAGE':
       result = executePlayStage(state, action, defs);
@@ -186,7 +192,7 @@ export function executeAction(state: GameState, action: GameAction, defs: CardDe
       result = executePassStep(state, action, defs);
       break;
     case 'RESOLVE_PENDING_CHOICE':
-      result = executeResolvePendingChoice(state, action);
+      result = executeResolvePendingChoice(state, action, registry);
       break;
     case 'END_MAIN_PHASE':
       result = executeEndMainPhase(state, action);

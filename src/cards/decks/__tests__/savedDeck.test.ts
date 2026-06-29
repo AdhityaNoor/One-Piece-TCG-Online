@@ -6,7 +6,7 @@ function v1Snapshot(cardNumber: string): Omit<SavedDeckCardSnapshot, 'variant' |
   return {
     cardNumber,
     printingImageId: cardNumber,
-    imageUrl: `https://optcgapi.com/media/static/Card_Images/${cardNumber}.jpg`,
+    imageUrl: `/card-images/${cardNumber}.webp`,
     definition: {
       cardDefinitionId: cardNumber,
       name: cardNumber,
@@ -37,7 +37,7 @@ function v1Deck() {
     donDeckSize: 10 as const,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
-    source: { provider: 'optcgapi' as const, fetchedAt: '2026-01-01T00:00:00.000Z' },
+    source: { provider: 'local-catalog' as const, fetchedAt: '2026-01-01T00:00:00.000Z' },
   };
 }
 

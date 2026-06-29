@@ -36,24 +36,45 @@ export type EffectTarget =
   | { kind: 'self' } // "this card" / "this Character"
   | { kind: 'allYourCharacters' }
   | { kind: 'allCharacters' }
+  | { kind: 'yourCharacters' } // "your Characters" (not necessarily ALL)
+  | { kind: 'opponentCharacters' } // "your opponent's Characters"
   | { kind: 'yourLeader' }
+  | { kind: 'opponentLeader' }
   | { kind: 'upTo'; count: number; raw: string } // "Up to N of your ..." — scope kept raw
   | { kind: 'unspecified'; raw: string };
 
 /**
- * A single drafted "atom" of effect behavior. Only emitted for tightly
- * recognized, unambiguous patterns (currently: draw, power modify, keyword
- * grant). Anything else is `{ op: 'unrecognized', rawText }`.
+ * A single drafted "atom" of effect behavior.
  *
- * IMPORTANT: an atom is a DESCRIPTION ("this clause appears to draw 1 card"),
- * not a function. The engine does not run these. They exist to bootstrap the
- * hand-authored template for this card, and any atom carrying `needsReview`
- * must be confirmed by a human before a template trusts it.
+ * Two confidence tiers, both honest about the project's no-guess rule:
+ *  - COUNT-CLEARING ops (`draw`, `modifyPower`, `grantKeyword`): emitted only
+ *    when the action AND its target are confidently pinned. These let a card
+ *    drop out of `needsReview` because nothing about them is guessed.
+ *  - HINT ops (`ko`, `rest`, `trash`, `donFromDeck`, `giveDon`, `returnToHand`,
+ *    `modifyCost`, `lookTopDeck`, `playCard`, `lifeChange`): the verb + amount
+ *    are recognized to accelerate hand-authoring, but they always carry
+ *    `needsReview: true` because surrounding restrictions (cost/power
+ *    thresholds, sources, ordering) aren't modeled — so the card STAYS flagged.
+ *
+ * `optional: true` marks an action that sat under "You may …" (2-8 optional).
+ * `conditional: true` marks one gated by an unmodeled "If …" precondition —
+ * which always forces `needsReview` (the condition would otherwise be silently
+ * dropped). An atom is always a DESCRIPTION, never an executed function.
  */
 export type EffectAction =
-  | { op: 'draw'; amount: number; needsReview?: boolean }
-  | { op: 'modifyPower'; amount: number; target: EffectTarget; duration: EffectDuration; needsReview?: boolean }
-  | { op: 'grantKeyword'; keyword: string; target: EffectTarget; duration: EffectDuration; needsReview?: boolean }
+  | { op: 'draw'; amount: number; optional?: boolean; conditional?: boolean; needsReview?: boolean }
+  | { op: 'modifyPower'; amount: number; target: EffectTarget; duration: EffectDuration; optional?: boolean; conditional?: boolean; needsReview?: boolean }
+  | { op: 'modifyCost'; amount: number; target: EffectTarget; duration: EffectDuration; optional?: boolean; conditional?: boolean; needsReview?: boolean }
+  | { op: 'grantKeyword'; keyword: string; target: EffectTarget; duration: EffectDuration; optional?: boolean; conditional?: boolean; needsReview?: boolean }
+  | { op: 'ko'; target: EffectTarget; amount?: number; optional?: boolean; conditional?: boolean; needsReview: true }
+  | { op: 'rest'; target: EffectTarget; amount?: number; optional?: boolean; conditional?: boolean; needsReview: true }
+  | { op: 'returnToHand'; target: EffectTarget; amount?: number; optional?: boolean; conditional?: boolean; needsReview: true }
+  | { op: 'trash'; from: 'hand' | 'self' | 'deck' | 'unspecified'; amount?: number; optional?: boolean; conditional?: boolean; needsReview: true }
+  | { op: 'donFromDeck'; amount: number; rested: boolean; optional?: boolean; conditional?: boolean; needsReview: true }
+  | { op: 'giveDon'; amount: number; target: EffectTarget; optional?: boolean; conditional?: boolean; needsReview: true }
+  | { op: 'lookTopDeck'; amount: number; optional?: boolean; conditional?: boolean; needsReview: true }
+  | { op: 'playCard'; amount?: number; optional?: boolean; conditional?: boolean; needsReview: true }
+  | { op: 'lifeChange'; direction: 'add' | 'trash'; amount?: number; optional?: boolean; conditional?: boolean; needsReview: true }
   | { op: 'unrecognized'; rawText: string };
 
 /** Best-effort structured cost. `raw` is always preserved; structured fields are added only when unambiguous. */

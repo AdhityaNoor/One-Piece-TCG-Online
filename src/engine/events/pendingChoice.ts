@@ -20,6 +20,13 @@ export interface ChoiceConstraints {
   zoneId?: string;
   /** Free-text description of the eligibility filter — concrete predicate logic lives in the rules engine, not here (data only). */
   filterDescription?: string;
+  /**
+   * Explicit set of eligible CardInstance ids the selection must be drawn from
+   * (computed when the choice was raised). Lets the generic resolver validate a
+   * card-effect target choice without re-deriving the filter. Omitted for
+   * choices whose eligibility is purely a zone/free-text description.
+   */
+  candidateInstanceIds?: string[];
 }
 
 /**
@@ -35,4 +42,11 @@ export interface PendingChoice {
   /** The card or rule that generated this choice, for log/UI attribution. */
   sourceInstanceId: string | null;
   sourceEffectId: string | null;
+  /**
+   * Serializable resume point for an interpreter-suspended EffectProgram (set
+   * when sourceEffectId === 'ir'). Lets RESOLVE_PENDING_CHOICE continue the
+   * program from where the chooseTargets op suspended it, with bindings intact.
+   * Omitted for rule-level choices (e.g. character-area overflow).
+   */
+  resumeState?: { abilityIndex: number; opIndex: number; bindings: Record<string, string[]> };
 }

@@ -86,13 +86,32 @@ export type ContinuousEffectDuration =
   | 'duringThisBattle'
   | 'permanent';
 
+/** Gating condition re-evaluated every time the modifier is read (8-3-2, 10-2-x). */
+export interface ContinuousPowerCondition {
+  /** [DON!! xN]: the card the modifier applies to has >= N DON!! cards attached (6-5-5, 10-2-x). */
+  donAttachedAtLeast?: number;
+  /** [Your Turn] / [Opponent's Turn] gating, relative to the modifier's owner. */
+  turn?: 'your' | 'opponent';
+}
+
+/** A structured power delta applied to one instance, evaluated by computeCurrentPower. */
+export interface ContinuousPowerModifier {
+  appliesToInstanceId: string;
+  /** Signed power delta (can be negative, e.g. "−2000 power"; 1-3-6-1 allows negative power). */
+  amount: number;
+  /** Omitted when the modifier is unconditional. */
+  condition?: ContinuousPowerCondition;
+}
+
 export interface ContinuousEffectRecord {
   id: string;
   sourceInstanceId: string;
   ownerId: string;
   duration: ContinuousEffectDuration;
-  /** Free-text description for now; structured effect payload is future work (see blueprint doc, Known Limitations). */
+  /** Free-text description, for log/debug. */
   description: string;
+  /** Structured power delta, when this record modifies power. Omitted for non-power effects. */
+  powerModifier?: ContinuousPowerModifier;
 }
 
 export interface GameState {
