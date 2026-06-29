@@ -85,9 +85,11 @@ function compileAbility(pa: ParsedAbility): Ability | null {
   }
 
   // [On Play] / [Activate: Main] give up to 1 rested DON!! to your Leader or 1 of your Characters.
+  // Match on the ability's full text, not the atom's target: phrasings like
+  // "give THIS Leader or 1 of your Characters up to 1 DON" make the parser tag
+  // the target as `self`, but the intended target set is still leader+characters.
   if ((pa.timing === 'onPlay' || pa.timing === 'activateMain') && a.op === 'giveDon' && a.amount === 1) {
-    const raw = a.target.kind === 'upTo' ? a.target.raw : '';
-    if (/leader or/i.test(raw)) {
+    if (/leader or/i.test(pa.rawText)) {
       return {
         trigger: pa.timing,
         ...(pa.oncePerTurn ? { oncePerTurn: true } : {}),
