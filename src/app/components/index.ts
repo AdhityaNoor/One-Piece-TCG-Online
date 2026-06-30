@@ -13,3 +13,4 @@ export * from './DeckListSummary';
 export * from './ScreenShell';
 export * from './ScaleToFit';
 export * from './GameCanvasScreen';
+export * from './BacksoundControl';

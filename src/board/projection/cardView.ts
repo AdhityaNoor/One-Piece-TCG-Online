@@ -32,6 +32,8 @@ export interface CardView {
   /** DON!! only — see card.ts CardInstance.donRested doc comment. */
   donRested: boolean;
   donAttachedCount: number;
+  /** Effect ids used by this instance this turn; UI-only for reminders, engine remains authoritative. */
+  oncePerTurnUsed: string[];
   summoningSick: boolean;
   hasBlocker: boolean;
   hasRush: boolean;
@@ -68,6 +70,7 @@ export function buildCardView(
       orientation: instance?.orientation ?? null,
       donRested: instance?.donRested ?? false,
       donAttachedCount: instance?.donAttached.length ?? 0,
+      oncePerTurnUsed: instance?.oncePerTurnUsed ?? [],
       summoningSick: instance?.summoningSick ?? false,
       hasBlocker: false,
       hasRush: false,
@@ -97,6 +100,7 @@ export function buildCardView(
     orientation: instance.orientation,
     donRested: instance.donRested ?? false,
     donAttachedCount: instance.donAttached.length,
+    oncePerTurnUsed: instance.oncePerTurnUsed,
     summoningSick: instance.summoningSick,
     hasBlocker: def.hasBlocker,
     hasRush: def.hasRush,

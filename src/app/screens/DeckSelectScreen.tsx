@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
-import { Button, DeckListSummary, ScreenShell } from '../components';
+import { CanvasMenuButton, DeckListSummary, GameCanvasScreen } from '../components';
 import { useNavigationStore } from '../store/navigationStore';
 import { useIsMatchSetupReady, useMatchSetupStore } from '../store/matchSetupStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -14,11 +14,11 @@ interface SeatPickerProps {
 
 function SeatPicker({ label, rows, selectedDeckId, onSelect }: SeatPickerProps) {
   return (
-    <section className="rounded-[1.8rem] border border-white/10 bg-white/8 p-4">
-      <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-100/70">{label}</h2>
-      <div className="mt-3 flex flex-col gap-2">
+    <section className="flex min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] p-4 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
+      <h2 className="text-xs font-black uppercase tracking-[0.2em] text-gold">{label}</h2>
+      <div className="mt-3 flex min-h-0 flex-col gap-2 overflow-y-auto pr-1">
         {rows.length === 0 ? (
-          <p className="rounded-[1.4rem] border border-white/10 bg-white/8 p-3 text-sm text-slate-200/60">No saved decks yet.</p>
+          <p className="border border-white/10 bg-black/24 p-3 text-sm text-slate-200/60">No saved decks yet.</p>
         ) : (
           rows.map(({ entry, deck }) =>
             deck.ok ? (
@@ -59,35 +59,30 @@ export function DeckSelectScreen() {
   const rows = useMemo(() => entries.map((entry) => ({ entry, deck: load(entry.deckId) })), [entries, load]);
 
   return (
-    <ScreenShell title="Choose Decks" onBack={goBack}>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <section className="rounded-[1.8rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.12),_rgba(255,255,255,0.06))] p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-100/70">Match Setup</p>
-          <h2 className="mt-1 text-2xl font-bold text-white">Assign a deck to each seat</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-200/70">Local hotseat. The same deck can be used on both sides for mirror matches and testing.</p>
+    <GameCanvasScreen kicker="Play" status="Match setup" title="Choose Decks" onBack={goBack}>
+      <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[20rem_minmax(0,1fr)]">
+        <section className="flex min-h-0 flex-col justify-center border-2 border-gold/35 bg-black/26 p-4 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)] backdrop-blur-sm">
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Local Hotseat</p>
+          <p className="mt-2 text-sm leading-6 text-slate-200/72">Assign one saved deck to each seat. Mirror matches are allowed for testing.</p>
 
-          <div className="mt-4 flex flex-col gap-3">
-            <Button variant="secondary" fullWidth disabled={!deckIdA && !deckIdB} onClick={swapSides}>
-              Swap Sides
-            </Button>
-            <Button
-              variant="primary"
-              fullWidth
+          <div className="mt-5 flex flex-col items-center gap-3">
+            <CanvasMenuButton label="Swap Sides" size="sm" disabled={!deckIdA && !deckIdB} onClick={swapSides} />
+            <CanvasMenuButton
+              label="Start Match"
+              prominence="primary"
               disabled={!isReady}
               onClick={() => {
                 if (deckIdA && deckIdB) navigateTo({ screen: 'match', deckIdA, deckIdB });
               }}
-            >
-              Start Match
-            </Button>
+            />
           </div>
         </section>
 
-        <div className="grid gap-4">
+        <div className="grid min-h-0 gap-4 lg:grid-cols-2 xl:grid-cols-1">
           <SeatPicker label="Player 1" rows={rows} selectedDeckId={deckIdA} onSelect={setDeckA} />
           <SeatPicker label="Player 2" rows={rows} selectedDeckId={deckIdB} onSelect={setDeckB} />
         </div>
       </div>
-    </ScreenShell>
+    </GameCanvasScreen>
   );
 }

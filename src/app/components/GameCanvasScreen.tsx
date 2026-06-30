@@ -84,7 +84,7 @@ export function GameCanvasScreen({ kicker, status, title, onBack, topRight, foot
       <div className="absolute inset-x-[-10%] bottom-[-18%] h-[42%] rotate-[-2deg] border-t-2 border-gold/35 bg-[linear-gradient(180deg,_rgba(11,28,62,0.78),_rgba(3,7,19,0.98))] shadow-[0_-20px_60px_rgba(0,0,0,0.45)]" />
 
       <section className="relative z-10 grid h-full grid-rows-[auto_minmax(0,1fr)_auto] px-4 py-5 sm:px-8 sm:py-7">
-        <div className="flex items-start justify-between gap-3">
+        <div className="relative z-20 flex items-start justify-between gap-3">
           <div className="flex items-start gap-2">
             {onBack && <CanvasMenuButton label="Back" onClick={onBack} size="sm" className="max-w-[7rem]" />}
             {(kicker || status) && (
@@ -99,17 +99,17 @@ export function GameCanvasScreen({ kicker, status, title, onBack, topRight, foot
 
         <div className="min-h-0 py-4 sm:py-5">
           <div className="mx-auto flex h-full w-full max-w-[72rem] flex-col gap-4">
-            <div className="relative text-center">
+            <div className="relative z-20 text-center">
               <div className="absolute inset-x-8 top-1/2 h-10 -translate-y-1/2 bg-brand/45 blur-3xl" />
               <h1 className="relative font-display text-4xl font-black uppercase leading-[0.9] tracking-[0.04em] text-white drop-shadow-[0_6px_0_rgba(0,0,0,0.55)] sm:text-6xl md:text-7xl">
                 {title}
               </h1>
             </div>
-            <div className="min-h-0 flex-1">{children}</div>
+            <div className="relative z-10 min-h-0 flex-1">{children}</div>
           </div>
         </div>
 
-        <div className="flex min-h-4 items-end justify-center">
+        <div className="relative z-20 flex min-h-4 items-end justify-center">
           {footer ?? <div className="h-2 w-40 border-x-2 border-gold/45 bg-[linear-gradient(90deg,_transparent,_rgba(217,164,65,0.85),_transparent)]" />}
         </div>
       </section>

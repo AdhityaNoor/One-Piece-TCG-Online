@@ -127,6 +127,9 @@ describe('validateAction — pending-choice gate (setup phase exception)', () =>
         goingFirstPlayerId: 'p1',
         goingSecondPlayerId: 'p2',
       },
+      // buildBaseRig() marks players hasMulliganed:true (its mid-game default);
+      // reset p1 so it is genuinely p1's mulligan decision that's outstanding.
+      players: { ...state.players, p1: { ...state.players.p1, hasMulliganed: false } },
       pendingChoices: [fakePendingChoice('p1', { id: 'p1__mulligan-decision' })],
     };
 

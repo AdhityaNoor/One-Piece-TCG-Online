@@ -13,9 +13,10 @@ export interface ModalProps {
   maxWidthClassName?: string;
   panelStyle?: CSSProperties;
   bodyClassName?: string;
+  showCloseButton?: boolean;
 }
 
-export function Modal({ open, onClose, title, children, maxWidthClassName = 'max-w-lg', panelStyle, bodyClassName = 'max-h-[80vh] overflow-y-auto' }: ModalProps) {
+export function Modal({ open, onClose, title, children, maxWidthClassName = 'max-w-lg', panelStyle, bodyClassName = 'max-h-[80vh] overflow-y-auto', showCloseButton = true }: ModalProps) {
   useEffect(() => {
     if (!open) return;
     function handleKeyDown(event: KeyboardEvent) {

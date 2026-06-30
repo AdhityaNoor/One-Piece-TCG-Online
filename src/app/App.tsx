@@ -7,6 +7,7 @@
  * under /src/app/screens for any future NavigationTarget added before its
  * real screen is built, but nothing currently routes to it.
  */
+import { BacksoundControl } from './components';
 import {
   CardLibraryScreen,
   DebugToolsScreen,
@@ -22,24 +23,33 @@ import { useCurrentScreen } from './store/navigationStore';
 export function App() {
   const current = useCurrentScreen();
 
-  switch (current.screen) {
-    case 'main-menu':
-      return <MainMenuScreen />;
-    case 'settings':
-      return <SettingsScreen />;
-    case 'debug-tools':
-      return <DebugToolsScreen />;
-    case 'card-library':
-      return <CardLibraryScreen />;
-    case 'deck-builder':
-      return <DeckBuilderScreen />;
-    case 'saved-decks':
-      return <SavedDecksScreen />;
-    case 'deck-select':
-      return <DeckSelectScreen />;
-    case 'match':
-      return <MatchScreen />;
-    default:
-      return <MainMenuScreen />;
-  }
+  const screen = (() => {
+    switch (current.screen) {
+      case 'main-menu':
+        return <MainMenuScreen />;
+      case 'settings':
+        return <SettingsScreen />;
+      case 'debug-tools':
+        return <DebugToolsScreen />;
+      case 'card-library':
+        return <CardLibraryScreen />;
+      case 'deck-builder':
+        return <DeckBuilderScreen />;
+      case 'saved-decks':
+        return <SavedDecksScreen />;
+      case 'deck-select':
+        return <DeckSelectScreen />;
+      case 'match':
+        return <MatchScreen />;
+      default:
+        return <MainMenuScreen />;
+    }
+  })();
+
+  return (
+    <>
+      {screen}
+      <BacksoundControl />
+    </>
+  );
 }

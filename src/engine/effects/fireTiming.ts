@@ -29,7 +29,7 @@ export function fireOnPlay(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTriggers(program, ['onEnterPlay', 'onPlay'], state, instanceId, defs, actionId);
+  return runTriggers(program, ['onEnterPlay', 'onPlay'], state, instanceId, defs, actionId, registry);
 }
 
 /**
@@ -47,7 +47,61 @@ export function fireActivate(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTriggers(program, ['activateMain'], state, instanceId, defs, actionId);
+  return runTriggers(program, ['activateMain'], state, instanceId, defs, actionId, registry);
+}
+
+/**
+ * Fires a card's [When Attacking] ability (8-1-3, timing whenAttacking). Call
+ * from DECLARE_ATTACK once the Battle is set up, with the attacker as source.
+ */
+export function fireWhenAttacking(
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const instance = state.cardsById[instanceId];
+  if (!instance) return noop(state);
+  const program = registry[instance.cardDefinitionId];
+  if (!program) return noop(state);
+  return runTriggers(program, ['whenAttacking'], state, instanceId, defs, actionId, registry);
+}
+
+/**
+ * Fires a card's [On K.O.] ability (10-2-17, timing onKO). Call AFTER the card
+ * has been moved to the trash, with the K.O.'d card as source.
+ */
+export function fireOnKO(
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const instance = state.cardsById[instanceId];
+  if (!instance) return noop(state);
+  const program = registry[instance.cardDefinitionId];
+  if (!program) return noop(state);
+  return runTriggers(program, ['onKO'], state, instanceId, defs, actionId, registry);
+}
+
+/**
+ * Fires a card's [Counter] ability (7-1-3, timing counter). Call from the
+ * ACTIVATE_COUNTER_EVENT handler after the event is paid for and trashed.
+ */
+export function fireCounter(
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const instance = state.cardsById[instanceId];
+  if (!instance) return noop(state);
+  const program = registry[instance.cardDefinitionId];
+  if (!program) return noop(state);
+  return runTriggers(program, ['counter'], state, instanceId, defs, actionId, registry);
 }
 
 /**
@@ -68,5 +122,5 @@ export function resumeChoice(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return resumeProgram(program, state, choice, selectedInstanceIds, defs, actionId);
+  return resumeProgram(program, state, choice, selectedInstanceIds, defs, actionId, registry);
 }

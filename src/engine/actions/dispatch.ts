@@ -133,7 +133,7 @@ export function validateAction(
     case 'ACTIVATE_COUNTER_CHARACTER':
       return validateActivateCounterCharacter(state, action, defs);
     case 'ACTIVATE_COUNTER_EVENT':
-      return validateActivateCounterEvent(state, action);
+      return validateActivateCounterEvent(state, action, defs, registry);
     case 'PASS_STEP':
       return validatePassStep(state, action, defs);
     case 'RESOLVE_PENDING_CHOICE':
@@ -182,7 +182,7 @@ export function executeAction(
       result = executeGiveDon(state, action);
       break;
     case 'DECLARE_ATTACK':
-      result = executeDeclareAttack(state, action, defs);
+      result = executeDeclareAttack(state, action, defs, registry);
       break;
     case 'ACTIVATE_BLOCKER':
       result = executeActivateBlocker(state, action, defs);
@@ -191,10 +191,10 @@ export function executeAction(
       result = executeActivateCounterCharacter(state, action, defs);
       break;
     case 'ACTIVATE_COUNTER_EVENT':
-      result = executeActivateCounterEvent();
+      result = executeActivateCounterEvent(state, action, defs, registry);
       break;
     case 'PASS_STEP':
-      result = executePassStep(state, action, defs);
+      result = executePassStep(state, action, defs, registry);
       break;
     case 'RESOLVE_PENDING_CHOICE':
       result = executeResolvePendingChoice(state, action, defs, registry);

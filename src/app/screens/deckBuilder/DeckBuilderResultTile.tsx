@@ -2,6 +2,7 @@ import type { CardLibraryEntry } from '../../../cards/library';
 import { CardDetailModal, CardImage } from '../../components';
 import { useDeckBuilderStore } from '../../store/deckBuilderStore';
 import { useState } from 'react';
+import { PrintingVariantPicker } from './PrintingVariantPicker';
 
 export interface DeckBuilderResultTileProps {
   entry: CardLibraryEntry;
@@ -9,25 +10,31 @@ export interface DeckBuilderResultTileProps {
 
 export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [selectedPrintingImageId, setSelectedPrintingImageId] = useState(entry.printings[0]?.printingImageId ?? entry.cardNumber);
   const leaderSelection = useDeckBuilderStore((state) => state.leaderSelection);
   const mainDeckSelections = useDeckBuilderStore((state) => state.mainDeckSelections);
   const setLeader = useDeckBuilderStore((state) => state.setLeader);
   const addMainDeckCard = useDeckBuilderStore((state) => state.addMainDeckCard);
 
-  const canonicalPrintingId = entry.rawPrintings[0]?.card_image_id ?? entry.cardNumber;
   const isLeaderCard = entry.definition.category === 'leader';
   const isCurrentLeader = isLeaderCard && leaderSelection?.libraryEntry.cardNumber === entry.cardNumber;
-  const mainDeckMatch = mainDeckSelections.find((s) => s.chosenPrintingImageId === canonicalPrintingId);
+  const currentLeaderPrintingId = isCurrentLeader ? leaderSelection.chosenPrintingImageId : selectedPrintingImageId;
+  const activePrintingImageId = isCurrentLeader ? currentLeaderPrintingId : selectedPrintingImageId;
+  const selectedPrinting = entry.printings.find((printing) => printing.printingImageId === activePrintingImageId) ?? entry.printings[0] ?? null;
+  const mainDeckMatch = mainDeckSelections.find((s) => s.chosenPrintingImageId === selectedPrintingImageId);
   const quantity = mainDeckMatch?.quantity ?? 0;
+  const totalQuantityForCardNumber = mainDeckSelections
+    .filter((s) => s.libraryEntry.cardNumber === entry.cardNumber)
+    .reduce((sum, selection) => sum + selection.quantity, 0);
   const hasLeader = leaderSelection !== null;
-  const imageUrl = entry.printings[0]?.imageUrl ?? null;
+  const imageUrl = selectedPrinting?.imageUrl ?? null;
 
   function handleSelect() {
     if (isLeaderCard) {
-      if (!isCurrentLeader) setLeader(entry, canonicalPrintingId);
+      setLeader(entry, selectedPrintingImageId);
       return;
     }
-    if (hasLeader && quantity < 4) addMainDeckCard(entry, canonicalPrintingId, 1);
+    if (hasLeader && totalQuantityForCardNumber < 4) addMainDeckCard(entry, selectedPrintingImageId, 1);
   }
 
   return (
@@ -38,13 +45,13 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
             event.preventDefault();
             setZoomOpen(true);
           }}
-          className={['group relative block w-full text-left', !isLeaderCard && (!hasLeader || quantity >= 4) ? 'opacity-55' : ''].join(' ')}
+          className={['group relative block w-full text-left', !isLeaderCard && (!hasLeader || totalQuantityForCardNumber >= 4) ? 'opacity-55' : ''].join(' ')}
           title={isLeaderCard ? (isCurrentLeader ? 'Current leader' : 'Set leader') : hasLeader ? 'Add to deck' : 'Pick a leader first'}
         >
           <CardImage src={imageUrl} alt={entry.definition.name} className="rounded-none" />
-          {quantity > 0 && (
+          {totalQuantityForCardNumber > 0 && (
             <span className="absolute bottom-1 right-1 border border-gold/40 bg-black/80 px-1.5 py-0.5 font-heading text-[10px] font-bold text-white">
-              {quantity}x
+              {totalQuantityForCardNumber}x
             </span>
           )}
           {isLeaderCard && (
@@ -69,17 +76,28 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
                 }
                 handleSelect();
               }}
-              disabled={isLeaderCard ? isCurrentLeader : !hasLeader || quantity >= 4}
+              disabled={isLeaderCard ? isCurrentLeader && leaderSelection?.chosenPrintingImageId === selectedPrintingImageId : !hasLeader || totalQuantityForCardNumber >= 4}
               className="flex h-7 min-w-7 items-center justify-center border border-gold/70 bg-gold px-2 font-heading text-sm font-black text-black shadow-[0_5px_0_rgba(68,39,0,0.75)] transition hover:bg-yellow-200 active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-45"
               title={isLeaderCard ? (isCurrentLeader ? 'Current leader' : 'Set leader') : 'Add one copy'}
             >
               {isLeaderCard ? 'Set' : '+'}
             </button>
           </div>
+          <div className="opacity-0 transition group-hover:opacity-100">
+            <PrintingVariantPicker
+              cardNumber={entry.cardNumber}
+              printings={entry.printings}
+              selectedPrintingImageId={activePrintingImageId}
+              onSelect={(printingImageId) => {
+                setSelectedPrintingImageId(printingImageId);
+                if (isCurrentLeader) setLeader(entry, printingImageId);
+              }}
+            />
+          </div>
           <span className="pointer-events-none absolute inset-0 ring-0 ring-gold transition group-hover:ring-2" />
         </div>
       </div>
-      <CardDetailModal open={zoomOpen} onClose={() => setZoomOpen(false)} definition={entry.definition} imageUrl={imageUrl} setName={entry.printings[0]?.setName} />
+      <CardDetailModal open={zoomOpen} onClose={() => setZoomOpen(false)} definition={entry.definition} imageUrl={imageUrl} setName={selectedPrinting?.setName} />
     </>
   );
 }

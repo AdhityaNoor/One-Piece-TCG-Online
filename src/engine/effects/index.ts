@@ -14,8 +14,9 @@ export type {
   IrCondition,
   IrDuration,
   IrTrigger,
+  SearchFilter,
   Selector,
 } from './effectIr';
 export { EffectContextImpl } from './effectContext';
 export { runTriggers, resumeProgram } from './interpreter';
-export { fireOnPlay, fireActivate, resumeChoice } from './fireTiming';
+export { fireOnPlay, fireActivate, fireWhenAttacking, fireOnKO, fireCounter, resumeChoice } from './fireTiming';

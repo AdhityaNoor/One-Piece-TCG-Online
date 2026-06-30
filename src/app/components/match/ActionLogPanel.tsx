@@ -48,14 +48,75 @@ export function ActionLogPanel({ open, onClose, log }: ActionLogPanelProps) {
 
 export function ActionLogDock({ log }: ActionLogDockProps) {
   return (
-    <aside className="flex h-full min-h-0 flex-col rounded-xl border border-white/10 bg-black/25">
-      <div className="border-b border-white/10 px-4 py-3">
-        <h2 className="font-display text-sm font-extrabold uppercase tracking-[0.12em] text-white">Log</h2>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <ActionLogContent log={log} />
-      </div>
+    <aside className="flex min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
+      <ActionLogDockContent log={log} />
     </aside>
+  );
+}
+
+function CompactLogBadge({ children, tone = 'neutral' }: { children: string; tone?: 'neutral' | 'brand' }) {
+  return (
+    <span
+      className={[
+        'max-w-full truncate border px-1.5 py-0.5 text-[9px] font-black uppercase leading-none tracking-[0.12em]',
+        tone === 'brand' ? 'border-brand/30 bg-brand/20 text-rose-100' : 'border-white/10 bg-white/10 text-white/58',
+      ].join(' ')}
+      title={children}
+    >
+      {children}
+    </span>
+  );
+}
+
+function ActionLogDockContent({ log }: { log: GameLogEntry[] }) {
+  const [publicOnly, setPublicOnly] = useState(false);
+  const visible = publicOnly ? log.filter((entry) => !isSecret(entry)) : log;
+  const ordered = [...visible].reverse();
+
+  return (
+    <>
+      <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Match</p>
+            <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Logs</h2>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">{log.length} entries</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPublicOnly((value) => !value)}
+            className="max-w-[6.25rem] flex-shrink-0 border border-white/15 bg-black/28 px-2 py-1.5 text-[9px] font-black uppercase leading-tight tracking-[0.12em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold"
+          >
+            {publicOnly ? 'Show All' : 'Public Only'}
+          </button>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+        {ordered.length === 0 ? (
+          <p className="border border-dashed border-white/10 px-3 py-6 text-center text-xs text-white/30">No log entries yet.</p>
+        ) : (
+          <ol className="flex flex-col gap-2">
+            {ordered.map((entry) => (
+              <li key={entry.id} className="min-w-0 border border-white/10 bg-white/[0.045] p-2 shadow-[0_8px_20px_rgba(0,0,0,0.18)]">
+                <div className="mb-1.5 grid min-w-0 grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[9px] font-black uppercase tracking-[0.12em] text-white/38">
+                  <span>#{entry.sequence}</span>
+                  <span className="min-w-0 truncate">
+                    Turn {entry.turnNumber || '-'} · {entry.phase}
+                    {entry.actorPlayerId ? ` · ${entry.actorPlayerId}` : ''}
+                  </span>
+                  <span className="col-span-2 flex min-w-0 flex-wrap gap-1">
+                    <CompactLogBadge>{entry.type}</CompactLogBadge>
+                    {isSecret(entry) && <CompactLogBadge tone="brand">Secret</CompactLogBadge>}
+                  </span>
+                </div>
+                <p className="min-w-0 break-words text-[11px] font-semibold leading-snug text-white/82">{entry.message}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </>
   );
 }
 

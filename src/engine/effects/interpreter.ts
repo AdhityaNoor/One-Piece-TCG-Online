@@ -13,7 +13,65 @@ import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { EffectContextImpl } from './effectContext';
-import type { Ability, EffectOp, EffectProgram, IrCondition, IrTrigger, Selector } from './effectIr';
+import type { EffectTemplateRegistry } from './effectTemplate';
+import type { Ability, EffectOp, EffectProgram, IrCondition, IrTrigger, SearchFilter, Selector } from './effectIr';
+
+/**
+ * After a resolution finishes WITHOUT suspending, fire [On K.O.] (10-2-17) for
+ * every Character it K.O.'d, in order — a card K.O.'d by an effect triggers its
+ * own onKO, which may itself K.O. more (chained). Each onKO runs as its own
+ * source. If an onKO suspends on a choice, we stop and return it (its resume,
+ * via resumeChoice→resumeProgram, runs that program's own cascade); any not-yet-
+ * processed K.O.s after a suspending onKO are not cascaded (rare edge).
+ */
+function finishWithCascade(
+  ctx: EffectContextImpl,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+  registry: EffectTemplateRegistry,
+): ActionExecuteResult {
+  const first = ctx.finish();
+  // Suspended (a choice is outstanding): the K.O.s, if any, cascade after resume.
+  if (first.pendingChoices.length > 0) return first;
+
+  let working = first.state;
+  let log = [...first.log];
+  const queue = ctx.takeKoed();
+  let guard = 0;
+  while (queue.length > 0 && guard++ < 200) {
+    const id = queue.shift()!;
+    const inst = working.cardsById[id];
+    const program = inst ? registry[inst.cardDefinitionId] : undefined;
+    if (!program) continue;
+    const idx = program.abilities.findIndex((a) => a.trigger === 'onKO');
+    if (idx < 0) continue;
+    const sub = new EffectContextImpl(working, id, defs, actionId);
+    const suspended = runOps(program.abilities[idx], idx, 0, {}, sub);
+    const subRes = sub.finish();
+    working = subRes.state;
+    log = [...log, ...subRes.log];
+    queue.push(...sub.takeKoed());
+    if (suspended) return { state: working, log, pendingChoices: subRes.pendingChoices };
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
+/** From the looked-at deck cards, the ids that satisfy a searcher filter (all fields ANDed). */
+function searchEligible(lookedIds: string[], filter: SearchFilter | undefined, ctx: EffectContextImpl): string[] {
+  if (!filter) return lookedIds;
+  const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
+  return lookedIds.filter((id) => {
+    const def = ctx.definitionOf(id);
+    if (!def) return false;
+    if (filter.typeIncludes && !def.types.some((t) => t.toLowerCase() === filter.typeIncludes!.toLowerCase())) return false;
+    if (filter.excludeSelfName && selfName !== undefined && def.name === selfName) return false;
+    if (filter.category && def.category !== filter.category) return false;
+    if (filter.maxCost !== undefined && (def.baseCost ?? Infinity) > filter.maxCost) return false;
+    if (filter.minCost !== undefined && (def.baseCost ?? -Infinity) < filter.minCost) return false;
+    if (filter.maxPower !== undefined && (def.basePower ?? Infinity) > filter.maxPower) return false;
+    return true;
+  });
+}
 
 function noop(state: GameState): ActionExecuteResult {
   return { state, log: [], pendingChoices: [] };
@@ -54,7 +112,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
   }
 }
 
-function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' }>, ctx: EffectContextImpl, bindings: Record<string, string[]>): void {
+function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTopDeck' }>, ctx: EffectContextImpl, bindings: Record<string, string[]>): void {
   switch (op.op) {
     case 'draw':
       ctx.draw(ctx.controllerId, op.amount);
@@ -72,6 +130,9 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' }>, ctx: EffectCont
       return;
     case 'rest':
       for (const id of resolveSelector(op.target, ctx, bindings)) ctx.rest(id);
+      return;
+    case 'trashTopDeck':
+      ctx.trashTopOfDeck(ctx.controllerId, op.count);
       return;
   }
 }
@@ -101,6 +162,25 @@ function runOps(
       ctx.emitChoice(choice);
       return true;
     }
+    if (op.op === 'searchTopDeck') {
+      const looked = ctx.topOfDeck(ctx.controllerId, op.look);
+      if (looked.length === 0) continue; // empty deck — nothing to look at, skip
+      const eligible = searchEligible(looked, op.filter, ctx);
+      const choice: PendingChoice = {
+        id: `${ctx.sourceInstanceId}__ir-${abilityIndex}-${i}`,
+        playerId: ctx.controllerId,
+        kind: 'SELECT_CARDS',
+        prompt: op.prompt,
+        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible },
+        sourceInstanceId: ctx.sourceInstanceId,
+        sourceEffectId: 'ir',
+        // Stash the full looked-at set on the resume point so resolveSearch can
+        // send the non-chosen remainder to the bottom of the deck.
+        resumeState: { abilityIndex, opIndex: i, bindings: { ...bindings, __looked: looked } },
+      };
+      ctx.emitChoice(choice);
+      return true;
+    }
     applyOp(op, ctx, bindings);
   }
   return false;
@@ -114,6 +194,7 @@ export function runTriggers(
   sourceInstanceId: string,
   defs: CardDefinitionLookup,
   actionId: string | null,
+  registry: EffectTemplateRegistry = {},
 ): ActionExecuteResult {
   const matching = program.abilities
     .map((ability, index) => ({ ability, index }))
@@ -126,7 +207,7 @@ export function runTriggers(
     const suspended = runOps(ability, index, 0, {}, ctx);
     if (suspended) break; // wait for the choice before any further ability runs
   }
-  return ctx.finish();
+  return finishWithCascade(ctx, defs, actionId, registry);
 }
 
 /** Resume a program suspended on a chooseTargets op, binding the player's selection. */
@@ -137,16 +218,26 @@ export function resumeProgram(
   selection: string[],
   defs: CardDefinitionLookup,
   actionId: string | null,
+  registry: EffectTemplateRegistry = {},
 ): ActionExecuteResult {
   const rs = choice.resumeState;
   if (!rs || !choice.sourceInstanceId) return noop(state);
   const ability = program.abilities[rs.abilityIndex];
   const op = ability?.ops[rs.opIndex];
-  if (!ability || !op || op.op !== 'chooseTargets') return noop(state);
+  if (!ability || !op || (op.op !== 'chooseTargets' && op.op !== 'searchTopDeck')) return noop(state);
 
   const stateWithoutChoice: GameState = { ...state, pendingChoices: state.pendingChoices.filter((c) => c.id !== choice.id) };
   const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
+
+  if (op.op === 'searchTopDeck') {
+    // The chosen subset goes to hand; resolveSearch sends the looked remainder
+    // to the bottom. `__looked` was stashed at suspend time (see runOps).
+    ctx.searchResolve(ctx.controllerId, rs.bindings.__looked ?? [], selection);
+    runOps(ability, rs.abilityIndex, rs.opIndex + 1, rs.bindings, ctx);
+    return finishWithCascade(ctx, defs, actionId, registry);
+  }
+
   const bindings: Record<string, string[]> = { ...rs.bindings, [op.var]: selection };
   runOps(ability, rs.abilityIndex, rs.opIndex + 1, bindings, ctx);
-  return ctx.finish();
+  return finishWithCascade(ctx, defs, actionId, registry);
 }

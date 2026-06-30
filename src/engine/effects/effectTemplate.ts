@@ -12,6 +12,7 @@
  */
 import type { ContinuousEffectDuration, ContinuousPowerCondition, GameState } from '../state/game';
 import type { PendingChoice } from '../events/pendingChoice';
+import type { CardDefinition } from '../state/card';
 import type { EffectProgram } from './effectIr';
 
 export interface EffectContext {
@@ -32,6 +33,10 @@ export interface EffectContext {
   powerOf(instanceId: string): number;
   /** Current cost of an instance (2-7). */
   costOf(instanceId: string): number;
+  /** The CardDefinition behind an instance (2-x), for searcher filters. Undefined if unknown. */
+  definitionOf(instanceId: string): CardDefinition | undefined;
+  /** Instance ids of the top `n` cards of a player's deck, top-first (read-only). */
+  topOfDeck(playerId: string, n: number): string[];
 
   // --- instruction set (one per IR op) ---
   /** Draw `n` cards for `playerId` (6-3; empty-deck draw loses, 9-2-1). */
@@ -50,6 +55,14 @@ export interface EffectContext {
   ko(targetInstanceId: string): void;
   /** Rest a card (4-4-1). */
   rest(targetInstanceId: string): void;
+  /** Trash the top `n` cards of a player's own deck (self-mill); fewer if the deck is short. */
+  trashTopOfDeck(playerId: string, n: number): void;
+  /**
+   * Resolve a "search": `lookedIds` are the top-of-deck cards that were looked
+   * at; move `chosenIds` (a subset) to the player's hand and the remainder to
+   * the bottom of the deck, in looked order (the classic searcher tail).
+   */
+  searchResolve(playerId: string, lookedIds: string[], chosenIds: string[]): void;
   /** Emit a fully-built PendingChoice (the interpreter uses this to suspend; carries its resume point). */
   emitChoice(choice: PendingChoice): void;
 }

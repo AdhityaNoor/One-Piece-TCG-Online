@@ -31,7 +31,9 @@ export type BoardSelectionMode =
   | { kind: 'selectAttackTarget'; attackerInstanceId: string }
   | { kind: 'selectBlocker' }
   | { kind: 'selectCounterCard' }
-  | { kind: 'selectCounterBoostTarget'; handCardInstanceId: string };
+  | { kind: 'selectCounterBoostTarget'; handCardInstanceId: string }
+  | { kind: 'payingCounterEventCost'; handCardInstanceId: string; cost: number; selectedDonIds: string[] }
+  | { kind: 'selectActivateSource' };
 
 const PLAY_ACTION_BY_CATEGORY: Record<'character' | 'stage' | 'event', GameAction['type']> = {
   character: 'PLAY_CHARACTER',
@@ -41,10 +43,25 @@ const PLAY_ACTION_BY_CATEGORY: Record<'character' | 'stage' | 'event', GameActio
 
 export function useBoardSelection(actingPlayerId: string | null) {
   const dispatch = useMatchStore((s) => s.dispatch);
+  const registry = useMatchStore((s) => s.registry);
   const [mode, setMode] = useState<BoardSelectionMode>({ kind: 'idle' });
   const [lastError, setLastError] = useState<string[] | null>(null);
 
   const reset = (): void => setMode({ kind: 'idle' });
+
+  /** True if the card's compiled program exposes an [Activate: Main] ability (8-1-3-2) — i.e. it offers an in-play activate option. */
+  const hasActivateMain = (card: CardView): boolean =>
+    !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.trigger === 'activateMain');
+
+  const hasUnusedActivateMain = (card: CardView): boolean => {
+    const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.trigger === 'activateMain');
+    if (!ability) return false;
+    return !ability.oncePerTurn || !card.oncePerTurnUsed.includes('activateMain');
+  };
+
+  /** True if the card's compiled program exposes a [Counter] ability (7-1-3) — i.e. it can be played from hand during the Counter Step. */
+  const hasCounter = (card: CardView): boolean =>
+    !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.trigger === 'counter');
 
   function runDispatch(action: GameAction): void {
     const result = dispatch(action);
@@ -66,6 +83,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const beginDeclareAttack = (): void => { setMode({ kind: 'selectAttacker' }); setLastError(null); };
   const beginActivateBlocker = (): void => { setMode({ kind: 'selectBlocker' }); setLastError(null); };
   const beginActivateCounter = (): void => { setMode({ kind: 'selectCounterCard' }); setLastError(null); };
+  const beginActivateMain = (): void => { setMode({ kind: 'selectActivateSource' }); setLastError(null); };
   const cancel = (): void => { reset(); setLastError(null); };
 
   // --- Confirm step for the one flow with a true multi-select sub-step ---
@@ -78,6 +96,18 @@ export function useBoardSelection(actingPlayerId: string | null) {
       handCardInstanceId: mode.handCardInstanceId,
       donInstanceIds: mode.selectedDonIds,
     }) as GameAction);
+  }
+
+  /** Confirm a Counter Event after its DON!! cost is fully selected. */
+  function confirmCounterEvent(): void {
+    if (mode.kind !== 'payingCounterEventCost' || mode.selectedDonIds.length !== mode.cost) return;
+    withActingPlayer((playerId) => ({
+      type: 'ACTIVATE_COUNTER_EVENT',
+      actionId: createActionId(),
+      playerId,
+      handCardInstanceId: mode.handCardInstanceId,
+      donInstanceIds: mode.selectedDonIds,
+    }));
   }
 
   // --- Step-less actions ---
@@ -176,9 +206,33 @@ export function useBoardSelection(actingPlayerId: string | null) {
       }
 
       case 'selectCounterCard': {
-        if (!isOwnCard || zone !== 'hand' || card.category !== 'character') return;
-        if (!card.counter || card.counter <= 0) return;
-        setMode({ kind: 'selectCounterBoostTarget', handCardInstanceId: card.instanceId });
+        if (!isOwnCard || zone !== 'hand') return;
+        // A Character with a printed Counter value -> boost-target flow.
+        if (card.category === 'character' && card.counter && card.counter > 0) {
+          setMode({ kind: 'selectCounterBoostTarget', handCardInstanceId: card.instanceId });
+          return;
+        }
+        // A Counter Event (compiled [Counter] ability) -> pay its cost, then play.
+        if (card.category === 'event' && hasCounter(card)) {
+          const cost = card.cost ?? 0;
+          if (cost === 0) {
+            withActingPlayer((playerId) => ({ type: 'ACTIVATE_COUNTER_EVENT', actionId: createActionId(), playerId, handCardInstanceId: card.instanceId, donInstanceIds: [] }));
+            return;
+          }
+          setMode({ kind: 'payingCounterEventCost', handCardInstanceId: card.instanceId, cost, selectedDonIds: [] });
+          setLastError(null);
+        }
+        return;
+      }
+
+      case 'payingCounterEventCost': {
+        if (!isOwnCard || zone !== 'costArea' || card.donRested) return;
+        const already = mode.selectedDonIds.includes(card.instanceId);
+        if (already) {
+          setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => id !== card.instanceId) });
+        } else if (mode.selectedDonIds.length < mode.cost) {
+          setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, card.instanceId] });
+        }
         return;
       }
 
@@ -190,6 +244,23 @@ export function useBoardSelection(actingPlayerId: string | null) {
           playerId,
           handCardInstanceId: mode.handCardInstanceId,
           boostTargetInstanceId: card.instanceId,
+        }));
+        return;
+      }
+
+      case 'selectActivateSource': {
+        // 8-1-3-2: activate an in-play Leader/Character/Stage's [Activate: Main].
+        // The engine validates legality (once-per-turn etc.); any chooseTargets
+        // the ability needs surfaces as a PendingChoice the prompt resolves.
+        if (!isOwnCard || (zone !== 'leaderArea' && zone !== 'characterArea' && zone !== 'stageArea')) return;
+        if (!hasActivateMain(card)) return;
+        withActingPlayer((playerId) => ({
+          type: 'ACTIVATE_CARD_EFFECT',
+          actionId: createActionId(),
+          playerId,
+          sourceInstanceId: card.instanceId,
+          effectId: 'activateMain',
+          donInstanceIds: [],
         }));
         return;
       }
@@ -207,7 +278,12 @@ export function useBoardSelection(actingPlayerId: string | null) {
     beginDeclareAttack,
     beginActivateBlocker,
     beginActivateCounter,
+    beginActivateMain,
+    hasActivateMain,
+    hasUnusedActivateMain,
+    hasCounter,
     confirmPlayCard,
+    confirmCounterEvent,
     passStep,
     endMainPhase,
     concede,

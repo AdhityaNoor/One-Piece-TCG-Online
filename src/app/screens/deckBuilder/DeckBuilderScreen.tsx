@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button, CardDetailModal, CardImage, ScreenShell } from '../../components';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Button, CardDetailModal, CardImage } from '../../components';
 import { useCardLibraryStore } from '../../store/cardLibraryStore';
 import { useDeckBuilderLegality, useDeckBuilderStore } from '../../store/deckBuilderStore';
 import { useCurrentScreen, useNavigationStore } from '../../store/navigationStore';
@@ -7,6 +7,7 @@ import { useSavedDecksStore } from '../../store/savedDecksStore';
 import { CardSetBrowserControls, CardSetBrowserResults } from '../shared';
 import { ClipboardImportTab } from './ClipboardImportTab';
 import { DeckBuilderResultTile } from './DeckBuilderResultTile';
+import { PrintingVariantPicker } from './PrintingVariantPicker';
 import { SearchByIdTab } from './SearchByIdTab';
 
 type DeckBuilderTab = 'browse' | 'search' | 'clipboard';
@@ -14,6 +15,10 @@ type DeckBuilderTab = 'browse' | 'search' | 'clipboard';
 function sameColors(left: string[] | undefined, right: string[]) {
   if (!left || left.length !== right.length) return false;
   return right.every((color) => left.includes(color));
+}
+
+function getSelectedPrinting(selection: { chosenPrintingImageId: string; libraryEntry: { printings: { printingImageId: string; imageUrl: string | null; setName?: string }[] } }) {
+  return selection.libraryEntry.printings.find((printing) => printing.printingImageId === selection.chosenPrintingImageId) ?? selection.libraryEntry.printings[0] ?? null;
 }
 
 export function DeckBuilderScreen() {
@@ -32,7 +37,9 @@ export function DeckBuilderScreen() {
   const startEditingDeck = useDeckBuilderStore((state) => state.startEditingDeck);
   const save = useDeckBuilderStore((state) => state.save);
   const removeLeader = useDeckBuilderStore((state) => state.removeLeader);
+  const setLeader = useDeckBuilderStore((state) => state.setLeader);
   const setMainDeckQuantity = useDeckBuilderStore((state) => state.setMainDeckQuantity);
+  const changeMainDeckPrinting = useDeckBuilderStore((state) => state.changeMainDeckPrinting);
   const cardLibraryFilter = useCardLibraryStore((state) => state.filter);
   const setCardLibraryFilter = useCardLibraryStore((state) => state.setFilter);
 
@@ -70,9 +77,11 @@ export function DeckBuilderScreen() {
   }, [cardLibraryFilter, leaderSelection, setCardLibraryFilter]);
 
   const mainDeckCount = mainDeckSelections.reduce((sum, s) => sum + s.quantity, 0);
-  const leaderImageUrl = leaderSelection?.libraryEntry.printings[0]?.imageUrl ?? null;
+  const leaderPrinting = leaderSelection ? getSelectedPrinting(leaderSelection) : null;
+  const leaderImageUrl = leaderPrinting?.imageUrl ?? null;
   const selectedCards = useMemo(() => [...mainDeckSelections].sort((a, b) => b.quantity - a.quantity), [mainDeckSelections]);
   const previewSelection = selectedCards.find((selection) => selection.chosenPrintingImageId === previewPrintingId) ?? null;
+  const previewPrinting = previewSelection ? getSelectedPrinting(previewSelection) : null;
   const saveTitle = legality.legal
     ? 'Save deck'
     : [`Deck is not legal yet. Main deck: ${mainDeckCount}/50.`, ...legality.reasons].join('\n');
@@ -85,16 +94,27 @@ export function DeckBuilderScreen() {
   }
 
   return (
-    <ScreenShell
+    <DeckBuilderGameShell
       title={deckIdToEdit ? 'Edit Deck' : 'New Deck'}
-      onBack={goBack}
-      bodyClassName="overflow-hidden px-2 py-2 sm:px-3"
       headerRight={
-        <span title={saveTitle}>
-          <Button variant="primary" size="sm" disabled={!legality.legal} onClick={handleSaveDeck}>
+        <>
+          <button
+            type="button"
+            onClick={goBack}
+            className="h-10 border border-white/15 bg-black/28 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold"
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            title={saveTitle}
+            disabled={!legality.legal}
+            onClick={handleSaveDeck}
+            className="h-10 border border-gold/45 bg-[linear-gradient(180deg,_#ff3026_0%,_#b91d22_100%)] px-3 text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[0_8px_0_rgba(63,8,12,0.9),_0_16px_24px_rgba(185,29,34,0.26)] transition-all hover:brightness-110 active:translate-y-[2px] active:shadow-[0_4px_0_rgba(63,8,12,0.9),_0_10px_18px_rgba(185,29,34,0.24)] disabled:cursor-not-allowed disabled:opacity-45"
+          >
             Save Deck
-          </Button>
-        </span>
+          </button>
+        </>
       }
     >
       <div className="grid h-full min-h-0 flex-1 gap-3 overflow-hidden xl:grid-cols-[420px_minmax(0,1fr)]">
@@ -165,6 +185,12 @@ export function DeckBuilderScreen() {
                     >
                       Unselect
                     </button>
+                    <PrintingVariantPicker
+                      cardNumber={leaderSelection.libraryEntry.cardNumber}
+                      printings={leaderSelection.libraryEntry.printings}
+                      selectedPrintingImageId={leaderSelection.chosenPrintingImageId}
+                      onSelect={(printingImageId) => setLeader(leaderSelection.libraryEntry, printingImageId)}
+                    />
                   </div>
                 )}
               </div>
@@ -179,32 +205,44 @@ export function DeckBuilderScreen() {
                     <p className="border border-gold/15 bg-black/30 p-2 text-sm text-slate-200/60">No cards selected yet.</p>
                   ) : (
                     <div className="grid grid-cols-[repeat(auto-fill,8.5rem)] content-start gap-x-3 gap-y-5">
-                      {selectedCards.map((selection) => (
-                        <div key={selection.chosenPrintingImageId} className="w-[8.5rem]">
-                          <div className="group relative block w-full transition hover:-translate-y-0.5">
-                            <CardImage src={selection.libraryEntry.printings[0]?.imageUrl ?? null} alt={selection.libraryEntry.definition.name} className="rounded-none" />
-                            <span className="absolute bottom-1 right-1 border border-gold/40 bg-black/80 px-1.5 py-0.5 font-heading text-[10px] font-bold text-white">{selection.quantity}x</span>
-                            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition group-hover:bg-black/55 group-hover:opacity-100">
-                              <button
-                                type="button"
-                                onClick={() => setPreviewPrintingId(selection.chosenPrintingImageId)}
-                                className="border border-gold/50 bg-white px-2.5 py-1 font-heading text-[10px] font-black uppercase tracking-[0.08em] text-navy-950 shadow-[0_5px_0_rgba(0,0,0,0.45)] transition hover:bg-gold active:translate-y-[2px]"
-                              >
-                                View
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setMainDeckQuantity(selection.chosenPrintingImageId, selection.quantity - 1)}
-                                className="flex h-7 w-7 items-center justify-center border border-red-200/60 bg-red-600 font-heading text-sm font-black text-white shadow-[0_5px_0_rgba(80,7,13,0.9)] transition hover:bg-red-500 active:translate-y-[2px]"
-                                title="Remove one copy"
-                              >
-                                -
-                              </button>
+                      {selectedCards.map((selection) => {
+                        const selectedPrinting = getSelectedPrinting(selection);
+
+                        return (
+                          <div key={selection.chosenPrintingImageId} className="w-[8.5rem]">
+                            <div className="group relative block w-full transition hover:-translate-y-0.5">
+                              <CardImage src={selectedPrinting?.imageUrl ?? null} alt={selection.libraryEntry.definition.name} className="rounded-none" />
+                              <span className="absolute bottom-1 right-1 border border-gold/40 bg-black/80 px-1.5 py-0.5 font-heading text-[10px] font-bold text-white">{selection.quantity}x</span>
+                              <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition group-hover:bg-black/55 group-hover:opacity-100">
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewPrintingId(selection.chosenPrintingImageId)}
+                                  className="border border-gold/50 bg-white px-2.5 py-1 font-heading text-[10px] font-black uppercase tracking-[0.08em] text-navy-950 shadow-[0_5px_0_rgba(0,0,0,0.45)] transition hover:bg-gold active:translate-y-[2px]"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setMainDeckQuantity(selection.chosenPrintingImageId, selection.quantity - 1)}
+                                  className="flex h-7 w-7 items-center justify-center border border-red-200/60 bg-red-600 font-heading text-sm font-black text-white shadow-[0_5px_0_rgba(80,7,13,0.9)] transition hover:bg-red-500 active:translate-y-[2px]"
+                                  title="Remove one copy"
+                                >
+                                  -
+                                </button>
+                              </div>
+                              <div className="opacity-0 transition group-hover:opacity-100">
+                                <PrintingVariantPicker
+                                  cardNumber={selection.libraryEntry.cardNumber}
+                                  printings={selection.libraryEntry.printings}
+                                  selectedPrintingImageId={selection.chosenPrintingImageId}
+                                  onSelect={(printingImageId) => changeMainDeckPrinting(selection.chosenPrintingImageId, printingImageId)}
+                                />
+                              </div>
                             </div>
+                            <p className="mt-1 text-center font-heading text-base font-black leading-none text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{selection.quantity}x</p>
                           </div>
-                          <p className="mt-1 text-center font-heading text-base font-black leading-none text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{selection.quantity}x</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -232,9 +270,37 @@ export function DeckBuilderScreen() {
         open={previewSelection !== null}
         onClose={() => setPreviewPrintingId(null)}
         definition={previewSelection?.libraryEntry.definition ?? null}
-        imageUrl={previewSelection?.libraryEntry.printings[0]?.imageUrl ?? null}
-        setName={previewSelection?.libraryEntry.printings[0]?.setName}
+        imageUrl={previewPrinting?.imageUrl ?? null}
+        setName={previewPrinting?.setName}
       />
-    </ScreenShell>
+    </DeckBuilderGameShell>
+  );
+}
+
+function DeckBuilderGameShell({
+  title,
+  headerRight,
+  children,
+}: {
+  title: string;
+  headerRight?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <main className="relative flex h-dvh w-full flex-col overflow-hidden bg-[#071126] font-body text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,211,74,0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
+      <header className="relative z-10 flex min-h-16 flex-shrink-0 items-center justify-between gap-3 border-b-2 border-gold/55 bg-black/28 px-4 py-3 shadow-[0_12px_34px_rgba(0,0,0,0.4)] backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          <span className="h-8 w-1 bg-gold shadow-[0_0_18px_rgba(217,164,65,0.45)]" aria-hidden="true" />
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Local Hotseat</p>
+            <h1 className="font-display text-lg font-black uppercase tracking-[0.12em] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.65)]">{title}</h1>
+          </div>
+        </div>
+        {headerRight && <div className="flex flex-shrink-0 items-center gap-2">{headerRight}</div>}
+      </header>
+      <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden px-2 py-2 sm:px-3">{children}</section>
+    </main>
   );
 }

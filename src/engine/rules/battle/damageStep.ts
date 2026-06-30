@@ -33,18 +33,27 @@
  */
 import type { GameState } from '../../state/game';
 import type { GameLogEntry } from '../../logs/logEntry';
+import type { PendingChoice } from '../../events/pendingChoice';
 import { createActionLogger } from '../shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { computeCurrentPower } from '../shared/power';
 import { getOpponentId } from '../shared/players';
+import { fireOnKO, type EffectTemplateRegistry } from '../../effects';
 
 export interface DamageStepResult {
   state: GameState;
   log: GameLogEntry[];
+  /** Any choice an [On K.O.] effect raised (resolved after the battle, via the dispatch gate). */
+  pendingChoices: PendingChoice[];
 }
 
-export function resolveDamageAndEndOfBattle(state: GameState, defs: CardDefinitionLookup, causedByActionId: string | null): DamageStepResult {
+export function resolveDamageAndEndOfBattle(
+  state: GameState,
+  defs: CardDefinitionLookup,
+  causedByActionId: string | null,
+  registry: EffectTemplateRegistry = {},
+): DamageStepResult {
   const battle = state.currentBattle;
   if (!battle) {
     throw new Error('resolveDamageAndEndOfBattle requires an in-progress Battle.');
@@ -70,6 +79,10 @@ export function resolveDamageAndEndOfBattle(state: GameState, defs: CardDefiniti
   });
 
   let nextState: GameState = state;
+  // [On K.O.] effects can append their own log/choices once the Character is
+  // trashed; collected here and merged into the final result.
+  let koLog: GameLogEntry[] = [];
+  let koPending: PendingChoice[] = [];
 
   if (attackerPower >= targetPower) {
     const target = state.cardsById[targetId];
@@ -141,6 +154,13 @@ export function resolveDamageAndEndOfBattle(state: GameState, defs: CardDefiniti
       });
 
       nextState = { ...nextState, cardsById, players: { ...nextState.players, [target.ownerId]: newOwner } };
+
+      // [On K.O.] (10-2-17) fires now that the Character is in the trash.
+      // No-op without a compiled onKO ability; collect its log/choices.
+      const koFired = fireOnKO(nextState, targetId, registry, defs, causedByActionId);
+      nextState = koFired.state;
+      koLog = [...koLog, ...koFired.log];
+      koPending = [...koPending, ...koFired.pendingChoices];
     }
   } else {
     logger.push({
@@ -164,7 +184,16 @@ export function resolveDamageAndEndOfBattle(state: GameState, defs: CardDefiniti
     });
   }
 
-  nextState = { ...nextState, currentBattle: null, log: [...state.log, ...logger.log] };
+  // End of Battle (7-1-5): the Battle ends and battle-only continuous power
+  // effects (duration 'duringThisBattle') expire — mirrors how nulling
+  // currentBattle drops battlePowerBonuses. "Until end of turn" effects are
+  // expired later, in runEndPhaseAndHandoff.ts.
+  nextState = {
+    ...nextState,
+    currentBattle: null,
+    continuousEffects: nextState.continuousEffects.filter((ce) => ce.duration !== 'duringThisBattle'),
+    log: [...state.log, ...logger.log, ...koLog],
+  };
 
-  return { state: nextState, log: logger.log };
+  return { state: nextState, log: [...logger.log, ...koLog], pendingChoices: koPending };
 }

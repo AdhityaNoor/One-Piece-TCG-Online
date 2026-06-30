@@ -20,12 +20,12 @@
  * scannable text list is more useful than card art. Card zoom/preview
  * (small-screen requirement) reuses the existing CardDetailModal as-is.
  */
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { CardDefinition } from '../../engine/state/card';
 import { getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
-import { Button, CardDetailModal, Modal, ScaleToFit, ScreenShell } from '../components';
-import { ActionBar, ActionLogPanel, BoardCardTile, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, useBoardSelection } from '../components/match';
+import { Button, CardDetailModal, Modal, ScaleToFit } from '../components';
+import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, useBoardSelection } from '../components/match';
 import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -47,7 +47,6 @@ export function MatchScreen() {
   const resetMatch = useMatchStore((s) => s.reset);
 
   const [pauseOpen, setPauseOpen] = useState(false);
-  const [logOpen, setLogOpen] = useState(false);
   const [zoomDefinitionId, setZoomDefinitionId] = useState<string | null>(null);
   const [hoveredAttackTargetId, setHoveredAttackTargetId] = useState<string | null>(null);
 
@@ -112,10 +111,14 @@ export function MatchScreen() {
 
   if (!matchState) {
     return (
-      <ScreenShell title="Match">
+      <MatchGameShell title="Match">
         <p className="p-6 text-sm text-white/50">Starting match…</p>
-      </ScreenShell>
+      </MatchGameShell>
     );
+  }
+
+  if (matchState.gameOver) {
+    return <VictoryScreen winnerId={matchState.gameOver.winnerId} reason={matchState.gameOver.reason} onReturn={handleQuit} />;
   }
 
   // Panel POSITION (which board renders top vs bottom) is intentionally
@@ -157,46 +160,48 @@ export function MatchScreen() {
       : null;
 
   return (
-    <ScreenShell
-      title="Match"
-      bodyClassName="overflow-hidden p-0"
-      headerRight={
+    <MatchGameShell title="Match">
+      {/*
         <div className="flex items-center gap-3">
-          <p className="hidden text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/70 md:block">
+          <p className="hidden border-l-4 border-gold bg-black/24 px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-amber-100/70 shadow-[0_10px_28px_rgba(0,0,0,0.22)] md:block">
             Turn {matchState.turnNumber} · {matchState.activePlayerId}'s turn · {matchState.currentPhase}
             {battleLabel}
           </p>
-          <Button variant="ghost" size="sm" onClick={() => setLogOpen(true)} className="text-slate-200/75">
+          <button
+            type="button"
+            onClick={() => setLogOpen(true)}
+            className="h-10 border border-white/15 bg-black/28 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold"
+          >
             Log
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setPauseOpen(true)} className="text-slate-200/75">
+          </button>
+          <button
+            type="button"
+            onClick={() => setPauseOpen(true)}
+            className="h-10 border border-white/15 bg-black/28 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold"
+          >
             Pause
-          </Button>
+          </button>
         </div>
-      }
-    >
+      */}
       <div className="flex min-h-0 flex-1 flex-col">
         <p className="hidden">
           Turn {matchState.turnNumber} · {matchState.activePlayerId}'s turn · {matchState.currentPhase}
           {battleLabel}
         </p>
 
-        {matchState.gameOver && (
-          <div className="rounded-2xl border border-gold/30 bg-gold/10 p-4 text-center">
-            <p className="text-lg font-bold text-white">
-              {matchState.gameOver.winnerId ? `${matchState.gameOver.winnerId} wins!` : 'Game over'}
-            </p>
-            <p className="text-xs text-white/60">Reason: {matchState.gameOver.reason}</p>
-            <Button variant="primary" size="sm" className="mt-3" onClick={handleQuit}>
-              Return to Main Menu
-            </Button>
-          </div>
-        )}
-
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="flex min-h-0 flex-col rounded-xl border border-white/10 bg-black/25">
-            <div className="border-b border-white/10 px-4 py-3">
-              <h2 className="font-display text-sm font-extrabold uppercase tracking-[0.12em] text-white">Actions</h2>
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid-cols-[220px_minmax(0,1fr)_220px]">
+          <aside className="flex min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
+            <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Local Hotseat</p>
+                  <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">
+                    Turn {matchState.turnNumber} · {matchState.activePlayerId} · {matchState.currentPhase}
+                    {battleLabel}
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               <div className="mb-3 flex flex-col gap-2">
@@ -214,6 +219,15 @@ export function MatchScreen() {
               ) : (
                 <p className="text-xs text-white/50">Match complete.</p>
               )}
+            </div>
+            <div className="border-t border-gold/25 bg-black/18 p-3">
+              <button
+                type="button"
+                onClick={() => setPauseOpen(true)}
+                className="h-10 w-full border border-white/15 bg-black/28 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold"
+              >
+                Pause
+              </button>
             </div>
           </aside>
 
@@ -274,11 +288,13 @@ export function MatchScreen() {
               committed={attackArrow?.committed ?? false}
             />
           </div>
+
+          <ActionLogDock log={matchState.log} />
         </div>
       </div>
 
+      <TurnChangeBanner turnNumber={matchState.turnNumber} activePlayerId={matchState.activePlayerId} phase={matchState.currentPhase} gameOver={!!matchState.gameOver} />
       <PendingChoicePrompt state={matchState} defs={defs} images={images} />
-      <ActionLogPanel open={logOpen} onClose={() => setLogOpen(false)} log={matchState.log} />
       <CardDetailModal open={zoomDefinitionId !== null} onClose={() => setZoomDefinitionId(null)} definition={zoomDefinition} imageUrl={zoomImageUrl} />
 
       <Modal open={pauseOpen} onClose={() => setPauseOpen(false)} title="Paused">
@@ -301,18 +317,231 @@ export function MatchScreen() {
           </Button>
         </div>
       </Modal>
-    </ScreenShell>
+    </MatchGameShell>
   );
 }
 
 function DeckLoadErrorScreen({ reason, onBack }: { reason: string; onBack: () => void }) {
   return (
-    <ScreenShell title="Match">
+    <MatchGameShell title="Match">
       <div className="flex flex-col items-center gap-4 p-8 text-center">
         <p className="rounded-2xl border border-red-400/20 bg-red-500/10 p-4 text-sm text-red-100">Could not start the match: {reason}</p>
         <Button variant="secondary" onClick={onBack}>Back to Main Menu</Button>
       </div>
-    </ScreenShell>
+    </MatchGameShell>
+  );
+}
+
+function formatGameOverReason(reason: string): string {
+  const labels: Record<string, string> = {
+    lifeDamageAtZero: 'Life damage',
+    deckedOut: 'Deck out',
+    concession: 'Concession',
+    cardEffect: 'Card effect',
+    draw: 'Draw',
+  };
+  return labels[reason] ?? reason;
+}
+
+function TurnChangeBanner({
+  turnNumber,
+  activePlayerId,
+  phase,
+  gameOver,
+}: {
+  turnNumber: number;
+  activePlayerId: string;
+  phase: string;
+  gameOver: boolean;
+}) {
+  const [visible, setVisible] = useState(false);
+  const [banner, setBanner] = useState<{ key: string; playerId: string; turnNumber: number } | null>(null);
+
+  useEffect(() => {
+    if (gameOver || phase === 'setup') {
+      setVisible(false);
+      return;
+    }
+
+    const key = `${turnNumber}:${activePlayerId}`;
+    setBanner({ key, playerId: activePlayerId, turnNumber });
+    setVisible(false);
+
+    const showFrame = window.requestAnimationFrame(() => setVisible(true));
+    const hideTimer = window.setTimeout(() => setVisible(false), 1250);
+
+    return () => {
+      window.cancelAnimationFrame(showFrame);
+      window.clearTimeout(hideTimer);
+    };
+  }, [activePlayerId, gameOver, phase, turnNumber]);
+
+  if (!banner) return null;
+
+  return (
+    <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center px-5" aria-live="polite">
+      <div
+        key={banner.key}
+        className={[
+          'relative min-w-[min(34rem,88vw)] overflow-hidden px-7 py-5 text-center transition-all duration-300 ease-out',
+          visible ? 'translate-x-0 scale-100 opacity-100' : '-translate-x-28 scale-105 opacity-0',
+        ].join(' ')}
+      >
+        <div className="absolute inset-0 skew-x-[-12deg] border-y-2 border-gold/60 bg-[linear-gradient(90deg,_transparent_0%,_rgba(255,211,74,0.13)_16%,_rgba(14,28,62,0.34)_48%,_rgba(185,29,34,0.18)_74%,_transparent_100%)] shadow-[0_0_42px_rgba(255,211,74,0.22)] backdrop-blur-[2px]" />
+        <div className="absolute inset-x-[-18%] top-1/2 h-px -translate-y-1/2 bg-[linear-gradient(90deg,_transparent,_rgba(255,255,255,0.75),_transparent)]" />
+        <div className="absolute left-[-8%] top-1/2 h-10 w-24 -translate-y-1/2 skew-x-[-18deg] bg-gold/25 blur-sm" />
+        <div className="absolute right-[-10%] top-1/2 h-12 w-28 -translate-y-1/2 skew-x-[-18deg] bg-brand/25 blur-sm" />
+        <div className="relative">
+          <p className="mb-1 text-[10px] font-black uppercase tracking-[0.34em] text-gold drop-shadow-[0_2px_0_rgba(0,0,0,0.65)]">Turn {banner.turnNumber}</p>
+          <p className="font-display text-[clamp(2rem,7vw,4.75rem)] font-black uppercase leading-none tracking-[0.05em] text-white drop-shadow-[0_6px_0_rgba(0,0,0,0.62)]">
+          {banner.playerId.toUpperCase()} Turn
+          </p>
+          <p className="mt-2 text-xs font-black uppercase tracking-[0.3em] text-white/72">Begin</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VictoryScreen({ winnerId, reason, onReturn }: { winnerId: string | null; reason: string; onReturn: () => void }) {
+  const winnerLabel = winnerId ? `${winnerId} wins!` : 'Game over';
+
+  return (
+    <main className="relative h-dvh w-full overflow-hidden bg-[#030713] font-body text-white">
+      <VictoryCanvas winnerId={winnerId ?? 'draw'} />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,_rgba(255,211,74,0.22),_transparent_28%),linear-gradient(180deg,_rgba(3,7,19,0.18)_0%,_rgba(3,7,19,0.84)_72%,_#030713_100%)]" />
+      <div className="pointer-events-none absolute inset-x-[-10%] bottom-[-18%] h-[45%] rotate-[-2deg] border-t-2 border-gold/35 bg-[linear-gradient(180deg,_rgba(12,30,68,0.72),_rgba(3,7,19,0.98))] shadow-[0_-20px_60px_rgba(0,0,0,0.45)]" />
+
+      <section className="relative z-10 flex h-full flex-col items-center justify-center px-5 text-center">
+        <div className="mb-5 h-1 w-[min(34rem,74vw)] bg-[linear-gradient(90deg,_transparent,_rgba(255,211,74,0.95),_transparent)] shadow-[0_0_24px_rgba(255,211,74,0.55)]" />
+        <p className="mb-3 text-[11px] font-black uppercase tracking-[0.28em] text-gold drop-shadow-[0_2px_0_rgba(0,0,0,0.6)]">Match Complete</p>
+        <h1 className="font-display text-[clamp(3.5rem,14vw,11rem)] font-black uppercase leading-[0.82] tracking-[0.02em] text-white drop-shadow-[0_10px_0_rgba(0,0,0,0.62)]">
+          {winnerLabel}
+        </h1>
+        <p className="mt-5 text-base font-bold uppercase tracking-[0.14em] text-white/72 sm:text-xl">
+          Reason: <span className="text-gold">{formatGameOverReason(reason)}</span>
+        </p>
+        <Button variant="primary" size="lg" className="pointer-events-auto mt-8 min-w-[18rem]" onClick={onReturn}>
+          Return to Main Menu
+        </Button>
+      </section>
+    </main>
+  );
+}
+
+function VictoryCanvas({ winnerId }: { winnerId: string }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    let frame = 0;
+    let width = 0;
+    let height = 0;
+    const seed = winnerId.split('').reduce((total, char) => total + char.charCodeAt(0), 0) || 1;
+    const streaks = Array.from({ length: 28 }, (_, index) => ({
+      x: (index * 137 + seed * 17) % 1800,
+      y: (index * 89 + seed * 29) % 900,
+      length: 120 + ((index * 37 + seed) % 260),
+      speed: 0.35 + ((index * 11) % 18) / 24,
+      alpha: 0.12 + ((index * 7) % 12) / 48,
+    }));
+    const sparks = Array.from({ length: 90 }, (_, index) => ({
+      x: (index * 71 + seed * 31) % 1800,
+      y: (index * 113 + seed * 13) % 900,
+      size: 1 + ((index * 5 + seed) % 4),
+      speed: 0.22 + ((index * 17) % 20) / 40,
+      hue: index % 3 === 0 ? '#ffd34a' : index % 3 === 1 ? '#ef4444' : '#7dd3fc',
+    }));
+
+    const resize = (): void => {
+      const ratio = window.devicePixelRatio || 1;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.floor(width * ratio);
+      canvas.height = Math.floor(height * ratio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    };
+
+    const draw = (): void => {
+      context.clearRect(0, 0, width, height);
+
+      const background = context.createLinearGradient(0, 0, width, height);
+      background.addColorStop(0, '#202838');
+      background.addColorStop(0.48, '#071126');
+      background.addColorStop(1, '#02040d');
+      context.fillStyle = background;
+      context.fillRect(0, 0, width, height);
+
+      context.save();
+      context.globalAlpha = 0.14;
+      context.strokeStyle = '#d9a441';
+      context.lineWidth = 1;
+      for (let x = -height; x < width + height; x += 96) {
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x + height, height);
+        context.stroke();
+      }
+      context.restore();
+
+      for (const streak of streaks) {
+        const x = ((streak.x + frame * streak.speed) % (width + streak.length + 220)) - streak.length;
+        const y = (streak.y % Math.max(height, 1));
+        const gradient = context.createLinearGradient(x, y, x + streak.length, y - 34);
+        gradient.addColorStop(0, 'rgba(255,211,74,0)');
+        gradient.addColorStop(0.5, `rgba(255,211,74,${streak.alpha})`);
+        gradient.addColorStop(1, 'rgba(255,255,255,0)');
+        context.strokeStyle = gradient;
+        context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(x, y);
+        context.lineTo(x + streak.length, y - 34);
+        context.stroke();
+      }
+
+      for (const spark of sparks) {
+        const x = ((spark.x + frame * spark.speed) % (width + 40)) - 20;
+        const y = (spark.y + Math.sin((frame + spark.x) / 38) * 12) % Math.max(height, 1);
+        context.globalAlpha = 0.34;
+        context.fillStyle = spark.hue;
+        context.fillRect(x, y, spark.size, spark.size);
+      }
+      context.globalAlpha = 1;
+
+      frame += 1;
+      animationFrame = window.requestAnimationFrame(draw);
+    };
+
+    let animationFrame = 0;
+    resize();
+    draw();
+    window.addEventListener('resize', resize);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.removeEventListener('resize', resize);
+    };
+  }, [winnerId]);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-hidden="true" />;
+}
+
+function MatchGameShell({ title, headerRight, children }: { title: string; headerRight?: ReactNode; children: ReactNode }) {
+  void headerRight;
+  return (
+    <main className="relative h-dvh w-full overflow-hidden bg-[#071126] font-body text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,211,74,0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
+      <h1 className="sr-only">{title}</h1>
+      <section className="absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden p-2">{children}</section>
+    </main>
   );
 }
 
@@ -507,6 +736,7 @@ function PlayerSideRow({
   const handCell = (
     <HandSection
       board={board}
+      edge={reverseRows ? 'top' : 'bottom'}
       isOwn={isOwn}
       selectedIds={selectedIds}
       mode={mode}
@@ -528,15 +758,35 @@ function PlayerSideRow({
   );
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)] gap-2 overflow-hidden">
-      {handCell}
+    <div className="relative min-h-0 flex-1 overflow-hidden">
       {boardCell}
+      {handCell}
+    </div>
+  );
+}
+
+function StackedHandBacks({ count }: { count: number }) {
+  return (
+    <div className="relative h-8 w-12 flex-shrink-0" aria-hidden="true">
+      {[0, 1, 2].map((index) => (
+        <div
+          key={index}
+          className="absolute top-1 h-7 w-5 overflow-hidden rounded-[3px] border border-gold/45 bg-black shadow-[0_3px_7px_rgba(0,0,0,0.45)]"
+          style={{ left: `${index * 9}px`, transform: `rotate(${(index - 1) * 7}deg)` }}
+        >
+          <CardBackArt tone="navy" />
+        </div>
+      ))}
+      <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-black/60 bg-gold px-1 text-[10px] font-black leading-none text-navy-950 shadow">
+        {count}
+      </span>
     </div>
   );
 }
 
 function HandSection({
   board,
+  edge,
   isOwn,
   selectedIds,
   mode,
@@ -544,35 +794,67 @@ function HandSection({
   onCardZoom,
 }: {
   board: ReturnType<typeof projectPlayerBoard>;
+  edge: 'top' | 'bottom';
   isOwn: boolean;
   selectedIds: Set<string>;
   mode: MatchSelectionMode;
   onCardTap: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
 }) {
-  return (
-    <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-white/[0.03]">
-      <div className="flex items-center justify-between border-b border-white/10 px-2 py-1">
-        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">{board.playerId}</span>
-        <span className="text-[10px] font-bold text-white/35">{board.hand.length}</span>
+  const isTop = edge === 'top';
+  const handle = (
+    <div className="flex h-10 flex-shrink-0 items-center justify-between gap-3 border-gold/25 bg-black/55 px-3 backdrop-blur-md">
+      <div className="flex min-w-0 items-center gap-2">
+        <StackedHandBacks count={board.hand.length} />
+        <div className="min-w-0 text-left">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-gold">{board.playerId} hand</p>
+          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-white/38">Hover to reveal</p>
+        </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-2">
-        {board.hand.length === 0 ? (
-          <p className="py-8 text-center text-[10px] text-white/25">No cards</p>
+      <span className="h-1 w-20 rounded-full bg-gold/45 shadow-[0_0_14px_rgba(217,164,65,0.35)]" aria-hidden="true" />
+    </div>
+  );
+  const gallery = (
+    <div className="h-[19cqh] flex-shrink-0 overflow-x-auto overflow-y-hidden bg-[linear-gradient(180deg,_rgba(5,12,30,0.94),_rgba(3,7,16,0.96))] px-3 py-2">
+      {board.hand.length === 0 ? (
+        <div className="flex h-full items-center justify-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/30">No cards</div>
+      ) : (
+        <div className="flex h-full w-max min-w-full items-center gap-2">
+          {board.hand.map((card) => (
+            <BoardCardTile
+              key={card.instanceId}
+              card={card}
+              size="board"
+              selectable={handSelectable(mode, isOwn, card)}
+              selected={selectedIds.has(card.instanceId)}
+              onSelect={() => onCardTap(card)}
+              onZoom={() => onCardZoom(card)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <section
+      className={[
+        'group/handTray absolute left-1/2 z-30 w-[60%] -translate-x-1/2 overflow-hidden rounded-lg border border-gold/25 shadow-[0_18px_38px_rgba(0,0,0,0.42)] transition-transform duration-200 ease-out focus-within:translate-y-0 hover:translate-y-0',
+        isTop ? 'top-0 -translate-y-[calc(100%-2.5rem)]' : 'bottom-0 translate-y-[calc(100%-2.5rem)]',
+      ].join(' ')}
+      aria-label={`${board.playerId} hand`}
+    >
+      <div className="flex flex-col overflow-hidden">
+        {isTop ? (
+          <>
+            {gallery}
+            {handle}
+          </>
         ) : (
-          <div className="flex flex-col items-center gap-1.5">
-            {board.hand.map((card) => (
-              <BoardCardTile
-                key={card.instanceId}
-                card={card}
-                size="board"
-                selectable={handSelectable(mode, isOwn, card)}
-                selected={selectedIds.has(card.instanceId)}
-                onSelect={() => onCardTap(card)}
-                onZoom={() => onCardZoom(card)}
-              />
-            ))}
-          </div>
+          <>
+            {handle}
+            {gallery}
+          </>
         )}
       </div>
     </section>

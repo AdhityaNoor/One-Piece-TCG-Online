@@ -20,6 +20,7 @@ function makeDef(cardNumber: string, category: CardDefinition['category'], color
 }
 
 const redLeader = makeDef('LEAD-01', 'leader', ['red']);
+const blackYellowLeader = makeDef('LEAD-BY', 'leader', ['black', 'yellow']);
 
 /** 13 distinct card numbers, 4 copies each except the last (2), summing to exactly 50 — satisfies both 5-1-2 and 5-1-2-3 simultaneously. */
 function legalMainDeck(colors: Color[] = ['red']): DeckConstructionEntry[] {
@@ -72,13 +73,34 @@ describe('validateDeckConstruction', () => {
     expect(reason).not.toContain('TODO');
   });
 
-  it('rejects a multicolor card not fully contained in Leader colors, flagged as the TODO subset-rule case', () => {
-    const multicolorLeader = makeDef('LEAD-MULTI', 'leader', ['red', 'green']);
-    const deck = legalMainDeck(['red', 'green']);
+  it('rejects a multicolor card not fully contained in Leader colors', () => {
+    const deck = legalMainDeck(['red']);
     deck[0] = { definition: makeDef('C-MULTI', 'character', ['red', 'blue']), quantity: deck[0].quantity };
-    const result = validateDeckConstruction(multicolorLeader, deck);
+    const result = validateDeckConstruction(redLeader, deck);
     expect(result.legal).toBe(false);
-    expect(result.reasons.some((r) => r.includes('multicolor subset rule'))).toBe(true);
+    expect(result.reasons.some((r) => r.includes('not a legal color'))).toBe(true);
+    expect(result.reasons.some((r) => r.includes('TODO'))).toBe(false);
+  });
+
+  it('accepts a black/yellow Leader with black and yellow cards in the main deck', () => {
+    const deck = legalMainDeck(['black']);
+    deck[0] = { definition: makeDef('C-YELLOW-1', 'character', ['yellow']), quantity: deck[0].quantity };
+    deck[1] = { definition: makeDef('C-BLACK-YELLOW-1', 'character', ['black', 'yellow']), quantity: deck[1].quantity };
+
+    const result = validateDeckConstruction(blackYellowLeader, deck);
+
+    expect(result.legal).toBe(true);
+    expect(result.reasons).toEqual([]);
+  });
+
+  it('rejects a card with any color outside a multicolor Leader color set', () => {
+    const deck = legalMainDeck(['black']);
+    deck[0] = { definition: makeDef('C-BLACK-BLUE-1', 'character', ['black', 'blue']), quantity: deck[0].quantity };
+
+    const result = validateDeckConstruction(blackYellowLeader, deck);
+
+    expect(result.legal).toBe(false);
+    expect(result.reasons.some((r) => r.includes('not a legal color'))).toBe(true);
   });
 
   it('flags a non-Leader card in the Leader slot', () => {

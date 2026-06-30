@@ -90,6 +90,7 @@ interface DeckBuilderState {
   addMainDeckCard(libraryEntry: CardLibraryEntry, printingImageId: string, quantity?: number): void;
   removeMainDeckCard(printingImageId: string): void;
   setMainDeckQuantity(printingImageId: string, quantity: number): void;
+  changeMainDeckPrinting(currentPrintingImageId: string, nextPrintingImageId: string): void;
 
   importFromClipboard(rawInput: string): Promise<void>;
 
@@ -151,6 +152,32 @@ export const useDeckBuilderStore = create<DeckBuilderState>((set, get) => ({
           ? state.mainDeckSelections.filter((s) => s.chosenPrintingImageId !== printingImageId)
           : state.mainDeckSelections.map((s) => (s.chosenPrintingImageId === printingImageId ? { ...s, quantity } : s)),
     })),
+
+  changeMainDeckPrinting: (currentPrintingImageId, nextPrintingImageId) =>
+    set((state) => {
+      if (currentPrintingImageId === nextPrintingImageId) return {};
+
+      const current = state.mainDeckSelections.find((s) => s.chosenPrintingImageId === currentPrintingImageId);
+      if (!current) return {};
+
+      const nextRaw = current.libraryEntry.rawPrintings.find((p) => p.card_image_id === nextPrintingImageId);
+      if (!nextRaw) return {};
+
+      const existing = state.mainDeckSelections.find((s) => s.chosenPrintingImageId === nextPrintingImageId);
+      if (existing) {
+        return {
+          mainDeckSelections: state.mainDeckSelections
+            .filter((s) => s.chosenPrintingImageId !== currentPrintingImageId)
+            .map((s) => (s.chosenPrintingImageId === nextPrintingImageId ? { ...s, quantity: s.quantity + current.quantity } : s)),
+        };
+      }
+
+      return {
+        mainDeckSelections: state.mainDeckSelections.map((s) =>
+          s.chosenPrintingImageId === currentPrintingImageId ? { ...s, chosenPrintingImageId: nextPrintingImageId } : s,
+        ),
+      };
+    }),
 
   /**
    * Replaces the current main-deck selection list with whatever resolves

@@ -16,6 +16,7 @@ import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
+import { fireWhenAttacking, type EffectTemplateRegistry } from '../../effects';
 
 export function validateDeclareAttack(state: GameState, action: DeclareAttackAction, defs: CardDefinitionLookup): ValidationResult {
   const reasons: string[] = [];
@@ -66,7 +67,12 @@ export function validateDeclareAttack(state: GameState, action: DeclareAttackAct
   return { legal: reasons.length === 0, reasons };
 }
 
-export function executeDeclareAttack(state: GameState, action: DeclareAttackAction, defs: CardDefinitionLookup): ActionExecuteResult {
+export function executeDeclareAttack(
+  state: GameState,
+  action: DeclareAttackAction,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+): ActionExecuteResult {
   const attacker = state.cardsById[action.attackerInstanceId];
   const attackerDef = getDefinition(defs, attacker);
   const logger = createActionLogger(state, action.actionId);
@@ -110,5 +116,14 @@ export function executeDeclareAttack(state: GameState, action: DeclareAttackActi
     log: [...state.log, ...logger.log],
   };
 
-  return { state: nextState, log: logger.log, pendingChoices: [] };
+  // [When Attacking] (8-1-3) fires now that the Battle is set up, with the
+  // attacker as source. No-op when the card has no compiled whenAttacking
+  // ability; any targeting it needs surfaces as a PendingChoice (resolved
+  // before the Block/Counter Step proceeds, via the dispatch pending-choice gate).
+  const fired = fireWhenAttacking(nextState, action.attackerInstanceId, registry, defs, action.actionId);
+  return {
+    state: fired.state,
+    log: [...logger.log, ...fired.log],
+    pendingChoices: fired.pendingChoices,
+  };
 }

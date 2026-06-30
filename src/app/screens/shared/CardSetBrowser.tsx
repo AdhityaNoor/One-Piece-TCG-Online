@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useEffect } from 'react';
 import type { CardLibraryEntry } from '../../../cards/library';
 import type { CardCategory, Color } from '../../../engine/state/card';
@@ -25,6 +25,7 @@ export interface CardSetBrowserControlsProps {
 export interface CardSetBrowserResultsProps {
   renderEntry: (entry: CardLibraryEntry) => ReactNode;
   gridClassName?: string;
+  gridStyle?: CSSProperties;
 }
 
 const DEFAULT_CATEGORIES: CardCategory[] = ['leader', 'character', 'event', 'stage'];
@@ -189,7 +190,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
   );
 }
 
-export function CardSetBrowserResults({ renderEntry, gridClassName }: CardSetBrowserResultsProps) {
+export function CardSetBrowserResults({ renderEntry, gridClassName, gridStyle }: CardSetBrowserResultsProps) {
   const selectedSetId = useCardLibraryStore((state) => state.selectedSetId);
   const setStatusById = useCardLibraryStore((state) => state.setStatusById);
   const setErrorById = useCardLibraryStore((state) => state.setErrorById);
@@ -227,7 +228,7 @@ export function CardSetBrowserResults({ renderEntry, gridClassName }: CardSetBro
       ) : (
         <>
           <div className="pr-1">
-            <div className={gridClassName ?? 'grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'}>{visibleEntries.map(renderEntry)}</div>
+            <div className={gridClassName ?? 'grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} style={gridStyle}>{visibleEntries.map(renderEntry)}</div>
           </div>
           {visibleCount < filteredCount && (
             <div className="mt-3 flex justify-center">

@@ -5,6 +5,7 @@
  * canonical engine implementation so behavior can't drift.
  */
 import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousPowerCondition, GameState } from '../state/game';
+import type { CardDefinition } from '../state/card';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import { createActionLogger, type ActionLogger } from '../rules/shared/actionLogger';
@@ -23,6 +24,8 @@ export class EffectContextImpl implements EffectContext {
   private readonly defs: CardDefinitionLookup;
   private readonly logger: ActionLogger;
   private readonly pending: PendingChoice[] = [];
+  /** Instance ids this resolution moved to the trash via ko(); drained by the interpreter to cascade [On K.O.] (10-2-17). */
+  private readonly koed: string[] = [];
 
   constructor(state: GameState, sourceInstanceId: string, defs: CardDefinitionLookup, actionId: string | null) {
     this.working = state;
@@ -52,6 +55,15 @@ export class EffectContextImpl implements EffectContext {
   }
   costOf(instanceId: string): number {
     return computeCurrentCost(this.defs, this.working, instanceId);
+  }
+  definitionOf(instanceId: string): CardDefinition | undefined {
+    const inst = this.working.cardsById[instanceId];
+    return inst ? this.defs[inst.cardDefinitionId] : undefined;
+  }
+  topOfDeck(playerId: string, n: number): string[] {
+    const player = this.working.players[playerId];
+    if (!player) return [];
+    return player.deck.cardIds.slice(0, Math.max(0, n));
   }
 
   draw(playerId: string, n: number): void {
@@ -174,6 +186,14 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [targetInstanceId],
       visibility: 'public',
     });
+    this.koed.push(targetInstanceId); // cascade [On K.O.] after this resolution finishes
+  }
+
+  /** Drain and return the ids K.O.'d via ko() this resolution (for [On K.O.] cascade). */
+  takeKoed(): string[] {
+    const drained = [...this.koed];
+    this.koed.length = 0;
+    return drained;
   }
 
   rest(targetInstanceId: string): void {
@@ -187,6 +207,76 @@ export class EffectContextImpl implements EffectContext {
       data: { targetInstanceId },
       relatedCardInstanceIds: [targetInstanceId],
       visibility: 'public',
+    });
+  }
+
+  trashTopOfDeck(playerId: string, n: number): void {
+    const player = this.working.players[playerId];
+    if (!player || n <= 0) return;
+    const moving = player.deck.cardIds.slice(0, n);
+    if (moving.length === 0) return;
+    const remainingDeck = player.deck.cardIds.slice(moving.length);
+    let trash = player.trash;
+    const cardsById = { ...this.working.cardsById };
+    for (const id of moving) {
+      trash = addToZoneTop(trash, id);
+      cardsById[id] = { ...cardsById[id], currentZone: 'trash', revealedTo: 'all' };
+    }
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [playerId]: { ...player, deck: { ...player.deck, cardIds: remainingDeck }, trash } },
+      cardsById,
+    };
+    this.logger.push({
+      actorPlayerId: playerId,
+      type: 'CARD_MOVED',
+      message: `${playerId} trashed the top ${moving.length} card(s) of their deck (self-mill).`,
+      data: { from: 'deck', to: 'trash', count: moving.length },
+      relatedCardInstanceIds: moving,
+      visibility: 'public',
+    });
+  }
+
+  searchResolve(playerId: string, lookedIds: string[], chosenIds: string[]): void {
+    const player = this.working.players[playerId];
+    if (!player || lookedIds.length === 0) return;
+
+    // Only honor choices that were actually among the looked-at cards (defensive
+    // against a forged resume selection), preserving looked order.
+    const lookedSet = new Set(lookedIds);
+    const chosenSet = new Set(chosenIds.filter((id) => lookedSet.has(id)));
+    const chosen = lookedIds.filter((id) => chosenSet.has(id));
+    const rest = lookedIds.filter((id) => !chosenSet.has(id));
+
+    // The looked cards are exactly the top N — drop them off the top, then the
+    // unrevealed rest returns to the bottom (6-? deck ops; "in any order" is a
+    // player nicety we resolve deterministically as looked order).
+    let deck = { ...player.deck, cardIds: player.deck.cardIds.slice(lookedIds.length) };
+    let hand = player.hand;
+    const cardsById = { ...this.working.cardsById };
+
+    for (const id of chosen) {
+      hand = addToZoneBottom(hand, id);
+      cardsById[id] = { ...cardsById[id], currentZone: 'hand', revealedTo: [playerId] };
+    }
+    for (const id of rest) {
+      deck = addToZoneBottom(deck, id);
+      cardsById[id] = { ...cardsById[id], currentZone: 'deck', revealedTo: [] };
+    }
+
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [playerId]: { ...player, hand, deck } },
+      cardsById,
+    };
+
+    this.logger.push({
+      actorPlayerId: playerId,
+      type: 'EFFECT_RESOLVED',
+      message: `Searched the top ${lookedIds.length}: added ${chosen.length} to hand, returned ${rest.length} to the bottom of the deck.`,
+      data: { lookedCount: lookedIds.length, addedCount: chosen.length, addedInstanceIds: chosen, bottomedCount: rest.length },
+      relatedCardInstanceIds: chosen,
+      visibility: { visibleTo: [playerId] },
     });
   }
 

@@ -26,8 +26,27 @@ export type IrCondition = ContinuousPowerCondition; // { donAttachedAtLeast?, tu
 export type IrDuration = ContinuousEffectDuration;
 
 /**
- * One instruction. `chooseTargets` suspends the program and binds the player's
- * selection to `var`; later ops reference it via { sel: 'var', name }.
+ * Predicate for the "searcher" pattern (look at top N, add a matching card to
+ * hand). All present fields are ANDed against the looked-at card's definition.
+ * Pure data — the interpreter evaluates it against CardDefinitions via defs.
+ */
+export interface SearchFilter {
+  /** A free-text tribal type the card must carry (2-4), e.g. "Straw Hat Crew". */
+  typeIncludes?: string;
+  /** "other than [SelfName]" — exclude cards sharing the source card's name. */
+  excludeSelfName?: boolean;
+  /** Card category gate (2-2), e.g. "reveal up to 1 Character card". */
+  category?: 'character' | 'event' | 'stage' | 'leader';
+  maxCost?: number;
+  minCost?: number;
+  maxPower?: number;
+}
+
+/**
+ * One instruction. `chooseTargets` and `searchTopDeck` both suspend the program
+ * via a PendingChoice; `chooseTargets` binds the player's selection to `var`
+ * (later ops reference it via { sel: 'var', name }), while `searchTopDeck`
+ * resolves its own deck movement on resume.
  */
 export type EffectOp =
   | { op: 'draw'; amount: number }
@@ -35,7 +54,13 @@ export type EffectOp =
   | { op: 'giveDon'; target: Selector; count: number }
   | { op: 'ko'; target: Selector }
   | { op: 'rest'; target: Selector }
-  | { op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string };
+  | { op: 'returnToHand'; target: Selector } // bounce a Character to its owner's hand
+  | { op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string }
+  // Look at top `look` cards; player adds up to `pick` filter-matching cards to
+  // hand; the rest go to the bottom of the deck (the classic "searcher").
+  | { op: 'searchTopDeck'; look: number; pick: number; filter?: SearchFilter; prompt: string }
+  // Trash the top `count` cards of the controller's own deck (self-mill).
+  | { op: 'trashTopDeck'; count: number };
 
 /** When the ability is exposed/fires (mirrors EffectTimingKeyword). */
 export type IrTrigger = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'activateMain' | 'onKO' | 'counter';

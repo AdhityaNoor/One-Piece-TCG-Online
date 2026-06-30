@@ -18,10 +18,22 @@ import type { SavedDeck } from '../../cards/decks/savedDeck';
 import type { GameAction } from '../../engine/actions';
 import { validateAction, executeAction } from '../../engine/actions';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
+import type { EffectTemplateRegistry } from '../../engine/effects';
+import { compileRegistry } from '../../cards/effectTemplates';
 import { hashSeed } from '../../engine/rng';
 import { createPreGameState } from '../../engine/setup';
 import type { GameState } from '../../engine/state';
 import { buildCardDefinitionLookup, buildCardImageLookup, savedDeckToPlayerSetupInput } from '../lib/savedDeckToSetupInput';
+
+/**
+ * Compile the match's card pool into the engine's effect registry. The app
+ * (never the engine) owns this injection: card text -> EffectProgram IR, keyed
+ * by cardNumber (== cardDefinitionId), so [On Play]/[Activate: Main]/etc. fire
+ * during play. Cards the compiler can't lower are simply absent (no effect).
+ */
+function buildRegistryFromDefs(defs: CardDefinitionLookup): EffectTemplateRegistry {
+  return compileRegistry(Object.values(defs).map((def) => ({ cardNumber: def.cardNumber, effectText: def.text })));
+}
 
 /** Fixed, stable player ids for the local hotseat match — both sides are the same human, alternating. */
 export const PLAYER_A_ID = 'p1';
@@ -45,6 +57,8 @@ export function createActionId(): string {
 interface MatchStoreState {
   state: GameState | null;
   defs: CardDefinitionLookup;
+  /** Compiled card effects injected into every validate/execute call, so [On Play]/[Activate: Main]/etc. fire in-game. Keyed by cardNumber (== cardDefinitionId). */
+  registry: EffectTemplateRegistry;
   /** cardDefinitionId -> cosmetic image URL, for board/zoom UI only — never read by the engine. See savedDeckToSetupInput.ts. */
   cardImagesByDefinitionId: Record<string, string | null>;
   /** Which two SavedDeck ids the live match was started with, so the Match screen can tell "still the requested match" apart from "navigated here with different decks" without restarting on every re-render. */
@@ -60,6 +74,7 @@ interface MatchStoreState {
 export const useMatchStore = create<MatchStoreState>((set, get) => ({
   state: null,
   defs: {},
+  registry: {},
   cardImagesByDefinitionId: {},
   startedWithDeckIds: null,
   startError: null,
@@ -87,13 +102,15 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     });
 
     if (!result.ok) {
-      set({ state: null, defs: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: result.reasons });
+      set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: result.reasons });
       return { ok: false, reasons: result.reasons };
     }
 
+    const defs = buildCardDefinitionLookup([deckA, deckB]);
     set({
       state: result.state,
-      defs: buildCardDefinitionLookup([deckA, deckB]),
+      defs,
+      registry: buildRegistryFromDefs(defs),
       cardImagesByDefinitionId: buildCardImageLookup([deckA, deckB]),
       startedWithDeckIds: { a: deckA.deckId, b: deckB.deckId },
       startError: null,
@@ -102,22 +119,22 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   },
 
   dispatch(action) {
-    const { state, defs } = get();
+    const { state, defs, registry } = get();
     if (!state) {
       return { ok: false, reasons: ['No match is in progress.'] };
     }
-    const validation = validateAction(state, action, defs);
+    const validation = validateAction(state, action, defs, registry);
     if (!validation.legal) {
       return { ok: false, reasons: validation.reasons };
     }
     // executeAction re-validates internally — see dispatch.ts doc comment.
     // That's intentional, harmless redundancy, not a bug to "optimize away".
-    const result = executeAction(state, action, defs);
+    const result = executeAction(state, action, defs, registry);
     set({ state: result.state });
     return { ok: true };
   },
 
   reset() {
-    set({ state: null, defs: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: null });
+    set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: null });
   },
 }));

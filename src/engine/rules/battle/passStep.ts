@@ -21,6 +21,7 @@ import { createActionLogger } from '../shared/actionLogger';
 import type { CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
 import { resolveDamageAndEndOfBattle } from './damageStep';
+import type { EffectTemplateRegistry } from '../../effects';
 
 export function validatePassStep(state: GameState, action: PassStepAction, _defs: CardDefinitionLookup): ValidationResult {
   const reasons: string[] = [];
@@ -46,7 +47,12 @@ export function validatePassStep(state: GameState, action: PassStepAction, _defs
   return { legal: reasons.length === 0, reasons };
 }
 
-export function executePassStep(state: GameState, action: PassStepAction, defs: CardDefinitionLookup): ActionExecuteResult {
+export function executePassStep(
+  state: GameState,
+  action: PassStepAction,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+): ActionExecuteResult {
   const battle = state.currentBattle!;
 
   if (battle.step === 'block') {
@@ -81,7 +87,7 @@ export function executePassStep(state: GameState, action: PassStepAction, defs: 
   });
   const stateAfterPass: GameState = { ...state, log: [...state.log, ...preLogger.log] };
 
-  const { state: resolvedState, log: damageLog } = resolveDamageAndEndOfBattle(stateAfterPass, defs, action.actionId);
+  const { state: resolvedState, log: damageLog, pendingChoices } = resolveDamageAndEndOfBattle(stateAfterPass, defs, action.actionId, registry);
 
-  return { state: resolvedState, log: [...preLogger.log, ...damageLog], pendingChoices: [] };
+  return { state: resolvedState, log: [...preLogger.log, ...damageLog], pendingChoices };
 }
