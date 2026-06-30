@@ -1,4 +1,5 @@
 export * from './useBoardSelection';
+export * from './DockHand';
 export * from './CardRow';
 export * from './ZoneSection';
 export * from './BoardCardTile';

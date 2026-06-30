@@ -75,7 +75,7 @@ export type EffectAction =
   | { op: 'lookTopDeck'; amount: number; optional?: boolean; conditional?: boolean; needsReview: true }
   | { op: 'playCard'; amount?: number; optional?: boolean; conditional?: boolean; needsReview: true }
   | { op: 'lifeChange'; direction: 'add' | 'trash'; amount?: number; optional?: boolean; conditional?: boolean; needsReview: true }
-  | { op: 'unrecognized'; rawText: string };
+  | { op: 'unrecognized'; rawText: string; conditional?: boolean };
 
 /** Best-effort structured cost. `raw` is always preserved; structured fields are added only when unambiguous. */
 export interface EffectCost {

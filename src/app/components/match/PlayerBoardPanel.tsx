@@ -67,6 +67,8 @@ export interface PlayerBoardPanelProps {
   mode: BoardSelectionMode;
   /** True for own in-play cards whose compiled program exposes an [Activate: Main] ability — used to mark and select them. */
   canActivateCard?: (card: CardView) => boolean;
+  /** Passed down to PileStack — hides ghost layers while board is active. */
+  boardFocused?: boolean;
   onCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea', card: CardView) => void;
   onCardZoom: (card: CardView) => void;
   onAttackTargetHover?: (card: CardView | null) => void;
@@ -235,7 +237,7 @@ function MatCell({
   );
 }
 
-export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, onCardTap, onCardZoom, onAttackTargetHover }: PlayerBoardPanelProps) {
+export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, boardFocused = false, onCardTap, onCardZoom, onAttackTargetHover }: PlayerBoardPanelProps) {
   const attackerSelected = selectedAttackerIds(mode);
   // Mark/select own in-play cards that can activate a [Activate: Main] effect.
   const canActivate = (card: CardView): boolean => isOwn && !!canActivateCard?.(card);
@@ -283,7 +285,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   // disconnected side.
   const deckCell = (
     <MatCell label="Deck" className="flex-shrink-0" labelClassName="sr-only" style={{ width: BOARD_ZONE_TRACK }}>
-      <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" />
+      <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" reverseRows={reverseRows} boardFocused={boardFocused} />
     </MatCell>
   );
 

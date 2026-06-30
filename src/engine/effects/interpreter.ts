@@ -227,7 +227,7 @@ export function runTriggers(
   for (const { ability, index } of matching) {
     if (!evalCondition(ability.condition, ctx)) continue;
     // "If …" board-state gate: an unmet precondition means the ability does nothing.
-    if (!evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId)) continue;
+    if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId)) continue;
     const suspended = runOps(ability, index, 0, {}, ctx);
     if (suspended) break; // wait for the choice before any further ability runs
   }

@@ -30,7 +30,7 @@ export function CardImage({ src, alt, className, eager }: CardImageProps) {
           <span className="px-2 text-center font-heading text-[10px] font-bold uppercase leading-tight tracking-[0.14em]">No image available</span>
         </div>
       ) : (
-        <img src={resolveAssetUrl(src)} alt={alt} loading={eager ? 'eager' : 'lazy'} onError={() => setFailed(true)} className="h-full w-full object-cover" />
+        <img src={resolveAssetUrl(src) ?? undefined} alt={alt} loading={eager ? 'eager' : 'lazy'} onError={() => setFailed(true)} className="h-full w-full object-cover" />
       )}
     </div>
   );

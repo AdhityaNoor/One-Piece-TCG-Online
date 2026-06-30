@@ -25,7 +25,7 @@ import type { CardDefinition } from '../../engine/state/card';
 import { getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
 import { Button, CardDetailModal, Modal, ScaleToFit } from '../components';
-import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, useBoardSelection } from '../components/match';
+import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, DockHand, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, useBoardSelection } from '../components/match';
 import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -50,6 +50,8 @@ export function MatchScreen() {
   const [pauseOpen, setPauseOpen] = useState(false);
   const [zoomDefinitionId, setZoomDefinitionId] = useState<string | null>(null);
   const [hoveredAttackTargetId, setHoveredAttackTargetId] = useState<string | null>(null);
+  // True while the mouse is over the playmat — forces both dock hands shut.
+  const [boardHovered, setBoardHovered] = useState(false);
   const navyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
 
   const isMatchScreen = current.screen === 'match';
@@ -257,7 +259,11 @@ export function MatchScreen() {
                 history. Height is the one dimension cqh ties card size to,
                 per the project's landscape-first requirement. */}
             <ScaleToFit className="op-match-playmat-layer">
-              <div className="flex h-full min-h-0 w-full flex-col justify-start gap-2 overflow-hidden">
+              <div
+                className="flex h-full min-h-0 w-full flex-col justify-start gap-2 overflow-hidden"
+                onMouseEnter={() => setBoardHovered(true)}
+                onMouseLeave={() => setBoardHovered(false)}
+              >
                 <PlayerSideRow
                   board={otherPlayerBoard}
                   isOwn={actingPlayerId === otherPlayerId}
@@ -265,10 +271,10 @@ export function MatchScreen() {
                   reverseRows={true}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
-                  onHandCardTap={(card) => selection.handleCardTap(otherPlayerId, 'hand', card)}
                   onMatCardTap={(zone, card) => selection.handleCardTap(otherPlayerId, zone, card)}
                   onCardZoom={openZoom}
                   onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
+                  boardFocused={boardHovered}
                 />
 
                 <div className="flex flex-shrink-0 items-center justify-center gap-3 py-0.5">
@@ -284,13 +290,36 @@ export function MatchScreen() {
                   reverseRows={false}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
-                  onHandCardTap={(card) => selection.handleCardTap(turnPlayerId, 'hand', card)}
                   onMatCardTap={(zone, card) => selection.handleCardTap(turnPlayerId, zone, card)}
                   onCardZoom={openZoom}
                   onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
+                  boardFocused={boardHovered}
                 />
               </div>
             </ScaleToFit>
+            {/* ── Dock hands ── rendered outside ScaleToFit so they aren't
+                affected by cqh sizing; positioned absolute relative to
+                op-match-table-shell (position:relative; overflow:hidden). */}
+            <DockHand
+              cards={otherPlayerBoard.hand}
+              isOwn={actingPlayerId === otherPlayerId}
+              position="top"
+              selectedIds={selectedHandIds(selection.mode)}
+              selectable={(card) => handSelectable(selection.mode, actingPlayerId === otherPlayerId, card)}
+              onCardTap={(card) => selection.handleCardTap(otherPlayerId, 'hand', card)}
+              onCardZoom={openZoom}
+              boardFocused={boardHovered}
+            />
+            <DockHand
+              cards={turnPlayerBoard.hand}
+              isOwn={actingPlayerId === turnPlayerId}
+              position="bottom"
+              selectedIds={selectedHandIds(selection.mode)}
+              selectable={(card) => handSelectable(selection.mode, actingPlayerId === turnPlayerId, card)}
+              onCardTap={(card) => selection.handleCardTap(turnPlayerId, 'hand', card)}
+              onCardZoom={openZoom}
+              boardFocused={boardHovered}
+            />
             <AttackArrowOverlay
               attackerInstanceId={attackArrow?.attackerInstanceId ?? null}
               targetInstanceId={attackArrow?.targetInstanceId ?? null}
@@ -709,170 +738,37 @@ function PlayerSideRow({
   isOpponent,
   reverseRows,
   mode,
-  onHandCardTap,
   onMatCardTap,
   onCardZoom,
   onAttackTargetHover,
   canActivateCard,
+  boardFocused,
 }: {
   board: ReturnType<typeof projectPlayerBoard>;
   isOwn: boolean;
   isOpponent: boolean;
   reverseRows: boolean;
   mode: MatchSelectionMode;
-  onHandCardTap: (card: CardView) => void;
   onMatCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea', card: CardView) => void;
   onCardZoom: (card: CardView) => void;
   onAttackTargetHover: (card: CardView | null) => void;
   canActivateCard: (card: CardView) => boolean;
+  boardFocused: boolean;
 }) {
-  const selectedIds = selectedHandIds(mode);
-
-  // The standalone Trash list column that used to flank the board on its
-  // outer edge is gone (Trash is now a face-up pile inside PlayerBoardPanel
-  // itself, in the old Deck slot — see TrashPile.tsx/PlayerBoardPanel.tsx).
-  // That column used to exist specifically so Hand could mirror sides
-  // (Hand left/Trash right on the bottom row, flipped on the top row) while
-  // still giving the board column the SAME fixed-width flanking on both
-  // sides — which is what kept both players' Leaders landing on the same
-  // screen X (PlayerBoardPanel.tsx centers Leader at the literal middle of
-  // its own board column; that column only lines up across rows if its
-  // start-X is identical on both rows).
-  //
-  // With Trash gone, mirroring Hand's side per-row would break that exact
-  // invariant again (a single fixed Hand column at one end means the board
-  // column's start-X differs by 180px depending on which side Hand sits on
-  // for a given row) — so Hand no longer mirrors; it's pinned to the same
-  // physical edge for both rows, and the board column always starts right
-  // after it. The board also gets to fully reclaim the old Trash column's
-  // width instead of leaving a dead 180px gap. The one visible consequence:
-  // the opponent's (top row's) hand now renders on the same side as the
-  // turn player's, instead of the mirrored opposite side it used to.
-  const handCell = (
-    <HandSection
-      board={board}
-      edge={reverseRows ? 'top' : 'bottom'}
-      isOwn={isOwn}
-      selectedIds={selectedIds}
-      mode={mode}
-      onCardTap={onHandCardTap}
-      onCardZoom={onCardZoom}
-    />
-  );
-  const boardCell = (
-    <PlayerBoardPanel
-      board={board}
-      isOwn={isOwn}
-      isOpponent={isOpponent}
-      reverseRows={reverseRows}
-      mode={mode}
-      canActivateCard={canActivateCard}
-      onCardTap={onMatCardTap}
-      onCardZoom={onCardZoom}
-      onAttackTargetHover={onAttackTargetHover}
-    />
-  );
-
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden">
-      {boardCell}
-      {handCell}
+      <PlayerBoardPanel
+        board={board}
+        isOwn={isOwn}
+        isOpponent={isOpponent}
+        reverseRows={reverseRows}
+        mode={mode}
+        canActivateCard={canActivateCard}
+        boardFocused={boardFocused}
+        onCardTap={onMatCardTap}
+        onCardZoom={onCardZoom}
+        onAttackTargetHover={onAttackTargetHover}
+      />
     </div>
-  );
-}
-
-function StackedHandBacks({ count }: { count: number }) {
-  return (
-    <div className="relative h-8 w-12 flex-shrink-0" aria-hidden="true">
-      {[0, 1, 2].map((index) => (
-        <div
-          key={index}
-          className="absolute top-1 h-7 w-5 overflow-hidden rounded-[3px] border border-gold/45 bg-black shadow-[0_3px_7px_rgba(0,0,0,0.45)]"
-          style={{ left: `${index * 9}px`, transform: `rotate(${(index - 1) * 7}deg)` }}
-        >
-          <CardBackArt tone="navy" />
-        </div>
-      ))}
-      <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-black/60 bg-gold px-1 text-[10px] font-black leading-none text-navy-950 shadow">
-        {count}
-      </span>
-    </div>
-  );
-}
-
-function HandSection({
-  board,
-  edge,
-  isOwn,
-  selectedIds,
-  mode,
-  onCardTap,
-  onCardZoom,
-}: {
-  board: ReturnType<typeof projectPlayerBoard>;
-  edge: 'top' | 'bottom';
-  isOwn: boolean;
-  selectedIds: Set<string>;
-  mode: MatchSelectionMode;
-  onCardTap: (card: CardView) => void;
-  onCardZoom: (card: CardView) => void;
-}) {
-  const isTop = edge === 'top';
-  const handle = (
-    <div className="flex h-10 flex-shrink-0 items-center justify-between gap-3 border-gold/25 bg-black/55 px-3 backdrop-blur-md">
-      <div className="flex min-w-0 items-center gap-2">
-        <StackedHandBacks count={board.hand.length} />
-        <div className="min-w-0 text-left">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-gold">{board.playerId} hand</p>
-          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-white/38">Hover to reveal</p>
-        </div>
-      </div>
-      <span className="h-1 w-20 rounded-full bg-gold/45 shadow-[0_0_14px_rgba(217,164,65,0.35)]" aria-hidden="true" />
-    </div>
-  );
-  const gallery = (
-    <div className="h-[19cqh] flex-shrink-0 overflow-x-auto overflow-y-hidden bg-[linear-gradient(180deg,_rgba(5,12,30,0.94),_rgba(3,7,16,0.96))] px-3 py-2">
-      {board.hand.length === 0 ? (
-        <div className="flex h-full items-center justify-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/30">No cards</div>
-      ) : (
-        <div className="flex h-full w-max min-w-full items-center gap-2">
-          {board.hand.map((card) => (
-            <BoardCardTile
-              key={card.instanceId}
-              card={card}
-              size="board"
-              selectable={handSelectable(mode, isOwn, card)}
-              selected={selectedIds.has(card.instanceId)}
-              onSelect={() => onCardTap(card)}
-              onZoom={() => onCardZoom(card)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <section
-      className={[
-        'group/handTray absolute left-1/2 z-30 w-[60%] -translate-x-1/2 overflow-hidden rounded-lg border border-gold/25 shadow-[0_18px_38px_rgba(0,0,0,0.42)] transition-transform duration-200 ease-out focus-within:translate-y-0 hover:translate-y-0',
-        isTop ? 'top-0 -translate-y-[calc(100%-2.5rem)]' : 'bottom-0 translate-y-[calc(100%-2.5rem)]',
-      ].join(' ')}
-      aria-label={`${board.playerId} hand`}
-    >
-      <div className="flex flex-col overflow-hidden">
-        {isTop ? (
-          <>
-            {gallery}
-            {handle}
-          </>
-        ) : (
-          <>
-            {handle}
-            {gallery}
-          </>
-        )}
-      </div>
-    </section>
   );
 }
