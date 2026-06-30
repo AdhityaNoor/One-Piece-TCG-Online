@@ -122,6 +122,20 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
     switch (mode.kind) {
       case 'idle': {
+        // Direct [Activate: Main] from the board: tap an own in-play card that
+        // has a compiled activate ability (the ⚡ badge). The engine validates
+        // phase/once-per-turn/cost; any target it needs becomes a PendingChoice.
+        if (isOwnCard && (zone === 'leaderArea' || zone === 'characterArea' || zone === 'stageArea') && hasActivateMain(card)) {
+          withActingPlayer((playerId) => ({
+            type: 'ACTIVATE_CARD_EFFECT',
+            actionId: createActionId(),
+            playerId,
+            sourceInstanceId: card.instanceId,
+            effectId: 'activateMain',
+            donInstanceIds: [],
+          }));
+          return;
+        }
         if (!isOwnCard || zone !== 'hand') return;
         if (card.category !== 'character' && card.category !== 'stage' && card.category !== 'event') return;
         const cost = card.cost ?? 0;

@@ -16,7 +16,8 @@ import type { GameState } from '../../../engine/state/game';
 
 const NAMI = { cardNumber: 'ST01-007', effectText: '[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.' };
 const LUFFY = { cardNumber: 'ST01-001', effectText: '[Activate: Main] [Once Per Turn] Give this Leader or 1 of your Characters up to 1 rested DON!! card.' };
-const registry = compileRegistry([NAMI, LUFFY]);
+const COST_DRAW = { cardNumber: 'CD-01', effectText: '[Activate: Main] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Draw 1 card.' };
+const registry = compileRegistry([NAMI, LUFFY, COST_DRAW]);
 const NO_DEFS = {};
 
 function inst(id: string, cardNumber: string, zone: CardInstance['currentZone'], owner: string, extra: Partial<CardInstance> = {}): CardInstance {
@@ -72,7 +73,49 @@ describe('ACTIVATE_CARD_EFFECT', () => {
     expect(validateActivateCardEffect(resumed, action, registry).legal).toBe(false);
   });
 
-  it('rejects activation costs (not modeled yet)', () => {
+  it('rejects a stray donInstanceIds payload (costs are paid automatically, not via the action)', () => {
     expect(validateActivateCardEffect(setup(), { ...action, donInstanceIds: ['don1'] }, registry).legal).toBe(false);
+  });
+
+  it('pays a DON!! −1 activation cost, then resolves the effect (returns 1 DON!! to the deck and draws 1)', () => {
+    const base = setup(); // don1 in cost area, nami in play
+    const s: GameState = {
+      ...base,
+      cardsById: { ...base.cardsById, cd: inst('cd', 'CD-01', 'characterArea', 'p1'), topcard: inst('topcard', 'F', 'deck', 'p1') },
+      players: {
+        ...base.players,
+        p1: {
+          ...base.players.p1,
+          characterArea: { ...base.players.p1.characterArea, cardIds: ['nami', 'cd'] },
+          deck: { ...base.players.p1.deck, cardIds: ['topcard'] },
+          donDeck: { ...base.players.p1.donDeck, cardIds: [] },
+        },
+      },
+    };
+    const costAction: ActivateCardEffectAction = { ...action, sourceInstanceId: 'cd', effectId: 'cd-act' };
+    expect(validateActivateCardEffect(s, costAction, registry).legal).toBe(true);
+
+    const fired = executeActivateCardEffect(s, costAction, NO_DEFS, registry);
+    // Cost paid: the DON!! returned from the cost area to the DON!! deck.
+    expect(fired.state.players.p1.donDeck.cardIds).toContain('don1');
+    expect(fired.state.players.p1.costArea.cardIds).not.toContain('don1');
+    // Effect resolved: drew the top card.
+    expect(fired.state.players.p1.hand.cardIds).toContain('topcard');
+  });
+
+  it('rejects a DON!! −1 ability when there is no DON!! on the field to return', () => {
+    const base = setup();
+    const s: GameState = {
+      ...base,
+      cardsById: { ...base.cardsById, cd: inst('cd', 'CD-01', 'characterArea', 'p1') },
+      players: {
+        ...base.players,
+        p1: { ...base.players.p1, characterArea: { ...base.players.p1.characterArea, cardIds: ['nami', 'cd'] }, costArea: { ...base.players.p1.costArea, cardIds: [] } },
+      },
+    };
+    const costAction: ActivateCardEffectAction = { ...action, sourceInstanceId: 'cd', effectId: 'cd-act' };
+    const r = validateActivateCardEffect(s, costAction, registry);
+    expect(r.legal).toBe(false);
+    expect(r.reasons.join(' ')).toMatch(/DON!! on the field to return/i);
   });
 });

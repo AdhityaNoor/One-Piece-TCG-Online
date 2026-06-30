@@ -65,12 +65,21 @@ export interface PlayerBoardPanelProps {
    */
   reverseRows: boolean;
   mode: BoardSelectionMode;
+  /** True for own in-play cards whose compiled program exposes an [Activate: Main] ability — used to mark and select them. */
+  canActivateCard?: (card: CardView) => boolean;
   onCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea', card: CardView) => void;
   onCardZoom: (card: CardView) => void;
   onAttackTargetHover?: (card: CardView | null) => void;
 }
 
-function leaderCharacterSelectable(mode: BoardSelectionMode, isOwn: boolean, isOpponent: boolean, zone: 'leaderArea' | 'characterArea', card: CardView): boolean {
+function leaderCharacterSelectable(
+  mode: BoardSelectionMode,
+  isOwn: boolean,
+  isOpponent: boolean,
+  zone: 'leaderArea' | 'characterArea',
+  card: CardView,
+  canActivate: boolean,
+): boolean {
   switch (mode.kind) {
     case 'selectAttacker':
       return isOwn && card.orientation === 'active' && !card.summoningSick;
@@ -83,6 +92,12 @@ function leaderCharacterSelectable(mode: BoardSelectionMode, isOwn: boolean, isO
       return isOwn;
     case 'selectBlocker':
       return isOwn && zone === 'characterArea' && card.orientation === 'active' && card.hasBlocker;
+    case 'selectActivateSource':
+      // The "Activate Effect" flow: own Leader/Character with a compiled [Activate: Main] ability.
+      return isOwn && canActivate;
+    case 'idle':
+      // Idle: an own card with a ready [Activate: Main] effect is tappable directly (the ⚡ badge).
+      return isOwn && canActivate;
     default:
       return false;
   }
@@ -220,8 +235,10 @@ function MatCell({
   );
 }
 
-export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, onCardTap, onCardZoom, onAttackTargetHover }: PlayerBoardPanelProps) {
+export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, onCardTap, onCardZoom, onAttackTargetHover }: PlayerBoardPanelProps) {
   const attackerSelected = selectedAttackerIds(mode);
+  // Mark/select own in-play cards that can activate a [Activate: Main] effect.
+  const canActivate = (card: CardView): boolean => isOwn && !!canActivateCard?.(card);
   const leaderCard: CardView | null = board.leader;
   const stageCard: CardView | null = board.stageArea[0] ?? null;
   const activeDon = board.costArea.filter((don) => !don.donRested);
@@ -233,8 +250,9 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
     <BoardCardTile
       card={leaderCard}
       size="field"
-      selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'leaderArea', leaderCard)}
+      selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'leaderArea', leaderCard, canActivate(leaderCard))}
       selected={attackerSelected.has(leaderCard.instanceId)}
+      activatable={mode.kind === 'idle' && canActivate(leaderCard)}
       onSelect={() => onCardTap('leaderArea', leaderCard)}
       onZoom={() => onCardZoom(leaderCard)}
       onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(leaderCard) : undefined}
@@ -277,8 +295,9 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
             key={card.instanceId}
             card={card}
             size="field"
-            selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'characterArea', card)}
+            selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'characterArea', card, canActivate(card))}
             selected={attackerSelected.has(card.instanceId)}
+            activatable={mode.kind === 'idle' && canActivate(card)}
             onSelect={() => onCardTap('characterArea', card)}
             onZoom={() => onCardZoom(card)}
             onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(card) : undefined}
@@ -451,7 +470,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   );
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
       {mat}
       <TrashGalleryModal
         open={trashGalleryOpen}

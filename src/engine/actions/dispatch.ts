@@ -123,7 +123,7 @@ export function validateAction(
     case 'ACTIVATE_EVENT_MAIN':
       return validateActivateEventMain(state, action, defs);
     case 'ACTIVATE_CARD_EFFECT':
-      return validateActivateCardEffect(state, action, registry);
+      return validateActivateCardEffect(state, action, registry, defs);
     case 'GIVE_DON':
       return validateGiveDon(state, action);
     case 'DECLARE_ATTACK':

@@ -26,11 +26,20 @@ export interface SettingsState {
   backsoundEnabled: boolean;
   /** Main-menu background music volume, normalized 0..1. */
   backsoundVolume: number;
+  /** UI click sound preference. UI-only audio state, never game state. */
+  sfxEnabled: boolean;
+  /** UI sound effect volume, normalized 0..1. */
+  sfxVolume: number;
+  /** Match screen navy backdrop preference. UI-only visual polish, never game state. */
+  matchNavyBackgroundEnabled: boolean;
   setDebugShowBothHands(value: boolean): void;
   setAnimationsEnabled(value: boolean): void;
   setThreeDEnabled(value: boolean): void;
   setBacksoundEnabled(value: boolean): void;
   setBacksoundVolume(value: number): void;
+  setSfxEnabled(value: boolean): void;
+  setSfxVolume(value: number): void;
+  setMatchNavyBackgroundEnabled(value: boolean): void;
   resetToDefaults(): void;
 }
 
@@ -40,7 +49,20 @@ const DEFAULTS = {
   threeDEnabled: false,
   backsoundEnabled: true,
   backsoundVolume: 0.45,
-} satisfies Pick<SettingsState, 'debugShowBothHands' | 'animationsEnabled' | 'threeDEnabled' | 'backsoundEnabled' | 'backsoundVolume'>;
+  sfxEnabled: true,
+  sfxVolume: 0.65,
+  matchNavyBackgroundEnabled: false,
+} satisfies Pick<
+  SettingsState,
+  | 'debugShowBothHands'
+  | 'animationsEnabled'
+  | 'threeDEnabled'
+  | 'backsoundEnabled'
+  | 'backsoundVolume'
+  | 'sfxEnabled'
+  | 'sfxVolume'
+  | 'matchNavyBackgroundEnabled'
+>;
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
@@ -51,6 +73,9 @@ export const useSettingsStore = create<SettingsState>()(
       setThreeDEnabled: (value) => set({ threeDEnabled: value }),
       setBacksoundEnabled: (value) => set({ backsoundEnabled: value }),
       setBacksoundVolume: (value) => set({ backsoundVolume: Math.max(0, Math.min(1, value)) }),
+      setSfxEnabled: (value) => set({ sfxEnabled: value }),
+      setSfxVolume: (value) => set({ sfxVolume: Math.max(0, Math.min(1, value)) }),
+      setMatchNavyBackgroundEnabled: (value) => set({ matchNavyBackgroundEnabled: value }),
       resetToDefaults: () => set(DEFAULTS),
     }),
     {

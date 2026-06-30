@@ -26,6 +26,13 @@ const CATALOG = [
   { cardNumber: 'DEBUFF', effectText: "[On Play] Give up to 1 of your opponent's Characters −2000 power during this turn." },
   { cardNumber: 'AOE', effectText: '[On Play] All of your Characters gain +1000 power during this turn.' },
   { cardNumber: 'MILL', effectText: '[On Play] Trash 3 cards from the top of your deck.' },
+  { cardNumber: 'BOUNCE', effectText: "[On Play] Return up to 1 of your opponent's Characters with a cost of 4 or less to the owner's hand." },
+  { cardNumber: 'ACT-DON', effectText: '[Activate: Main] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Draw 1 card.' },
+  { cardNumber: 'PLAY-HAND', effectText: '[On Play] Play up to 1 {Animal} type Character card with a cost of 4 or less from your hand.' },
+  { cardNumber: 'RECOVER', effectText: '[On Play] Add up to 1 {Animal} type Character card with a cost of 4 or less from your trash to your hand.' },
+  { cardNumber: 'GATED', effectText: '[On Play] If your Leader has the {Land of Wano} type, draw 1 card.' },
+  { cardNumber: 'RAMP', effectText: '[On Play] Add up to 1 DON!! card from your DON!! deck and set it as active.' },
+  { cardNumber: 'COND-STAT', effectText: '[DON!! x1] [Your Turn] If you have 2 or less Life cards, this Character gains +2000 power.' },
 ];
 const registry = compileRegistry(CATALOG);
 const NO_DEFS = {};
@@ -46,7 +53,38 @@ function place(state: GameState, i: CardInstance): GameState {
 
 describe('compiler', () => {
   it('lowers the catalog (draw, self-power, give-DON, KO, searcher, attack/KO/counter timings)', () => {
-    expect(Object.keys(registry).sort()).toEqual(['AOE', 'CTR-PWR', 'DEBUFF', 'KO-DRAW', 'KO-SRC', 'MILL', 'OP01-016', 'OP02-011', 'OP04-045', 'ST01-013', 'ST15-002', 'ST21-002', 'WA-DON']);
+    expect(Object.keys(registry).sort()).toEqual(['ACT-DON', 'AOE', 'BOUNCE', 'COND-STAT', 'CTR-PWR', 'DEBUFF', 'GATED', 'KO-DRAW', 'KO-SRC', 'MILL', 'OP01-016', 'OP02-011', 'OP04-045', 'PLAY-HAND', 'RAMP', 'RECOVER', 'ST01-013', 'ST15-002', 'ST21-002', 'WA-DON']);
+  });
+  it('lowers a conditional self-power static to a continuously-gated addPower (DON!! + turn + If-gate)', () => {
+    const p = compileEffect('COND-STAT', '[DON!! x1] [Your Turn] If you have 2 or less Life cards, this Character gains +2000 power.')!;
+    expect(p.abilities[0].trigger).toBe('onEnterPlay');
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'addPower', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 1, turn: 'your', gate: [{ kind: 'selfLife', atMost: 2 }] } });
+  });
+  it('lowers DON!! ramp to addDonFromDeck', () => {
+    expect(compileEffect('RAMP', '[On Play] Add up to 1 DON!! card from your DON!! deck and set it as active.')!.abilities[0].ops[0]).toEqual({ op: 'addDonFromDeck', count: 1, rested: false });
+  });
+  it('lowers an "If your Leader has the {Type} type, …" precondition into an ability gate', () => {
+    const p = compileEffect('GATED', '[On Play] If your Leader has the {Land of Wano} type, draw 1 card.')!;
+    expect(p.abilities[0].gate).toEqual([{ kind: 'leaderType', type: 'Land of Wano' }]);
+    expect(p.abilities[0].ops).toEqual([{ op: 'draw', amount: 1 }]);
+  });
+  it('lowers recover-from-trash to chooseTargets(controllerTrash filter) + moveToHand', () => {
+    const p = compileEffect('RECOVER', '[On Play] Add up to 1 {Animal} type Character card with a cost of 4 or less from your trash to your hand.')!;
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerTrash', filter: { typeIncludes: 'Animal', category: 'character', maxCost: 4 } } });
+    expect(p.abilities[0].ops[1].op).toBe('moveToHand');
+  });
+  it('lowers play-from-hand to chooseTargets(controllerHand filter) + playFromHand', () => {
+    const p = compileEffect('PLAY-HAND', '[On Play] Play up to 1 {Animal} type Character card with a cost of 4 or less from your hand.')!;
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerHand', filter: { category: 'character', typeIncludes: 'Animal', maxCost: 4 } } });
+    expect(p.abilities[0].ops[1].op).toBe('playFromHand');
+  });
+  it('lowers a bounce to chooseTargets + returnToHand, and a cost-prefixed [Activate: Main] to cost + effect', () => {
+    const b = compileEffect('BOUNCE', "[On Play] Return up to 1 of your opponent's Characters with a cost of 4 or less to the owner's hand.")!;
+    expect(b.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters', maxCost: 4 } });
+    expect(b.abilities[0].ops[1].op).toBe('returnToHand');
+    const act = compileEffect('ACT-DON', '[Activate: Main] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Draw 1 card.')!;
+    expect(act.abilities[0].cost).toEqual([{ kind: 'donMinus', count: 1 }]);
+    expect(act.abilities[0].ops).toEqual([{ op: 'draw', amount: 1 }]);
   });
   it('lowers a temporary opponent debuff and an AoE buff to addPower + a self-mill to trashTopDeck', () => {
     const deb = compileEffect('DEBUFF', "[On Play] Give up to 1 of your opponent's Characters −2000 power during this turn.")!;
@@ -227,6 +265,114 @@ describe('interpreter runs the compiled IR', () => {
     expect(played.pendingChoices[0].constraints.candidateInstanceIds).toEqual(['oc']);
     const resumed = resumeChoice(played.state, played.pendingChoices[0].id, ['oc'], registry, defs, 'b');
     expect(computeCurrentPower(defs, resumed.state, 'oc')).toBe(1000); // 3000 − 2000
+  });
+
+  it('[On Play] PLAY-HAND: offers only matching hand Characters, then plays the chosen one (summoning-sick)', () => {
+    const defs = {
+      'PLAY-HAND': def('PLAY-HAND', 0),
+      ANIMAL3: { ...namedDef('ANIMAL3', 'Karoo', ['Animal']), baseCost: 3 },
+      OTHER: { ...namedDef('OTHER', 'Zoro', []), baseCost: 1 },
+    };
+    let s = createSampleGameState();
+    s = {
+      ...s,
+      cardsById: { ...s.cardsById, ha: inst('ha', 'ANIMAL3', 'hand', 'p1'), hb: inst('hb', 'OTHER', 'hand', 'p1') },
+      players: { ...s.players, p1: { ...s.players.p1, hand: { ...s.players.p1.hand, cardIds: ['ha', 'hb'] } } },
+    };
+    s = place(s, inst('src', 'PLAY-HAND', 'characterArea', 'p1'));
+    const beforeChars = s.players.p1.characterArea.cardIds.length;
+
+    const played = fireOnPlay(s, 'src', registry, defs, 'a');
+    // Only the {Animal} cost-3 card qualifies (the off-type card is filtered out).
+    expect(played.pendingChoices[0].constraints.candidateInstanceIds).toEqual(['ha']);
+
+    const resumed = resumeChoice(played.state, played.pendingChoices[0].id, ['ha'], registry, defs, 'b');
+    expect(resumed.state.players.p1.hand.cardIds).toEqual(['hb']); // 'ha' left the hand
+    expect(resumed.state.players.p1.characterArea.cardIds.length).toBe(beforeChars + 1);
+    const newId = resumed.state.players.p1.characterArea.cardIds.find((id) => id !== 'src');
+    expect(resumed.state.cardsById[newId!].summoningSick).toBe(true);
+  });
+
+  it('GATED [On Play]: fires only when the Leader gate holds (draws), and does nothing when it fails', () => {
+    function setup(leaderTypes: string[]) {
+      let s = createSampleGameState();
+      const leaderId = s.players.p1.leaderInstanceId;
+      s = {
+        ...s,
+        cardsById: { ...s.cardsById, [leaderId]: { ...s.cardsById[leaderId], cardDefinitionId: 'LEAD' }, d0: inst('d0', 'F', 'deck', 'p1') },
+        players: { ...s.players, p1: { ...s.players.p1, deck: { ...s.players.p1.deck, cardIds: ['d0'] }, hand: { ...s.players.p1.hand, cardIds: [] } } },
+      };
+      s = place(s, inst('src', 'GATED', 'characterArea', 'p1'));
+      const defs = { LEAD: { ...namedDef('LEAD', 'Wano Leader', leaderTypes), category: 'leader' as const }, GATED: def('GATED', 0) };
+      return { s, defs };
+    }
+    const met = setup(['Land of Wano']);
+    expect(fireOnPlay(met.s, 'src', registry, met.defs, 'a').state.players.p1.hand.cardIds).toEqual(['d0']); // gate holds → drew
+    const notMet = setup(['Animal']);
+    expect(fireOnPlay(notMet.s, 'src', registry, notMet.defs, 'a').state.players.p1.hand.cardIds).toEqual([]); // gate fails → nothing
+  });
+
+  it('[On Play] RECOVER: offers only matching trash cards, then moves the chosen one to hand', () => {
+    const defs = {
+      RECOVER: def('RECOVER', 0),
+      ANIMAL3: { ...namedDef('ANIMAL3', 'Karoo', ['Animal']), baseCost: 3 },
+      OTHER: { ...namedDef('OTHER', 'Zoro', []), baseCost: 1 },
+    };
+    let s = createSampleGameState();
+    s = {
+      ...s,
+      cardsById: { ...s.cardsById, ta: inst('ta', 'ANIMAL3', 'trash', 'p1'), tb: inst('tb', 'OTHER', 'trash', 'p1') },
+      players: { ...s.players, p1: { ...s.players.p1, trash: { ...s.players.p1.trash, cardIds: ['ta', 'tb'] }, hand: { ...s.players.p1.hand, cardIds: [] } } },
+    };
+    s = place(s, inst('src', 'RECOVER', 'characterArea', 'p1'));
+
+    const played = fireOnPlay(s, 'src', registry, defs, 'a');
+    expect(played.pendingChoices[0].constraints.candidateInstanceIds).toEqual(['ta']); // off-type 'tb' filtered out
+    const resumed = resumeChoice(played.state, played.pendingChoices[0].id, ['ta'], registry, defs, 'b');
+    expect(resumed.state.players.p1.hand.cardIds).toContain('ta');
+    expect(resumed.state.players.p1.trash.cardIds).toEqual(['tb']);
+    expect(resumed.state.cardsById.ta.currentZone).toBe('hand');
+  });
+
+  it('[On Play] BOUNCE: returns the chosen opponent Character to its owner’s hand', () => {
+    const defs = { BOUNCE: def('BOUNCE', 0), OC: def('OC', 2000) };
+    let s = place(createSampleGameState(), inst('src', 'BOUNCE', 'characterArea', 'p1'));
+    s = place(s, inst('oc', 'OC', 'characterArea', 'p2'));
+    const beforeHand = s.players.p2.hand.cardIds.length;
+    const played = fireOnPlay(s, 'src', registry, defs, 'a');
+    expect(played.pendingChoices[0].constraints.candidateInstanceIds).toEqual(['oc']);
+    const resumed = resumeChoice(played.state, played.pendingChoices[0].id, ['oc'], registry, defs, 'b');
+    expect(resumed.state.cardsById.oc.currentZone).toBe('hand');
+    expect(resumed.state.players.p2.characterArea.cardIds).not.toContain('oc');
+    expect(resumed.state.players.p2.hand.cardIds.length).toBe(beforeHand + 1);
+  });
+
+  it('COND-STAT: the gated static (+2000 while ≤2 Life, your turn, [DON!! x1]) toggles with Life count', () => {
+    const defs = { 'COND-STAT': def('COND-STAT', 5000) };
+    function build(lifeCount: number): GameState {
+      let s = createSampleGameState();
+      const life = Array.from({ length: lifeCount }, (_, i) => `lf${i}`);
+      s = { ...s, activePlayerId: 'p1', players: { ...s.players, p1: { ...s.players.p1, lifeArea: { ...s.players.p1.lifeArea, cardIds: life } } } };
+      s = place(s, inst('z', 'COND-STAT', 'characterArea', 'p1', { donAttached: ['dd'] }));
+      return fireOnPlay(s, 'z', registry, defs, 'a').state;
+    }
+    expect(computeCurrentPower(defs, build(2), 'z')).toBe(8000); // 5000 base + 1000 DON + 2000 (gate met)
+    expect(computeCurrentPower(defs, build(3), 'z')).toBe(6000); // gate fails → 5000 + 1000 DON only
+  });
+
+  it('[On Play] RAMP: moves a DON!! from the DON!! deck to the cost area, active', () => {
+    let s = createSampleGameState();
+    s = {
+      ...s,
+      cardsById: { ...s.cardsById, dd1: inst('dd1', 'DON', 'donDeck', 'p1') },
+      players: { ...s.players, p1: { ...s.players.p1, donDeck: { ...s.players.p1.donDeck, cardIds: ['dd1'] }, costArea: { ...s.players.p1.costArea, cardIds: [] } } },
+    };
+    s = place(s, inst('src', 'RAMP', 'characterArea', 'p1'));
+    const fired = fireOnPlay(s, 'src', registry, {}, 'a');
+    expect(fired.state.players.p1.costArea.cardIds).toContain('dd1');
+    expect(fired.state.players.p1.donDeck.cardIds).not.toContain('dd1');
+    expect(fired.state.cardsById.dd1.currentZone).toBe('costArea');
+    expect(fired.state.cardsById.dd1.donRested).toBe(false);
   });
 
   it('[On Play] MILL: trashes the top 3 cards of the controller’s own deck', () => {

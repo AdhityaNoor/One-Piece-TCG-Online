@@ -9,7 +9,7 @@
  * render via the selector hook below, not a parallel rule implementation.
  */
 import { create } from 'zustand';
-import { resolveCardPrintingsById } from '../../cards/api';
+import { resolveCardPrintingsById } from '../lib/cardCatalog';
 import { buildCardLibraryEntry, type CardLibraryEntry } from '../../cards/library';
 import {
   createSavedDeck,

@@ -195,6 +195,34 @@
     outline: none;
     box-shadow: 0 0 0 2px rgba(255, 225, 122, 0.12);
   }
+
+  .op-match-table-shell {
+    isolation: isolate;
+    perspective: 86rem;
+    perspective-origin: 50% 70%;
+  }
+
+  .op-match-playmat-layer {
+    filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.28));
+    transform: rotateX(15deg) translateY(-5.5%) scale(0.985);
+    transform-origin: 50% 100%;
+    transform-style: preserve-3d;
+    transition:
+      filter 260ms ease,
+      transform 260ms ease;
+  }
+
+  .op-match-table-shell:is(:hover, :focus-within) .op-match-playmat-layer {
+    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.22));
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .op-match-playmat-layer {
+      transition: none;
+    }
+  }
+
 }
 
 @keyframes op-home-character-enter {

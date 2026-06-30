@@ -13,6 +13,7 @@ import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { EffectContextImpl } from './effectContext';
+import { evaluateGates } from './gates';
 import type { EffectTemplateRegistry } from './effectTemplate';
 import type { Ability, EffectOp, EffectProgram, IrCondition, IrTrigger, SearchFilter, Selector } from './effectIr';
 
@@ -56,18 +57,20 @@ function finishWithCascade(
   return { state: working, log, pendingChoices: [] };
 }
 
-/** From the looked-at deck cards, the ids that satisfy a searcher filter (all fields ANDed). */
-function searchEligible(lookedIds: string[], filter: SearchFilter | undefined, ctx: EffectContextImpl): string[] {
-  if (!filter) return lookedIds;
+/** From a set of card instance ids, those whose definition satisfies a filter (all present fields ANDed). */
+function searchEligible(ids: string[], filter: SearchFilter | undefined, ctx: EffectContextImpl): string[] {
+  if (!filter) return ids;
   const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
-  return lookedIds.filter((id) => {
+  return ids.filter((id) => {
     const def = ctx.definitionOf(id);
     if (!def) return false;
     if (filter.typeIncludes && !def.types.some((t) => t.toLowerCase() === filter.typeIncludes!.toLowerCase())) return false;
     if (filter.excludeSelfName && selfName !== undefined && def.name === selfName) return false;
     if (filter.category && def.category !== filter.category) return false;
+    if (filter.name && def.name !== filter.name) return false;
     if (filter.maxCost !== undefined && (def.baseCost ?? Infinity) > filter.maxCost) return false;
     if (filter.minCost !== undefined && (def.baseCost ?? -Infinity) < filter.minCost) return false;
+    if (filter.exactCost !== undefined && (def.baseCost ?? -1) !== filter.exactCost) return false;
     if (filter.maxPower !== undefined && (def.basePower ?? Infinity) > filter.maxPower) return false;
     return true;
   });
@@ -107,6 +110,10 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       return ids;
     }
+    case 'controllerHand':
+      return searchEligible(ctx.controllerHandIds(), sel.filter, ctx);
+    case 'controllerTrash':
+      return searchEligible(ctx.controllerTrashIds(), sel.filter, ctx);
     case 'var':
       return bindings[sel.name] ?? [];
   }
@@ -131,8 +138,23 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTo
     case 'rest':
       for (const id of resolveSelector(op.target, ctx, bindings)) ctx.rest(id);
       return;
+    case 'returnToHand':
+      for (const id of resolveSelector(op.target, ctx, bindings)) ctx.returnToHand(id);
+      return;
+    case 'playFromHand':
+      for (const id of resolveSelector(op.target, ctx, bindings)) ctx.playCharacterFromHand(id);
+      return;
+    case 'moveToHand':
+      for (const id of resolveSelector(op.target, ctx, bindings)) ctx.moveToHand(id);
+      return;
+    case 'trashCards':
+      for (const id of resolveSelector(op.target, ctx, bindings)) ctx.trashCard(id);
+      return;
     case 'trashTopDeck':
       ctx.trashTopOfDeck(ctx.controllerId, op.count);
+      return;
+    case 'addDonFromDeck':
+      ctx.addDonFromDeck(ctx.controllerId, op.count, op.rested);
       return;
   }
 }
@@ -204,6 +226,8 @@ export function runTriggers(
   const ctx = new EffectContextImpl(state, sourceInstanceId, defs, actionId);
   for (const { ability, index } of matching) {
     if (!evalCondition(ability.condition, ctx)) continue;
+    // "If …" board-state gate: an unmet precondition means the ability does nothing.
+    if (!evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId)) continue;
     const suspended = runOps(ability, index, 0, {}, ctx);
     if (suspended) break; // wait for the choice before any further ability runs
   }

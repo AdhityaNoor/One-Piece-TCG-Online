@@ -1,14 +1,11 @@
 import { create } from 'zustand';
 import {
-  fetchAllSets,
-  fetchAllPlayableCardPrintings,
-  fetchSetCards,
-  resolveCardPrintingsById,
   withCache,
   type CardApiError,
   type CardPrintingDto,
   type SetSummaryDto,
 } from '../../cards/api';
+import { fetchAllSets, fetchAllPlayableCardPrintings, fetchSetCards, resolveCardPrintingsById } from '../lib/cardCatalog';
 import {
   buildCardLibraryEntry,
   filterCardLibraryEntries,

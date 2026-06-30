@@ -1,0 +1,20 @@
+# Heavy card-image assets (~510 MB) — served from Vercel Blob in production.
+# See docs/04-deployment.md for the upload workflow.
+public/card-images/
+
+# Build artefacts and deps — Vercel installs/builds these itself.
+node_modules
+dist
+
+# Dev-only data and tooling — not needed at runtime.
+scrape/
+scripts/
+incoming-assets/
+effect-coverage.csv
+effect-coverage.md
+effect-review-worklist.csv
+test-results.txt
+
+# PDFs and docs — source references only.
+*.pdf
+docs/

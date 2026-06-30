@@ -11,8 +11,9 @@
  */
 import type { ContinuousEffectRecord, GameState } from '../../state/game';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
+import { evaluateGates } from '../../effects/gates';
 
-function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string): boolean {
+function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
   const mod = record.powerModifier;
   if (!mod || mod.appliesToInstanceId !== instanceId) return false;
   const cond = mod.condition;
@@ -24,6 +25,8 @@ function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, 
     if (cond.turn === 'your' && !isOwnersTurn) return false;
     if (cond.turn === 'opponent' && isOwnersTurn) return false;
   }
+  // "If <board state>" gate, re-evaluated each read against the modifier's owner.
+  if (cond.gate && !evaluateGates(cond.gate, state, defs, record.ownerId)) return false;
   return true;
 }
 
@@ -35,7 +38,7 @@ export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState
   const battleBonus = state.currentBattle?.battlePowerBonuses[instanceId] ?? 0; // 7-1-3-2-1
   let continuousBonus = 0; // 8-1-3-3 card-effect power modifiers
   for (const record of state.continuousEffects) {
-    if (powerModifierApplies(record, state, instanceId)) continuousBonus += record.powerModifier!.amount;
+    if (powerModifierApplies(record, state, instanceId, defs)) continuousBonus += record.powerModifier!.amount;
   }
   return base + donBonus + battleBonus + continuousBonus;
 }

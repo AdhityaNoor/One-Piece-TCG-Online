@@ -5,8 +5,9 @@
  * canonical engine implementation so behavior can't drift.
  */
 import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousPowerCondition, GameState } from '../state/game';
-import type { CardDefinition } from '../state/card';
+import type { CardDefinition, CardInstance } from '../state/card';
 import type { PendingChoice } from '../events/pendingChoice';
+import { mintRuntimeInstanceId } from '../rules/shared/mintInstance';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import { createActionLogger, type ActionLogger } from '../rules/shared/actionLogger';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
@@ -49,6 +50,12 @@ export class EffectContextImpl implements EffectContext {
   }
   opponentCharacterIds(): string[] {
     return [...this.working.players[this.opponentId].characterArea.cardIds];
+  }
+  controllerHandIds(): string[] {
+    return [...this.working.players[this.controllerId].hand.cardIds];
+  }
+  controllerTrashIds(): string[] {
+    return [...this.working.players[this.controllerId].trash.cardIds];
   }
   powerOf(instanceId: string): number {
     return computeCurrentPower(this.defs, this.working, instanceId);
@@ -196,6 +203,155 @@ export class EffectContextImpl implements EffectContext {
     return drained;
   }
 
+  returnToHand(targetInstanceId: string): void {
+    const inst = this.working.cardsById[targetInstanceId];
+    if (!inst) return;
+    const owner = this.working.players[inst.ownerId];
+    const newOwner = {
+      ...owner,
+      characterArea: removeFromZone(owner.characterArea, targetInstanceId),
+      stageArea: removeFromZone(owner.stageArea, targetInstanceId),
+      hand: addToZoneBottom(owner.hand, targetInstanceId),
+    };
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [inst.ownerId]: newOwner },
+      cardsById: {
+        ...this.working.cardsById,
+        // Leaving play resets in-play state; the card is now a hand card, visible only to its owner (3-1-6).
+        [targetInstanceId]: { ...inst, currentZone: 'hand', donAttached: [], summoningSick: false, revealedTo: [inst.ownerId] },
+      },
+      continuousEffects: this.working.continuousEffects.filter((ce) => ce.sourceInstanceId !== targetInstanceId),
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'CARD_MOVED',
+      message: `${targetInstanceId} was returned to its owner's hand (bounce).`,
+      data: { from: 'characterArea', to: 'hand', targetInstanceId },
+      relatedCardInstanceIds: [targetInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  playCharacterFromHand(handInstanceId: string): void {
+    const handInst = this.working.cardsById[handInstanceId];
+    if (!handInst || handInst.currentZone !== 'hand') return;
+    const def = this.defs[handInst.cardDefinitionId];
+    if (!def || def.category !== 'character') return; // only Characters can be played to the field
+    const controllerId = handInst.controllerId;
+    const player = this.working.players[controllerId];
+    if (!player) return;
+
+    const minted = mintRuntimeInstanceId(this.working); // 3-1-6: fresh instance entering play
+    const newId = minted.id;
+    const newInstance: CardInstance = {
+      instanceId: newId,
+      cardDefinitionId: handInst.cardDefinitionId,
+      ownerId: handInst.ownerId,
+      controllerId,
+      currentZone: 'characterArea',
+      orientation: 'active',
+      faceState: 'faceUp',
+      donAttached: [],
+      currentPower: def.basePower ?? 0,
+      appliedContinuousEffectIds: [],
+      oncePerTurnUsed: [],
+      summoningSick: !def.hasRush, // 3-7-4, 10-1-6
+      revealedTo: 'all',
+    };
+    const cardsById = { ...minted.state.cardsById, [newId]: newInstance };
+    delete cardsById[handInstanceId]; // old hand instance retired
+    const newCharacterArea = addToZoneBottom(player.characterArea, newId);
+    const newHand = removeFromZone(player.hand, handInstanceId);
+    this.working = {
+      ...minted.state,
+      cardsById,
+      players: { ...minted.state.players, [controllerId]: { ...player, hand: newHand, characterArea: newCharacterArea } },
+    };
+
+    this.logger.push({
+      actorPlayerId: controllerId,
+      type: 'CARD_PLAYED',
+      message: `${controllerId} played ${def.name} from hand via an effect (no cost).`,
+      data: { from: 'hand', to: 'characterArea', cost: 0, oldInstanceId: handInstanceId },
+      relatedCardInstanceIds: [newId],
+      visibility: 'public',
+    });
+
+    // 3-7-6-1: a 6th Character forces a trash-down choice (same sentinel the
+    // PLAY_CHARACTER handler / PendingChoicePrompt already handle).
+    const limit = newCharacterArea.maxSize ?? Infinity;
+    if (newCharacterArea.cardIds.length > limit) {
+      this.emitChoice({
+        id: `${controllerId}__character-overflow-${newId}`,
+        playerId: controllerId,
+        kind: 'SELECT_CARDS',
+        prompt: `Choose 1 Character to trash — more than ${limit} in your Character Area (3-7-6-1).`,
+        constraints: { min: 1, max: 1, zoneId: 'characterArea', filterDescription: 'Any Character currently in your Character Area.' },
+        sourceInstanceId: null,
+        sourceEffectId: 'rule:characterAreaOverflow',
+      });
+    }
+  }
+
+  moveToHand(instanceId: string): void {
+    const inst = this.working.cardsById[instanceId];
+    if (!inst) return;
+    const owner = this.working.players[inst.ownerId];
+    if (!owner) return;
+    const fromZone = inst.currentZone;
+    const newOwner = {
+      ...owner,
+      trash: removeFromZone(owner.trash, instanceId),
+      characterArea: removeFromZone(owner.characterArea, instanceId),
+      stageArea: removeFromZone(owner.stageArea, instanceId),
+      hand: addToZoneBottom(owner.hand, instanceId),
+    };
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [inst.ownerId]: newOwner },
+      cardsById: { ...this.working.cardsById, [instanceId]: { ...inst, currentZone: 'hand', donAttached: [], revealedTo: [inst.ownerId] } },
+      continuousEffects: this.working.continuousEffects.filter((ce) => ce.sourceInstanceId !== instanceId),
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'CARD_MOVED',
+      message: `${instanceId} was added to ${inst.ownerId}'s hand (from ${fromZone}).`,
+      data: { from: fromZone, to: 'hand', instanceId },
+      relatedCardInstanceIds: [instanceId],
+      visibility: { visibleTo: [inst.ownerId] },
+    });
+  }
+
+  trashCard(instanceId: string): void {
+    const inst = this.working.cardsById[instanceId];
+    if (!inst) return;
+    const owner = this.working.players[inst.ownerId];
+    if (!owner) return;
+    const fromZone = inst.currentZone;
+    const newOwner = {
+      ...owner,
+      hand: removeFromZone(owner.hand, instanceId),
+      characterArea: removeFromZone(owner.characterArea, instanceId),
+      stageArea: removeFromZone(owner.stageArea, instanceId),
+      trash: addToZoneTop(owner.trash, instanceId),
+    };
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [inst.ownerId]: newOwner },
+      cardsById: { ...this.working.cardsById, [instanceId]: { ...inst, currentZone: 'trash', donAttached: [], revealedTo: 'all' } },
+      continuousEffects: this.working.continuousEffects.filter((ce) => ce.sourceInstanceId !== instanceId),
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'CARD_MOVED',
+      message: `${instanceId} was trashed (from ${fromZone}).`,
+      data: { from: fromZone, to: 'trash', instanceId },
+      relatedCardInstanceIds: [instanceId],
+      visibility: 'public',
+    });
+  }
+
   rest(targetInstanceId: string): void {
     const inst = this.working.cardsById[targetInstanceId];
     if (!inst || inst.orientation === 'rested') return;
@@ -232,6 +388,33 @@ export class EffectContextImpl implements EffectContext {
       type: 'CARD_MOVED',
       message: `${playerId} trashed the top ${moving.length} card(s) of their deck (self-mill).`,
       data: { from: 'deck', to: 'trash', count: moving.length },
+      relatedCardInstanceIds: moving,
+      visibility: 'public',
+    });
+  }
+
+  addDonFromDeck(playerId: string, n: number, rested: boolean): void {
+    const player = this.working.players[playerId];
+    if (!player || n <= 0) return;
+    const moving = player.donDeck.cardIds.slice(0, n);
+    if (moving.length === 0) return;
+    const remainingDonDeck = player.donDeck.cardIds.slice(moving.length);
+    let costArea = player.costArea;
+    const cardsById = { ...this.working.cardsById };
+    for (const id of moving) {
+      costArea = addToZoneBottom(costArea, id);
+      cardsById[id] = { ...cardsById[id], currentZone: 'costArea', donRested: rested };
+    }
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [playerId]: { ...player, donDeck: { ...player.donDeck, cardIds: remainingDonDeck }, costArea } },
+      cardsById,
+    };
+    this.logger.push({
+      actorPlayerId: playerId,
+      type: 'CARD_MOVED',
+      message: `${playerId} added ${moving.length} DON!! from the DON!! deck to the cost area (${rested ? 'rested' : 'active'}).`,
+      data: { from: 'donDeck', to: 'costArea', count: moving.length, rested, donInstanceIds: moving },
       relatedCardInstanceIds: moving,
       visibility: 'public',
     });

@@ -16,7 +16,8 @@
     "scrape:limitless:window": "node scripts/scrape/launch.mjs scrape:limitless",
     "build:assets": "node scripts/build-card-assets.mjs",
     "worklist": "tsx scripts/effect-worklist/run.ts",
-    "coverage": "tsx scripts/effect-coverage/run.ts"
+    "coverage": "tsx scripts/effect-coverage/run.ts",
+    "upload:blob-assets": "node scripts/upload-blob-assets.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -28,6 +29,7 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@types/three": "^0.185.0",
+    "@vercel/blob": "^1.1.1",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
     "jsdom": "^25.0.1",

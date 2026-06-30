@@ -12,3 +12,6 @@ dist-ssr
 # DATA under public/cards/ IS committed (the catalog); only the heavy images
 # are ignored — regenerate them by re-running the scrape + build:assets.
 /public/card-images/
+
+.vercel
+.env*

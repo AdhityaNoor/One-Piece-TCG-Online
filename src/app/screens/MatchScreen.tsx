@@ -30,6 +30,7 @@ import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
 import { useMatchStore } from '../store/matchStore';
+import { useSettingsStore } from '../store/settingsStore';
 import type { CardView } from '../../board/projection';
 
 export function MatchScreen() {
@@ -49,6 +50,7 @@ export function MatchScreen() {
   const [pauseOpen, setPauseOpen] = useState(false);
   const [zoomDefinitionId, setZoomDefinitionId] = useState<string | null>(null);
   const [hoveredAttackTargetId, setHoveredAttackTargetId] = useState<string | null>(null);
+  const navyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
 
   const isMatchScreen = current.screen === 'match';
   const deckIdA = current.screen === 'match' ? current.deckIdA : null;
@@ -231,7 +233,12 @@ export function MatchScreen() {
             </div>
           </aside>
 
-          <div className="relative min-h-0 overflow-hidden rounded-xl border border-gold/20 bg-[linear-gradient(180deg,_rgba(5,9,20,0.9),_rgba(3,7,16,0.96))] p-2 shadow-inner shadow-black/40">
+          <div
+            className={[
+              'op-match-table-shell relative min-h-0 overflow-hidden rounded-xl border border-gold/20 p-2 shadow-inner shadow-black/40',
+              navyBackgroundEnabled ? 'bg-[linear-gradient(180deg,_rgba(5,9,20,0.9),_rgba(3,7,16,0.96))]' : 'bg-transparent',
+            ].join(' ')}
+          >
             {/* ScaleToFit no longer scales anything itself — it just turns this
                 block into a CSS containment context (container-type: size) so
                 every card-sized leaf inside (PlayerBoardPanel/DonChip/
@@ -249,7 +256,7 @@ export function MatchScreen() {
                 fixed reference ratio) — see ScaleToFit.tsx for the full
                 history. Height is the one dimension cqh ties card size to,
                 per the project's landscape-first requirement. */}
-            <ScaleToFit>
+            <ScaleToFit className="op-match-playmat-layer">
               <div className="flex h-full min-h-0 w-full flex-col justify-start gap-2 overflow-hidden">
                 <PlayerSideRow
                   board={otherPlayerBoard}
@@ -257,6 +264,7 @@ export function MatchScreen() {
                   isOpponent={actingPlayerId !== otherPlayerId}
                   reverseRows={true}
                   mode={selection.mode}
+                  canActivateCard={selection.hasActivateMain}
                   onHandCardTap={(card) => selection.handleCardTap(otherPlayerId, 'hand', card)}
                   onMatCardTap={(zone, card) => selection.handleCardTap(otherPlayerId, zone, card)}
                   onCardZoom={openZoom}
@@ -275,6 +283,7 @@ export function MatchScreen() {
                   isOpponent={actingPlayerId !== turnPlayerId}
                   reverseRows={false}
                   mode={selection.mode}
+                  canActivateCard={selection.hasActivateMain}
                   onHandCardTap={(card) => selection.handleCardTap(turnPlayerId, 'hand', card)}
                   onMatCardTap={(zone, card) => selection.handleCardTap(turnPlayerId, zone, card)}
                   onCardZoom={openZoom}
@@ -535,10 +544,14 @@ function VictoryCanvas({ winnerId }: { winnerId: string }) {
 
 function MatchGameShell({ title, headerRight, children }: { title: string; headerRight?: ReactNode; children: ReactNode }) {
   void headerRight;
+  const navyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
+
   return (
-    <main className="relative h-dvh w-full overflow-hidden bg-[#071126] font-body text-white">
+    <main className={['relative h-dvh w-full overflow-hidden font-body text-white', navyBackgroundEnabled ? 'bg-[#071126]' : 'bg-transparent'].join(' ')}>
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,211,74,0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
+      {navyBackgroundEnabled && (
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,211,74,0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
+      )}
       <h1 className="sr-only">{title}</h1>
       <section className="absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden p-2">{children}</section>
     </main>
@@ -700,6 +713,7 @@ function PlayerSideRow({
   onMatCardTap,
   onCardZoom,
   onAttackTargetHover,
+  canActivateCard,
 }: {
   board: ReturnType<typeof projectPlayerBoard>;
   isOwn: boolean;
@@ -710,6 +724,7 @@ function PlayerSideRow({
   onMatCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea', card: CardView) => void;
   onCardZoom: (card: CardView) => void;
   onAttackTargetHover: (card: CardView | null) => void;
+  canActivateCard: (card: CardView) => boolean;
 }) {
   const selectedIds = selectedHandIds(mode);
 
@@ -751,6 +766,7 @@ function PlayerSideRow({
       isOpponent={isOpponent}
       reverseRows={reverseRows}
       mode={mode}
+      canActivateCard={canActivateCard}
       onCardTap={onMatCardTap}
       onCardZoom={onCardZoom}
       onAttackTargetHover={onAttackTargetHover}

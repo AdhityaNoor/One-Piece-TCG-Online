@@ -16,12 +16,15 @@ export interface CardLibraryFilter {
   colors?: Color[];
   /** OR match against CardDefinition.category. Empty/omitted = no category filter. */
   categories?: CardCategory[];
+  /** Case-insensitive substring match against CardDefinition.types. Empty/omitted = no type filter. */
+  typeQuery?: string;
 }
 
 export function filterCardLibraryEntries(entries: CardLibraryEntry[], filter: CardLibraryFilter): CardLibraryEntry[] {
   const query = filter.query?.trim().toLowerCase();
   const colors = filter.colors && filter.colors.length > 0 ? filter.colors : undefined;
   const categories = filter.categories && filter.categories.length > 0 ? filter.categories : undefined;
+  const typeQuery = filter.typeQuery?.trim().toLowerCase();
 
   return entries.filter((entry) => {
     if (query) {
@@ -31,6 +34,7 @@ export function filterCardLibraryEntries(entries: CardLibraryEntry[], filter: Ca
     }
     if (colors && !entry.definition.colors.some((c) => colors.includes(c))) return false;
     if (categories && !categories.includes(entry.definition.category)) return false;
+    if (typeQuery && !entry.definition.types.some((type) => type.toLowerCase().includes(typeQuery))) return false;
     return true;
   });
 }

@@ -11,6 +11,7 @@ import type { PlayerState } from './player';
 import type { GameLogEntry } from '../logs/logEntry';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { RngState } from '../rng/rng';
+import type { AbilityGate } from '../effects/effectIr';
 
 /**
  * 6-1-1. Battle (Section 7) is a Main Phase action, not a 6th phase — see
@@ -92,6 +93,8 @@ export interface ContinuousPowerCondition {
   donAttachedAtLeast?: number;
   /** [Your Turn] / [Opponent's Turn] gating, relative to the modifier's owner. */
   turn?: 'your' | 'opponent';
+  /** "If <board state>" gate(s), re-checked on every power read (e.g. "If you have 2 or less Life cards"). */
+  gate?: AbilityGate[];
 }
 
 /** A structured power delta applied to one instance, evaluated by computeCurrentPower. */

@@ -26,6 +26,7 @@ describe('filterCardLibraryEntries', () => {
   const luffy = makeEntry({ name: 'Monkey D. Luffy', cardNumber: 'OP01-001', colors: ['red'], category: 'character' });
   const zoro = makeEntry({ name: 'Roronoa Zoro', cardNumber: 'OP01-002', colors: ['green'], category: 'character' });
   const leader = makeEntry({ name: 'Monkey D. Luffy', cardNumber: 'OP01-099', colors: ['red'], category: 'leader' });
+  const marco = makeEntry({ name: 'Marco', cardNumber: 'OP02-018', colors: ['red'], category: 'character', types: ['Whitebeard Pirates'] });
   const entries = [luffy, zoro, leader];
 
   it('returns everything when the filter is empty', () => {
@@ -46,6 +47,11 @@ describe('filterCardLibraryEntries', () => {
 
   it('filters by category', () => {
     expect(filterCardLibraryEntries(entries, { categories: ['leader'] })).toEqual([leader]);
+  });
+
+  it('filters by character type with case-insensitive substring matching', () => {
+    expect(filterCardLibraryEntries([...entries, marco], { typeQuery: 'whitebeard pirates' })).toEqual([marco]);
+    expect(filterCardLibraryEntries([...entries, marco], { typeQuery: 'beard' })).toEqual([marco]);
   });
 
   it('combines query and facet filters with AND', () => {

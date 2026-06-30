@@ -42,6 +42,8 @@ export interface BoardCardTileProps {
   size?: BoardCardTileSize;
   selectable?: boolean;
   selected?: boolean;
+  /** Marks a card that has a usable [Activate: Main] effect right now (own card, Main Phase). */
+  activatable?: boolean;
   onSelect?: () => void;
   onZoom?: () => void;
   onHoverStart?: () => void;
@@ -61,7 +63,7 @@ function MiniBadge({ tone = 'dark', children }: { tone?: 'dark' | 'gold'; childr
   );
 }
 
-export function BoardCardTile({ card, size = 'board', selectable, selected, onSelect, onZoom, onHoverStart, onHoverEnd }: BoardCardTileProps) {
+export function BoardCardTile({ card, size = 'board', selectable, selected, activatable, onSelect, onZoom, onHoverStart, onHoverEnd }: BoardCardTileProps) {
   const dims = SIZE_PX[size];
   const isField = size === 'field';
   const rested = card.orientation === 'rested';
@@ -87,8 +89,16 @@ export function BoardCardTile({ card, size = 'board', selectable, selected, onSe
         ].join(' ')}
       >
         <div className="relative" style={isField ? { height: '100%', aspectRatio: '63 / 88' } : { width: dims.width }}>
-          <CardImage src={card.imageUrl} alt={card.name} className={[isField ? 'h-full w-full' : '', selected ? 'ring-2 ring-amber-300' : ''].filter(Boolean).join(' ')} />
+          <CardImage src={card.imageUrl} alt={card.name} className={[isField ? 'h-full w-full' : '', selected ? 'ring-2 ring-amber-300' : activatable ? 'ring-2 ring-emerald-400' : ''].filter(Boolean).join(' ')} />
           {onZoom && <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100 group-focus-within:bg-black/45 group-focus-within:opacity-100" />}
+
+          {activatable && (
+            <div className="pointer-events-none absolute -top-1 left-1/2 z-20 -translate-x-1/2">
+              <span className="flex items-center gap-0.5 rounded-full bg-emerald-500 px-1.5 py-[1px] text-[8px] font-extrabold uppercase leading-none tracking-wide text-white shadow ring-1 ring-emerald-200/60">
+                ⚡ Main
+              </span>
+            </div>
+          )}
 
           {card.cost !== null && (
             <div className="absolute -top-1 -left-1 z-10">

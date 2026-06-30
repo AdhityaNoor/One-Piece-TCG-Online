@@ -8,6 +8,8 @@
 export type { EffectContext, EffectTemplateRegistry } from './effectTemplate';
 export type {
   Ability,
+  AbilityCost,
+  AbilityGate,
   EffectOp,
   EffectProgram,
   EffectResumeState,
@@ -20,3 +22,4 @@ export type {
 export { EffectContextImpl } from './effectContext';
 export { runTriggers, resumeProgram } from './interpreter';
 export { fireOnPlay, fireActivate, fireWhenAttacking, fireOnKO, fireCounter, resumeChoice } from './fireTiming';
+export { evaluateGates } from './gates';

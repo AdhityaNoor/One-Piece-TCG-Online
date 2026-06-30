@@ -20,6 +20,9 @@ export type LogEventType =
   | 'TRIGGER_REVEALED'
   | 'CHARACTER_KO'
   | 'CARD_MOVED'
+  | 'CARD_RESTED'
+  | 'DON_RETURNED'
+  | 'DON_RESTED'
   | 'CHOICE_REQUESTED'
   | 'CHOICE_RESOLVED'
   | 'GAME_OVER';

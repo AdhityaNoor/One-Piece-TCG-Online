@@ -28,6 +28,8 @@ export interface EffectContext {
   // --- selectors / queries ---
   controllerLeaderId(): string;
   controllerCharacterIds(): string[];
+  controllerHandIds(): string[];
+  controllerTrashIds(): string[];
   opponentCharacterIds(): string[];
   /** Current power of an instance (2-6, incl. modifiers) — for cost/power-threshold target filters. */
   powerOf(instanceId: string): number;
@@ -53,10 +55,20 @@ export interface EffectContext {
   giveDon(targetInstanceId: string, count: number): void;
   /** K.O. a Character: move it to its owner's trash, dropping attachments/continuous effects (7-1-4-1-2). */
   ko(targetInstanceId: string): void;
+  /** Return a Character to its owner's hand (bounce), dropping attachments/continuous effects it sourced. */
+  returnToHand(targetInstanceId: string): void;
+  /** Play a Character from the controller's hand into the Character Area for free (3-7), summoning-sick; raises the 3-7-6-1 overflow choice if it makes a 6th. */
+  playCharacterFromHand(handInstanceId: string): void;
+  /** Move a card (e.g. from the trash) to its owner's hand. */
+  moveToHand(instanceId: string): void;
+  /** Move a card (e.g. from the hand) to its owner's trash. */
+  trashCard(instanceId: string): void;
   /** Rest a card (4-4-1). */
   rest(targetInstanceId: string): void;
   /** Trash the top `n` cards of a player's own deck (self-mill); fewer if the deck is short. */
   trashTopOfDeck(playerId: string, n: number): void;
+  /** Add `n` DON!! from the player's DON!! deck to their cost area, active or rested (DON!! ramp); fewer if the DON!! deck is short. */
+  addDonFromDeck(playerId: string, n: number, rested: boolean): void;
   /**
    * Resolve a "search": `lookedIds` are the top-of-deck cards that were looked
    * at; move `chosenIds` (a subset) to the player's hand and the remainder to

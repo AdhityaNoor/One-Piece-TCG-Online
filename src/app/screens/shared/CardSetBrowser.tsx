@@ -58,7 +58,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
   const visibleColors = colorFilterIsLocked ? lockedColors! : ALL_CARD_COLORS;
   const unlockedColorFilterIsActive = !colorFilterIsLocked && (filter.colors?.length ?? 0) > 0;
   const unlockedCategoryFilterIsActive = !categoryFilterIsLocked && (filter.categories?.length ?? 0) > 0;
-  const hasActiveFilter = Boolean(filter.query) || unlockedColorFilterIsActive || unlockedCategoryFilterIsActive;
+  const hasActiveFilter = Boolean(filter.query) || Boolean(filter.typeQuery) || unlockedColorFilterIsActive || unlockedCategoryFilterIsActive;
 
   function toggleColor(color: Color) {
     if (colorFilterIsLocked) return;
@@ -116,6 +116,17 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
           value={filter.query ?? ''}
           onChange={(event) => setFilter({ ...filter, query: event.target.value })}
           placeholder="Search by name or card number..."
+          className="op-input mt-1.5 w-full px-3 py-2 text-sm placeholder:text-slate-300/35"
+        />
+      </div>
+
+      <div>
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Type / Crew</label>
+        <input
+          type="search"
+          value={filter.typeQuery ?? ''}
+          onChange={(event) => setFilter({ ...filter, typeQuery: event.target.value })}
+          placeholder="Whitebeard Pirates..."
           className="op-input mt-1.5 w-full px-3 py-2 text-sm placeholder:text-slate-300/35"
         />
       </div>
