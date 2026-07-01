@@ -104,6 +104,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return ctx.controllerCharacterIds();
     case 'controllerLeaderOrCharacters':
       return [ctx.controllerLeaderId(), ...ctx.controllerCharacterIds()];
+    case 'opponentLeaderOrCharacters':
+      return [ctx.state().players[ctx.opponentId].leaderInstanceId, ...ctx.opponentCharacterIds()];
     case 'opponentCharacters': {
       let ids = ctx.opponentCharacterIds();
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
@@ -127,6 +129,11 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTo
     case 'addPower':
       for (const id of resolveSelector(op.target, ctx, bindings)) {
         ctx.addContinuousPower({ appliesToInstanceId: id, amount: op.amount, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
+      }
+      return;
+    case 'addCost':
+      for (const id of resolveSelector(op.target, ctx, bindings)) {
+        ctx.addContinuousCost({ appliesToInstanceId: id, amount: op.amount, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
       }
       return;
     case 'giveDon':

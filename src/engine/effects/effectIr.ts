@@ -19,6 +19,7 @@ export type Selector =
   | { sel: 'controllerLeader' }
   | { sel: 'controllerCharacters' }
   | { sel: 'controllerLeaderOrCharacters' }
+  | { sel: 'opponentLeaderOrCharacters' }
   | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number } // optional "cost/power N or less" filter
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
   | { sel: 'controllerTrash'; filter?: SearchFilter } // controller's trash cards matching a filter (for recover-to-hand)
@@ -57,6 +58,7 @@ export interface SearchFilter {
 export type EffectOp =
   | { op: 'draw'; amount: number }
   | { op: 'addPower'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition }
+  | { op: 'addCost'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition }
   | { op: 'giveDon'; target: Selector; count: number }
   | { op: 'ko'; target: Selector }
   | { op: 'rest'; target: Selector }
@@ -108,7 +110,7 @@ export interface Ability {
   gate?: AbilityGate[];
   /** 10-2-13 [Once Per Turn] — an activated ability may only be used once per turn per source. */
   oncePerTurn?: boolean;
-  /** Activation cost(s) paid on use (8-3-1-5); currently only [Activate: Main] abilities carry these. */
+  /** Activation cost(s) paid on use (8-3-1-5); [Activate: Main] and [Counter] handlers pay these before resolution. */
   cost?: AbilityCost[];
   ops: EffectOp[];
 }

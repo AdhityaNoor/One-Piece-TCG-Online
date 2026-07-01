@@ -51,6 +51,14 @@ export interface EffectContext {
     condition?: ContinuousPowerCondition;
     description?: string;
   }): void;
+  /** Register a continuous cost modifier (8-1-3-3); condition re-checked on every read. */
+  addContinuousCost(spec: {
+    appliesToInstanceId: string;
+    amount: number;
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void;
   /** Give up to `count` un-attached DON!! from the controller's cost area to a Leader/Character (6-5-5). */
   giveDon(targetInstanceId: string, count: number): void;
   /** K.O. a Character: move it to its owner's trash, dropping attachments/continuous effects (7-1-4-1-2). */

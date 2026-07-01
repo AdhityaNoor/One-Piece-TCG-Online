@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { createSampleGameState } from '../../../engine/state/__fixtures__/sampleGameState';
-import { computeCurrentPower } from '../../../engine/rules/shared/power';
+import { computeCurrentCost, computeCurrentPower } from '../../../engine/rules/shared/power';
 import { fireOnPlay, fireWhenAttacking, fireOnKO, fireCounter, fireTrigger, resumeChoice } from '../../../engine/effects';
 import { compileEffect } from '../compile';
 import { compileRegistry } from '../programs';
@@ -23,7 +23,11 @@ const CATALOG = [
   { cardNumber: 'KO-DRAW', effectText: '[On K.O.] Draw 1 card.' },
   { cardNumber: 'KO-SRC', effectText: "[On Play] K.O. up to 1 of your opponent's Characters." },
   { cardNumber: 'CTR-PWR', effectText: '[Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle.' },
+  { cardNumber: 'CTR-KO', effectText: "[Counter] K.O. up to 1 of your opponent's Characters with 6000 base power or less." },
+  { cardNumber: 'CTR-REST', effectText: "[Counter] Rest up to 1 of your opponent's Characters with a cost of 4 or less." },
+  { cardNumber: 'CTR-OPP-DEBUFF', effectText: "[Counter] Give up to 1 of your opponent's Leader or Character cards -2000 power during this turn." },
   { cardNumber: 'DEBUFF', effectText: "[On Play] Give up to 1 of your opponent's Characters −2000 power during this turn." },
+  { cardNumber: 'COST-DEBUFF', effectText: "[On Play] Give up to 1 of your opponent's Characters -4 cost during this turn." },
   { cardNumber: 'AOE', effectText: '[On Play] All of your Characters gain +1000 power during this turn.' },
   { cardNumber: 'MILL', effectText: '[On Play] Trash 3 cards from the top of your deck.' },
   { cardNumber: 'BOUNCE', effectText: "[On Play] Return up to 1 of your opponent's Characters with a cost of 4 or less to the owner's hand." },
@@ -54,7 +58,7 @@ function place(state: GameState, i: CardInstance): GameState {
 
 describe('compiler', () => {
   it('lowers the catalog (draw, self-power, give-DON, KO, searcher, attack/KO/counter timings)', () => {
-    expect(Object.keys(registry).sort()).toEqual(['ACT-DON', 'AOE', 'BOUNCE', 'COND-STAT', 'CTR-PWR', 'DEBUFF', 'GATED', 'KO-DRAW', 'KO-SRC', 'MILL', 'OP01-016', 'OP02-011', 'OP04-045', 'PLAY-HAND', 'RAMP', 'RECOVER', 'ST01-013', 'ST15-002', 'ST21-002', 'TRIG', 'WA-DON']);
+    expect(Object.keys(registry).sort()).toEqual(['ACT-DON', 'AOE', 'BOUNCE', 'COND-STAT', 'COST-DEBUFF', 'CTR-KO', 'CTR-OPP-DEBUFF', 'CTR-PWR', 'CTR-REST', 'DEBUFF', 'GATED', 'KO-DRAW', 'KO-SRC', 'MILL', 'OP01-016', 'OP02-011', 'OP04-045', 'PLAY-HAND', 'RAMP', 'RECOVER', 'ST01-013', 'ST15-002', 'ST21-002', 'TRIG', 'WA-DON']);
   });
   it('lowers a [Trigger] ability to the trigger timing (recursion through the On Play lowerings)', () => {
     const p = compileEffect('TRIG', '[Trigger] Draw 1 card.')!;
@@ -102,6 +106,9 @@ describe('compiler', () => {
     const deb = compileEffect('DEBUFF', "[On Play] Give up to 1 of your opponent's Characters −2000 power during this turn.")!;
     expect(deb.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters' } });
     expect(deb.abilities[0].ops[1]).toMatchObject({ op: 'addPower', amount: -2000, duration: 'duringThisTurn' });
+    const costDeb = compileEffect('COST-DEBUFF', "[On Play] Give up to 1 of your opponent's Characters -4 cost during this turn.")!;
+    expect(costDeb.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters' } });
+    expect(costDeb.abilities[0].ops[1]).toMatchObject({ op: 'addCost', amount: -4, duration: 'duringThisTurn' });
     const aoe = compileEffect('AOE', '[On Play] All of your Characters gain +1000 power during this turn.')!;
     expect(aoe.abilities[0].ops).toEqual([{ op: 'addPower', target: { sel: 'controllerCharacters' }, amount: 1000, duration: 'duringThisTurn' }]);
     expect(compileEffect('MILL', '[On Play] Trash 3 cards from the top of your deck.')!.abilities[0].ops[0]).toEqual({ op: 'trashTopDeck', count: 3 });
@@ -113,6 +120,11 @@ describe('compiler', () => {
     const donMinus = compileEffect('X', '[Main] DON!! −1: Trash 3 cards from the top of your deck.')!;
     expect(donMinus.abilities[0].cost).toEqual([{ kind: 'donMinus', count: 1 }]);
     expect(donMinus.abilities[0].ops[0]).toEqual({ op: 'trashTopDeck', count: 3 });
+  });
+  it('compiles a cost-prefixed [Counter] effect WITH its activation cost attached', () => {
+    const counterDonMinus = compileEffect('X', '[Counter] DON!! -1: Up to 1 of your Leader or Character cards gains +4000 power during this battle.')!;
+    expect(counterDonMinus.abilities[0]).toMatchObject({ trigger: 'counter', cost: [{ kind: 'donMinus', count: 1 }] });
+    expect(counterDonMinus.abilities[0].ops[1]).toMatchObject({ op: 'addPower', amount: 4000, duration: 'duringThisBattle' });
   });
   it('compiles a MODELED "If …" gate, but bails on an unmodeled one (no guessing)', () => {
     const gated = compileEffect('IF', '[On Play] If you have 3 or more Characters, draw 1 card.')!;
@@ -129,6 +141,32 @@ describe('compiler', () => {
     const ctr = compileEffect('CTR-PWR', '[Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle.')!;
     expect(ctr.abilities[0].trigger).toBe('counter');
     expect(ctr.abilities[0].ops[1]).toMatchObject({ op: 'addPower', amount: 4000, duration: 'duringThisBattle' });
+  });
+  it('lowers counter-speed K.O. and rest clauses to counter-triggered target choices', () => {
+    const koText = CATALOG.find((card) => card.cardNumber === 'CTR-KO')!.effectText;
+    const ko = compileEffect('CTR-KO', koText)!;
+    expect(ko.abilities[0].trigger).toBe('counter');
+    expect(ko.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters', maxPower: 6000 } });
+    expect(ko.abilities[0].ops[1].op).toBe('ko');
+
+    const restText = CATALOG.find((card) => card.cardNumber === 'CTR-REST')!.effectText;
+    const rest = compileEffect('CTR-REST', restText)!;
+    expect(rest.abilities[0].trigger).toBe('counter');
+    expect(rest.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters', maxCost: 4 } });
+    expect(rest.abilities[0].ops[1].op).toBe('rest');
+  });
+  it('lowers counter-speed draw clauses, including cost-prefixed ones', () => {
+    const draw = compileEffect('CTR-DRAW', '[Counter] Draw 1 card.')!;
+    expect(draw.abilities[0]).toMatchObject({ trigger: 'counter', ops: [{ op: 'draw', amount: 1 }] });
+
+    const costed = compileEffect('CTR-DRAW-COST', '[Counter] DON!! -1: Draw 1 card.')!;
+    expect(costed.abilities[0]).toMatchObject({ trigger: 'counter', cost: [{ kind: 'donMinus', count: 1 }], ops: [{ op: 'draw', amount: 1 }] });
+  });
+  it('lowers opponent Leader-or-Character power debuffs', () => {
+    const p = compileEffect('CTR-OPP-DEBUFF', CATALOG.find((card) => card.cardNumber === 'CTR-OPP-DEBUFF')!.effectText)!;
+    expect(p.abilities[0].trigger).toBe('counter');
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentLeaderOrCharacters' } });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'addPower', amount: -2000, duration: 'duringThisTurn' });
   });
   it('OP01-016 [On Play] lowers to a single searchTopDeck (type + other-than self)', () => {
     const p = compileEffect('OP01-016', CATALOG[5].effectText)!;
@@ -275,6 +313,27 @@ describe('interpreter runs the compiled IR', () => {
     expect(boost?.duration).toBe('duringThisBattle');
   });
 
+  it('[Counter] CTR-OPP-DEBUFF can target the opponent Leader', () => {
+    const defs = {
+      'CTR-OPP-DEBUFF': { ...def('CTR-OPP-DEBUFF', 0), category: 'event' as const },
+      OP01: { ...def('OP01', 5000), category: 'leader' as const },
+    };
+    const base = createSampleGameState();
+    const p2LeaderId = base.players.p2.leaderInstanceId;
+    const s = {
+      ...base,
+      cardsById: {
+        ...base.cardsById,
+        [p2LeaderId]: { ...base.cardsById[p2LeaderId], cardDefinitionId: 'OP01' },
+        ev: inst('ev', 'CTR-OPP-DEBUFF', 'trash', 'p1'),
+      },
+    };
+    const fired = fireCounter(s, 'ev', registry, defs, 'a');
+    expect(fired.pendingChoices[0].constraints.candidateInstanceIds).toContain(p2LeaderId);
+    const resumed = resumeChoice(fired.state, fired.pendingChoices[0].id, [p2LeaderId], registry, defs, 'b');
+    expect(computeCurrentPower(defs, resumed.state, p2LeaderId)).toBe(3000);
+  });
+
   it('[On Play] DEBUFF: offers an opponent Character, then applies −2000 power for the turn', () => {
     const defs = { DEBUFF: def('DEBUFF', 0), OC: def('OC', 3000) };
     let s = place(createSampleGameState(), inst('src', 'DEBUFF', 'characterArea', 'p1'));
@@ -283,6 +342,16 @@ describe('interpreter runs the compiled IR', () => {
     expect(played.pendingChoices[0].constraints.candidateInstanceIds).toEqual(['oc']);
     const resumed = resumeChoice(played.state, played.pendingChoices[0].id, ['oc'], registry, defs, 'b');
     expect(computeCurrentPower(defs, resumed.state, 'oc')).toBe(1000); // 3000 − 2000
+  });
+
+  it('[On Play] COST-DEBUFF: applies a temporary cost modifier, floored at 0', () => {
+    const defs = { 'COST-DEBUFF': def('COST-DEBUFF', 0), OC3: { ...def('OC3', 3000), baseCost: 3 } };
+    let s = place(createSampleGameState(), inst('src', 'COST-DEBUFF', 'characterArea', 'p1'));
+    s = place(s, inst('oc', 'OC3', 'characterArea', 'p2'));
+    const played = fireOnPlay(s, 'src', registry, defs, 'a');
+    expect(played.pendingChoices[0].constraints.candidateInstanceIds).toEqual(['oc']);
+    const resumed = resumeChoice(played.state, played.pendingChoices[0].id, ['oc'], registry, defs, 'b');
+    expect(computeCurrentCost(defs, resumed.state, 'oc')).toBe(0);
   });
 
   it('[On Play] PLAY-HAND: offers only matching hand Characters, then plays the chosen one (summoning-sick)', () => {

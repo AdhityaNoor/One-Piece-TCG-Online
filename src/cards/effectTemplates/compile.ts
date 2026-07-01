@@ -142,16 +142,18 @@ function parseCostPrefix(rawText: string): { cost: AbilityCost[]; effectText: st
 }
 
 /**
- * Lower an [Activate: Main] ability that pays an activation cost: parse the
+ * Lower an [Activate: Main] or [Counter] ability that pays an activation cost: parse the
  * cost prefix, re-parse the remaining effect text on its own, lower that, and
- * attach the cost. Activated abilities only (the cost is paid by
- * ACTIVATE_CARD_EFFECT) — other timings keep bailing on cost prefixes.
+ * attach the cost. Activated abilities only (the cost is paid by the action
+ * handler before firing the IR) — other timings keep bailing on cost prefixes.
  */
 function lowerWithCost(pa: ParsedAbility): Ability | null {
-  if (pa.timing !== 'activateMain') return null;
+  if (pa.timing !== 'activateMain' && pa.timing !== 'counter') return null;
   const split = parseCostPrefix(pa.rawText);
   if (!split) return null;
-  const sub = parseEffect('cost-split', `[Activate: Main] ${split.effectText}`).abilities[0];
+  const tag = timingTag(pa.timing);
+  if (!tag) return null;
+  const sub = parseEffect('cost-split', `${tag} ${split.effectText}`).abilities[0];
   if (!sub) return null;
   const lowered = compileAbility(sub); // sub has no cost prefix -> no recursion loop
   if (!lowered) return null;
@@ -394,9 +396,9 @@ function compileSingleAction(pa: ParsedAbility): Ability | null {
   // (evalCondition in interpreter.ts). undefined when the text has no such gate.
   const condition = buildCondition(pa);
 
-  // [On Play] / [Activate: Main] / [When Attacking] / [On K.O.] Draw N.
-  if (isAutoOrActivate(pa.timing) && a.op === 'draw') {
-    return { trigger: pa.timing, ...(pa.oncePerTurn ? { oncePerTurn: true } : {}), ...(condition ? { condition } : {}), ops: [{ op: 'draw', amount: a.amount }] };
+  // [On Play] / [Activate: Main] / [When Attacking] / [On K.O.] / [Counter] Draw N.
+  if ((isAutoOrActivate(pa.timing) || pa.timing === 'counter') && a.op === 'draw') {
+    return { trigger: pa.timing as AutoOrActivateTiming | 'counter', ...(pa.oncePerTurn ? { oncePerTurn: true } : {}), ...(condition ? { condition } : {}), ops: [{ op: 'draw', amount: a.amount }] };
   }
 
   // [When Attacking] / [On K.O.] This Character gains +M power (temporary).
@@ -410,7 +412,7 @@ function compileSingleAction(pa: ParsedAbility): Ability | null {
 
   // [Counter] Up to 1 of your Leader or Character cards gains +M power during
   // this battle. "Up to 1" -> optional single target (min 0).
-  if (pa.timing === 'counter' && a.op === 'modifyPower' && (/leader or/i.test(pa.rawText) || a.target.kind === 'yourLeader' || a.target.kind === 'self' || a.target.kind === 'yourCharacters')) {
+  if (pa.timing === 'counter' && a.op === 'modifyPower' && (/your leader or/i.test(pa.rawText) || a.target.kind === 'yourLeader' || a.target.kind === 'self' || a.target.kind === 'yourCharacters')) {
     return {
       trigger: 'counter',
       ...(condition ? { condition } : {}),
@@ -421,12 +423,13 @@ function compileSingleAction(pa: ParsedAbility): Ability | null {
     };
   }
 
-  // [On Play] / [When Attacking] / [Activate: Main] K.O. up to 1 of your opponent's Characters [with cost/power N or less].
-  if ((pa.timing === 'onPlay' || pa.timing === 'whenAttacking' || pa.timing === 'activateMain') && a.op === 'ko' && a.target.kind === 'opponentCharacters') {
+  // [On Play] / [When Attacking] / [Activate: Main] / [Counter] K.O.
+  // up to 1 of your opponent's Characters [with cost/power N or less].
+  if ((pa.timing === 'onPlay' || pa.timing === 'whenAttacking' || pa.timing === 'activateMain' || (pa.timing === 'counter' && !hasActivationCost(pa.rawText))) && a.op === 'ko' && a.target.kind === 'opponentCharacters') {
     const from = opponentTargetFrom(pa.rawText);
     if (!from) return null;
     return {
-      trigger: pa.timing,
+      trigger: pa.timing as AutoOrActivateTiming | 'counter',
       ...(condition ? { condition } : {}),
       ops: [
         { op: 'chooseTargets', var: 't', from, min: 0, max: 1, prompt: "K.O. up to 1 of your opponent's Characters (or decline)." },
@@ -435,12 +438,13 @@ function compileSingleAction(pa: ParsedAbility): Ability | null {
     };
   }
 
-  // [On Play] / [When Attacking] / [Activate: Main] Rest up to 1 of your opponent's Characters [with cost/power N or less].
-  if ((pa.timing === 'onPlay' || pa.timing === 'whenAttacking' || pa.timing === 'activateMain') && a.op === 'rest' && a.target.kind === 'opponentCharacters') {
+  // [On Play] / [When Attacking] / [Activate: Main] / [Counter] Rest
+  // up to 1 of your opponent's Characters [with cost/power N or less].
+  if ((pa.timing === 'onPlay' || pa.timing === 'whenAttacking' || pa.timing === 'activateMain' || (pa.timing === 'counter' && !hasActivationCost(pa.rawText))) && a.op === 'rest' && a.target.kind === 'opponentCharacters') {
     const from = opponentTargetFrom(pa.rawText);
     if (!from) return null;
     return {
-      trigger: pa.timing,
+      trigger: pa.timing as AutoOrActivateTiming | 'counter',
       ...(condition ? { condition } : {}),
       ops: [
         { op: 'chooseTargets', var: 't', from, min: 0, max: 1, prompt: "Rest up to 1 of your opponent's Characters (or decline)." },
@@ -496,6 +500,17 @@ function compileSingleAction(pa: ParsedAbility): Ability | null {
       const raw = a.target.kind === 'upTo' ? a.target.raw : '';
       const signed = `${a.amount >= 0 ? '+' : ''}${a.amount}`;
 
+      if (a.target.kind === 'opponentLeader' || /opponent'?s? leader or character/i.test(pa.rawText)) {
+        return {
+          trigger,
+          ...(condition ? { condition } : {}),
+          ops: [
+            { op: 'chooseTargets', var: 't', from: { sel: 'opponentLeaderOrCharacters' }, min: 0, max: 1, prompt: `Give up to 1 of your opponent's Leader or Characters ${signed} power (or decline).` },
+            { op: 'addPower', target: { sel: 'var', name: 't' }, amount: a.amount, duration },
+          ],
+        };
+      }
+
       if (a.target.kind === 'opponentCharacters' || /opponent/i.test(raw)) {
         const from = opponentTargetFrom(pa.rawText);
         if (from) {
@@ -522,6 +537,38 @@ function compileSingleAction(pa: ParsedAbility): Ability | null {
             { op: 'chooseTargets', var: 't', from: { sel: 'controllerLeaderOrCharacters' }, min: 0, max: 1, prompt: `Give your Leader or 1 Character ${signed} power (or decline).` },
             { op: 'addPower', target: { sel: 'var', name: 't' }, amount: a.amount, duration },
           ],
+        };
+      }
+    }
+  }
+
+  // Temporary cost modifier (±X "during this turn/battle") to a Character.
+  // Uses the same continuous-effect expiry path as temporary power modifiers.
+  if (a.op === 'modifyCost' && (a.duration === 'thisTurn' || a.duration === 'thisBattle')) {
+    const okTiming = isAutoOrActivate(pa.timing) || pa.timing === 'counter';
+    if (okTiming && !hasActivationCost(pa.rawText)) {
+      const trigger = pa.timing as AutoOrActivateTiming | 'counter';
+      const duration = a.duration === 'thisBattle' ? 'duringThisBattle' : 'duringThisTurn';
+      const raw = a.target.kind === 'upTo' ? a.target.raw : '';
+      const signed = `${a.amount >= 0 ? '+' : ''}${a.amount}`;
+
+      if (a.target.kind === 'opponentCharacters' || /opponent/i.test(raw)) {
+        const from = opponentTargetFrom(pa.rawText);
+        if (from) {
+          return {
+            trigger,
+            ...(condition ? { condition } : {}),
+            ops: [
+              { op: 'chooseTargets', var: 't', from, min: 0, max: 1, prompt: `Give up to 1 of your opponent's Characters ${signed} cost (or decline).` },
+              { op: 'addCost', target: { sel: 'var', name: 't' }, amount: a.amount, duration },
+            ],
+          };
+        }
+      } else if (a.target.kind === 'self') {
+        return {
+          trigger,
+          ...(condition ? { condition } : {}),
+          ops: [{ op: 'addCost', target: { sel: 'self' }, amount: a.amount, duration }],
         };
       }
     }

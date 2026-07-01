@@ -106,6 +106,14 @@ export interface ContinuousPowerModifier {
   condition?: ContinuousPowerCondition;
 }
 
+export interface ContinuousCostModifier {
+  appliesToInstanceId: string;
+  /** Signed cost delta; final computed cost is floored at 0. */
+  amount: number;
+  /** Omitted when the modifier is unconditional. */
+  condition?: ContinuousPowerCondition;
+}
+
 export interface ContinuousEffectRecord {
   id: string;
   sourceInstanceId: string;
@@ -115,6 +123,8 @@ export interface ContinuousEffectRecord {
   description: string;
   /** Structured power delta, when this record modifies power. Omitted for non-power effects. */
   powerModifier?: ContinuousPowerModifier;
+  /** Structured cost delta, when this record modifies cost. Omitted for non-cost effects. */
+  costModifier?: ContinuousCostModifier;
 }
 
 export interface GameState {

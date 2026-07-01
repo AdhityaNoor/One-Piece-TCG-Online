@@ -21,6 +21,7 @@ import { computeCurrentCost } from '../../rules/shared/power';
 import { getOpponentId } from '../../rules/shared/players';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { fireCounter, type EffectTemplateRegistry } from '../../effects';
+import { canPayAbilityCost, payAbilityCost } from './abilityCost';
 
 export function validateActivateCounterEvent(
   state: GameState,
@@ -67,8 +68,12 @@ export function validateActivateCounterEvent(
   }
 
   const program = registry[handInstance.cardDefinitionId];
-  if (!program?.abilities.some((a) => a.trigger === 'counter')) {
+  const ability = program?.abilities.find((a) => a.trigger === 'counter');
+  if (!ability) {
     reasons.push(`'${def.name}' has no [Counter] effect to activate.`);
+  }
+  if (ability?.cost?.length) {
+    reasons.push(...canPayAbilityCost(state, action.handCardInstanceId, action.playerId, ability.cost));
   }
 
   const cost = computeCurrentCost(defs, state, action.handCardInstanceId);
@@ -101,6 +106,7 @@ export function executeActivateCounterEvent(
   const player = state.players[action.playerId];
   const handInstance = state.cardsById[action.handCardInstanceId];
   const def = getDefinition(defs, handInstance);
+  const ability = registry[handInstance.cardDefinitionId]?.abilities.find((a) => a.trigger === 'counter');
   const logger = createActionLogger(state, action.actionId);
 
   const cardsById = { ...state.cardsById };
@@ -131,11 +137,17 @@ export function executeActivateCounterEvent(
     log: [...state.log, ...logger.log],
   };
 
+  // Pay structured [Counter] ability costs (for example DON!! -N) before the
+  // counter effect resolves. The Event play cost above is separate.
+  const paid = ability?.cost?.length
+    ? payAbilityCost(nextState, action.handCardInstanceId, action.playerId, ability.cost, action.actionId)
+    : { state: nextState, log: [] as ActionExecuteResult['log'] };
+
   // Fire the [Counter] ability (timing 'counter'); may emit a target choice.
-  const fired = fireCounter(nextState, action.handCardInstanceId, registry, defs, action.actionId);
+  const fired = fireCounter(paid.state, action.handCardInstanceId, registry, defs, action.actionId);
   return {
     state: fired.state,
-    log: [...logger.log, ...fired.log],
+    log: [...logger.log, ...paid.log, ...fired.log],
     pendingChoices: fired.pendingChoices,
   };
 }

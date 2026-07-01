@@ -7,7 +7,7 @@
  * structured `powerModifier` payload (see game.ts). Each modifier's optional
  * condition ([DON!! xN], [Your Turn]/[Opponent's Turn]) is re-evaluated here on
  * every read, so a conditional buff turns on/off as DON!! attaches or the turn
- * flips, with no extra bookkeeping. Cost modifiers remain future work.
+ * flips, with no extra bookkeeping. Cost modifiers use the same record model.
  */
 import type { ContinuousEffectRecord, GameState } from '../../state/game';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
@@ -30,6 +30,22 @@ function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, 
   return true;
 }
 
+function costModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
+  const mod = record.costModifier;
+  if (!mod || mod.appliesToInstanceId !== instanceId) return false;
+  const cond = mod.condition;
+  if (!cond) return true;
+  const instance = state.cardsById[instanceId];
+  if (cond.donAttachedAtLeast !== undefined && instance.donAttached.length < cond.donAttachedAtLeast) return false;
+  if (cond.turn !== undefined) {
+    const isOwnersTurn = state.activePlayerId === instance.ownerId;
+    if (cond.turn === 'your' && !isOwnersTurn) return false;
+    if (cond.turn === 'opponent' && isOwnersTurn) return false;
+  }
+  if (cond.gate && !evaluateGates(cond.gate, state, defs, record.ownerId)) return false;
+  return true;
+}
+
 export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState, instanceId: string): number {
   const instance = state.cardsById[instanceId];
   const def = getDefinition(defs, instance);
@@ -46,5 +62,9 @@ export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState
 export function computeCurrentCost(defs: CardDefinitionLookup, state: GameState, instanceId: string): number {
   const instance = state.cardsById[instanceId];
   const def = getDefinition(defs, instance);
-  return def.baseCost ?? 0;
+  let continuousDelta = 0;
+  for (const record of state.continuousEffects) {
+    if (costModifierApplies(record, state, instanceId, defs)) continuousDelta += record.costModifier!.amount;
+  }
+  return Math.max(0, (def.baseCost ?? 0) + continuousDelta);
 }

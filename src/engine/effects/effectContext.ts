@@ -143,6 +143,36 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  addContinuousCost(spec: {
+    appliesToInstanceId: string;
+    amount: number;
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? `cost ${spec.amount >= 0 ? '+' : ''}${spec.amount}`,
+      costModifier: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        amount: spec.amount,
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to ${spec.appliesToInstanceId}.`,
+      data: { continuousEffectId: record.id, amount: spec.amount, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
   giveDon(targetInstanceId: string, count: number): void {
     const controller = this.working.players[this.controllerId];
     const attached = new Set<string>();
