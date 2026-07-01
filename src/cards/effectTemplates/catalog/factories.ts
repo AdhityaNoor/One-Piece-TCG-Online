@@ -185,20 +185,26 @@ const FACTORY_MAP: {
 
   // --- bounce ---
 
-  onPlayReturnToHand: (cn, p) =>
-    program(cn, [
+  onPlayReturnToHand: (cn, p) => {
+    const from =
+      p.target === 'any'
+        ? ({ sel: 'allCharacters', maxCost: p.maxCost } as const)
+        : ({ sel: 'opponentCharacters', maxCost: p.maxCost } as const);
+    const promptSubject = p.target === 'any' ? 'Character' : "of your opponent's Characters";
+    return program(cn, [
       ability('onPlay', [
         {
           op: 'chooseTargets',
           var: 't',
-          from: { sel: 'opponentCharacters', maxCost: p.maxCost },
+          from,
           min: 0,
           max: 1,
-          prompt: `Return up to 1 of your opponent's Characters with a cost of ${p.maxCost} or less to the owner's hand (or decline).`,
+          prompt: `Return up to 1 ${promptSubject} with a cost of ${p.maxCost} or less to the owner's hand (or decline).`,
         },
         { op: 'returnToHand', target: { sel: 'var', name: 't' } },
       ]),
-    ]),
+    ]);
+  },
 
   // --- modify cost (opponent) ---
 

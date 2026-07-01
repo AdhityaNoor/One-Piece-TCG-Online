@@ -4,7 +4,7 @@ EB01,EB01-002,Izo,character,needsTemplate,0,2,,yes,"[On Play] Give up to 1 reste
 EB01,EB01-003,Kid & Killer,character,needsTemplate,0,1,,yes,"[Rush] (This card can attack on the turn in which it is played.)[When Attacking] If your opponent has 2 or less Life cards, this Character gains +2000 power during this turn."
 EB01,EB01-004,Koza,character,needsTemplate,0,1,,,[When Attacking] You may give your 1 active Leader −5000 power during this turn: Give up to 1 of your opponent's Characters −3000 power during this turn.
 EB01,EB01-006,Tony Tony.Chopper,character,needsTemplate,0,2,,yes,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[DON!! x2] [When Attacking] Give up to 1 of your opponent's Characters −3000 power during this turn."
-EB01,EB01-007,Yamato,character,needsTemplate,0,1,,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
+EB01,EB01-007,Yamato,character,curated,1,1,activateMain,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
 EB01,EB01-008,LittleOars Jr.,character,needsTemplate,0,1,,yes,"[Once Per Turn] If this Character would be K.O.'d by an effect, you may trash 1 Event or Stage card from your hand instead."
 EB01,EB01-009,Just Shut Up and Come with Us!!!!,event,needsTemplate,0,1,,yes,"[Counter] Look at 5 cards from the top of your deck and play up to 1 {Animal} type Character card with a cost of 3 or less. Then, place the rest at the bottom of your deck in any order."
 EB01,EB01-010,There's No Way You Could Defeat Me!!,event,needsTemplate,0,2,,yes,[Counter] K.O. up to 1 of your opponent's Characters with 6000 base power or less. [Trigger] K.O. up to 1 of your opponent's Characters with 5000 base power or less.
@@ -41,7 +41,7 @@ EB01,EB01-044,Funkfreed,character,needsTemplate,0,1,,yes,[Activate: Main] You ma
 EB01,EB01-045,Brook,character,keyword,0,0,,yes,"[On Play] If your opponent has a Character with a cost of 0, this Character gains [Rush] during this turn.(This card can attack on the turn in which it is played.)"
 EB01,EB01-046,Brook,character,needsTemplate,0,2,,yes,"[On Play]/[When Attacking] Give up to 1 of your opponent's Characters −1 cost during this turn. Then, K.O. up to 1 of your opponent's Characters with a cost of 0."
 EB01,EB01-047,Laboon,character,needsTemplate,0,1,,yes,"[Once Per Turn] When a Character is K.O.'d, draw 1 card and trash 1 card from your hand."
-EB01,EB01-048,Laboon,character,needsTemplate,0,1,,yes,[Activate: Main] You may rest this Character: Give up to 1 of your opponent's Characters −4 cost during this turn.
+EB01,EB01-048,Laboon,character,curated,1,1,activateMain,yes,[Activate: Main] You may rest this Character: Give up to 1 of your opponent's Characters −4 cost during this turn.
 EB01,EB01-049,T-Bone,character,curated,1,1,onPlay,yes,[On Play] K.O. up to 1 of your opponent's Characters with a cost of 2 or less.
 EB01,EB01-050,...I Want to Live!!,event,needsTemplate,0,1,,yes,"[Counter] If you have 30 or more cards in your trash, add up to 1 card from the top of your deck to the top of your Life cards."
 EB01,EB01-051,Finger Pistol,event,needsTemplate,0,3,,yes,[Main] You may trash 2 cards from the top of your deck: K.O. up to 1 of your opponent's Characters with a cost of 5 or less. [Trigger] Activate this card's [Main] effect.
@@ -440,9 +440,9 @@ OP03,OP03-003,Izo,character,needsTemplate,0,1,,yes,"[On Play] Look at 5 cards fr
 OP03,OP03-004,Curiel,character,keyword,0,0,,,This Character cannot attack a Leader on the turn in which it is played.[DON!! x1] This Character gains [Rush].(This card can attack on the turn in which it is played.)
 OP03,OP03-005,Thatch,character,needsTemplate,0,1,,yes,"[Activate: Main] [Once Per Turn] This Character gains +2000 power during this turn. Then, trash this Character at the end of this turn."
 OP03,OP03-008,Buggy,character,needsTemplate,0,2,,yes,"This Character cannot be K.O.'d in battle by <Slash> attribute cards.[On Play] Look at 5 cards from the top of your deck; reveal up to 1 red Event and add it to your hand. Then, place the rest at the bottom of your deck in any order."
-OP03,OP03-009,Haruta,character,needsTemplate,0,1,,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
+OP03,OP03-009,Haruta,character,curated,1,1,activateMain,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
 OP03,OP03-010,Fossa,character,keyword,0,0,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)"
-OP03,OP03-011,Blamenco,character,needsTemplate,0,1,,,[DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power during this turn.
+OP03,OP03-011,Blamenco,character,curated,1,1,whenAttacking,,[DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power during this turn.
 OP03,OP03-012,Marshall.D.Teach,character,needsTemplate,0,1,,yes,"[When Attacking] You may trash 1 of your red Characters with 4000 power or more: Draw 1 card. Then, this Character gains +1000 power during this battle."
 OP03,OP03-013,Marco,character,needsTemplate,0,2,,yes,[Your Turn] [On Play] K.O. up to 1 of your opponent's Characters with 3000 power or less.[On K.O.] You may trash 1 Event from your hand: You may play this Character card from your trash rested.
 OP03,OP03-014,Monkey.D.Garp,character,needsTemplate,0,1,,yes,[When Attacking] Play up to 1 red Character card with a cost of 1 from your hand.
@@ -562,7 +562,7 @@ OP04,OP04-018,Enchanting Vertigo Dance,event,needsTemplate,0,3,,yes,"[Main] If y
 OP04,OP04-019,Donquixote Doflamingo,leader,needsTemplate,0,1,,yes,[End of Your Turn] Set up to 2 of your DON!! cards as active.
 OP04,OP04-020,Issho,leader,needsTemplate,0,2,,yes,[DON!! x1] [Your Turn] Give all of your opponent's Characters −1 cost.[End of Your Turn] ➀ (You may rest the specified number of DON!! cards in your cost area.): Set up to 1 of your Characters with a cost of 5 or less as active.
 OP04,OP04-021,Viola,character,needsTemplate,0,1,,yes,[On Your Opponent's Attack] ➁ (You may rest the specified number of DON!! cards in your cost area.): Rest up to 1 of your opponent's DON!! cards.
-OP04,OP04-022,Eric,character,needsTemplate,0,1,,yes,[Activate: Main] You may rest this Character: Rest up to 1 of your opponent's Characters with a cost of 1 or less.
+OP04,OP04-022,Eric,character,curated,1,1,activateMain,yes,[Activate: Main] You may rest this Character: Rest up to 1 of your opponent's Characters with a cost of 1 or less.
 OP04,OP04-024,Sugar,character,needsTemplate,0,2,,yes,"[Opponent's Turn] [Once Per Turn] When your opponent plays a Character, if your Leader has the {Donquixote Pirates} type, rest up to 1 of your opponent's Characters. Then, rest this Character.[On Play] Rest up to 1 of your opponent's Characters with a cost of 4 or less."
 OP04,OP04-025,Giolla,character,needsTemplate,0,1,,yes,[On Your Opponent's Attack] ➁ (You may rest the specified number of DON!! cards in your cost area.): Rest up to 1 of your opponent's Characters with a cost of 4 or less.
 OP04,OP04-026,Senor Pink,character,needsTemplate,0,1,,yes,"[When Attacking] ➀ (You may rest the specified number of DON!! cards in your cost area.): If your Leader has the {Donquixote Pirates} type, rest up to 1 of your opponent's Characters with a cost of 4 or less. Then, set up to 1 of your DON!! cards as active at the end of this turn."
@@ -665,7 +665,7 @@ OP05,OP05-009,Toh-Toh,character,needsTemplate,0,1,,yes,[On Play] Draw 1 card if 
 OP05,OP05-010,Nico Robin,character,curated,1,1,onPlay,yes,[On Play] K.O. up to 1 of your opponent's Characters with 1000 power or less.
 OP05,OP05-011,Bartholomew Kuma,character,needsTemplate,0,2,,yes,"[On Play] K.O. up to 1 of your opponent's Characters with 2000 power or less. [Trigger] If your Leader is multicolored, play this card."
 OP05,OP05-013,Bunny Joe,character,keyword,0,0,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)"
-OP05,OP05-014,Pell,character,needsTemplate,0,1,,,[DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power during this turn.
+OP05,OP05-014,Pell,character,curated,1,1,whenAttacking,,[DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power during this turn.
 OP05,OP05-015,Belo Betty,character,curated,1,1,onPlay,yes,"[On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Revolutionary Army} type card other than [Belo Betty] and add it to your hand. Then, place the rest at the bottom of your deck in any order."
 OP05,OP05-016,Morley,character,needsTemplate,0,2,,yes,"[When Attacking] If this Character has 7000 power or more, your opponent cannot activate [Blocker] during this battle. [Trigger] You may trash 1 card from your hand: If your Leader is multicolored, play this card."
 OP05,OP05-017,Lindbergh,character,needsTemplate,0,2,,yes,"[When Attacking] If this Character has 7000 power or more, K.O. up to 1 of your opponent's Characters with 3000 power or less. [Trigger] You may trash 1 card from your hand: If your Leader is multicolored, play this card."
@@ -676,7 +676,7 @@ OP05,OP05-021,Revolutionary Army HQ,stage,needsTemplate,0,1,,yes,"[Activate: Mai
 OP05,OP05-022,Donquixote Rosinante,leader,needsTemplate,0,1,,yes,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[End of Your Turn] If you have 6 or less cards in your hand, set this Leader as active."
 OP05,OP05-023,Vergo,character,needsTemplate,0,1,,yes,[DON!! x1] [When Attacking] K.O. up to 1 of your opponent's rested Characters with a cost of 3 or less.
 OP05,OP05-024,Kuween,character,keyword,0,0,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)"
-OP05,OP05-025,Gladius,character,needsTemplate,0,1,,yes,[Activate: Main] You may rest this Character: Rest up to 1 of your opponent's Characters with a cost of 3 or less.
+OP05,OP05-025,Gladius,character,curated,1,1,activateMain,yes,[Activate: Main] You may rest this Character: Rest up to 1 of your opponent's Characters with a cost of 3 or less.
 OP05,OP05-026,Sarquiss,character,needsTemplate,0,1,,yes,[DON!! x1] [When Attacking] [Once Per Turn] You may rest 1 of your Characters with a cost of 3 or more: Set this Character as active.
 OP05,OP05-027,Trafalgar Law,character,needsTemplate,0,1,,yes,[Activate: Main] You may trash this Character: Rest up to 1 of your opponent's Characters with a cost of 3 or less.
 OP05,OP05-028,Donquixote Doflamingo,character,needsTemplate,0,1,,yes,[Activate: Main] You may trash this Character: K.O. up to 1 of your opponent's rested Characters with a cost of 2 or less.
@@ -927,7 +927,7 @@ OP07,OP07-050,Boa Sandersonia,character,needsTemplate,0,1,,yes,"[On Play] If you
 OP07,OP07-051,Boa Hancock,character,needsTemplate,0,1,,yes,"[On Play] Up to 1 of your opponent's Characters other than [Monkey.D.Luffy] cannot attack until the end of your opponent's next turn. Then, place up to 1 Character with a cost of 1 or less at the bottom of the owner's deck."
 OP07,OP07-052,Boa Marigold,character,needsTemplate,0,1,,yes,"[On Play] If you have 2 or more {Amazon Lily} or {Kuja Pirates} type Characters on your field, place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck."
 OP07,OP07-053,Portgas.D.Ace,character,needsTemplate,0,1,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Play] Draw 2 cards and place 2 cards from your hand at the top or bottom of your deck in any order."
-OP07,OP07-054,Marguerite,character,needsTemplate,0,1,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Play] Draw 1 card."
+OP07,OP07-054,Marguerite,character,curated,1,1,onPlay,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Play] Draw 1 card."
 OP07,OP07-055,Snake Dance,event,needsTemplate,0,2,,yes,"[Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, return up to 1 of your Characters to the owner's hand. [Trigger] You may return 1 of your Characters to the owner's hand: Return up to 1 of your opponent's Characters with a cost of 5 or less to the owner's hand."
 OP07,OP07-056,Slave Arrow,event,needsTemplate,0,2,,yes,[Counter] You may return 1 of your Characters with a cost of 2 or more to the owner's hand: Up to 1 of your Leader or Character cards gains +4000 power during this battle. [Trigger] Draw 2 cards and place 2 cards from your hand at the bottom of your deck in any order.
 OP07,OP07-057,Perfume Femur,event,needsTemplate,0,2,,yes,"[Main] Select up to 1 of your {The Seven Warlords of the Sea} type Leader or Character cards and that card gains +2000 power during this turn. Then, if the selected card attacks during this turn, your opponent cannot activate [Blocker]. [Trigger] Draw 1 card."
@@ -1068,7 +1068,7 @@ OP08,OP08-083,Sheepshead,character,needsTemplate,0,1,,,[DON!! x1] [Your Turn] Gi
 OP08,OP08-084,Jack,character,needsTemplate,0,2,,yes,"This Character gains +4 cost.[Activate: Main] You may rest this Character: Draw 1 card and trash 1 card from your hand. Then, K.O. up to 1 of your opponent's Characters with a cost of 3 or less."
 OP08,OP08-085,Jinbe,character,needsTemplate,0,1,,yes,"[DON!! x1] [When Attacking] If you have a Character with a cost of 8 or more, K.O. up to 1 of your opponent's Characters with a cost of 4 or less."
 OP08,OP08-086,Ginrummy,character,needsTemplate,0,1,,yes,"[On Play] If your opponent has a Character with a cost of 0, draw 2 cards and trash 2 cards from your hand."
-OP08,OP08-087,Scratchmen Apoo,character,needsTemplate,0,1,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[Activate: Main] [Once Per Turn] Give up to 1 of your opponent's Characters −1 cost during this turn."
+OP08,OP08-087,Scratchmen Apoo,character,curated,1,1,activateMain,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[Activate: Main] [Once Per Turn] Give up to 1 of your opponent's Characters −1 cost during this turn."
 OP08,OP08-088,Duval,character,needsTemplate,0,1,,,[On Play] Up to 1 of your Characters gains +1 cost until the end of your opponent's next turn.
 OP08,OP08-090,Hamlet,character,needsTemplate,0,1,,yes,[On Play] Play up to 1 {SMILE} type Character card with a cost of 2 or less from your trash.
 OP08,OP08-091,Who's.Who,character,needsTemplate,0,2,,yes,[On Play] You may trash 1 card from your hand: K.O. up to 1 of your opponent's Characters with a cost of 3 or less. [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 3 or less.
@@ -1100,7 +1100,7 @@ OP08,OP08-118,Silvers Rayleigh,character,needsTemplate,0,1,,yes,"[On Play] Selec
 OP08,OP08-119,Kaido & Linlin,character,needsTemplate,0,1,,yes,"[When Attacking] DON!! −10: K.O. all Characters other than this Character. Then, add up to 1 card from the top of your deck to the top of your Life cards and trash up to 1 card from the top of your opponent's Life cards."
 OP09,OP09-001,Shanks,leader,needsTemplate,0,1,,yes,[Once Per Turn] This effect can be activated when your opponent attacks. Give up to 1 of your opponent's Leader or Character cards −1000 power during this turn.
 OP09,OP09-002,Uta,character,curated,1,1,onPlay,yes,"[On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Red-Haired Pirates} type card and add it to your hand. Then, place the rest at the bottom of your deck in any order."
-OP09,OP09-003,Shachi & Penguin,character,needsTemplate,0,1,,,[When Attacking] Give up to 1 of your opponent's Characters −2000 power during this turn.
+OP09,OP09-003,Shachi & Penguin,character,curated,1,1,whenAttacking,,[When Attacking] Give up to 1 of your opponent's Characters −2000 power during this turn.
 OP09,OP09-004,Shanks,character,needsTemplate,0,1,,,Give all of your opponent's Characters −1000 power.[Rush] (This card can attack on the turn in which it is played.)
 OP09,OP09-005,Silvers Rayleigh,character,needsTemplate,0,1,,yes,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Play] If your opponent has 2 or more Characters with a base power of 5000 or more, draw 2 cards and trash 1 card from your hand."
 OP09,OP09-007,Heat,character,needsTemplate,0,1,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Play] Up to 1 of your Leader with 4000 power or less gains +1000 power during this turn."
@@ -1325,7 +1325,7 @@ OP11,OP11-010,Hibari,character,needsTemplate,0,2,,yes,"[On Play] Give up to 1 of
 OP11,OP11-012,Franky,character,needsTemplate,0,1,,,"[Your Turn] [Once Per Turn] When your opponent activates an Event, all of your Characters gain +2000 power during this turn."
 OP11,OP11-013,Prince Grus,character,needsTemplate,0,1,,yes,[When Attacking] All of your opponent's Characters with 2000 power or less cannot activate [Blocker] during this turn.
 OP11,OP11-014,Borsalino,character,needsTemplate,0,1,,yes,[Blocker][Activate: Main] You may rest this Character: Up to 1 of your {Navy} type Leader or Character cards can also attack active Characters during this turn.
-OP11,OP11-016,Roronoa Zoro,character,needsTemplate,0,1,,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
+OP11,OP11-016,Roronoa Zoro,character,curated,1,1,activateMain,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
 OP11,OP11-018,Honesty Impact,event,needsTemplate,0,2,,yes,"[Main] Give up to 1 of your opponent's Characters −4000 power during this turn. Then, K.O. up to 1 of your opponent's Characters with 6000 power or less. [Trigger] K.O. up to 1 of your opponent's Characters with 6000 power or less."
 OP11,OP11-019,Glorp Web!!,event,needsTemplate,0,2,,yes,"[Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if your opponent has a Character with 6000 power or more, up to 1 of your Leader or Character cards gains +1000 power during this turn. [Trigger] Up to 1 of your Leader or Character cards gains +1000 power during this turn."
 OP11,OP11-020,X Calibur,event,needsTemplate,0,2,,yes,"[Main] Give up to 2 of your opponent's Characters −2000 power during this turn. Then, up to 1 of your {Navy} type Characters gains +1000 power during this turn. [Trigger] K.O. up to 1 of your opponent's Characters with 4000 power or less."
@@ -1614,7 +1614,7 @@ OP14,OP14-001,Trafalgar Law,leader,needsTemplate,0,1,,yes,[Activate: Main] [Once
 OP14,OP14-002,Urouge,character,needsTemplate,0,1,,yes,"[When Attacking] If this Character has 5000 power or more, draw 1 card and K.O. up to 1 of your opponent's Characters with 3000 base power or less."
 OP14,OP14-003,"Capone""Gang""Bege",character,needsTemplate,0,1,,yes,This Character cannot be K.O.'d by effects of your opponent's Characters with 5000 base power or less.
 OP14,OP14-004,Cavendish,character,keyword,0,0,,yes,"If this Character has 5000 power or more, this Character gains [Rush].(This card can attack on the turn in which it is played.)"
-OP14,OP14-005,Killer,character,needsTemplate,0,1,,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
+OP14,OP14-005,Killer,character,curated,1,1,activateMain,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
 OP14,OP14-006,Shachi & Penguin,character,needsTemplate,0,1,,yes,"[When Attacking] If this Character has 5000 power or more, give up to 1 of your opponent's Characters −2000 power during this turn."
 OP14,OP14-009,Trafalgar Law,character,needsTemplate,0,1,,yes,[Rush][On Your Opponent's Attack] [Once Per Turn] You may trash 2 cards from your hand: Select your Leader and 1 Character. Swap the base power of the selected cards with each other during this battle.
 OP14,OP14-010,Basil Hawkins,character,needsTemplate,0,1,,yes,"[On K.O.] Look at 5 cards from the top of your deck; play up to 1 {Supernovas} type Character card with 2000 power or less other than [Basil Hawkins]. Then, place the rest at the bottom of your deck in any order."
@@ -1622,7 +1622,7 @@ OP14,OP14-011,Bartolomeo,character,keyword,0,0,,,"[DON!! x2] This Character gain
 OP14,OP14-012,Bepo,character,needsTemplate,0,1,,yes,"[When Attacking] If this Character has 5000 power or more, give up to 2 rested DON!! cards to your Leader or 1 of your Characters."
 OP14,OP14-013,Monkey.D.Luffy,character,needsTemplate,0,2,,yes,"[On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Supernovas} type card other than [Monkey.D.Luffy] and add it to your hand. Then, place the rest at the bottom of your deck in any order.[When Attacking] Give up to 1 of your opponent's Characters −1000 power during this turn."
 OP14,OP14-014,"Eustass""Captain""Kid",character,needsTemplate,0,1,,yes,"[Blocker][On Play] If your Leader has the {Supernovas} type, play up to 1 red Character card with 2000 power or less from your hand."
-OP14,OP14-015,Roronoa Zoro,character,needsTemplate,0,1,,,[Rush] (This card can attack on the turn in which it is played.)[When Attacking] Give up to 1 of your opponent's Characters −1000 power during this turn.
+OP14,OP14-015,Roronoa Zoro,character,curated,1,1,whenAttacking,,[Rush] (This card can attack on the turn in which it is played.)[When Attacking] Give up to 1 of your opponent's Characters −1000 power during this turn.
 OP14,OP14-016,X.Drake,character,needsTemplate,0,2,,yes,"[Opponent's Turn] [Once Per Turn] If your {Supernovas} type Character would be removed from the field by your opponent's effect, you may give your Leader −2000 power during this turn instead.[DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power during this turn."
 OP14,OP14-017,Chambres,event,needsTemplate,0,1,,yes,[Main] Select 2 of your opponent's Characters with 9000 base power or less. Swap the base power of the selected Characters with each other during this turn.
 OP14,OP14-018,Time for the Counterattack,event,needsTemplate,0,2,,yes,"[Counter] If there is a Character with 8000 power or more, up to 1 of your Leader or Character cards gains +4000 power during this battle. [Trigger] Play up to 1 red Character card with 2000 power or less from your hand."
@@ -1881,7 +1881,7 @@ OP16,OP16-048,Buggy,character,needsTemplate,0,1,,yes,"[On Play] If your Leader h
 OP16,OP16-049,Portgas.D.Ace,character,needsTemplate,0,1,,yes,[Activate: Main] You may rest this Character: Draw 1 card.
 OP16,OP16-050,Miss Olive,character,needsTemplate,0,1,,yes,[Blocker][On Play] You may return 1 of your Characters with a cost of 2 or more to the owner's hand: Draw 2 cards and trash 1 card from your hand.
 OP16,OP16-051,Mohji & Cabaji,character,needsTemplate,0,1,,yes,"[On Play] If you have 5 or less cards in your hand, draw 2 cards."
-OP16,OP16-052,Monkey.D.Luffy,character,needsTemplate,0,1,,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
+OP16,OP16-052,Monkey.D.Luffy,character,curated,1,1,activateMain,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
 OP16,OP16-053,Roronoa Zoro,character,needsTemplate,0,1,,yes,"[When Attacking] If you have 6 or less cards in your hand, draw 1 card."
 OP16,OP16-054,Mr.1(Daz.Bonez),character,needsTemplate,0,2,,yes,"[DON!! x1] [Your Turn] If you have 5 or more cards in your hand, this Character gains +3000 power.[On Play] Draw 1 card."
 OP16,OP16-055,Mr.2.Bon.Kurei(Bentham),character,needsTemplate,0,2,,yes,[On Play] Draw 1 card.[DON!! x1] [When Attacking] This Character's base power becomes the same as your opponent's Leader's power during this turn.
@@ -1957,7 +1957,7 @@ P,P-059,The World's Continuation,event,needsTemplate,0,1,,yes,"[Counter] If your
 P,P-060,Tot Musica,event,needsTemplate,0,1,,yes,[Main] You may rest 1 of your [Uta] cards: Rest up to 2 of your opponent's DON!! cards.
 P,P-063,Jinbe,character,curated,1,1,onPlay,yes,[On Play] Rest up to 1 of your opponent's Characters with a cost of 1 or less.
 P,P-068,Sanji,character,needsTemplate,0,1,,yes,[Activate: Main] You may trash this Character: Look at 5 cards from the top of your deck and place them at the top or bottom of the deck in any order.
-P,P-069,Koala,character,needsTemplate,0,1,,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
+P,P-069,Koala,character,curated,1,1,activateMain,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
 P,P-070,Carrot,character,keyword,0,0,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)"
 P,P-073,Sabo,character,needsTemplate,0,1,,,[Activate: Main] [Once Per Turn] You may add 1 card from the top or bottom of your Life cards to your hand: This Character gains +1000 power during this turn.
 P,P-074,Portgas.D.Ace,character,needsTemplate,0,1,,yes,[Activate: Main] You may return this Character to the owner's hand: Look at 5 cards from the top of your deck and place them at the top or bottom of the deck in any order.
@@ -1990,13 +1990,13 @@ PRB02,PRB02-015,Shiryu,character,needsTemplate,0,2,,yes,"If your Leader has the 
 PRB02,PRB02-016,Otama,character,needsTemplate,0,2,,yes,[Activate: Main] You may rest this Character and add 1 card from the top or bottom of your Life cards to your hand: Up to 1 of your Leader or Character cards gains +3000 power during this turn. [Trigger] Rest up to 1 of your opponent's Characters with a cost of 4 or less.
 PRB02,PRB02-017,Boa Hancock,character,needsTemplate,0,3,,yes,[On Play] You may trash 1 card with a [Trigger] from your hand: Your opponent's rested Leader or up to 1 of your opponent's Characters other than [Monkey.D.Luffy] cannot attack until the end of your opponent's next End Phase. [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 4 or less.
 PRB02,PRB02-018,Portgas.D.Ace,character,needsTemplate,0,1,,yes,"[On Play] If you have a face-up Life card, play up to 1 [Sabo], [Portgas.D.Ace], or [Monkey.D.Luffy] with a cost of 2 from your hand or trash."
-ST01,ST01-001,Monkey.D.Luffy,leader,needsTemplate,0,1,,yes,[Activate: Main] [Once Per Turn] Give this Leader or 1 of your Characters up to 1 rested DON!! card.
+ST01,ST01-001,Monkey.D.Luffy,leader,curated,1,1,activateMain,yes,[Activate: Main] [Once Per Turn] Give this Leader or 1 of your Characters up to 1 rested DON!! card.
 ST01,ST01-002,Usopp,character,needsTemplate,0,2,,yes,[DON!! x2] [When Attacking] Your opponent cannot activate a [Blocker] Character that has 5000 or more power during this battle. [Trigger] Play this card.
 ST01,ST01-004,Sanji,character,keyword,0,0,,,[DON!! x2] This Character gains [Rush]. (This card can attack on the turn in which it is played.)
 ST01,ST01-005,Jinbe,character,needsTemplate,0,1,,,[DON!! x1] [When Attacking] Up to 1 of your Leader or Character cards other than this card gains +1000 power during this turn.
 ST01,ST01-006,Tony Tony.Chopper,character,keyword,0,0,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)"
-ST01,ST01-007,Nami,character,needsTemplate,0,1,,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
-ST01,ST01-011,Brook,character,needsTemplate,0,1,,yes,[On Play] Give up to 2 rested DON!! cards to your Leader or 1 of your Characters.
+ST01,ST01-007,Nami,character,curated,1,1,activateMain,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
+ST01,ST01-011,Brook,character,curated,1,1,onPlay,yes,[On Play] Give up to 2 rested DON!! cards to your Leader or 1 of your Characters.
 ST01,ST01-012,Monkey.D.Luffy,character,needsTemplate,0,2,,yes,[Rush] (This card can attack on the turn in which it is played.) [DON!! x2] [When Attacking] Your opponent cannot activate [Blocker] during this battle.
 ST01,ST01-013,Roronoa Zoro,character,curated,1,1,onEnterPlay,,[DON!! x1] This Character gains +1000 power.
 ST01,ST01-014,Guard Point,event,needsTemplate,0,2,,,[Counter] Up to 1 of your Leader or Character cards gains +3000 power during this battle. [Trigger] Up to 1 of your Leader or Character cards gains +1000 power during this turn.
@@ -2007,7 +2007,7 @@ ST02,ST02-001,"Eustass""Captain""Kid",leader,needsTemplate,0,1,,yes,[Activate: M
 ST02,ST02-003,Urouge,character,needsTemplate,0,1,,yes,"[DON!! x1] If you have 3 or more Characters, this card gains +2000 power."
 ST02,ST02-004,"Capone""Gang""Bege",character,keyword,0,0,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)"
 ST02,ST02-005,Killer,character,needsTemplate,0,2,,yes,[On Play] K.O. up to 1 of your opponent's rested Characters with a cost of 3 or less. [Trigger] Play this card.
-ST02,ST02-007,Jewelry Bonney,character,needsTemplate,0,1,,yes,"[Activate: Main] ➀ (You may rest the specified number of DON!! cards in your cost area.) You may rest this Character: Look at 5 cards from the top of your deck; reveal up to 1 {Supernovas} type card and add it to your hand. Then, place the rest at the bottom of your deck in any order."
+ST02,ST02-007,Jewelry Bonney,character,curated,1,1,activateMain,yes,"[Activate: Main] ➀ (You may rest the specified number of DON!! cards in your cost area.) You may rest this Character: Look at 5 cards from the top of your deck; reveal up to 1 {Supernovas} type card and add it to your hand. Then, place the rest at the bottom of your deck in any order."
 ST02,ST02-008,Scratchmen Apoo,character,needsTemplate,0,1,,yes,[DON!! x1] [When Attacking] Rest up to 1 of your opponent's DON!! cards.
 ST02,ST02-009,Trafalgar Law,character,needsTemplate,0,1,,yes,[On Play] Set up to 1 of your {Supernovas} or {Heart Pirates} type rested Characters with a cost of 5 or less as active.
 ST02,ST02-010,Basil Hawkins,character,needsTemplate,0,1,,yes,"[DON!! x1] [Once Per Turn] [Your Turn] If this Character battles your opponent's Character, set this card as active."
@@ -2019,13 +2019,13 @@ ST02,ST02-017,Straw Sword,event,needsTemplate,0,2,,yes,[Main] Rest up to 1 of yo
 ST03,ST03-001,Crocodile,leader,needsTemplate,0,1,,yes,[Activate: Main] [Once Per Turn] DON!! −4 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Return up to 1 Character with a cost of 5 or less to the owner's hand.
 ST03,ST03-003,Crocodile,character,needsTemplate,0,2,,yes,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [DON!! x1] [On Block] Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck."
 ST03,ST03-004,Gecko Moria,character,needsTemplate,0,1,,yes,[On Play] Add up to 1 {The Seven Warlords of the Sea} or {Thriller Bark Pirates} type Character with a cost of 4 or less other than [Gecko Moria] from your trash to your hand.
-ST03,ST03-005,Dracule Mihawk,character,needsTemplate,0,1,,yes,[DON!! x1] [When Attacking] Draw 2 cards and trash 2 cards from your hand.
+ST03,ST03-005,Dracule Mihawk,character,curated,1,1,whenAttacking,yes,[DON!! x1] [When Attacking] Draw 2 cards and trash 2 cards from your hand.
 ST03,ST03-007,Sentomaru,character,needsTemplate,0,1,,yes,"[DON!! x1] [Activate: Main] [Once Per Turn] ➁ (You may rest the specified number of DON!! cards in your cost area.): Play up to 1 [Pacifista] with a cost of 4 or less from your deck, then shuffle your deck."
 ST03,ST03-008,Trafalgar Law,character,keyword,0,0,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)"
-ST03,ST03-009,Donquixote Doflamingo,character,needsTemplate,0,1,,yes,[On Play] Return up to 1 Character with a cost of 7 or less to the owner's hand.
+ST03,ST03-009,Donquixote Doflamingo,character,curated,1,1,onPlay,yes,[On Play] Return up to 1 Character with a cost of 7 or less to the owner's hand.
 ST03,ST03-010,Bartholomew Kuma,character,needsTemplate,0,2,,yes,[On Play] Look at 3 cards from the top of your deck and return them to the top or bottom of the deck in any order. [Trigger] Play this card.
 ST03,ST03-013,Boa Hancock,character,needsTemplate,0,1,,yes,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [Trigger] Play this card."
-ST03,ST03-014,Marshall.D.Teach,character,needsTemplate,0,1,,yes,[On Play] Return up to 1 Character with a cost of 3 or less to the owner's hand.
+ST03,ST03-014,Marshall.D.Teach,character,curated,1,1,onPlay,yes,[On Play] Return up to 1 Character with a cost of 3 or less to the owner's hand.
 ST03,ST03-015,Sables,event,needsTemplate,0,3,,yes,[Main] Return up to 1 Character with a cost of 7 or less to the owner's hand. [Trigger] Activate this card's [Main] effect.
 ST03,ST03-016,Thrust Pad Cannon,event,needsTemplate,0,3,,yes,[Counter] Return up to 1 Character with a cost of 3 or less to the owner's hand. [Trigger] Activate this card's [Counter] effect.
 ST03,ST03-017,Love-Love Mellow,event,needsTemplate,0,1,,yes,"[Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, draw 1 card if you have 3 or less cards in your hand."
@@ -2058,11 +2058,11 @@ ST05,ST05-017,Union Armada,event,needsTemplate,0,2,,yes,"[Counter] Up to 1 of yo
 ST06,ST06-001,Sakazuki,leader,needsTemplate,0,1,,yes,[Activate: Main] [Once Per Turn] ③ (You may rest the specified number of DON!! cards in your cost area.) You may trash 1 card from your hand: K.O. up to 1 of your opponent's Characters with a cost of 0.
 ST06,ST06-002,Koby,character,needsTemplate,0,1,,yes,[On Play] You may trash 1 card from your hand: K.O. up to 1 of your opponent's Characters with a cost of 0.
 ST06,ST06-004,Smoker,character,needsTemplate,0,1,,yes,"This Character cannot be K.O.'d by effects. [DON!! x1] If there is a Character with a cost of 0, this Character gains [Double Attack]. (This card deals 2 damage.)"
-ST06,ST06-005,Sengoku,character,needsTemplate,0,1,,,[When Attacking] Give up to 1 of your opponent's Characters −4 cost during this turn.
+ST06,ST06-005,Sengoku,character,curated,1,1,whenAttacking,,[When Attacking] Give up to 1 of your opponent's Characters −4 cost during this turn.
 ST06,ST06-006,Tashigi,character,needsTemplate,0,1,,yes,[Activate: Main] You may rest this Character: Give up to 1 of your opponent's Characters −2 cost during this turn.
 ST06,ST06-007,Tsuru,character,keyword,0,0,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)"
-ST06,ST06-008,Hina,character,needsTemplate,0,1,,,[On Play] Give up to 1 of your opponent's Characters −4 cost during this turn.
-ST06,ST06-010,Helmeppo,character,needsTemplate,0,1,,,[On Play] Give up to 1 of your opponent's Characters −3 cost during this turn.
+ST06,ST06-008,Hina,character,curated,1,1,onPlay,,[On Play] Give up to 1 of your opponent's Characters −4 cost during this turn.
+ST06,ST06-010,Helmeppo,character,curated,1,1,onPlay,,[On Play] Give up to 1 of your opponent's Characters −3 cost during this turn.
 ST06,ST06-012,Monkey.D.Garp,character,needsTemplate,0,1,,yes,[Activate: Main] You may trash 1 card from your hand and rest this Character: K.O. up to 1 of your opponent's Characters with a cost of 4 or less.
 ST06,ST06-014,Shockwave,event,needsTemplate,0,2,,yes,"[Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, K.O. up to 1 of your opponent's active Characters with a cost of 3 or less. [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 4 or less."
 ST06,ST06-015,Great Eruption,event,needsTemplate,0,2,,yes,"[Main] Draw 1 card. Then, give up to 1 of your opponent's Characters −2 cost during this turn. [Trigger] Your opponent chooses 1 card from their hand and trashes it."
@@ -2085,9 +2085,9 @@ ST08,ST08-001,Monkey.D.Luffy,leader,needsTemplate,0,1,,yes,"[Your Turn] When a C
 ST08,ST08-002,Uta,character,needsTemplate,0,2,,yes,This Character cannot be K.O.'d in battle by Leaders.[Activate: Main] You may rest this Character: Give up to 1 of your opponent's Characters −2 cost during this turn.
 ST08,ST08-004,Koby,character,needsTemplate,0,1,,yes,[Activate: Main] You may rest this Character: K.O. up to 1 of your opponent's Characters with a cost of 2 or less.
 ST08,ST08-005,Shanks,character,needsTemplate,0,1,,yes,[On Play] You may trash 1 card from your hand: K.O. all Characters with a cost of 1 or less.
-ST08,ST08-006,Shirahoshi,character,needsTemplate,0,1,,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Play] Give up to 1 of your opponent's Characters −4 cost during this turn."
+ST08,ST08-006,Shirahoshi,character,curated,1,1,onPlay,,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Play] Give up to 1 of your opponent's Characters −4 cost during this turn."
 ST08,ST08-007,Nefeltari Vivi,character,needsTemplate,0,1,,yes,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [Trigger] Play this card."
-ST08,ST08-008,Higuma,character,needsTemplate,0,1,,,[On Play] Give up to 1 of your opponent's Characters −2 cost during this turn.
+ST08,ST08-008,Higuma,character,curated,1,1,onPlay,,[On Play] Give up to 1 of your opponent's Characters −2 cost during this turn.
 ST08,ST08-009,Makino,character,needsTemplate,0,1,,yes,"[On Play] If there is a Character with a cost of 0, draw 1 card."
 ST08,ST08-013,Mr.2.Bon.Kurei(Bentham),character,needsTemplate,0,1,,yes,"[DON!! x1] At the end of a battle in which this Character battles your opponent's Character, you may K.O. the opponent’s Character you battled with. If you do, K.O. this Character."
 ST08,ST08-014,Gum-Gum Bell,event,needsTemplate,0,2,,yes,[Main] You may add 1 card from the top of your Life cards to your hand: Give up to 1 of your opponent's Characters −7 cost during this turn. [Trigger] Add up to 1 black Character card with a cost of 2 or less from your trash to your hand.
@@ -2107,7 +2107,7 @@ ST10,ST10-001,Trafalgar Law,leader,needsTemplate,0,1,,yes,"[Activate: Main] [Onc
 ST10,ST10-002,Monkey.D.Luffy,leader,needsTemplate,0,1,,yes,"[Activate: Main] [Once Per Turn] If you have 0 DON!! cards on your field or 8 or more DON!! cards on your field, add up to 1 DON!! card from your DON!! deck and set it as active."
 ST10,ST10-003,"Eustass""Captain""Kid",leader,needsTemplate,0,2,,yes,"[Your Turn] If you have 4 or more Life cards, give this Leader −1000 power.[When Attacking] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): This Leader gains +2000 power during this turn."
 ST10,ST10-004,Sanji,character,keyword,0,0,,yes,"[On Play] If your opponent has a Character with 5000 or more power, this Character gains [Rush] during this turn.(This card can attack on the turn in which it is played.)"
-ST10,ST10-005,Jinbe,character,needsTemplate,0,1,,,[DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power during this turn.
+ST10,ST10-005,Jinbe,character,curated,1,1,whenAttacking,,[DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power during this turn.
 ST10,ST10-006,Monkey.D.Luffy,character,needsTemplate,0,1,,yes,"[Rush] (This card can attack on the turn in which it is played.)[Once Per Turn] When your opponent activates a [Blocker], K.O. up to 1 of your opponent's Characters with 8000 power or less."
 ST10,ST10-007,Killer,character,needsTemplate,0,1,,yes,"[Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, K.O. up to 1 of your opponent's rested Characters with a cost of 3 or less."
 ST10,ST10-008,Shachi & Penguin,character,needsTemplate,0,1,,yes,"[On Play] If you have 3 or less DON!! cards on your field, add up to 2 DON!! cards from your DON!! deck and rest them."
@@ -2230,7 +2230,7 @@ ST23,ST23-001,Uta,character,needsTemplate,0,1,,yes,"If you have a Character with
 ST23,ST23-002,Shanks,character,needsTemplate,0,2,,yes,"If your opponent has a Character with 8000 base power or more, give this card in your hand −3 cost.[On Play] If your Leader has the {Red-Haired Pirates} type or is [Uta], your Leader gains +2000 power until the end of your opponent's next End Phase."
 ST23,ST23-003,Benn.Beckman,character,needsTemplate,0,1,,yes,"[On Play] You may trash 1 card from your hand: If your Leader has the {Red-Haired Pirates} type, K.O. up to 1 of your opponent's Characters with 4000 base power or less."
 ST23,ST23-004,Monkey.D.Luffy,character,needsTemplate,0,1,,yes,[Activate: Main] You may rest 1 of your DON!! cards and this Character: Give up to 1 of your opponent's Characters −1000 power during this turn.
-ST23,ST23-005,Yasopp,character,needsTemplate,0,1,,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
+ST23,ST23-005,Yasopp,character,curated,1,1,activateMain,yes,[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.
 ST24,ST24-001,"Capone""Gang""Bege",character,needsTemplate,0,1,,yes,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Play] If you have 6 or more rested cards, draw 1 card and trash 1 card from your hand."
 ST24,ST24-002,Kid & Killer,character,needsTemplate,0,2,,yes,"[On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Supernovas} type card and add it to your hand. Then, place the rest at the bottom of your deck in any order.[On Your Opponent's Attack] You may trash this Character: Set up to 1 of your DON!! cards as active."
 ST24,ST24-003,Basil Hawkins,character,needsTemplate,0,1,,yes,[End of Your Turn] Set up to 1 of your DON!! cards as active.

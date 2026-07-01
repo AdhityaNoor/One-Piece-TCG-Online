@@ -116,6 +116,12 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return [ctx.controllerLeaderId(), ...ctx.controllerCharacterIds()];
     case 'opponentLeaderOrCharacters':
       return [ctx.state().players[ctx.opponentId].leaderInstanceId, ...ctx.opponentCharacterIds()];
+    case 'allCharacters': {
+      let ids = [...ctx.controllerCharacterIds(), ...ctx.opponentCharacterIds()];
+      if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
+      return ids;
+    }
     case 'opponentCharacters': {
       let ids = ctx.opponentCharacterIds();
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);

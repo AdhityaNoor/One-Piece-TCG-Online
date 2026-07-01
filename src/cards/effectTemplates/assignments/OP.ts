@@ -36,6 +36,9 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03 -----------------------------------------------------------------------
 
   // OP03-011 — [DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power.
+  // OP03-009 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
+  { cardNumber: 'OP03-009', templateId: 'activateMainGiveDon', params: { count: 1 } },
+
   { cardNumber: 'OP03-011', templateId: 'whenAttackingModifyPowerOpponent', params: { amount: -2000, donRequired: 1 } },
 
   // OP03-062 — [On Play] Look at 5; add up to 1 Water Seven type (excl. same name).
@@ -110,6 +113,9 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP07-044 — [On Play] Draw 1 card.
   { cardNumber: 'OP07-044', templateId: 'onPlayDraw', params: { amount: 1 } },
+  // OP07-054 - [Blocker] [On Play] Draw 1 card.
+  // Note: [Blocker] is an engine keyword flag. Only the on-play draw is templated.
+  { cardNumber: 'OP07-054', templateId: 'onPlayDraw', params: { amount: 1 } },
   // OP07-046 — [On Play] Look at 5; add up to 1 The Seven Warlords of the Sea.
   {
     cardNumber: 'OP07-046',
@@ -165,6 +171,11 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
     params: { look: 5, pick: 1, filter: { typeIncludes: 'Supernovas', excludeSelfName: true } },
   },
 
+  // OP11 -----------------------------------------------------------------------
+
+  // OP11-016 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
+  { cardNumber: 'OP11-016', templateId: 'activateMainGiveDon', params: { count: 1 } },
+
   // OP12 -----------------------------------------------------------------------
 
   // OP12-104 — [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 4 or less.
@@ -179,6 +190,9 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP14-015 — [Rush] [When Attacking] Give up to 1 of your opponent's Characters −1000 power.
   // Note: [Rush] is an engine keyword flag. Only the when-attacking effect is templated.
+  // OP14-005 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
+  { cardNumber: 'OP14-005', templateId: 'activateMainGiveDon', params: { count: 1 } },
+
   { cardNumber: 'OP14-015', templateId: 'whenAttackingModifyPowerOpponent', params: { amount: -1000 } },
 
   // OP15 -----------------------------------------------------------------------
@@ -197,6 +211,9 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP16 -----------------------------------------------------------------------
+
+  // OP16-052 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
+  { cardNumber: 'OP16-052', templateId: 'activateMainGiveDon', params: { count: 1 } },
 
   // OP16-064 — [On Play] Look at 5; add up to 1 Navy (excl. same name).
   {

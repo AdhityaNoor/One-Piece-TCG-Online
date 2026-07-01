@@ -10,7 +10,7 @@
  * file, and the assembler produces the registry automatically.
  *
  * Invariants enforced at assembly time:
- *   - Duplicate card numbers are detected (second entry wins + console.warn in dev).
+ *   - Duplicate card numbers are detected (second entry wins + console.warn).
  *   - Output is JSON-serializable: every EffectProgram comes from a factory that
  *     only produces plain data ops.
  *   - Raw card text NEVER touches this path.
@@ -56,9 +56,7 @@ export function buildRegistryFromAssignments(
   for (const a of assignments) {
     if (registry[a.cardNumber] !== undefined) {
       // Should never happen if sets are reviewed carefully; warn loudly.
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(`[effectTemplates] duplicate assignment for ${a.cardNumber} — last one wins`);
-      }
+      console.warn(`[effectTemplates] duplicate assignment for ${a.cardNumber} - last one wins`);
     }
     // Cast needed: TypeScript can't prove the union member lines up without a
     // runtime switch, but TemplateParamMap guarantees correctness statically.

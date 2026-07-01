@@ -95,7 +95,7 @@ export interface TemplateParamMap {
 
   // bounce
   /** [On Play] Return up to 1 opponent Character with cost ≤ maxCost to owner's hand. */
-  onPlayReturnToHand: { maxCost: number };
+  onPlayReturnToHand: { maxCost: number; target: 'any' | 'opponent' };
 
   // modify cost
   /** [On Play] Give up to 1 opponent Character −|amount| cost this turn. amount must be negative. */

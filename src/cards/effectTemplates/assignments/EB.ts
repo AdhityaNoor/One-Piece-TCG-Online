@@ -11,6 +11,9 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
+  // EB01-007 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
+  { cardNumber: 'EB01-007', templateId: 'activateMainGiveDon', params: { count: 1 } },
+
   // EB01-015 — [On Play] Rest up to 1 of your opponent's Characters with a cost of 2 or less.
   { cardNumber: 'EB01-015', templateId: 'onPlayRestOpponentCharacter', params: { filter: { maxCost: 2 } } },
   // EB01-023 — [On Play] Draw 1 card.

@@ -26,8 +26,8 @@ export const ST03_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // ST03-009 — [On Play] Return up to 1 Character with a cost of 7 or less to the owner's hand.
-  { cardNumber: 'ST03-009', templateId: 'onPlayReturnToHand', params: { maxCost: 7 } },
+  { cardNumber: 'ST03-009', templateId: 'onPlayReturnToHand', params: { maxCost: 7, target: 'any' } },
 
   // ST03-014 — [On Play] Return up to 1 Character with a cost of 3 or less to the owner's hand.
-  { cardNumber: 'ST03-014', templateId: 'onPlayReturnToHand', params: { maxCost: 3 } },
+  { cardNumber: 'ST03-014', templateId: 'onPlayReturnToHand', params: { maxCost: 3, target: 'any' } },
 ];

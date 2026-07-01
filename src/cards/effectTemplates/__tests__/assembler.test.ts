@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistryFromAssignments } from '../assembler';
 import type { CardEffectAssignment } from '../assembler';
 import { applyTemplate } from '../catalog/factories';
+import { ALL_ASSIGNMENTS } from '../assignments';
 
 describe('buildRegistryFromAssignments', () => {
   it('produces an empty registry for an empty assignment list', () => {
@@ -31,7 +32,7 @@ describe('buildRegistryFromAssignments', () => {
     const assignments: CardEffectAssignment[] = [
       { cardNumber: 'A', templateId: 'onPlayDraw', params: { amount: 1 } },
       { cardNumber: 'B', templateId: 'onPlayGiveDon', params: { count: 2 } },
-      { cardNumber: 'C', templateId: 'onPlayReturnToHand', params: { maxCost: 5 } },
+      { cardNumber: 'C', templateId: 'onPlayReturnToHand', params: { maxCost: 5, target: 'opponent' } },
       { cardNumber: 'D', templateId: 'whenAttackingDrawAndTrash', params: { drawCount: 2, trashCount: 2, donRequired: 1 } },
       { cardNumber: 'E', templateId: 'onPlayModifyCostOpponent', params: { amount: -3 } },
       { cardNumber: 'F', templateId: 'whenAttackingModifyPowerOpponent', params: { amount: -2000, donRequired: 1 } },
@@ -74,12 +75,20 @@ describe('template factories — structural correctness', () => {
   });
 
   it('onPlayReturnToHand targets opponent characters filtered by maxCost', () => {
-    const p = applyTemplate('T', 'onPlayReturnToHand', { maxCost: 5 });
+    const p = applyTemplate('T', 'onPlayReturnToHand', { maxCost: 5, target: 'opponent' });
     const choose = p.abilities[0].ops[0];
     expect(choose.op).toBe('chooseTargets');
     // @ts-expect-error — narrow to chooseTargets shape
     expect(choose.from).toMatchObject({ sel: 'opponentCharacters', maxCost: 5 });
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'returnToHand' });
+  });
+
+  it('onPlayReturnToHand can target any Character when text says Character', () => {
+    const p = applyTemplate('T', 'onPlayReturnToHand', { maxCost: 7, target: 'any' });
+    const choose = p.abilities[0].ops[0];
+    expect(choose.op).toBe('chooseTargets');
+    // @ts-expect-error - narrow to chooseTargets shape
+    expect(choose.from).toMatchObject({ sel: 'allCharacters', maxCost: 7 });
   });
 
   it('whenAttackingDrawAndTrash sets donAttachedAtLeast condition when donRequired provided', () => {
@@ -134,7 +143,6 @@ describe('raw card text isolation', () => {
     // This test is intentionally shallow: it checks that no assignment
     // stores a long string that looks like card effect text in its params.
     // Actual card text lives in the card catalog JSON, not here.
-    const { ALL_ASSIGNMENTS } = require('../assignments');
     for (const a of ALL_ASSIGNMENTS) {
       const paramsStr = JSON.stringify(a.params);
       // Heuristic: card effect text contains brackets like [On Play] or "your opponent"

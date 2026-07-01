@@ -19,6 +19,7 @@ export type Selector =
   | { sel: 'controllerCharacters' }
   | { sel: 'controllerLeaderOrCharacters' }
   | { sel: 'opponentLeaderOrCharacters' }
+  | { sel: 'allCharacters'; maxCost?: number; maxPower?: number } // any player's Characters
   | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number } // optional "cost/power N or less" filter
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
   | { sel: 'controllerTrash'; filter?: SearchFilter } // controller's trash cards matching a filter (for recover-to-hand)
