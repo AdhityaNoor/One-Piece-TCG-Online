@@ -325,6 +325,16 @@ export function MatchScreen() {
               targetInstanceId={attackArrow?.targetInstanceId ?? null}
               committed={attackArrow?.committed ?? false}
             />
+            {/* Portal root for board-scoped overlays (DonStack popup, etc.).
+                Sits inside op-match-table-shell so overlays follow the board
+                when it animates, are clipped to board bounds by overflow:hidden,
+                and are above all board content via z-index. pointer-events:none
+                so the invisible layer doesn't block board interaction by default;
+                portal contents opt in with pointer-events:auto. */}
+            <div
+              id="board-overlay-root"
+              style={{ position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none' }}
+            />
           </div>
 
           <ActionLogDock log={matchState.log} />

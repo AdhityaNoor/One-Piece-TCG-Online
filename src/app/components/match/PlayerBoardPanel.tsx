@@ -347,6 +347,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
         selectable={(card) => donSelectable(mode, isOwn, card)}
         selectedIds={selectedDon}
         onDonSelect={(card) => onCardTap('costArea', card)}
+        reverseRows={reverseRows}
       />
     </MatCell>
   );
@@ -359,6 +360,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
         selectable={(card) => donSelectable(mode, isOwn, card)}
         selectedIds={selectedDon}
         onDonSelect={(card) => onCardTap('costArea', card)}
+        reverseRows={reverseRows}
       />
     </MatCell>
   );
