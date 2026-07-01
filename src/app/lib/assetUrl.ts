@@ -21,7 +21,7 @@
  * path and never needs to know about this seam.
  */
 
-const ASSET_BASE = import.meta.env.VITE_ASSET_BASE_URL ?? '';
+const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL ?? '').replace(/\/$/, '');
 
 /**
  * Resolves a root-relative asset path to the correct URL for the current

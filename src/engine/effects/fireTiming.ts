@@ -105,6 +105,24 @@ export function fireCounter(
 }
 
 /**
+ * Fires a Life card's [Trigger] ability (10-1-5-2, timing 'trigger'). Called
+ * when the defending player chooses to activate a revealed [Trigger] Life card.
+ */
+export function fireTrigger(
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const instance = state.cardsById[instanceId];
+  if (!instance) return noop(state);
+  const program = registry[instance.cardDefinitionId];
+  if (!program) return noop(state);
+  return runTriggers(program, ['trigger'], state, instanceId, defs, actionId, registry);
+}
+
+/**
  * Resumes a suspended EffectProgram after its PendingChoice (sourceEffectId
  * 'ir') is answered. Called by the generic RESOLVE_PENDING_CHOICE handler.
  */

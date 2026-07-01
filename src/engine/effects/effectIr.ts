@@ -74,7 +74,7 @@ export type EffectOp =
   | { op: 'addDonFromDeck'; count: number; rested: boolean };
 
 /** When the ability is exposed/fires (mirrors EffectTimingKeyword). */
-export type IrTrigger = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'activateMain' | 'onKO' | 'counter';
+export type IrTrigger = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'activateMain' | 'onKO' | 'counter' | 'trigger';
 
 /**
  * An activation cost that must be PAID before an activated ability resolves

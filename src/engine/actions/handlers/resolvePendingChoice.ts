@@ -19,7 +19,7 @@ import type { ResolvePendingChoiceAction, ValidationResult } from '../action';
 import { createActionLogger } from '../../rules/shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { resumeChoice, type EffectTemplateRegistry } from '../../effects';
+import { resumeChoice, fireTrigger, type EffectTemplateRegistry } from '../../effects';
 import type { CardDefinitionLookup } from '../../rules/shared/definitions';
 
 function findChoice(state: GameState, action: ResolvePendingChoiceAction) {
@@ -65,6 +65,12 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
         }
       }
     }
+  } else if (choice.sourceEffectId === 'rule:lifeTrigger') {
+    // [] = decline (keep in hand); [the Life card id] = activate the trigger.
+    const sel = action.response;
+    if (!Array.isArray(sel) || (sel.length > 0 && (sel.length !== 1 || sel[0] !== choice.sourceInstanceId))) {
+      reasons.push('A Life [Trigger] choice expects [] (decline) or [the Life card id] (activate).');
+    }
   } else {
     reasons.push(`Unrecognized PendingChoice sourceEffectId '${choice.sourceEffectId}' — no resolver implemented.`);
   }
@@ -86,6 +92,26 @@ export function executeResolvePendingChoice(
   // Interpreter-suspended card effect: resume the program with the selection.
   if (choice.sourceEffectId === 'ir') {
     return resumeChoice(state, action.choiceId, action.response as string[], registry, defs, action.actionId);
+  }
+
+  // Life [Trigger] (10-1-5-2): activate → fire the trigger + trash the card;
+  // decline → keep it in hand.
+  if (choice.sourceEffectId === 'rule:lifeTrigger') {
+    const cardId = choice.sourceInstanceId;
+    const remaining = state.pendingChoices.filter((c) => c.id !== action.choiceId);
+    const activate = !!cardId && (action.response as string[]).includes(cardId);
+    if (!activate || !cardId) {
+      return { state: { ...state, pendingChoices: remaining }, log: [], pendingChoices: [] };
+    }
+    const fired = fireTrigger({ ...state, pendingChoices: remaining }, cardId, registry, defs, action.actionId);
+    const inst = fired.state.cardsById[cardId];
+    const owner = fired.state.players[inst.ownerId];
+    const working: GameState = {
+      ...fired.state,
+      players: { ...fired.state.players, [inst.ownerId]: { ...owner, hand: removeFromZone(owner.hand, cardId), trash: addToZoneTop(owner.trash, cardId) } },
+      cardsById: { ...fired.state.cardsById, [cardId]: { ...inst, currentZone: 'trash' } },
+    };
+    return { state: working, log: fired.log, pendingChoices: fired.pendingChoices };
   }
 
   const logger = createActionLogger(state, action.actionId);

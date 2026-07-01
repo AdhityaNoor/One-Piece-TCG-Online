@@ -83,6 +83,9 @@ export function resolveDamageAndEndOfBattle(
   // trashed; collected here and merged into the final result.
   let koLog: GameLogEntry[] = [];
   let koPending: PendingChoice[] = [];
+  // [Trigger] (10-1-5-2): revealed Life cards with a compiled trigger raise an
+  // "activate?" choice, resolved after the battle (see resolvePendingChoice.ts).
+  const triggerPending: PendingChoice[] = [];
 
   if (attackerPower >= targetPower) {
     const target = state.cardsById[targetId];
@@ -114,14 +117,37 @@ export function resolveDamageAndEndOfBattle(
         player = { ...player, lifeArea: { ...player.lifeArea, cardIds: restLife }, hand: addToZoneTop(player.hand, lifeCardId) };
 
         if (lifeDef?.hasTrigger) {
-          logger.push({
-            actorPlayerId: defendingPlayerId,
-            type: 'TRIGGER_REVEALED',
-            message: `${defendingPlayerId}'s revealed Life card has [Trigger] — effect text not executed (stubbed this milestone); added to hand.`,
-            data: { lifeCardInstanceId: lifeCardId, effectStubbed: true },
-            relatedCardInstanceIds: [lifeCardId],
-            visibility: { visibleTo: [defendingPlayerId] },
-          });
+          const hasCompiledTrigger = !!registry[lifeCardId ? cardsById[lifeCardId].cardDefinitionId : '']?.abilities.some((ab) => ab.trigger === 'trigger');
+          if (hasCompiledTrigger) {
+            // Offer to activate it (10-1-5-2). The card is in hand for now; a
+            // "yes" moves it to the trash and resolves the trigger.
+            triggerPending.push({
+              id: `${defendingPlayerId}__life-trigger-${lifeCardId}`,
+              playerId: defendingPlayerId,
+              kind: 'YES_NO',
+              prompt: `A revealed Life card has a [Trigger] — activate it? (It will be trashed instead of kept in hand.)`,
+              constraints: { min: 0, max: 1 },
+              sourceInstanceId: lifeCardId,
+              sourceEffectId: 'rule:lifeTrigger',
+            });
+            logger.push({
+              actorPlayerId: defendingPlayerId,
+              type: 'TRIGGER_REVEALED',
+              message: `${defendingPlayerId}'s revealed Life card has a [Trigger] — activation offered (10-1-5-2).`,
+              data: { lifeCardInstanceId: lifeCardId },
+              relatedCardInstanceIds: [lifeCardId],
+              visibility: { visibleTo: [defendingPlayerId] },
+            });
+          } else {
+            logger.push({
+              actorPlayerId: defendingPlayerId,
+              type: 'TRIGGER_REVEALED',
+              message: `${defendingPlayerId}'s revealed Life card has [Trigger] — not yet implemented; added to hand.`,
+              data: { lifeCardInstanceId: lifeCardId, effectStubbed: true },
+              relatedCardInstanceIds: [lifeCardId],
+              visibility: { visibleTo: [defendingPlayerId] },
+            });
+          }
         }
         logger.push({
           actorPlayerId: defendingPlayerId,
@@ -195,5 +221,5 @@ export function resolveDamageAndEndOfBattle(
     log: [...state.log, ...logger.log, ...koLog],
   };
 
-  return { state: nextState, log: [...logger.log, ...koLog], pendingChoices: koPending };
+  return { state: { ...nextState, pendingChoices: [...nextState.pendingChoices, ...triggerPending] }, log: [...logger.log, ...koLog], pendingChoices: [...koPending, ...triggerPending] };
 }

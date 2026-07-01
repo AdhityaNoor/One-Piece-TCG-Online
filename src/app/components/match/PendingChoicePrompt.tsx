@@ -379,6 +379,29 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     );
   }
 
+  // Life [Trigger] (10-1-5-2): a revealed Life card offers to activate its
+  // [Trigger] (then it's trashed) or be kept in hand.
+  if (choice.sourceEffectId === 'rule:lifeTrigger') {
+    const card = choice.sourceInstanceId ? buildCardView(defs, state, images, choice.sourceInstanceId) : null;
+    return (
+      <Modal open onClose={() => {}} title="Life [Trigger]">
+        <div className="flex flex-col gap-3 p-5">
+          <p className="text-sm text-white/70">{choice.prompt}</p>
+          {card && <p className="text-sm font-bold text-white">{card.name}</p>}
+          {errorBanner}
+          <div className="flex gap-2">
+            <Button variant="primary" onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: choice.sourceInstanceId ? [choice.sourceInstanceId] : [] })}>
+              Activate Trigger
+            </Button>
+            <Button variant="secondary" onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: [] })}>
+              Keep in Hand
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
   // Generic interpreter-suspended choice (chooseTargets / searchTopDeck). The
   // candidates are explicit instance ids; the choosing player may see them all
   // (their own search look, or visible target Characters), so we build a

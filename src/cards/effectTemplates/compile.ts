@@ -310,6 +310,15 @@ function buildCondition(pa: ParsedAbility): IrCondition | undefined {
 
 /** Lower ONE parsed ability to IR, or null if no lowering matches it. */
 function compileAbility(pa: ParsedAbility): Ability | null {
+  // [Trigger] (10-1-5-2): the parser tags these as `custom` timing. Recognize
+  // them by the leading tag, lower the inner effect exactly as if it were an
+  // [On Play] (immediate effect), then re-tag the ability as the 'trigger'
+  // timing so the Damage Step can fire it when the Life card is revealed.
+  if (pa.timing === 'custom' && /^\s*\[trigger\]/i.test(pa.rawText)) {
+    const asOnPlay = compileAbility({ ...pa, timing: 'onPlay' });
+    return asOnPlay ? { ...asOnPlay, trigger: 'trigger' } : null;
+  }
+
   // Multi-clause patterns are matched on the ability's full text BEFORE the
   // single-action guard below (the parser splits a searcher into 3 sentences).
   const search = lowerSearch(pa);

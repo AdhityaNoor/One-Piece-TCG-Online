@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSampleGameState } from '../../../engine/state/__fixtures__/sampleGameState';
 import { computeCurrentPower } from '../../../engine/rules/shared/power';
-import { fireOnPlay, fireWhenAttacking, fireOnKO, fireCounter, resumeChoice } from '../../../engine/effects';
+import { fireOnPlay, fireWhenAttacking, fireOnKO, fireCounter, fireTrigger, resumeChoice } from '../../../engine/effects';
 import { compileEffect } from '../compile';
 import { compileRegistry } from '../programs';
 import type { CardInstance, CardDefinition } from '../../../engine/state/card';
@@ -33,6 +33,7 @@ const CATALOG = [
   { cardNumber: 'GATED', effectText: '[On Play] If your Leader has the {Land of Wano} type, draw 1 card.' },
   { cardNumber: 'RAMP', effectText: '[On Play] Add up to 1 DON!! card from your DON!! deck and set it as active.' },
   { cardNumber: 'COND-STAT', effectText: '[DON!! x1] [Your Turn] If you have 2 or less Life cards, this Character gains +2000 power.' },
+  { cardNumber: 'TRIG', effectText: '[Trigger] Draw 1 card.' },
 ];
 const registry = compileRegistry(CATALOG);
 const NO_DEFS = {};
@@ -53,7 +54,18 @@ function place(state: GameState, i: CardInstance): GameState {
 
 describe('compiler', () => {
   it('lowers the catalog (draw, self-power, give-DON, KO, searcher, attack/KO/counter timings)', () => {
-    expect(Object.keys(registry).sort()).toEqual(['ACT-DON', 'AOE', 'BOUNCE', 'COND-STAT', 'CTR-PWR', 'DEBUFF', 'GATED', 'KO-DRAW', 'KO-SRC', 'MILL', 'OP01-016', 'OP02-011', 'OP04-045', 'PLAY-HAND', 'RAMP', 'RECOVER', 'ST01-013', 'ST15-002', 'ST21-002', 'WA-DON']);
+    expect(Object.keys(registry).sort()).toEqual(['ACT-DON', 'AOE', 'BOUNCE', 'COND-STAT', 'CTR-PWR', 'DEBUFF', 'GATED', 'KO-DRAW', 'KO-SRC', 'MILL', 'OP01-016', 'OP02-011', 'OP04-045', 'PLAY-HAND', 'RAMP', 'RECOVER', 'ST01-013', 'ST15-002', 'ST21-002', 'TRIG', 'WA-DON']);
+  });
+  it('lowers a [Trigger] ability to the trigger timing (recursion through the On Play lowerings)', () => {
+    const p = compileEffect('TRIG', '[Trigger] Draw 1 card.')!;
+    expect(p.abilities[0].trigger).toBe('trigger');
+    expect(p.abilities[0].ops).toEqual([{ op: 'draw', amount: 1 }]);
+  });
+  it('fireTrigger runs a [Trigger] ability (draws)', () => {
+    let s = createSampleGameState();
+    s = { ...s, players: { ...s.players, p1: { ...s.players.p1, deck: { ...s.players.p1.deck, cardIds: ['t0'] }, hand: { ...s.players.p1.hand, cardIds: [] } } }, cardsById: { ...s.cardsById, t0: inst('t0', 'F', 'deck', 'p1'), lc: inst('lc', 'TRIG', 'hand', 'p1') } };
+    const fired = fireTrigger(s, 'lc', registry, {}, 'a');
+    expect(fired.state.players.p1.hand.cardIds).toContain('t0');
   });
   it('lowers a conditional self-power static to a continuously-gated addPower (DON!! + turn + If-gate)', () => {
     const p = compileEffect('COND-STAT', '[DON!! x1] [Your Turn] If you have 2 or less Life cards, this Character gains +2000 power.')!;

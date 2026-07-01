@@ -573,14 +573,10 @@ function VictoryCanvas({ winnerId }: { winnerId: string }) {
 
 function MatchGameShell({ title, headerRight, children }: { title: string; headerRight?: ReactNode; children: ReactNode }) {
   void headerRight;
-  const navyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
-
   return (
-    <main className={['relative h-dvh w-full overflow-hidden font-body text-white', navyBackgroundEnabled ? 'bg-[#071126]' : 'bg-transparent'].join(' ')}>
+    <main className="relative h-dvh w-full overflow-hidden bg-[#071126] font-body text-white">
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
-      {navyBackgroundEnabled && (
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,211,74,0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
-      )}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,211,74,0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
       <h1 className="sr-only">{title}</h1>
       <section className="absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden p-2">{children}</section>
     </main>
