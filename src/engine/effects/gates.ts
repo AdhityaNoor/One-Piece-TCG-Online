@@ -14,6 +14,11 @@ import type { GameState } from '../state/game';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { getOpponentId } from '../rules/shared/players';
 
+function typeMatches(defTypes: string[], required: string): boolean {
+  const normalized = required.toLowerCase();
+  return defTypes.some((type) => type.toLowerCase().includes(normalized));
+}
+
 export function evaluateGates(
   gates: AbilityGate[],
   state: GameState,
@@ -49,7 +54,7 @@ function evaluateGate(
       if (!leaderInst) return false;
       const def = defs[leaderInst.cardDefinitionId];
       if (!def) return false;
-      return def.types.includes(gate.type);
+      return typeMatches(def.types, gate.type);
     }
 
     case 'leaderMulticolor': {

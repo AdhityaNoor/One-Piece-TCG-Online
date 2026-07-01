@@ -326,15 +326,20 @@ const FACTORY_MAP: {
 
   onPlaySearchTopDeck: (cn, p) =>
     program(cn, [
-      ability('onPlay', [
-        {
-          op: 'searchTopDeck',
-          look: p.look,
-          pick: p.pick,
-          filter: p.filter,
-          prompt: `Look at the top ${p.look}: add up to ${p.pick} matching card${p.pick === 1 ? '' : 's'} to your hand; the rest go to the bottom of your deck.`,
-        },
-      ]),
+      ability(
+        'onPlay',
+        [
+          {
+            op: 'searchTopDeck',
+            look: p.look,
+            pick: p.pick,
+            filter: p.filter,
+            ...(p.remainder ? { remainder: p.remainder } : {}),
+            prompt: `Look at the top ${p.look}: add up to ${p.pick} matching card${p.pick === 1 ? '' : 's'} to your hand; the rest ${p.remainder === 'trash' ? 'go to your trash' : 'go to the bottom of your deck'}.`,
+          },
+        ],
+        p.gate ? { gate: p.gate } : undefined,
+      ),
     ]),
 
   activateMainSearchTopDeck: (cn, p) =>
@@ -347,10 +352,11 @@ const FACTORY_MAP: {
             look: p.look,
             pick: p.pick,
             filter: p.filter,
-            prompt: `Look at the top ${p.look}: add up to ${p.pick} matching card${p.pick === 1 ? '' : 's'} to your hand; the rest go to the bottom of your deck.`,
+            ...(p.remainder ? { remainder: p.remainder } : {}),
+            prompt: `Look at the top ${p.look}: add up to ${p.pick} matching card${p.pick === 1 ? '' : 's'} to your hand; the rest ${p.remainder === 'trash' ? 'go to your trash' : 'go to the bottom of your deck'}.`,
           },
         ],
-        activateOpts(p.cost, p.oncePerTurn),
+        { ...(activateOpts(p.cost, p.oncePerTurn) ?? {}), ...(p.gate ? { gate: p.gate } : {}) },
       ),
     ]),
 

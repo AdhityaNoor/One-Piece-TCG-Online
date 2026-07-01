@@ -15,6 +15,7 @@ import { getOpponentId } from '../rules/shared/players';
 import { computeCurrentCost, computeCurrentPower } from '../rules/shared/power';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import type { EffectContext } from './effectTemplate';
+import type { SearchRemainderDestination } from './effectIr';
 
 export class EffectContextImpl implements EffectContext {
   readonly sourceInstanceId: string;
@@ -450,7 +451,7 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
-  searchResolve(playerId: string, lookedIds: string[], chosenIds: string[], bottomOrderIds?: string[]): void {
+  searchResolve(playerId: string, lookedIds: string[], chosenIds: string[], remainder: SearchRemainderDestination, bottomOrderIds?: string[]): void {
     const player = this.working.players[playerId];
     if (!player || lookedIds.length === 0) return;
 
@@ -462,7 +463,7 @@ export class EffectContextImpl implements EffectContext {
     const rest = lookedIds.filter((id) => !chosenSet.has(id));
     const restSet = new Set(rest);
     const orderedRest =
-      bottomOrderIds && bottomOrderIds.length === rest.length && bottomOrderIds.every((id) => restSet.has(id))
+      remainder === 'bottom' && bottomOrderIds && bottomOrderIds.length === rest.length && bottomOrderIds.every((id) => restSet.has(id))
         ? bottomOrderIds
         : rest;
 
@@ -471,6 +472,7 @@ export class EffectContextImpl implements EffectContext {
     // player nicety we resolve deterministically as looked order).
     let deck = { ...player.deck, cardIds: player.deck.cardIds.slice(lookedIds.length) };
     let hand = player.hand;
+    let trash = player.trash;
     const cardsById = { ...this.working.cardsById };
 
     for (const id of chosen) {
@@ -478,21 +480,27 @@ export class EffectContextImpl implements EffectContext {
       cardsById[id] = { ...cardsById[id], currentZone: 'hand', revealedTo: [playerId] };
     }
     for (const id of orderedRest) {
-      deck = addToZoneBottom(deck, id);
-      cardsById[id] = { ...cardsById[id], currentZone: 'deck', revealedTo: [] };
+      if (remainder === 'trash') {
+        trash = addToZoneTop(trash, id);
+        cardsById[id] = { ...cardsById[id], currentZone: 'trash', revealedTo: 'all' };
+      } else {
+        deck = addToZoneBottom(deck, id);
+        cardsById[id] = { ...cardsById[id], currentZone: 'deck', revealedTo: [] };
+      }
     }
 
     this.working = {
       ...this.working,
-      players: { ...this.working.players, [playerId]: { ...player, hand, deck } },
+      players: { ...this.working.players, [playerId]: { ...player, hand, deck, trash } },
       cardsById,
     };
+    const remainderText = remainder === 'trash' ? 'trashed' : 'returned to the bottom of the deck';
 
     this.logger.push({
       actorPlayerId: playerId,
       type: 'EFFECT_RESOLVED',
-      message: `Searched the top ${lookedIds.length}: added ${chosen.length} to hand, returned ${rest.length} to the bottom of the deck.`,
-      data: { lookedCount: lookedIds.length, addedCount: chosen.length, addedInstanceIds: chosen, bottomedCount: orderedRest.length, bottomOrderInstanceIds: orderedRest },
+      message: `Searched the top ${lookedIds.length}: added ${chosen.length} to hand, ${remainderText} ${rest.length}.`,
+      data: { lookedCount: lookedIds.length, addedCount: chosen.length, addedInstanceIds: chosen, remainder, remainderCount: orderedRest.length, remainderInstanceIds: orderedRest },
       relatedCardInstanceIds: chosen,
       visibility: { visibleTo: [playerId] },
     });

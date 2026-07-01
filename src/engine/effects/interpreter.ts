@@ -15,7 +15,7 @@ import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates } from './gates';
 import type { EffectTemplateRegistry } from './effectTemplate';
-import type { Ability, EffectOp, EffectProgram, IrCondition, IrTrigger, SearchFilter, Selector } from './effectIr';
+import type { Ability, EffectOp, EffectProgram, IrCondition, IrTrigger, SearchFilter, SearchRemainderDestination, Selector } from './effectIr';
 
 /**
  * After a resolution finishes WITHOUT suspending, fire [On K.O.] (10-2-17) for
@@ -64,26 +64,31 @@ function hasType(defTypes: string[], required: string): boolean {
     type
       .split(/[\/,]+/)
       .map((part) => part.trim().toLowerCase())
-      .includes(normalized)
+      .some((part) => part.includes(normalized))
   );
+}
+
+function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContextImpl): boolean {
+  const def = ctx.definitionOf(id);
+  if (!def) return false;
+  if (filter.anyOf !== undefined && !filter.anyOf.some((child) => matchesSearchFilter(id, child, ctx))) return false;
+  const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
+  if (filter.typeIncludes && !hasType(def.types, filter.typeIncludes)) return false;
+  if (filter.excludeSelfName && selfName !== undefined && def.name === selfName) return false;
+  if (filter.category && def.category !== filter.category) return false;
+  if (filter.color && !def.colors.includes(filter.color)) return false;
+  if (filter.name && def.name !== filter.name) return false;
+  if (filter.maxCost !== undefined && (def.baseCost ?? Infinity) > filter.maxCost) return false;
+  if (filter.minCost !== undefined && (def.baseCost ?? -Infinity) < filter.minCost) return false;
+  if (filter.exactCost !== undefined && (def.baseCost ?? -1) !== filter.exactCost) return false;
+  if (filter.maxPower !== undefined && (def.basePower ?? Infinity) > filter.maxPower) return false;
+  if (filter.exactPower !== undefined && (def.basePower ?? -1) !== filter.exactPower) return false;
+  return true;
 }
 
 function searchEligible(ids: string[], filter: SearchFilter | undefined, ctx: EffectContextImpl): string[] {
   if (!filter) return ids;
-  const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
-  return ids.filter((id) => {
-    const def = ctx.definitionOf(id);
-    if (!def) return false;
-    if (filter.typeIncludes && !hasType(def.types, filter.typeIncludes)) return false;
-    if (filter.excludeSelfName && selfName !== undefined && def.name === selfName) return false;
-    if (filter.category && def.category !== filter.category) return false;
-    if (filter.name && def.name !== filter.name) return false;
-    if (filter.maxCost !== undefined && (def.baseCost ?? Infinity) > filter.maxCost) return false;
-    if (filter.minCost !== undefined && (def.baseCost ?? -Infinity) < filter.minCost) return false;
-    if (filter.exactCost !== undefined && (def.baseCost ?? -1) !== filter.exactCost) return false;
-    if (filter.maxPower !== undefined && (def.basePower ?? Infinity) > filter.maxPower) return false;
-    return true;
-  });
+  return ids.filter((id) => matchesSearchFilter(id, filter, ctx));
 }
 
 function noop(state: GameState): ActionExecuteResult {
@@ -211,6 +216,7 @@ function runOps(
       const looked = ctx.topOfDeck(ctx.controllerId, op.look);
       if (looked.length === 0) continue; // empty deck — nothing to look at, skip
       const eligible = searchEligible(looked, op.filter, ctx);
+      const remainder = op.remainder ?? 'bottom';
       const choice: PendingChoice = {
         id: `${ctx.sourceInstanceId}__ir-${abilityIndex}-${i}`,
         playerId: ctx.controllerId,
@@ -221,7 +227,7 @@ function runOps(
         sourceEffectId: 'ir',
         // Stash the full looked-at set on the resume point so resolveSearch can
         // send the non-chosen remainder to the bottom of the deck.
-        resumeState: { abilityIndex, opIndex: i, bindings: { ...bindings, __looked: looked } },
+        resumeState: { abilityIndex, opIndex: i, bindings: { ...bindings, __looked: looked, __remainder: [remainder] } },
       };
       ctx.emitChoice(choice);
       return true;
@@ -280,8 +286,9 @@ export function resumeProgram(
     // The chosen subset goes to hand; resolveSearch sends the looked remainder
     // to the bottom. `__looked` was stashed at suspend time (see runOps).
     const looked = rs.bindings.__looked ?? [];
+    const remainder = (rs.bindings.__remainder?.[0] ?? op.remainder ?? 'bottom') as SearchRemainderDestination;
     const chosen = rs.bindings.__searchChosen ?? selection;
-    if (!rs.bindings.__searchChosen) {
+    if (remainder === 'bottom' && !rs.bindings.__searchChosen) {
       const chosenSet = new Set(selection);
       const rest = looked.filter((id) => !chosenSet.has(id));
       if (rest.length > 1) {
@@ -299,7 +306,7 @@ export function resumeProgram(
         return ctx.finish();
       }
     }
-    ctx.searchResolve(ctx.controllerId, looked, chosen, rs.bindings.__searchChosen ? selection : undefined);
+    ctx.searchResolve(ctx.controllerId, looked, chosen, remainder, rs.bindings.__searchChosen ? selection : undefined);
     runOps(ability, rs.abilityIndex, rs.opIndex + 1, rs.bindings, ctx);
     return finishWithCascade(ctx, defs, actionId, registry);
   }

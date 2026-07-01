@@ -11,6 +11,7 @@
  * bespoke card logic.
  */
 import type { ContinuousEffectDuration, ContinuousPowerCondition } from '../state/game';
+import type { CardCategory, Color } from '../state/card';
 
 /** Resolves to a set of CardInstance ids at run time. Pure data. */
 export type Selector =
@@ -34,12 +35,16 @@ export type IrDuration = ContinuousEffectDuration;
  * Pure data — the interpreter evaluates it against CardDefinitions via defs.
  */
 export interface SearchFilter {
+  /** OR branch: a card matches when it satisfies any child filter, plus any sibling gates on this filter. */
+  anyOf?: SearchFilter[];
   /** A free-text tribal type the card must carry (2-4), e.g. "Straw Hat Crew". */
   typeIncludes?: string;
   /** "other than [SelfName]" — exclude cards sharing the source card's name. */
   excludeSelfName?: boolean;
   /** Card category gate (2-2), e.g. "reveal up to 1 Character card". */
-  category?: 'character' | 'event' | 'stage' | 'leader';
+  category?: Exclude<CardCategory, 'don'>;
+  /** Card color gate (2-3), e.g. "red Event". */
+  color?: Color;
   /** Exact card name (2-1), e.g. "play up to 1 [Gaimon]". */
   name?: string;
   maxCost?: number;
@@ -47,7 +52,10 @@ export interface SearchFilter {
   /** Exact cost (2-7), e.g. "with a cost of 6" (no "or less"). */
   exactCost?: number;
   maxPower?: number;
+  exactPower?: number;
 }
+
+export type SearchRemainderDestination = 'bottom' | 'trash';
 
 /**
  * One instruction. `chooseTargets` and `searchTopDeck` both suspend the program
@@ -68,8 +76,8 @@ export type EffectOp =
   | { op: 'trashCards'; target: Selector } // move chosen cards (e.g. from the hand) to their owner's trash
   | { op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string }
   // Look at top `look` cards; player adds up to `pick` filter-matching cards to
-  // hand; the rest go to the bottom of the deck (the classic "searcher").
-  | { op: 'searchTopDeck'; look: number; pick: number; filter?: SearchFilter; prompt: string }
+  // hand; the rest go to the configured destination (bottom by default).
+  | { op: 'searchTopDeck'; look: number; pick: number; filter?: SearchFilter; remainder?: SearchRemainderDestination; prompt: string }
   // Trash the top `count` cards of the controller's own deck (self-mill).
   | { op: 'trashTopDeck'; count: number }
   // Add `count` DON!! from the DON!! deck to the cost area, active or rested (DON!! ramp).

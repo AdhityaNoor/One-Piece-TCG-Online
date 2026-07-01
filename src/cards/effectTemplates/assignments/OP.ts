@@ -40,6 +40,18 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'whenAttackingModifyCostOpponent', params: { amount: -4 } },
     ],
   },
+  // OP02-058 - [On Play] Look at 5; add blue Impel Down card other than this card's name.
+  {
+    cardNumber: 'OP02-058',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 5, pick: 1, filter: { color: 'blue', typeIncludes: 'Impel Down', excludeSelfName: true } },
+  },
+  // OP02-083 - [On Play] Look at 5; add purple Impel Down card other than this card's name.
+  {
+    cardNumber: 'OP02-083',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 5, pick: 1, filter: { color: 'purple', typeIncludes: 'Impel Down', excludeSelfName: true } },
+  },
 
   // OP03 -----------------------------------------------------------------------
 
@@ -62,6 +74,26 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'onPlaySearchTopDeck',
     params: { look: 5, pick: 1, filter: { typeIncludes: 'Water Seven', excludeSelfName: true } },
   },
+  // OP03-044 - [On Play] Draw 2 cards, then trash 2 cards from hand.
+  { cardNumber: 'OP03-044', templateId: 'onPlayDrawAndTrash', params: { drawCount: 2, trashCount: 2 } },
+  // OP03-112 - [On Play] Look at 4; add [Sanji] or Big Mom Pirates other than this card's name.
+  {
+    cardNumber: 'OP03-112',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 4, pick: 1, filter: { anyOf: [{ name: 'Sanji' }, { typeIncludes: 'Big Mom Pirates' }], excludeSelfName: true } },
+  },
+  // OP03-086 - [On Play] If Leader type includes CP, look at 3; add CP card other than this card's name, trash rest.
+  {
+    cardNumber: 'OP03-086',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 3, pick: 1, filter: { typeIncludes: 'CP', excludeSelfName: true }, remainder: 'trash', gate: [{ kind: 'leaderType', type: 'CP' }] },
+  },
+  // OP03-089 - [On Play] Look at 3; add Navy other than this card's name, trash rest.
+  {
+    cardNumber: 'OP03-089',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 3, pick: 1, filter: { typeIncludes: 'Navy', excludeSelfName: true }, remainder: 'trash' },
+  },
 
   // OP04 -----------------------------------------------------------------------
 
@@ -80,6 +112,12 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP04-051',
     templateId: 'onPlaySearchTopDeck',
     params: { look: 5, pick: 1, filter: { typeIncludes: 'Animal Kingdom Pirates', excludeSelfName: true } },
+  },
+  // OP04-092 - [On Play] Look at 3; add Dressrosa other than this card's name, trash rest.
+  {
+    cardNumber: 'OP04-092',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 3, pick: 1, filter: { typeIncludes: 'Dressrosa', excludeSelfName: true }, remainder: 'trash' },
   },
 
   // OP05 -----------------------------------------------------------------------
@@ -123,6 +161,12 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'onPlaySearchTopDeck',
     params: { look: 5, pick: 1, filter: { typeIncludes: 'Navy', excludeSelfName: true } },
   },
+  // OP06-025 - [On Play] Look at 4; add Fish-Man or Merfolk other than this card's name.
+  {
+    cardNumber: 'OP06-025',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 4, pick: 1, filter: { anyOf: [{ typeIncludes: 'Fish-Man' }, { typeIncludes: 'Merfolk' }], excludeSelfName: true } },
+  },
 
   // OP07 -----------------------------------------------------------------------
 
@@ -140,6 +184,18 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'onPlaySearchTopDeck',
     params: { look: 5, pick: 1, filter: { typeIncludes: 'The Seven Warlords of the Sea' } },
   },
+  // OP07-022 - [On Play] Look at 5; add green Land of Wano other than this card's name.
+  {
+    cardNumber: 'OP07-022',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 5, pick: 1, filter: { color: 'green', typeIncludes: 'Land of Wano', excludeSelfName: true } },
+  },
+  // OP07-041 - [On Play] Look at 5; add Amazon Lily or Kuja Pirates other than this card's name.
+  {
+    cardNumber: 'OP07-041',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 5, pick: 1, filter: { anyOf: [{ typeIncludes: 'Amazon Lily' }, { typeIncludes: 'Kuja Pirates' }], excludeSelfName: true } },
+  },
 
   // OP08 -----------------------------------------------------------------------
 
@@ -154,6 +210,12 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP08-080',
     templateId: 'onPlaySearchTopDeck',
     params: { look: 5, pick: 1, filter: { typeIncludes: 'Animal Kingdom Pirates', excludeSelfName: true } },
+  },
+  // OP08-015 - [On Play] Look at 4; add [Tony Tony.Chopper] or Drum Kingdom other than this card's name.
+  {
+    cardNumber: 'OP08-015',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 4, pick: 1, filter: { anyOf: [{ name: 'Tony Tony.Chopper' }, { typeIncludes: 'Drum Kingdom' }], excludeSelfName: true } },
   },
   // OP08-087 — [Blocker] [Activate: Main] [Once Per Turn] Give up to 1 of your opponent's Characters −1 cost.
   // Note: [Blocker] is an engine keyword flag, not an IR ability. Only the activate effect is templated.
@@ -176,6 +238,18 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-048 - [Blocker] [On Play] Draw 2 cards and trash 1 card from hand.
   // Note: [Blocker] is an engine keyword flag. Only the on-play draw/trash is templated.
   { cardNumber: 'OP09-048', templateId: 'onPlayDrawAndTrash', params: { drawCount: 2, trashCount: 1 } },
+  // OP09-056 - [On Play] Look at 4; add Cross Guild or type including Baroque Works other than this card's name.
+  {
+    cardNumber: 'OP09-056',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 4, pick: 1, filter: { anyOf: [{ typeIncludes: 'Cross Guild' }, { typeIncludes: 'Baroque Works' }], excludeSelfName: true } },
+  },
+  // OP09-069 - [On Play] Look at 4; add Straw Hat Crew or Heart Pirates with cost 2+.
+  {
+    cardNumber: 'OP09-069',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 4, pick: 1, filter: { anyOf: [{ typeIncludes: 'Straw Hat Crew' }, { typeIncludes: 'Heart Pirates' }], minCost: 2 } },
+  },
 
   // OP10 -----------------------------------------------------------------------
 
@@ -199,11 +273,53 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-029 - [Blocker] [On Play] Rest up to 1 opponent Character with cost 1 or less.
   // Note: [Blocker] is an engine keyword flag. Only the on-play rest is templated.
   { cardNumber: 'OP11-029', templateId: 'onPlayRestOpponentCharacter', params: { filter: { maxCost: 1 } } },
+  // OP11-048 - [On Play] Look at 4; add Firetank Pirates or Straw Hat Crew with cost 2+.
+  {
+    cardNumber: 'OP11-048',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 4, pick: 1, filter: { anyOf: [{ typeIncludes: 'Firetank Pirates' }, { typeIncludes: 'Straw Hat Crew' }], minCost: 2 } },
+  },
+  // OP11-047 - [On Play] If Leader has The Vinsmoke Family, look at 5; add GERMA, trash rest.
+  {
+    cardNumber: 'OP11-047',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 5, pick: 1, filter: { typeIncludes: 'GERMA' }, remainder: 'trash', gate: [{ kind: 'leaderType', type: 'The Vinsmoke Family' }] },
+  },
 
   // OP12 -----------------------------------------------------------------------
 
   // OP12-104 — [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 4 or less.
   { cardNumber: 'OP12-104', templateId: 'triggerKoOpponentCharacter', params: { filter: { maxCost: 4 } } },
+  // OP12-108 - [On Play] Look at 5; add up to 1 [Trafalgar Law].
+  {
+    cardNumber: 'OP12-108',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 5, pick: 1, filter: { name: 'Trafalgar Law' } },
+  },
+  // OP12-006 - [On Play] Look at 5; add [Monkey.D.Luffy] or red Event.
+  {
+    cardNumber: 'OP12-006',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 5, pick: 1, filter: { anyOf: [{ name: 'Monkey.D.Luffy' }, { category: 'event', color: 'red' }] } },
+  },
+  // OP12-071 - [On Play] Look at 4; add [Sanji] or Event.
+  {
+    cardNumber: 'OP12-071',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 4, pick: 1, filter: { anyOf: [{ name: 'Sanji' }, { category: 'event' }] } },
+  },
+  // OP12-086 - [On Play] If Leader has Revolutionary Army, look at 3; add Revolutionary Army other than self or [Nico Robin], trash rest.
+  {
+    cardNumber: 'OP12-086',
+    templateId: 'onPlaySearchTopDeck',
+    params: {
+      look: 3,
+      pick: 1,
+      filter: { anyOf: [{ typeIncludes: 'Revolutionary Army', excludeSelfName: true }, { name: 'Nico Robin' }] },
+      remainder: 'trash',
+      gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }],
+    },
+  },
 
   // OP13 -----------------------------------------------------------------------
 
@@ -215,6 +331,15 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'onPlaySearchTopDeck',
     params: { look: 5, pick: 1, filter: { typeIncludes: 'Roger Pirates', excludeSelfName: true } },
   },
+  // OP13-093 - [Blocker] [On Play] Draw 2 cards, then trash 2 cards from hand.
+  // Note: [Blocker] is an engine keyword flag. Only the on-play draw/trash is templated.
+  { cardNumber: 'OP13-093', templateId: 'onPlayDrawAndTrash', params: { drawCount: 2, trashCount: 2 } },
+  // OP13-012 - [On Play] Look at 4; add Alabasta or Straw Hat Crew with cost 2+.
+  {
+    cardNumber: 'OP13-012',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 4, pick: 1, filter: { anyOf: [{ typeIncludes: 'Alabasta' }, { typeIncludes: 'Straw Hat Crew' }], minCost: 2 } },
+  },
 
   // OP14 -----------------------------------------------------------------------
 
@@ -224,6 +349,12 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP14-005', templateId: 'activateMainGiveDon', params: { count: 1 } },
 
   { cardNumber: 'OP14-015', templateId: 'whenAttackingModifyPowerOpponent', params: { amount: -1000 } },
+  // OP14-087 - [On Play] If Leader type includes Baroque Works, look at 4; add Baroque Works other than self, trash rest.
+  {
+    cardNumber: 'OP14-087',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 4, pick: 1, filter: { typeIncludes: 'Baroque Works', excludeSelfName: true }, remainder: 'trash', gate: [{ kind: 'leaderType', type: 'Baroque Works' }] },
+  },
 
   // OP15 -----------------------------------------------------------------------
 
@@ -256,5 +387,11 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP16-072',
     templateId: 'onPlaySearchTopDeck',
     params: { look: 5, pick: 1, filter: { typeIncludes: 'Impel Down' } },
+  },
+  // OP16-091 - [On Play] If Leader has Land of Wano, look at 4; add Land of Wano other than self, trash rest.
+  {
+    cardNumber: 'OP16-091',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 4, pick: 1, filter: { typeIncludes: 'Land of Wano', excludeSelfName: true }, remainder: 'trash', gate: [{ kind: 'leaderType', type: 'Land of Wano' }] },
   },
 ];

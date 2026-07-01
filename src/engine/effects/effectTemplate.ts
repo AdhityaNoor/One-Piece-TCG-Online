@@ -13,7 +13,7 @@
 import type { ContinuousEffectDuration, ContinuousPowerCondition, GameState } from '../state/game';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinition } from '../state/card';
-import type { EffectProgram } from './effectIr';
+import type { EffectProgram, SearchRemainderDestination } from './effectIr';
 
 export interface EffectContext {
   /** The CardInstance whose effect is resolving (8-1-3-1-3). */
@@ -80,9 +80,10 @@ export interface EffectContext {
   /**
    * Resolve a "search": `lookedIds` are the top-of-deck cards that were looked
    * at; move `chosenIds` (a subset) to the player's hand and the remainder to
-   * the bottom of the deck, in player-selected order when supplied.
+   * the configured destination. Bottom-deck remainders may use a player-selected
+   * order when supplied.
    */
-  searchResolve(playerId: string, lookedIds: string[], chosenIds: string[], bottomOrderIds?: string[]): void;
+  searchResolve(playerId: string, lookedIds: string[], chosenIds: string[], remainder: SearchRemainderDestination, bottomOrderIds?: string[]): void;
   /** Emit a fully-built PendingChoice (the interpreter uses this to suspend; carries its resume point). */
   emitChoice(choice: PendingChoice): void;
 }

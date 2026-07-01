@@ -152,14 +152,14 @@ describe('template factories — structural correctness', () => {
     const p = applyTemplate('T', 'onPlaySearchTopDeck', {
       look: 5,
       pick: 1,
-      filter: { typeIncludes: 'Straw Hat Crew', excludeSelfName: true },
+      filter: { anyOf: [{ typeIncludes: 'Straw Hat Crew' }, { name: 'Sanji' }], excludeSelfName: true },
     });
     const op = p.abilities[0].ops[0];
     expect(op.op).toBe('searchTopDeck');
     // @ts-expect-error — narrow
     expect(op.look).toBe(5);
     // @ts-expect-error
-    expect(op.filter).toMatchObject({ typeIncludes: 'Straw Hat Crew', excludeSelfName: true });
+    expect(op.filter).toMatchObject({ anyOf: [{ typeIncludes: 'Straw Hat Crew' }, { name: 'Sanji' }], excludeSelfName: true });
   });
 
   it('donAttachedSelfPower has permanent duration and donAttachedAtLeast condition', () => {

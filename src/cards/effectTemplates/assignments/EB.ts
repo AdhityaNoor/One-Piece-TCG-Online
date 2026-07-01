@@ -35,4 +35,17 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'onPlaySearchTopDeck',
     params: { look: 5, pick: 1, filter: { typeIncludes: 'Straw Hat Crew', excludeSelfName: true } },
   },
+
+  // EB04-006 - [On Play] Look at 7; add up to 1 [Lulucia Kingdom].
+  {
+    cardNumber: 'EB04-006',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 7, pick: 1, filter: { name: 'Lulucia Kingdom' } },
+  },
+  // EB04-002 - [On Play] Look at 4; add Egghead or Straw Hat Crew other than this card's name.
+  {
+    cardNumber: 'EB04-002',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 4, pick: 1, filter: { anyOf: [{ typeIncludes: 'Egghead' }, { typeIncludes: 'Straw Hat Crew' }], excludeSelfName: true } },
+  },
 ];

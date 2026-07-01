@@ -41,7 +41,7 @@ describe('curated effect programs', () => {
   it('contains exactly the reviewed assignment card numbers', () => {
     const assigned = [...new Set(ALL_ASSIGNMENTS.map((a) => a.cardNumber))].sort();
     expect(Object.keys(CURATED_EFFECT_PROGRAMS).sort()).toEqual(assigned);
-    expect(assigned).toHaveLength(72);
+    expect(assigned).toHaveLength(100);
   });
 
   it('are JSON-serializable engine IR, not executable functions', () => {

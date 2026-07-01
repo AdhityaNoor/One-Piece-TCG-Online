@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { executeAction, validateAction } from '../../../engine/actions';
-import { makeCharacterDef, buildBaseRig, putCharacterInPlay, putDeckCards, putInHand, nextTestId } from '../../../engine/rules/shared/__tests__/testRig';
+import { makeCharacterDef, makeEventDef, buildBaseRig, putCharacterInPlay, putDeckCards, putInHand, nextTestId } from '../../../engine/rules/shared/__tests__/testRig';
 import { computeCurrentCost } from '../../../engine/rules/shared';
+import { buildRegistryFromAssignments } from '../assembler';
 import { buildCuratedEffectRegistry } from '../curatedPrograms';
 
 describe('curated effect template integration with match engine dispatch', () => {
@@ -111,5 +112,160 @@ describe('curated effect template integration with match engine dispatch', () =>
       }),
     );
     expect(computeCurrentCost(rig.defs, state, opponentId)).toBe(1);
+  });
+
+  it('applies reusable search filters with OR branches, color, and exact power', () => {
+    const searcher = makeCharacterDef({
+      cardDefinitionId: 'TEST-SEARCHER',
+      cardNumber: 'TEST-SEARCHER',
+      name: 'Searcher',
+      category: 'character',
+      baseCost: 0,
+      basePower: 1000,
+    });
+    const sanji = makeCharacterDef({
+      cardDefinitionId: 'TEST-SANJI',
+      cardNumber: 'TEST-SANJI',
+      name: 'Sanji',
+      category: 'character',
+      basePower: 4000,
+    });
+    const redEvent = makeEventDef({
+      cardDefinitionId: 'TEST-RED-EVENT',
+      cardNumber: 'TEST-RED-EVENT',
+      name: 'Red Event',
+      category: 'event',
+      colors: ['red'],
+    });
+    const exactPowerCharacter = makeCharacterDef({
+      cardDefinitionId: 'TEST-POWER-6000',
+      cardNumber: 'TEST-POWER-6000',
+      name: '6000 Power Character',
+      category: 'character',
+      basePower: 6000,
+    });
+    const blueEvent = makeEventDef({
+      cardDefinitionId: 'TEST-BLUE-EVENT',
+      cardNumber: 'TEST-BLUE-EVENT',
+      name: 'Blue Event',
+      category: 'event',
+      colors: ['blue'],
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    let sanjiId: string;
+    let redEventId: string;
+    let exactPowerId: string;
+    let blueEventId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', searcher));
+    ({ rig, deckIds: [sanjiId] } = putDeckCards(rig, 'p1', sanji, 1));
+    ({ rig, deckIds: [redEventId] } = putDeckCards(rig, 'p1', redEvent, 1));
+    ({ rig, deckIds: [exactPowerId] } = putDeckCards(rig, 'p1', exactPowerCharacter, 1));
+    ({ rig, deckIds: [blueEventId] } = putDeckCards(rig, 'p1', blueEvent, 1));
+
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: 'TEST-SEARCHER',
+        templateId: 'onPlaySearchTopDeck',
+        params: {
+          look: 4,
+          pick: 1,
+          filter: {
+            anyOf: [
+              { name: 'Sanji' },
+              { category: 'event', color: 'red' },
+              { category: 'character', exactPower: 6000 },
+            ],
+          },
+        },
+      },
+    ]);
+
+    const playAction = {
+      type: 'PLAY_CHARACTER',
+      actionId: nextTestId('action'),
+      playerId: 'p1',
+      handCardInstanceId: handId,
+      donInstanceIds: [],
+    } as const;
+    const result = executeAction(rig.state, playAction, rig.defs, registry);
+
+    expect(result.state.pendingChoices[0]).toMatchObject({
+      sourceEffectId: 'ir',
+      constraints: {
+        min: 0,
+        max: 1,
+        candidateInstanceIds: [sanjiId, redEventId, exactPowerId],
+        visibleInstanceIds: [sanjiId, redEventId, exactPowerId, blueEventId],
+      },
+    });
+  });
+
+  it('can search top deck and trash the non-chosen remainder', () => {
+    const searcher = makeCharacterDef({
+      cardDefinitionId: 'TEST-TRASH-SEARCHER',
+      cardNumber: 'TEST-TRASH-SEARCHER',
+      name: 'Trash Searcher',
+      category: 'character',
+      baseCost: 0,
+      basePower: 1000,
+    });
+    const navyOne = makeCharacterDef({
+      cardDefinitionId: 'TEST-NAVY-1',
+      cardNumber: 'TEST-NAVY-1',
+      name: 'Navy One',
+      types: ['Navy'],
+    });
+    const navyTwo = makeCharacterDef({
+      cardDefinitionId: 'TEST-NAVY-2',
+      cardNumber: 'TEST-NAVY-2',
+      name: 'Navy Two',
+      types: ['Navy'],
+    });
+    const offType = makeCharacterDef({
+      cardDefinitionId: 'TEST-OFF-TYPE',
+      cardNumber: 'TEST-OFF-TYPE',
+      name: 'Off Type',
+      types: ['Animal'],
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    let navyOneId: string;
+    let navyTwoId: string;
+    let offTypeId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', searcher));
+    ({ rig, deckIds: [navyOneId] } = putDeckCards(rig, 'p1', navyOne, 1));
+    ({ rig, deckIds: [navyTwoId] } = putDeckCards(rig, 'p1', navyTwo, 1));
+    ({ rig, deckIds: [offTypeId] } = putDeckCards(rig, 'p1', offType, 1));
+
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: 'TEST-TRASH-SEARCHER',
+        templateId: 'onPlaySearchTopDeck',
+        params: { look: 3, pick: 1, filter: { typeIncludes: 'Navy' }, remainder: 'trash' },
+      },
+    ]);
+    const playResult = executeAction(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+    const choice = playResult.state.pendingChoices[0];
+    expect(choice.constraints.candidateInstanceIds).toEqual([navyOneId, navyTwoId]);
+
+    const resolveResult = executeAction(
+      playResult.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: choice.id, response: [navyOneId] },
+      rig.defs,
+      registry,
+    );
+
+    expect(resolveResult.state.pendingChoices).toEqual([]);
+    expect(resolveResult.state.players.p1.hand.cardIds).toContain(navyOneId);
+    expect(resolveResult.state.players.p1.trash.cardIds).toEqual([offTypeId, navyTwoId]);
+    expect(resolveResult.state.players.p1.deck.cardIds).toEqual([]);
   });
 });

@@ -11,7 +11,7 @@
  *   - Keep params minimal: only what the factory needs to produce the IR.
  *   - No free-text strings that could be confused with card effect text.
  */
-import type { AbilityCost, SearchFilter } from '../../../engine/effects/effectIr';
+import type { AbilityCost, AbilityGate, SearchFilter, SearchRemainderDestination } from '../../../engine/effects/effectIr';
 
 // ---------------------------------------------------------------------------
 // Template identifiers
@@ -117,9 +117,9 @@ export interface TemplateParamMap {
   whenAttackingDrawAndTrash: { drawCount: number; trashCount: number; donRequired?: number };
 
   // searcher
-  onPlaySearchTopDeck: { look: number; pick: number; filter: SearchFilter };
+  onPlaySearchTopDeck: { look: number; pick: number; filter: SearchFilter; remainder?: SearchRemainderDestination; gate?: AbilityGate[] };
   /** [Activate: Main] Look at top `look`; add up to `pick` matching cards to hand. Optional cost. */
-  activateMainSearchTopDeck: { look: number; pick: number; filter: SearchFilter; cost?: AbilityCost[]; oncePerTurn?: boolean };
+  activateMainSearchTopDeck: { look: number; pick: number; filter: SearchFilter; remainder?: SearchRemainderDestination; gate?: AbilityGate[]; cost?: AbilityCost[]; oncePerTurn?: boolean };
 
   // DON!! attachment passive boost
   donAttachedSelfPower: { donAttachedAtLeast: number; amount: number };
