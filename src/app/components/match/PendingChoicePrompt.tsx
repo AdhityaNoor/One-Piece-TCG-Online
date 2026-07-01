@@ -467,7 +467,7 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     <Modal open onClose={() => {}} title="Pending Choice">
       <div className="flex flex-col gap-2 p-5">
         <p className="text-sm text-white/70">{choice.prompt}</p>
-        <p className="text-xs text-red-300">No UI implemented yet for sourceEffectId '{choice.sourceEffectId}' (TODO — only the Character Area overflow choice is implemented this milestone).</p>
+        <p className="text-xs text-red-300">No UI implemented yet for sourceEffectId '{choice.sourceEffectId}'.</p>
       </div>
     </Modal>
   );

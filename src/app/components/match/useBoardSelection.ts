@@ -131,7 +131,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     switch (mode.kind) {
       case 'idle': {
         // Direct [Activate: Main] from the board: tap an own in-play card that
-        // has a compiled activate ability (the ⚡ badge). The engine validates
+        // has a curated activate ability (the ⚡ badge). The engine validates
         // phase/once-per-turn/cost; any target it needs becomes a PendingChoice.
         if (isOwnCard && (zone === 'leaderArea' || zone === 'characterArea' || zone === 'stageArea') && hasActivateMain(card)) {
           withActingPlayer((playerId) => ({
@@ -234,7 +234,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
           setMode({ kind: 'selectCounterBoostTarget', handCardInstanceId: card.instanceId });
           return;
         }
-        // A Counter Event (compiled [Counter] ability) -> pay its cost, then play.
+        // A Counter Event (curated [Counter] ability) -> pay its cost, then play.
         if (card.category === 'event' && hasCounter(card)) {
           const cost = currentCostOf(card);
           if (cost === 0) {

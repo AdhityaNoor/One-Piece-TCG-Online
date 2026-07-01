@@ -51,6 +51,7 @@ export const TEMPLATE_IDS = {
   WHEN_ATTACKING_MODIFY_POWER_OPPONENT: 'whenAttackingModifyPowerOpponent',
 
   // --- draw + discard ---
+  ON_PLAY_DRAW_AND_TRASH: 'onPlayDrawAndTrash',
   WHEN_ATTACKING_DRAW_AND_TRASH: 'whenAttackingDrawAndTrash',
 
   // --- searcher (look at top N, pick matching) ---
@@ -110,6 +111,8 @@ export interface TemplateParamMap {
   whenAttackingModifyPowerOpponent: { amount: number; donRequired?: number; maxTargets?: number };
 
   // draw + discard
+  /** [On Play] Draw `drawCount` cards, then choose `trashCount` to trash. */
+  onPlayDrawAndTrash: { drawCount: number; trashCount: number };
   /** [When Attacking] Draw `drawCount` cards, then choose `trashCount` to trash. */
   whenAttackingDrawAndTrash: { drawCount: number; trashCount: number; donRequired?: number };
 

@@ -1,9 +1,8 @@
 /**
  * RESOLVE_PENDING_CHOICE — generic answer to an outstanding PendingChoice
- * (blueprint Section 11). This milestone, the ONLY PendingChoice kind that
- * is ever actually queued and resolved through this generic path is the
- * Character-area-overflow forced trash (3-7-6-1), tagged with the sentinel
- * sourceEffectId 'rule:characterAreaOverflow' (see handlers/playCharacter.ts).
+ * (blueprint Section 11). It handles rule-level character overflow,
+ * interpreter-suspended curated EffectProgram choices, and Life [Trigger]
+ * prompts.
  * Setup's own choices (going-first, mulligan) are resolved through their
  * OWN dedicated action types instead — see setup/applyChooseGoingFirst.ts /
  * setup/applyMulliganDecision.ts — never through this handler.

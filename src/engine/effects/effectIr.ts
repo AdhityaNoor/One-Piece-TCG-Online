@@ -115,7 +115,7 @@ export interface Ability {
   ops: EffectOp[];
 }
 
-/** A whole card's compiled effect. */
+/** A whole card's curated runtime effect program. */
 export interface EffectProgram {
   cardNumber: string;
   abilities: Ability[];

@@ -1,8 +1,8 @@
 /**
  * Engine effect-interpreter barrel.
  *
- * The compile target (EffectProgram IR), the generic interpreter, and the
- * firing seams. Per-card behavior is compiled DATA injected as an
+ * The runtime target (EffectProgram IR), the generic interpreter, and the
+ * firing seams. Per-card behavior is curated DATA injected as an
  * EffectTemplateRegistry; the engine never imports /src/cards.
  */
 export type { EffectContext, EffectTemplateRegistry } from './effectTemplate';

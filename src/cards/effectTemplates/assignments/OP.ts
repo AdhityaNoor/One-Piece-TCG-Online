@@ -32,10 +32,25 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP02-011 — [On Play] K.O. up to 1 of your opponent's Characters with 3000 power or less.
   { cardNumber: 'OP02-011', templateId: 'onPlayKoOpponentCharacter', params: { filter: { maxPower: 3000 } } },
+  // OP02-096 - [On Play] Draw 1. [When Attacking] Give opponent Character -4 cost this turn.
+  {
+    cardNumber: 'OP02-096',
+    templates: [
+      { templateId: 'onPlayDraw', params: { amount: 1 } },
+      { templateId: 'whenAttackingModifyCostOpponent', params: { amount: -4 } },
+    ],
+  },
 
   // OP03 -----------------------------------------------------------------------
 
   // OP03-011 — [DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power.
+  // OP03-003 - [On Play] Look at 5; add Whitebeard Pirates card other than this card's name.
+  {
+    cardNumber: 'OP03-003',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 5, pick: 1, filter: { typeIncludes: 'Whitebeard Pirates', excludeSelfName: true } },
+  },
+
   // OP03-009 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
   { cardNumber: 'OP03-009', templateId: 'activateMainGiveDon', params: { count: 1 } },
 
@@ -116,6 +131,9 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-054 - [Blocker] [On Play] Draw 1 card.
   // Note: [Blocker] is an engine keyword flag. Only the on-play draw is templated.
   { cardNumber: 'OP07-054', templateId: 'onPlayDraw', params: { amount: 1 } },
+  // OP07-015 - [Rush] [On Play] Give up to 2 rested DON!! to Leader/Character.
+  // Note: [Rush] is an engine keyword flag. Only the on-play DON!! attach is templated.
+  { cardNumber: 'OP07-015', templateId: 'onPlayGiveDon', params: { count: 2 } },
   // OP07-046 — [On Play] Look at 5; add up to 1 The Seven Warlords of the Sea.
   {
     cardNumber: 'OP07-046',
@@ -155,6 +173,9 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   },
   // OP09-003 — [When Attacking] Give up to 1 of your opponent's Characters −2000 power.
   { cardNumber: 'OP09-003', templateId: 'whenAttackingModifyPowerOpponent', params: { amount: -2000 } },
+  // OP09-048 - [Blocker] [On Play] Draw 2 cards and trash 1 card from hand.
+  // Note: [Blocker] is an engine keyword flag. Only the on-play draw/trash is templated.
+  { cardNumber: 'OP09-048', templateId: 'onPlayDrawAndTrash', params: { drawCount: 2, trashCount: 1 } },
 
   // OP10 -----------------------------------------------------------------------
 
@@ -175,6 +196,9 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP11-016 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
   { cardNumber: 'OP11-016', templateId: 'activateMainGiveDon', params: { count: 1 } },
+  // OP11-029 - [Blocker] [On Play] Rest up to 1 opponent Character with cost 1 or less.
+  // Note: [Blocker] is an engine keyword flag. Only the on-play rest is templated.
+  { cardNumber: 'OP11-029', templateId: 'onPlayRestOpponentCharacter', params: { filter: { maxCost: 1 } } },
 
   // OP12 -----------------------------------------------------------------------
 
@@ -185,6 +209,12 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP13-013 — [On Play] K.O. up to 1 of your opponent's Characters with 0 power.
   { cardNumber: 'OP13-013', templateId: 'onPlayKoOpponentCharacter', params: { filter: { maxPower: 0 } } },
+  // OP13-065 - [On Play] Look at 5; add Roger Pirates card other than this card's name.
+  {
+    cardNumber: 'OP13-065',
+    templateId: 'onPlaySearchTopDeck',
+    params: { look: 5, pick: 1, filter: { typeIncludes: 'Roger Pirates', excludeSelfName: true } },
+  },
 
   // OP14 -----------------------------------------------------------------------
 

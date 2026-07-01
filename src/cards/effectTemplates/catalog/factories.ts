@@ -286,6 +286,22 @@ const FACTORY_MAP: {
 
   // --- draw + discard ---
 
+  onPlayDrawAndTrash: (cn, p) =>
+    program(cn, [
+      ability('onPlay', [
+        { op: 'draw', amount: p.drawCount },
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerHand' },
+          min: p.trashCount,
+          max: p.trashCount,
+          prompt: `Trash ${p.trashCount} card${p.trashCount === 1 ? '' : 's'} from your hand.`,
+        },
+        { op: 'trashCards', target: { sel: 'var', name: 't' } },
+      ]),
+    ]),
+
   whenAttackingDrawAndTrash: (cn, p) =>
     program(cn, [
       ability(

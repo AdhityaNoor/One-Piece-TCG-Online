@@ -1,7 +1,7 @@
 /**
  * ACTIVATE_COUNTER_EVENT validation (7-1-3-2-2). The full play→trash→[Counter]
  * firing path is covered end-to-end in
- * cards/effectTemplates/__tests__/compileAndRun.test.ts (fireCounter); here we
+ * cards/effectTemplates/__tests__/matchIntegration.test.ts covers registry-to-dispatch wiring; here we
  * cover the handler's own structural gates.
  */
 import { describe, expect, it } from 'vitest';

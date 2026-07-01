@@ -57,7 +57,7 @@ export function createActionId(): string {
 interface MatchStoreState {
   state: GameState | null;
   defs: CardDefinitionLookup;
-  /** Compiled card effects injected into every validate/execute call, so [On Play]/[Activate: Main]/etc. fire in-game. Keyed by cardNumber (== cardDefinitionId). */
+  /** Curated card effects injected into every validate/execute call, so [On Play]/[Activate: Main]/etc. fire in-game. Keyed by cardNumber (== cardDefinitionId). */
   registry: EffectTemplateRegistry;
   /** cardDefinitionId -> cosmetic image URL, for board/zoom UI only — never read by the engine. See savedDeckToSetupInput.ts. */
   cardImagesByDefinitionId: Record<string, string | null>;

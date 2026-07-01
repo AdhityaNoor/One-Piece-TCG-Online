@@ -117,7 +117,7 @@ export function executeDeclareAttack(
   };
 
   // [When Attacking] (8-1-3) fires now that the Battle is set up, with the
-  // attacker as source. No-op when the card has no compiled whenAttacking
+  // attacker as source. No-op when the card has no curated whenAttacking
   // ability; any targeting it needs surfaces as a PendingChoice (resolved
   // before the Block/Counter Step proceeds, via the dispatch pending-choice gate).
   const fired = fireWhenAttacking(nextState, action.attackerInstanceId, registry, defs, action.actionId);

@@ -95,7 +95,7 @@ function leaderCharacterSelectable(
     case 'selectBlocker':
       return isOwn && zone === 'characterArea' && card.orientation === 'active' && card.hasBlocker;
     case 'selectActivateSource':
-      // The "Activate Effect" flow: own Leader/Character with a compiled [Activate: Main] ability.
+      // The "Activate Effect" flow: own Leader/Character with a curated [Activate: Main] ability.
       return isOwn && canActivate;
     case 'idle':
       // Idle: an own card with a ready [Activate: Main] effect is tappable directly (the ⚡ badge).

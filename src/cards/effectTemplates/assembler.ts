@@ -29,10 +29,8 @@ import type { TemplateId, TemplateParamMap } from './catalog/templateDefs';
  * The union distributes over TemplateId so TypeScript narrows `params` to the
  * correct shape for each `templateId` discriminant — no `any` in callers.
  */
-export type CardEffectAssignment = {
+export type TemplateBinding = {
   [T in TemplateId]: {
-    /** Card number exactly as it appears in the card catalog (e.g. "OP01-016"). */
-    cardNumber: string;
     /** Which reusable template shape this card uses. */
     templateId: T;
     /** Template-specific parameters. TypeScript narrows this from TemplateParamMap[T]. */
@@ -40,9 +38,17 @@ export type CardEffectAssignment = {
   };
 }[TemplateId];
 
+export type CardEffectAssignment =
+  | ({ cardNumber: string } & TemplateBinding)
+  | { cardNumber: string; templates: readonly TemplateBinding[] };
+
 // ---------------------------------------------------------------------------
 // Assembly
 // ---------------------------------------------------------------------------
+
+function bindingsFor(a: CardEffectAssignment): readonly TemplateBinding[] {
+  return 'templates' in a ? a.templates : [a];
+}
 
 /**
  * Build an EffectTemplateRegistry from a list of reviewed assignments.
@@ -58,13 +64,14 @@ export function buildRegistryFromAssignments(
       // Should never happen if sets are reviewed carefully; warn loudly.
       console.warn(`[effectTemplates] duplicate assignment for ${a.cardNumber} - last one wins`);
     }
-    // Cast needed: TypeScript can't prove the union member lines up without a
-    // runtime switch, but TemplateParamMap guarantees correctness statically.
-    registry[a.cardNumber] = applyTemplate(
-      a.cardNumber,
-      a.templateId,
-      a.params as TemplateParamMap[typeof a.templateId],
+    const abilities = bindingsFor(a).flatMap((binding) =>
+      applyTemplate(
+        a.cardNumber,
+        binding.templateId,
+        binding.params as TemplateParamMap[typeof binding.templateId],
+      ).abilities,
     );
+    registry[a.cardNumber] = { cardNumber: a.cardNumber, abilities };
   }
 
   return registry;

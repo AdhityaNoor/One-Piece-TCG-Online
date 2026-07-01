@@ -83,7 +83,7 @@ export function resolveDamageAndEndOfBattle(
   // trashed; collected here and merged into the final result.
   let koLog: GameLogEntry[] = [];
   let koPending: PendingChoice[] = [];
-  // [Trigger] (10-1-5-2): revealed Life cards with a compiled trigger raise an
+  // [Trigger] (10-1-5-2): revealed Life cards with a curated trigger raise an
   // "activate?" choice, resolved after the battle (see resolvePendingChoice.ts).
   const triggerPending: PendingChoice[] = [];
 
@@ -117,8 +117,8 @@ export function resolveDamageAndEndOfBattle(
         player = { ...player, lifeArea: { ...player.lifeArea, cardIds: restLife }, hand: addToZoneTop(player.hand, lifeCardId) };
 
         if (lifeDef?.hasTrigger) {
-          const hasCompiledTrigger = !!registry[lifeCardId ? cardsById[lifeCardId].cardDefinitionId : '']?.abilities.some((ab) => ab.trigger === 'trigger');
-          if (hasCompiledTrigger) {
+          const hasCuratedTrigger = !!registry[lifeCardId ? cardsById[lifeCardId].cardDefinitionId : '']?.abilities.some((ab) => ab.trigger === 'trigger');
+          if (hasCuratedTrigger) {
             // Offer to activate it (10-1-5-2). The card is in hand for now; a
             // "yes" moves it to the trash and resolves the trigger.
             triggerPending.push({
@@ -182,7 +182,7 @@ export function resolveDamageAndEndOfBattle(
       nextState = { ...nextState, cardsById, players: { ...nextState.players, [target.ownerId]: newOwner } };
 
       // [On K.O.] (10-2-17) fires now that the Character is in the trash.
-      // No-op without a compiled onKO ability; collect its log/choices.
+      // No-op without a curated onKO ability; collect its log/choices.
       const koFired = fireOnKO(nextState, targetId, registry, defs, causedByActionId);
       nextState = koFired.state;
       koLog = [...koLog, ...koFired.log];

@@ -49,6 +49,26 @@ describe('buildRegistryFromAssignments', () => {
     ];
     expect(Object.keys(buildRegistryFromAssignments(assignments))).toHaveLength(2);
   });
+
+  it('composes multiple atomic templates into one card EffectProgram', () => {
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: 'COMBO-001',
+        templates: [
+          { templateId: 'onPlayDraw', params: { amount: 1 } },
+          { templateId: 'whenAttackingModifyCostOpponent', params: { amount: -4 } },
+        ],
+      },
+    ]);
+    expect(registry['COMBO-001']).toMatchObject({
+      cardNumber: 'COMBO-001',
+      abilities: [
+        { trigger: 'onPlay', ops: [{ op: 'draw', amount: 1 }] },
+        { trigger: 'whenAttacking' },
+      ],
+    });
+    expect(registry['COMBO-001'].abilities[1].ops[1]).toMatchObject({ op: 'addCost', amount: -4 });
+  });
 });
 
 describe('template factories — structural correctness', () => {
@@ -98,6 +118,19 @@ describe('template factories — structural correctness', () => {
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'draw', amount: 2 });
   });
 
+  it('onPlayDrawAndTrash draws then requires trashing from hand', () => {
+    const p = applyTemplate('T', 'onPlayDrawAndTrash', { drawCount: 2, trashCount: 1 });
+    expect(p.abilities[0].trigger).toBe('onPlay');
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'draw', amount: 2 });
+    expect(p.abilities[0].ops[1]).toMatchObject({
+      op: 'chooseTargets',
+      from: { sel: 'controllerHand' },
+      min: 1,
+      max: 1,
+    });
+    expect(p.abilities[0].ops[2]).toMatchObject({ op: 'trashCards' });
+  });
+
   it('whenAttackingDrawAndTrash has no condition when donRequired is omitted', () => {
     const p = applyTemplate('T', 'whenAttackingDrawAndTrash', { drawCount: 1, trashCount: 1 });
     expect(p.abilities[0].condition).toBeUndefined();
@@ -144,7 +177,7 @@ describe('raw card text isolation', () => {
     // stores a long string that looks like card effect text in its params.
     // Actual card text lives in the card catalog JSON, not here.
     for (const a of ALL_ASSIGNMENTS) {
-      const paramsStr = JSON.stringify(a.params);
+      const paramsStr = JSON.stringify(a);
       // Heuristic: card effect text contains brackets like [On Play] or "your opponent"
       const looksLikeEffectText = /\[On Play\]|\[When Attacking\]|your opponent|\[Activate|During this turn/i.test(paramsStr);
       expect(looksLikeEffectText, `${a.cardNumber} params look like raw effect text: ${paramsStr}`).toBe(false);
