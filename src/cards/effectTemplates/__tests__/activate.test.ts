@@ -116,6 +116,6 @@ describe('ACTIVATE_CARD_EFFECT', () => {
     const costAction: ActivateCardEffectAction = { ...action, sourceInstanceId: 'cd', effectId: 'cd-act' };
     const r = validateActivateCardEffect(s, costAction, registry);
     expect(r.legal).toBe(false);
-    expect(r.reasons.join(' ')).toMatch(/DON!! on the field to return/i);
+    expect(r.reasons.join(' ')).toMatch(/returning 1 DON!!|DON!!.*available/i);
   });
 });

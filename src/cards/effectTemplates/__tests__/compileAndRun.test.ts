@@ -106,12 +106,18 @@ describe('compiler', () => {
     expect(aoe.abilities[0].ops).toEqual([{ op: 'addPower', target: { sel: 'controllerCharacters' }, amount: 1000, duration: 'duringThisTurn' }]);
     expect(compileEffect('MILL', '[On Play] Trash 3 cards from the top of your deck.')!.abilities[0].ops[0]).toEqual({ op: 'trashTopDeck', count: 3 });
   });
-  it('does NOT compile an activation-cost-gated effect (would be a free effect)', () => {
-    expect(compileEffect('X', "[Activate: Main] You may rest 1 of your DON!! cards: Give up to 1 of your opponent's Characters −2000 power during this turn.")).toBeNull();
-    expect(compileEffect('X', '[Main] DON!! −1: Trash 3 cards from the top of your deck.')).toBeNull();
+  it('compiles a cost-gated effect WITH its activation cost attached (not as a free effect)', () => {
+    const rest = compileEffect('X', "[Activate: Main] You may rest 1 of your DON!! cards: Give up to 1 of your opponent's Characters −2000 power during this turn.")!;
+    expect(rest.abilities[0].cost).toEqual([{ kind: 'restDon', count: 1 }]);
+    expect(rest.abilities[0].ops.some((o) => o.op === 'addPower')).toBe(true);
+    const donMinus = compileEffect('X', '[Main] DON!! −1: Trash 3 cards from the top of your deck.')!;
+    expect(donMinus.abilities[0].cost).toEqual([{ kind: 'donMinus', count: 1 }]);
+    expect(donMinus.abilities[0].ops[0]).toEqual({ op: 'trashTopDeck', count: 3 });
   });
-  it('bails on an unmodeled "If …" precondition rather than dropping it (no guessing)', () => {
-    expect(compileEffect('IF', '[On Play] If you have 3 or more Characters, draw 1 card.')).toBeNull();
+  it('compiles a MODELED "If …" gate, but bails on an unmodeled one (no guessing)', () => {
+    const gated = compileEffect('IF', '[On Play] If you have 3 or more Characters, draw 1 card.')!;
+    expect(gated.abilities[0].gate).toEqual([{ kind: 'selfCharacterCount', atLeast: 3 }]);
+    expect(compileEffect('IF', '[On Play] If this Character was played this turn, draw 1 card.')).toBeNull();
   });
   it('lowers a [DON!! x1] gate to an IR condition (donAttachedAtLeast)', () => {
     const p = compileEffect('DON', '[DON!! x1] [Activate: Main] Draw 1 card.')!;
