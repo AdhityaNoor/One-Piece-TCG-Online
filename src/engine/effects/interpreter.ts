@@ -58,13 +58,23 @@ function finishWithCascade(
 }
 
 /** From a set of card instance ids, those whose definition satisfies a filter (all present fields ANDed). */
+function hasType(defTypes: string[], required: string): boolean {
+  const normalized = required.toLowerCase();
+  return defTypes.some((type) =>
+    type
+      .split(/[\/,]+/)
+      .map((part) => part.trim().toLowerCase())
+      .includes(normalized)
+  );
+}
+
 function searchEligible(ids: string[], filter: SearchFilter | undefined, ctx: EffectContextImpl): string[] {
   if (!filter) return ids;
   const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
   return ids.filter((id) => {
     const def = ctx.definitionOf(id);
     if (!def) return false;
-    if (filter.typeIncludes && !def.types.some((t) => t.toLowerCase() === filter.typeIncludes!.toLowerCase())) return false;
+    if (filter.typeIncludes && !hasType(def.types, filter.typeIncludes)) return false;
     if (filter.excludeSelfName && selfName !== undefined && def.name === selfName) return false;
     if (filter.category && def.category !== filter.category) return false;
     if (filter.name && def.name !== filter.name) return false;
@@ -263,7 +273,27 @@ export function resumeProgram(
   if (op.op === 'searchTopDeck') {
     // The chosen subset goes to hand; resolveSearch sends the looked remainder
     // to the bottom. `__looked` was stashed at suspend time (see runOps).
-    ctx.searchResolve(ctx.controllerId, rs.bindings.__looked ?? [], selection);
+    const looked = rs.bindings.__looked ?? [];
+    const chosen = rs.bindings.__searchChosen ?? selection;
+    if (!rs.bindings.__searchChosen) {
+      const chosenSet = new Set(selection);
+      const rest = looked.filter((id) => !chosenSet.has(id));
+      if (rest.length > 1) {
+        const bottomOrderChoice: PendingChoice = {
+          id: `${choice.sourceInstanceId}__ir-${rs.abilityIndex}-${rs.opIndex}-bottom-order`,
+          playerId: ctx.controllerId,
+          kind: 'SELECT_CARDS',
+          prompt: 'Choose the order to place the remaining looked cards at the bottom of your deck. First selected is placed first; last selected becomes the bottom card.',
+          constraints: { min: rest.length, max: rest.length, candidateInstanceIds: rest },
+          sourceInstanceId: choice.sourceInstanceId,
+          sourceEffectId: 'ir',
+          resumeState: { abilityIndex: rs.abilityIndex, opIndex: rs.opIndex, bindings: { ...rs.bindings, __searchChosen: selection } },
+        };
+        ctx.emitChoice(bottomOrderChoice);
+        return ctx.finish();
+      }
+    }
+    ctx.searchResolve(ctx.controllerId, looked, chosen, rs.bindings.__searchChosen ? selection : undefined);
     runOps(ability, rs.abilityIndex, rs.opIndex + 1, rs.bindings, ctx);
     return finishWithCascade(ctx, defs, actionId, registry);
   }

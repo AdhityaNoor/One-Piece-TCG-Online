@@ -19,6 +19,7 @@ import { useState } from 'react';
 import type { GameAction } from '../../../engine/actions';
 import { createActionId, useMatchStore } from '../../store/matchStore';
 import type { CardView } from '../../../board/projection';
+import { computeCurrentCost } from '../../../engine/rules/shared/power';
 
 export type BoardZoneKind = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'trash';
 
@@ -43,6 +44,8 @@ const PLAY_ACTION_BY_CATEGORY: Record<'character' | 'stage' | 'event', GameActio
 
 export function useBoardSelection(actingPlayerId: string | null) {
   const dispatch = useMatchStore((s) => s.dispatch);
+  const state = useMatchStore((s) => s.state);
+  const defs = useMatchStore((s) => s.defs);
   const registry = useMatchStore((s) => s.registry);
   const [mode, setMode] = useState<BoardSelectionMode>({ kind: 'idle' });
   const [lastError, setLastError] = useState<string[] | null>(null);
@@ -62,6 +65,11 @@ export function useBoardSelection(actingPlayerId: string | null) {
   /** True if the card's compiled program exposes a [Counter] ability (7-1-3) — i.e. it can be played from hand during the Counter Step. */
   const hasCounter = (card: CardView): boolean =>
     !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.trigger === 'counter');
+
+  const currentCostOf = (card: CardView): number => {
+    if (!state) return card.cost ?? 0;
+    return computeCurrentCost(defs, state, card.instanceId);
+  };
 
   function runDispatch(action: GameAction): void {
     const result = dispatch(action);
@@ -138,7 +146,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
         }
         if (!isOwnCard || zone !== 'hand') return;
         if (card.category !== 'character' && card.category !== 'stage' && card.category !== 'event') return;
-        const cost = card.cost ?? 0;
+        const cost = currentCostOf(card);
         if (cost === 0) {
           withActingPlayer((playerId) => ({
             type: PLAY_ACTION_BY_CATEGORY[card.category as 'character' | 'stage' | 'event'],
@@ -228,7 +236,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
         }
         // A Counter Event (compiled [Counter] ability) -> pay its cost, then play.
         if (card.category === 'event' && hasCounter(card)) {
-          const cost = card.cost ?? 0;
+          const cost = currentCostOf(card);
           if (cost === 0) {
             withActingPlayer((playerId) => ({ type: 'ACTIVATE_COUNTER_EVENT', actionId: createActionId(), playerId, handCardInstanceId: card.instanceId, donInstanceIds: [] }));
             return;

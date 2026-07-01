@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSampleGameState } from '../../../engine/state/__fixtures__/sampleGameState';
 import { computeCurrentCost, computeCurrentPower } from '../../../engine/rules/shared/power';
-import { fireOnPlay, fireWhenAttacking, fireOnKO, fireCounter, fireTrigger, resumeChoice } from '../../../engine/effects';
+import { fireOnPlay, fireActivate, fireWhenAttacking, fireOnKO, fireCounter, fireTrigger, resumeChoice } from '../../../engine/effects';
 import { compileEffect } from '../compile';
 import { compileRegistry } from '../programs';
 import type { CardInstance, CardDefinition } from '../../../engine/state/card';
@@ -28,6 +28,7 @@ const CATALOG = [
   { cardNumber: 'CTR-OPP-DEBUFF', effectText: "[Counter] Give up to 1 of your opponent's Leader or Character cards -2000 power during this turn." },
   { cardNumber: 'DEBUFF', effectText: "[On Play] Give up to 1 of your opponent's Characters −2000 power during this turn." },
   { cardNumber: 'COST-DEBUFF', effectText: "[On Play] Give up to 1 of your opponent's Characters -4 cost during this turn." },
+  { cardNumber: 'MULTI-COST-DEBUFF', effectText: "[On Play] Give up to 2 of your opponent's Characters -2 cost during this turn." },
   { cardNumber: 'AOE', effectText: '[On Play] All of your Characters gain +1000 power during this turn.' },
   { cardNumber: 'MILL', effectText: '[On Play] Trash 3 cards from the top of your deck.' },
   { cardNumber: 'BOUNCE', effectText: "[On Play] Return up to 1 of your opponent's Characters with a cost of 4 or less to the owner's hand." },
@@ -58,7 +59,7 @@ function place(state: GameState, i: CardInstance): GameState {
 
 describe('compiler', () => {
   it('lowers the catalog (draw, self-power, give-DON, KO, searcher, attack/KO/counter timings)', () => {
-    expect(Object.keys(registry).sort()).toEqual(['ACT-DON', 'AOE', 'BOUNCE', 'COND-STAT', 'COST-DEBUFF', 'CTR-KO', 'CTR-OPP-DEBUFF', 'CTR-PWR', 'CTR-REST', 'DEBUFF', 'GATED', 'KO-DRAW', 'KO-SRC', 'MILL', 'OP01-016', 'OP02-011', 'OP04-045', 'PLAY-HAND', 'RAMP', 'RECOVER', 'ST01-013', 'ST15-002', 'ST21-002', 'TRIG', 'WA-DON']);
+    expect(Object.keys(registry).sort()).toEqual(['ACT-DON', 'AOE', 'BOUNCE', 'COND-STAT', 'COST-DEBUFF', 'CTR-KO', 'CTR-OPP-DEBUFF', 'CTR-PWR', 'CTR-REST', 'DEBUFF', 'GATED', 'KO-DRAW', 'KO-SRC', 'MILL', 'MULTI-COST-DEBUFF', 'OP01-016', 'OP02-011', 'OP04-045', 'PLAY-HAND', 'RAMP', 'RECOVER', 'ST01-013', 'ST15-002', 'ST21-002', 'TRIG', 'WA-DON']);
   });
   it('lowers a [Trigger] ability to the trigger timing (recursion through the On Play lowerings)', () => {
     const p = compileEffect('TRIG', '[Trigger] Draw 1 card.')!;
@@ -109,6 +110,9 @@ describe('compiler', () => {
     const costDeb = compileEffect('COST-DEBUFF', "[On Play] Give up to 1 of your opponent's Characters -4 cost during this turn.")!;
     expect(costDeb.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters' } });
     expect(costDeb.abilities[0].ops[1]).toMatchObject({ op: 'addCost', amount: -4, duration: 'duringThisTurn' });
+    const multiCostDeb = compileEffect('MULTI-COST-DEBUFF', "[On Play] Give up to 2 of your opponent's Characters -2 cost during this turn.")!;
+    expect(multiCostDeb.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters' }, min: 0, max: 2 });
+    expect(multiCostDeb.abilities[0].ops[1]).toMatchObject({ op: 'addCost', amount: -2, duration: 'duringThisTurn' });
     const aoe = compileEffect('AOE', '[On Play] All of your Characters gain +1000 power during this turn.')!;
     expect(aoe.abilities[0].ops).toEqual([{ op: 'addPower', target: { sel: 'controllerCharacters' }, amount: 1000, duration: 'duringThisTurn' }]);
     expect(compileEffect('MILL', '[On Play] Trash 3 cards from the top of your deck.')!.abilities[0].ops[0]).toEqual({ op: 'trashTopDeck', count: 3 });
@@ -254,12 +258,48 @@ describe('interpreter runs the compiled IR', () => {
     expect(played.pendingChoices[0].constraints.candidateInstanceIds).toEqual(['d1', 'd4']);
     expect(played.pendingChoices[0].constraints.max).toBe(1);
 
-    const resumed = resumeChoice(played.state, played.pendingChoices[0].id, ['d4'], registry, defs, 'b');
-    expect(resumed.state.players.p1.hand.cardIds).toEqual(['d4']);
-    // Top 5 removed; the 4 non-chosen looked cards go to the bottom (after d6, d7).
-    expect(resumed.state.players.p1.deck.cardIds).toEqual(['d6', 'd7', 'd1', 'd2', 'd3', 'd5']);
-    expect(resumed.state.cardsById.d4.currentZone).toBe('hand');
-    expect(resumed.state.pendingChoices).toHaveLength(0);
+    const picked = resumeChoice(played.state, played.pendingChoices[0].id, ['d4'], registry, defs, 'b');
+    expect(picked.pendingChoices[0].constraints).toMatchObject({ min: 4, max: 4, candidateInstanceIds: ['d1', 'd2', 'd3', 'd5'] });
+
+    const ordered = resumeChoice(picked.state, picked.pendingChoices[0].id, ['d5', 'd3', 'd2', 'd1'], registry, defs, 'c');
+    expect(ordered.state.players.p1.hand.cardIds).toEqual(['d4']);
+    // Top 5 removed; the non-chosen looked cards go to the bottom in the player's chosen order.
+    expect(ordered.state.players.p1.deck.cardIds).toEqual(['d6', 'd7', 'd5', 'd3', 'd2', 'd1']);
+    expect(ordered.state.cardsById.d4.currentZone).toBe('hand');
+    expect(ordered.state.pendingChoices).toHaveLength(0);
+  });
+
+  it('OP09-095 Laffitte search offers all Blackbeard Pirates type cards, not just Fullalead', () => {
+    const lafitteRegistry = compileRegistry([
+      {
+        cardNumber: 'OP09-095',
+        effectText: '[Activate: Main] You may rest 1 of your DON!! cards and this Character: Look at 5 cards from the top of your deck; reveal up to 1 {Blackbeard Pirates} type card and add it to your hand. Then, place the rest at the bottom of your deck in any order.',
+      },
+    ]);
+    const defs = {
+      'OP09-095': { ...def('OP09-095', 4000), baseCost: 1, types: ['Blackbeard Pirates'] },
+      'OP09-081': { ...def('OP09-081', 5000), types: ['The Four Emperors/Blackbeard Pirates'] },
+      'OP09-099': { ...def('OP09-099', 0), category: 'stage' as const, baseCost: 1, types: ['Blackbeard Pirates'] },
+      FILLER: namedDef('FILLER', 'Filler', ['Navy']),
+    };
+    let s = createSampleGameState();
+    const deckIds = ['bb-char', 'fullalead', 'f1', 'f2', 'f3'];
+    s = {
+      ...s,
+      cardsById: {
+        ...s.cardsById,
+        'bb-char': inst('bb-char', 'OP09-081', 'deck', 'p1'),
+        fullalead: inst('fullalead', 'OP09-099', 'deck', 'p1'),
+        f1: inst('f1', 'FILLER', 'deck', 'p1'),
+        f2: inst('f2', 'FILLER', 'deck', 'p1'),
+        f3: inst('f3', 'FILLER', 'deck', 'p1'),
+      },
+      players: { ...s.players, p1: { ...s.players.p1, hand: { ...s.players.p1.hand, cardIds: [] }, deck: { ...s.players.p1.deck, cardIds: deckIds } } },
+    };
+    s = place(s, inst('lafitte', 'OP09-095', 'characterArea', 'p1'));
+
+    const fired = fireActivate(s, 'lafitte', lafitteRegistry, defs, 'a');
+    expect(fired.pendingChoices[0].constraints.candidateInstanceIds).toEqual(['bb-char', 'fullalead']);
   });
 
   it('[When Attacking] WA-DON fires a give-DON choice when the attacker is declared', () => {
@@ -352,6 +392,22 @@ describe('interpreter runs the compiled IR', () => {
     expect(played.pendingChoices[0].constraints.candidateInstanceIds).toEqual(['oc']);
     const resumed = resumeChoice(played.state, played.pendingChoices[0].id, ['oc'], registry, defs, 'b');
     expect(computeCurrentCost(defs, resumed.state, 'oc')).toBe(0);
+  });
+
+  it('[On Play] MULTI-COST-DEBUFF supports selecting up to 2 opponent Characters', () => {
+    const defs = {
+      'MULTI-COST-DEBUFF': def('MULTI-COST-DEBUFF', 0),
+      OC4: { ...def('OC4', 3000), baseCost: 4 },
+      OC5: { ...def('OC5', 3000), baseCost: 5 },
+    };
+    let s = place(createSampleGameState(), inst('src', 'MULTI-COST-DEBUFF', 'characterArea', 'p1'));
+    s = place(s, inst('oc1', 'OC4', 'characterArea', 'p2'));
+    s = place(s, inst('oc2', 'OC5', 'characterArea', 'p2'));
+    const played = fireOnPlay(s, 'src', registry, defs, 'a');
+    expect(played.pendingChoices[0].constraints).toMatchObject({ min: 0, max: 2, candidateInstanceIds: ['oc1', 'oc2'] });
+    const resumed = resumeChoice(played.state, played.pendingChoices[0].id, ['oc1', 'oc2'], registry, defs, 'b');
+    expect(computeCurrentCost(defs, resumed.state, 'oc1')).toBe(2);
+    expect(computeCurrentCost(defs, resumed.state, 'oc2')).toBe(3);
   });
 
   it('[On Play] PLAY-HAND: offers only matching hand Characters, then plays the chosen one (summoning-sick)', () => {
@@ -489,8 +545,10 @@ describe('interpreter runs the compiled IR', () => {
     const played = fireOnPlay(s, 'nami', registry, defs, 'a');
     // No eligible card (all Filler, no Straw Hat Crew) — choice still appears with min 0.
     expect(played.pendingChoices[0].constraints.candidateInstanceIds).toEqual([]);
-    const resumed = resumeChoice(played.state, played.pendingChoices[0].id, [], registry, defs, 'b');
-    expect(resumed.state.players.p1.hand.cardIds).toEqual([]);
-    expect(resumed.state.players.p1.deck.cardIds).toEqual(['e6', 'e1', 'e2', 'e3', 'e4', 'e5']);
+    const declined = resumeChoice(played.state, played.pendingChoices[0].id, [], registry, defs, 'b');
+    expect(declined.pendingChoices[0].constraints).toMatchObject({ min: 5, max: 5, candidateInstanceIds: ['e1', 'e2', 'e3', 'e4', 'e5'] });
+    const ordered = resumeChoice(declined.state, declined.pendingChoices[0].id, ['e5', 'e4', 'e3', 'e2', 'e1'], registry, defs, 'c');
+    expect(ordered.state.players.p1.hand.cardIds).toEqual([]);
+    expect(ordered.state.players.p1.deck.cardIds).toEqual(['e6', 'e5', 'e4', 'e3', 'e2', 'e1']);
   });
 });

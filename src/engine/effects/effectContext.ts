@@ -450,7 +450,7 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
-  searchResolve(playerId: string, lookedIds: string[], chosenIds: string[]): void {
+  searchResolve(playerId: string, lookedIds: string[], chosenIds: string[], bottomOrderIds?: string[]): void {
     const player = this.working.players[playerId];
     if (!player || lookedIds.length === 0) return;
 
@@ -460,6 +460,11 @@ export class EffectContextImpl implements EffectContext {
     const chosenSet = new Set(chosenIds.filter((id) => lookedSet.has(id)));
     const chosen = lookedIds.filter((id) => chosenSet.has(id));
     const rest = lookedIds.filter((id) => !chosenSet.has(id));
+    const restSet = new Set(rest);
+    const orderedRest =
+      bottomOrderIds && bottomOrderIds.length === rest.length && bottomOrderIds.every((id) => restSet.has(id))
+        ? bottomOrderIds
+        : rest;
 
     // The looked cards are exactly the top N — drop them off the top, then the
     // unrevealed rest returns to the bottom (6-? deck ops; "in any order" is a
@@ -472,7 +477,7 @@ export class EffectContextImpl implements EffectContext {
       hand = addToZoneBottom(hand, id);
       cardsById[id] = { ...cardsById[id], currentZone: 'hand', revealedTo: [playerId] };
     }
-    for (const id of rest) {
+    for (const id of orderedRest) {
       deck = addToZoneBottom(deck, id);
       cardsById[id] = { ...cardsById[id], currentZone: 'deck', revealedTo: [] };
     }
@@ -487,7 +492,7 @@ export class EffectContextImpl implements EffectContext {
       actorPlayerId: playerId,
       type: 'EFFECT_RESOLVED',
       message: `Searched the top ${lookedIds.length}: added ${chosen.length} to hand, returned ${rest.length} to the bottom of the deck.`,
-      data: { lookedCount: lookedIds.length, addedCount: chosen.length, addedInstanceIds: chosen, bottomedCount: rest.length },
+      data: { lookedCount: lookedIds.length, addedCount: chosen.length, addedInstanceIds: chosen, bottomedCount: orderedRest.length, bottomOrderInstanceIds: orderedRest },
       relatedCardInstanceIds: chosen,
       visibility: { visibleTo: [playerId] },
     });

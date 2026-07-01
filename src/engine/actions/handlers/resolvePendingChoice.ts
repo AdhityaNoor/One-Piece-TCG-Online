@@ -59,9 +59,14 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
         reasons.push(`Select between ${min} and ${max} target(s) (got ${sel.length}) (8-4-4-1).`);
       }
       const candidates = new Set(candidateInstanceIds ?? []);
+      const seen = new Set<string>();
       for (const id of sel) {
         if (typeof id !== 'string' || !candidates.has(id)) {
           reasons.push(`'${String(id)}' is not an eligible target for this effect.`);
+        } else if (seen.has(id)) {
+          reasons.push(`'${id}' was selected more than once.`);
+        } else {
+          seen.add(id);
         }
       }
     }

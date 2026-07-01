@@ -412,6 +412,8 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     const { min, max } = choice.constraints;
     const count = selectedIrIds.length;
     const canConfirm = count >= min && count <= max;
+    const isOrderingChoice = min === max && max > 1 && /order/i.test(choice.prompt);
+    const selectedCardsById = new Map(candidates.map((card) => [card.instanceId, card]));
 
     const toggle = (instanceId: string): void => {
       setSelectedIrIds((prev) => {
@@ -445,6 +447,16 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
           >
             {min === 0 && count === 0 ? 'Decline' : `Confirm (${count}/${max})`}
           </Button>
+          {isOrderingChoice && selectedIrIds.length > 0 && (
+            <ol className="flex flex-col gap-1 rounded-lg border border-white/10 bg-black/18 p-2 text-xs text-white/70">
+              {selectedIrIds.map((id, index) => (
+                <li key={id} className="flex items-center gap-2">
+                  <span className="text-gold">{index + 1}.</span>
+                  <span>{selectedCardsById.get(id)?.name ?? id}</span>
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
       </Modal>
     );

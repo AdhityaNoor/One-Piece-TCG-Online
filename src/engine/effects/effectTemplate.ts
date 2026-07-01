@@ -80,9 +80,9 @@ export interface EffectContext {
   /**
    * Resolve a "search": `lookedIds` are the top-of-deck cards that were looked
    * at; move `chosenIds` (a subset) to the player's hand and the remainder to
-   * the bottom of the deck, in looked order (the classic searcher tail).
+   * the bottom of the deck, in player-selected order when supplied.
    */
-  searchResolve(playerId: string, lookedIds: string[], chosenIds: string[]): void;
+  searchResolve(playerId: string, lookedIds: string[], chosenIds: string[], bottomOrderIds?: string[]): void;
   /** Emit a fully-built PendingChoice (the interpreter uses this to suspend; carries its resume point). */
   emitChoice(choice: PendingChoice): void;
 }

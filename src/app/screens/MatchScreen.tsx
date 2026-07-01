@@ -305,7 +305,7 @@ export function MatchScreen() {
               isOwn={actingPlayerId === otherPlayerId}
               position="top"
               selectedIds={selectedHandIds(selection.mode)}
-              selectable={(card) => handSelectable(selection.mode, actingPlayerId === otherPlayerId, card)}
+              selectable={(card) => handSelectable(selection.mode, actingPlayerId === otherPlayerId, card, selection.hasCounter)}
               onCardTap={(card) => selection.handleCardTap(otherPlayerId, 'hand', card)}
               onCardZoom={openZoom}
               boardFocused={boardHovered}
@@ -315,7 +315,7 @@ export function MatchScreen() {
               isOwn={actingPlayerId === turnPlayerId}
               position="bottom"
               selectedIds={selectedHandIds(selection.mode)}
-              selectable={(card) => handSelectable(selection.mode, actingPlayerId === turnPlayerId, card)}
+              selectable={(card) => handSelectable(selection.mode, actingPlayerId === turnPlayerId, card, selection.hasCounter)}
               onCardTap={(card) => selection.handleCardTap(turnPlayerId, 'hand', card)}
               onCardZoom={openZoom}
               boardFocused={boardHovered}
@@ -711,19 +711,20 @@ function AttackArrowOverlay({ attackerInstanceId, targetInstanceId, committed }:
   );
 }
 
-function handSelectable(mode: MatchSelectionMode, isOwn: boolean, card: CardView): boolean {
+function handSelectable(mode: MatchSelectionMode, isOwn: boolean, card: CardView, hasCounter: (card: CardView) => boolean): boolean {
   if (!isOwn) return false;
   if (mode.kind === 'idle') {
     return card.category === 'character' || card.category === 'stage' || card.category === 'event';
   }
   if (mode.kind === 'selectCounterCard') {
-    return card.category === 'character' && !!card.counter && card.counter > 0;
+    return (card.category === 'character' && !!card.counter && card.counter > 0) || (card.category === 'event' && hasCounter(card));
   }
   return false;
 }
 
 function selectedHandIds(mode: MatchSelectionMode): Set<string> {
   if (mode.kind === 'payingCost') return new Set([mode.handCardInstanceId]);
+  if (mode.kind === 'payingCounterEventCost') return new Set([mode.handCardInstanceId]);
   if (mode.kind === 'selectCounterBoostTarget') return new Set([mode.handCardInstanceId]);
   return new Set();
 }

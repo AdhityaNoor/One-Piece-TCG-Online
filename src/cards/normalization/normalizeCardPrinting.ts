@@ -45,6 +45,22 @@ const ATTRIBUTE_MAP: Record<string, Attribute> = {
   '?': 'unknown',
 };
 
+const TYPE_OVERRIDES_BY_CARD_NUMBER: Record<string, string[]> = {
+  'OP09-082': ['Blackbeard Pirates'],
+  'OP09-083': ['Blackbeard Pirates'],
+  'OP09-084': ['Blackbeard Pirates'],
+  'OP09-086': ['Blackbeard Pirates'],
+  'OP09-089': ['Animal', 'Blackbeard Pirates'],
+  'OP09-090': ['Blackbeard Pirates'],
+  'OP09-093': ['Blackbeard Pirates'],
+  'OP09-095': ['Blackbeard Pirates'],
+  'ST27-001': ['Blackbeard Pirates'],
+  'ST27-002': ['Blackbeard Pirates'],
+  'ST27-003': ['Blackbeard Pirates'],
+  'ST27-004': ['Blackbeard Pirates'],
+  'ST27-005': ['Blackbeard Pirates'],
+};
+
 /**
  * The live API represents some multicolor cards as space-separated values
  * (for example OP01-061 Kaido: "Blue Purple"). Slash/comma delimiters are
@@ -86,9 +102,17 @@ function parseAttributes(attribute: string | null, cardNumber: string, warnings:
  * filtering in the deck builder is not yet reliable for multi-type cards.
  */
 function parseTypes(subTypes: string | null, cardNumber: string, warnings: NormalizationWarning[]): string[] {
+  const override = TYPE_OVERRIDES_BY_CARD_NUMBER[cardNumber];
+  if (override) return override;
   if (subTypes === null) return [];
   const trimmed = subTypes.trim();
   if (trimmed.length === 0) return [];
+  if (/[\/,]/.test(trimmed)) {
+    return trimmed
+      .split(/[\/,]+/)
+      .map((type) => type.trim())
+      .filter(Boolean);
+  }
   warnings.push(
     warn(
       'unsplit-sub-types',

@@ -131,6 +131,7 @@ function parseCostPrefix(rawText: string): { cost: AbilityCost[]; effectText: st
     if ((m = residual.match(/^don!!\s*[−-]\s*(\d+)/i))) cost.push({ kind: 'donMinus', count: Number(m[1]) });
     else if ((m = residual.match(/^rest (\d+) of your don!! cards?/i))) cost.push({ kind: 'restDon', count: Number(m[1]) });
     else if ((m = residual.match(/^rest this (?:character|stage|leader|card)/i))) cost.push({ kind: 'restThis' });
+    else if ((m = residual.match(/^this (?:character|stage|leader|card)/i))) cost.push({ kind: 'restThis' });
     if (m) {
       residual = residual.slice(m[0].length).trim();
       progressed = true;
@@ -173,6 +174,11 @@ function opponentTargetFrom(rawText: string): Selector | null {
   if (power) return { sel: 'opponentCharacters', maxPower: Number(power[1]) };
   if (/\bwith\b/i.test(rawText)) return null; // an unparsed restriction — don't guess
   return { sel: 'opponentCharacters' }; // no restriction
+}
+
+function upToTargetCount(rawText: string): number {
+  const count = rawText.match(/\bup to (\d+)\b/i);
+  return count ? Number(count[1]) : 1;
 }
 
 /**
@@ -498,6 +504,7 @@ function compileSingleAction(pa: ParsedAbility): Ability | null {
       const trigger = pa.timing as AutoOrActivateTiming | 'counter';
       const duration = a.duration === 'thisBattle' ? 'duringThisBattle' : 'duringThisTurn';
       const raw = a.target.kind === 'upTo' ? a.target.raw : '';
+      const maxTargets = a.target.kind === 'upTo' ? a.target.count : upToTargetCount(pa.rawText);
       const signed = `${a.amount >= 0 ? '+' : ''}${a.amount}`;
 
       if (a.target.kind === 'opponentLeader' || /opponent'?s? leader or character/i.test(pa.rawText)) {
@@ -518,7 +525,7 @@ function compileSingleAction(pa: ParsedAbility): Ability | null {
             trigger,
             ...(condition ? { condition } : {}),
             ops: [
-              { op: 'chooseTargets', var: 't', from, min: 0, max: 1, prompt: `Give up to 1 of your opponent's Characters ${signed} power (or decline).` },
+            { op: 'chooseTargets', var: 't', from, min: 0, max: maxTargets, prompt: `Give up to ${maxTargets} of your opponent's Characters ${signed} power (or decline).` },
               { op: 'addPower', target: { sel: 'var', name: 't' }, amount: a.amount, duration },
             ],
           };
@@ -550,6 +557,7 @@ function compileSingleAction(pa: ParsedAbility): Ability | null {
       const trigger = pa.timing as AutoOrActivateTiming | 'counter';
       const duration = a.duration === 'thisBattle' ? 'duringThisBattle' : 'duringThisTurn';
       const raw = a.target.kind === 'upTo' ? a.target.raw : '';
+      const maxTargets = a.target.kind === 'upTo' ? a.target.count : upToTargetCount(pa.rawText);
       const signed = `${a.amount >= 0 ? '+' : ''}${a.amount}`;
 
       if (a.target.kind === 'opponentCharacters' || /opponent/i.test(raw)) {
@@ -559,7 +567,7 @@ function compileSingleAction(pa: ParsedAbility): Ability | null {
             trigger,
             ...(condition ? { condition } : {}),
             ops: [
-              { op: 'chooseTargets', var: 't', from, min: 0, max: 1, prompt: `Give up to 1 of your opponent's Characters ${signed} cost (or decline).` },
+              { op: 'chooseTargets', var: 't', from, min: 0, max: maxTargets, prompt: `Give up to ${maxTargets} of your opponent's Characters ${signed} cost (or decline).` },
               { op: 'addCost', target: { sel: 'var', name: 't' }, amount: a.amount, duration },
             ],
           };

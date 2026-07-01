@@ -13,6 +13,34 @@ import type { CardDefinition } from '../../engine/state/card';
 import type { PlayerSetupInput } from '../../engine/setup';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 
+const TYPE_OVERRIDES_BY_CARD_NUMBER: Record<string, string[]> = {
+  'OP09-082': ['Blackbeard Pirates'],
+  'OP09-083': ['Blackbeard Pirates'],
+  'OP09-084': ['Blackbeard Pirates'],
+  'OP09-086': ['Blackbeard Pirates'],
+  'OP09-089': ['Animal', 'Blackbeard Pirates'],
+  'OP09-090': ['Blackbeard Pirates'],
+  'OP09-093': ['Blackbeard Pirates'],
+  'OP09-095': ['Blackbeard Pirates'],
+  'ST27-001': ['Blackbeard Pirates'],
+  'ST27-002': ['Blackbeard Pirates'],
+  'ST27-003': ['Blackbeard Pirates'],
+  'ST27-004': ['Blackbeard Pirates'],
+  'ST27-005': ['Blackbeard Pirates'],
+};
+
+function normalizeSnapshotDefinition(definition: CardDefinition): CardDefinition {
+  const override = TYPE_OVERRIDES_BY_CARD_NUMBER[definition.cardNumber];
+  if (override) return { ...definition, types: override };
+  if (definition.types.some((type) => /[\/,]/.test(type))) {
+    return {
+      ...definition,
+      types: definition.types.flatMap((type) => type.split(/[\/,]+/).map((part) => part.trim()).filter(Boolean)),
+    };
+  }
+  return definition;
+}
+
 /**
  * Expands SavedDeck.cards (aggregated by `quantity`, one entry per distinct
  * card-number+printing choice) into one CardDefinition per physical card —
@@ -24,8 +52,9 @@ import type { CardDefinitionLookup } from '../../engine/rules/shared';
 function expandMainDeck(deck: SavedDeck): CardDefinition[] {
   const expanded: CardDefinition[] = [];
   for (const snapshot of deck.cards) {
+    const definition = normalizeSnapshotDefinition(snapshot.definition);
     for (let i = 0; i < snapshot.quantity; i++) {
-      expanded.push(snapshot.definition);
+      expanded.push(definition);
     }
   }
   return expanded;
@@ -34,7 +63,7 @@ function expandMainDeck(deck: SavedDeck): CardDefinition[] {
 export function savedDeckToPlayerSetupInput(deck: SavedDeck, playerId: string): PlayerSetupInput {
   return {
     playerId,
-    leader: deck.leader.definition,
+    leader: normalizeSnapshotDefinition(deck.leader.definition),
     deck: expandMainDeck(deck),
     donCard: GENERIC_DON_CARD_DEFINITION,
     donDeckSize: deck.donDeckSize,
@@ -53,9 +82,9 @@ export function savedDeckToPlayerSetupInput(deck: SavedDeck, playerId: string): 
 export function buildCardDefinitionLookup(decks: SavedDeck[]): CardDefinitionLookup {
   const lookup: CardDefinitionLookup = {};
   for (const deck of decks) {
-    lookup[deck.leader.definition.cardDefinitionId] = deck.leader.definition;
+    lookup[deck.leader.definition.cardDefinitionId] = normalizeSnapshotDefinition(deck.leader.definition);
     for (const snapshot of deck.cards) {
-      lookup[snapshot.definition.cardDefinitionId] = snapshot.definition;
+      lookup[snapshot.definition.cardDefinitionId] = normalizeSnapshotDefinition(snapshot.definition);
     }
   }
   lookup[GENERIC_DON_CARD_DEFINITION.cardDefinitionId] = GENERIC_DON_CARD_DEFINITION;

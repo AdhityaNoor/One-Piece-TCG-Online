@@ -131,6 +131,36 @@ describe('normalizeCardPrintings - multicolor leader color parsing', () => {
   });
 });
 
+describe('normalizeCardPrintings - local catalog type cleanup', () => {
+  it('splits explicit slash-delimited type lists into separate type tags', () => {
+    const teach: CardPrintingDto = {
+      ...sampleLeaderPrintings[0],
+      card_name: 'Marshall.D.Teach',
+      card_set_id: 'OP09-081',
+      card_image_id: 'OP09-081',
+      sub_types: 'The Four Emperors / Blackbeard Pirates',
+    };
+
+    const { definition } = normalizeCardPrintings([teach]);
+
+    expect(definition.types).toEqual(['The Four Emperors', 'Blackbeard Pirates']);
+  });
+
+  it('repairs known corrupted OP09 Blackbeard Pirates local catalog type rows', () => {
+    const laffitte: CardPrintingDto = {
+      ...sampleCharacterPrintings[0],
+      card_name: 'Laffitte',
+      card_set_id: 'OP09-095',
+      card_image_id: 'OP09-095',
+      sub_types: 'Suzume Muraichi',
+    };
+
+    const { definition } = normalizeCardPrintings([laffitte]);
+
+    expect(definition.types).toEqual(['Blackbeard Pirates']);
+  });
+});
+
 describe('normalizeDonCard', () => {
   const { definition } = normalizeDonCard(sampleDonCard);
 

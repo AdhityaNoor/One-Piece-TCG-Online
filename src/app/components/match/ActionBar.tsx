@@ -95,6 +95,7 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
     beginActivateMain,
     hasActivateMain,
     hasUnusedActivateMain,
+    hasCounter,
     confirmPlayCard,
     confirmCounterEvent,
     passStep,
@@ -144,7 +145,10 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
   }
 
   if (battle && battle.step === 'counter') {
-    const hasEligibleCounter = actingBoard.hand.some((card) => card.category === 'character' && !!card.counter && card.counter > 0);
+    const hasEligibleCounter = actingBoard.hand.some((card) =>
+      (card.category === 'character' && !!card.counter && card.counter > 0) ||
+      (card.category === 'event' && hasCounter(card))
+    );
     return (
       <div className="flex flex-col gap-2">
         {errorBanner}
