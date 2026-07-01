@@ -5,6 +5,9 @@
  * Augments Vite's own ImportMetaEnv rather than replacing it, so BASE_URL,
  * MODE, etc. stay typed too.
  */
+/** Stamped at build time from package.json version field (see vite.config.ts). */
+declare const __APP_VERSION__: string;
+
 interface ImportMetaEnv {
   /**
    * Absolute origin (no trailing slash) that root-relative asset paths get

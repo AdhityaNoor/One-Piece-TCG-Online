@@ -10,6 +10,7 @@
 import { BacksoundControl } from './components';
 import {
   CardLibraryScreen,
+  CreditsScreen,
   DebugToolsScreen,
   DeckBuilderScreen,
   DeckSelectScreen,
@@ -17,11 +18,16 @@ import {
   MatchScreen,
   SavedDecksScreen,
   SettingsScreen,
+  SplashScreen,
 } from './screens';
 import { useCurrentScreen } from './store/navigationStore';
+import { useAppInit } from './hooks/useAppInit';
 
 export function App() {
+  const { ready, progress } = useAppInit();
   const current = useCurrentScreen();
+
+  if (!ready) return <SplashScreen progress={progress} />;
 
   const screen = (() => {
     switch (current.screen) {
@@ -39,6 +45,8 @@ export function App() {
         return <SavedDecksScreen />;
       case 'deck-select':
         return <DeckSelectScreen />;
+      case 'credits':
+        return <CreditsScreen />;
       case 'match':
         return <MatchScreen />;
       default:

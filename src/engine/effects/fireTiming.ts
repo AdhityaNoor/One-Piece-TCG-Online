@@ -1,8 +1,8 @@
 /**
- * Firing seams the action handlers / phase steps call into. Each looks up the
- * card's compiled EffectProgram in the injected registry and runs it through
- * the generic interpreter. No-op when the card has no compiled program, so a
- * firing point is always safe to wire in.
+ * Firing helpers the action handlers / phase steps call into. Each looks up the
+ * card's curated EffectProgram in the injected registry and runs it through the
+ * generic interpreter. No-op when the card has no curated program, so a firing
+ * point is always safe to wire in.
  */
 import type { GameState } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';

@@ -27,6 +27,12 @@ export interface ChoiceConstraints {
    * choices whose eligibility is purely a zone/free-text description.
    */
   candidateInstanceIds?: string[];
+  /**
+   * Cards the player is allowed to see for this choice even if they are not
+   * selectable. Used by search/look effects: all looked cards are visible, but
+   * only filter-matching cards are eligible to add/select.
+   */
+  visibleInstanceIds?: string[];
 }
 
 /**

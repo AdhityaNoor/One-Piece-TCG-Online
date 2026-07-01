@@ -54,6 +54,31 @@ describe('filterCardLibraryEntries', () => {
     expect(filterCardLibraryEntries([...entries, marco], { typeQuery: 'beard' })).toEqual([marco]);
   });
 
+  it('filters by exact normalized type for dropdown selection', () => {
+    const teach = makeEntry({
+      name: 'Marshall.D.Teach',
+      cardNumber: 'OP09-081',
+      colors: ['black'],
+      category: 'leader',
+      types: ['The Four Emperors/Blackbeard Pirates'],
+    });
+
+    expect(filterCardLibraryEntries([...entries, teach], { type: 'Blackbeard Pirates' })).toEqual([teach]);
+    expect(filterCardLibraryEntries([...entries, teach], { type: 'blackbeard pirates' })).toEqual([teach]);
+  });
+
+  it('filters by trigger presence', () => {
+    const triggerEvent = makeEntry({
+      name: 'Gum-Gum Giant',
+      cardNumber: 'OP09-078',
+      category: 'event',
+      hasTrigger: true,
+    });
+
+    expect(filterCardLibraryEntries([...entries, triggerEvent], { trigger: 'has-trigger' })).toEqual([triggerEvent]);
+    expect(filterCardLibraryEntries([...entries, triggerEvent], { trigger: 'no-trigger' })).toEqual(entries);
+  });
+
   it('combines query and facet filters with AND', () => {
     expect(filterCardLibraryEntries(entries, { query: 'luffy', categories: ['character'] })).toEqual([luffy]);
   });

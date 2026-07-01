@@ -52,7 +52,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
   const reset = (): void => setMode({ kind: 'idle' });
 
-  /** True if the card's compiled program exposes an [Activate: Main] ability (8-1-3-2) — i.e. it offers an in-play activate option. */
+  /** True if the card's curated program exposes an [Activate: Main] ability (8-1-3-2). */
   const hasActivateMain = (card: CardView): boolean =>
     !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.trigger === 'activateMain');
 
@@ -62,7 +62,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     return !ability.oncePerTurn || !card.oncePerTurnUsed.includes('activateMain');
   };
 
-  /** True if the card's compiled program exposes a [Counter] ability (7-1-3) — i.e. it can be played from hand during the Counter Step. */
+  /** True if the card's curated program exposes a [Counter] ability (7-1-3). */
   const hasCounter = (card: CardView): boolean =>
     !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.trigger === 'counter');
 

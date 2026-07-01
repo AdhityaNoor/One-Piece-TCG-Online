@@ -48,62 +48,6 @@ interface LocalCatalogCard {
   };
 }
 
-const LOCAL_SET_DISPLAY_NAMES: Record<string, string> = {
-  EB01: 'EB01 - Memorial Collection',
-  EB02: 'EB02 - Anime 25th Collection',
-  EB03: 'EB03 - One Piece Heroines Edition',
-  EB04: "EB04 - Adventure on Kami's Island",
-  OP01: 'OP01 - Romance Dawn',
-  OP02: 'OP02 - Paramount War',
-  OP03: 'OP03 - Pillars of Strength',
-  OP04: 'OP04 - Kingdoms of Intrigue',
-  OP05: 'OP05 - Awakening of the New Era',
-  OP06: 'OP06 - Wings of the Captain',
-  OP07: 'OP07 - 500 Years in the Future',
-  OP08: 'OP08 - Two Legends',
-  OP09: 'OP09 - Emperors in the New World',
-  OP10: 'OP10 - Royal Blood',
-  OP11: 'OP11 - A Fist of Divine Speed',
-  OP12: 'OP12 - Legacy of the Master',
-  OP13: 'OP13 - Carrying on His Will',
-  OP14: "OP14 - The Azure Sea's Seven",
-  OP15: "OP15 - Adventure on Kami's Island",
-  OP16: 'OP16 - The Time of Battle',
-  P: 'Promo Cards',
-  PRB01: 'PRB01 - One Piece Card The Best',
-  PRB02: 'PRB02 - One Piece Card The Best Vol.2',
-  ST01: 'ST01 - Straw Hat Crew',
-  ST02: 'ST02 - Worst Generation',
-  ST03: 'ST03 - The Seven Warlords of the Sea',
-  ST04: 'ST04 - Animal Kingdom Pirates',
-  ST05: 'ST05 - One Piece Film Edition',
-  ST06: 'ST06 - Absolute Justice',
-  ST07: 'ST07 - Big Mom Pirates',
-  ST08: 'ST08 - Monkey D. Luffy',
-  ST09: 'ST09 - Yamato',
-  ST10: 'ST10 - The Three Captains',
-  ST11: 'ST11 - Uta',
-  ST12: 'ST12 - Zoro and Sanji',
-  ST13: 'ST13 - The Three Brothers',
-  ST14: 'ST14 - 3D2Y',
-  ST15: 'ST15 - Red Edward.Newgate',
-  ST16: 'ST16 - Green Uta',
-  ST17: 'ST17 - Blue Donquixote Doflamingo',
-  ST18: 'ST18 - Purple Monkey.D.Luffy',
-  ST19: 'ST19 - Black Smoker',
-  ST20: 'ST20 - Yellow Charlotte Katakuri',
-  ST21: 'ST21 - Gear5',
-  ST22: 'ST22 - Ace & Newgate',
-  ST23: 'ST23 - Red Shanks',
-  ST24: 'ST24 - Green Jewelry Bonney',
-  ST25: 'ST25 - Blue Buggy',
-  ST26: 'ST26 - Purple/Black Monkey.D.Luffy',
-  ST27: 'ST27 - Black Marshall.D.Teach',
-  ST28: 'ST28 - Green/Yellow Yamato',
-  ST29: 'ST29 - Egghead',
-  ST30: 'ST30 - Luffy & Ace',
-};
-
 async function getJson(url: string, fetchImpl: FetchLike): Promise<CardApiResult<unknown>> {
   let response: { ok: boolean; status: number; json: () => Promise<unknown> };
   try {
@@ -170,7 +114,7 @@ function localCardToPrintingDto(card: LocalCatalogCard): CardPrintingDto {
     inventory_price: null,
     market_price: null,
     card_name: card.en.name,
-    set_name: LOCAL_SET_DISPLAY_NAMES[card.setCode] ?? card.setName,
+    set_name: card.setName,
     card_text: card.en.effectText,
     set_id: card.setCode,
     rarity: card.rarity,
@@ -224,7 +168,7 @@ export async function fetchAllSets(fetchImpl: FetchLike, url = cardCatalogPaths.
     const sets = rows
       .map((row): SetSummaryDto | null => {
         if (isSetSummaryDtoShape(row)) return row;
-        if (isLocalCatalogSetShape(row)) return { set_id: row.code, set_name: LOCAL_SET_DISPLAY_NAMES[row.code] ?? row.name };
+        if (isLocalCatalogSetShape(row)) return { set_id: row.code, set_name: row.name };
         return null;
       })
       .filter((row): row is SetSummaryDto => row !== null);

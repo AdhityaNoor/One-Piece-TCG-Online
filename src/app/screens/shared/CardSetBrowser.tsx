@@ -5,7 +5,7 @@ import type { CardCategory, Color } from '../../../engine/state/card';
 import { Button } from '../../components';
 import { ALL_CARD_COLORS } from '../../lib/cardColors';
 import { formatCardApiError } from '../../lib/formatCardApiError';
-import { useCardLibraryStore, useFilteredCardLibraryCount, useVisibleCardLibraryEntries } from '../../store/cardLibraryStore';
+import { useCardLibraryStore, useFilteredCardLibraryCount, useKnownCardLibraryTypes, useVisibleCardLibraryEntries } from '../../store/cardLibraryStore';
 import { CARD_COLOR_TOKENS } from '../../lib/cardColors';
 
 export interface CardSetBrowserProps {
@@ -48,6 +48,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
   const loadSets = useCardLibraryStore((state) => state.loadSets);
   const selectSet = useCardLibraryStore((state) => state.selectSet);
   const setFilter = useCardLibraryStore((state) => state.setFilter);
+  const knownTypes = useKnownCardLibraryTypes();
 
   useEffect(() => {
     loadSets();
@@ -58,7 +59,8 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
   const visibleColors = colorFilterIsLocked ? lockedColors! : ALL_CARD_COLORS;
   const unlockedColorFilterIsActive = !colorFilterIsLocked && (filter.colors?.length ?? 0) > 0;
   const unlockedCategoryFilterIsActive = !categoryFilterIsLocked && (filter.categories?.length ?? 0) > 0;
-  const hasActiveFilter = Boolean(filter.query) || Boolean(filter.typeQuery) || unlockedColorFilterIsActive || unlockedCategoryFilterIsActive;
+  const triggerFilterIsActive = Boolean(filter.trigger && filter.trigger !== 'any');
+  const hasActiveFilter = Boolean(filter.query) || Boolean(filter.type) || Boolean(filter.typeQuery) || triggerFilterIsActive || unlockedColorFilterIsActive || unlockedCategoryFilterIsActive;
 
   function toggleColor(color: Color) {
     if (colorFilterIsLocked) return;
@@ -122,13 +124,35 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
 
       <div>
         <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Type / Crew</label>
-        <input
-          type="search"
-          value={filter.typeQuery ?? ''}
-          onChange={(event) => setFilter({ ...filter, typeQuery: event.target.value })}
-          placeholder="Whitebeard Pirates..."
+        <select
+          value={filter.type ?? ''}
+          onChange={(event) => setFilter({ ...filter, type: event.target.value || undefined, typeQuery: undefined })}
           className="op-input mt-1.5 w-full px-3 py-2 text-sm placeholder:text-slate-300/35"
-        />
+        >
+          <option value="">All types</option>
+          {knownTypes.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
+        {knownTypes.length === 0 && <p className="mt-1.5 text-xs leading-5 text-slate-200/50">Load a set to populate known types.</p>}
+      </div>
+
+      <div>
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Trigger</label>
+        <select
+          value={filter.trigger ?? 'any'}
+          onChange={(event) => {
+            const value = event.target.value as 'any' | 'has-trigger' | 'no-trigger';
+            setFilter({ ...filter, trigger: value === 'any' ? undefined : value });
+          }}
+          className="op-input mt-1.5 w-full px-3 py-2 text-sm"
+        >
+          <option value="any">All cards</option>
+          <option value="has-trigger">Has Trigger</option>
+          <option value="no-trigger">No Trigger</option>
+        </select>
       </div>
 
       <div>

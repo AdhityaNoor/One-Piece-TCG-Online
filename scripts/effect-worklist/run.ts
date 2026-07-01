@@ -3,19 +3,18 @@
  *
  *   npm run worklist
  *
- * Reads the local card catalog (public/cards/sets/*.json), runs each card's
- * English effect text through the inert effect parser, and writes a triage CSV
- * of every card that still needs a hand-authored effect template — tagged with
- * the recognized verb "ops" (KO / search / rest / trash / …), timings, and
- * optional/conditional flags so the backlog can be worked pattern-by-pattern.
+ * Reads the local card catalog, skips cards that already have curated runtime
+ * EffectProgram IR, then runs remaining raw English effect text through the
+ * inert parser. The parser only describes text for triage; it is not runtime
+ * behavior.
  *
- * Output: effect-review-worklist.csv (repo root). Nothing here is executed as
- * game logic; the parser only describes the text.
+ * Output: effect-review-worklist.csv (repo root).
  */
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseEffect } from '../../src/cards/effectParser';
+import { CURATED_EFFECT_PROGRAMS } from '../../src/cards/effectTemplates';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SETS_DIR = resolve(ROOT, 'public', 'cards', 'sets');
@@ -33,9 +32,13 @@ function csv(value: unknown): string {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+function effectActionCount(ability: { actions: { op: string }[] }): number {
+  return ability.actions.filter((a) => a.op !== 'grantKeyword').length;
+}
+
 function main(): void {
   if (!existsSync(SETS_DIR)) {
-    console.error(`[worklist] no catalog at ${SETS_DIR} — run \`npm run build:assets\` first.`);
+    console.error(`[worklist] no catalog at ${SETS_DIR} - run \`npm run build:assets\` first.`);
     process.exitCode = 1;
     return;
   }
@@ -46,24 +49,36 @@ function main(): void {
   }
   cards.sort((a, b) => a.cardNumber.localeCompare(b.cardNumber));
 
-  const rows: string[] = ['set,cardNumber,name,category,timings,detectedOps,optional,conditional,effectText'];
+  const rows: string[] = ['set,cardNumber,name,category,timings,detectedOps,optional,conditional,parserReview,effectText'];
   const opTally = new Map<string, number>();
-  let total = 0;
+  let totalWithText = 0;
+  let curated = 0;
+  let keywordOnly = 0;
   let review = 0;
 
   for (const c of cards) {
     const text = c.en?.effectText ?? '';
     if (!text.trim()) continue;
-    total++;
-    const parsed = parseEffect(c.cardNumber, text);
-    if (!parsed.needsReview) continue;
-    review++;
+    totalWithText++;
 
-    const timings = [...new Set(parsed.abilities.map((a) => a.timing))].join('|');
+    if (CURATED_EFFECT_PROGRAMS[c.cardNumber]) {
+      curated++;
+      continue;
+    }
+
+    const parsed = parseEffect(c.cardNumber, text);
+    const effectAbilities = parsed.abilities.filter((a) => effectActionCount(a) > 0);
+    if (effectAbilities.length === 0) {
+      keywordOnly++;
+      continue;
+    }
+
+    review++;
+    const timings = [...new Set(effectAbilities.map((a) => a.timing))].join('|');
     const ops = new Set<string>();
     let optional = false;
     let conditional = false;
-    for (const ability of parsed.abilities) {
+    for (const ability of effectAbilities) {
       for (const a of ability.actions) {
         if (a.op !== 'unrecognized') {
           ops.add(a.op);
@@ -74,15 +89,16 @@ function main(): void {
       }
     }
     rows.push(
-      [c.setCode, c.cardNumber, c.en.name, c.category, timings, [...ops].join('+') || '(none)', optional ? 'yes' : '', conditional ? 'yes' : '', text]
+      [c.setCode, c.cardNumber, c.en.name, c.category, timings, [...ops].join('+') || '(none)', optional ? 'yes' : '', conditional ? 'yes' : '', parsed.needsReview ? 'yes' : '', text]
         .map(csv)
         .join(','),
     );
   }
 
-  writeFileSync(OUT_CSV, rows.join('\n'), 'utf8');
-  console.log(`[worklist] ${review}/${total} cards need a template -> effect-review-worklist.csv`);
-  console.log('[worklist] detected-op coverage (build templates in this rough priority):');
+  writeFileSync(OUT_CSV, rows.join('\n') + '\n', 'utf8');
+  console.log(`[worklist] ${review} cards need reviewed templates -> effect-review-worklist.csv`);
+  console.log(`[worklist] skipped ${curated} curated cards and ${keywordOnly} keyword-only cards (${totalWithText} cards with text total).`);
+  console.log('[worklist] detected parser hints (rough prioritization only):');
   for (const [op, n] of [...opTally.entries()].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${String(n).padStart(4)}  ${op}`);
   }

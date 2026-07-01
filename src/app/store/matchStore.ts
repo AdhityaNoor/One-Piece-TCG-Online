@@ -19,20 +19,20 @@ import type { GameAction } from '../../engine/actions';
 import { validateAction, executeAction } from '../../engine/actions';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import type { EffectTemplateRegistry } from '../../engine/effects';
-import { compileRegistry } from '../../cards/effectTemplates';
+import { buildCuratedEffectRegistry } from '../../cards/effectTemplates';
 import { hashSeed } from '../../engine/rng';
 import { createPreGameState } from '../../engine/setup';
 import type { GameState } from '../../engine/state';
 import { buildCardDefinitionLookup, buildCardImageLookup, savedDeckToPlayerSetupInput } from '../lib/savedDeckToSetupInput';
 
 /**
- * Compile the match's card pool into the engine's effect registry. The app
- * (never the engine) owns this injection: card text -> EffectProgram IR, keyed
- * by cardNumber (== cardDefinitionId), so [On Play]/[Activate: Main]/etc. fire
- * during play. Cards the compiler can't lower are simply absent (no effect).
+ * Build the match's card-effect registry from curated EffectProgram data.
+ * Raw CardDefinition.text is never compiled or executed at runtime; it is only
+ * display/reference text. A card gets behavior only when its cardNumber has an
+ * explicit reviewed program in /src/cards/effectTemplates/curatedPrograms.ts.
  */
 function buildRegistryFromDefs(defs: CardDefinitionLookup): EffectTemplateRegistry {
-  return compileRegistry(Object.values(defs).map((def) => ({ cardNumber: def.cardNumber, effectText: def.text })));
+  return buildCuratedEffectRegistry(defs);
 }
 
 /** Fixed, stable player ids for the local hotseat match — both sides are the same human, alternating. */

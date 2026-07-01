@@ -2,11 +2,11 @@
  * The engine-owned execution surface for card effects.
  *
  * Boundary (blueprint Section 16): /src/engine never imports /src/cards. The
- * generic interpreter (interpreter.ts) and these primitives live here; the
- * front-end compiler that turns card text into EffectProgram IR lives in
- * /src/cards/effectTemplates and is injected as `EffectTemplateRegistry`.
+ * generic interpreter (interpreter.ts) and these primitives live here. Curated
+ * EffectProgram data from /src/cards/effectTemplates is injected as
+ * `EffectTemplateRegistry`.
  *
- * `EffectContext` is the interpreter's instruction set — one method per IR op.
+ * `EffectContext` is the interpreter's instruction set: one method per IR op.
  * Card behavior is DATA (EffectProgram, see effectIr.ts), never code; nothing
  * here is per-card.
  */
@@ -88,8 +88,8 @@ export interface EffectContext {
 }
 
 /**
- * Injected map cardNumber -> compiled EffectProgram. Absent entry = the card
- * has no (yet-compilable) effect. The dispatcher passes this to the engine; the
+ * Injected map cardNumber -> curated EffectProgram. Absent entry = the card
+ * has no reviewed runtime effect. The dispatcher passes this to the engine; the
  * engine never reaches into /src/cards.
  */
 export type EffectTemplateRegistry = Record<string, EffectProgram>;

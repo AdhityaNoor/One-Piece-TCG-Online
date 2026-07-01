@@ -146,7 +146,7 @@ describe('normalizeCardPrintings - local catalog type cleanup', () => {
     expect(definition.types).toEqual(['The Four Emperors', 'Blackbeard Pirates']);
   });
 
-  it('repairs known corrupted OP09 Blackbeard Pirates local catalog type rows', () => {
+  it('does not repair provider-specific bad type rows by card number', () => {
     const laffitte: CardPrintingDto = {
       ...sampleCharacterPrintings[0],
       card_name: 'Laffitte',
@@ -157,7 +157,7 @@ describe('normalizeCardPrintings - local catalog type cleanup', () => {
 
     const { definition } = normalizeCardPrintings([laffitte]);
 
-    expect(definition.types).toEqual(['Blackbeard Pirates']);
+    expect(definition.types).toEqual(['Suzume Muraichi']);
   });
 });
 

@@ -4,9 +4,9 @@
  * The defending player plays a Counter Event from hand by paying its DON!! cost,
  * the card moves hand -> trash (Events resolve then trash, 8-1), and its
  * [Counter] ability fires through the generic interpreter (timing 'counter').
- * The boost amount is NOT read from text here — it comes from the card's
- * compiled EffectProgram in the injected registry, keeping the engine free of
- * card text (project rule #6/#7). A card with no compiled [Counter] ability is
+ * The boost amount is NOT read from text here; it comes from the card's
+ * curated EffectProgram in the injected registry, keeping the engine free of
+ * card text (project rule #6/#7). A card with no curated [Counter] ability is
  * rejected rather than played as a no-op.
  *
  * No fresh-instance minting: an Event never enters the Character/Stage area, so

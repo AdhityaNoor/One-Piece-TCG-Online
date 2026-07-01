@@ -763,7 +763,7 @@ function PlayerSideRow({
   boardFocused: boolean;
 }) {
   return (
-    <div className="relative min-h-0 flex-1 overflow-hidden">
+    <div className="relative min-h-0 flex-1 overflow-visible">
       <PlayerBoardPanel
         board={board}
         isOwn={isOwn}

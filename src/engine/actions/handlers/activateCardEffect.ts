@@ -2,7 +2,7 @@
  * ACTIVATE_CARD_EFFECT (8-1-3-2 / 8-1-3-2-1). The turn player activates a field
  * card's [Activate: Main] ability during their Main Phase.
  *
- * The ability is a compiled EffectProgram run through the generic interpreter
+ * The ability is a curated EffectProgram run through the generic interpreter
  * (engine/effects). Its ops run sequentially, and a `chooseTargets` op suspends
  * via a PendingChoice that RESOLVE_PENDING_CHOICE resumes — so an activated
  * effect's later ops happen after the player's choice, in order.

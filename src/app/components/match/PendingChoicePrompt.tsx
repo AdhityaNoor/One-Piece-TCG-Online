@@ -408,7 +408,8 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
   // CardView for each regardless of zone. Selection is bounded by [min, max].
   if (choice.sourceEffectId === 'ir') {
     const candidateIds = choice.constraints.candidateInstanceIds ?? [];
-    const candidates = candidateIds.map((id) => buildCardView(defs, state, images, id));
+    const visibleIds = choice.constraints.visibleInstanceIds ?? candidateIds;
+    const candidates = visibleIds.map((id) => buildCardView(defs, state, images, id));
     const { min, max } = choice.constraints;
     const count = selectedIrIds.length;
     const canConfirm = count >= min && count <= max;

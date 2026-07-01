@@ -65,7 +65,7 @@ export interface PlayerBoardPanelProps {
    */
   reverseRows: boolean;
   mode: BoardSelectionMode;
-  /** True for own in-play cards whose compiled program exposes an [Activate: Main] ability — used to mark and select them. */
+  /** True for own in-play cards whose curated program exposes an [Activate: Main] ability. */
   canActivateCard?: (card: CardView) => boolean;
   /** Passed down to PileStack — hides ghost layers while board is active. */
   boardFocused?: boolean;
@@ -209,6 +209,7 @@ function MatCell({
   variant = 'light',
   labelClassName = '',
   style,
+  allowOverflow = false,
 }: {
   label: string;
   children?: ReactNode;
@@ -218,6 +219,8 @@ function MatCell({
   labelClassName?: string;
   /** Explicit sizing (e.g. a fixed cqh() width) for cells that must match another cell's box exactly rather than shrink-to-fit their content — see deckCell. */
   style?: CSSProperties;
+  /** When true, removes overflow-hidden so children (e.g. the stacked deck ghost layers) can render outside the cell boundary without being clipped. */
+  allowOverflow?: boolean;
 }) {
   const isInvisible = variant === 'invisible';
 
@@ -226,7 +229,7 @@ function MatCell({
       style={style}
       className={[
         'relative flex min-h-0 min-w-0 items-center justify-center rounded-lg p-2',
-        isInvisible ? 'border-0 bg-transparent' : 'overflow-hidden border',
+        isInvisible ? 'border-0 bg-transparent' : (allowOverflow ? 'border' : 'overflow-hidden border'),
         variant === 'dark' ? 'border-white/10 bg-white/12' : variant === 'light' ? 'border-white/15 bg-white/[0.05]' : '',
         className,
       ].join(' ')}
@@ -284,8 +287,9 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   // Deck stays visually stacked above Stage/Trash rather than landing on a
   // disconnected side.
   const deckCell = (
-    <MatCell label="Deck" className="flex-shrink-0" labelClassName="sr-only" style={{ width: BOARD_ZONE_TRACK }}>
+    <MatCell label="Deck" className="flex-shrink-0" labelClassName="sr-only" style={{ width: BOARD_ZONE_TRACK }} allowOverflow>
       <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" reverseRows={reverseRows} boardFocused={boardFocused} />
+
     </MatCell>
   );
 
@@ -312,7 +316,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   );
 
   const characterRow = (
-    <div className="flex h-full min-h-0 items-stretch gap-2 overflow-hidden">
+    <div className="flex h-full min-h-0 items-stretch gap-2 overflow-visible">
       {reverseRows ? (
         <>
           {deckCell}
@@ -465,7 +469,9 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
             <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only">
               <LifeStack count={board.lifeAreaCount} donDeckCount={board.donDeckCount} />
             </MatCell>
-            <div className="min-h-0">{characterRow}</div>
+            {/* relative z-10: characterRow must paint above boardRow (which comes later in DOM
+                and would otherwise cover the deck ghost layers that extend downward into row 1) */}
+            <div className="relative z-10 min-h-0">{characterRow}</div>
             {boardRow}
           </>
         )}

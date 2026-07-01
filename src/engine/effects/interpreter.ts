@@ -1,7 +1,7 @@
 /**
  * The generic effect interpreter (VM).
  *
- * ONE function set executes every card's compiled EffectProgram (effectIr.ts)
+ * ONE function set executes every card's curated EffectProgram (effectIr.ts)
  * against game state, via the EffectContext instruction set. There is no
  * per-card code anywhere. A `chooseTargets` op suspends the program by emitting
  * a PendingChoice that carries a serializable resume point; RESOLVE_PENDING_-
@@ -210,7 +210,7 @@ function runOps(
         playerId: ctx.controllerId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
-        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible },
+        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: looked },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
         // Stash the full looked-at set on the resume point so resolveSearch can

@@ -1,11 +1,10 @@
 /**
- * Effect IR — the compile TARGET for card effects.
+ * Effect IR: the curated runtime representation for card effects.
  *
- * A card's behavior is DATA, not code: the front-end compiler
- * (/src/cards/effectTemplates/compile.ts) turns parsed effect text into an
- * `EffectProgram`, and ONE generic interpreter (interpreter.ts) executes it for
- * every card. There is no per-card code — adding a card means producing IR,
- * never writing a resolver. Everything here is JSON-serializable.
+ * A card's behavior is data, not code: reviewed templates in /src/cards build
+ * EffectProgram objects, and one engine interpreter executes them for every
+ * card. Raw API/scraped text is reference text only, never executable logic.
+ * Everything here is JSON-serializable.
  *
  * The op vocabulary is the interpreter's instruction set; it maps 1:1 onto the
  * EffectContext primitives. Grow the vocabulary (new ops) rather than adding
@@ -81,8 +80,8 @@ export type IrTrigger = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'activateMa
 /**
  * An activation cost that must be PAID before an activated ability resolves
  * (8-3-1-5). Pure data; the ACTIVATE_CARD_EFFECT handler pays it. Only fully
- * mechanical costs are modeled — costs the compiler can't represent leave the
- * ability uncompiled rather than letting it resolve for free.
+ * mechanical costs are modeled. Ambiguous costs stay out of curated runtime
+ * templates until reviewed rather than resolving for free.
  */
 export type AbilityCost =
   | { kind: 'donMinus'; count: number } // return N DON!! from the field to the DON!! deck

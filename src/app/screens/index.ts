@@ -1,4 +1,6 @@
 export * from './MainMenuScreen';
+export * from './SplashScreen';
+export * from './CreditsScreen';
 export * from './SettingsScreen';
 export * from './DebugToolsScreen';
 export * from './CardLibraryScreen';

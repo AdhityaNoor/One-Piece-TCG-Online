@@ -7,7 +7,8 @@ import type { ReactNode } from 'react';
 export interface GameCanvasScreenProps {
   kicker?: string;
   status?: string;
-  title: ReactNode;
+  /** Omit to collapse the title row and let children fill the full content area. */
+  title?: ReactNode;
   onBack?: () => void;
   topRight?: ReactNode;
   footer?: ReactNode;
@@ -41,7 +42,7 @@ export function CanvasMenuButton({ label, onClick, disabled, badge, prominence =
         'group relative w-full select-none overflow-visible text-center font-heading font-black uppercase text-white transition-all duration-200',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-[#061024]',
         size === 'sm' ? 'h-11 max-w-[15rem] px-5 text-xs tracking-[0.1em]' : 'h-14 max-w-[21rem] px-7 text-base tracking-[0.12em]',
-        disabled ? 'cursor-not-allowed opacity-40 saturate-50' : 'hover:-translate-y-1 active:translate-y-0.5',
+        disabled ? 'cursor-not-allowed opacity-40 saturate-50' : 'hover:-translate-y-1 hover:scale-[1.06] active:translate-y-0.5 active:scale-100',
         className ?? '',
       ]
         .filter(Boolean)
@@ -99,12 +100,14 @@ export function GameCanvasScreen({ kicker, status, title, onBack, topRight, foot
 
         <div className="min-h-0 py-4 sm:py-5">
           <div className="mx-auto flex h-full w-full max-w-[72rem] flex-col gap-4">
-            <div className="relative z-20 text-center">
-              <div className="absolute inset-x-8 top-1/2 h-10 -translate-y-1/2 bg-brand/45 blur-3xl" />
-              <h1 className="relative font-display text-4xl font-black uppercase leading-[0.9] tracking-[0.04em] text-white drop-shadow-[0_6px_0_rgba(0,0,0,0.55)] sm:text-6xl md:text-7xl">
-                {title}
-              </h1>
-            </div>
+            {title && (
+              <div className="relative z-20 text-center">
+                <div className="absolute inset-x-8 top-1/2 h-10 -translate-y-1/2 bg-brand/45 blur-3xl" />
+                <h1 className="relative font-display text-4xl font-black uppercase leading-[0.9] tracking-[0.04em] text-white drop-shadow-[0_6px_0_rgba(0,0,0,0.55)] sm:text-6xl md:text-7xl">
+                  {title}
+                </h1>
+              </div>
+            )}
             <div className="relative z-10 min-h-0 flex-1">{children}</div>
           </div>
         </div>

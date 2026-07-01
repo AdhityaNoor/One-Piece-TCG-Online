@@ -19,6 +19,7 @@ export type NavigationTarget =
   | { screen: 'deck-builder'; deckIdToEdit?: string }
   | { screen: 'saved-decks' }
   | { screen: 'deck-select' }
+  | { screen: 'credits' }
   | { screen: 'match'; deckIdA: string; deckIdB: string };
 
 interface NavigationState {

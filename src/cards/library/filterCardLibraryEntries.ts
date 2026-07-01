@@ -18,6 +18,17 @@ export interface CardLibraryFilter {
   categories?: CardCategory[];
   /** Case-insensitive substring match against CardDefinition.types. Empty/omitted = no type filter. */
   typeQuery?: string;
+  /** Exact case-insensitive match against a normalized CardDefinition.types entry. Empty/omitted = no type filter. */
+  type?: string;
+  /** Trigger presence facet. "any"/omitted = no trigger filter. */
+  trigger?: 'any' | 'has-trigger' | 'no-trigger';
+}
+
+export function normalizeTypeTags(types: string[]): string[] {
+  return types
+    .flatMap((type) => type.split(/[\/,]+/))
+    .map((type) => type.trim())
+    .filter(Boolean);
 }
 
 export function filterCardLibraryEntries(entries: CardLibraryEntry[], filter: CardLibraryFilter): CardLibraryEntry[] {
@@ -25,8 +36,11 @@ export function filterCardLibraryEntries(entries: CardLibraryEntry[], filter: Ca
   const colors = filter.colors && filter.colors.length > 0 ? filter.colors : undefined;
   const categories = filter.categories && filter.categories.length > 0 ? filter.categories : undefined;
   const typeQuery = filter.typeQuery?.trim().toLowerCase();
+  const type = filter.type?.trim().toLowerCase();
+  const trigger = filter.trigger && filter.trigger !== 'any' ? filter.trigger : undefined;
 
   return entries.filter((entry) => {
+    const normalizedTypes = normalizeTypeTags(entry.definition.types);
     if (query) {
       const matchesName = entry.definition.name.toLowerCase().includes(query);
       const matchesNumber = entry.cardNumber.toLowerCase().includes(query);
@@ -34,7 +48,10 @@ export function filterCardLibraryEntries(entries: CardLibraryEntry[], filter: Ca
     }
     if (colors && !entry.definition.colors.some((c) => colors.includes(c))) return false;
     if (categories && !categories.includes(entry.definition.category)) return false;
-    if (typeQuery && !entry.definition.types.some((type) => type.toLowerCase().includes(typeQuery))) return false;
+    if (typeQuery && !normalizedTypes.some((cardType) => cardType.toLowerCase().includes(typeQuery))) return false;
+    if (type && !normalizedTypes.some((cardType) => cardType.toLowerCase() === type)) return false;
+    if (trigger === 'has-trigger' && !entry.definition.hasTrigger) return false;
+    if (trigger === 'no-trigger' && entry.definition.hasTrigger) return false;
     return true;
   });
 }

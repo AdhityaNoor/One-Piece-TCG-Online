@@ -13,25 +13,7 @@ import type { CardDefinition } from '../../engine/state/card';
 import type { PlayerSetupInput } from '../../engine/setup';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 
-const TYPE_OVERRIDES_BY_CARD_NUMBER: Record<string, string[]> = {
-  'OP09-082': ['Blackbeard Pirates'],
-  'OP09-083': ['Blackbeard Pirates'],
-  'OP09-084': ['Blackbeard Pirates'],
-  'OP09-086': ['Blackbeard Pirates'],
-  'OP09-089': ['Animal', 'Blackbeard Pirates'],
-  'OP09-090': ['Blackbeard Pirates'],
-  'OP09-093': ['Blackbeard Pirates'],
-  'OP09-095': ['Blackbeard Pirates'],
-  'ST27-001': ['Blackbeard Pirates'],
-  'ST27-002': ['Blackbeard Pirates'],
-  'ST27-003': ['Blackbeard Pirates'],
-  'ST27-004': ['Blackbeard Pirates'],
-  'ST27-005': ['Blackbeard Pirates'],
-};
-
 function normalizeSnapshotDefinition(definition: CardDefinition): CardDefinition {
-  const override = TYPE_OVERRIDES_BY_CARD_NUMBER[definition.cardNumber];
-  if (override) return { ...definition, types: override };
   if (definition.types.some((type) => /[\/,]/.test(type))) {
     return {
       ...definition,

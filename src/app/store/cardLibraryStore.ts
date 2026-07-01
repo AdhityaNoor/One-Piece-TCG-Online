@@ -11,6 +11,7 @@ import {
   filterCardLibraryEntries,
   groupPrintingsByCardNumber,
   groupPrintingsIntoLibraryEntries,
+  normalizeTypeTags,
   type CardLibraryEntry,
   type CardLibraryFilter,
 } from '../../cards/library';
@@ -131,5 +132,19 @@ export function useFilteredCardLibraryCount(): number {
   return useCardLibraryStore((state) => {
     const all = state.entriesBySetId[state.selectedSetId] ?? [];
     return filterCardLibraryEntries(all, state.filter).length;
+  });
+}
+
+export function useKnownCardLibraryTypes(): string[] {
+  return useCardLibraryStore((state) => {
+    const all = state.entriesBySetId[state.selectedSetId] ?? [];
+    const byLower = new Map<string, string>();
+    for (const entry of all) {
+      for (const type of normalizeTypeTags(entry.definition.types)) {
+        const key = type.toLowerCase();
+        if (!byLower.has(key)) byLower.set(key, type);
+      }
+    }
+    return [...byLower.values()].sort((a, b) => a.localeCompare(b));
   });
 }
