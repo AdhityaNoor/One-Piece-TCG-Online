@@ -38,6 +38,11 @@ async function placeImage(setCode, cardNumber, lang) {
 }
 
 function toLocalCard(scraped, enImage, jpImage) {
+  const effectText = scraped.en?.effectText ?? '';
+  const definition = scraped.definition
+    ? { ...scraped.definition, hasBanish: effectText.includes('[Banish]') }
+    : scraped.definition;
+
   return {
     cardNumber: scraped.cardNumber,
     setCode: scraped.setCode,
@@ -54,7 +59,7 @@ function toLocalCard(scraped, enImage, jpImage) {
     legality: scraped.legality,
     en: {
       name: scraped.en?.name ?? scraped.definition?.name ?? scraped.cardNumber,
-      effectText: scraped.en?.effectText ?? '',
+      effectText,
       types: scraped.en?.types ?? [],
       image: enImage,
     },
@@ -64,7 +69,7 @@ function toLocalCard(scraped, enImage, jpImage) {
       types: scraped.jp?.types ?? [],
       image: jpImage,
     },
-    definition: scraped.definition,
+    definition,
   };
 }
 

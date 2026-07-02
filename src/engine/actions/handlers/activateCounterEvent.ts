@@ -20,8 +20,7 @@ import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/def
 import { computeCurrentCost } from '../../rules/shared/power';
 import { getOpponentId } from '../../rules/shared/players';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { fireCounter, type EffectTemplateRegistry } from '../../effects';
-import { canPayAbilityCost, payAbilityCost } from './abilityCost';
+import { fireCounter, canPayAbilityCost, payAbilityCost, type EffectTemplateRegistry } from '../../effects';
 
 export function validateActivateCounterEvent(
   state: GameState,

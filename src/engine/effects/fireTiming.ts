@@ -47,7 +47,7 @@ export function fireActivate(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTimings(program, ['activateMain'], state, instanceId, defs, actionId, registry);
+  return runTimings(program, ['activateMain'], state, instanceId, defs, actionId, registry, false);
 }
 
 /**
@@ -101,7 +101,7 @@ export function fireCounter(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTimings(program, ['counter'], state, instanceId, defs, actionId, registry);
+  return runTimings(program, ['counter'], state, instanceId, defs, actionId, registry, false);
 }
 
 /**

@@ -6,7 +6,6 @@
  *     ST05-001 (leader) — DON!! −3 + modifyPower all FILM Characters: DON!! cost (TODO).
  *     ST05-004 — [Blocker] [On Block] DON!! −1 rest opponent ≤5: DON!! cost (TODO).
  *     ST05-005 — [Activate: Main] rest+trash cost + conditional DON!! ramp: complex (TODO).
- *     ST05-006 — [When Attacking] DON!! −2 draw 2: DON!! cost (TODO).
  *     ST05-008 — continuous immunity (cannot be K.O.'d in battle if ≥8 DON!!): (TODO).
  *     ST05-009 — [Trigger] Play this card: triggerPlaySelf (TODO).
  *     ST05-010 — battle-attribute condition + DON!! −1 power boost: (TODO).
@@ -19,6 +18,9 @@ import type { CardEffectAssignment } from '../assembler';
 export const ST05_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST05-002 — [On Play] Add 1 DON!! from DON!! deck (rested).
   { cardNumber: 'ST05-002', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+
+  // ST05-006 - [When Attacking] DON!! -2: draw 2.
+  { cardNumber: 'ST05-006', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'draw', amount: 2 }] } },
 
   // ST05-014 — [On Play] Look at 5; add up to 1 FILM type (excl. same name).
   {

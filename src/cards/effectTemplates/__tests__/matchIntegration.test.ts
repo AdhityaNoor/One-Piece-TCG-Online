@@ -1,11 +1,69 @@
 import { describe, expect, it } from 'vitest';
 import { executeAction, validateAction } from '../../../engine/actions';
-import { makeCharacterDef, makeEventDef, buildBaseRig, putCharacterInPlay, putDeckCards, putInHand, nextTestId } from '../../../engine/rules/shared/__tests__/testRig';
+import { makeCharacterDef, makeEventDef, buildBaseRig, putCharacterInPlay, putDeckCards, putDon, putInHand, nextTestId } from '../../../engine/rules/shared/__tests__/testRig';
 import { computeCurrentCost } from '../../../engine/rules/shared';
 import { buildRegistryFromAssignments } from '../assembler';
 import { buildCuratedEffectRegistry } from '../curatedPrograms';
 
 describe('curated effect template integration with match engine dispatch', () => {
+  it('pauses automatic DON!! -N triggered abilities for selected DON, pays it, then resolves ops', () => {
+    const attacker = makeCharacterDef({
+      cardDefinitionId: 'TEST-WHEN-ATTACKING-DON-MINUS',
+      cardNumber: 'TEST-WHEN-ATTACKING-DON-MINUS',
+      name: 'Costed Attacker',
+      category: 'character',
+      baseCost: 0,
+      basePower: 5000,
+    });
+    const drawCard = makeCharacterDef({
+      cardDefinitionId: 'TEST-COST-DRAW',
+      cardNumber: 'TEST-COST-DRAW',
+      name: 'Cost Draw',
+      category: 'character',
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let attackerId: string;
+    let drawId: string;
+    ({ rig, instanceId: attackerId } = putCharacterInPlay(rig, 'p1', attacker, { summoningSick: false }));
+    ({ rig, deckIds: [drawId] } = putDeckCards(rig, 'p1', drawCard, 1));
+    const { rig: withDon, donIds } = putDon(rig, 'p1', 1, { rested: true });
+    rig = withDon;
+
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: attacker.cardDefinitionId,
+        templateId: 'ability',
+        params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }] },
+      },
+    ]);
+
+    const attackResult = executeAction(
+      rig.state,
+      { type: 'DECLARE_ATTACK', actionId: nextTestId('action'), playerId: 'p1', attackerInstanceId: attackerId, targetInstanceId: rig.state.players.p2.leaderInstanceId },
+      rig.defs,
+      registry,
+    );
+    const costChoice = attackResult.state.pendingChoices[0];
+    expect(costChoice).toMatchObject({
+      sourceEffectId: 'ir',
+      sourceInstanceId: attackerId,
+      constraints: { min: 1, max: 1, candidateInstanceIds: [donIds[0]] },
+    });
+
+    const resolved = executeAction(
+      attackResult.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: costChoice.id, response: [donIds[0]] },
+      rig.defs,
+      registry,
+    );
+
+    expect(resolved.state.pendingChoices).toEqual([]);
+    expect(resolved.state.players.p1.costArea.cardIds).not.toContain(donIds[0]);
+    expect(resolved.state.players.p1.donDeck.cardIds).toContain(donIds[0]);
+    expect(resolved.state.players.p1.hand.cardIds).toContain(drawId);
+  });
+
   it('injects curated composed templates into play, attack, and pending-choice resume', () => {
     const spandam = makeCharacterDef({
       cardDefinitionId: 'OP02-096',

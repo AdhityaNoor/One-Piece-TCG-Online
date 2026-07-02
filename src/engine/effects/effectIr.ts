@@ -120,6 +120,7 @@ export type AbilityGate =
   | { kind: 'leaderMulticolor' } // "If your Leader is multicolored"
   | { kind: 'selfCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more/less Characters"
   | { kind: 'opponentCharacterCount'; atLeast?: number; atMost?: number } // "If your opponent has N or less Characters"
+  | { kind: 'selfDonFieldCount'; atLeast?: number; atMost?: number } // "If you have N or less DON!! cards on your field"
   | { kind: 'selfLife'; atLeast?: number; atMost?: number } // "If you have N or less Life cards"
   | { kind: 'opponentLife'; atLeast?: number; atMost?: number } // "If your opponent has N or less Life cards"
   | { kind: 'selfHand'; atLeast?: number; atMost?: number }; // "If you have N or less cards in your hand"

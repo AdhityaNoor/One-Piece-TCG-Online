@@ -1,48 +1,41 @@
 /**
- * Ability cost payment — validation and execution for structured AbilityCost
- * values (effectIr.ts). Called by activateCardEffect.ts before the effect
- * resolves (8-3-1-5).
+ * Ability cost payment for structured AbilityCost values (effectIr.ts).
  *
- * Supported cost kinds (effectIr.ts: AbilityCost):
- *   donMinus  — return selected DON!! from the field (active/rested/attached)
- *               to the DON!! deck.
- *   restThis  — rest the source card.
- *   restDon   — rest N active DON!! cards in the cost area.
- *
- * All functions are pure (no mutation); payAbilityCost returns a new state.
+ * This lives in /effects because both explicit action handlers and automatic
+ * triggered effect resolution need the same cost semantics.
  */
-import type { GameState } from '../../state/game';
-import type { AbilityCost } from '../../effects/effectIr';
-import type { GameLogEntry } from '../../logs/logEntry';
-import { createActionLogger } from '../../rules/shared/actionLogger';
-import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
+import type { GameState } from '../state/game';
+import type { AbilityCost } from './effectIr';
+import type { GameLogEntry } from '../logs/logEntry';
+import { createActionLogger } from '../rules/shared/actionLogger';
+import { addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-/** DON!! ids on the player's field. Attached DON!! are still represented in costArea. */
-function fieldDonIds(state: GameState, playerId: string): string[] {
+export function fieldDonIds(state: GameState, playerId: string): string[] {
   const player = state.players[playerId];
   if (!player) return [];
-  return player.costArea.cardIds;
+  const ids = new Set(player.costArea.cardIds);
+  for (const inst of Object.values(state.cardsById)) {
+    if (inst.controllerId !== playerId) continue;
+    for (const donId of inst.donAttached) {
+      const don = state.cardsById[donId];
+      if (don?.ownerId === playerId) ids.add(donId);
+    }
+  }
+  return [...ids];
 }
 
-/** Count of active (non-rested) DON!! in the cost area. */
 function activeDonCount(state: GameState, playerId: string): number {
   const player = state.players[playerId];
   if (!player) return 0;
   return player.costArea.cardIds.filter((id) => state.cardsById[id]?.donRested === false).length;
 }
 
-// ---------------------------------------------------------------------------
-// Validation
-// ---------------------------------------------------------------------------
+export function requiredDonMinusCount(costs: AbilityCost[] = []): number {
+  return costs
+    .filter((cost): cost is Extract<AbilityCost, { kind: 'donMinus' }> => cost.kind === 'donMinus')
+    .reduce((sum, cost) => sum + cost.count, 0);
+}
 
-/**
- * Returns an array of human-readable failure reasons (empty = can pay).
- * Called from validateActivateCardEffect so errors surface before dispatch.
- */
 export function canPayAbilityCost(
   state: GameState,
   sourceInstanceId: string,
@@ -51,9 +44,7 @@ export function canPayAbilityCost(
   selectedDonMinusIds: string[] = [],
 ): string[] {
   const reasons: string[] = [];
-  const requiredDonMinus = costs
-    .filter((cost): cost is Extract<AbilityCost, { kind: 'donMinus' }> => cost.kind === 'donMinus')
-    .reduce((sum, cost) => sum + cost.count, 0);
+  const requiredDonMinus = requiredDonMinusCount(costs);
   if (selectedDonMinusIds.length !== requiredDonMinus) {
     reasons.push(`Cost requires selecting ${requiredDonMinus} DON!! to return, but ${selectedDonMinusIds.length} were supplied.`);
   }
@@ -81,7 +72,7 @@ export function canPayAbilityCost(
       case 'restThis': {
         const source = state.cardsById[sourceInstanceId];
         if (!source || source.orientation !== 'active') {
-          reasons.push(`Cost requires resting the source card, but it is already rested or not in play.`);
+          reasons.push('Cost requires resting the source card, but it is already rested or not in play.');
         }
         break;
       }
@@ -97,16 +88,12 @@ export function canPayAbilityCost(
   return reasons;
 }
 
-// ---------------------------------------------------------------------------
-// Execution
-// ---------------------------------------------------------------------------
-
 export function payAbilityCost(
   state: GameState,
   sourceInstanceId: string,
   playerId: string,
   costs: AbilityCost[],
-  actionId: string,
+  actionId: string | null,
   selectedDonMinusIds: string[] = [],
 ): { state: GameState; log: GameLogEntry[] } {
   const logger = createActionLogger(state, actionId);
@@ -147,10 +134,6 @@ export function payAbilityCost(
   return { state: { ...working, log: [...working.log, ...logger.log] }, log: logger.log };
 }
 
-// ---------------------------------------------------------------------------
-// donMinus helper
-// ---------------------------------------------------------------------------
-
 function payDonMinus(
   state: GameState,
   playerId: string,
@@ -165,12 +148,10 @@ function payDonMinus(
   for (const donId of toReturn) {
     costArea = removeFromZone(costArea, donId);
     donDeck = addToZoneTop(donDeck, donId);
-    // Clear any donRested/donAttached traces and update zone.
     cardsById = {
       ...cardsById,
       [donId]: { ...cardsById[donId], currentZone: 'donDeck', donRested: false },
     };
-    // Remove from any character's donAttached list.
     for (const [id, inst] of Object.entries(cardsById)) {
       if (inst.donAttached.includes(donId)) {
         cardsById = { ...cardsById, [id]: { ...inst, donAttached: inst.donAttached.filter((d) => d !== donId) } };
@@ -196,10 +177,6 @@ function payDonMinus(
     },
   };
 }
-
-// ---------------------------------------------------------------------------
-// restDon helper
-// ---------------------------------------------------------------------------
 
 function payRestDon(
   state: GameState,

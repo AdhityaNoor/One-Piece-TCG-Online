@@ -55,6 +55,7 @@ function buildDefinition(cardNumber: string, en: ParsedCardPage, enName: string 
     hasRush: text.includes('[Rush]') || text.includes('[Rush: Character]'),
     hasBlocker: text.includes('[Blocker]'),
     hasDoubleAttack: text.includes('[Double Attack]'),
+    hasBanish: text.includes('[Banish]'),
     isUnblockable: text.includes('[Unblockable]'),
     cardNumber,
     rarity: en.rarity,

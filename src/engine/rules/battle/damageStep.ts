@@ -113,10 +113,30 @@ export function resolveDamageAndEndOfBattle(
 
         const [lifeCardId, ...restLife] = player.lifeArea.cardIds;
         const lifeDef = defs[cardsById[lifeCardId].cardDefinitionId];
-        cardsById = { ...cardsById, [lifeCardId]: { ...cardsById[lifeCardId], currentZone: 'hand', faceState: 'faceUp' } };
-        player = { ...player, lifeArea: { ...player.lifeArea, cardIds: restLife }, hand: addToZoneTop(player.hand, lifeCardId) };
+        const banished = !!attackerDef.hasBanish;
+        cardsById = {
+          ...cardsById,
+          [lifeCardId]: {
+            ...cardsById[lifeCardId],
+            currentZone: banished ? 'trash' : 'hand',
+            faceState: 'faceUp',
+            revealedTo: banished ? 'all' : cardsById[lifeCardId].revealedTo,
+          },
+        };
+        player = banished
+          ? { ...player, lifeArea: { ...player.lifeArea, cardIds: restLife }, trash: addToZoneTop(player.trash, lifeCardId) }
+          : { ...player, lifeArea: { ...player.lifeArea, cardIds: restLife }, hand: addToZoneTop(player.hand, lifeCardId) };
 
-        if (lifeDef?.hasTrigger) {
+        if (banished) {
+          logger.push({
+            actorPlayerId: defendingPlayerId,
+            type: 'DAMAGE_DEALT',
+            message: `${defendingPlayerId}'s damaged Life card was trashed by [Banish]; its [Trigger] cannot activate.`,
+            data: { lifeCardInstanceId: lifeCardId, banish: true, triggerSuppressed: !!lifeDef?.hasTrigger },
+            relatedCardInstanceIds: [lifeCardId],
+            visibility: 'public',
+          });
+        } else if (lifeDef?.hasTrigger) {
           const hasCuratedTrigger = !!registry[lifeCardId ? cardsById[lifeCardId].cardDefinitionId : '']?.abilities.some((ab) => ab.timing === 'lifeTrigger');
           if (hasCuratedTrigger) {
             // Offer to activate it (10-1-5-2). The card is in hand for now; a
@@ -152,10 +172,10 @@ export function resolveDamageAndEndOfBattle(
         logger.push({
           actorPlayerId: defendingPlayerId,
           type: 'DAMAGE_DEALT',
-          message: `${defendingPlayerId} took 1 Life damage (hit ${hit + 1}/${hitCount}) — Life card added to hand (7-1-4-1).`,
-          data: { hit: hit + 1, of: hitCount },
+          message: `${defendingPlayerId} took 1 Life damage (hit ${hit + 1}/${hitCount}) — Life card ${banished ? 'trashed by [Banish]' : 'added to hand'} (7-1-4-1).`,
+          data: { hit: hit + 1, of: hitCount, banish: banished || undefined },
           relatedCardInstanceIds: [lifeCardId],
-          visibility: { visibleTo: [defendingPlayerId] },
+          visibility: banished ? 'public' : { visibleTo: [defendingPlayerId] },
         });
       }
 

@@ -16,8 +16,7 @@ import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/definitions';
 import { computeCurrentCost } from '../../rules/shared/power';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { evaluateGates, fireActivate, type EffectTemplateRegistry } from '../../effects';
-import { canPayAbilityCost, payAbilityCost } from './abilityCost';
+import { evaluateGates, fireActivate, canPayAbilityCost, payAbilityCost, type EffectTemplateRegistry } from '../../effects';
 
 export function validateActivateEventMain(
   state: GameState,

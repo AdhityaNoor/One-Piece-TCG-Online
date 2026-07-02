@@ -7,10 +7,9 @@
  * This tool checks every card against the curated EffectProgram registry: the
  * source of truth for what the game engine can execute at runtime.
  *
- *   curated        reviewed JSON IR exists in curatedPrograms.ts
+ *   curated        reviewed JSON IR exists in curatedPrograms.ts, or the card
+ *                  is static keyword-only and covered by normalized flags
  *   needsTemplate  has effect logic, but no curated runtime template yet
- *   keyword        only keyword abilities ([Blocker]/[Rush]/...); handled by
- *                  engine flags, nothing for the effect interpreter to do
  *   vanilla        no effect text at all
  *
  * Outputs (repo root):
@@ -23,6 +22,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseEffect } from '../../src/cards/effectParser';
+import { isStaticEngineKeywordOnly } from '../../src/cards/effectParser/staticKeywordOnly';
 import { CURATED_EFFECT_PROGRAMS } from '../../src/cards/effectTemplates';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -37,7 +37,7 @@ interface LocalCard {
   en: { name: string | null; effectText: string };
 }
 
-type Status = 'curated' | 'needsTemplate' | 'keyword' | 'vanilla';
+type Status = 'curated' | 'needsTemplate' | 'vanilla';
 
 interface Row {
   set: string;
@@ -82,11 +82,11 @@ function classify(card: LocalCard): Row {
   const runtimeTriggers = program ? [...new Set(program.abilities.map((a) => a.trigger))].sort().join('|') : '';
 
   let status: Status;
-  if (effectAbilities === 0) status = 'keyword';
-  else if (program) status = 'curated';
+  if (program) status = 'curated';
+  else if (isStaticEngineKeywordOnly(text)) status = 'curated';
   else status = 'needsTemplate';
 
-  return { ...base, status, curatedAbilities, effectAbilities, runtimeTriggers, parserReview: parsed.needsReview };
+  return { ...base, status, curatedAbilities, effectAbilities, runtimeTriggers: runtimeTriggers || (isStaticEngineKeywordOnly(text) ? 'staticKeyword' : ''), parserReview: parsed.needsReview };
 }
 
 function main(): void {
@@ -125,8 +125,8 @@ function main(): void {
     }
   }
 
-  const order: Status[] = ['curated', 'needsTemplate', 'keyword', 'vanilla'];
-  const withEffect = rows.filter((r) => r.status !== 'vanilla' && r.status !== 'keyword').length;
+  const order: Status[] = ['curated', 'needsTemplate', 'vanilla'];
+  const withEffect = rows.filter((r) => r.status !== 'vanilla').length;
   const curated = byStatus.get('curated') ?? 0;
 
   const md: string[] = [];
@@ -136,9 +136,8 @@ function main(): void {
   md.push('| Status | Cards | Meaning |');
   md.push('| --- | ---: | --- |');
   const meaning: Record<Status, string> = {
-    curated: 'reviewed runtime EffectProgram exists',
+    curated: 'reviewed runtime EffectProgram exists, or static keyword-only card is covered by normalized flags',
     needsTemplate: 'has effect logic; needs reviewed template IR',
-    keyword: 'only keyword abilities; handled by engine flags',
     vanilla: 'no effect text',
   };
   for (const s of order) md.push(`| ${s} | ${byStatus.get(s) ?? 0} | ${meaning[s]} |`);

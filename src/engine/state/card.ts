@@ -61,6 +61,9 @@ export interface CardDefinition {
    *   Step (7-1-2-1).
    * - hasDoubleAttack: a successful Leader-targeted attack from this card
    *   deals 2 damage instead of 1 (7-1-4-1-1-3).
+   * - hasBanish: a successful Leader-targeted attack from this card trashes
+   *   the damaged Life card instead of adding it to hand, and the card's
+   *   [Trigger] cannot be activated.
    * - isUnblockable: the Block Step is skipped for attacks made BY this
    *   card — read from the attacker's definition, not the defender's
    *   (10-1 keyword list).
@@ -68,6 +71,7 @@ export interface CardDefinition {
   hasRush: boolean;
   hasBlocker: boolean;
   hasDoubleAttack: boolean;
+  hasBanish?: boolean;
   isUnblockable: boolean;
   cardNumber: string; // 2-14, deck-construction max-4-copies key
   // 2-12, 2-13, 2-15, 2-16, 2-17: explicitly no gameplay effect — metadata only.

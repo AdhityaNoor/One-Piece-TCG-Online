@@ -13,6 +13,7 @@ import type { AbilityGate } from './effectIr';
 import type { GameState } from '../state/game';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { getOpponentId } from '../rules/shared/players';
+import { fieldDonIds } from './abilityCost';
 
 function typeMatches(defTypes: string[], required: string): boolean {
   const normalized = required.toLowerCase();
@@ -77,6 +78,13 @@ function evaluateGate(
       const opponent = state.players[opponentId];
       if (!opponent) return false;
       const count = opponent.characterArea.cardIds.length;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
+    case 'selfDonFieldCount': {
+      const count = fieldDonIds(state, ownerId).length;
       if (gate.atLeast !== undefined && count < gate.atLeast) return false;
       if (gate.atMost !== undefined && count > gate.atMost) return false;
       return true;

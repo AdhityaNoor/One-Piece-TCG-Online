@@ -14,6 +14,7 @@ import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates } from './gates';
+import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
 import type { EffectTemplateRegistry } from './effectTemplate';
 import type { Ability, EffectOp, EffectProgram, IrCondition, IrTiming, SearchFilter, SearchPickDestination, SearchRemainderDestination, Selector } from './effectIr';
 
@@ -294,15 +295,49 @@ function runFollowingAbilities(
   startAbilityIndex: number,
   ctx: EffectContextImpl,
   defs: CardDefinitionLookup,
+  actionId: string | null,
+  payCosts: boolean,
 ): boolean {
   for (let i = startAbilityIndex; i < program.abilities.length; i += 1) {
     const ability = program.abilities[i];
     if (ability.timing !== timing) continue;
     if (!evalCondition(ability.condition, ctx)) continue;
     if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId)) continue;
+    if (payCosts && suspendOrPayAbilityCost(ability, i, ctx, actionId)) return true;
     const suspended = runOps(ability, i, 0, {}, ctx);
     if (suspended) return true;
   }
+  return false;
+}
+
+function suspendOrPayAbilityCost(
+  ability: Ability,
+  abilityIndex: number,
+  ctx: EffectContextImpl,
+  actionId: string | null,
+): boolean {
+  if (!ability.cost?.length) return false;
+
+  const requiredDon = requiredDonMinusCount(ability.cost);
+  if (requiredDon > 0) {
+    const candidates = fieldDonIds(ctx.state(), ctx.controllerId);
+    if (candidates.length < requiredDon) return false;
+    ctx.emitChoice({
+      id: `${ctx.sourceInstanceId}__ir-cost-${abilityIndex}`,
+      playerId: ctx.controllerId,
+      kind: 'SELECT_CARDS',
+      prompt: `Choose ${requiredDon} DON!! on your field to return to your DON!! deck.`,
+      constraints: { min: requiredDon, max: requiredDon, candidateInstanceIds: candidates },
+      sourceInstanceId: ctx.sourceInstanceId,
+      sourceEffectId: 'ir',
+      resumeState: { abilityIndex, opIndex: -1, bindings: {} },
+    });
+    return true;
+  }
+
+  if (canPayAbilityCost(ctx.state(), ctx.sourceInstanceId, ctx.controllerId, ability.cost, []).length > 0) return false;
+  const paid = payAbilityCost(ctx.state(), ctx.sourceInstanceId, ctx.controllerId, ability.cost, actionId, []);
+  ctx.replaceState(paid.state, paid.log);
   return false;
 }
 
@@ -315,6 +350,7 @@ export function runTimings(
   defs: CardDefinitionLookup,
   actionId: string | null,
   registry: EffectTemplateRegistry = {},
+  payCosts = true,
 ): ActionExecuteResult {
   const matching = program.abilities
     .map((ability, index) => ({ ability, index }))
@@ -326,6 +362,7 @@ export function runTimings(
     if (!evalCondition(ability.condition, ctx)) continue;
     // "If …" board-state gate: an unmet precondition means the ability does nothing.
     if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId)) continue;
+    if (payCosts && suspendOrPayAbilityCost(ability, index, ctx, actionId)) break;
     const suspended = runOps(ability, index, 0, {}, ctx);
     if (suspended) break; // wait for the choice before any further ability runs
   }
@@ -345,11 +382,24 @@ export function resumeProgram(
   const rs = choice.resumeState;
   if (!rs || !choice.sourceInstanceId) return noop(state);
   const ability = program.abilities[rs.abilityIndex];
-  const op = ability?.ops[rs.opIndex];
-  if (!ability || !op || (op.op !== 'chooseTargets' && op.op !== 'searchTopDeck')) return noop(state);
+  if (!ability) return noop(state);
 
   const stateWithoutChoice: GameState = { ...state, pendingChoices: state.pendingChoices.filter((c) => c.id !== choice.id) };
+  if (rs.opIndex === -1) {
+    if (!ability.cost?.length) return noop(stateWithoutChoice);
+    const reasons = canPayAbilityCost(stateWithoutChoice, choice.sourceInstanceId, choice.playerId, ability.cost, selection);
+    if (reasons.length > 0) return noop(stateWithoutChoice);
+    const paid = payAbilityCost(stateWithoutChoice, choice.sourceInstanceId, choice.playerId, ability.cost, actionId, selection);
+    const ctx = new EffectContextImpl(paid.state, choice.sourceInstanceId, defs, actionId);
+    const suspended = runOps(ability, rs.abilityIndex, 0, rs.bindings, ctx);
+    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+    const finished = finishWithCascade(ctx, defs, actionId, registry);
+    return { state: finished.state, log: [...paid.log, ...finished.log], pendingChoices: finished.pendingChoices };
+  }
+
   const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
+  const op = ability.ops[rs.opIndex];
+  if (!op || (op.op !== 'chooseTargets' && op.op !== 'searchTopDeck')) return noop(stateWithoutChoice);
 
   if (op.op === 'searchTopDeck') {
     // The chosen subset goes to hand; resolveSearch sends the looked remainder
@@ -380,12 +430,12 @@ export function resumeProgram(
     ctx.searchResolve(ctx.controllerId, looked, chosen, remainder, reveal, destination, rs.bindings.__searchChosen ? selection : undefined);
     const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: chosen, movedIds: chosen });
     const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterSearchBindings, ctx);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs);
+    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
     return finishWithCascade(ctx, defs, actionId, registry);
   }
 
   const bindings: Record<string, string[]> = { ...rs.bindings, [op.var]: selection };
   const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, bindings, ctx);
-  if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs);
+  if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
   return finishWithCascade(ctx, defs, actionId, registry);
 }

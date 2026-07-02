@@ -14,6 +14,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseEffect } from '../../src/cards/effectParser';
+import { isStaticEngineKeywordOnly } from '../../src/cards/effectParser/staticKeywordOnly';
 import { CURATED_EFFECT_PROGRAMS } from '../../src/cards/effectTemplates';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -53,7 +54,7 @@ function main(): void {
   const opTally = new Map<string, number>();
   let totalWithText = 0;
   let curated = 0;
-  let keywordOnly = 0;
+  let staticKeywordOnly = 0;
   let review = 0;
 
   for (const c of cards) {
@@ -61,24 +62,22 @@ function main(): void {
     if (!text.trim()) continue;
     totalWithText++;
 
-    if (CURATED_EFFECT_PROGRAMS[c.cardNumber]) {
+    if (CURATED_EFFECT_PROGRAMS[c.cardNumber] || isStaticEngineKeywordOnly(text)) {
       curated++;
+      if (!CURATED_EFFECT_PROGRAMS[c.cardNumber]) staticKeywordOnly++;
       continue;
     }
 
     const parsed = parseEffect(c.cardNumber, text);
     const effectAbilities = parsed.abilities.filter((a) => effectActionCount(a) > 0);
-    if (effectAbilities.length === 0) {
-      keywordOnly++;
-      continue;
-    }
+    const reviewAbilities = effectAbilities.length > 0 ? effectAbilities : parsed.abilities;
 
     review++;
-    const timings = [...new Set(effectAbilities.map((a) => a.timing))].join('|');
+    const timings = [...new Set(reviewAbilities.map((a) => a.timing))].join('|');
     const ops = new Set<string>();
     let optional = false;
     let conditional = false;
-    for (const ability of effectAbilities) {
+    for (const ability of reviewAbilities) {
       for (const a of ability.actions) {
         if (a.op !== 'unrecognized') {
           ops.add(a.op);
@@ -97,7 +96,7 @@ function main(): void {
 
   writeFileSync(OUT_CSV, rows.join('\n') + '\n', 'utf8');
   console.log(`[worklist] ${review} cards need reviewed templates -> effect-review-worklist.csv`);
-  console.log(`[worklist] skipped ${curated} curated cards and ${keywordOnly} keyword-only cards (${totalWithText} cards with text total).`);
+  console.log(`[worklist] skipped ${curated} curated cards (${staticKeywordOnly} static keyword-only) (${totalWithText} cards with text total).`);
   console.log('[worklist] detected parser hints (rough prioritization only):');
   for (const [op, n] of [...opTally.entries()].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${String(n).padStart(4)}  ${op}`);

@@ -61,6 +61,24 @@ describe('resolveDamageAndEndOfBattle', () => {
     expect(triggerLog?.data).toMatchObject({ effectStubbed: true });
   });
 
+  it('[Banish] trashes damaged Life and suppresses its Trigger', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1', leaderOverridesP1: { hasBanish: true } });
+    const { rig, lifeIds } = putLifeCards(base, 'p2', [makeCharacterDef({ hasTrigger: true })]);
+    const attackerId = rig.state.players.p1.leaderInstanceId;
+    const targetId = rig.state.players.p2.leaderInstanceId;
+    const battling = { ...rig.state, currentBattle: battleAt(attackerId, targetId) };
+
+    const result = resolveDamageAndEndOfBattle(battling, rig.defs, 'action-x');
+
+    expect(result.state.players.p2.lifeArea.cardIds).toHaveLength(0);
+    expect(result.state.players.p2.hand.cardIds).not.toContain(lifeIds[0]);
+    expect(result.state.players.p2.trash.cardIds).toContain(lifeIds[0]);
+    expect(result.state.cardsById[lifeIds[0]]).toMatchObject({ currentZone: 'trash', faceState: 'faceUp', revealedTo: 'all' });
+    expect(result.pendingChoices).toHaveLength(0);
+    expect(result.log.some((e) => e.type === 'TRIGGER_REVEALED')).toBe(false);
+    expect(result.log.some((e) => e.type === 'DAMAGE_DEALT' && e.data && (e.data as Record<string, unknown>).triggerSuppressed === true)).toBe(true);
+  });
+
   it('[Double Attack] deals 2 Life hits against a Leader target', () => {
     const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1', leaderOverridesP1: { hasDoubleAttack: true } });
     const { rig, lifeIds } = putLifeCards(base, 'p2', [makeCharacterDef(), makeCharacterDef()]);

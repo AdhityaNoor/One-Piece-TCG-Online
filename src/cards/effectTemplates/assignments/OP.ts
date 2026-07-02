@@ -77,6 +77,13 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Baroque Works', excludeSelfName: true } }] },
   },
   // OP01-113 — [On K.O.] Add 1 DON!! from DON!! deck (rested).
+  // OP01-096 - [On Play] DON!! -2: K.O. cost <=3 and cost <=2.
+  {
+    cardNumber: 'OP01-096',
+    templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 3 } }, { fn: 'koOpponentCharacter', filter: { maxCost: 2 } }] },
+  },
+  // OP01-108 - [On K.O.] DON!! -1: K.O. cost <=5.
+  { cardNumber: 'OP01-108', templateId: 'ability', params: { timing: 'onKO', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 5 } }] } },
   { cardNumber: 'OP01-113', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
   // OP01-115 - [Main] K.O. cost 2 or less, then add 1 active DON!!. [Trigger] activates the Main effect.
   {
@@ -139,6 +146,12 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { color: 'purple', typeIncludes: 'Impel Down', excludeSelfName: true } }] },
   },
   // OP02-086 - [On K.O.] If Leader has Impel Down, add 1 DON!! rested.
+  // OP02-072 - [When Attacking] DON!! -4: K.O. cost <=3, then this Leader +1000.
+  { cardNumber: 'OP02-072', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 4 }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 3 } }, { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' }] } },
+  // OP02-076 - [On Play] DON!! -1: K.O. cost <=1.
+  { cardNumber: 'OP02-076', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 1 } }] } },
+  // OP02-079 - [On Play] DON!! -1: Rest cost <=4.
+  { cardNumber: 'OP02-079', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 4 } }] } },
   { cardNumber: 'OP02-086', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
   // OP02-087 - [On K.O.] If Leader has Impel Down, add 1 DON!! rested.
   { cardNumber: 'OP02-087', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
@@ -245,12 +258,27 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }] } },
     ],
   },
+  // OP03-060 - [When Attacking] DON!! -1: draw 2, then trash 1.
+  { cardNumber: 'OP03-060', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+  // OP03-063 - [Blocker] [On Play] DON!! -1: if Leader has Water Seven, draw 1.
+  // Note: [Blocker] is an engine keyword flag. Only the on-play draw is templated.
+  { cardNumber: 'OP03-063', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Water Seven' }], functions: [{ fn: 'draw', amount: 1 }] } },
   // OP03-064 - [On K.O.] If Leader has Galley-La Company, add 1 DON!! rested.
   { cardNumber: 'OP03-064', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Galley-La Company' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
   // OP03-067 - [DON!! x1] [When Attacking] If Leader has Galley-La Company, add 1 DON!! rested.
   { cardNumber: 'OP03-067', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'leaderType', type: 'Galley-La Company' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
   // OP03-069 - [On K.O.] If Leader has Impel Down, draw 2 then trash 1.
   { cardNumber: 'OP03-069', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+  // OP03-071 - [When Attacking] DON!! -1: rest opponent Character cost 5 or less.
+  { cardNumber: 'OP03-071', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 5 } }] } },
+  // OP03-073 - [Main] DON!! -1: if Leader has Water Seven, K.O. cost 2 or less. [Trigger] activates Main.
+  {
+    cardNumber: 'OP03-073',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Water Seven' }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 2 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Water Seven' }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 2 } }] } },
+    ],
+  },
   // OP03-075 - [Activate: Main] Rest this Stage: if Leader is Iceburg, add 1 DON!! rested.
   { cardNumber: 'OP03-075', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderName', name: 'Iceburg' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
   // OP03-081 - [On Play] Draw 2, trash 2, then give opponent Character -2 cost.
@@ -545,6 +573,32 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'OP15-108',
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Sky Island' } }] },
+  },
+
+  // OP15-061 - [On Play] DON!! -1: draw 1. [When Attacking] if <=6 DON!!, -1000 opponent Character.
+  {
+    cardNumber: 'OP15-061',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfDonFieldCount', atMost: 6 }], functions: [{ fn: 'modifyPowerOpponent', amount: -1000 }] } },
+    ],
+  },
+  // OP15-063 - [On Play] DON!! -1: draw 1. [On K.O.] if <=6 DON!!, K.O. power <=2000.
+  {
+    cardNumber: 'OP15-063',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'selfDonFieldCount', atMost: 6 }], functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 2000 } }] } },
+    ],
+  },
+  // OP15-078 - [Main] DON!! -2: draw 1, then rest power <=5000. [Counter] +1000, then if <=6 DON!! draw 1.
+  {
+    cardNumber: 'OP15-078',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'restOpponentCharacter', filter: { maxPower: 5000 } }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisBattle' }] } },
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'selfDonFieldCount', atMost: 6 }], functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
   },
 
   // OP16 -----------------------------------------------------------------------

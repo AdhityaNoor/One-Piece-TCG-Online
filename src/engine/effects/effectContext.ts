@@ -10,6 +10,7 @@ import type { PendingChoice } from '../events/pendingChoice';
 import { mintRuntimeInstanceId } from '../rules/shared/mintInstance';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import { createActionLogger, type ActionLogger } from '../rules/shared/actionLogger';
+import type { GameLogEntry } from '../logs/logEntry';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 import { getOpponentId } from '../rules/shared/players';
 import { computeCurrentCost, computeCurrentPower } from '../rules/shared/power';
@@ -25,6 +26,7 @@ export class EffectContextImpl implements EffectContext {
   private working: GameState;
   private readonly defs: CardDefinitionLookup;
   private readonly logger: ActionLogger;
+  private readonly externalLog: GameLogEntry[] = [];
   private readonly pending: PendingChoice[] = [];
   /** Instance ids this resolution moved to the trash via ko(); drained by the interpreter to cascade [On K.O.] (10-2-17). */
   private readonly koed: string[] = [];
@@ -41,6 +43,11 @@ export class EffectContextImpl implements EffectContext {
 
   state(): GameState {
     return this.working;
+  }
+
+  replaceState(state: GameState, log: GameLogEntry[] = []): void {
+    this.working = state;
+    this.externalLog.push(...log);
   }
 
   controllerLeaderId(): string {
@@ -531,6 +538,6 @@ export class EffectContextImpl implements EffectContext {
       log: [...this.working.log, ...this.logger.log],
       pendingChoices: [...this.working.pendingChoices, ...this.pending],
     };
-    return { state, log: this.logger.log, pendingChoices: this.pending };
+    return { state, log: [...this.externalLog, ...this.logger.log], pendingChoices: this.pending };
   }
 }

@@ -47,6 +47,7 @@ describe('normalizeCardPrintings — Leader (OP01-001)', () => {
     expect(definition.hasRush).toBe(false);
     expect(definition.hasBlocker).toBe(false);
     expect(definition.hasDoubleAttack).toBe(false);
+    expect(definition.hasBanish).toBe(false);
     expect(definition.isUnblockable).toBe(false);
   });
 
@@ -179,6 +180,7 @@ describe('normalizeDonCard', () => {
     expect(definition.hasRush).toBe(false);
     expect(definition.hasBlocker).toBe(false);
     expect(definition.hasDoubleAttack).toBe(false);
+    expect(definition.hasBanish).toBe(false);
     expect(definition.isUnblockable).toBe(false);
   });
 });
@@ -189,6 +191,7 @@ describe('normalizeCardPrintings — battle keyword detection (10-1, 10-2)', () 
     expect(definition.hasRush).toBe(true);
     expect(definition.hasBlocker).toBe(false);
     expect(definition.hasDoubleAttack).toBe(false);
+    expect(definition.hasBanish).toBe(false);
     expect(definition.isUnblockable).toBe(false);
   });
 
@@ -210,6 +213,11 @@ describe('normalizeCardPrintings — battle keyword detection (10-1, 10-2)', () 
   it('detects [Double Attack] presence', () => {
     const { definition } = normalizeCardPrintings([withText('[Double Attack]')]);
     expect(definition.hasDoubleAttack).toBe(true);
+  });
+
+  it('detects [Banish] presence', () => {
+    const { definition } = normalizeCardPrintings([withText('[Banish]')]);
+    expect(definition.hasBanish).toBe(true);
   });
 
   it('detects [Unblockable] presence', () => {
