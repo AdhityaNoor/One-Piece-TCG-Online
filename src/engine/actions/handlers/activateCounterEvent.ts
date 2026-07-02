@@ -73,7 +73,9 @@ export function validateActivateCounterEvent(
     reasons.push(`'${def.name}' has no [Counter] effect to activate.`);
   }
   if (ability?.cost?.length) {
-    reasons.push(...canPayAbilityCost(state, action.handCardInstanceId, action.playerId, ability.cost));
+    reasons.push(...canPayAbilityCost(state, action.handCardInstanceId, action.playerId, ability.cost, action.abilityCostDonInstanceIds ?? []));
+  } else if ((action.abilityCostDonInstanceIds?.length ?? 0) > 0) {
+    reasons.push('This Counter Event has no DON!! -N ability cost, so abilityCostDonInstanceIds must be empty.');
   }
 
   const cost = computeCurrentCost(defs, state, action.handCardInstanceId);
@@ -140,7 +142,7 @@ export function executeActivateCounterEvent(
   // Pay structured [Counter] ability costs (for example DON!! -N) before the
   // counter effect resolves. The Event play cost above is separate.
   const paid = ability?.cost?.length
-    ? payAbilityCost(nextState, action.handCardInstanceId, action.playerId, ability.cost, action.actionId)
+    ? payAbilityCost(nextState, action.handCardInstanceId, action.playerId, ability.cost, action.actionId, action.abilityCostDonInstanceIds ?? [])
     : { state: nextState, log: [] as ActionExecuteResult['log'] };
 
   // Fire the [Counter] ability (timing 'counter'); may emit a target choice.

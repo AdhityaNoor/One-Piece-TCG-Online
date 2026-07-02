@@ -13,7 +13,8 @@ function program(cardNumber: string, abilities: Ability[]): EffectProgram {
 
 function chooseOpponentCharacter(
   fn: 'koOpponentCharacter' | 'restOpponentCharacter',
-  filter: { maxCost?: number; maxPower?: number },
+  filter: { maxCost?: number; maxPower?: number; rested?: boolean },
+  maxTargets = 1,
 ): EffectOp {
   const verb = fn === 'koOpponentCharacter' ? 'K.O.' : 'Rest';
   return {
@@ -21,8 +22,8 @@ function chooseOpponentCharacter(
     var: 't',
     from: { sel: 'opponentCharacters', ...filter },
     min: 0,
-    max: 1,
-    prompt: `${verb} up to 1 of your opponent's Characters (or decline).`,
+    max: maxTargets,
+    prompt: `${verb} up to ${maxTargets} of your opponent's Characters (or decline).`,
   };
 }
 
@@ -49,9 +50,9 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'giveDon', target: { sel: 'var', name: 't' }, count: f.count },
       ];
     case 'koOpponentCharacter':
-      return [chooseOpponentCharacter(f.fn, f.filter), { op: 'ko', target: { sel: 'var', name: 't' } }];
+      return [chooseOpponentCharacter(f.fn, f.filter, f.maxTargets), { op: 'ko', target: { sel: 'var', name: 't' } }];
     case 'restOpponentCharacter':
-      return [chooseOpponentCharacter(f.fn, f.filter), { op: 'rest', target: { sel: 'var', name: 't' } }];
+      return [chooseOpponentCharacter(f.fn, f.filter, f.maxTargets), { op: 'rest', target: { sel: 'var', name: 't' } }];
     case 'returnToHand': {
       const from =
         f.target === 'any'
@@ -70,18 +71,20 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'returnToHand', target: { sel: 'var', name: 't' } },
       ];
     }
-    case 'modifyCostOpponent':
+    case 'modifyCostOpponent': {
+      const maxTargets = f.maxTargets ?? 1;
       return [
         {
           op: 'chooseTargets',
           var: 't',
           from: { sel: 'opponentCharacters' },
           min: 0,
-          max: 1,
-          prompt: `Give up to 1 of your opponent's Characters ${f.amount} cost during this turn (or decline).`,
+          max: maxTargets,
+          prompt: `Give up to ${maxTargets} of your opponent's Characters ${f.amount} cost during this turn (or decline).`,
         },
         { op: 'addCost', target: { sel: 'var', name: 't' }, amount: f.amount, duration: 'duringThisTurn' },
       ];
+    }
     case 'modifyPowerOpponent': {
       const maxTargets = f.maxTargets ?? 1;
       return [
@@ -94,6 +97,50 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           prompt: `Give up to ${maxTargets} of your opponent's Characters ${f.amount} power during this turn (or decline).`,
         },
         { op: 'addPower', target: { sel: 'var', name: 't' }, amount: f.amount, duration: 'duringThisTurn' },
+      ];
+    }
+    case 'addPowerController': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerLeaderOrCharacters' },
+          min: 0,
+          max: maxTargets,
+          prompt: `Give up to ${maxTargets} of your Leader or Character cards +${f.amount} power (or decline).`,
+        },
+        { op: 'addPower', target: { sel: 'var', name: 't' }, amount: f.amount, duration: f.duration },
+      ];
+    }
+    case 'addPowerControllerLeader':
+      return [{ op: 'addPower', target: { sel: 'controllerLeader' }, amount: f.amount, duration: f.duration }];
+    case 'addPowerControllerCharacter': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerCharacters', ...f.filter },
+          min: 0,
+          max: maxTargets,
+          prompt: `Give up to ${maxTargets} of your Characters +${f.amount} power (or decline).`,
+        },
+        { op: 'addPower', target: { sel: 'var', name: 't' }, amount: f.amount, duration: f.duration },
+      ];
+    }
+    case 'modifyPowerOpponentLeaderOrCharacter': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'opponentLeaderOrCharacters' },
+          min: 0,
+          max: maxTargets,
+          prompt: `Give up to ${maxTargets} of your opponent's Leader or Character cards ${f.amount} power (or decline).`,
+        },
+        { op: 'addPower', target: { sel: 'var', name: 't' }, amount: f.amount, duration: f.duration },
       ];
     }
     case 'drawAndTrash':

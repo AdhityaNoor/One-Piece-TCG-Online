@@ -47,14 +47,18 @@ export interface PlayStageAction extends BaseAction<'PLAY_STAGE'> {
 /** 2-7-3, 10-2-3. Event marked [Main]. */
 export interface ActivateEventMainAction extends BaseAction<'ACTIVATE_EVENT_MAIN'> {
   handCardInstanceId: string;
+  /** Active DON!! used to pay the Event play cost. */
   donInstanceIds: string[];
+  /** DON!! on field selected for structured ability costs such as DON!! -N. */
+  abilityCostDonInstanceIds?: string[];
 }
 
 /** 8-1-3-2-1. Field card marked [Activate: Main] or [Main]. */
 export interface ActivateCardEffectAction extends BaseAction<'ACTIVATE_CARD_EFFECT'> {
   sourceInstanceId: string;
   effectId: string;
-  donInstanceIds: string[]; // activation cost payment, if any (8-3-1-5)
+  /** DON!! on field selected for structured ability costs such as DON!! -N. */
+  donInstanceIds: string[];
 }
 
 /** 6-5-5-1. */
@@ -83,7 +87,10 @@ export interface ActivateCounterCharacterAction extends BaseAction<'ACTIVATE_COU
 /** 7-1-3-2-2. */
 export interface ActivateCounterEventAction extends BaseAction<'ACTIVATE_COUNTER_EVENT'> {
   handCardInstanceId: string;
+  /** Active DON!! used to pay the Event play cost. */
   donInstanceIds: string[];
+  /** DON!! on field selected for structured ability costs such as DON!! -N. */
+  abilityCostDonInstanceIds?: string[];
 }
 
 /** Generic decline for an optional Block/Counter Step action, or a declined optional trigger. */

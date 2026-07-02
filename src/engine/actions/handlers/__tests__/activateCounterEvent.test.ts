@@ -11,8 +11,13 @@ import type { BattleState } from '../../../state/game';
 import type { EffectTemplateRegistry } from '../../../effects';
 import { buildBaseRig, makeEventDef, nextTestId, putDon, putInHand } from '../../../rules/shared/__tests__/testRig';
 
-function counterEvent(playerId: string, handCardInstanceId = 'x', donInstanceIds: string[] = []): ActivateCounterEventAction {
-  return { type: 'ACTIVATE_COUNTER_EVENT', actionId: nextTestId('action'), playerId, handCardInstanceId, donInstanceIds };
+function counterEvent(
+  playerId: string,
+  handCardInstanceId = 'x',
+  donInstanceIds: string[] = [],
+  abilityCostDonInstanceIds: string[] = [],
+): ActivateCounterEventAction {
+  return { type: 'ACTIVATE_COUNTER_EVENT', actionId: nextTestId('action'), playerId, handCardInstanceId, donInstanceIds, abilityCostDonInstanceIds };
 }
 
 function battleAt(step: BattleState['step'], overrides: Partial<BattleState> = {}): BattleState {
@@ -57,7 +62,7 @@ describe('validateActivateCounterEvent', () => {
     const { rig: withHand, instanceId: eventId } = putInHand(base, 'p2', eventDef);
     const { rig: withDon, donIds } = putDon(withHand, 'p2', 1);
     const state = { ...withDon.state, currentBattle: battleAt('counter') };
-    const action = counterEvent('p2', eventId);
+    const action = counterEvent('p2', eventId, [], [donIds[0]]);
 
     expect(validateActivateCounterEvent(state, action, withDon.defs, registry).legal).toBe(true);
     const result = executeActivateCounterEvent(state, action, withDon.defs, registry);

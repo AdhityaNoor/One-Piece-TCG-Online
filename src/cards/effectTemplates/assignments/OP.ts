@@ -26,10 +26,42 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP01-017', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 3000 } }] } },
   // OP01-022 - [DON!! x1] [When Attacking] Give up to 2 opponent Characters -2000 power.
   { cardNumber: 'OP01-022', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'modifyPowerOpponent', amount: -2000, maxTargets: 2 }] } },
+  // OP01-026 - [Counter] +4000 to your Leader/Character, then K.O. 4000 power or less. [Trigger] -10000 to opponent Leader/Character.
+  {
+    cardNumber: 'OP01-026',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPowerController', amount: 4000, duration: 'duringThisBattle' }, { fn: 'koOpponentCharacter', filter: { maxPower: 4000 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'modifyPowerOpponentLeaderOrCharacter', amount: -10000, duration: 'duringThisTurn' }] } },
+    ],
+  },
+  // OP01-030 - [Main] Search Straw Hat Crew Character. [Trigger] activates the Main effect.
+  {
+    cardNumber: 'OP01-030',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'Straw Hat Crew' } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'Straw Hat Crew' } }] } },
+    ],
+  },
+  // OP01-028 - [Counter] Give opponent Leader/Character -2000. [Trigger] activates the Counter effect.
+  {
+    cardNumber: 'OP01-028',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'modifyPowerOpponentLeaderOrCharacter', amount: -2000, duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'modifyPowerOpponentLeaderOrCharacter', amount: -2000, duration: 'duringThisTurn' }] } },
+    ],
+  },
   // OP01-033 — [On Play] Rest up to 1 of your opponent's Characters with a cost of 4 or less.
   { cardNumber: 'OP01-033', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 4 } }] } },
   // OP01-048 — [On Play] Rest up to 1 of your opponent's Characters with a cost of 3 or less.
   { cardNumber: 'OP01-048', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 3 } }] } },
+  // OP01-058 - [Counter] +4000 to your Leader/Character, then rest opponent Character cost 4 or less. [Trigger] rest opponent Character.
+  {
+    cardNumber: 'OP01-058',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPowerController', amount: 4000, duration: 'duringThisBattle' }, { fn: 'restOpponentCharacter', filter: { maxCost: 4 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'restOpponentCharacter', filter: {} }] } },
+    ],
+  },
   // OP01-080 — [On K.O.] Draw 1 card.
   { cardNumber: 'OP01-080', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
   // OP01-084 - [DON!! x1] [When Attacking] Look at 5; add up to 1 Baroque Works Event.
@@ -39,13 +71,55 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   },
   // OP01-089 - [Counter] If Leader has Seven Warlords type, return cost 5 or less Character to hand.
   { cardNumber: 'OP01-089', templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderType', type: 'The Seven Warlords of the Sea' }], functions: [{ fn: 'returnToHand', maxCost: 5, target: 'any' }] } },
+  // OP01-090 - [Main] Search Baroque Works card other than self.
+  {
+    cardNumber: 'OP01-090',
+    templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Baroque Works', excludeSelfName: true } }] },
+  },
   // OP01-113 — [On K.O.] Add 1 DON!! from DON!! deck (rested).
   { cardNumber: 'OP01-113', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  // OP01-115 - [Main] K.O. cost 2 or less, then add 1 active DON!!. [Trigger] activates the Main effect.
+  {
+    cardNumber: 'OP01-115',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 2 } }, { fn: 'addDonFromDeck', count: 1, rested: false }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 2 } }, { fn: 'addDonFromDeck', count: 1, rested: false }] } },
+    ],
+  },
+  // OP01-117 - [Main] DON!! -1: Rest opponent Character with cost 6 or less.
+  { cardNumber: 'OP01-117', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 6 } }] } },
+  // OP01-118 - [Counter] DON!! -2: +2000 to your Leader/Character, then draw 1. [Trigger] add 1 active DON!!.
+  {
+    cardNumber: 'OP01-118',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'addPowerController', amount: 2000, duration: 'duringThisBattle' }, { fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+    ],
+  },
 
   // OP02 -----------------------------------------------------------------------
 
   // OP02-011 — [On Play] K.O. up to 1 of your opponent's Characters with 3000 power or less.
+  // OP02-005 - [On Play] Look at up to 5; add red cost-1 Character.
+  {
+    cardNumber: 'OP02-005',
+    templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', color: 'red', exactCost: 1 } }] },
+  },
   { cardNumber: 'OP02-011', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 3000 } }] } },
+  // OP02-016 - [On Play] Give red cost-1 Character +3000 power.
+  { cardNumber: 'OP02-016', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPowerControllerCharacter', amount: 3000, duration: 'duringThisTurn', filter: { color: 'red', exactCost: 1 } }] } },
+  // OP02-017 - [DON!! x2] [When Attacking] K.O. opponent Character with 2000 power or less.
+  { cardNumber: 'OP02-017', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 2000 } }] } },
+  // OP02-022 - [Main] Search Whitebeard Pirates Character. [Trigger] activates the Main effect.
+  {
+    cardNumber: 'OP02-022',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'Whitebeard Pirates' } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'Whitebeard Pirates' } }] } },
+    ],
+  },
+  // OP02-034 - [DON!! x1] [When Attacking] Rest opponent Character with cost 2 or less.
+  { cardNumber: 'OP02-034', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 2 } }] } },
   // OP02-096 - [On Play] Draw 1. [When Attacking] Give opponent Character -4 cost this turn.
   {
     cardNumber: 'OP02-096',
@@ -64,6 +138,44 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP02-083',
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { color: 'purple', typeIncludes: 'Impel Down', excludeSelfName: true } }] },
   },
+  // OP02-086 - [On K.O.] If Leader has Impel Down, add 1 DON!! rested.
+  { cardNumber: 'OP02-086', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  // OP02-087 - [On K.O.] If Leader has Impel Down, add 1 DON!! rested.
+  { cardNumber: 'OP02-087', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  // OP02-103 - [DON!! x1] [When Attacking] Give opponent Character -2 cost.
+  { cardNumber: 'OP02-103', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'modifyCostOpponent', amount: -2 }] } },
+  // OP02-105 - [DON!! x1] [When Attacking] Give opponent Character -3 cost.
+  { cardNumber: 'OP02-105', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'modifyCostOpponent', amount: -3 }] } },
+  // OP02-106 - [On Play] Give opponent Character -2 cost.
+  { cardNumber: 'OP02-106', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'modifyCostOpponent', amount: -2 }] } },
+  // OP02-112 - [Activate: Main] Rest this: give opponent Character -1 cost, then your Leader/Character +1000.
+  { cardNumber: 'OP02-112', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'modifyCostOpponent', amount: -1 }, { fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn' }] } },
+  // OP02-115 - [DON!! x2] [When Attacking] K.O. opponent Character with cost 0.
+  { cardNumber: 'OP02-115', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 0 } }] } },
+  // OP02-067 - [Main] Return cost 4 or less Character to hand. [Trigger] activates the Main effect.
+  {
+    cardNumber: 'OP02-067',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'returnToHand', maxCost: 4, target: 'any' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'returnToHand', maxCost: 4, target: 'any' }] } },
+    ],
+  },
+  // OP02-117 - [Main] Give opponent Character -5 cost. [Trigger] K.O. cost 3 or less.
+  {
+    cardNumber: 'OP02-117',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'modifyCostOpponent', amount: -5 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 3 } }] } },
+    ],
+  },
+  // OP02-119 - [Main] K.O. cost 1 or less. [Trigger] Draw 2, trash 1.
+  {
+    cardNumber: 'OP02-119',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 1 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+    ],
+  },
 
   // OP03 -----------------------------------------------------------------------
 
@@ -78,6 +190,27 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP03-009', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
   { cardNumber: 'OP03-011', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'modifyPowerOpponent', amount: -2000 }] } },
+  // OP03-017 - [Main]/[Counter] If Leader has Whitebeard Pirates, give opponent Character -4000. [Trigger] activates Main.
+  {
+    cardNumber: 'OP03-017',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'modifyPowerOpponent', amount: -4000 }] } },
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'modifyPowerOpponent', amount: -4000 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'modifyPowerOpponent', amount: -4000 }] } },
+    ],
+  },
+  // OP03-019 - [Main] Leader +4000. [Trigger] opponent Leader/Character -10000.
+  {
+    cardNumber: 'OP03-019',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPowerControllerLeader', amount: 4000, duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'modifyPowerOpponentLeaderOrCharacter', amount: -10000, duration: 'duringThisTurn' }] } },
+    ],
+  },
+  // OP03-024 - [On Play] If Leader has East Blue, rest up to 2 opponent Characters cost 4 or less.
+  { cardNumber: 'OP03-024', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'East Blue' }], functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 4 }, maxTargets: 2 }] } },
+  // OP03-034 - [On Play] K.O. opponent rested Character with cost 2 or less.
+  { cardNumber: 'OP03-034', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'koOpponentCharacter', filter: { rested: true, maxCost: 2 } }] } },
 
   // OP03-062 — [On Play] Look at 5; add up to 1 Water Seven type (excl. same name).
   {
@@ -86,6 +219,42 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   },
   // OP03-044 - [On Play] Draw 2 cards, then trash 2 cards from hand.
   { cardNumber: 'OP03-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
+  // OP03-038 - [Main] Rest up to 2 opponent Characters cost 2 or less. [Trigger] rest cost 5 or less.
+  {
+    cardNumber: 'OP03-038',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 2 }, maxTargets: 2 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 5 } }] } },
+    ],
+  },
+  // OP03-039 - [Main] Rest cost 1 or less, then your Character +1000. [Trigger] rest cost 4 or less.
+  {
+    cardNumber: 'OP03-039',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 1 } }, { fn: 'addPowerControllerCharacter', amount: 1000, duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 4 } }] } },
+    ],
+  },
+  // OP03-048 - [On Play] If Leader is Nami, return opponent Character cost 5 or less.
+  { cardNumber: 'OP03-048', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Nami' }], functions: [{ fn: 'returnToHand', maxCost: 5, target: 'opponent' }] } },
+  // OP03-056 - [Main] Draw 2 cards. [Trigger] activates the Main effect.
+  {
+    cardNumber: 'OP03-056',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'draw', amount: 2 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }] } },
+    ],
+  },
+  // OP03-064 - [On K.O.] If Leader has Galley-La Company, add 1 DON!! rested.
+  { cardNumber: 'OP03-064', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Galley-La Company' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  // OP03-067 - [DON!! x1] [When Attacking] If Leader has Galley-La Company, add 1 DON!! rested.
+  { cardNumber: 'OP03-067', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'leaderType', type: 'Galley-La Company' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  // OP03-069 - [On K.O.] If Leader has Impel Down, draw 2 then trash 1.
+  { cardNumber: 'OP03-069', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+  // OP03-075 - [Activate: Main] Rest this Stage: if Leader is Iceburg, add 1 DON!! rested.
+  { cardNumber: 'OP03-075', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderName', name: 'Iceburg' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  // OP03-081 - [On Play] Draw 2, trash 2, then give opponent Character -2 cost.
+  { cardNumber: 'OP03-081', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }, { fn: 'modifyCostOpponent', amount: -2 }] } },
   // OP03-112 - [On Play] Look at 4; add [Sanji] or Big Mom Pirates other than this card's name.
   {
     cardNumber: 'OP03-112',

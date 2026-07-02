@@ -4,7 +4,8 @@
  * resolves (8-3-1-5).
  *
  * Supported cost kinds (effectIr.ts: AbilityCost):
- *   donMinus  — return N DON!! from the field (costArea) to the DON!! deck.
+ *   donMinus  — return selected DON!! from the field (active/rested/attached)
+ *               to the DON!! deck.
  *   restThis  — rest the source card.
  *   restDon   — rest N active DON!! cards in the cost area.
  *
@@ -20,14 +21,11 @@ import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-/** DON!! ids in the player's cost area that are NOT currently given (attached) to a card. */
-function freeDonIds(state: GameState, playerId: string): string[] {
+/** DON!! ids on the player's field. Attached DON!! are still represented in costArea. */
+function fieldDonIds(state: GameState, playerId: string): string[] {
   const player = state.players[playerId];
   if (!player) return [];
-  const attachedSet = new Set<string>(
-    Object.values(state.cardsById).flatMap((c) => c.donAttached),
-  );
-  return player.costArea.cardIds.filter((id) => !attachedSet.has(id));
+  return player.costArea.cardIds;
 }
 
 /** Count of active (non-rested) DON!! in the cost area. */
@@ -50,15 +48,33 @@ export function canPayAbilityCost(
   sourceInstanceId: string,
   playerId: string,
   costs: AbilityCost[],
+  selectedDonMinusIds: string[] = [],
 ): string[] {
   const reasons: string[] = [];
+  const requiredDonMinus = costs
+    .filter((cost): cost is Extract<AbilityCost, { kind: 'donMinus' }> => cost.kind === 'donMinus')
+    .reduce((sum, cost) => sum + cost.count, 0);
+  if (selectedDonMinusIds.length !== requiredDonMinus) {
+    reasons.push(`Cost requires selecting ${requiredDonMinus} DON!! to return, but ${selectedDonMinusIds.length} were supplied.`);
+  }
+  const uniqueSelectedDon = new Set(selectedDonMinusIds);
+  if (uniqueSelectedDon.size !== selectedDonMinusIds.length) {
+    reasons.push('Selected DON!! for DON!! -N costs must not contain duplicates.');
+  }
+  const fieldDon = new Set(fieldDonIds(state, playerId));
+  for (const donId of uniqueSelectedDon) {
+    const donInstance = state.cardsById[donId];
+    if (!donInstance || donInstance.ownerId !== playerId || !fieldDon.has(donId)) {
+      reasons.push(`'${donId}' is not one of ${playerId}'s DON!! cards on the field.`);
+    }
+  }
+
   for (const cost of costs) {
     switch (cost.kind) {
       case 'donMinus': {
-        // Prefer returning free DON!!; fall back to all costArea if needed.
-        const available = Math.max(freeDonIds(state, playerId).length, state.players[playerId]?.costArea.cardIds.length ?? 0);
+        const available = fieldDonIds(state, playerId).length;
         if (available < cost.count) {
-          reasons.push(`Cost requires returning ${cost.count} DON!! but only ${available} are available in the cost area.`);
+          reasons.push(`Cost requires returning ${cost.count} DON!! but only ${available} are on the field.`);
         }
         break;
       }
@@ -91,14 +107,18 @@ export function payAbilityCost(
   playerId: string,
   costs: AbilityCost[],
   actionId: string,
+  selectedDonMinusIds: string[] = [],
 ): { state: GameState; log: GameLogEntry[] } {
   const logger = createActionLogger(state, actionId);
   let working = state;
+  let selectedCursor = 0;
 
   for (const cost of costs) {
     switch (cost.kind) {
       case 'donMinus': {
-        working = payDonMinus(working, playerId, cost.count, logger);
+        const selected = selectedDonMinusIds.slice(selectedCursor, selectedCursor + cost.count);
+        selectedCursor += cost.count;
+        working = payDonMinus(working, playerId, selected, logger);
         break;
       }
       case 'restThis': {
@@ -134,16 +154,10 @@ export function payAbilityCost(
 function payDonMinus(
   state: GameState,
   playerId: string,
-  count: number,
+  toReturn: string[],
   logger: ReturnType<typeof createActionLogger>,
 ): GameState {
   const player = state.players[playerId];
-  // Prefer free (unattached) DON!! first; if not enough, take any from costArea.
-  const free = freeDonIds(state, playerId);
-  const toReturn: string[] = free.length >= count
-    ? free.slice(0, count)
-    : player.costArea.cardIds.slice(0, count);
-
   let cardsById = { ...state.cardsById };
   let costArea = player.costArea;
   let donDeck = player.donDeck;
@@ -167,7 +181,7 @@ function payDonMinus(
   logger.push({
     actorPlayerId: playerId,
     type: 'DON_RETURNED',
-    message: `${playerId} returned ${count} DON!! to the DON!! deck as an activation cost.`,
+    message: `${playerId} returned ${toReturn.length} DON!! to the DON!! deck as an activation cost.`,
     data: { donInstanceIds: toReturn },
     relatedCardInstanceIds: toReturn,
     visibility: 'public',

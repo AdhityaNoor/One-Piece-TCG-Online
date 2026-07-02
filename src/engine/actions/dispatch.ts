@@ -121,7 +121,7 @@ export function validateAction(
     case 'PLAY_STAGE':
       return validatePlayStage(state, action, defs);
     case 'ACTIVATE_EVENT_MAIN':
-      return validateActivateEventMain(state, action, defs);
+      return validateActivateEventMain(state, action, defs, registry);
     case 'ACTIVATE_CARD_EFFECT':
       return validateActivateCardEffect(state, action, registry, defs);
     case 'GIVE_DON':
@@ -173,7 +173,7 @@ export function executeAction(
       result = executePlayStage(state, action, defs);
       break;
     case 'ACTIVATE_EVENT_MAIN':
-      result = executeActivateEventMain(state, action, defs);
+      result = executeActivateEventMain(state, action, defs, registry);
       break;
     case 'ACTIVATE_CARD_EFFECT':
       result = executeActivateCardEffect(state, action, defs, registry);

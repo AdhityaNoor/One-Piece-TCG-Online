@@ -154,6 +154,18 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'addCost', amount: -3, duration: 'duringThisTurn' });
   });
 
+  it('opponent target functions can choose multiple cards when configured', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'activateMain',
+      functions: [
+        { fn: 'restOpponentCharacter', filter: { maxCost: 2, rested: true }, maxTargets: 2 },
+        { fn: 'modifyCostOpponent', amount: -2, maxTargets: 2 },
+      ],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters', maxCost: 2, rested: true }, max: 2 });
+    expect(p.abilities[0].ops[2]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters' }, max: 2 });
+  });
+
   it('modifyPowerOpponent function produces addPower with negative amount', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'whenAttacking',
@@ -162,6 +174,36 @@ describe('template factories - structural correctness', () => {
     });
     expect(p.abilities[0].timing).toBe('whenAttacking');
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'addPower', amount: -2000, duration: 'duringThisTurn' });
+  });
+
+  it('power functions can target controller or opponent Leader/Character groups', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'counter',
+      functions: [
+        { fn: 'addPowerController', amount: 4000, duration: 'duringThisBattle' },
+        { fn: 'addPowerControllerLeader', amount: 4000, duration: 'duringThisTurn' },
+        { fn: 'modifyPowerOpponentLeaderOrCharacter', amount: -10000, duration: 'duringThisTurn' },
+      ],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerLeaderOrCharacters' }, max: 1 });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'addPower', amount: 4000, duration: 'duringThisBattle' });
+    expect(p.abilities[0].ops[2]).toMatchObject({ op: 'addPower', target: { sel: 'controllerLeader' }, amount: 4000, duration: 'duringThisTurn' });
+    expect(p.abilities[0].ops[3]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentLeaderOrCharacters' }, max: 1 });
+    expect(p.abilities[0].ops[4]).toMatchObject({ op: 'addPower', amount: -10000, duration: 'duringThisTurn' });
+  });
+
+  it('addPowerControllerCharacter can filter own Characters by color and exact cost', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'addPowerControllerCharacter', amount: 3000, duration: 'duringThisTurn', filter: { color: 'red', exactCost: 1 } }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({
+      op: 'chooseTargets',
+      from: { sel: 'controllerCharacters', color: 'red', exactCost: 1 },
+      min: 0,
+      max: 1,
+    });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'addPower', amount: 3000, duration: 'duringThisTurn' });
   });
 
   it('searchTopDeck function produces a search op at the configured timing', () => {

@@ -9,8 +9,9 @@
  *
  * [Once Per Turn] (10-2-13) is tracked on the source CardInstance's
  * `oncePerTurnUsed` (keyed by the action's effectId) and cleared on the
- * controller's Refresh Phase (runRefreshPhase). Activation costs (DON!! −X,
- * rest-this-card, etc.) are NOT modeled yet — only no-cost abilities activate.
+ * controller's Refresh Phase (runRefreshPhase). Structured activation costs
+ * are paid before resolution; DON!! -N uses action.donInstanceIds as the
+ * selected DON!! to return from field.
  */
 import type { GameState } from '../../state/game';
 import type { ActivateCardEffectAction, ValidationResult } from '../action';
@@ -48,16 +49,13 @@ export function validateActivateCardEffect(
   if (!ability) {
     reasons.push(`'${source.cardDefinitionId}' has no activatable [Activate: Main] effect.`);
   }
-  // The engine pays the ability's structured cost automatically (no player DON
-  // selection); donInstanceIds is therefore always empty for ACTIVATE_CARD_EFFECT.
-  if (action.donInstanceIds.length > 0) {
-    reasons.push('ACTIVATE_CARD_EFFECT does not take donInstanceIds — its activation cost (if any) is paid automatically.');
-  }
   if (ability?.gate && !evaluateGates(ability.gate, state, defs, action.playerId)) {
     reasons.push(`'${source.cardDefinitionId}' can't be activated right now — its "If …" condition isn't met.`);
   }
   if (ability?.cost?.length) {
-    reasons.push(...canPayAbilityCost(state, action.sourceInstanceId, action.playerId, ability.cost));
+    reasons.push(...canPayAbilityCost(state, action.sourceInstanceId, action.playerId, ability.cost, action.donInstanceIds));
+  } else if (action.donInstanceIds.length > 0) {
+    reasons.push('This effect has no DON!! -N cost, so donInstanceIds must be empty.');
   }
   if (ability?.oncePerTurn && source.oncePerTurnUsed.includes(action.effectId)) {
     reasons.push(`This [Once Per Turn] effect of '${source.cardDefinitionId}' was already used this turn (10-2-13).`);
@@ -78,7 +76,7 @@ export function executeActivateCardEffect(
 
   // Pay the activation cost first (8-3-1-5), then resolve the effect on the paid state.
   const paid = ability?.cost?.length
-    ? payAbilityCost(state, action.sourceInstanceId, action.playerId, ability.cost, action.actionId)
+    ? payAbilityCost(state, action.sourceInstanceId, action.playerId, ability.cost, action.actionId, action.donInstanceIds)
     : { state, log: [] as ActionExecuteResult['log'] };
 
   const fired = fireActivate(paid.state, action.sourceInstanceId, registry, defs, action.actionId);

@@ -140,8 +140,13 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return [ctx.sourceInstanceId];
     case 'controllerLeader':
       return [ctx.controllerLeaderId()];
-    case 'controllerCharacters':
-      return ctx.controllerCharacterIds();
+    case 'controllerCharacters': {
+      let ids = ctx.controllerCharacterIds();
+      if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
+      if (sel.color !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.colors.includes(sel.color!) === true);
+      return ids;
+    }
     case 'controllerLeaderOrCharacters':
       return [ctx.controllerLeaderId(), ...ctx.controllerCharacterIds()];
     case 'opponentLeaderOrCharacters':
@@ -156,6 +161,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       let ids = ctx.opponentCharacterIds();
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
+      if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       return ids;
     }
     case 'controllerHand':

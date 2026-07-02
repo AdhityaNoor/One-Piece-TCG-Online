@@ -105,7 +105,7 @@ export function executePlayStage(state: GameState, action: PlayStageAction, defs
     ownerId: action.playerId,
     controllerId: action.playerId,
     currentZone: 'stageArea',
-    orientation: null, // TODO (blueprint Section 19): unconfirmed whether Stage cards carry Active/Rested state at all.
+    orientation: 'active',
     faceState: 'faceUp',
     donAttached: [],
     appliedContinuousEffectIds: [],

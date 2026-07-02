@@ -1,16 +1,13 @@
 /**
  * ACTIVATE_EVENT_MAIN (2-7-3, 10-2-3). Main Phase, turn-player-only.
  *
- * KNOWN LIMITATION (project decision: "stub everything" for card effects):
- * this handler pays the Event's cost and moves it hand -> trash (8-1,
- * Events resolve then trash), but the Event's actual effect TEXT never
- * executes — there is no effect-template system yet. Playing an Event this
- * milestone is mechanically a no-op beyond cost payment + the card leaving
- * the hand. Revisit once /src/cards/effectTemplates exists.
+ * Event text is never interpreted directly. This handler only activates Events
+ * with a reviewed curated EffectProgram containing timing 'activateMain'. It
+ * pays the Event play cost, moves the Event hand -> trash (8-1), then resolves
+ * the structured [Main] ability through the generic interpreter.
  *
- * No fresh-instance minting here: 3-1-6 only requires it for cards
- * entering/leaving the Character or Stage area: an Event never enters
- * either, going straight from hand to trash.
+ * No fresh-instance minting here: 3-1-6 only requires it for cards entering or
+ * leaving the Character or Stage area. An Event never enters either area.
  */
 import type { GameState } from '../../state/game';
 import type { ActivateEventMainAction, ValidationResult } from '../action';
@@ -19,8 +16,15 @@ import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/definitions';
 import { computeCurrentCost } from '../../rules/shared/power';
 import type { ActionExecuteResult } from '../actionExecuteResult';
+import { evaluateGates, fireActivate, type EffectTemplateRegistry } from '../../effects';
+import { canPayAbilityCost, payAbilityCost } from './abilityCost';
 
-export function validateActivateEventMain(state: GameState, action: ActivateEventMainAction, defs: CardDefinitionLookup): ValidationResult {
+export function validateActivateEventMain(
+  state: GameState,
+  action: ActivateEventMainAction,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+): ValidationResult {
   const reasons: string[] = [];
   if (state.currentPhase !== 'main') {
     reasons.push('ACTIVATE_EVENT_MAIN is only legal during the Main Phase (2-7-3).');
@@ -49,6 +53,20 @@ export function validateActivateEventMain(state: GameState, action: ActivateEven
     reasons.push(`'${def.name}' is a ${def.category}, not an Event.`);
   }
 
+  const program = registry[handInstance.cardDefinitionId];
+  const ability = program?.abilities.find((a) => a.timing === 'activateMain');
+  if (!ability) {
+    reasons.push(`'${def.name}' has no curated [Main] effect to activate.`);
+  }
+  if (ability?.gate && !evaluateGates(ability.gate, state, defs, action.playerId)) {
+    reasons.push(`'${def.name}' can't be activated right now - its "If ..." condition isn't met.`);
+  }
+  if (ability?.cost?.length) {
+    reasons.push(...canPayAbilityCost(state, action.handCardInstanceId, action.playerId, ability.cost, action.abilityCostDonInstanceIds ?? []));
+  } else if ((action.abilityCostDonInstanceIds?.length ?? 0) > 0) {
+    reasons.push('This Event has no DON!! -N ability cost, so abilityCostDonInstanceIds must be empty.');
+  }
+
   const cost = computeCurrentCost(defs, state, action.handCardInstanceId);
   if (action.donInstanceIds.length !== cost) {
     reasons.push(`'${def.name}' costs ${cost} DON!!, but ${action.donInstanceIds.length} were supplied (2-7-3).`);
@@ -70,10 +88,16 @@ export function validateActivateEventMain(state: GameState, action: ActivateEven
   return { legal: reasons.length === 0, reasons };
 }
 
-export function executeActivateEventMain(state: GameState, action: ActivateEventMainAction, defs: CardDefinitionLookup): ActionExecuteResult {
+export function executeActivateEventMain(
+  state: GameState,
+  action: ActivateEventMainAction,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+): ActionExecuteResult {
   const player = state.players[action.playerId];
   const handInstance = state.cardsById[action.handCardInstanceId];
   const def = getDefinition(defs, handInstance);
+  const ability = registry[handInstance.cardDefinitionId]?.abilities.find((a) => a.timing === 'activateMain');
   const logger = createActionLogger(state, action.actionId);
 
   const cardsById = { ...state.cardsById };
@@ -82,15 +106,17 @@ export function executeActivateEventMain(state: GameState, action: ActivateEvent
   }
   cardsById[action.handCardInstanceId] = { ...cardsById[action.handCardInstanceId], currentZone: 'trash' };
 
-  const newHand = removeFromZone(player.hand, action.handCardInstanceId);
-  const newTrash = addToZoneTop(player.trash, action.handCardInstanceId);
-  const newPlayer = { ...player, hand: newHand, trash: newTrash };
+  const newPlayer = {
+    ...player,
+    hand: removeFromZone(player.hand, action.handCardInstanceId),
+    trash: addToZoneTop(player.trash, action.handCardInstanceId),
+  };
 
   logger.push({
     actorPlayerId: action.playerId,
     type: 'EFFECT_ACTIVATED',
-    message: `${action.playerId} activated ${def.name} (cost ${action.donInstanceIds.length}) — effect text not executed (stubbed this milestone).`,
-    data: { from: 'hand', to: 'trash', cost: action.donInstanceIds.length, donInstanceIds: action.donInstanceIds, effectStubbed: true },
+    message: `${action.playerId} activated [Main] Event ${def.name} (cost ${action.donInstanceIds.length}).`,
+    data: { from: 'hand', to: 'trash', cost: action.donInstanceIds.length, donInstanceIds: action.donInstanceIds },
     relatedCardInstanceIds: [action.handCardInstanceId],
     visibility: 'public',
   });
@@ -102,5 +128,10 @@ export function executeActivateEventMain(state: GameState, action: ActivateEvent
     log: [...state.log, ...logger.log],
   };
 
-  return { state: nextState, log: logger.log, pendingChoices: [] };
+  const paid = ability?.cost?.length
+    ? payAbilityCost(nextState, action.handCardInstanceId, action.playerId, ability.cost, action.actionId, action.abilityCostDonInstanceIds ?? [])
+    : { state: nextState, log: [] as ActionExecuteResult['log'] };
+  const fired = fireActivate(paid.state, action.handCardInstanceId, registry, defs, action.actionId);
+
+  return { state: fired.state, log: [...logger.log, ...paid.log, ...fired.log], pendingChoices: fired.pendingChoices };
 }

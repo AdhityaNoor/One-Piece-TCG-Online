@@ -19,6 +19,7 @@ import type {
   SearchRemainderDestination,
   SequenceCondition,
 } from '../../../engine/effects/effectIr';
+import type { Color } from '../../../engine/state/card';
 
 export const TEMPLATE_IDS = {
   ABILITY: 'ability',
@@ -30,11 +31,15 @@ export type AbilityFunction =
   | { fn: 'draw'; amount: number }
   | { fn: 'addDonFromDeck'; count: number; rested: boolean }
   | { fn: 'giveDon'; count: number }
-  | { fn: 'koOpponentCharacter'; filter: { maxCost?: number; maxPower?: number } }
-  | { fn: 'restOpponentCharacter'; filter: { maxCost?: number; maxPower?: number } }
+  | { fn: 'koOpponentCharacter'; filter: { maxCost?: number; maxPower?: number; rested?: boolean }; maxTargets?: number }
+  | { fn: 'restOpponentCharacter'; filter: { maxCost?: number; maxPower?: number; rested?: boolean }; maxTargets?: number }
   | { fn: 'returnToHand'; maxCost: number; target: 'any' | 'opponent' }
-  | { fn: 'modifyCostOpponent'; amount: number }
+  | { fn: 'modifyCostOpponent'; amount: number; maxTargets?: number }
   | { fn: 'modifyPowerOpponent'; amount: number; maxTargets?: number }
+  | { fn: 'addPowerController'; amount: number; duration: IrDuration; maxTargets?: number }
+  | { fn: 'addPowerControllerLeader'; amount: number; duration: IrDuration }
+  | { fn: 'addPowerControllerCharacter'; amount: number; duration: IrDuration; filter?: { maxCost?: number; exactCost?: number; color?: Color }; maxTargets?: number }
+  | { fn: 'modifyPowerOpponentLeaderOrCharacter'; amount: number; duration: IrDuration; maxTargets?: number }
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
   | { fn: 'trashFromHand'; count: number }
   | { fn: 'trashTopDeck'; count: number }

@@ -17,11 +17,11 @@ import type { CardCategory, Color } from '../state/card';
 export type Selector =
   | { sel: 'self' } // the source card
   | { sel: 'controllerLeader' }
-  | { sel: 'controllerCharacters' }
+  | { sel: 'controllerCharacters'; maxCost?: number; exactCost?: number; color?: Color }
   | { sel: 'controllerLeaderOrCharacters' }
   | { sel: 'opponentLeaderOrCharacters' }
   | { sel: 'allCharacters'; maxCost?: number; maxPower?: number } // any player's Characters
-  | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number } // optional "cost/power N or less" filter
+  | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number; rested?: boolean } // optional "cost/power N or less" and/or rested filter
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
   | { sel: 'controllerTrash'; filter?: SearchFilter } // controller's trash cards matching a filter (for recover-to-hand)
   | { sel: 'var'; name: string }; // ids bound by a prior chooseTargets op

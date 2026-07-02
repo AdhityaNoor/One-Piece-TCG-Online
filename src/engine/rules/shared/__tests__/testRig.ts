@@ -277,7 +277,7 @@ export function putStageInPlay(rig: Rig, playerId: 'p1' | 'p2', def: CardDefinit
     ownerId: playerId,
     controllerId: playerId,
     currentZone: 'stageArea',
-    orientation: null,
+    orientation: 'active',
     faceState: 'faceUp',
     donAttached: [],
     appliedContinuousEffectIds: [],
