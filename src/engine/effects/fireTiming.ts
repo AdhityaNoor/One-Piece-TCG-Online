@@ -7,7 +7,7 @@
 import type { GameState } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
-import { runTriggers, resumeProgram } from './interpreter';
+import { runTimings, resumeProgram } from './interpreter';
 import type { EffectTemplateRegistry } from './effectTemplate';
 
 function noop(state: GameState): ActionExecuteResult {
@@ -29,7 +29,7 @@ export function fireOnPlay(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTriggers(program, ['onEnterPlay', 'onPlay'], state, instanceId, defs, actionId, registry);
+  return runTimings(program, ['onEnterPlay', 'onPlay'], state, instanceId, defs, actionId, registry);
 }
 
 /**
@@ -47,7 +47,7 @@ export function fireActivate(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTriggers(program, ['activateMain'], state, instanceId, defs, actionId, registry);
+  return runTimings(program, ['activateMain'], state, instanceId, defs, actionId, registry);
 }
 
 /**
@@ -65,7 +65,7 @@ export function fireWhenAttacking(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTriggers(program, ['whenAttacking'], state, instanceId, defs, actionId, registry);
+  return runTimings(program, ['whenAttacking'], state, instanceId, defs, actionId, registry);
 }
 
 /**
@@ -83,7 +83,7 @@ export function fireOnKO(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTriggers(program, ['onKO'], state, instanceId, defs, actionId, registry);
+  return runTimings(program, ['onKO'], state, instanceId, defs, actionId, registry);
 }
 
 /**
@@ -101,14 +101,14 @@ export function fireCounter(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTriggers(program, ['counter'], state, instanceId, defs, actionId, registry);
+  return runTimings(program, ['counter'], state, instanceId, defs, actionId, registry);
 }
 
 /**
- * Fires a Life card's [Trigger] ability (10-1-5-2, timing 'trigger'). Called
+ * Fires a Life card's [Trigger] ability (10-1-5-2, timing 'lifeTrigger'). Called
  * when the defending player chooses to activate a revealed [Trigger] Life card.
  */
-export function fireTrigger(
+export function fireLifeTrigger(
   state: GameState,
   instanceId: string,
   registry: EffectTemplateRegistry,
@@ -119,7 +119,7 @@ export function fireTrigger(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTriggers(program, ['trigger'], state, instanceId, defs, actionId, registry);
+  return runTimings(program, ['lifeTrigger'], state, instanceId, defs, actionId, registry);
 }
 
 /**

@@ -18,14 +18,14 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST01-001 (leader) — [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
-  { cardNumber: 'ST01-001', templateId: 'activateMainGiveDon', params: { count: 1 } },
+  { cardNumber: 'ST01-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
   // ST01-007 — [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
-  { cardNumber: 'ST01-007', templateId: 'activateMainGiveDon', params: { count: 1 } },
+  { cardNumber: 'ST01-007', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
   // ST01-011 — [On Play] Give up to 2 rested DON!! cards to your Leader or 1 of your Characters.
-  { cardNumber: 'ST01-011', templateId: 'onPlayGiveDon', params: { count: 2 } },
+  { cardNumber: 'ST01-011', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 2 }] } },
 
   // ST01-013 — [DON!! x1] Permanent +1000 power when ≥1 DON!! attached.
-  { cardNumber: 'ST01-013', templateId: 'donAttachedSelfPower', params: { donAttachedAtLeast: 1, amount: 1000 } },
+  { cardNumber: 'ST01-013', templateId: 'ability', params: { timing: 'onEnterPlay', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent' }] } },
 ];

@@ -167,18 +167,15 @@ describe('curated effect template integration with match engine dispatch', () =>
     const registry = buildRegistryFromAssignments([
       {
         cardNumber: 'TEST-SEARCHER',
-        templateId: 'onPlaySearchTopDeck',
-        params: {
-          look: 4,
+        templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 4,
           pick: 1,
-          filter: {
+          reveal: true, destination: 'hand', filter: {
             anyOf: [
               { name: 'Sanji' },
               { category: 'event', color: 'red' },
               { category: 'character', exactPower: 6000 },
             ],
-          },
-        },
+          } }] },
       },
     ]);
 
@@ -243,8 +240,7 @@ describe('curated effect template integration with match engine dispatch', () =>
     const registry = buildRegistryFromAssignments([
       {
         cardNumber: 'TEST-TRASH-SEARCHER',
-        templateId: 'onPlaySearchTopDeck',
-        params: { look: 3, pick: 1, filter: { typeIncludes: 'Navy' }, remainder: 'trash' },
+        templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Navy' }, remainder: 'trash' }] },
       },
     ]);
     const playResult = executeAction(
@@ -265,7 +261,331 @@ describe('curated effect template integration with match engine dispatch', () =>
 
     expect(resolveResult.state.pendingChoices).toEqual([]);
     expect(resolveResult.state.players.p1.hand.cardIds).toContain(navyOneId);
+    expect(resolveResult.state.cardsById[navyOneId].revealedTo).toBe('all');
     expect(resolveResult.state.players.p1.trash.cardIds).toEqual([offTypeId, navyTwoId]);
     expect(resolveResult.state.players.p1.deck.cardIds).toEqual([]);
+    expect(resolveResult.log.at(-1)).toMatchObject({
+      visibility: 'public',
+      data: { reveal: true, addedInstanceIds: [navyOneId] },
+    });
+  });
+
+  it('keeps searched cards secret when the reviewed text does not say reveal', () => {
+    const searcher = makeCharacterDef({
+      cardDefinitionId: 'TEST-SECRET-SEARCHER',
+      cardNumber: 'TEST-SECRET-SEARCHER',
+      name: 'Secret Searcher',
+      category: 'character',
+      baseCost: 0,
+      basePower: 1000,
+    });
+    const foundCard = makeCharacterDef({
+      cardDefinitionId: 'TEST-SECRET-FOUND',
+      cardNumber: 'TEST-SECRET-FOUND',
+      name: 'Secret Found',
+      types: ['Secret Type'],
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    let foundId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', searcher));
+    ({ rig, deckIds: [foundId] } = putDeckCards(rig, 'p1', foundCard, 1));
+
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: 'TEST-SECRET-SEARCHER',
+        templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 1, pick: 1, reveal: false, destination: 'hand', filter: { typeIncludes: 'Secret Type' } }] },
+      },
+    ]);
+    const playResult = executeAction(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+    const choice = playResult.state.pendingChoices[0];
+    const resolveResult = executeAction(
+      playResult.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: choice.id, response: [foundId] },
+      rig.defs,
+      registry,
+    );
+
+    expect(resolveResult.state.players.p1.hand.cardIds).toContain(foundId);
+    expect(resolveResult.state.cardsById[foundId].revealedTo).toEqual(['p1']);
+    expect(resolveResult.log.at(-1)).toMatchObject({
+      visibility: { visibleTo: ['p1'] },
+      data: { reveal: false, destination: 'hand', addedInstanceIds: [], privateAddedInstanceIds: [foundId] },
+    });
+  });
+
+  it('can put a non-revealed searched card on top of Life instead of into hand', () => {
+    const searcher = makeCharacterDef({
+      cardDefinitionId: 'TEST-LIFE-SEARCHER',
+      cardNumber: 'TEST-LIFE-SEARCHER',
+      name: 'Life Searcher',
+      category: 'character',
+      baseCost: 0,
+      basePower: 1000,
+    });
+    const foundCard = makeCharacterDef({
+      cardDefinitionId: 'TEST-LIFE-FOUND',
+      cardNumber: 'TEST-LIFE-FOUND',
+      name: 'Life Found',
+      types: ['Life Type'],
+    });
+    const offType = makeCharacterDef({
+      cardDefinitionId: 'TEST-LIFE-OFF',
+      cardNumber: 'TEST-LIFE-OFF',
+      name: 'Life Off Type',
+      types: ['Other'],
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    let foundId: string;
+    let offTypeId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', searcher));
+    ({ rig, deckIds: [foundId] } = putDeckCards(rig, 'p1', foundCard, 1));
+    ({ rig, deckIds: [offTypeId] } = putDeckCards(rig, 'p1', offType, 1));
+
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: 'TEST-LIFE-SEARCHER',
+        templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 2, pick: 1, reveal: false, destination: 'lifeTop', filter: { typeIncludes: 'Life Type' } }] },
+      },
+    ]);
+    const playResult = executeAction(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+    const choice = playResult.state.pendingChoices[0];
+    const resolveResult = executeAction(
+      playResult.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: choice.id, response: [foundId] },
+      rig.defs,
+      registry,
+    );
+
+    expect(resolveResult.state.players.p1.hand.cardIds).not.toContain(foundId);
+    expect(resolveResult.state.players.p1.lifeArea.cardIds[0]).toBe(foundId);
+    expect(resolveResult.state.cardsById[foundId]).toMatchObject({ currentZone: 'lifeArea', revealedTo: ['p1'] });
+    expect(resolveResult.state.players.p1.deck.cardIds).toEqual([offTypeId]);
+    expect(resolveResult.log.at(-1)).toMatchObject({
+      visibility: { visibleTo: ['p1'] },
+      data: { reveal: false, destination: 'lifeTop', privateAddedInstanceIds: [foundId] },
+    });
+  });
+
+  it('skips an if-you-do follow-up when an up-to search chooses nothing', () => {
+    const searcher = makeCharacterDef({
+      cardDefinitionId: 'TEST-IF-DO-DECLINE',
+      cardNumber: 'TEST-IF-DO-DECLINE',
+      name: 'If Do Decline',
+      category: 'character',
+      baseCost: 0,
+      basePower: 1000,
+    });
+    const foundCard = makeCharacterDef({
+      cardDefinitionId: 'TEST-IF-DO-FOUND',
+      cardNumber: 'TEST-IF-DO-FOUND',
+      name: 'If Do Found',
+      types: ['If Do'],
+    });
+    const spareHandCard = makeCharacterDef({
+      cardDefinitionId: 'TEST-IF-DO-SPARE',
+      cardNumber: 'TEST-IF-DO-SPARE',
+      name: 'If Do Spare',
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    let foundId: string;
+    let spareHandId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', searcher));
+    ({ rig, instanceId: spareHandId } = putInHand(rig, 'p1', spareHandCard));
+    ({ rig, deckIds: [foundId] } = putDeckCards(rig, 'p1', foundCard, 1));
+
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: 'TEST-IF-DO-DECLINE',
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'searchTopDeck', look: 1, pick: 1, reveal: false, destination: 'hand', filter: { typeIncludes: 'If Do' } },
+            { fn: 'trashFromHand', count: 1, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ]);
+    const playResult = executeAction(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+    const searchChoice = playResult.state.pendingChoices[0];
+    const afterDecline = executeAction(
+      playResult.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: searchChoice.id, response: [] },
+      rig.defs,
+      registry,
+    );
+
+    expect(afterDecline.state.pendingChoices).toEqual([]);
+    expect(afterDecline.state.players.p1.hand.cardIds).toContain(spareHandId);
+    expect(afterDecline.state.players.p1.deck.cardIds).toEqual([foundId]);
+  });
+
+  it('runs an if-you-do follow-up when an up-to search moves a card', () => {
+    const searcher = makeCharacterDef({
+      cardDefinitionId: 'TEST-IF-DO-PICK',
+      cardNumber: 'TEST-IF-DO-PICK',
+      name: 'If Do Pick',
+      category: 'character',
+      baseCost: 0,
+      basePower: 1000,
+    });
+    const foundCard = makeCharacterDef({
+      cardDefinitionId: 'TEST-IF-DO-PICK-FOUND',
+      cardNumber: 'TEST-IF-DO-PICK-FOUND',
+      name: 'If Do Pick Found',
+      types: ['If Do'],
+    });
+    const spareHandCard = makeCharacterDef({
+      cardDefinitionId: 'TEST-IF-DO-PICK-SPARE',
+      cardNumber: 'TEST-IF-DO-PICK-SPARE',
+      name: 'If Do Pick Spare',
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    let foundId: string;
+    let spareHandId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', searcher));
+    ({ rig, instanceId: spareHandId } = putInHand(rig, 'p1', spareHandCard));
+    ({ rig, deckIds: [foundId] } = putDeckCards(rig, 'p1', foundCard, 1));
+
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: 'TEST-IF-DO-PICK',
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'searchTopDeck', look: 1, pick: 1, reveal: false, destination: 'hand', filter: { typeIncludes: 'If Do' } },
+            { fn: 'trashFromHand', count: 1, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ]);
+    const playResult = executeAction(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+    const searchChoice = playResult.state.pendingChoices[0];
+    const afterSearch = executeAction(
+      playResult.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: searchChoice.id, response: [foundId] },
+      rig.defs,
+      registry,
+    );
+
+    const trashChoice = afterSearch.state.pendingChoices[0];
+    expect(trashChoice).toMatchObject({
+      sourceEffectId: 'ir',
+      constraints: { min: 1, max: 1, candidateInstanceIds: [spareHandId, foundId] },
+    });
+  });
+
+  it('continues composed onPlay templates after a search choice resolves', () => {
+    const searcher = makeCharacterDef({
+      cardDefinitionId: 'TEST-CONTINUE-SEARCH',
+      cardNumber: 'TEST-CONTINUE-SEARCH',
+      name: 'Continue Searcher',
+      category: 'character',
+      baseCost: 0,
+      basePower: 1000,
+    });
+    const foundCard = makeCharacterDef({
+      cardDefinitionId: 'TEST-CELESTIAL',
+      cardNumber: 'TEST-CELESTIAL',
+      name: 'Celestial Card',
+      types: ['Celestial Dragons'],
+    });
+    const offType = makeCharacterDef({
+      cardDefinitionId: 'TEST-NOT-CELESTIAL',
+      cardNumber: 'TEST-NOT-CELESTIAL',
+      name: 'Off Type',
+      types: ['Navy'],
+    });
+    const spareHandCard = makeCharacterDef({
+      cardDefinitionId: 'TEST-SPARE-HAND',
+      cardNumber: 'TEST-SPARE-HAND',
+      name: 'Spare Hand Card',
+      types: ['Straw Hat Crew'],
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    let spareHandId: string;
+    let foundId: string;
+    let offTypeId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', searcher));
+    ({ rig, instanceId: spareHandId } = putInHand(rig, 'p1', spareHandCard));
+    ({ rig, deckIds: [foundId] } = putDeckCards(rig, 'p1', foundCard, 1));
+    ({ rig, deckIds: [offTypeId] } = putDeckCards(rig, 'p1', offType, 1));
+
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: 'TEST-CONTINUE-SEARCH',
+        templates: [
+          { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 2, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Celestial Dragons' }, remainder: 'trash' }] } },
+          { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromHand', count: 1 }] } },
+        ],
+      },
+    ]);
+
+    const playResult = executeAction(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+    const searchChoice = playResult.state.pendingChoices[0];
+    expect(searchChoice.constraints.candidateInstanceIds).toEqual([foundId]);
+
+    const afterSearch = executeAction(
+      playResult.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: searchChoice.id, response: [foundId] },
+      rig.defs,
+      registry,
+    );
+    const trashChoice = afterSearch.state.pendingChoices[0];
+    expect(trashChoice).toMatchObject({
+      playerId: 'p1',
+      kind: 'SELECT_CARDS',
+      sourceEffectId: 'ir',
+      constraints: { min: 1, max: 1, candidateInstanceIds: [spareHandId, foundId] },
+    });
+    expect(afterSearch.state.players.p1.trash.cardIds).toEqual([offTypeId]);
+
+    const afterTrash = executeAction(
+      afterSearch.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: trashChoice.id, response: [spareHandId] },
+      rig.defs,
+      registry,
+    );
+
+    expect(afterTrash.state.pendingChoices).toEqual([]);
+    expect(afterTrash.state.players.p1.hand.cardIds).toEqual([foundId]);
+    expect(afterTrash.state.players.p1.trash.cardIds).toEqual([spareHandId, offTypeId]);
+    expect(afterTrash.state.players.p1.deck.cardIds).toEqual([]);
   });
 });

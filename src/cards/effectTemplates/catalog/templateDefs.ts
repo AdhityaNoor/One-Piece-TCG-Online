@@ -1,126 +1,60 @@
 /**
  * Template catalog: identifiers and typed parameter schemas.
  *
- * Every TemplateId names one reusable card-effect shape. The TemplateParamMap
- * constrains what params each shape accepts — TypeScript narrows the params
- * field in CardEffectAssignment automatically based on the templateId
- * discriminant.
+ * Card behavior is modeled as timing + reusable functions:
+ *   - `timing` says when the ability exists/fires.
+ *   - `condition`, `gate`, `cost`, and `oncePerTurn` describe the ability wrapper.
+ *   - `functions` is an ordered list of reusable effect functions translated to IR ops.
  *
- * Rules:
- *   - Add a template only when at least one reviewed card uses it.
- *   - Keep params minimal: only what the factory needs to produce the IR.
- *   - No free-text strings that could be confused with card effect text.
+ * Raw card text never enters this path.
  */
-import type { AbilityCost, AbilityGate, SearchFilter, SearchRemainderDestination } from '../../../engine/effects/effectIr';
-
-// ---------------------------------------------------------------------------
-// Template identifiers
-// ---------------------------------------------------------------------------
+import type {
+  AbilityCost,
+  AbilityGate,
+  IrCondition,
+  IrDuration,
+  IrTiming,
+  SearchFilter,
+  SearchPickDestination,
+  SearchRemainderDestination,
+  SequenceCondition,
+} from '../../../engine/effects/effectIr';
 
 export const TEMPLATE_IDS = {
-  // --- draw ---
-  ON_PLAY_DRAW: 'onPlayDraw',
-  ON_KO_DRAW: 'onKODraw',
-
-  // --- DON!! ramp (add from DON!! deck) ---
-  ON_PLAY_ADD_DON_FROM_DECK: 'onPlayAddDonFromDeck',
-  ON_KO_ADD_DON_FROM_DECK: 'onKOAddDonFromDeck',
-
-  // --- give DON!! (attach from cost area) ---
-  ON_PLAY_GIVE_DON: 'onPlayGiveDon',
-  ACTIVATE_MAIN_GIVE_DON: 'activateMainGiveDon',
-
-  // --- K.O. ---
-  ON_PLAY_KO_OPPONENT_CHARACTER: 'onPlayKoOpponentCharacter',
-  TRIGGER_KO_OPPONENT_CHARACTER: 'triggerKoOpponentCharacter',
-  ACTIVATE_MAIN_KO: 'activateMainKo',
-
-  // --- rest opponent ---
-  ON_PLAY_REST_OPPONENT_CHARACTER: 'onPlayRestOpponentCharacter',
-  ACTIVATE_MAIN_REST: 'activateMainRest',
-
-  // --- bounce (return to hand) ---
-  ON_PLAY_RETURN_TO_HAND: 'onPlayReturnToHand',
-
-  // --- modify cost ---
-  ON_PLAY_MODIFY_COST_OPPONENT: 'onPlayModifyCostOpponent',
-  WHEN_ATTACKING_MODIFY_COST_OPPONENT: 'whenAttackingModifyCostOpponent',
-  ACTIVATE_MAIN_MODIFY_COST_OPPONENT: 'activateMainModifyCostOpponent',
-
-  // --- modify power ---
-  WHEN_ATTACKING_MODIFY_POWER_OPPONENT: 'whenAttackingModifyPowerOpponent',
-
-  // --- draw + discard ---
-  ON_PLAY_DRAW_AND_TRASH: 'onPlayDrawAndTrash',
-  WHEN_ATTACKING_DRAW_AND_TRASH: 'whenAttackingDrawAndTrash',
-
-  // --- searcher (look at top N, pick matching) ---
-  ON_PLAY_SEARCH_TOP_DECK: 'onPlaySearchTopDeck',
-  ACTIVATE_MAIN_SEARCH_TOP_DECK: 'activateMainSearchTopDeck',
-
-  // --- DON!! attachment conditional power boost (passive) ---
-  DON_ATTACHED_SELF_POWER: 'donAttachedSelfPower',
+  ABILITY: 'ability',
 } as const;
 
 export type TemplateId = (typeof TEMPLATE_IDS)[keyof typeof TEMPLATE_IDS];
 
-// ---------------------------------------------------------------------------
-// Typed params per template (one entry per TemplateId)
-// ---------------------------------------------------------------------------
+export type AbilityFunction =
+  | { fn: 'draw'; amount: number }
+  | { fn: 'addDonFromDeck'; count: number; rested: boolean }
+  | { fn: 'giveDon'; count: number }
+  | { fn: 'koOpponentCharacter'; filter: { maxCost?: number; maxPower?: number } }
+  | { fn: 'restOpponentCharacter'; filter: { maxCost?: number; maxPower?: number } }
+  | { fn: 'returnToHand'; maxCost: number; target: 'any' | 'opponent' }
+  | { fn: 'modifyCostOpponent'; amount: number }
+  | { fn: 'modifyPowerOpponent'; amount: number; maxTargets?: number }
+  | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
+  | { fn: 'trashFromHand'; count: number }
+  | { fn: 'trashTopDeck'; count: number }
+  | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter: SearchFilter; remainder?: SearchRemainderDestination }
+  | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition };
+
+export type SequencedAbilityFunction = AbilityFunction & {
+  /** Gate this function on the prior function result, for "if you do" wording. */
+  ifPrevious?: SequenceCondition;
+};
+
+export interface AbilityTemplateParams {
+  timing: IrTiming;
+  functions: readonly SequencedAbilityFunction[];
+  condition?: IrCondition;
+  gate?: AbilityGate[];
+  cost?: AbilityCost[];
+  oncePerTurn?: boolean;
+}
 
 export interface TemplateParamMap {
-  // draw
-  onPlayDraw: { amount: number };
-  onKODraw: { amount: number };
-
-  // DON!! ramp
-  onPlayAddDonFromDeck: { count: number; rested: boolean };
-  onKOAddDonFromDeck: { count: number; rested: boolean };
-
-  // give DON!! (attach from cost area to a leader/character)
-  /** [On Play] Give up to `count` rested DON!! to a chosen Leader/Character. */
-  onPlayGiveDon: { count: number };
-  /** [Activate: Main] [Once Per Turn] Give up to `count` rested DON!! to a chosen Leader/Character. */
-  activateMainGiveDon: { count: number };
-
-  // K.O.
-  onPlayKoOpponentCharacter: { filter: { maxCost?: number; maxPower?: number } };
-  triggerKoOpponentCharacter: { filter: { maxCost?: number; maxPower?: number } };
-  /** [Activate: Main] K.O. up to 1 opponent Character matching filter. Optional activation cost. */
-  activateMainKo: { filter: { maxCost?: number; maxPower?: number }; cost?: AbilityCost[]; oncePerTurn?: boolean };
-
-  // rest
-  onPlayRestOpponentCharacter: { filter: { maxCost?: number; maxPower?: number } };
-  /** [Activate: Main] Rest up to 1 opponent Character matching filter. Optional activation cost. */
-  activateMainRest: { filter: { maxCost?: number; maxPower?: number }; cost?: AbilityCost[]; oncePerTurn?: boolean };
-
-  // bounce
-  /** [On Play] Return up to 1 opponent Character with cost ≤ maxCost to owner's hand. */
-  onPlayReturnToHand: { maxCost: number; target: 'any' | 'opponent' };
-
-  // modify cost
-  /** [On Play] Give up to 1 opponent Character −|amount| cost this turn. amount must be negative. */
-  onPlayModifyCostOpponent: { amount: number };
-  /** [When Attacking] Give up to 1 opponent Character −|amount| cost this turn. */
-  whenAttackingModifyCostOpponent: { amount: number; donRequired?: number };
-  /** [Activate: Main] Give up to 1 opponent Character −|amount| cost this turn. Optional activation cost. */
-  activateMainModifyCostOpponent: { amount: number; cost?: AbilityCost[]; oncePerTurn?: boolean };
-
-  // modify power (opponent)
-  /** [When Attacking] Give up to `maxTargets` (default 1) opponent Characters −|amount| power this turn. */
-  whenAttackingModifyPowerOpponent: { amount: number; donRequired?: number; maxTargets?: number };
-
-  // draw + discard
-  /** [On Play] Draw `drawCount` cards, then choose `trashCount` to trash. */
-  onPlayDrawAndTrash: { drawCount: number; trashCount: number };
-  /** [When Attacking] Draw `drawCount` cards, then choose `trashCount` to trash. */
-  whenAttackingDrawAndTrash: { drawCount: number; trashCount: number; donRequired?: number };
-
-  // searcher
-  onPlaySearchTopDeck: { look: number; pick: number; filter: SearchFilter; remainder?: SearchRemainderDestination; gate?: AbilityGate[] };
-  /** [Activate: Main] Look at top `look`; add up to `pick` matching cards to hand. Optional cost. */
-  activateMainSearchTopDeck: { look: number; pick: number; filter: SearchFilter; remainder?: SearchRemainderDestination; gate?: AbilityGate[]; cost?: AbilityCost[]; oncePerTurn?: boolean };
-
-  // DON!! attachment passive boost
-  donAttachedSelfPower: { donAttachedAtLeast: number; amount: number };
+  ability: AbilityTemplateParams;
 }

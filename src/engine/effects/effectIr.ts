@@ -56,6 +56,17 @@ export interface SearchFilter {
 }
 
 export type SearchRemainderDestination = 'bottom' | 'trash';
+export type SearchPickDestination = 'hand' | 'lifeTop';
+export type SequenceCondition = 'previousSelectedAny' | 'previousMovedAny';
+
+export interface EffectOpSequenceGate {
+  /**
+   * Optional sequencing gate for text like "If you do" after an optional
+   * function. Plain "Then" does not use this; choosing 0 for an "up to" effect
+   * still counts as resolving the prior function.
+   */
+  ifPrevious?: SequenceCondition;
+}
 
 /**
  * One instruction. `chooseTargets` and `searchTopDeck` both suspend the program
@@ -64,27 +75,29 @@ export type SearchRemainderDestination = 'bottom' | 'trash';
  * resolves its own deck movement on resume.
  */
 export type EffectOp =
-  | { op: 'draw'; amount: number }
-  | { op: 'addPower'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition }
-  | { op: 'addCost'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition }
-  | { op: 'giveDon'; target: Selector; count: number }
-  | { op: 'ko'; target: Selector }
-  | { op: 'rest'; target: Selector }
-  | { op: 'returnToHand'; target: Selector } // bounce a Character to its owner's hand
-  | { op: 'playFromHand'; target: Selector } // put a chosen Character from hand into play (no cost)
-  | { op: 'moveToHand'; target: Selector } // move a chosen card (e.g. from the trash) to its owner's hand
-  | { op: 'trashCards'; target: Selector } // move chosen cards (e.g. from the hand) to their owner's trash
-  | { op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string }
+  | ({ op: 'draw'; amount: number } & EffectOpSequenceGate)
+  | ({ op: 'addPower'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
+  | ({ op: 'addCost'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
+  | ({ op: 'giveDon'; target: Selector; count: number } & EffectOpSequenceGate)
+  | ({ op: 'ko'; target: Selector } & EffectOpSequenceGate)
+  | ({ op: 'rest'; target: Selector } & EffectOpSequenceGate)
+  | ({ op: 'returnToHand'; target: Selector } & EffectOpSequenceGate) // bounce a Character to its owner's hand
+  | ({ op: 'playFromHand'; target: Selector } & EffectOpSequenceGate) // put a chosen Character from hand into play (no cost)
+  | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
+  | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
+  | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string } & EffectOpSequenceGate)
   // Look at top `look` cards; player adds up to `pick` filter-matching cards to
-  // hand; the rest go to the configured destination (bottom by default).
-  | { op: 'searchTopDeck'; look: number; pick: number; filter?: SearchFilter; remainder?: SearchRemainderDestination; prompt: string }
+  // `destination`; `reveal` means the added card identity is public ("reveal up to N").
+  // Without that text, the added card remains secret to the controller.
+  // The rest go to the configured destination (bottom by default).
+  | ({ op: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination; prompt: string } & EffectOpSequenceGate)
   // Trash the top `count` cards of the controller's own deck (self-mill).
-  | { op: 'trashTopDeck'; count: number }
+  | ({ op: 'trashTopDeck'; count: number } & EffectOpSequenceGate)
   // Add `count` DON!! from the DON!! deck to the cost area, active or rested (DON!! ramp).
-  | { op: 'addDonFromDeck'; count: number; rested: boolean };
+  | ({ op: 'addDonFromDeck'; count: number; rested: boolean } & EffectOpSequenceGate);
 
 /** When the ability is exposed/fires (mirrors EffectTimingKeyword). */
-export type IrTrigger = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'activateMain' | 'onKO' | 'counter' | 'trigger';
+export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'activateMain' | 'onKO' | 'counter' | 'lifeTrigger';
 
 /**
  * An activation cost that must be PAID before an activated ability resolves
@@ -108,10 +121,11 @@ export type AbilityGate =
   | { kind: 'selfCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more/less Characters"
   | { kind: 'opponentCharacterCount'; atLeast?: number; atMost?: number } // "If your opponent has N or less Characters"
   | { kind: 'selfLife'; atLeast?: number; atMost?: number } // "If you have N or less Life cards"
+  | { kind: 'opponentLife'; atLeast?: number; atMost?: number } // "If your opponent has N or less Life cards"
   | { kind: 'selfHand'; atLeast?: number; atMost?: number }; // "If you have N or less cards in your hand"
 
 export interface Ability {
-  trigger: IrTrigger;
+  timing: IrTiming;
   /** Gate for whether a TRIGGERED ability fires at all ([DON!! xN] / [Your/Opponent's Turn]). */
   condition?: IrCondition;
   /** "If …" board-state preconditions (all must hold) — checked once at fire/activate time. */

@@ -21,13 +21,12 @@ export const ST03_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST03-005 — [DON!! x1] [When Attacking] Draw 2 cards and trash 2 cards from your hand.
   {
     cardNumber: 'ST03-005',
-    templateId: 'whenAttackingDrawAndTrash',
-    params: { drawCount: 2, trashCount: 2, donRequired: 1 },
+    templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] },
   },
 
   // ST03-009 — [On Play] Return up to 1 Character with a cost of 7 or less to the owner's hand.
-  { cardNumber: 'ST03-009', templateId: 'onPlayReturnToHand', params: { maxCost: 7, target: 'any' } },
+  { cardNumber: 'ST03-009', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'returnToHand', maxCost: 7, target: 'any' }] } },
 
   // ST03-014 — [On Play] Return up to 1 Character with a cost of 3 or less to the owner's hand.
-  { cardNumber: 'ST03-014', templateId: 'onPlayReturnToHand', params: { maxCost: 3, target: 'any' } },
+  { cardNumber: 'ST03-014', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'returnToHand', maxCost: 3, target: 'any' }] } },
 ];

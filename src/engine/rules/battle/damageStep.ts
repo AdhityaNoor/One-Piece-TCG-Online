@@ -117,7 +117,7 @@ export function resolveDamageAndEndOfBattle(
         player = { ...player, lifeArea: { ...player.lifeArea, cardIds: restLife }, hand: addToZoneTop(player.hand, lifeCardId) };
 
         if (lifeDef?.hasTrigger) {
-          const hasCuratedTrigger = !!registry[lifeCardId ? cardsById[lifeCardId].cardDefinitionId : '']?.abilities.some((ab) => ab.trigger === 'trigger');
+          const hasCuratedTrigger = !!registry[lifeCardId ? cardsById[lifeCardId].cardDefinitionId : '']?.abilities.some((ab) => ab.timing === 'lifeTrigger');
           if (hasCuratedTrigger) {
             // Offer to activate it (10-1-5-2). The card is in hand for now; a
             // "yes" moves it to the trash and resolves the trigger.

@@ -25,7 +25,6 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST10-005 — [DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power.
   {
     cardNumber: 'ST10-005',
-    templateId: 'whenAttackingModifyPowerOpponent',
-    params: { amount: -2000, donRequired: 1 },
+    templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'modifyPowerOpponent', amount: -2000 }] },
   },
 ];

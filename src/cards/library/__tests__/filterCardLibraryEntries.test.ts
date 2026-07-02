@@ -75,8 +75,8 @@ describe('filterCardLibraryEntries', () => {
       hasTrigger: true,
     });
 
-    expect(filterCardLibraryEntries([...entries, triggerEvent], { trigger: 'has-trigger' })).toEqual([triggerEvent]);
-    expect(filterCardLibraryEntries([...entries, triggerEvent], { trigger: 'no-trigger' })).toEqual(entries);
+    expect(filterCardLibraryEntries([...entries, triggerEvent], { timing: 'has-trigger' })).toEqual([triggerEvent]);
+    expect(filterCardLibraryEntries([...entries, triggerEvent], { timing: 'no-trigger' })).toEqual(entries);
   });
 
   it('combines query and facet filters with AND', () => {

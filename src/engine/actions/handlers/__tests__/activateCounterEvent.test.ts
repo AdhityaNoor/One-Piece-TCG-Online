@@ -43,7 +43,7 @@ describe('validateActivateCounterEvent', () => {
         cardNumber: 'COSTED-COUNTER',
         abilities: [
           {
-            trigger: 'counter',
+            timing: 'counter',
             cost: [{ kind: 'donMinus', count: 1 }],
             ops: [
               { op: 'chooseTargets', var: 't', from: { sel: 'controllerLeaderOrCharacters' }, min: 0, max: 1, prompt: 'Choose your Leader or 1 Character to gain +4000 power this battle (or decline).' },

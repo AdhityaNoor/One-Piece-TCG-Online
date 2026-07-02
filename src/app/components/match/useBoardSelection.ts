@@ -54,17 +54,17 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
   /** True if the card's curated program exposes an [Activate: Main] ability (8-1-3-2). */
   const hasActivateMain = (card: CardView): boolean =>
-    !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.trigger === 'activateMain');
+    !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.timing === 'activateMain');
 
   const hasUnusedActivateMain = (card: CardView): boolean => {
-    const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.trigger === 'activateMain');
+    const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'activateMain');
     if (!ability) return false;
     return !ability.oncePerTurn || !card.oncePerTurnUsed.includes('activateMain');
   };
 
   /** True if the card's curated program exposes a [Counter] ability (7-1-3). */
   const hasCounter = (card: CardView): boolean =>
-    !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.trigger === 'counter');
+    !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.timing === 'counter');
 
   const currentCostOf = (card: CardView): number => {
     if (!state) return card.cost ?? 0;

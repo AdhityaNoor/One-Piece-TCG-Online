@@ -20,8 +20,8 @@ describe('buildRegistryFromAssignments', () => {
 
   it('maps each cardNumber to an EffectProgram with matching cardNumber', () => {
     const assignments: CardEffectAssignment[] = [
-      { cardNumber: 'TEST-001', templateId: 'onPlayDraw', params: { amount: 1 } },
-      { cardNumber: 'TEST-002', templateId: 'onKODraw', params: { amount: 2 } },
+      { cardNumber: 'TEST-001', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
+      { cardNumber: 'TEST-002', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 2 }] } },
     ];
     const registry = buildRegistryFromAssignments(assignments);
     expect(registry['TEST-001'].cardNumber).toBe('TEST-001');
@@ -30,12 +30,12 @@ describe('buildRegistryFromAssignments', () => {
 
   it('every produced EffectProgram is JSON-serializable (no functions or class instances)', () => {
     const assignments: CardEffectAssignment[] = [
-      { cardNumber: 'A', templateId: 'onPlayDraw', params: { amount: 1 } },
-      { cardNumber: 'B', templateId: 'onPlayGiveDon', params: { count: 2 } },
-      { cardNumber: 'C', templateId: 'onPlayReturnToHand', params: { maxCost: 5, target: 'opponent' } },
-      { cardNumber: 'D', templateId: 'whenAttackingDrawAndTrash', params: { drawCount: 2, trashCount: 2, donRequired: 1 } },
-      { cardNumber: 'E', templateId: 'onPlayModifyCostOpponent', params: { amount: -3 } },
-      { cardNumber: 'F', templateId: 'whenAttackingModifyPowerOpponent', params: { amount: -2000, donRequired: 1 } },
+      { cardNumber: 'A', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
+      { cardNumber: 'B', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 2 }] } },
+      { cardNumber: 'C', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'returnToHand', maxCost: 5, target: 'opponent' }] } },
+      { cardNumber: 'D', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
+      { cardNumber: 'E', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'modifyCostOpponent', amount: -3 }] } },
+      { cardNumber: 'F', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'modifyPowerOpponent', amount: -2000 }] } },
     ];
     const registry = buildRegistryFromAssignments(assignments);
     const roundTripped = JSON.parse(JSON.stringify(registry));
@@ -44,8 +44,8 @@ describe('buildRegistryFromAssignments', () => {
 
   it('registry size equals unique assignment count', () => {
     const assignments: CardEffectAssignment[] = [
-      { cardNumber: 'X-001', templateId: 'onPlayDraw', params: { amount: 1 } },
-      { cardNumber: 'X-002', templateId: 'onPlayDraw', params: { amount: 1 } },
+      { cardNumber: 'X-001', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
+      { cardNumber: 'X-002', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
     ];
     expect(Object.keys(buildRegistryFromAssignments(assignments))).toHaveLength(2);
   });
@@ -55,115 +55,151 @@ describe('buildRegistryFromAssignments', () => {
       {
         cardNumber: 'COMBO-001',
         templates: [
-          { templateId: 'onPlayDraw', params: { amount: 1 } },
-          { templateId: 'whenAttackingModifyCostOpponent', params: { amount: -4 } },
+          { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
+          { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'modifyCostOpponent', amount: -4 }] } },
         ],
       },
     ]);
     expect(registry['COMBO-001']).toMatchObject({
       cardNumber: 'COMBO-001',
       abilities: [
-        { trigger: 'onPlay', ops: [{ op: 'draw', amount: 1 }] },
-        { trigger: 'whenAttacking' },
+        { timing: 'onPlay', ops: [{ op: 'draw', amount: 1 }] },
+        { timing: 'whenAttacking' },
       ],
     });
     expect(registry['COMBO-001'].abilities[1].ops[1]).toMatchObject({ op: 'addCost', amount: -4 });
   });
 });
 
-describe('template factories — structural correctness', () => {
-  it('onPlayDraw produces onPlay trigger with draw op', () => {
-    const p = applyTemplate('T', 'onPlayDraw', { amount: 2 });
+describe('template factories - structural correctness', () => {
+  it('ability produces the configured trigger with draw op', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'draw', amount: 2 }] });
     expect(p.abilities).toHaveLength(1);
-    expect(p.abilities[0].trigger).toBe('onPlay');
+    expect(p.abilities[0].timing).toBe('onPlay');
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'draw', amount: 2 });
   });
 
-  it('onPlayGiveDon produces chooseTargets then giveDon', () => {
-    const p = applyTemplate('T', 'onPlayGiveDon', { count: 2 });
+  it('giveDon function produces chooseTargets then giveDon', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 2 }] });
     const [choose, give] = p.abilities[0].ops;
     expect(choose.op).toBe('chooseTargets');
     expect(give.op).toBe('giveDon');
-    // @ts-expect-error — narrow to giveDon shape
+    // @ts-expect-error - narrow to giveDon shape
     expect(give.count).toBe(2);
   });
 
-  it('activateMainGiveDon is oncePerTurn', () => {
-    const p = applyTemplate('T', 'activateMainGiveDon', { count: 1 });
-    expect(p.abilities[0].trigger).toBe('activateMain');
+  it('ability carries oncePerTurn independently from its function', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] });
+    expect(p.abilities[0].timing).toBe('activateMain');
     expect(p.abilities[0].oncePerTurn).toBe(true);
   });
 
-  it('onPlayReturnToHand targets opponent characters filtered by maxCost', () => {
-    const p = applyTemplate('T', 'onPlayReturnToHand', { maxCost: 5, target: 'opponent' });
+  it('returnToHand function targets opponent characters filtered by maxCost', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'returnToHand', maxCost: 5, target: 'opponent' }] });
     const choose = p.abilities[0].ops[0];
     expect(choose.op).toBe('chooseTargets');
-    // @ts-expect-error — narrow to chooseTargets shape
+    // @ts-expect-error - narrow to chooseTargets shape
     expect(choose.from).toMatchObject({ sel: 'opponentCharacters', maxCost: 5 });
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'returnToHand' });
   });
 
-  it('onPlayReturnToHand can target any Character when text says Character', () => {
-    const p = applyTemplate('T', 'onPlayReturnToHand', { maxCost: 7, target: 'any' });
+  it('returnToHand function can target any Character when text says Character', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'returnToHand', maxCost: 7, target: 'any' }] });
     const choose = p.abilities[0].ops[0];
     expect(choose.op).toBe('chooseTargets');
     // @ts-expect-error - narrow to chooseTargets shape
     expect(choose.from).toMatchObject({ sel: 'allCharacters', maxCost: 7 });
   });
 
-  it('whenAttackingDrawAndTrash sets donAttachedAtLeast condition when donRequired provided', () => {
-    const p = applyTemplate('T', 'whenAttackingDrawAndTrash', { drawCount: 2, trashCount: 2, donRequired: 1 });
-    expect(p.abilities[0].trigger).toBe('whenAttacking');
+  it('ability condition carries DON!! attachment requirements', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'whenAttacking',
+      condition: { donAttachedAtLeast: 1 },
+      functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }],
+    });
+    expect(p.abilities[0].timing).toBe('whenAttacking');
     expect(p.abilities[0].condition).toEqual({ donAttachedAtLeast: 1 });
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'draw', amount: 2 });
   });
 
-  it('onPlayDrawAndTrash draws then requires trashing from hand', () => {
-    const p = applyTemplate('T', 'onPlayDrawAndTrash', { drawCount: 2, trashCount: 1 });
-    expect(p.abilities[0].trigger).toBe('onPlay');
+  it('drawAndTrash function draws then requires trashing from hand', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] });
+    expect(p.abilities[0].timing).toBe('onPlay');
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'draw', amount: 2 });
-    expect(p.abilities[0].ops[1]).toMatchObject({
-      op: 'chooseTargets',
-      from: { sel: 'controllerHand' },
-      min: 1,
-      max: 1,
-    });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerHand' }, min: 1, max: 1 });
     expect(p.abilities[0].ops[2]).toMatchObject({ op: 'trashCards' });
   });
 
-  it('whenAttackingDrawAndTrash has no condition when donRequired is omitted', () => {
-    const p = applyTemplate('T', 'whenAttackingDrawAndTrash', { drawCount: 1, trashCount: 1 });
+  it('trashFromHand function requires trashing from hand at the configured timing', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'trashFromHand', count: 1 }] });
+    expect(p.abilities[0].timing).toBe('onPlay');
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerHand' }, min: 1, max: 1 });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'trashCards' });
+  });
+
+  it('trashTopDeck function mills from the controller deck without a choice', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 3 }] });
+    expect(p.abilities[0].timing).toBe('onPlay');
+    expect(p.abilities[0].ops[0]).toEqual({ op: 'trashTopDeck', count: 3 });
+  });
+
+  it('ability has no condition when condition is omitted', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'whenAttacking', functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] });
     expect(p.abilities[0].condition).toBeUndefined();
   });
 
-  it('onPlayModifyCostOpponent produces chooseTargets then addCost duringThisTurn', () => {
-    const p = applyTemplate('T', 'onPlayModifyCostOpponent', { amount: -3 });
+  it('modifyCostOpponent function produces chooseTargets then addCost duringThisTurn', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'modifyCostOpponent', amount: -3 }] });
     expect(p.abilities[0].ops[0].op).toBe('chooseTargets');
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'addCost', amount: -3, duration: 'duringThisTurn' });
   });
 
-  it('whenAttackingModifyPowerOpponent produces addPower with negative amount', () => {
-    const p = applyTemplate('T', 'whenAttackingModifyPowerOpponent', { amount: -2000, donRequired: 1 });
-    expect(p.abilities[0].trigger).toBe('whenAttacking');
+  it('modifyPowerOpponent function produces addPower with negative amount', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'whenAttacking',
+      condition: { donAttachedAtLeast: 1 },
+      functions: [{ fn: 'modifyPowerOpponent', amount: -2000 }],
+    });
+    expect(p.abilities[0].timing).toBe('whenAttacking');
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'addPower', amount: -2000, duration: 'duringThisTurn' });
   });
 
-  it('onPlaySearchTopDeck produces searchTopDeck op with correct look/pick/filter', () => {
-    const p = applyTemplate('T', 'onPlaySearchTopDeck', {
-      look: 5,
-      pick: 1,
-      filter: { anyOf: [{ typeIncludes: 'Straw Hat Crew' }, { name: 'Sanji' }], excludeSelfName: true },
+  it('searchTopDeck function produces a search op at the configured timing', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'whenAttacking',
+      functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Straw Hat Crew' }, { name: 'Sanji' }], excludeSelfName: true } }],
     });
+    expect(p.abilities[0].timing).toBe('whenAttacking');
     const op = p.abilities[0].ops[0];
     expect(op.op).toBe('searchTopDeck');
-    // @ts-expect-error — narrow
+    // @ts-expect-error - narrow
     expect(op.look).toBe(5);
+    // @ts-expect-error
+    expect(op.reveal).toBe(true);
+    // @ts-expect-error
+    expect(op.destination).toBe('hand');
     // @ts-expect-error
     expect(op.filter).toMatchObject({ anyOf: [{ typeIncludes: 'Straw Hat Crew' }, { name: 'Sanji' }], excludeSelfName: true });
   });
 
-  it('donAttachedSelfPower has permanent duration and donAttachedAtLeast condition', () => {
-    const p = applyTemplate('T', 'donAttachedSelfPower', { donAttachedAtLeast: 1, amount: 1000 });
+  it('can gate a follow-up function on the previous function result', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'searchTopDeck', look: 1, pick: 1, reveal: false, destination: 'hand', filter: { typeIncludes: 'Test' } },
+        { fn: 'trashFromHand', count: 1, ifPrevious: 'previousMovedAny' },
+      ],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'searchTopDeck' });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'chooseTargets', ifPrevious: 'previousMovedAny' });
+    expect(p.abilities[0].ops[2]).toMatchObject({ op: 'trashCards', ifPrevious: 'previousMovedAny' });
+  });
+
+  it('addPowerSelf function has permanent duration and donAttachedAtLeast condition', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onEnterPlay',
+      functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 1 } }],
+    });
     const op = p.abilities[0].ops[0];
     expect(op).toMatchObject({ op: 'addPower', amount: 1000, duration: 'permanent' });
     // @ts-expect-error

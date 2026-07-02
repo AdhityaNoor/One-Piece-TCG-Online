@@ -19,8 +19,8 @@ import type { CardEffectAssignment } from '../assembler';
 export const ST08_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST08-006 — [Blocker] [On Play] Give up to 1 of your opponent's Characters −4 cost.
   // Note: [Blocker] is an engine keyword flag, not an IR ability. Only the on-play effect is templated.
-  { cardNumber: 'ST08-006', templateId: 'onPlayModifyCostOpponent', params: { amount: -4 } },
+  { cardNumber: 'ST08-006', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'modifyCostOpponent', amount: -4 }] } },
 
   // ST08-008 — [On Play] Give up to 1 of your opponent's Characters −2 cost during this turn.
-  { cardNumber: 'ST08-008', templateId: 'onPlayModifyCostOpponent', params: { amount: -2 } },
+  { cardNumber: 'ST08-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'modifyCostOpponent', amount: -2 }] } },
 ];

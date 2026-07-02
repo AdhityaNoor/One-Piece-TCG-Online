@@ -17,11 +17,11 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const ST06_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST06-005 — [When Attacking] Give up to 1 of your opponent's Characters −4 cost during this turn.
-  { cardNumber: 'ST06-005', templateId: 'whenAttackingModifyCostOpponent', params: { amount: -4 } },
+  { cardNumber: 'ST06-005', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'modifyCostOpponent', amount: -4 }] } },
 
   // ST06-008 — [On Play] Give up to 1 of your opponent's Characters −4 cost during this turn.
-  { cardNumber: 'ST06-008', templateId: 'onPlayModifyCostOpponent', params: { amount: -4 } },
+  { cardNumber: 'ST06-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'modifyCostOpponent', amount: -4 }] } },
 
   // ST06-010 — [On Play] Give up to 1 of your opponent's Characters −3 cost during this turn.
-  { cardNumber: 'ST06-010', templateId: 'onPlayModifyCostOpponent', params: { amount: -3 } },
+  { cardNumber: 'ST06-010', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'modifyCostOpponent', amount: -3 }] } },
 ];

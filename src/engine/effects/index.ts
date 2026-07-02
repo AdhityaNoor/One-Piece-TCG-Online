@@ -15,11 +15,11 @@ export type {
   EffectResumeState,
   IrCondition,
   IrDuration,
-  IrTrigger,
+  IrTiming,
   SearchFilter,
   Selector,
 } from './effectIr';
 export { EffectContextImpl } from './effectContext';
-export { runTriggers, resumeProgram } from './interpreter';
-export { fireOnPlay, fireActivate, fireWhenAttacking, fireOnKO, fireCounter, fireTrigger, resumeChoice } from './fireTiming';
+export { runTimings, resumeProgram } from './interpreter';
+export { fireOnPlay, fireActivate, fireWhenAttacking, fireOnKO, fireCounter, fireLifeTrigger, resumeChoice } from './fireTiming';
 export { evaluateGates } from './gates';

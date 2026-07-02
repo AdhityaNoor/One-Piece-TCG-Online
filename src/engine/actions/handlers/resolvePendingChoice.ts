@@ -18,7 +18,7 @@ import type { ResolvePendingChoiceAction, ValidationResult } from '../action';
 import { createActionLogger } from '../../rules/shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { resumeChoice, fireTrigger, type EffectTemplateRegistry } from '../../effects';
+import { resumeChoice, fireLifeTrigger, type EffectTemplateRegistry } from '../../effects';
 import type { CardDefinitionLookup } from '../../rules/shared/definitions';
 
 function findChoice(state: GameState, action: ResolvePendingChoiceAction) {
@@ -107,7 +107,7 @@ export function executeResolvePendingChoice(
     if (!activate || !cardId) {
       return { state: { ...state, pendingChoices: remaining }, log: [], pendingChoices: [] };
     }
-    const fired = fireTrigger({ ...state, pendingChoices: remaining }, cardId, registry, defs, action.actionId);
+    const fired = fireLifeTrigger({ ...state, pendingChoices: remaining }, cardId, registry, defs, action.actionId);
     const inst = fired.state.cardsById[cardId];
     const owner = fired.state.players[inst.ownerId];
     const working: GameState = {

@@ -18,12 +18,11 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const ST05_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST05-002 — [On Play] Add 1 DON!! from DON!! deck (rested).
-  { cardNumber: 'ST05-002', templateId: 'onPlayAddDonFromDeck', params: { count: 1, rested: true } },
+  { cardNumber: 'ST05-002', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
   // ST05-014 — [On Play] Look at 5; add up to 1 FILM type (excl. same name).
   {
     cardNumber: 'ST05-014',
-    templateId: 'onPlaySearchTopDeck',
-    params: { look: 5, pick: 1, filter: { typeIncludes: 'FILM', excludeSelfName: true } },
+    templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'FILM', excludeSelfName: true } }] },
   },
 ];

@@ -26,12 +26,8 @@ export const ST02_ASSIGNMENTS: CardEffectAssignment[] = [
   //            Two costs: DON!! −1 (➀) AND rest-this-Character.
   {
     cardNumber: 'ST02-007',
-    templateId: 'activateMainSearchTopDeck',
-    params: {
-      look: 5,
+    templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }, { kind: 'restThis' }], functions: [{ fn: 'searchTopDeck', look: 5,
       pick: 1,
-      filter: { typeIncludes: 'Supernovas' },
-      cost: [{ kind: 'donMinus', count: 1 }, { kind: 'restThis' }],
-    },
+      reveal: true, destination: 'hand', filter: { typeIncludes: 'Supernovas' } }] },
   },
 ];

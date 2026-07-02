@@ -68,7 +68,7 @@ export function validateActivateCounterEvent(
   }
 
   const program = registry[handInstance.cardDefinitionId];
-  const ability = program?.abilities.find((a) => a.trigger === 'counter');
+  const ability = program?.abilities.find((a) => a.timing === 'counter');
   if (!ability) {
     reasons.push(`'${def.name}' has no [Counter] effect to activate.`);
   }
@@ -106,7 +106,7 @@ export function executeActivateCounterEvent(
   const player = state.players[action.playerId];
   const handInstance = state.cardsById[action.handCardInstanceId];
   const def = getDefinition(defs, handInstance);
-  const ability = registry[handInstance.cardDefinitionId]?.abilities.find((a) => a.trigger === 'counter');
+  const ability = registry[handInstance.cardDefinitionId]?.abilities.find((a) => a.timing === 'counter');
   const logger = createActionLogger(state, action.actionId);
 
   const cardsById = { ...state.cardsById };

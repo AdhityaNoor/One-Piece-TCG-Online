@@ -44,7 +44,7 @@ export function validateActivateCardEffect(
   }
 
   const program = registry[source.cardDefinitionId];
-  const ability = program?.abilities.find((a) => a.trigger === 'activateMain');
+  const ability = program?.abilities.find((a) => a.timing === 'activateMain');
   if (!ability) {
     reasons.push(`'${source.cardDefinitionId}' has no activatable [Activate: Main] effect.`);
   }
@@ -74,7 +74,7 @@ export function executeActivateCardEffect(
 ): ActionExecuteResult {
   const source = state.cardsById[action.sourceInstanceId];
   const program = registry[source.cardDefinitionId];
-  const ability = program?.abilities.find((a) => a.trigger === 'activateMain');
+  const ability = program?.abilities.find((a) => a.timing === 'activateMain');
 
   // Pay the activation cost first (8-3-1-5), then resolve the effect on the paid state.
   const paid = ability?.cost?.length
