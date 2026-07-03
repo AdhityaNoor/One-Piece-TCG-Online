@@ -67,9 +67,13 @@ export interface PlayerBoardPanelProps {
   mode: BoardSelectionMode;
   /** True for own in-play cards whose curated program exposes an [Activate: Main] ability. */
   canActivateCard?: (card: CardView) => boolean;
+  canAttackCard?: (card: CardView) => boolean;
+  battlePowerInstanceIds?: Set<string>;
   /** Passed down to PileStack — hides ghost layers while board is active. */
   boardFocused?: boolean;
   onCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea', card: CardView) => void;
+  onCardAttack?: (card: CardView) => void;
+  onAttachedDonLabelTap?: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
   onAttackTargetHover?: (card: CardView | null) => void;
 }
@@ -78,20 +82,20 @@ function leaderCharacterSelectable(
   mode: BoardSelectionMode,
   isOwn: boolean,
   isOpponent: boolean,
-  zone: 'leaderArea' | 'characterArea',
+  zone: 'leaderArea' | 'characterArea' | 'stageArea',
   card: CardView,
   canActivate: boolean,
 ): boolean {
   switch (mode.kind) {
     case 'selectAttacker':
-      return isOwn && card.orientation === 'active' && !card.summoningSick;
+      return zone !== 'stageArea' && isOwn && card.orientation === 'active' && !card.summoningSick;
     case 'selectAttackTarget':
       if (!isOpponent) return false;
       if (zone === 'leaderArea') return true;
-      return card.orientation === 'rested';
+      return zone === 'characterArea' && card.orientation === 'rested';
     case 'selectGiveDonTarget':
     case 'selectCounterBoostTarget':
-      return isOwn;
+      return zone !== 'stageArea' && isOwn;
     case 'selectBlocker':
       return isOwn && zone === 'characterArea' && card.orientation === 'active' && card.hasBlocker;
     case 'selectActivateSource':
@@ -118,13 +122,27 @@ function donSelectable(mode: BoardSelectionMode, isOwn: boolean, card: CardView)
   if (mode.kind === 'payingCost' || mode.kind === 'selectDonToGive') {
     return !card.donRested;
   }
+  if (mode.kind === 'payingActivateEffectCost') {
+    return true;
+  }
   return false;
 }
 
 function selectedDonInstanceIds(mode: BoardSelectionMode): Set<string> {
   if (mode.kind === 'payingCost') return new Set(mode.selectedDonIds);
-  if (mode.kind === 'selectGiveDonTarget') return new Set([mode.donInstanceId]);
+  if (mode.kind === 'selectDonToGive') return new Set(mode.selectedDonIds);
+  if (mode.kind === 'payingActivateEffectCost') return new Set(mode.selectedDonIds);
+  if (mode.kind === 'selectGiveDonTarget') return new Set(mode.selectedDonIds);
   return new Set();
+}
+
+function attachedDonIds(board: PlayerBoardView): Set<string> {
+  const ids = new Set<string>();
+  for (const id of board.leader?.donAttachedIds ?? []) ids.add(id);
+  for (const character of board.characterArea) {
+    for (const id of character.donAttachedIds) ids.add(id);
+  }
+  return ids;
 }
 
 // Raw px-equivalent constants, kept as plain numbers so ratio math (the
@@ -240,16 +258,23 @@ function MatCell({
   );
 }
 
-export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, boardFocused = false, onCardTap, onCardZoom, onAttackTargetHover }: PlayerBoardPanelProps) {
+export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, canAttackCard, battlePowerInstanceIds, boardFocused = false, onCardTap, onCardAttack, onAttachedDonLabelTap, onCardZoom, onAttackTargetHover }: PlayerBoardPanelProps) {
   const attackerSelected = selectedAttackerIds(mode);
   // Mark/select own in-play cards that can activate a [Activate: Main] effect.
   const canActivate = (card: CardView): boolean => isOwn && !!canActivateCard?.(card);
+  const canAttack = (card: CardView): boolean => isOwn && !!canAttackCard?.(card);
   const leaderCard: CardView | null = board.leader;
   const stageCard: CardView | null = board.stageArea[0] ?? null;
-  const activeDon = board.costArea.filter((don) => !don.donRested);
-  const restedDon = board.costArea.filter((don) => don.donRested);
+  const attachedDon = attachedDonIds(board);
+  const unattachedDon = board.costArea.filter((don) => !attachedDon.has(don.instanceId));
+  const activeDon = unattachedDon.filter((don) => !don.donRested);
+  const restedDon = unattachedDon.filter((don) => don.donRested);
   const selectedDon = selectedDonInstanceIds(mode);
   const [trashGalleryOpen, setTrashGalleryOpen] = useState(false);
+  const attachedDonSelectable = (card: CardView): boolean =>
+    isOwn && mode.kind === 'payingActivateEffectCost' && card.donAttachedCount > 0;
+  const selectedAttachedDonCount = (card: CardView): number =>
+    card.donAttachedIds.filter((id) => selectedDon.has(id)).length;
 
   const leaderSlot = leaderCard ? (
     <BoardCardTile
@@ -258,6 +283,13 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
       selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'leaderArea', leaderCard, canActivate(leaderCard))}
       selected={attackerSelected.has(leaderCard.instanceId)}
       activatable={mode.kind === 'idle' && canActivate(leaderCard)}
+      attackable={mode.kind === 'idle' && canAttack(leaderCard)}
+      showBattlePower={battlePowerInstanceIds?.has(leaderCard.instanceId)}
+      attachedDonSelectable={attachedDonSelectable(leaderCard)}
+      attachedDonSelectedCount={selectedAttachedDonCount(leaderCard)}
+      onActivate={mode.kind === 'idle' && canActivate(leaderCard) ? () => onCardTap('leaderArea', leaderCard) : undefined}
+      onAttack={mode.kind === 'idle' && canAttack(leaderCard) ? () => onCardAttack?.(leaderCard) : undefined}
+      onAttachedDonSelect={attachedDonSelectable(leaderCard) ? () => onAttachedDonLabelTap?.(leaderCard) : undefined}
       onSelect={() => onCardTap('leaderArea', leaderCard)}
       onZoom={() => onCardZoom(leaderCard)}
       onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(leaderCard) : undefined}
@@ -268,7 +300,16 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   );
 
   const stageSlot = stageCard ? (
-    <BoardCardTile card={stageCard} size="field" onZoom={() => onCardZoom(stageCard)} />
+    <BoardCardTile
+      card={stageCard}
+      size="field"
+      selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'stageArea', stageCard, canActivate(stageCard))}
+      activatable={mode.kind === 'idle' && canActivate(stageCard)}
+      showBattlePower={battlePowerInstanceIds?.has(stageCard.instanceId)}
+      onActivate={mode.kind === 'idle' && canActivate(stageCard) ? () => onCardTap('stageArea', stageCard) : undefined}
+      onSelect={() => onCardTap('stageArea', stageCard)}
+      onZoom={() => onCardZoom(stageCard)}
+    />
   ) : (
     <EmptySlot size="board" label="Stage" />
   );
@@ -304,6 +345,13 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
             selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'characterArea', card, canActivate(card))}
             selected={attackerSelected.has(card.instanceId)}
             activatable={mode.kind === 'idle' && canActivate(card)}
+            attackable={mode.kind === 'idle' && canAttack(card)}
+            showBattlePower={battlePowerInstanceIds?.has(card.instanceId)}
+            attachedDonSelectable={attachedDonSelectable(card)}
+            attachedDonSelectedCount={selectedAttachedDonCount(card)}
+            onActivate={mode.kind === 'idle' && canActivate(card) ? () => onCardTap('characterArea', card) : undefined}
+            onAttack={mode.kind === 'idle' && canAttack(card) ? () => onCardAttack?.(card) : undefined}
+            onAttachedDonSelect={attachedDonSelectable(card) ? () => onAttachedDonLabelTap?.(card) : undefined}
             onSelect={() => onCardTap('characterArea', card)}
             onZoom={() => onCardZoom(card)}
             onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(card) : undefined}

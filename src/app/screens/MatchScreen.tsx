@@ -162,6 +162,9 @@ export function MatchScreen() {
           committed: false,
         }
       : null;
+  const battlePowerInstanceIds = matchState.currentBattle
+    ? new Set([matchState.currentBattle.attackerInstanceId, matchState.currentBattle.targetInstanceId])
+    : new Set<string>();
 
   return (
     <MatchGameShell title="Match">
@@ -271,7 +274,11 @@ export function MatchScreen() {
                   reverseRows={true}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
+                  canAttackCard={selection.canDeclareAttackWith}
+                  battlePowerInstanceIds={battlePowerInstanceIds}
                   onMatCardTap={(zone, card) => selection.handleCardTap(otherPlayerId, zone, card)}
+                  onMatCardAttack={selection.beginAttackWithCard}
+                  onAttachedDonLabelTap={(card) => selection.handleAttachedDonLabelTap(otherPlayerId, card)}
                   onCardZoom={openZoom}
                   onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
                   boardFocused={boardHovered}
@@ -290,7 +297,11 @@ export function MatchScreen() {
                   reverseRows={false}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
+                  canAttackCard={selection.canDeclareAttackWith}
+                  battlePowerInstanceIds={battlePowerInstanceIds}
                   onMatCardTap={(zone, card) => selection.handleCardTap(turnPlayerId, zone, card)}
+                  onMatCardAttack={selection.beginAttackWithCard}
+                  onAttachedDonLabelTap={(card) => selection.handleAttachedDonLabelTap(turnPlayerId, card)}
                   onCardZoom={openZoom}
                   onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
                   boardFocused={boardHovered}
@@ -746,9 +757,13 @@ function PlayerSideRow({
   reverseRows,
   mode,
   onMatCardTap,
+  onMatCardAttack,
+  onAttachedDonLabelTap,
   onCardZoom,
   onAttackTargetHover,
   canActivateCard,
+  canAttackCard,
+  battlePowerInstanceIds,
   boardFocused,
 }: {
   board: ReturnType<typeof projectPlayerBoard>;
@@ -757,9 +772,13 @@ function PlayerSideRow({
   reverseRows: boolean;
   mode: MatchSelectionMode;
   onMatCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea', card: CardView) => void;
+  onMatCardAttack: (card: CardView) => void;
+  onAttachedDonLabelTap: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
   onAttackTargetHover: (card: CardView | null) => void;
   canActivateCard: (card: CardView) => boolean;
+  canAttackCard: (card: CardView) => boolean;
+  battlePowerInstanceIds: Set<string>;
   boardFocused: boolean;
 }) {
   return (
@@ -771,8 +790,12 @@ function PlayerSideRow({
         reverseRows={reverseRows}
         mode={mode}
         canActivateCard={canActivateCard}
+        canAttackCard={canAttackCard}
+        battlePowerInstanceIds={battlePowerInstanceIds}
         boardFocused={boardFocused}
         onCardTap={onMatCardTap}
+        onCardAttack={onMatCardAttack}
+        onAttachedDonLabelTap={onAttachedDonLabelTap}
         onCardZoom={onCardZoom}
         onAttackTargetHover={onAttackTargetHover}
       />

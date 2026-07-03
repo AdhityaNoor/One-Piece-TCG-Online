@@ -22,6 +22,10 @@ export interface CardView {
   imageUrl: string | null;
   /** Leader/Character only; null for Event/Stage/DON!!. */
   power: number | null;
+  /** Printed/base power before DON!!, counter, and continuous modifiers. */
+  basePower: number | null;
+  /** Current power minus basePower; positive values are shown as a floating buff label. */
+  powerDelta: number | null;
   /** Character/Stage/Event only; null for Leader/DON!!. */
   cost: number | null;
   /** Character only (printed Counter value 2-10, when present). */
@@ -32,6 +36,7 @@ export interface CardView {
   /** DON!! only — see card.ts CardInstance.donRested doc comment. */
   donRested: boolean;
   donAttachedCount: number;
+  donAttachedIds: string[];
   /** Effect ids used by this instance this turn; UI-only for reminders, engine remains authoritative. */
   oncePerTurnUsed: string[];
   summoningSick: boolean;
@@ -64,12 +69,15 @@ export function buildCardView(
       text: '',
       imageUrl: null,
       power: null,
+      basePower: null,
+      powerDelta: null,
       cost: null,
       counter: null,
       life: null,
       orientation: instance?.orientation ?? null,
       donRested: instance?.donRested ?? false,
       donAttachedCount: instance?.donAttached.length ?? 0,
+      donAttachedIds: instance?.donAttached ?? [],
       oncePerTurnUsed: instance?.oncePerTurnUsed ?? [],
       summoningSick: instance?.summoningSick ?? false,
       hasBlocker: false,
@@ -84,6 +92,9 @@ export function buildCardView(
   const isPowerCard = def.category === 'leader' || def.category === 'character';
   const isCostCard = def.category === 'character' || def.category === 'stage' || def.category === 'event';
 
+  const power = isPowerCard ? computeCurrentPower(defs, state, instanceId) : null;
+  const basePower = isPowerCard ? def.basePower ?? 0 : null;
+
   return {
     instanceId,
     cardDefinitionId: instance.cardDefinitionId,
@@ -93,13 +104,16 @@ export function buildCardView(
     colors: def.colors,
     text: def.text,
     imageUrl: images[instance.cardDefinitionId] ?? null,
-    power: isPowerCard ? computeCurrentPower(defs, state, instanceId) : null,
+    power,
+    basePower,
+    powerDelta: power !== null && basePower !== null ? power - basePower : null,
     cost: isCostCard ? computeCurrentCost(defs, state, instanceId) : null,
     counter: def.category === 'character' ? def.counter ?? null : null,
     life: def.category === 'leader' ? def.life ?? null : null,
     orientation: instance.orientation,
     donRested: instance.donRested ?? false,
     donAttachedCount: instance.donAttached.length,
+    donAttachedIds: instance.donAttached,
     oncePerTurnUsed: instance.oncePerTurnUsed,
     summoningSick: instance.summoningSick,
     hasBlocker: def.hasBlocker,

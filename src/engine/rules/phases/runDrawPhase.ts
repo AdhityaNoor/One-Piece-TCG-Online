@@ -2,7 +2,7 @@
  * Draw Phase (6-3). Turn-player-only, fully automatic.
  *
  * 6-3-1: the player going first skips their draw on turn 1 specifically
- * (isFirstTurnOfGame, scoped to turnNumber === 1 only — see game.ts doc
+ * (isFirstTurnOfGame, scoped to turnNumber === 1 only - see game.ts doc
  * comment; the second player's first turn, turnNumber === 2, draws
  * normally).
  *
@@ -24,7 +24,7 @@ export function runDrawPhase(state: GameState): PhaseStepResult {
     logger.push({
       actorPlayerId: player.playerId,
       type: 'PHASE_CHANGED',
-      message: `${player.playerId} skips their Draw Phase — going first on turn 1 (6-3-1).`,
+      message: `${player.playerId} skips their Draw Phase - going first on turn 1 (6-3-1).`,
       data: { phase: 'draw', skipped: true },
       relatedCardInstanceIds: [],
       visibility: 'public',
@@ -58,11 +58,8 @@ export function runDrawPhase(state: GameState): PhaseStepResult {
     hand: addToZoneBottom(player.hand, drawnId),
   };
 
-  // The Zone helpers above only move the id between zone.cardIds arrays —
-  // the CardInstance's own currentZone field (the field every PLAY_*
-  // validator actually checks for hand membership) has to be kept in sync
-  // here too, or the drawn card silently fails "is not in hand" checks the
-  // moment it's played.
+  // The Zone helpers above only move the id between zone.cardIds arrays.
+  // Keep CardInstance.currentZone in sync too; PLAY_* validators read it.
   const cardsById = {
     ...state.cardsById,
     [drawnId]: { ...state.cardsById[drawnId], currentZone: 'hand' as const },

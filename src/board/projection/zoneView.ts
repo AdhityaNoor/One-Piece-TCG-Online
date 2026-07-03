@@ -51,7 +51,19 @@ export function projectPlayerBoard(
   };
 }
 
+function attachedDonIds(board: PlayerBoardView): Set<string> {
+  const ids = new Set<string>();
+  if (board.leader) {
+    for (const id of board.leader.donAttachedIds) ids.add(id);
+  }
+  for (const card of board.characterArea) {
+    for (const id of card.donAttachedIds) ids.add(id);
+  }
+  return ids;
+}
+
 /** Active (non-rested), unattached DON!! a player could pay a cost with. */
 export function countAvailableDon(board: PlayerBoardView): number {
-  return board.costArea.filter((don) => !don.donRested).length;
+  const attached = attachedDonIds(board);
+  return board.costArea.filter((don) => !don.donRested && !attached.has(don.instanceId)).length;
 }

@@ -2,8 +2,8 @@
  * GIVE_DON (6-5-5-1). Main Phase, turn-player-only.
  *
  * The act of giving IS the cost — resting the DON!! and giving it are the
- * same step (6-5-5-1), not a separate cost payment. +1000 power (6-5-5-2)
- * is not stored anywhere here: it's derived on demand by
+ * same step (6-5-5-1), not a separate cost payment. The owner's-turn +1000
+ * power (6-5-5-2) is not stored anywhere here: it's derived on demand by
  * rules/shared/power.ts's computeCurrentPower from donAttached.length.
  *
  * Per card.ts's CardInstance.donRested doc comment, a given DON!! never
@@ -52,7 +52,7 @@ export function executeGiveDon(state: GameState, action: GiveDonAction): ActionE
   logger.push({
     actorPlayerId: action.playerId,
     type: 'DON_GIVEN',
-    message: `${action.playerId} gave 1 DON!! to '${action.targetInstanceId}' (+1000 power, 6-5-5-1/6-5-5-2).`,
+    message: `${action.playerId} gave 1 DON!! to '${action.targetInstanceId}' (+1000 power during their turn, 6-5-5-1/6-5-5-2).`,
     data: { donInstanceId: action.donInstanceId, targetInstanceId: action.targetInstanceId },
     relatedCardInstanceIds: [action.donInstanceId, action.targetInstanceId],
     visibility: 'public',

@@ -21,20 +21,21 @@ import { createActionId, useMatchStore } from '../../store/matchStore';
 import type { CardView } from '../../../board/projection';
 import { computeCurrentCost } from '../../../engine/rules/shared/power';
 
-export type BoardZoneKind = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'trash';
+export type BoardZoneKind = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'attachedDon' | 'trash';
 
 export type BoardSelectionMode =
   | { kind: 'idle' }
   | { kind: 'payingCost'; handCardInstanceId: string; cardCategory: 'character' | 'stage' | 'event'; cost: number; selectedDonIds: string[] }
-  | { kind: 'selectDonToGive' }
-  | { kind: 'selectGiveDonTarget'; donInstanceId: string }
+  | { kind: 'selectDonToGive'; selectedDonIds: string[] }
+  | { kind: 'selectGiveDonTarget'; selectedDonIds: string[] }
   | { kind: 'selectAttacker' }
   | { kind: 'selectAttackTarget'; attackerInstanceId: string }
   | { kind: 'selectBlocker' }
   | { kind: 'selectCounterCard' }
   | { kind: 'selectCounterBoostTarget'; handCardInstanceId: string }
   | { kind: 'payingCounterEventCost'; handCardInstanceId: string; cost: number; selectedDonIds: string[] }
-  | { kind: 'selectActivateSource' };
+  | { kind: 'selectActivateSource' }
+  | { kind: 'payingActivateEffectCost'; sourceInstanceId: string; cost: number; selectedDonIds: string[] };
 
 const PLAY_ACTION_BY_CATEGORY: Record<'character' | 'stage' | 'event', GameAction['type']> = {
   character: 'PLAY_CHARACTER',
@@ -66,6 +67,19 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const hasCounter = (card: CardView): boolean =>
     !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.timing === 'counter');
 
+  const activateMainDonMinusCost = (card: CardView): number => {
+    const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'activateMain');
+    return ability?.cost
+      ?.filter((cost) => cost.kind === 'donMinus')
+      .reduce((sum, cost) => sum + cost.count, 0) ?? 0;
+  };
+
+  const canDeclareAttackWith = (card: CardView): boolean => {
+    if (!state || state.currentPhase !== 'main' || state.turnNumber <= 2) return false;
+    if (card.category !== 'leader' && card.category !== 'character') return false;
+    return card.orientation === 'active' && !card.summoningSick;
+  };
+
   const currentCostOf = (card: CardView): number => {
     if (!state) return card.cost ?? 0;
     return computeCurrentCost(defs, state, card.instanceId);
@@ -87,7 +101,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
   }
 
   // --- Mode entry points, called from ActionBar's mode-switch buttons ---
-  const beginGiveDon = (): void => { setMode({ kind: 'selectDonToGive' }); setLastError(null); };
+  const beginGiveDon = (): void => { setMode({ kind: 'selectDonToGive', selectedDonIds: [] }); setLastError(null); };
   const beginDeclareAttack = (): void => { setMode({ kind: 'selectAttacker' }); setLastError(null); };
   const beginActivateBlocker = (): void => { setMode({ kind: 'selectBlocker' }); setLastError(null); };
   const beginActivateCounter = (): void => { setMode({ kind: 'selectCounterCard' }); setLastError(null); };
@@ -118,6 +132,48 @@ export function useBoardSelection(actingPlayerId: string | null) {
     }));
   }
 
+  /** Confirm an [Activate: Main] effect after selecting its DON!! -N payment. */
+  function confirmActivateMainCost(): void {
+    if (mode.kind !== 'payingActivateEffectCost' || mode.selectedDonIds.length !== mode.cost) return;
+    withActingPlayer((playerId) => ({
+      type: 'ACTIVATE_CARD_EFFECT',
+      actionId: createActionId(),
+      playerId,
+      sourceInstanceId: mode.sourceInstanceId,
+      effectId: 'activateMain',
+      donInstanceIds: mode.selectedDonIds,
+    }));
+  }
+
+  function confirmGiveDonSelection(): void {
+    if (mode.kind !== 'selectDonToGive' || mode.selectedDonIds.length === 0) return;
+    setMode({ kind: 'selectGiveDonTarget', selectedDonIds: mode.selectedDonIds });
+    setLastError(null);
+  }
+
+  function activateMainFromCard(card: CardView): void {
+    const donMinusCost = activateMainDonMinusCost(card);
+    if (donMinusCost > 0) {
+      setMode({ kind: 'payingActivateEffectCost', sourceInstanceId: card.instanceId, cost: donMinusCost, selectedDonIds: [] });
+      setLastError(null);
+      return;
+    }
+    withActingPlayer((playerId) => ({
+      type: 'ACTIVATE_CARD_EFFECT',
+      actionId: createActionId(),
+      playerId,
+      sourceInstanceId: card.instanceId,
+      effectId: 'activateMain',
+      donInstanceIds: [],
+    }));
+  }
+
+  function beginAttackWithCard(card: CardView): void {
+    if (!canDeclareAttackWith(card)) return;
+    setMode({ kind: 'selectAttackTarget', attackerInstanceId: card.instanceId });
+    setLastError(null);
+  }
+
   // --- Step-less actions ---
   const passStep = (): void => withActingPlayer((playerId) => ({ type: 'PASS_STEP', actionId: createActionId(), playerId }));
   const endMainPhase = (): void => withActingPlayer((playerId) => ({ type: 'END_MAIN_PHASE', actionId: createActionId(), playerId }));
@@ -134,14 +190,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
         // has a curated activate ability (the ⚡ badge). The engine validates
         // phase/once-per-turn/cost; any target it needs becomes a PendingChoice.
         if (isOwnCard && (zone === 'leaderArea' || zone === 'characterArea' || zone === 'stageArea') && hasActivateMain(card)) {
-          withActingPlayer((playerId) => ({
-            type: 'ACTIVATE_CARD_EFFECT',
-            actionId: createActionId(),
-            playerId,
-            sourceInstanceId: card.instanceId,
-            effectId: 'activateMain',
-            donInstanceIds: [],
-          }));
+          activateMainFromCard(card);
           return;
         }
         if (!isOwnCard || zone !== 'hand') return;
@@ -175,19 +224,33 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
       case 'selectDonToGive': {
         if (!isOwnCard || zone !== 'costArea' || card.donRested) return;
-        setMode({ kind: 'selectGiveDonTarget', donInstanceId: card.instanceId });
+        const already = mode.selectedDonIds.includes(card.instanceId);
+        if (already) {
+          setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => id !== card.instanceId) });
+        } else {
+          setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, card.instanceId] });
+        }
         return;
       }
 
       case 'selectGiveDonTarget': {
         if (!isOwnCard || (zone !== 'leaderArea' && zone !== 'characterArea')) return;
-        withActingPlayer((playerId) => ({
-          type: 'GIVE_DON',
-          actionId: createActionId(),
-          playerId,
-          donInstanceId: mode.donInstanceId,
-          targetInstanceId: card.instanceId,
-        }));
+        if (!actingPlayerId) return;
+        for (const donInstanceId of mode.selectedDonIds) {
+          const result = dispatch({
+            type: 'GIVE_DON',
+            actionId: createActionId(),
+            playerId: actingPlayerId,
+            donInstanceId,
+            targetInstanceId: card.instanceId,
+          });
+          if (!result.ok) {
+            setLastError(result.reasons);
+            return;
+          }
+        }
+        setLastError(null);
+        reset();
         return;
       }
 
@@ -258,6 +321,17 @@ export function useBoardSelection(actingPlayerId: string | null) {
         return;
       }
 
+      case 'payingActivateEffectCost': {
+        if (!isOwnCard || (zone !== 'costArea' && zone !== 'attachedDon')) return;
+        const already = mode.selectedDonIds.includes(card.instanceId);
+        if (already) {
+          setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => id !== card.instanceId) });
+        } else if (mode.selectedDonIds.length < mode.cost) {
+          setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, card.instanceId] });
+        }
+        return;
+      }
+
       case 'selectCounterBoostTarget': {
         if (!isOwnCard || (zone !== 'leaderArea' && zone !== 'characterArea')) return;
         withActingPlayer((playerId) => ({
@@ -276,20 +350,35 @@ export function useBoardSelection(actingPlayerId: string | null) {
         // the ability needs surfaces as a PendingChoice the prompt resolves.
         if (!isOwnCard || (zone !== 'leaderArea' && zone !== 'characterArea' && zone !== 'stageArea')) return;
         if (!hasActivateMain(card)) return;
-        withActingPlayer((playerId) => ({
-          type: 'ACTIVATE_CARD_EFFECT',
-          actionId: createActionId(),
-          playerId,
-          sourceInstanceId: card.instanceId,
-          effectId: 'activateMain',
-          donInstanceIds: [],
-        }));
+        activateMainFromCard(card);
         return;
       }
 
       default:
         return;
     }
+  }
+
+  function handleAttachedDonLabelTap(ownerPlayerId: string, card: CardView): void {
+    if (!actingPlayerId || ownerPlayerId !== actingPlayerId) return;
+    if (mode.kind !== 'payingActivateEffectCost') return;
+    if (card.donAttachedIds.length === 0) return;
+
+    const selectedAttachedIds = card.donAttachedIds.filter((id) => mode.selectedDonIds.includes(id));
+    if (selectedAttachedIds.length > 0) {
+      setMode({
+        ...mode,
+        selectedDonIds: mode.selectedDonIds.filter((id) => !card.donAttachedIds.includes(id)),
+      });
+      return;
+    }
+
+    const remaining = mode.cost - mode.selectedDonIds.length;
+    if (remaining <= 0) return;
+    setMode({
+      ...mode,
+      selectedDonIds: [...mode.selectedDonIds, ...card.donAttachedIds.slice(0, remaining)],
+    });
   }
 
   return {
@@ -304,11 +393,16 @@ export function useBoardSelection(actingPlayerId: string | null) {
     hasActivateMain,
     hasUnusedActivateMain,
     hasCounter,
+    canDeclareAttackWith,
     confirmPlayCard,
     confirmCounterEvent,
+    confirmActivateMainCost,
+    confirmGiveDonSelection,
+    beginAttackWithCard,
     passStep,
     endMainPhase,
     concede,
     handleCardTap,
+    handleAttachedDonLabelTap,
   };
 }

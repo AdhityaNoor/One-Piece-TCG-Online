@@ -24,8 +24,8 @@ interface EndPhaseWarning {
 
 const INSTRUCTIONS: Record<string, string> = {
   payingCost: 'Tap active DON!! cards in your Cost Area to pay the cost, then Confirm.',
-  selectDonToGive: 'Tap an active DON!! card in your Cost Area to give.',
-  selectGiveDonTarget: 'Tap your own Leader or Character to receive the DON!!.',
+  selectDonToGive: 'Tap one or more active DON!! cards in your Cost Area, then choose a target.',
+  selectGiveDonTarget: 'Tap your own Leader or Character to receive the selected DON!!.',
   selectAttacker: 'Tap your own active Leader or Character to attack with.',
   selectAttackTarget: "Tap the opponent's Leader, or a RESTED Character, to attack.",
   selectBlocker: 'Tap your own active [Blocker] Character.',
@@ -33,6 +33,7 @@ const INSTRUCTIONS: Record<string, string> = {
   selectCounterBoostTarget: 'Tap your own Leader or Character to receive the power boost.',
   payingCounterEventCost: 'Tap active DON!! to pay the Counter Event cost, then Confirm.',
   selectActivateSource: 'Tap your own Leader, Character, or Stage that has an [Activate: Main] effect.',
+  payingActivateEffectCost: 'Tap DON!! in your Cost Area to return for the activation cost, then Confirm.',
 };
 
 function formatCardNames(cards: { name: string }[]): string {
@@ -89,15 +90,15 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
     lastError,
     cancel,
     beginGiveDon,
-    beginDeclareAttack,
     beginActivateBlocker,
     beginActivateCounter,
-    beginActivateMain,
     hasActivateMain,
     hasUnusedActivateMain,
     hasCounter,
     confirmPlayCard,
     confirmCounterEvent,
+    confirmActivateMainCost,
+    confirmGiveDonSelection,
     passStep,
     endMainPhase,
   } = selection;
@@ -123,6 +124,16 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
           {mode.kind === 'payingCounterEventCost' && (
             <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmCounterEvent}>
               Play Counter ({mode.selectedDonIds.length}/{mode.cost} DON!!)
+            </Button>
+          )}
+          {mode.kind === 'payingActivateEffectCost' && (
+            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmActivateMainCost}>
+              Activate ({mode.selectedDonIds.length}/{mode.cost} DON!!)
+            </Button>
+          )}
+          {mode.kind === 'selectDonToGive' && (
+            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length === 0} onClick={confirmGiveDonSelection}>
+              Choose Target ({mode.selectedDonIds.length} DON!!)
             </Button>
           )}
           <Button variant="ghost" size="sm" onClick={cancel}>Cancel</Button>
@@ -165,10 +176,6 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
   }
 
   const availableDon = countAvailableDon(actingBoard);
-  const canActivate =
-    (actingBoard.leader ? hasActivateMain(actingBoard.leader) : false) ||
-    actingBoard.characterArea.some(hasActivateMain) ||
-    actingBoard.stageArea.some(hasActivateMain);
   const attackableCards =
     turnNumber > 2
       ? [actingBoard.leader, ...actingBoard.characterArea].filter(isCardView).filter((card) => card.orientation === 'active' && !card.summoningSick)
@@ -227,12 +234,6 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
       {errorBanner}
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" disabled={availableDon === 0} onClick={beginGiveDon}>Give DON!! ({availableDon} available)</Button>
-        <Button variant="secondary" size="sm" disabled={!canActivate} onClick={beginActivateMain} title={canActivate ? undefined : 'No in-play card has an [Activate: Main] effect right now.'}>
-          Activate Effect
-        </Button>
-        <Button variant="secondary" size="sm" disabled={turnNumber <= 2} onClick={beginDeclareAttack} title={turnNumber <= 2 ? 'Neither player may battle on their first turn (6-5-6-1).' : undefined}>
-          Declare Attack
-        </Button>
         <Button variant="primary" size="sm" onClick={requestEndMainPhase}>End Main Phase</Button>
       </div>
 

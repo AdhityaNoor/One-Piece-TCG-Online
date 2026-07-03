@@ -1,7 +1,8 @@
 /**
  * Power/cost resolution. Source of truth: 2-6 (power), 2-7 (cost),
- * 6-5-5-2 (+1000 per attached DON!!), 7-1-3-2-1 (Counter Character "during
- * this battle" boost), 8-1-3-3 (permanent/continuous effects).
+ * 6-5-5-2 (+1000 per attached DON!! during its owner's turn), 7-1-3-2-1
+ * (Counter Character "during this battle" boost), 8-1-3-3
+ * (permanent/continuous effects).
  *
  * Card-effect power modifiers ARE now read, via GameState.continuousEffects'
  * structured `powerModifier` payload (see game.ts). Each modifier's optional
@@ -50,7 +51,7 @@ export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState
   const instance = state.cardsById[instanceId];
   const def = getDefinition(defs, instance);
   const base = def.basePower ?? 0;
-  const donBonus = instance.donAttached.length * 1000; // 6-5-5-2
+  const donBonus = state.activePlayerId === instance.ownerId ? instance.donAttached.length * 1000 : 0; // 6-5-5-2
   const battleBonus = state.currentBattle?.battlePowerBonuses[instanceId] ?? 0; // 7-1-3-2-1
   let continuousBonus = 0; // 8-1-3-3 card-effect power modifiers
   for (const record of state.continuousEffects) {
