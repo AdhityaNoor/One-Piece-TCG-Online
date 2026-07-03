@@ -170,6 +170,20 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'trashTopDeck':
       return [{ op: 'trashTopDeck', count: f.count }];
+    case 'playFromHand': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerHand', filter: f.filter },
+          min: 0,
+          max: maxTargets,
+          prompt: `Play up to ${maxTargets} matching Character card${maxTargets === 1 ? '' : 's'} from your hand.`,
+        },
+        { op: 'playFromHand', target: { sel: 'var', name: 't' } },
+      ];
+    }
     case 'searchTopDeck':
       return [
         {

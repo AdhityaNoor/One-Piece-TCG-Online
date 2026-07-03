@@ -16,8 +16,17 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // EB01-015 — [On Play] Rest up to 1 of your opponent's Characters with a cost of 2 or less.
   { cardNumber: 'EB01-015', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 2 } }] } },
+  // EB01-016 - [Activate: Main] Rest this Character: K.O. up to 1 rested opponent Character cost 1 or less.
+  { cardNumber: 'EB01-016', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'koOpponentCharacter', filter: { rested: true, maxCost: 1 } }] } },
   // EB01-023 — [On Play] Draw 1 card.
   { cardNumber: 'EB01-023', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
+
+  // EB01-003 - [Rush] [When Attacking] If opponent has 2 or less Life, this Character +2000 this turn.
+  // Note: [Rush] is an engine keyword flag. Only the when-attacking power effect is templated.
+  { cardNumber: 'EB01-003', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'opponentLife', atMost: 2 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
+
+  // EB01-026 - [DON!! x1] [When Attacking] If hand has 1 or less, return cost <=3 Character to hand.
+  { cardNumber: 'EB01-026', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfHand', atMost: 1 }], functions: [{ fn: 'returnToHand', maxCost: 3, target: 'any' }] } },
 
   // EB01-048 — [Activate: Main] You may rest this Character: Give up to 1 of your opponent's Characters −4 cost.
   {
@@ -44,10 +53,23 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentLife', atMost: 1 }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 3 } }] },
   },
 
+  // EB01-036 - [Rush] [On K.O.] If Leader has Impel Down type, add 1 rested DON!!.
+  // Note: [Rush] is an engine keyword flag. Only the on-K.O. DON!! ramp is templated.
+  {
+    cardNumber: 'EB01-036',
+    templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] },
+  },
+
   // EB02-026 - [On Play] If Leader is multicolored and hand has 5 or less cards, draw 2.
   {
     cardNumber: 'EB02-026',
     templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderMulticolor' }, { kind: 'selfHand', atMost: 5 }], functions: [{ fn: 'draw', amount: 2 }] },
+  },
+
+  // EB02-014 - [On Play] Play up to 1 [Gaimon] from hand.
+  {
+    cardNumber: 'EB02-014',
+    templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Gaimon' } }] },
   },
 
   // EB02-046 - [On Play] Trash top 2 cards of deck, then give opponent Character -1 cost.

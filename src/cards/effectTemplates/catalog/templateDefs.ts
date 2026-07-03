@@ -43,6 +43,7 @@ export type AbilityFunction =
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
   | { fn: 'trashFromHand'; count: number }
   | { fn: 'trashTopDeck'; count: number }
+  | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter: SearchFilter; remainder?: SearchRemainderDestination }
   | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition };
 
