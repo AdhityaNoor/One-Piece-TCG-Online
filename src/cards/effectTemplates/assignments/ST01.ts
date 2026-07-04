@@ -39,8 +39,11 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST01-005 - [DON!! x1] [When Attacking] Give another Leader/Character +1000 power.
   { cardNumber: 'ST01-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn', filter: { excludeSelf: true } }] } },
 
-  // ST01-013 — [DON!! x1] Permanent +1000 power when ≥1 DON!! attached.
-  { cardNumber: 'ST01-013', templateId: 'ability', params: { timing: 'onEnterPlay', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent' }] } },
+  // ST01-013 — [DON!! x1] This Character gains +1000 power (static, while >=1 DON!! attached).
+  // The DON!! gate belongs on the continuous power MODIFIER (re-evaluated on every power
+  // read by computeCurrentPower), NOT on the ability's firing. onEnterPlay fires once and
+  // registers a permanent conditional modifier — mirrors ST01-004's [DON!! x2] Rush grant.
+  { cardNumber: 'ST01-013', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
 
   // ST01-014 - [Counter] +3000 to Leader/Character. [Trigger] +1000 to Leader/Character.
   {
