@@ -21,7 +21,7 @@ export type Selector =
   | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; excludeSelf?: boolean }
   | { sel: 'opponentLeaderOrCharacters' }
   | { sel: 'allCharacters'; maxCost?: number; maxPower?: number } // any player's Characters
-  | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number; rested?: boolean } // optional "cost/power N or less" and/or rested filter
+  | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean } // optional cost/power/rested/blocker filters
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
   | { sel: 'controllerTrash'; filter?: SearchFilter } // controller's trash cards matching a filter (for recover-to-hand)
   | { sel: 'var'; name: string }; // ids bound by a prior chooseTargets op
@@ -78,6 +78,7 @@ export type EffectOp =
   | ({ op: 'draw'; amount: number } & EffectOpSequenceGate)
   | ({ op: 'addPower'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
   | ({ op: 'addCost'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
+  | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
   | ({ op: 'giveDon'; target: Selector; count: number } & EffectOpSequenceGate)
   | ({ op: 'ko'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'rest'; target: Selector } & EffectOpSequenceGate)

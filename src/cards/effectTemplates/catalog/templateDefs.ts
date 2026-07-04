@@ -31,7 +31,7 @@ export type AbilityFunction =
   | { fn: 'draw'; amount: number }
   | { fn: 'addDonFromDeck'; count: number; rested: boolean }
   | { fn: 'giveDon'; count: number }
-  | { fn: 'koOpponentCharacter'; filter: { maxCost?: number; maxPower?: number; rested?: boolean }; maxTargets?: number }
+  | { fn: 'koOpponentCharacter'; filter: { maxCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean }; maxTargets?: number }
   | { fn: 'restOpponentCharacter'; filter: { maxCost?: number; maxPower?: number; rested?: boolean }; maxTargets?: number }
   | { fn: 'returnToHand'; maxCost: number; target: 'any' | 'opponent' }
   | { fn: 'moveToBottomDeck'; maxCost: number; target: 'any' | 'opponent' }
@@ -41,6 +41,7 @@ export type AbilityFunction =
   | { fn: 'addPowerControllerLeader'; amount: number; duration: IrDuration }
   | { fn: 'addPowerControllerCharacter'; amount: number; duration: IrDuration; filter?: { maxCost?: number; exactCost?: number; color?: Color }; maxTargets?: number }
   | { fn: 'modifyPowerOpponentLeaderOrCharacter'; amount: number; duration: IrDuration; maxTargets?: number }
+  | { fn: 'preventBlockers'; duration: IrDuration; target?: 'self' | 'chosenControllerLeaderOrCharacter'; filter?: { typeIncludes?: string }; blockerPowerAtLeast?: number }
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
   | { fn: 'trashFromHand'; count: number }
   | { fn: 'trashTopDeck'; count: number }

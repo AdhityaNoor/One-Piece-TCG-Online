@@ -114,6 +114,13 @@ export interface ContinuousCostModifier {
   condition?: ContinuousPowerCondition;
 }
 
+/** Prevents some or all [Blocker] activations while a specific attacker is attacking. */
+export interface ContinuousBlockerRestriction {
+  appliesToAttackerInstanceId: string;
+  /** Omitted for "cannot activate [Blocker]" with no blocker filter. */
+  blockerPowerAtLeast?: number;
+}
+
 export interface ContinuousEffectRecord {
   id: string;
   sourceInstanceId: string;
@@ -125,6 +132,8 @@ export interface ContinuousEffectRecord {
   powerModifier?: ContinuousPowerModifier;
   /** Structured cost delta, when this record modifies cost. Omitted for non-cost effects. */
   costModifier?: ContinuousCostModifier;
+  /** Structured blocker-activation restriction. Omitted for unrelated continuous effects. */
+  blockerRestriction?: ContinuousBlockerRestriction;
 }
 
 export interface GameState {

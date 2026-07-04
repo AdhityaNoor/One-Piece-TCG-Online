@@ -21,6 +21,9 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST01-011 — [On Play] Give up to 2 rested DON!! cards to your Leader or 1 of your Characters.
   { cardNumber: 'ST01-011', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 2 }] } },
 
+  // ST01-012 - [DON!! x2] [When Attacking] opponent cannot activate [Blocker] during this battle. [Rush] is static card data.
+  { cardNumber: 'ST01-012', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle' }] } },
+
   // ST01-005 - [DON!! x1] [When Attacking] Give another Leader/Character +1000 power.
   { cardNumber: 'ST01-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn', filter: { excludeSelf: true } }] } },
 
@@ -42,6 +45,15 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
     templates: [
       { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 6000 } }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 6000 } }] } },
+    ],
+  },
+
+  // ST01-016 - [Main] selected Straw Hat Crew Leader/Character cannot be blocked this turn; [Trigger] K.O. blocker cost <=3.
+  {
+    cardNumber: 'ST01-016',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', target: 'chosenControllerLeaderOrCharacter', filter: { typeIncludes: 'Straw Hat Crew' } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'koOpponentCharacter', filter: { hasBlocker: true, maxCost: 3 } }] } },
     ],
   },
 

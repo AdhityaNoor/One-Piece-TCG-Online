@@ -106,6 +106,22 @@ function parseTypes(subTypes: string | null, cardNumber: string, warnings: Norma
   return [trimmed];
 }
 
+function leadingBracketTags(text: string): string[] {
+  const tags: string[] = [];
+  let rest = text.trimStart();
+  while (rest.startsWith('[')) {
+    const end = rest.indexOf(']');
+    if (end < 0) break;
+    tags.push(rest.slice(0, end + 1));
+    rest = rest.slice(end + 1).trimStart();
+  }
+  return tags;
+}
+
+function hasLeadingKeywordTag(text: string, tag: string): boolean {
+  return leadingBracketTags(text).includes(tag);
+}
+
 export interface NormalizeCardPrintingsResult {
   definition: CardDefinition;
   /** card_image_id of every non-canonical printing (Parallel/SP/manga/etc.) — for library/UI art-picker use, not gameplay. */
@@ -132,12 +148,10 @@ export function normalizeCardPrintings(printings: CardPrintingDto[]): NormalizeC
     counter: coerceCounterAmount(canonical.counter_amount),
     hasTrigger: canonical.card_text.includes('[Trigger]'),
     triggerText: extractTriggerText(canonical.card_text, cardNumber, warnings),
-    // Plain keyword-presence substring checks — same category of detection as
-    // hasTrigger above, never an interpretation of the keyword's effect. See
-    // CardDefinition's doc comment (engine/state/card.ts) for why the rules
-    // engine is allowed to branch on these four specifically.
+    // Static keyword flags. [Blocker] must be in the leading tag run; text like
+    // "cannot activate [Blocker]" does not make this card a Blocker.
     hasRush: canonical.card_text.includes('[Rush]') || canonical.card_text.includes('[Rush: Character]'),
-    hasBlocker: canonical.card_text.includes('[Blocker]'),
+    hasBlocker: hasLeadingKeywordTag(canonical.card_text, '[Blocker]'),
     hasDoubleAttack: canonical.card_text.includes('[Double Attack]'),
     hasBanish: canonical.card_text.includes('[Banish]'),
     isUnblockable: canonical.card_text.includes('[Unblockable]'),

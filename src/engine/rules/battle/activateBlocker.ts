@@ -10,6 +10,19 @@ import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
+import { computeCurrentPower } from '../shared/power';
+
+function isBlockedByRestriction(state: GameState, blockerInstanceId: string, defs: CardDefinitionLookup): boolean {
+  const battle = state.currentBattle;
+  if (!battle) return false;
+  for (const record of state.continuousEffects) {
+    const restriction = record.blockerRestriction;
+    if (!restriction || restriction.appliesToAttackerInstanceId !== battle.attackerInstanceId) continue;
+    if (restriction.blockerPowerAtLeast === undefined) return true;
+    if (computeCurrentPower(defs, state, blockerInstanceId) >= restriction.blockerPowerAtLeast) return true;
+  }
+  return false;
+}
 
 export function validateActivateBlocker(state: GameState, action: ActivateBlockerAction, defs: CardDefinitionLookup): ValidationResult {
   const reasons: string[] = [];
@@ -39,6 +52,8 @@ export function validateActivateBlocker(state: GameState, action: ActivateBlocke
     const def = defs[blocker.cardDefinitionId];
     if (!def || !def.hasBlocker) {
       reasons.push(`'${action.blockerInstanceId}' does not have [Blocker].`);
+    } else if (isBlockedByRestriction(state, action.blockerInstanceId, defs)) {
+      reasons.push(`'${action.blockerInstanceId}' cannot activate [Blocker] due to an active blocker restriction.`);
     }
   }
 

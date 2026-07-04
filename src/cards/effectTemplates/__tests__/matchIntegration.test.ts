@@ -786,4 +786,54 @@ describe('curated effect template integration with match engine dispatch', () =>
     expect(attackResult.state.pendingChoices[0].constraints.candidateInstanceIds).not.toContain(sourceId);
     expect(attackResult.state.pendingChoices[0].constraints.candidateInstanceIds).not.toContain(offTypeAllyId);
   });
+
+  it('wires ST01-012 blocker suppression into battle validation', () => {
+    const luffy = makeCharacterDef({
+      cardDefinitionId: 'ST01-012',
+      cardNumber: 'ST01-012',
+      name: 'Monkey.D.Luffy',
+      category: 'character',
+      baseCost: 5,
+      basePower: 6000,
+      hasRush: true,
+    });
+    const blocker = makeCharacterDef({
+      cardDefinitionId: 'TEST-BLOCKER',
+      cardNumber: 'TEST-BLOCKER',
+      name: 'Blocker',
+      category: 'character',
+      baseCost: 1,
+      basePower: 1000,
+      hasBlocker: true,
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let attackerId: string;
+    let blockerId: string;
+    ({ rig, instanceId: attackerId } = putCharacterInPlay(rig, 'p1', luffy, { summoningSick: false }));
+    ({ rig, instanceId: blockerId } = putCharacterInPlay(rig, 'p2', blocker));
+    const { rig: withDon, donIds } = putDon(rig, 'p1', 2);
+    rig = {
+      ...withDon,
+      state: {
+        ...withDon.state,
+        cardsById: {
+          ...withDon.state.cardsById,
+          [attackerId]: { ...withDon.state.cardsById[attackerId], donAttached: donIds },
+        },
+      },
+    };
+
+    const registry = buildCuratedEffectRegistry(rig.defs);
+    const attackResult = executeAction(
+      rig.state,
+      { type: 'DECLARE_ATTACK', actionId: nextTestId('action'), playerId: 'p1', attackerInstanceId: attackerId, targetInstanceId: rig.state.players.p2.leaderInstanceId },
+      rig.defs,
+      registry,
+    );
+
+    expect(attackResult.state.continuousEffects.some((effect) => effect.blockerRestriction?.appliesToAttackerInstanceId === attackerId)).toBe(true);
+    const blockAction = { type: 'ACTIVATE_BLOCKER', actionId: nextTestId('action'), playerId: 'p2', blockerInstanceId: blockerId } as const;
+    expect(validateAction(attackResult.state, blockAction, rig.defs, registry).legal).toBe(false);
+  });
 });

@@ -13,7 +13,7 @@ function program(cardNumber: string, abilities: Ability[]): EffectProgram {
 
 function chooseOpponentCharacter(
   fn: 'koOpponentCharacter' | 'restOpponentCharacter',
-  filter: { maxCost?: number; maxPower?: number; rested?: boolean },
+  filter: { maxCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean },
   maxTargets = 1,
 ): EffectOp {
   const verb = fn === 'koOpponentCharacter' ? 'K.O.' : 'Rest';
@@ -159,6 +159,34 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           prompt: `Give up to ${maxTargets} of your opponent's Leader or Character cards ${f.amount} power (or decline).`,
         },
         { op: 'addPower', target: { sel: 'var', name: 't' }, amount: f.amount, duration: f.duration },
+      ];
+    }
+    case 'preventBlockers': {
+      if (f.target === 'chosenControllerLeaderOrCharacter') {
+        return [
+          {
+            op: 'chooseTargets',
+            var: 't',
+            from: { sel: 'controllerLeaderOrCharacters', ...f.filter },
+            min: 0,
+            max: 1,
+            prompt: 'Choose up to 1 of your Leader or Character cards.',
+          },
+          {
+            op: 'preventBlockers',
+            target: { sel: 'var', name: 't' },
+            duration: f.duration,
+            ...(f.blockerPowerAtLeast !== undefined ? { blockerPowerAtLeast: f.blockerPowerAtLeast } : {}),
+          },
+        ];
+      }
+      return [
+        {
+          op: 'preventBlockers',
+          target: { sel: 'self' },
+          duration: f.duration,
+          ...(f.blockerPowerAtLeast !== undefined ? { blockerPowerAtLeast: f.blockerPowerAtLeast } : {}),
+        },
       ];
     }
     case 'drawAndTrash':

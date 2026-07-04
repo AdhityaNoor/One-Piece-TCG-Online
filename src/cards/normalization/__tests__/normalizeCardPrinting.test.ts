@@ -210,6 +210,16 @@ describe('normalizeCardPrintings — battle keyword detection (10-1, 10-2)', () 
     expect(definition.hasRush).toBe(false);
   });
 
+  it('does not treat effect text mentioning [Blocker] as the card having Blocker', () => {
+    const { definition } = normalizeCardPrintings([withText('[DON!! x2] [When Attacking] Your opponent cannot activate [Blocker] during this battle.')]);
+    expect(definition.hasBlocker).toBe(false);
+  });
+
+  it('detects [Blocker] in the leading keyword tag run before other abilities', () => {
+    const { definition } = normalizeCardPrintings([withText('[Blocker] [On Play] Draw 1 card.')]);
+    expect(definition.hasBlocker).toBe(true);
+  });
+
   it('detects [Double Attack] presence', () => {
     const { definition } = normalizeCardPrintings([withText('[Double Attack]')]);
     expect(definition.hasDoubleAttack).toBe(true);

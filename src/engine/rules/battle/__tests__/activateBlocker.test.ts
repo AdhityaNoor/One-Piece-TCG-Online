@@ -68,6 +68,56 @@ describe('validateActivateBlocker', () => {
     const battling = { ...rig.state, currentBattle: battleAt('block') };
     expect(validateActivateBlocker(battling, activateBlocker('p2', blockerId), rig.defs).legal).toBe(true);
   });
+
+  it('rejects blockers when a continuous restriction applies to the attacker', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const { rig, instanceId: blockerId } = putCharacterInPlay(base, 'p2', makeCharacterDef({ hasBlocker: true }));
+    const battling = {
+      ...rig.state,
+      currentBattle: battleAt('block'),
+      continuousEffects: [
+        {
+          id: 'ce-blockers-off',
+          sourceInstanceId: 'source-x',
+          ownerId: 'p1',
+          duration: 'duringThisBattle' as const,
+          description: 'cannot activate Blocker',
+          blockerRestriction: { appliesToAttackerInstanceId: 'attacker-x' },
+        },
+      ],
+    };
+
+    const result = validateActivateBlocker(battling, activateBlocker('p2', blockerId), rig.defs);
+
+    expect(result.legal).toBe(false);
+    expect(result.reasons.join(' ')).toContain('blocker restriction');
+  });
+
+  it('only rejects blockers matching a blocker-power restriction', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    let rig = base;
+    let smallBlockerId: string;
+    let largeBlockerId: string;
+    ({ rig, instanceId: smallBlockerId } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ hasBlocker: true, basePower: 4000 })));
+    ({ rig, instanceId: largeBlockerId } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ hasBlocker: true, basePower: 5000 })));
+    const battling = {
+      ...rig.state,
+      currentBattle: battleAt('block'),
+      continuousEffects: [
+        {
+          id: 'ce-large-blockers-off',
+          sourceInstanceId: 'source-x',
+          ownerId: 'p1',
+          duration: 'duringThisBattle' as const,
+          description: 'large blockers cannot activate',
+          blockerRestriction: { appliesToAttackerInstanceId: 'attacker-x', blockerPowerAtLeast: 5000 },
+        },
+      ],
+    };
+
+    expect(validateActivateBlocker(battling, activateBlocker('p2', smallBlockerId), rig.defs).legal).toBe(true);
+    expect(validateActivateBlocker(battling, activateBlocker('p2', largeBlockerId), rig.defs).legal).toBe(false);
+  });
 });
 
 describe('executeActivateBlocker', () => {

@@ -181,6 +181,38 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  preventBlockers(spec: {
+    appliesToAttackerInstanceId: string;
+    duration: ContinuousEffectDuration;
+    blockerPowerAtLeast?: number;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description:
+        spec.description ??
+        (spec.blockerPowerAtLeast === undefined
+          ? 'opponent cannot activate Blocker'
+          : `opponent cannot activate Blocker with ${spec.blockerPowerAtLeast} or more power`),
+      blockerRestriction: {
+        appliesToAttackerInstanceId: spec.appliesToAttackerInstanceId,
+        ...(spec.blockerPowerAtLeast !== undefined ? { blockerPowerAtLeast: spec.blockerPowerAtLeast } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} while ${spec.appliesToAttackerInstanceId} attacks.`,
+      data: { continuousEffectId: record.id, duration: spec.duration, blockerPowerAtLeast: spec.blockerPowerAtLeast },
+      relatedCardInstanceIds: [spec.appliesToAttackerInstanceId],
+      visibility: 'public',
+    });
+  }
+
   giveDon(targetInstanceId: string, count: number): void {
     const controller = this.working.players[this.controllerId];
     const attached = new Set<string>();

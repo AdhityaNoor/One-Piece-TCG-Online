@@ -167,6 +167,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
+      if (sel.hasBlocker !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasBlocker === true) === sel.hasBlocker);
       return ids;
     }
     case 'controllerHand':
@@ -194,6 +195,17 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTo
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
         ctx.addContinuousCost({ appliesToInstanceId: id, amount: op.amount, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
+    case 'preventBlockers': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.preventBlockers({
+          appliesToAttackerInstanceId: id,
+          duration: op.duration,
+          ...(op.blockerPowerAtLeast !== undefined ? { blockerPowerAtLeast: op.blockerPowerAtLeast } : {}),
+        });
       }
       return { selectedIds: ids, movedIds: [] };
     }

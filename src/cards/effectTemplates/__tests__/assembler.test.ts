@@ -247,6 +247,27 @@ describe('template factories - structural correctness', () => {
     // @ts-expect-error
     expect(op.condition).toEqual({ donAttachedAtLeast: 1 });
   });
+
+  it('preventBlockers can apply to self or a chosen controller card', () => {
+    const self = applyTemplate('T', 'ability', {
+      timing: 'whenAttacking',
+      condition: { donAttachedAtLeast: 2 },
+      functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle', blockerPowerAtLeast: 5000 }],
+    });
+    expect(self.abilities[0].ops[0]).toMatchObject({
+      op: 'preventBlockers',
+      target: { sel: 'self' },
+      duration: 'duringThisBattle',
+      blockerPowerAtLeast: 5000,
+    });
+
+    const chosen = applyTemplate('T', 'ability', {
+      timing: 'activateMain',
+      functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', target: 'chosenControllerLeaderOrCharacter', filter: { typeIncludes: 'Straw Hat Crew' } }],
+    });
+    expect(chosen.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerLeaderOrCharacters', typeIncludes: 'Straw Hat Crew' } });
+    expect(chosen.abilities[0].ops[1]).toMatchObject({ op: 'preventBlockers', target: { sel: 'var', name: 't' }, duration: 'duringThisTurn' });
+  });
 });
 
 describe('raw card text isolation', () => {
