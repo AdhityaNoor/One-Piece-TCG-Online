@@ -4,3 +4,4 @@ export * from './savedDecksStore';
 export * from './cardLibraryStore';
 export * from './deckBuilderStore';
 export * from './matchSetupStore';
+export * from './casualStore';

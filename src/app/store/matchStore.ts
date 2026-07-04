@@ -65,10 +65,32 @@ interface MatchStoreState {
   startedWithDeckIds: { a: string; b: string } | null;
   /** Reasons the most recent startMatch() call failed, for the Match screen to display. Cleared on the next successful start. */
   startError: string[] | null;
+  /**
+   * Presentation-only seat binding (Layer 3). `null` == classic hotseat: the
+   * board follows whose turn it is and seats read p1/p2. Non-null (Casual)
+   * pins the board to this seat's perspective and forces IT to be the
+   * out-of-band deciding player, so the local client can always take the
+   * first pre-game decision. Never read by the engine — GameState is
+   * identical either way.
+   */
+  localPlayerId: string | null;
+  /** engine playerId -> display username, for board/log/banner labels. Empty == label by id. Never read by the engine. */
+  playerNames: Record<string, string>;
 
-  startMatch(deckA: SavedDeck, deckB: SavedDeck): MatchStartResult;
+  startMatch(deckA: SavedDeck, deckB: SavedDeck, presentation?: MatchPresentation): MatchStartResult;
   dispatch(action: GameAction): MatchDispatchResult;
   reset(): void;
+}
+
+/** Optional UI seat/label config for a match (see MatchStoreState.localPlayerId). */
+export interface MatchPresentation {
+  localPlayerId?: string;
+  playerNames?: Record<string, string>;
+}
+
+/** Label a seat: its username if one was provided, else the raw engine id (hotseat shows p1/p2). */
+export function resolvePlayerName(playerId: string, playerNames: Record<string, string>): string {
+  return playerNames[playerId] ?? playerId;
 }
 
 export const useMatchStore = create<MatchStoreState>((set, get) => ({
@@ -78,10 +100,15 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   cardImagesByDefinitionId: {},
   startedWithDeckIds: null,
   startError: null,
+  localPlayerId: null,
+  playerNames: {},
 
-  startMatch(deckA, deckB) {
+  startMatch(deckA, deckB, presentation) {
     const p1Input = savedDeckToPlayerSetupInput(deckA, PLAYER_A_ID);
     const p2Input = savedDeckToPlayerSetupInput(deckB, PLAYER_B_ID);
+
+    const localPlayerId = presentation?.localPlayerId ?? null;
+    const playerNames = presentation?.playerNames ?? {};
 
     // The seed is the root of randomness for this match — it does not itself
     // need to be deterministic (cf. shuffling a real deck before play), only
@@ -91,10 +118,13 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     // 5-2-1-4-1: the going-first-or-second DECISION is explicitly out of the
     // engine's scope ("no intervention of any kind is allowed"); resolving
     // WHO gets to make that decision (the real-life coin-flip/RPS-or-similar
-    // step) is the same kind of out-of-band input. Derived from the match
-    // seed rather than Math.random() purely so a given seed always
-    // reproduces the same pre-game flow too.
-    const decidingPlayerId = hashSeed(seed) % 2 === 0 ? PLAYER_A_ID : PLAYER_B_ID;
+    // step) is the same kind of out-of-band input. In hotseat it is derived
+    // from the match seed (reproducible pre-game flow). In a Casual match the
+    // local seat is made the deciding player, so this single-client build can
+    // always take the first pre-game decision itself rather than stalling on
+    // a not-yet-connected opponent — still a purely out-of-band choice.
+    const decidingPlayerId =
+      localPlayerId ?? (hashSeed(seed) % 2 === 0 ? PLAYER_A_ID : PLAYER_B_ID);
 
     const result = createPreGameState(p1Input, p2Input, {
       decidingPlayerId,
@@ -102,7 +132,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     });
 
     if (!result.ok) {
-      set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: result.reasons });
+      set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: result.reasons, localPlayerId: null, playerNames: {} });
       return { ok: false, reasons: result.reasons };
     }
 
@@ -114,6 +144,8 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       cardImagesByDefinitionId: buildCardImageLookup([deckA, deckB]),
       startedWithDeckIds: { a: deckA.deckId, b: deckB.deckId },
       startError: null,
+      localPlayerId,
+      playerNames,
     });
     return { ok: true };
   },
@@ -135,6 +167,6 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   },
 
   reset() {
-    set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: null });
+    set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {} });
   },
 }));

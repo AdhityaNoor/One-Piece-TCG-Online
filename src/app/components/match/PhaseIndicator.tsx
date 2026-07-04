@@ -9,15 +9,17 @@ function phaseLabel(phase: GameState['currentPhase']): string {
 
 export interface PhaseIndicatorProps {
   playerId: string;
+  /** Display label for the seat — defaults to the raw engine id (hotseat shows p1/p2; Casual passes a username). */
+  label?: string;
   currentPhase: GameState['currentPhase'];
   active: boolean;
 }
 
-export function PhaseIndicator({ playerId, currentPhase, active }: PhaseIndicatorProps) {
+export function PhaseIndicator({ playerId, label, currentPhase, active }: PhaseIndicatorProps) {
   return (
     <section className={['rounded-lg border p-2', active ? 'border-gold/30 bg-gold/10' : 'border-white/10 bg-white/[0.03]'].join(' ')}>
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/45">{playerId}</span>
+        <span className="max-w-[70%] truncate text-[10px] font-black uppercase tracking-[0.16em] text-white/45" title={label ?? playerId}>{label ?? playerId}</span>
         {active && <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-gold">Turn</span>}
       </div>
       <div className="flex flex-col gap-1">

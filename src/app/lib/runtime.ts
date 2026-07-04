@@ -12,6 +12,7 @@
 import type { FetchLike } from '../../cards/api/client';
 import { InMemoryCacheStore, type CacheStore } from '../../cards/api/cache';
 import { createLocalStorageDeckStore, type DeckStore, type StorageLike } from '../../cards/decks/deckStorage';
+import { createMockRoomService, type RoomService } from '../../multiplayer/rooms';
 
 export const browserFetch: FetchLike = (url) => fetch(url);
 
@@ -34,6 +35,20 @@ export const cardLibraryCache: CacheStore = new InMemoryCacheStore();
 export const CARD_LIBRARY_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour — card data changes only on new-set releases.
 
 export const deckStore: DeckStore = createLocalStorageDeckStore(browserStorage);
+
+/**
+ * Builds a fresh Casual-lobby RoomService bound to the local deck store.
+ * A factory (not a singleton) so each lobby "Refresh" can mint a service
+ * with a new seed — regenerating the synthetic room list and re-reading
+ * decks saved since the last visit. Swapping to a real backend later is a
+ * one-line change here (return a NetworkRoomService instead); nothing in
+ * the stores/screens references the mock directly.
+ */
+export const createRoomService = (): RoomService =>
+  createMockRoomService({
+    listDecks: () => deckStore.list(),
+    loadDeck: (deckId) => deckStore.load(deckId),
+  });
 
 export const nowIso = (): string => new Date().toISOString();
 

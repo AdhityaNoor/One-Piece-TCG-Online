@@ -10,7 +10,25 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { browserStorage } from '../lib/runtime';
 
+/** Max length for a display username. Purely a UI/presentation cap. */
+export const USERNAME_MAX_LENGTH = 20;
+/** Shown when the user has never set a name — also the online-lobby default handle. */
+export const DEFAULT_USERNAME = 'Player';
+
+/** Trim + clamp a raw username input to something safe to display; empties fall back to the default. */
+export function sanitizeUsername(raw: string): string {
+  const trimmed = raw.replace(/\s+/g, ' ').trim().slice(0, USERNAME_MAX_LENGTH);
+  return trimmed.length > 0 ? trimmed : DEFAULT_USERNAME;
+}
+
 export interface SettingsState {
+  /**
+   * The local player's display name. UI/presentation only — the engine keeps
+   * fixed player ids (p1/p2); this is just how those ids are labelled on
+   * screen and, later, the handle this client presents to the online lobby.
+   * Never read by the rules engine.
+   */
+  username: string;
   /**
    * Local hotseat debug aid: shows both players' hands at once instead of
    * hiding the off-turn player's hand. Project rule: card visibility must
@@ -32,6 +50,7 @@ export interface SettingsState {
   sfxVolume: number;
   /** Match screen navy backdrop preference. UI-only visual polish, never game state. */
   matchNavyBackgroundEnabled: boolean;
+  setUsername(value: string): void;
   setDebugShowBothHands(value: boolean): void;
   setAnimationsEnabled(value: boolean): void;
   setThreeDEnabled(value: boolean): void;
@@ -44,6 +63,7 @@ export interface SettingsState {
 }
 
 const DEFAULTS = {
+  username: DEFAULT_USERNAME,
   debugShowBothHands: true,
   animationsEnabled: true,
   threeDEnabled: false,
@@ -54,6 +74,7 @@ const DEFAULTS = {
   matchNavyBackgroundEnabled: false,
 } satisfies Pick<
   SettingsState,
+  | 'username'
   | 'debugShowBothHands'
   | 'animationsEnabled'
   | 'threeDEnabled'
@@ -68,6 +89,7 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       ...DEFAULTS,
+      setUsername: (value) => set({ username: sanitizeUsername(value) }),
       setDebugShowBothHands: (value) => set({ debugShowBothHands: value }),
       setAnimationsEnabled: (value) => set({ animationsEnabled: value }),
       setThreeDEnabled: (value) => set({ threeDEnabled: value }),

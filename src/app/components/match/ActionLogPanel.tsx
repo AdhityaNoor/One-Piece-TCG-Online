@@ -24,32 +24,41 @@ import { Modal } from '../Modal';
 import { Pill } from '../Pill';
 import { Button } from '../Button';
 
+/** engine playerId -> display username. Absent/empty labels fall back to the raw id (hotseat shows p1/p2). */
+export type PlayerNameMap = Record<string, string>;
+
 export interface ActionLogPanelProps {
   open: boolean;
   onClose: () => void;
   log: GameLogEntry[];
+  playerNames?: PlayerNameMap;
 }
 
 export interface ActionLogDockProps {
   log: GameLogEntry[];
+  playerNames?: PlayerNameMap;
 }
 
 function isSecret(entry: GameLogEntry): boolean {
   return entry.visibility !== 'public';
 }
 
-export function ActionLogPanel({ open, onClose, log }: ActionLogPanelProps) {
+function nameFor(playerId: string, playerNames?: PlayerNameMap): string {
+  return playerNames?.[playerId] ?? playerId;
+}
+
+export function ActionLogPanel({ open, onClose, log, playerNames }: ActionLogPanelProps) {
   return (
     <Modal open={open} onClose={onClose} title="Action Log" maxWidthClassName="max-w-xl">
-      <ActionLogContent log={log} />
+      <ActionLogContent log={log} playerNames={playerNames} />
     </Modal>
   );
 }
 
-export function ActionLogDock({ log }: ActionLogDockProps) {
+export function ActionLogDock({ log, playerNames }: ActionLogDockProps) {
   return (
     <aside className="flex min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
-      <ActionLogDockContent log={log} />
+      <ActionLogDockContent log={log} playerNames={playerNames} />
     </aside>
   );
 }
@@ -68,7 +77,7 @@ function CompactLogBadge({ children, tone = 'neutral' }: { children: string; ton
   );
 }
 
-function ActionLogDockContent({ log }: { log: GameLogEntry[] }) {
+function ActionLogDockContent({ log, playerNames }: { log: GameLogEntry[]; playerNames?: PlayerNameMap }) {
   const [publicOnly, setPublicOnly] = useState(false);
   const visible = publicOnly ? log.filter((entry) => !isSecret(entry)) : log;
   const ordered = [...visible].reverse();
@@ -103,7 +112,7 @@ function ActionLogDockContent({ log }: { log: GameLogEntry[] }) {
                   <span>#{entry.sequence}</span>
                   <span className="min-w-0 truncate">
                     Turn {entry.turnNumber || '-'} · {entry.phase}
-                    {entry.actorPlayerId ? ` · ${entry.actorPlayerId}` : ''}
+                    {entry.actorPlayerId ? ` · ${nameFor(entry.actorPlayerId, playerNames)}` : ''}
                   </span>
                   <span className="col-span-2 flex min-w-0 flex-wrap gap-1">
                     <CompactLogBadge>{entry.type}</CompactLogBadge>
@@ -120,7 +129,7 @@ function ActionLogDockContent({ log }: { log: GameLogEntry[] }) {
   );
 }
 
-function ActionLogContent({ log }: { log: GameLogEntry[] }) {
+function ActionLogContent({ log, playerNames }: { log: GameLogEntry[]; playerNames?: PlayerNameMap }) {
   const [publicOnly, setPublicOnly] = useState(false);
   const visible = publicOnly ? log.filter((e) => !isSecret(e)) : log;
   const ordered = [...visible].reverse();
@@ -149,7 +158,7 @@ function ActionLogContent({ log }: { log: GameLogEntry[] }) {
                   {entry.actorPlayerId && (
                     <>
                       <span>·</span>
-                      <span>{entry.actorPlayerId}</span>
+                      <span>{nameFor(entry.actorPlayerId, playerNames)}</span>
                     </>
                   )}
                   <span className="ml-auto flex gap-1">

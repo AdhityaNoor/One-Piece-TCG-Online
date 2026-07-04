@@ -69,7 +69,7 @@ export function MainMenuScreen() {
 
         {/* Nav */}
         <nav className="relative z-10 flex w-full flex-col items-center gap-3 sm:gap-3.5" aria-label="Main menu">
-          <CanvasMenuButton label="Play" prominence="primary" onClick={() => navigateTo({ screen: 'deck-select' })} disabled={deckCount < 1} />
+          <CanvasMenuButton label="Play" prominence="primary" onClick={() => navigateTo({ screen: 'play-menu' })} disabled={deckCount < 1} />
           <CanvasMenuButton label="Card Library" onClick={() => navigateTo({ screen: 'card-library' })} />
           <CanvasMenuButton label="Decks" badge={deckCount} onClick={() => navigateTo({ screen: 'saved-decks' })} />
           <CanvasMenuButton label="Settings" onClick={() => navigateTo({ screen: 'settings' })} />

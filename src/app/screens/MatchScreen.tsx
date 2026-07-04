@@ -46,6 +46,12 @@ export function MatchScreen() {
   const startError = useMatchStore((s) => s.startError);
   const startMatch = useMatchStore((s) => s.startMatch);
   const resetMatch = useMatchStore((s) => s.reset);
+  // Presentation seat binding (null == hotseat). Drives fixed-perspective +
+  // username labelling for Casual matches; never touches GameState.
+  const localPlayerId = useMatchStore((s) => s.localPlayerId);
+  const playerNames = useMatchStore((s) => s.playerNames);
+  const isCasual = localPlayerId !== null;
+  const nameFor = (id: string): string => playerNames[id] ?? id;
 
   const [pauseOpen, setPauseOpen] = useState(false);
   const [zoomDefinitionId, setZoomDefinitionId] = useState<string | null>(null);
@@ -57,6 +63,10 @@ export function MatchScreen() {
   const isMatchScreen = current.screen === 'match';
   const deckIdA = current.screen === 'match' ? current.deckIdA : null;
   const deckIdB = current.screen === 'match' ? current.deckIdB : null;
+  // Casual presentation config off the nav target (undefined == hotseat).
+  const presentation = current.screen === 'match' ? current.presentation : undefined;
+  // Serialize so the start effect only re-fires when the config actually changes.
+  const presentationKey = presentation ? JSON.stringify(presentation) : '';
 
   // Start (or restart, if navigated here with a different deck pairing) the
   // engine match exactly once per distinct {deckIdA, deckIdB} pair — never
@@ -68,9 +78,15 @@ export function MatchScreen() {
     const deckAResult = load(deckIdA);
     const deckBResult = load(deckIdB);
     if (deckAResult.ok && deckBResult.ok) {
-      startMatch(deckAResult.deck, deckBResult.deck);
+      startMatch(
+        deckAResult.deck,
+        deckBResult.deck,
+        presentation ? { localPlayerId: presentation.localPlayerId, playerNames: presentation.playerNames } : undefined,
+      );
     }
-  }, [deckIdA, deckIdB, startedWithDeckIds, load, startMatch]);
+    // presentationKey stands in for the presentation object (stable string).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckIdA, deckIdB, presentationKey, startedWithDeckIds, load, startMatch]);
 
   // Hooks must run unconditionally on every render of this component (it
   // stays mounted across screen navigation and just returns null when
@@ -122,31 +138,44 @@ export function MatchScreen() {
   }
 
   if (matchState.gameOver) {
-    return <VictoryScreen winnerId={matchState.gameOver.winnerId} reason={matchState.gameOver.reason} onReturn={handleQuit} />;
+    return (
+      <VictoryScreen
+        winnerId={matchState.gameOver.winnerId}
+        winnerName={matchState.gameOver.winnerId ? nameFor(matchState.gameOver.winnerId) : null}
+        reason={matchState.gameOver.reason}
+        onReturn={handleQuit}
+      />
+    );
   }
 
-  // Panel POSITION (which board renders top vs bottom) is intentionally
-  // anchored to whose TURN it is (state.activePlayerId), not to
-  // getActingPlayerId() — that function correctly identifies who must act
-  // RIGHT NOW (e.g. the defending player during the Block/Counter Steps),
-  // but using it for position too caused the entire layout to swap the
-  // instant DECLARE_ATTACK executed: the just-rested attacker's board would
-  // jump into the slot the target's (untouched) board had occupied a moment
-  // earlier, which reads exactly like "the wrong card got rested" even
-  // though cardsById was always correct (see declareAttack.test.ts's
-  // "never changes the target's orientation" regression tests). The turn
-  // player's board now stays in the same slot for their whole turn,
-  // including the sub-steps where the opponent acts on it.
-  const turnPlayerId = matchState.activePlayerId;
-  const otherPlayerId = getOpponentId(matchState, turnPlayerId);
-  const turnPlayerBoard = projectPlayerBoard(matchState, defs, images, turnPlayerId);
-  const otherPlayerBoard = projectPlayerBoard(matchState, defs, images, otherPlayerId);
+  // Panel POSITION (which board renders top vs bottom).
+  //
+  // Hotseat (localPlayerId == null): anchored to whose TURN it is
+  // (state.activePlayerId), NOT getActingPlayerId() — that function correctly
+  // identifies who must act RIGHT NOW (e.g. the defending player during the
+  // Block/Counter Steps), but using it for position caused the entire layout
+  // to swap the instant DECLARE_ATTACK executed: the just-rested attacker's
+  // board would jump into the slot the target's (untouched) board had
+  // occupied a moment earlier, which reads exactly like "the wrong card got
+  // rested" even though cardsById was always correct (see declareAttack.test
+  // .ts's "never changes the target's orientation" regression tests). The
+  // turn player's board stays in the same slot for their whole turn.
+  //
+  // Casual (localPlayerId set): the board is pinned to the LOCAL seat — this
+  // client always views from its own side, so the layout never switches
+  // regardless of whose turn/authority it is. This is the online-client
+  // perspective and still preserves the invariant above (position is a fixed
+  // seat, never getActingPlayerId()).
+  const bottomPlayerId = localPlayerId ?? matchState.activePlayerId;
+  const topPlayerId = getOpponentId(matchState, bottomPlayerId);
+  const bottomPlayerBoard = projectPlayerBoard(matchState, defs, images, bottomPlayerId);
+  const topPlayerBoard = projectPlayerBoard(matchState, defs, images, topPlayerId);
 
   // Action AUTHORITY (who may currently act, and whose hand/board ActionBar
   // should read for eligibility checks) still tracks getActingPlayerId() —
   // only the panels' on-screen position was the bug, not this.
   const actingPlayerId = getActingPlayerId(matchState);
-  const actingBoard = actingPlayerId === turnPlayerId ? turnPlayerBoard : otherPlayerBoard;
+  const actingBoard = actingPlayerId === bottomPlayerId ? bottomPlayerBoard : topPlayerBoard;
 
   const battleLabel = matchState.currentBattle ? ` · Battle: ${matchState.currentBattle.step}` : '';
   const attackArrow = matchState.currentBattle
@@ -201,10 +230,10 @@ export function MatchScreen() {
             <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Local Hotseat</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{isCasual ? 'Casual Match' : 'Local Hotseat'}</p>
                   <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">
-                    Turn {matchState.turnNumber} · {matchState.activePlayerId} · {matchState.currentPhase}
+                  <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">
+                    Turn {matchState.turnNumber} · {nameFor(matchState.activePlayerId)} · {matchState.currentPhase}
                     {battleLabel}
                   </p>
                 </div>
@@ -212,10 +241,14 @@ export function MatchScreen() {
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               <div className="mb-3 flex flex-col gap-2">
-                <PhaseIndicator playerId={otherPlayerId} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === otherPlayerId} />
-                <PhaseIndicator playerId={turnPlayerId} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === turnPlayerId} />
+                <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} />
+                <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} />
               </div>
-              {!matchState.gameOver ? (
+              {matchState.gameOver ? (
+                <p className="text-xs text-white/50">Match complete.</p>
+              ) : isCasual && actingPlayerId !== localPlayerId ? (
+                <WaitingForOpponent opponentName={nameFor(topPlayerId)} />
+              ) : (
                 <ActionBar
                   phase={matchState.currentPhase}
                   turnNumber={matchState.turnNumber}
@@ -223,8 +256,6 @@ export function MatchScreen() {
                   actingBoard={actingBoard}
                   selection={selection}
                 />
-              ) : (
-                <p className="text-xs text-white/50">Match complete.</p>
               )}
             </div>
             <div className="border-t border-gold/25 bg-black/18 p-3">
@@ -268,17 +299,21 @@ export function MatchScreen() {
                 onMouseLeave={() => setBoardHovered(false)}
               >
                 <PlayerSideRow
-                  board={otherPlayerBoard}
-                  isOwn={actingPlayerId === otherPlayerId}
-                  isOpponent={actingPlayerId !== otherPlayerId}
+                  board={topPlayerBoard}
+                  // Casual: the top seat is the remote opponent — this client
+                  // never controls it, so it is never "own" regardless of
+                  // whose authority it is. Hotseat keeps the both-sides-local
+                  // behaviour.
+                  isOwn={isCasual ? false : actingPlayerId === topPlayerId}
+                  isOpponent={isCasual ? true : actingPlayerId !== topPlayerId}
                   reverseRows={true}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
                   canAttackCard={selection.canDeclareAttackWith}
                   battlePowerInstanceIds={battlePowerInstanceIds}
-                  onMatCardTap={(zone, card) => selection.handleCardTap(otherPlayerId, zone, card)}
+                  onMatCardTap={(zone, card) => selection.handleCardTap(topPlayerId, zone, card)}
                   onMatCardAttack={selection.beginAttackWithCard}
-                  onAttachedDonLabelTap={(card) => selection.handleAttachedDonLabelTap(otherPlayerId, card)}
+                  onAttachedDonLabelTap={(card) => selection.handleAttachedDonLabelTap(topPlayerId, card)}
                   onCardZoom={openZoom}
                   onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
                   boardFocused={boardHovered}
@@ -291,17 +326,17 @@ export function MatchScreen() {
                 </div>
 
                 <PlayerSideRow
-                  board={turnPlayerBoard}
-                  isOwn={actingPlayerId === turnPlayerId}
-                  isOpponent={actingPlayerId !== turnPlayerId}
+                  board={bottomPlayerBoard}
+                  isOwn={actingPlayerId === bottomPlayerId}
+                  isOpponent={actingPlayerId !== bottomPlayerId}
                   reverseRows={false}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
                   canAttackCard={selection.canDeclareAttackWith}
                   battlePowerInstanceIds={battlePowerInstanceIds}
-                  onMatCardTap={(zone, card) => selection.handleCardTap(turnPlayerId, zone, card)}
+                  onMatCardTap={(zone, card) => selection.handleCardTap(bottomPlayerId, zone, card)}
                   onMatCardAttack={selection.beginAttackWithCard}
-                  onAttachedDonLabelTap={(card) => selection.handleAttachedDonLabelTap(turnPlayerId, card)}
+                  onAttachedDonLabelTap={(card) => selection.handleAttachedDonLabelTap(bottomPlayerId, card)}
                   onCardZoom={openZoom}
                   onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
                   boardFocused={boardHovered}
@@ -312,22 +347,22 @@ export function MatchScreen() {
                 affected by cqh sizing; positioned absolute relative to
                 op-match-table-shell (position:relative; overflow:hidden). */}
             <DockHand
-              cards={otherPlayerBoard.hand}
-              isOwn={actingPlayerId === otherPlayerId}
+              cards={topPlayerBoard.hand}
+              isOwn={isCasual ? false : actingPlayerId === topPlayerId}
               position="top"
               selectedIds={selectedHandIds(selection.mode)}
-              selectable={(card) => handSelectable(selection.mode, actingPlayerId === otherPlayerId, card, selection.hasCounter)}
-              onCardTap={(card) => selection.handleCardTap(otherPlayerId, 'hand', card)}
+              selectable={(card) => (isCasual ? false : handSelectable(selection.mode, actingPlayerId === topPlayerId, card, selection.hasCounter))}
+              onCardTap={(card) => selection.handleCardTap(topPlayerId, 'hand', card)}
               onCardZoom={openZoom}
               boardFocused={boardHovered}
             />
             <DockHand
-              cards={turnPlayerBoard.hand}
-              isOwn={actingPlayerId === turnPlayerId}
+              cards={bottomPlayerBoard.hand}
+              isOwn={actingPlayerId === bottomPlayerId}
               position="bottom"
               selectedIds={selectedHandIds(selection.mode)}
-              selectable={(card) => handSelectable(selection.mode, actingPlayerId === turnPlayerId, card, selection.hasCounter)}
-              onCardTap={(card) => selection.handleCardTap(turnPlayerId, 'hand', card)}
+              selectable={(card) => handSelectable(selection.mode, actingPlayerId === bottomPlayerId, card, selection.hasCounter)}
+              onCardTap={(card) => selection.handleCardTap(bottomPlayerId, 'hand', card)}
               onCardZoom={openZoom}
               boardFocused={boardHovered}
             />
@@ -348,12 +383,16 @@ export function MatchScreen() {
             />
           </div>
 
-          <ActionLogDock log={matchState.log} />
+          <ActionLogDock log={matchState.log} playerNames={playerNames} />
         </div>
       </div>
 
-      <TurnChangeBanner turnNumber={matchState.turnNumber} activePlayerId={matchState.activePlayerId} phase={matchState.currentPhase} gameOver={!!matchState.gameOver} />
-      <PendingChoicePrompt state={matchState} defs={defs} images={images} />
+      <TurnChangeBanner turnNumber={matchState.turnNumber} activePlayerId={matchState.activePlayerId} activePlayerName={nameFor(matchState.activePlayerId)} phase={matchState.currentPhase} gameOver={!!matchState.gameOver} />
+      {/* Casual: a pending choice belonging to the opponent seat is theirs to
+          resolve over the network, not this client's — suppress the prompt so
+          the local human can't answer for the opponent (the WaitingForOpponent
+          panel covers this state instead). */}
+      {(!isCasual || actingPlayerId === localPlayerId) && <PendingChoicePrompt state={matchState} defs={defs} images={images} />}
       <CardDetailModal open={zoomDefinitionId !== null} onClose={() => setZoomDefinitionId(null)} definition={zoomDefinition} imageUrl={zoomImageUrl} />
 
       <Modal open={pauseOpen} onClose={() => setPauseOpen(false)} title="Paused">
@@ -402,19 +441,50 @@ function formatGameOverReason(reason: string): string {
   return labels[reason] ?? reason;
 }
 
+/**
+ * Casual-only: shown in the Actions panel when action authority belongs to
+ * the opponent seat, not the local client. In a real online match the
+ * opponent's move would arrive over the RoomService/transport and clear this;
+ * in this single-client build there is no remote player, so the local seat's
+ * controls simply stay disabled until it is the local player's turn again.
+ * This IS the network seam — the place a NetworkTransport plugs in later.
+ */
+function WaitingForOpponent({ opponentName }: { opponentName: string }) {
+  return (
+    <div className="flex flex-col items-center gap-3 border border-white/10 bg-black/24 px-4 py-8 text-center">
+      <span className="inline-flex gap-1" aria-hidden="true">
+        {[0, 1, 2].map((index) => (
+          <span
+            key={index}
+            className="h-2 w-2 animate-pulse rounded-full bg-gold/70"
+            style={{ animationDelay: `${index * 160}ms` }}
+          />
+        ))}
+      </span>
+      <p className="text-sm font-black uppercase tracking-[0.16em] text-white/80">Waiting for {opponentName}</p>
+      <p className="max-w-[16rem] text-[11px] leading-relaxed text-white/45">
+        It's the opponent's turn. Their actions will arrive over the network once an online opponent is connected.
+      </p>
+    </div>
+  );
+}
+
 function TurnChangeBanner({
   turnNumber,
   activePlayerId,
+  activePlayerName,
   phase,
   gameOver,
 }: {
   turnNumber: number;
   activePlayerId: string;
+  /** Display label for the turn player (username in Casual, else the raw id). */
+  activePlayerName: string;
   phase: string;
   gameOver: boolean;
 }) {
   const [visible, setVisible] = useState(false);
-  const [banner, setBanner] = useState<{ key: string; playerId: string; turnNumber: number } | null>(null);
+  const [banner, setBanner] = useState<{ key: string; playerName: string; turnNumber: number } | null>(null);
 
   useEffect(() => {
     if (gameOver || phase === 'setup') {
@@ -423,7 +493,7 @@ function TurnChangeBanner({
     }
 
     const key = `${turnNumber}:${activePlayerId}`;
-    setBanner({ key, playerId: activePlayerId, turnNumber });
+    setBanner({ key, playerName: activePlayerName, turnNumber });
     setVisible(false);
 
     const showFrame = window.requestAnimationFrame(() => setVisible(true));
@@ -433,7 +503,7 @@ function TurnChangeBanner({
       window.cancelAnimationFrame(showFrame);
       window.clearTimeout(hideTimer);
     };
-  }, [activePlayerId, gameOver, phase, turnNumber]);
+  }, [activePlayerId, activePlayerName, gameOver, phase, turnNumber]);
 
   if (!banner) return null;
 
@@ -453,7 +523,7 @@ function TurnChangeBanner({
         <div className="relative">
           <p className="mb-1 text-[10px] font-black uppercase tracking-[0.34em] text-gold drop-shadow-[0_2px_0_rgba(0,0,0,0.65)]">Turn {banner.turnNumber}</p>
           <p className="font-display text-[clamp(2rem,7vw,4.75rem)] font-black uppercase leading-none tracking-[0.05em] text-white drop-shadow-[0_6px_0_rgba(0,0,0,0.62)]">
-          {banner.playerId.toUpperCase()} Turn
+          {banner.playerName.toUpperCase()} Turn
           </p>
           <p className="mt-2 text-xs font-black uppercase tracking-[0.3em] text-white/72">Begin</p>
         </div>
@@ -462,8 +532,8 @@ function TurnChangeBanner({
   );
 }
 
-function VictoryScreen({ winnerId, reason, onReturn }: { winnerId: string | null; reason: string; onReturn: () => void }) {
-  const winnerLabel = winnerId ? `${winnerId} wins!` : 'Game over';
+function VictoryScreen({ winnerId, winnerName, reason, onReturn }: { winnerId: string | null; winnerName?: string | null; reason: string; onReturn: () => void }) {
+  const winnerLabel = winnerId ? `${winnerName ?? winnerId} wins!` : 'Game over';
 
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-[#030713] font-body text-white">

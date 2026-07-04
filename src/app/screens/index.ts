@@ -6,6 +6,8 @@ export * from './DebugToolsScreen';
 export * from './CardLibraryScreen';
 export * from './deckBuilder';
 export * from './SavedDecksScreen';
+export * from './PlayMenuScreen';
 export * from './DeckSelectScreen';
+export * from './CasualLobbyScreen';
 export * from './MatchScreen';
 export * from './ComingSoonScreen';

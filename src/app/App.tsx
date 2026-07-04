@@ -11,11 +11,13 @@ import { BacksoundControl } from './components';
 import {
   CardLibraryScreen,
   CreditsScreen,
+  CasualLobbyScreen,
   DebugToolsScreen,
   DeckBuilderScreen,
   DeckSelectScreen,
   MainMenuScreen,
   MatchScreen,
+  PlayMenuScreen,
   SavedDecksScreen,
   SettingsScreen,
   SplashScreen,
@@ -43,8 +45,12 @@ export function App() {
         return <DeckBuilderScreen />;
       case 'saved-decks':
         return <SavedDecksScreen />;
+      case 'play-menu':
+        return <PlayMenuScreen />;
       case 'deck-select':
         return <DeckSelectScreen />;
+      case 'casual-lobby':
+        return <CasualLobbyScreen />;
       case 'credits':
         return <CreditsScreen />;
       case 'match':

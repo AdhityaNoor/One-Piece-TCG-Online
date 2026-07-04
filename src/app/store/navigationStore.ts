@@ -11,6 +11,24 @@
  */
 import { create } from 'zustand';
 
+/**
+ * Presentation-only match config layered on top of the pure {deckIdA,
+ * deckIdB} pairing. Absent (`undefined`) == the classic "vs Self" hotseat:
+ * board follows whose turn it is and seats are labelled by their engine id
+ * (p1/p2). Present == a Casual match: the board is pinned to `localPlayerId`
+ * (it never flips to the opponent's side) and seats are labelled by
+ * `playerNames`. None of this reaches the engine — it only changes how the
+ * fixed GameState is projected and labelled (Layer 3), and stays
+ * JSON-serializable so a match target round-trips like everything else.
+ */
+export interface CasualMatchPresentation {
+  mode: 'casual';
+  /** Engine player id the local client controls and views from (bottom of the board). */
+  localPlayerId: string;
+  /** engine playerId -> display username, for board/log/banner labels. */
+  playerNames: Record<string, string>;
+}
+
 export type NavigationTarget =
   | { screen: 'main-menu' }
   | { screen: 'settings' }
@@ -18,9 +36,11 @@ export type NavigationTarget =
   | { screen: 'card-library' }
   | { screen: 'deck-builder'; deckIdToEdit?: string }
   | { screen: 'saved-decks' }
+  | { screen: 'play-menu' }
   | { screen: 'deck-select' }
+  | { screen: 'casual-lobby' }
   | { screen: 'credits' }
-  | { screen: 'match'; deckIdA: string; deckIdB: string };
+  | { screen: 'match'; deckIdA: string; deckIdB: string; presentation?: CasualMatchPresentation };
 
 interface NavigationState {
   /** Last entry is the current screen. Always non-empty. */

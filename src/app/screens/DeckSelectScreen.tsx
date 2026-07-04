@@ -62,7 +62,7 @@ export function DeckSelectScreen() {
     <GameCanvasScreen kicker="Play" status="Match setup" title="Choose Decks" onBack={goBack}>
       <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[20rem_minmax(0,1fr)]">
         <section className="flex min-h-0 flex-col justify-center border-2 border-gold/35 bg-black/26 p-4 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)] backdrop-blur-sm">
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Local Hotseat</p>
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">vs Self · Local Hotseat</p>
           <p className="mt-2 text-sm leading-6 text-slate-200/72">Assign one saved deck to each seat. Mirror matches are allowed for testing.</p>
 
           <div className="mt-5 flex flex-col items-center gap-3">
