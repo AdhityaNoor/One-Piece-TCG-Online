@@ -29,6 +29,13 @@ const ASSET_BASE = (import.meta.env.VITE_ASSET_BASE_URL ?? '').replace(/\/$/, ''
  */
 export function resolveAssetUrl(path: string | null): string | null {
   if (path === null) return null;
+  // Idempotency guard: some saved-deck snapshots (created before deck
+  // snapshots stored root-relative paths) captured a FULLY resolved Blob
+  // URL, and a few raw API rows carry a full http(s) source. Such a value is
+  // already final — re-prefixing ASSET_BASE would produce a doubled origin
+  // like "<blob>/https://<blob>/card-images/..." that 404s (the match-screen
+  // bug). Resolving an absolute URL must be a no-op.
+  if (/^https?:\/\//i.test(path)) return path;
   if (!ASSET_BASE) return path; // local dev — served by Vite from /public/
   // Ensure no double-slash when joining.
   return `${ASSET_BASE}${path.startsWith('/') ? path : `/${path}`}`;
