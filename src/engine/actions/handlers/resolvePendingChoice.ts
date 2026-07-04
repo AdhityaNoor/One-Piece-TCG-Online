@@ -109,6 +109,9 @@ export function executeResolvePendingChoice(
     }
     const fired = fireLifeTrigger({ ...state, pendingChoices: remaining }, cardId, registry, defs, action.actionId);
     const inst = fired.state.cardsById[cardId];
+    if (!inst || inst.currentZone !== 'hand') {
+      return { state: fired.state, log: fired.log, pendingChoices: fired.pendingChoices };
+    }
     const owner = fired.state.players[inst.ownerId];
     const working: GameState = {
       ...fired.state,

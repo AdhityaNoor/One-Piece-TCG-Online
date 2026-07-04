@@ -4,6 +4,7 @@
  */
 import { useState } from 'react';
 import type { CardDefinition } from '../../engine/state/card';
+import { resolveAssetUrl } from '../lib/assetUrl';
 import { CARD_COLOR_TOKENS } from '../lib/cardColors';
 import { Modal } from './Modal';
 import { Pill } from './Pill';
@@ -42,7 +43,7 @@ function PreviewCardImage({ src, alt }: { src: string | null; alt: string }) {
           <span className="px-4 text-center font-heading text-xs font-bold uppercase leading-tight tracking-[0.14em]">No image available</span>
         </div>
       ) : (
-        <img src={src} alt={alt} loading="eager" onError={() => setFailed(true)} className="h-full max-h-full w-full max-w-full object-contain drop-shadow-[0_18px_34px_rgba(0,0,0,0.5)]" />
+        <img src={resolveAssetUrl(src) ?? undefined} alt={alt} loading="eager" onError={() => setFailed(true)} className="h-full max-h-full w-full max-w-full object-contain drop-shadow-[0_18px_34px_rgba(0,0,0,0.5)]" />
       )}
     </div>
   );

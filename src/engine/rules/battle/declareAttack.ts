@@ -16,6 +16,7 @@ import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
+import { hasContinuousKeyword } from '../shared/power';
 import { fireWhenAttacking, type EffectTemplateRegistry } from '../../effects';
 
 export function validateDeclareAttack(state: GameState, action: DeclareAttackAction, defs: CardDefinitionLookup): ValidationResult {
@@ -38,7 +39,7 @@ export function validateDeclareAttack(state: GameState, action: DeclareAttackAct
     reasons.push(`'${action.attackerInstanceId}' is not one of ${action.playerId}'s own Leader/Character cards.`);
   } else if (attacker.orientation !== 'active') {
     reasons.push(`'${action.attackerInstanceId}' must be active to attack (7-1-1-1).`);
-  } else if (attacker.summoningSick) {
+  } else if (attacker.summoningSick && !hasContinuousKeyword(defs, state, action.attackerInstanceId, 'rush')) {
     reasons.push(`'${action.attackerInstanceId}' cannot attack the turn it was played (3-7-4) — it has no [Rush].`);
   }
 

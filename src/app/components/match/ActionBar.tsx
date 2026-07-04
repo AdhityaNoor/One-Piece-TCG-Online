@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { GameState } from '../../../engine/state/game';
 import type { CardView, PlayerBoardView } from '../../../board/projection';
 import { countAvailableDon } from '../../../board/projection';
+import { resolveAssetUrl } from '../../lib/assetUrl';
 import { Button } from '../Button';
 import { Modal } from '../Modal';
 import type { useBoardSelection } from './useBoardSelection';
@@ -65,7 +66,7 @@ function WarningCardRow({ card, tone = 'gold' }: { card: CardView; tone?: 'gold'
       <div className="flex min-w-0 items-center gap-3 pl-1">
         <div className="flex h-11 w-8 shrink-0 items-center justify-center overflow-hidden border border-white/15 bg-black/30 shadow-[0_0_16px_rgba(245,178,49,0.12)]">
           {card.imageUrl ? (
-            <img src={card.imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+            <img src={resolveAssetUrl(card.imageUrl) ?? undefined} alt="" className="h-full w-full object-cover" loading="lazy" />
           ) : (
             <span className="text-[0.55rem] font-black uppercase tracking-[0.16em] text-white/35">Card</span>
           )}

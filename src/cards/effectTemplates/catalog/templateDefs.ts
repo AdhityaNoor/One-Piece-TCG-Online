@@ -19,6 +19,7 @@ import type {
   SearchRemainderDestination,
   SequenceCondition,
 } from '../../../engine/effects/effectIr';
+import type { ContinuousKeyword } from '../../../engine/state/game';
 import type { Color } from '../../../engine/state/card';
 
 export const TEMPLATE_IDS = {
@@ -41,11 +42,13 @@ export type AbilityFunction =
   | { fn: 'addPowerControllerLeader'; amount: number; duration: IrDuration }
   | { fn: 'addPowerControllerCharacter'; amount: number; duration: IrDuration; filter?: { maxCost?: number; exactCost?: number; color?: Color }; maxTargets?: number }
   | { fn: 'modifyPowerOpponentLeaderOrCharacter'; amount: number; duration: IrDuration; maxTargets?: number }
+  | { fn: 'addKeywordSelf'; keyword: ContinuousKeyword; duration: IrDuration; condition?: IrCondition }
   | { fn: 'preventBlockers'; duration: IrDuration; target?: 'self' | 'chosenControllerLeaderOrCharacter'; filter?: { typeIncludes?: string }; blockerPowerAtLeast?: number }
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
   | { fn: 'trashFromHand'; count: number }
   | { fn: 'trashTopDeck'; count: number }
   | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number }
+  | { fn: 'triggerPlaySelf' }
   | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter: SearchFilter; remainder?: SearchRemainderDestination }
   | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition };
 

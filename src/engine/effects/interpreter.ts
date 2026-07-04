@@ -198,6 +198,13 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTo
       }
       return { selectedIds: ids, movedIds: [] };
     }
+    case 'addKeyword': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.addContinuousKeyword({ appliesToInstanceId: id, keyword: op.keyword, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
     case 'preventBlockers': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
@@ -234,6 +241,9 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTo
       for (const id of ids) ctx.moveToBottomDeck(id);
       return { selectedIds: ids, movedIds: ids };
     }
+    case 'playSelf':
+      ctx.playSelf();
+      return { selectedIds: [ctx.sourceInstanceId], movedIds: [ctx.sourceInstanceId] };
     case 'playFromHand': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.playCharacterFromHand(id);

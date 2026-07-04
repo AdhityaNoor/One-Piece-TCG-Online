@@ -2,6 +2,7 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState }
 import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
 import type { CardCategory, Color } from '../../engine/state/card';
 import { Button, CanvasMenuButton, GameCanvasScreen, Modal } from '../components';
+import { resolveAssetUrl } from '../lib/assetUrl';
 import { CARD_COLOR_TOKENS } from '../lib/cardColors';
 import { useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -205,7 +206,7 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
           {/* Body: card art */}
           <div className="absolute left-1.5 right-1.5 overflow-hidden rounded-[2px] border border-gold/15" style={{ top: `${LID + 0.3}rem`, bottom: '2.5rem' }}>
             {imageUrl ? (
-              <img src={imageUrl} alt={leaderName} className="absolute inset-0 h-full w-full object-cover object-center" />
+              <img src={resolveAssetUrl(imageUrl) ?? undefined} alt={leaderName} className="absolute inset-0 h-full w-full object-cover object-center" />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-black/40 text-[8px] font-black uppercase tracking-widest text-white/20">
                 No Image
@@ -292,7 +293,7 @@ function DeckCardRow({ snap }: { snap: CardRowSnapshot }) {
     <div className="flex items-center gap-2.5 rounded border border-white/8 bg-white/4 px-2.5 py-1.5 transition-colors hover:bg-white/8">
       <div className="h-9 w-6 flex-shrink-0 overflow-hidden rounded-sm border border-white/15 bg-slate-900">
         {snap.imageUrl && (
-          <img src={snap.imageUrl} alt={snap.definition.name} className="h-full w-full object-cover object-top" />
+          <img src={resolveAssetUrl(snap.imageUrl) ?? undefined} alt={snap.definition.name} className="h-full w-full object-cover object-top" />
         )}
       </div>
       <div className="min-w-0 flex-1">

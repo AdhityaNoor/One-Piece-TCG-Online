@@ -90,6 +90,18 @@ function evaluateGate(
       return true;
     }
 
+    case 'selfRestedDonCount': {
+      const attached = new Set<string>();
+      for (const inst of Object.values(state.cardsById)) {
+        if (inst.controllerId !== ownerId) continue;
+        for (const donId of inst.donAttached) attached.add(donId);
+      }
+      const count = player.costArea.cardIds.filter((id) => state.cardsById[id]?.donRested === true && !attached.has(id)).length;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
     case 'selfLife': {
       const count = player.lifeArea.cardIds.length;
       if (gate.atLeast !== undefined && count < gate.atLeast) return false;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { executeAction, validateAction } from '../../../engine/actions';
-import { makeCharacterDef, makeEventDef, buildBaseRig, putCharacterInPlay, putDeckCards, putDon, putInHand, nextTestId } from '../../../engine/rules/shared/__tests__/testRig';
+import { makeCharacterDef, makeEventDef, buildBaseRig, putCharacterInPlay, putDeckCards, putDon, putInHand, putLifeCards, nextTestId } from '../../../engine/rules/shared/__tests__/testRig';
 import { computeCurrentCost } from '../../../engine/rules/shared';
 import { buildRegistryFromAssignments } from '../assembler';
 import { buildCuratedEffectRegistry } from '../curatedPrograms';
@@ -835,5 +835,164 @@ describe('curated effect template integration with match engine dispatch', () =>
     expect(attackResult.state.continuousEffects.some((effect) => effect.blockerRestriction?.appliesToAttackerInstanceId === attackerId)).toBe(true);
     const blockAction = { type: 'ACTIVATE_BLOCKER', actionId: nextTestId('action'), playerId: 'p2', blockerInstanceId: blockerId } as const;
     expect(validateAction(attackResult.state, blockAction, rig.defs, registry).legal).toBe(false);
+  });
+
+  it('wires ST01-002 life trigger to play itself from Life damage', () => {
+    const attacker = makeCharacterDef({
+      cardDefinitionId: 'TEST-LIFE-HIT-ATTACKER',
+      cardNumber: 'TEST-LIFE-HIT-ATTACKER',
+      name: 'Life Hit Attacker',
+      category: 'character',
+      baseCost: 0,
+      basePower: 9000,
+    });
+    const guardPoint = makeCharacterDef({
+      cardDefinitionId: 'ST01-002',
+      cardNumber: 'ST01-002',
+      name: 'Usopp',
+      category: 'character',
+      baseCost: 2,
+      basePower: 3000,
+      hasTrigger: true,
+      text: '[DON!! x2] [When Attacking] Your opponent cannot activate a [Blocker] Character that has 5000 or more power during this battle. [Trigger] Play this card.',
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let attackerId: string;
+    let lifeId: string;
+    ({ rig, instanceId: attackerId } = putCharacterInPlay(rig, 'p1', attacker, { summoningSick: false }));
+    ({ rig, lifeIds: [lifeId] } = putLifeCards(rig, 'p2', [guardPoint]));
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        currentBattle: {
+          attackerInstanceId: attackerId,
+          targetInstanceId: rig.state.players.p2.leaderInstanceId,
+          originalTargetInstanceId: rig.state.players.p2.leaderInstanceId,
+          step: 'counter',
+          blockerUsed: false,
+          battlePowerBonuses: {},
+        },
+      },
+    };
+
+    const registry = buildCuratedEffectRegistry(rig.defs);
+    const damageResult = executeAction(
+      rig.state,
+      { type: 'PASS_STEP', actionId: nextTestId('action'), playerId: 'p2' },
+      rig.defs,
+      registry,
+    );
+    const triggerChoice = damageResult.state.pendingChoices[0];
+    expect(triggerChoice).toMatchObject({ sourceEffectId: 'rule:lifeTrigger', sourceInstanceId: lifeId });
+    expect(damageResult.state.players.p2.hand.cardIds).toContain(lifeId);
+
+    const triggerResult = executeAction(
+      damageResult.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p2', choiceId: triggerChoice.id, response: [lifeId] },
+      rig.defs,
+      registry,
+    );
+
+    const playedId = triggerResult.state.players.p2.characterArea.cardIds.find((id) => triggerResult.state.cardsById[id]?.cardDefinitionId === 'ST01-002');
+    expect(playedId).toBeDefined();
+    expect(triggerResult.state.players.p2.hand.cardIds).not.toContain(lifeId);
+    expect(triggerResult.state.players.p2.trash.cardIds).not.toContain(lifeId);
+    expect(triggerResult.state.pendingChoices).toEqual([]);
+  });
+
+  it('wires ST01-004 conditional Rush into attack validation', () => {
+    const sanji = makeCharacterDef({
+      cardDefinitionId: 'ST01-004',
+      cardNumber: 'ST01-004',
+      name: 'Sanji',
+      category: 'character',
+      baseCost: 0,
+      basePower: 5000,
+      hasRush: false,
+      text: '[DON!! x2] This Character gains [Rush].',
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', sanji));
+    const { rig: withDon, donIds } = putDon(rig, 'p1', 2);
+    rig = withDon;
+
+    const registry = buildCuratedEffectRegistry(rig.defs);
+    const playResult = executeAction(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+    const playedId = playResult.state.players.p1.characterArea.cardIds[0];
+    const attackAction = { type: 'DECLARE_ATTACK', actionId: nextTestId('action'), playerId: 'p1', attackerInstanceId: playedId, targetInstanceId: playResult.state.players.p2.leaderInstanceId } as const;
+    expect(validateAction(playResult.state, attackAction, rig.defs, registry).legal).toBe(false);
+
+    const withAttachedDon = {
+      ...playResult.state,
+      cardsById: {
+        ...playResult.state.cardsById,
+        [playedId]: { ...playResult.state.cardsById[playedId], donAttached: donIds },
+      },
+    };
+    expect(validateAction(withAttachedDon, attackAction, rig.defs, registry).legal).toBe(true);
+  });
+
+  it('wires ST01-001 to require and attach only rested DON!!', () => {
+    let rig = buildBaseRig({
+      phase: 'main',
+      activePlayerId: 'p1',
+      turnNumber: 3,
+      leaderOverridesP1: {
+        cardDefinitionId: 'ST01-001',
+        cardNumber: 'ST01-001',
+        name: 'Monkey.D.Luffy',
+        category: 'leader',
+        types: ['Straw Hat Crew'],
+        text: '[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.',
+      },
+    });
+    const leaderId = rig.state.players.p1.leaderInstanceId;
+    ({ rig } = putDon(rig, 'p1', 2, { rested: false }));
+    const [activeDonId, restedDonId] = rig.state.players.p1.costArea.cardIds;
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        cardsById: {
+          ...rig.state.cardsById,
+          [activeDonId]: { ...rig.state.cardsById[activeDonId], donRested: false },
+          [restedDonId]: { ...rig.state.cardsById[restedDonId], donRested: true },
+        },
+      },
+    };
+    const registry = buildCuratedEffectRegistry(rig.defs);
+    const action = { type: 'ACTIVATE_CARD_EFFECT', actionId: nextTestId('action'), playerId: 'p1', sourceInstanceId: leaderId, effectId: 'activateMain', donInstanceIds: [] } as const;
+
+    const activeOnlyState = {
+      ...rig.state,
+      cardsById: {
+        ...rig.state.cardsById,
+        [restedDonId]: { ...rig.state.cardsById[restedDonId], donRested: false },
+      },
+    };
+    expect(validateAction(activeOnlyState, action, rig.defs, registry).legal).toBe(false);
+    expect(validateAction(rig.state, action, rig.defs, registry).legal).toBe(true);
+
+    const activated = executeAction(rig.state, action, rig.defs, registry);
+    const choice = activated.state.pendingChoices[0];
+    const resolved = executeAction(
+      activated.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: choice.id, response: [leaderId] },
+      rig.defs,
+      registry,
+    );
+
+    expect(resolved.state.cardsById[leaderId].donAttached).toEqual([restedDonId]);
+    expect(resolved.state.cardsById[activeDonId].donRested).toBe(false);
+    expect(resolved.state.cardsById[restedDonId].donRested).toBe(true);
   });
 });

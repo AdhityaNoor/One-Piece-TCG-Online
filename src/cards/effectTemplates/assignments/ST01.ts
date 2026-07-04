@@ -15,7 +15,19 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST01-001 (leader) — [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
   { cardNumber: 'ST01-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
+  // ST01-002 - [DON!! x2] [When Attacking] prevent 5000+ power Blockers. [Trigger] Play this card.
+  {
+    cardNumber: 'ST01-002',
+    templates: [
+      { templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle', blockerPowerAtLeast: 5000 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
+
   // ST01-007 — [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
+  // ST01-004 - [DON!! x2] This Character gains [Rush].
+  { cardNumber: 'ST01-004', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordSelf', keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
+
   { cardNumber: 'ST01-007', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
   // ST01-011 — [On Play] Give up to 2 rested DON!! cards to your Leader or 1 of your Characters.

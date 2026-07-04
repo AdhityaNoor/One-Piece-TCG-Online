@@ -121,6 +121,16 @@ export interface ContinuousBlockerRestriction {
   blockerPowerAtLeast?: number;
 }
 
+export type ContinuousKeyword = 'rush' | 'blocker' | 'doubleAttack' | 'banish' | 'unblockable';
+
+/** A structured keyword grant applied to one instance, with optional dynamic conditions. */
+export interface ContinuousKeywordModifier {
+  appliesToInstanceId: string;
+  keyword: ContinuousKeyword;
+  /** Omitted when the granted keyword is unconditional. */
+  condition?: ContinuousPowerCondition;
+}
+
 export interface ContinuousEffectRecord {
   id: string;
   sourceInstanceId: string;
@@ -134,6 +144,8 @@ export interface ContinuousEffectRecord {
   costModifier?: ContinuousCostModifier;
   /** Structured blocker-activation restriction. Omitted for unrelated continuous effects. */
   blockerRestriction?: ContinuousBlockerRestriction;
+  /** Structured keyword grant. Omitted for unrelated continuous effects. */
+  keywordModifier?: ContinuousKeywordModifier;
 }
 
 export interface GameState {

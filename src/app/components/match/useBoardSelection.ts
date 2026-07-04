@@ -16,10 +16,12 @@
  * drag-and-drop is a documented known limitation (see MatchScreen.tsx).
  */
 import { useState } from 'react';
-import type { GameAction } from '../../../engine/actions';
+import { validateAction, type GameAction } from '../../../engine/actions';
 import { createActionId, useMatchStore } from '../../store/matchStore';
 import type { CardView } from '../../../board/projection';
 import { computeCurrentCost } from '../../../engine/rules/shared/power';
+import { getOpponentId } from '../../../engine/rules/shared';
+import { canPayAbilityCost, evaluateGates, fieldDonIds, requiredDonMinusCount } from '../../../engine/effects';
 
 export type BoardZoneKind = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'attachedDon' | 'trash';
 
@@ -54,8 +56,35 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const reset = (): void => setMode({ kind: 'idle' });
 
   /** True if the card's curated program exposes an [Activate: Main] ability (8-1-3-2). */
-  const hasActivateMain = (card: CardView): boolean =>
-    !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.timing === 'activateMain');
+  const hasActivateMain = (card: CardView): boolean => {
+    if (!state) return false;
+    if (!actingPlayerId) return false;
+    const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'activateMain');
+    if (!ability) return false;
+    const inst = state.cardsById[card.instanceId];
+    if (!inst || inst.controllerId !== actingPlayerId) return false;
+    if (state.currentPhase !== 'main' || actingPlayerId !== state.activePlayerId) return false;
+    if (ability.oncePerTurn && card.oncePerTurnUsed.includes('activateMain')) return false;
+    if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, actingPlayerId)) return false;
+    if (ability.cost?.length) {
+      const requiredDon = requiredDonMinusCount(ability.cost);
+      const selectedDon = requiredDon > 0 ? fieldDonIds(state, actingPlayerId).slice(0, requiredDon) : [];
+      return canPayAbilityCost(state, card.instanceId, actingPlayerId, ability.cost, selectedDon).length === 0;
+    }
+    return validateAction(
+      state,
+      {
+        type: 'ACTIVATE_CARD_EFFECT',
+        actionId: 'ui-preview',
+        playerId: actingPlayerId,
+        sourceInstanceId: card.instanceId,
+        effectId: 'activateMain',
+        donInstanceIds: [],
+      },
+      defs,
+      registry,
+    ).legal;
+  };
 
   const hasUnusedActivateMain = (card: CardView): boolean => {
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'activateMain');
@@ -77,7 +106,20 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const canDeclareAttackWith = (card: CardView): boolean => {
     if (!state || state.currentPhase !== 'main' || state.turnNumber <= 2) return false;
     if (card.category !== 'leader' && card.category !== 'character') return false;
-    return card.orientation === 'active' && !card.summoningSick;
+    if (!actingPlayerId) return false;
+    const opponentId = getOpponentId(state, actingPlayerId);
+    return validateAction(
+      state,
+      {
+        type: 'DECLARE_ATTACK',
+        actionId: 'ui-preview',
+        playerId: actingPlayerId,
+        attackerInstanceId: card.instanceId,
+        targetInstanceId: state.players[opponentId]?.leaderInstanceId ?? '',
+      },
+      defs,
+      registry,
+    ).legal;
   };
 
   const currentCostOf = (card: CardView): number => {

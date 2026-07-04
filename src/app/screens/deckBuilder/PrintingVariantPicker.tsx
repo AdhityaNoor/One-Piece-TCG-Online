@@ -1,4 +1,5 @@
 import type { CardPrintingRef } from '../../../cards/library';
+import { resolveAssetUrl } from '../../lib/assetUrl';
 
 function variantLabel(cardNumber: string, printingImageId: string, index: number): string {
   if (printingImageId === cardNumber) return 'Base';
@@ -37,7 +38,7 @@ export function PrintingVariantPicker({ cardNumber, printings, selectedPrintingI
             title={`Use ${label} art`}
           >
             {printing.imageUrl ? (
-              <img src={printing.imageUrl} alt={label} className="h-full w-full object-contain" />
+              <img src={resolveAssetUrl(printing.imageUrl) ?? undefined} alt={label} className="h-full w-full object-contain" />
             ) : (
               <span className="flex h-full w-full items-center justify-center text-[8px] font-black uppercase tracking-[0.08em] text-white/35">No art</span>
             )}

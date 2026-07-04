@@ -10,14 +10,11 @@
  * every read, so a conditional buff turns on/off as DON!! attaches or the turn
  * flips, with no extra bookkeeping. Cost modifiers use the same record model.
  */
-import type { ContinuousEffectRecord, GameState } from '../../state/game';
+import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousPowerCondition, GameState } from '../../state/game';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
 
-function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
-  const mod = record.powerModifier;
-  if (!mod || mod.appliesToInstanceId !== instanceId) return false;
-  const cond = mod.condition;
+function conditionApplies(cond: ContinuousPowerCondition | undefined, record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
   if (!cond) return true;
   const instance = state.cardsById[instanceId];
   if (cond.donAttachedAtLeast !== undefined && instance.donAttached.length < cond.donAttachedAtLeast) return false;
@@ -31,20 +28,22 @@ function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, 
   return true;
 }
 
+function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
+  const mod = record.powerModifier;
+  if (!mod || mod.appliesToInstanceId !== instanceId) return false;
+  return conditionApplies(mod.condition, record, state, instanceId, defs);
+}
+
 function costModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
   const mod = record.costModifier;
   if (!mod || mod.appliesToInstanceId !== instanceId) return false;
-  const cond = mod.condition;
-  if (!cond) return true;
-  const instance = state.cardsById[instanceId];
-  if (cond.donAttachedAtLeast !== undefined && instance.donAttached.length < cond.donAttachedAtLeast) return false;
-  if (cond.turn !== undefined) {
-    const isOwnersTurn = state.activePlayerId === instance.ownerId;
-    if (cond.turn === 'your' && !isOwnersTurn) return false;
-    if (cond.turn === 'opponent' && isOwnersTurn) return false;
-  }
-  if (cond.gate && !evaluateGates(cond.gate, state, defs, record.ownerId)) return false;
-  return true;
+  return conditionApplies(mod.condition, record, state, instanceId, defs);
+}
+
+function keywordModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, keyword: ContinuousKeyword, defs: CardDefinitionLookup): boolean {
+  const mod = record.keywordModifier;
+  if (!mod || mod.appliesToInstanceId !== instanceId || mod.keyword !== keyword) return false;
+  return conditionApplies(mod.condition, record, state, instanceId, defs);
 }
 
 export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState, instanceId: string): number {
@@ -68,4 +67,8 @@ export function computeCurrentCost(defs: CardDefinitionLookup, state: GameState,
     if (costModifierApplies(record, state, instanceId, defs)) continuousDelta += record.costModifier!.amount;
   }
   return Math.max(0, (def.baseCost ?? 0) + continuousDelta);
+}
+
+export function hasContinuousKeyword(defs: CardDefinitionLookup, state: GameState, instanceId: string, keyword: ContinuousKeyword): boolean {
+  return state.continuousEffects.some((record) => keywordModifierApplies(record, state, instanceId, keyword, defs));
 }

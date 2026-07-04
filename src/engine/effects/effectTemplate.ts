@@ -10,7 +10,7 @@
  * Card behavior is DATA (EffectProgram, see effectIr.ts), never code; nothing
  * here is per-card.
  */
-import type { ContinuousEffectDuration, ContinuousPowerCondition, GameState } from '../state/game';
+import type { ContinuousEffectDuration, ContinuousKeyword, ContinuousPowerCondition, GameState } from '../state/game';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinition } from '../state/card';
 import type { EffectProgram, SearchPickDestination, SearchRemainderDestination } from './effectIr';
@@ -59,6 +59,14 @@ export interface EffectContext {
     condition?: ContinuousPowerCondition;
     description?: string;
   }): void;
+  /** Register a continuous keyword grant (8-1-3-3); condition re-checked on every keyword read. */
+  addContinuousKeyword(spec: {
+    appliesToInstanceId: string;
+    keyword: ContinuousKeyword;
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void;
   /** Prevent some/all [Blocker] activations while the target instance is attacking. */
   preventBlockers(spec: {
     appliesToAttackerInstanceId: string;
@@ -74,6 +82,8 @@ export interface EffectContext {
   returnToHand(targetInstanceId: string): void;
   /** Move a card to the bottom of its owner's deck, dropping attachments/continuous effects it sourced. */
   moveToBottomDeck(instanceId: string): void;
+  /** Play the source Character itself from hand into the Character Area for free. */
+  playSelf(): void;
   /** Play a Character from the controller's hand into the Character Area for free (3-7), summoning-sick; raises the 3-7-6-1 overflow choice if it makes a 6th. */
   playCharacterFromHand(handInstanceId: string): void;
   /** Move a card (e.g. from the trash) to its owner's hand. */

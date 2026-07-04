@@ -82,6 +82,7 @@ describe('template factories - structural correctness', () => {
   it('giveDon function produces chooseTargets then giveDon', () => {
     const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 2 }] });
     const [choose, give] = p.abilities[0].ops;
+    expect(p.abilities[0].gate).toEqual([{ kind: 'selfRestedDonCount', atLeast: 1 }]);
     expect(choose.op).toBe('chooseTargets');
     expect(give.op).toBe('giveDon');
     // @ts-expect-error - narrow to giveDon shape
@@ -267,6 +268,31 @@ describe('template factories - structural correctness', () => {
     });
     expect(chosen.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerLeaderOrCharacters', typeIncludes: 'Straw Hat Crew' } });
     expect(chosen.abilities[0].ops[1]).toMatchObject({ op: 'preventBlockers', target: { sel: 'var', name: 't' }, duration: 'duringThisTurn' });
+  });
+
+  it('triggerPlaySelf produces a source-card play op', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'lifeTrigger',
+      functions: [{ fn: 'triggerPlaySelf' }],
+    });
+    expect(p.abilities[0]).toMatchObject({
+      timing: 'lifeTrigger',
+      ops: [{ op: 'playSelf' }],
+    });
+  });
+
+  it('addKeywordSelf produces a conditional keyword grant', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onEnterPlay',
+      functions: [{ fn: 'addKeywordSelf', keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({
+      op: 'addKeyword',
+      target: { sel: 'self' },
+      keyword: 'rush',
+      duration: 'permanent',
+      condition: { donAttachedAtLeast: 2 },
+    });
   });
 });
 

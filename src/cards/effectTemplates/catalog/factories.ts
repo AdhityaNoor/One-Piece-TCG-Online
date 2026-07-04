@@ -161,6 +161,16 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'addPower', target: { sel: 'var', name: 't' }, amount: f.amount, duration: f.duration },
       ];
     }
+    case 'addKeywordSelf':
+      return [
+        {
+          op: 'addKeyword',
+          target: { sel: 'self' },
+          keyword: f.keyword,
+          duration: f.duration,
+          ...(f.condition ? { condition: f.condition } : {}),
+        },
+      ];
     case 'preventBlockers': {
       if (f.target === 'chosenControllerLeaderOrCharacter') {
         return [
@@ -230,6 +240,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'playFromHand', target: { sel: 'var', name: 't' } },
       ];
     }
+    case 'triggerPlaySelf':
+      return [{ op: 'playSelf' }];
     case 'searchTopDeck':
       return [
         {
@@ -262,17 +274,22 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
 const FACTORY_MAP: {
   [T in TemplateId]: (cardNumber: string, params: TemplateParamMap[T]) => EffectProgram;
 } = {
-  ability: (cn, p) =>
-    program(cn, [
+  ability: (cn, p) => {
+    const implicitGates = p.functions.some((f) => f.fn === 'giveDon')
+      ? ([{ kind: 'selfRestedDonCount', atLeast: 1 }] as const)
+      : [];
+    const gates = [...(p.gate ?? []), ...implicitGates];
+    return program(cn, [
       {
         timing: p.timing,
         ...(p.condition ? { condition: p.condition } : {}),
-        ...(p.gate ? { gate: p.gate } : {}),
+        ...(gates.length > 0 ? { gate: gates } : {}),
         ...(p.cost && p.cost.length > 0 ? { cost: p.cost } : {}),
         ...(p.oncePerTurn ? { oncePerTurn: true } : {}),
         ops: p.functions.flatMap(functionOps),
       },
-    ]),
+    ]);
+  },
 };
 
 export function applyTemplate<T extends TemplateId>(

@@ -64,6 +64,31 @@ describe('validateDeclareAttack', () => {
     expect(validateDeclareAttack(rig.state, declareAttack('p1', charId, opponentLeaderId), rig.defs).legal).toBe(false);
   });
 
+  it('accepts a summoning-sick attacker with a conditional continuous Rush grant when the condition is met', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const { rig, instanceId: charId } = putCharacterInPlay(base, 'p1', makeCharacterDef(), { summoningSick: true, donAttached: ['don-a', 'don-b'] });
+    const opponentLeaderId = rig.state.players.p2.leaderInstanceId;
+    const state = {
+      ...rig.state,
+      continuousEffects: [
+        {
+          id: 'ce-rush',
+          sourceInstanceId: charId,
+          ownerId: 'p1',
+          duration: 'permanent' as const,
+          description: 'gains rush',
+          keywordModifier: {
+            appliesToInstanceId: charId,
+            keyword: 'rush' as const,
+            condition: { donAttachedAtLeast: 2 },
+          },
+        },
+      ],
+    };
+
+    expect(validateDeclareAttack(state, declareAttack('p1', charId, opponentLeaderId), rig.defs).legal).toBe(true);
+  });
+
   it('rejects targeting a card that does not belong to the opponent', () => {
     const { state, defs } = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
     const leaderId = state.players.p1.leaderInstanceId;

@@ -4,7 +4,7 @@
  * standard ActionExecuteResult via finish(). Each primitive mirrors the
  * canonical engine implementation so behavior can't drift.
  */
-import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousPowerCondition, GameState } from '../state/game';
+import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousKeyword, ContinuousPowerCondition, GameState } from '../state/game';
 import type { CardDefinition, CardInstance } from '../state/card';
 import type { PendingChoice } from '../events/pendingChoice';
 import { mintRuntimeInstanceId } from '../rules/shared/mintInstance';
@@ -181,6 +181,36 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  addContinuousKeyword(spec: {
+    appliesToInstanceId: string;
+    keyword: ContinuousKeyword;
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? `gains ${spec.keyword}`,
+      keywordModifier: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        keyword: spec.keyword,
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to ${spec.appliesToInstanceId}.`,
+      data: { continuousEffectId: record.id, keyword: spec.keyword, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
   preventBlockers(spec: {
     appliesToAttackerInstanceId: string;
     duration: ContinuousEffectDuration;
@@ -219,12 +249,11 @@ export class EffectContextImpl implements EffectContext {
     for (const id of Object.keys(this.working.cardsById)) {
       for (const donId of this.working.cardsById[id].donAttached) attached.add(donId);
     }
-    const available = controller.costArea.cardIds.filter((id) => !attached.has(id));
+    const available = controller.costArea.cardIds.filter((id) => !attached.has(id) && this.working.cardsById[id]?.donRested === true);
     const toGive = available.slice(0, Math.max(0, count));
     if (toGive.length === 0) return;
 
     const cardsById = { ...this.working.cardsById };
-    for (const donId of toGive) cardsById[donId] = { ...cardsById[donId], donRested: true };
     const target = cardsById[targetInstanceId];
     cardsById[targetInstanceId] = { ...target, donAttached: [...target.donAttached, ...toGive] };
     this.working = { ...this.working, cardsById };
@@ -335,6 +364,10 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: 'public',
     });
+  }
+
+  playSelf(): void {
+    this.playCharacterFromHand(this.sourceInstanceId);
   }
 
   playCharacterFromHand(handInstanceId: string): void {
