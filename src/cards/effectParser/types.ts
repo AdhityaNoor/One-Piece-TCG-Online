@@ -94,7 +94,7 @@ export interface ParsedAbility {
   id: string;
   /** 8-1-3 effect category, best-effort from the timing tag. */
   category: EffectCategory;
-  /** 8-1-3-1-1 / 10-2 activation timing. 'custom' when no defined keyword applies (e.g. [Trigger], plain permanent text). */
+  /** 8-1-3-1-1 / 10-2 activation timing. 'custom' when no defined keyword applies. */
   timing: EffectTimingKeyword;
   /** 8-3-2 / 10-2-x gating conditions, distinct from timing. */
   conditions: EffectCondition[];
@@ -104,7 +104,7 @@ export interface ParsedAbility {
   donRequirement?: number;
   /** 10-2-13 [Once Per Turn]. */
   oncePerTurn: boolean;
-  /** True for a [Trigger] clause (2-11) — has no EffectTimingKeyword of its own, surfaced as a flag instead. */
+  /** True when timing is `lifeTrigger` ([Trigger], 2-11). Kept for quick checks; prefer `timing`. */
   isTrigger: boolean;
   /** Best-effort activation cost; null when none detected. */
   cost: EffectCost | null;

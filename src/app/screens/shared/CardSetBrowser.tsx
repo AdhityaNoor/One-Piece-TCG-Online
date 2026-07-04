@@ -59,8 +59,8 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
   const visibleColors = colorFilterIsLocked ? lockedColors! : ALL_CARD_COLORS;
   const unlockedColorFilterIsActive = !colorFilterIsLocked && (filter.colors?.length ?? 0) > 0;
   const unlockedCategoryFilterIsActive = !categoryFilterIsLocked && (filter.categories?.length ?? 0) > 0;
-  const triggerFilterIsActive = Boolean(filter.trigger && filter.trigger !== 'any');
-  const hasActiveFilter = Boolean(filter.query) || Boolean(filter.type) || Boolean(filter.typeQuery) || triggerFilterIsActive || unlockedColorFilterIsActive || unlockedCategoryFilterIsActive;
+  const timingFilterIsActive = Boolean(filter.timing && filter.timing !== 'any');
+  const hasActiveFilter = Boolean(filter.query) || Boolean(filter.type) || Boolean(filter.typeQuery) || timingFilterIsActive || unlockedColorFilterIsActive || unlockedCategoryFilterIsActive;
 
   function toggleColor(color: Color) {
     if (colorFilterIsLocked) return;
@@ -140,18 +140,18 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
       </div>
 
       <div>
-        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Trigger</label>
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Timing</label>
         <select
-          value={filter.trigger ?? 'any'}
+          value={filter.timing ?? 'any'}
           onChange={(event) => {
-            const value = event.target.value as 'any' | 'has-trigger' | 'no-trigger';
-            setFilter({ ...filter, trigger: value === 'any' ? undefined : value });
+            const value = event.target.value as 'any' | 'lifeTrigger' | 'no-lifeTrigger';
+            setFilter({ ...filter, timing: value === 'any' ? undefined : value });
           }}
           className="op-input mt-1.5 w-full px-3 py-2 text-sm"
         >
           <option value="any">All cards</option>
-          <option value="has-trigger">Has Trigger</option>
-          <option value="no-trigger">No Trigger</option>
+          <option value="lifeTrigger">Has [Trigger]</option>
+          <option value="no-lifeTrigger">No [Trigger]</option>
         </select>
       </div>
 

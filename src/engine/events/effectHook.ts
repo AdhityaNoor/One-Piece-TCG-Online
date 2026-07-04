@@ -23,6 +23,7 @@ export type EffectTimingKeyword =
   | 'endOfOpponentsTurn' // [End of Your Opponent's Turn]
   | 'activateMain' // [Activate: Main] / Event [Main]
   | 'counter' // Event [Counter]
+  | 'lifeTrigger' // [Trigger] — fires when revealed from Life (2-11, 10-1-5-2)
   | 'custom'; // free-text "when ..."/"on ..." trigger not covered by a defined keyword (8-1-3-1-1)
 
 /** 8-3-2, 10-2-9 through 10-2-13. Gating conditions, distinct from activation timing. */

@@ -67,7 +67,7 @@ describe('filterCardLibraryEntries', () => {
     expect(filterCardLibraryEntries([...entries, teach], { type: 'blackbeard pirates' })).toEqual([teach]);
   });
 
-  it('filters by trigger presence', () => {
+  it('filters by lifeTrigger timing ([Trigger] presence)', () => {
     const triggerEvent = makeEntry({
       name: 'Gum-Gum Giant',
       cardNumber: 'OP09-078',
@@ -75,8 +75,8 @@ describe('filterCardLibraryEntries', () => {
       hasTrigger: true,
     });
 
-    expect(filterCardLibraryEntries([...entries, triggerEvent], { timing: 'has-trigger' })).toEqual([triggerEvent]);
-    expect(filterCardLibraryEntries([...entries, triggerEvent], { timing: 'no-trigger' })).toEqual(entries);
+    expect(filterCardLibraryEntries([...entries, triggerEvent], { timing: 'lifeTrigger' })).toEqual([triggerEvent]);
+    expect(filterCardLibraryEntries([...entries, triggerEvent], { timing: 'no-lifeTrigger' })).toEqual(entries);
   });
 
   it('combines query and facet filters with AND', () => {

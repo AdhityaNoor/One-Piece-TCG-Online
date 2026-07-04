@@ -28,6 +28,10 @@ export interface CardView {
   powerDelta: number | null;
   /** Character/Stage/Event only; null for Leader/DON!!. */
   cost: number | null;
+  /** Printed/base cost before continuous modifiers. */
+  baseCost: number | null;
+  /** Current cost minus baseCost; shown as a compact floating cost modifier label. */
+  costDelta: number | null;
   /** Character only (printed Counter value 2-10, when present). */
   counter: number | null;
   /** Leader only. */
@@ -72,6 +76,8 @@ export function buildCardView(
       basePower: null,
       powerDelta: null,
       cost: null,
+      baseCost: null,
+      costDelta: null,
       counter: null,
       life: null,
       orientation: instance?.orientation ?? null,
@@ -94,6 +100,8 @@ export function buildCardView(
 
   const power = isPowerCard ? computeCurrentPower(defs, state, instanceId) : null;
   const basePower = isPowerCard ? def.basePower ?? 0 : null;
+  const cost = isCostCard ? computeCurrentCost(defs, state, instanceId) : null;
+  const baseCost = isCostCard ? def.baseCost ?? 0 : null;
 
   return {
     instanceId,
@@ -107,7 +115,9 @@ export function buildCardView(
     power,
     basePower,
     powerDelta: power !== null && basePower !== null ? power - basePower : null,
-    cost: isCostCard ? computeCurrentCost(defs, state, instanceId) : null,
+    cost,
+    baseCost,
+    costDelta: cost !== null && baseCost !== null ? cost - baseCost : null,
     counter: def.category === 'character' ? def.counter ?? null : null,
     life: def.category === 'leader' ? def.life ?? null : null,
     orientation: instance.orientation,

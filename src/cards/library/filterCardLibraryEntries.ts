@@ -20,8 +20,11 @@ export interface CardLibraryFilter {
   typeQuery?: string;
   /** Exact case-insensitive match against a normalized CardDefinition.types entry. Empty/omitted = no type filter. */
   type?: string;
-  /** Trigger presence facet. "any"/omitted = no trigger filter. */
-  trigger?: 'any' | 'has-trigger' | 'no-trigger';
+  /**
+   * Effect-timing facet. [Trigger] is modeled as `lifeTrigger` (2-11), not a
+   * separate "effect" category. "any"/omitted = no timing filter.
+   */
+  timing?: 'any' | 'lifeTrigger' | 'no-lifeTrigger';
 }
 
 export function normalizeTypeTags(types: string[]): string[] {
@@ -37,7 +40,7 @@ export function filterCardLibraryEntries(entries: CardLibraryEntry[], filter: Ca
   const categories = filter.categories && filter.categories.length > 0 ? filter.categories : undefined;
   const typeQuery = filter.typeQuery?.trim().toLowerCase();
   const type = filter.type?.trim().toLowerCase();
-  const trigger = filter.trigger && filter.trigger !== 'any' ? filter.trigger : undefined;
+  const timing = filter.timing && filter.timing !== 'any' ? filter.timing : undefined;
 
   return entries.filter((entry) => {
     const normalizedTypes = normalizeTypeTags(entry.definition.types);
@@ -50,8 +53,8 @@ export function filterCardLibraryEntries(entries: CardLibraryEntry[], filter: Ca
     if (categories && !categories.includes(entry.definition.category)) return false;
     if (typeQuery && !normalizedTypes.some((cardType) => cardType.toLowerCase().includes(typeQuery))) return false;
     if (type && !normalizedTypes.some((cardType) => cardType.toLowerCase() === type)) return false;
-    if (trigger === 'has-trigger' && !entry.definition.hasTrigger) return false;
-    if (trigger === 'no-trigger' && entry.definition.hasTrigger) return false;
+    if (timing === 'lifeTrigger' && !entry.definition.hasTrigger) return false;
+    if (timing === 'no-lifeTrigger' && entry.definition.hasTrigger) return false;
     return true;
   });
 }

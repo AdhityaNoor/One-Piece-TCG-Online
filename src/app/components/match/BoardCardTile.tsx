@@ -86,6 +86,7 @@ export function BoardCardTile({
   const isField = size === 'field';
   const rested = card.orientation === 'rested';
   const visiblePowerDelta = !showBattlePower && card.powerDelta !== null && card.powerDelta !== 0 ? card.powerDelta : null;
+  const visibleCostDelta = !showBattlePower && card.costDelta !== null && card.costDelta !== 0 ? card.costDelta : null;
   const hasCardActions = !!onActivate || !!onAttack || !!onZoom;
   const hasAttachedDon = card.donAttachedCount > 0 && !showBattlePower;
   const attachedDonSelected = attachedDonSelectedCount > 0;
@@ -125,7 +126,7 @@ export function BoardCardTile({
         </div>
       </div>
 
-      {(visiblePowerDelta !== null || hasAttachedDon) && (
+      {(visiblePowerDelta !== null || visibleCostDelta !== null || hasAttachedDon) && (
         <div className="absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5">
           {visiblePowerDelta !== null && (
             <div
@@ -137,6 +138,19 @@ export function BoardCardTile({
               ].join(' ')}
             >
               {visiblePowerDelta > 0 ? '+' : ''}{visiblePowerDelta.toLocaleString()}
+            </div>
+          )}
+
+          {visibleCostDelta !== null && (
+            <div
+              className={[
+                'pointer-events-none rounded-lg border px-3 py-1.5 text-2xl font-black leading-none shadow-[0_12px_30px_rgba(0,0,0,0.55)]',
+                visibleCostDelta > 0
+                  ? 'border-[#ffffff] bg-black text-white shadow-[0_12px_30px_rgba(0,0,0,0.55),0_0_22px_rgba(255,255,255,0.24)]'
+                  : 'border-[#00d5ff] bg-[#001f33]/90 text-[#00d5ff] shadow-[0_12px_30px_rgba(0,0,0,0.55),0_0_24px_rgba(0,213,255,0.36)]',
+              ].join(' ')}
+            >
+              {visibleCostDelta > 0 ? '+' : ''}{visibleCostDelta}
             </div>
           )}
 

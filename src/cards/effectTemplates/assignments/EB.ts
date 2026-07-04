@@ -59,11 +59,27 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'EB01-036',
     templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] },
   },
+  // EB01-039 - [Main] DON!! -1: K.O. cost <=8. [Trigger] add 1 active DON!!.
+  {
+    cardNumber: 'EB01-039',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 8 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+    ],
+  },
 
   // EB02-026 - [On Play] If Leader is multicolored and hand has 5 or less cards, draw 2.
   {
     cardNumber: 'EB02-026',
     templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderMulticolor' }, { kind: 'selfHand', atMost: 5 }], functions: [{ fn: 'draw', amount: 2 }] },
+  },
+  // EB02-007 - [Main] up to 3 Leader/Characters +1000, then K.O. power <=3000. [Trigger] K.O. power <=4000.
+  {
+    cardNumber: 'EB02-007',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn', maxTargets: 3 }, { fn: 'koOpponentCharacter', filter: { maxPower: 3000 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 4000 } }] } },
+    ],
   },
 
   // EB02-014 - [On Play] Play up to 1 [Gaimon] from hand.

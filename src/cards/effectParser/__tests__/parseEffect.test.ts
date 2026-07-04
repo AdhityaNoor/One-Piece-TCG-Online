@@ -65,6 +65,7 @@ describe('parseEffect', () => {
     expect(counter.needsTemplate).toBe(true);
 
     const trigger = r.abilities[1];
+    expect(trigger.timing).toBe('lifeTrigger');
     expect(trigger.isTrigger).toBe(true);
     expect(trigger.tags).toContain('[Trigger]');
     expect(trigger.needsTemplate).toBe(true);

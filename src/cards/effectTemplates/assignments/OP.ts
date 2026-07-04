@@ -127,6 +127,14 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   },
   // OP02-034 - [DON!! x1] [When Attacking] Rest opponent Character with cost 2 or less.
   { cardNumber: 'OP02-034', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 2 } }] } },
+  // OP02-047 - [Main] Rest cost <=4. [Trigger] K.O. rested cost <=3.
+  {
+    cardNumber: 'OP02-047',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 4 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'koOpponentCharacter', filter: { rested: true, maxCost: 3 } }] } },
+    ],
+  },
   // OP02-096 - [On Play] Draw 1. [When Attacking] Give opponent Character -4 cost this turn.
   {
     cardNumber: 'OP02-096',
@@ -352,6 +360,14 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP06-007 — [On Play] K.O. up to 1 of your opponent's Characters with 10000 power or less.
   { cardNumber: 'OP06-007', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 10000 } }] } },
+  // OP06-019 - [Main] K.O. power <=5000. [Trigger] K.O. power <=4000.
+  {
+    cardNumber: 'OP06-019',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 5000 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 4000 } }] } },
+    ],
+  },
   // OP06-050 — [On Play] Look at 5; add up to 1 Navy (excl. same name).
   {
     cardNumber: 'OP06-050',

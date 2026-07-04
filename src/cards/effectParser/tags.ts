@@ -22,6 +22,7 @@ export const TIMING_TAGS: Record<string, { timing: EffectTimingKeyword; category
   '[Activate: Main]': { timing: 'activateMain', category: 'activate' }, // 8-1-3-2
   '[Main]': { timing: 'activateMain', category: 'activate' }, // Event [Main]
   '[Counter]': { timing: 'counter', category: 'auto' }, // Event [Counter]
+  '[Trigger]': { timing: 'lifeTrigger', category: 'auto' }, // 2-11 / 10-1-5-2
 };
 
 /** Ability keyword tags (10-1) that are abilities in their own right, not timings — e.g. a vanilla "[Blocker]" card. */

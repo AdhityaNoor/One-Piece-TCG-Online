@@ -28,13 +28,11 @@ import {
 } from './tags';
 import type { EffectAction, EffectParseWarning, ParsedAbility, ParsedEffect } from './types';
 
-const TRIGGER_TAG = '[Trigger]';
-
-/** Indices in `text` where a new ability begins (a timing tag or [Trigger]). */
+/** Indices in `text` where a new ability begins (a timing tag). */
 function abilityStartIndices(text: string): number[] {
   const starts: number[] = [];
   for (const hit of findTags(text)) {
-    if (hit.tag in TIMING_TAGS || hit.tag === TRIGGER_TAG) starts.push(hit.index);
+    if (hit.tag in TIMING_TAGS) starts.push(hit.index);
   }
   return starts;
 }
@@ -89,11 +87,7 @@ function classifyTags(tags: string[], cardNumber: string, warnings: EffectParseW
         result.category = TIMING_TAGS[tag].category;
         timingSet = true;
       }
-      continue;
-    }
-    if (tag === TRIGGER_TAG) {
-      result.isTrigger = true;
-      if (!timingSet) result.category = 'auto';
+      if (TIMING_TAGS[tag].timing === 'lifeTrigger') result.isTrigger = true;
       continue;
     }
     const donReq = tag.match(DON_REQUIREMENT_RE);
