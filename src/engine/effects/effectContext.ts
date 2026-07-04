@@ -271,6 +271,40 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  moveToBottomDeck(instanceId: string): void {
+    const inst = this.working.cardsById[instanceId];
+    if (!inst) return;
+    const owner = this.working.players[inst.ownerId];
+    if (!owner) return;
+    const fromZone = inst.currentZone;
+    const newOwner = {
+      ...owner,
+      hand: removeFromZone(owner.hand, instanceId),
+      trash: removeFromZone(owner.trash, instanceId),
+      characterArea: removeFromZone(owner.characterArea, instanceId),
+      stageArea: removeFromZone(owner.stageArea, instanceId),
+      lifeArea: removeFromZone(owner.lifeArea, instanceId),
+      deck: addToZoneBottom(owner.deck, instanceId),
+    };
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [inst.ownerId]: newOwner },
+      cardsById: {
+        ...this.working.cardsById,
+        [instanceId]: { ...inst, currentZone: 'deck', donAttached: [], summoningSick: false, revealedTo: [] },
+      },
+      continuousEffects: this.working.continuousEffects.filter((ce) => ce.sourceInstanceId !== instanceId),
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'CARD_MOVED',
+      message: `${instanceId} was placed at the bottom of its owner's deck.`,
+      data: { from: fromZone, to: 'deck', position: 'bottom', instanceId },
+      relatedCardInstanceIds: [instanceId],
+      visibility: 'public',
+    });
+  }
+
   playCharacterFromHand(handInstanceId: string): void {
     const handInst = this.working.cardsById[handInstanceId];
     if (!handInst || handInst.currentZone !== 'hand') return;

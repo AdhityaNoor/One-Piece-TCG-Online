@@ -646,4 +646,144 @@ describe('curated effect template integration with match engine dispatch', () =>
     expect(afterTrash.state.players.p1.trash.cardIds).toEqual([spareHandId, offTypeId]);
     expect(afterTrash.state.players.p1.deck.cardIds).toEqual([]);
   });
+
+  it('can move a chosen Character to the bottom of its owner deck', () => {
+    const bottomDeckEvent = makeEventDef({
+      cardDefinitionId: 'TEST-BOTTOM-DECK-EVENT',
+      cardNumber: 'TEST-BOTTOM-DECK-EVENT',
+      name: 'Bottom Deck Event',
+      category: 'event',
+      baseCost: 0,
+    });
+    const opponentCharacter = makeCharacterDef({
+      cardDefinitionId: 'TEST-BOTTOM-DECK-TARGET',
+      cardNumber: 'TEST-BOTTOM-DECK-TARGET',
+      name: 'Bottom Deck Target',
+      category: 'character',
+      baseCost: 3,
+      basePower: 5000,
+    });
+    const existingDeckCard = makeCharacterDef({
+      cardDefinitionId: 'TEST-EXISTING-DECK-CARD',
+      cardNumber: 'TEST-EXISTING-DECK-CARD',
+      name: 'Existing Deck Card',
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    let targetId: string;
+    let existingDeckId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', bottomDeckEvent));
+    ({ rig, instanceId: targetId } = putCharacterInPlay(rig, 'p2', opponentCharacter));
+    ({ rig, deckIds: [existingDeckId] } = putDeckCards(rig, 'p2', existingDeckCard, 1));
+
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: 'TEST-BOTTOM-DECK-EVENT',
+        templateId: 'ability',
+        params: { timing: 'activateMain', functions: [{ fn: 'moveToBottomDeck', maxCost: 3, target: 'opponent' }] },
+      },
+    ]);
+
+    const playResult = executeAction(
+      rig.state,
+      { type: 'ACTIVATE_EVENT_MAIN', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+    const choice = playResult.state.pendingChoices[0];
+    expect(choice).toMatchObject({
+      sourceEffectId: 'ir',
+      constraints: { min: 0, max: 1, candidateInstanceIds: [targetId] },
+    });
+
+    const resolveResult = executeAction(
+      playResult.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: choice.id, response: [targetId] },
+      rig.defs,
+      registry,
+    );
+
+    expect(resolveResult.state.pendingChoices).toEqual([]);
+    expect(resolveResult.state.players.p2.characterArea.cardIds).not.toContain(targetId);
+    expect(resolveResult.state.players.p2.deck.cardIds).toEqual([existingDeckId, targetId]);
+    expect(resolveResult.state.cardsById[targetId]).toMatchObject({
+      currentZone: 'deck',
+      revealedTo: [],
+      donAttached: [],
+    });
+  });
+
+  it('filters controller Leader/Character power targets by type and can exclude the source', () => {
+    const source = makeCharacterDef({
+      cardDefinitionId: 'TEST-FILTERED-BOOSTER',
+      cardNumber: 'TEST-FILTERED-BOOSTER',
+      name: 'Filtered Booster',
+      category: 'character',
+      baseCost: 0,
+      basePower: 5000,
+      types: ['Straw Hat Crew'],
+    });
+    const strawHatAlly = makeCharacterDef({
+      cardDefinitionId: 'TEST-STRAW-HAT-ALLY',
+      cardNumber: 'TEST-STRAW-HAT-ALLY',
+      name: 'Straw Hat Ally',
+      category: 'character',
+      types: ['Straw Hat Crew'],
+    });
+    const offTypeAlly = makeCharacterDef({
+      cardDefinitionId: 'TEST-OFF-TYPE-ALLY',
+      cardNumber: 'TEST-OFF-TYPE-ALLY',
+      name: 'Off Type Ally',
+      category: 'character',
+      types: ['Animal'],
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3, leaderOverridesP1: { types: ['Straw Hat Crew'] } });
+    let sourceId: string;
+    let strawHatAllyId: string;
+    let offTypeAllyId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', source, { summoningSick: false }));
+    ({ rig, instanceId: strawHatAllyId } = putCharacterInPlay(rig, 'p1', strawHatAlly));
+    ({ rig, instanceId: offTypeAllyId } = putCharacterInPlay(rig, 'p1', offTypeAlly));
+    const { rig: withDon, donIds } = putDon(rig, 'p1', 1);
+    rig = {
+      ...withDon,
+      state: {
+        ...withDon.state,
+        cardsById: {
+          ...withDon.state.cardsById,
+          [sourceId]: { ...withDon.state.cardsById[sourceId], donAttached: [donIds[0]] },
+        },
+      },
+    };
+
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: source.cardDefinitionId,
+        templateId: 'ability',
+        params: {
+          timing: 'whenAttacking',
+          condition: { donAttachedAtLeast: 1 },
+          functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn', filter: { typeIncludes: 'Straw Hat Crew', excludeSelf: true } }],
+        },
+      },
+    ]);
+
+    const attackResult = executeAction(
+      rig.state,
+      { type: 'DECLARE_ATTACK', actionId: nextTestId('action'), playerId: 'p1', attackerInstanceId: sourceId, targetInstanceId: rig.state.players.p2.leaderInstanceId },
+      rig.defs,
+      registry,
+    );
+
+    expect(attackResult.state.pendingChoices[0]).toMatchObject({
+      sourceEffectId: 'ir',
+      constraints: {
+        candidateInstanceIds: [rig.state.players.p1.leaderInstanceId, strawHatAllyId],
+      },
+    });
+    expect(attackResult.state.pendingChoices[0].constraints.candidateInstanceIds).not.toContain(sourceId);
+    expect(attackResult.state.pendingChoices[0].constraints.candidateInstanceIds).not.toContain(offTypeAllyId);
+  });
 });

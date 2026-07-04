@@ -148,8 +148,12 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.color !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.colors.includes(sel.color!) === true);
       return ids;
     }
-    case 'controllerLeaderOrCharacters':
-      return [ctx.controllerLeaderId(), ...ctx.controllerCharacterIds()];
+    case 'controllerLeaderOrCharacters': {
+      let ids = [ctx.controllerLeaderId(), ...ctx.controllerCharacterIds()];
+      if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
+      if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
+      return ids;
+    }
     case 'opponentLeaderOrCharacters':
       return [ctx.state().players[ctx.opponentId].leaderInstanceId, ...ctx.opponentCharacterIds()];
     case 'allCharacters': {
@@ -211,6 +215,11 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTo
     case 'returnToHand': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.returnToHand(id);
+      return { selectedIds: ids, movedIds: ids };
+    }
+    case 'moveToBottomDeck': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.moveToBottomDeck(id);
       return { selectedIds: ids, movedIds: ids };
     }
     case 'playFromHand': {

@@ -25,8 +25,18 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // Note: [Rush] is an engine keyword flag. Only the when-attacking power effect is templated.
   { cardNumber: 'EB01-003', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'opponentLife', atMost: 2 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
 
+  // EB01-006 - [Blocker] [DON!! x2] [When Attacking] Give opponent Character -3000 power.
+  // Note: [Blocker] is an engine keyword flag. Only the when-attacking power effect is templated.
+  { cardNumber: 'EB01-006', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'modifyPowerOpponent', amount: -3000 }] } },
+
   // EB01-026 - [DON!! x1] [When Attacking] If hand has 1 or less, return cost <=3 Character to hand.
   { cardNumber: 'EB01-026', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfHand', atMost: 1 }], functions: [{ fn: 'returnToHand', maxCost: 3, target: 'any' }] } },
+
+  // EB01-019 - [Counter] +4000 to Leader/Character, then reveal-search top 3 for Donquixote Pirates Character.
+  {
+    cardNumber: 'EB01-019',
+    templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPowerController', amount: 4000, duration: 'duringThisBattle' }, { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'Donquixote Pirates' } }] },
+  },
 
   // EB01-048 — [Activate: Main] You may rest this Character: Give up to 1 of your opponent's Characters −4 cost.
   {

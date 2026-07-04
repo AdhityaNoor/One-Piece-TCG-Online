@@ -5,14 +5,9 @@
  *   SKIPPED (not yet supported in IR):
  *     ST01-001 (leader) — activateMainGiveDon ✓ ... wait, actually covered below.
  *     ST01-002 — [Trigger] Play this card: needs triggerPlaySelf op (TODO).
- *     ST01-005 — [DON!! x1] [When Attacking] +1000 to a different Leader/Character:
- *                needs "controllerLeaderOrCharactersExcludingSelf" selector (TODO).
  *     ST01-012 — multi-ability ([Rush] + [DON!! x2] block suppression): needs
  *                blockSuppression op (TODO).
- *     ST01-014 (event) — [Counter] +3000 / [Trigger] +1000: event counter not modeled (TODO).
- *     ST01-015 (event) — [Main] K.O. ≤6000 + [Trigger] activate Main: event Main (TODO).
  *     ST01-016 (event) — complex blocker suppression + trigger: TODO.
- *     ST01-017 (stage) — [Activate: Main] rest this Stage: stage rest-cost (TODO).
  */
 import type { CardEffectAssignment } from '../assembler';
 
@@ -26,6 +21,30 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST01-011 — [On Play] Give up to 2 rested DON!! cards to your Leader or 1 of your Characters.
   { cardNumber: 'ST01-011', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 2 }] } },
 
+  // ST01-005 - [DON!! x1] [When Attacking] Give another Leader/Character +1000 power.
+  { cardNumber: 'ST01-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn', filter: { excludeSelf: true } }] } },
+
   // ST01-013 — [DON!! x1] Permanent +1000 power when ≥1 DON!! attached.
   { cardNumber: 'ST01-013', templateId: 'ability', params: { timing: 'onEnterPlay', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent' }] } },
+
+  // ST01-014 - [Counter] +3000 to Leader/Character. [Trigger] +1000 to Leader/Character.
+  {
+    cardNumber: 'ST01-014',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPowerController', amount: 3000, duration: 'duringThisBattle' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn' }] } },
+    ],
+  },
+
+  // ST01-015 - [Main] K.O. power <=6000. [Trigger] activates the same Main effect.
+  {
+    cardNumber: 'ST01-015',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 6000 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 6000 } }] } },
+    ],
+  },
+
+  // ST01-017 - [Activate: Main] Rest this Stage: give Straw Hat Crew Leader/Character +1000.
+  { cardNumber: 'ST01-017', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn', filter: { typeIncludes: 'Straw Hat Crew' } }] } },
 ];

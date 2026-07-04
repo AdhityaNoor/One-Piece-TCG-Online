@@ -65,6 +65,8 @@ export interface EffectContext {
   ko(targetInstanceId: string): void;
   /** Return a Character to its owner's hand (bounce), dropping attachments/continuous effects it sourced. */
   returnToHand(targetInstanceId: string): void;
+  /** Move a card to the bottom of its owner's deck, dropping attachments/continuous effects it sourced. */
+  moveToBottomDeck(instanceId: string): void;
   /** Play a Character from the controller's hand into the Character Area for free (3-7), summoning-sick; raises the 3-7-6-1 overflow choice if it makes a 6th. */
   playCharacterFromHand(handInstanceId: string): void;
   /** Move a card (e.g. from the trash) to its owner's hand. */

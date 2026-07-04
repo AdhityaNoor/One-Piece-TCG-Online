@@ -71,6 +71,24 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'returnToHand', target: { sel: 'var', name: 't' } },
       ];
     }
+    case 'moveToBottomDeck': {
+      const from =
+        f.target === 'any'
+          ? ({ sel: 'allCharacters', maxCost: f.maxCost } as const)
+          : ({ sel: 'opponentCharacters', maxCost: f.maxCost } as const);
+      const promptSubject = f.target === 'any' ? 'Character' : "of your opponent's Characters";
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from,
+          min: 0,
+          max: 1,
+          prompt: `Place up to 1 ${promptSubject} with a cost of ${f.maxCost} or less at the bottom of the owner's deck (or decline).`,
+        },
+        { op: 'moveToBottomDeck', target: { sel: 'var', name: 't' } },
+      ];
+    }
     case 'modifyCostOpponent': {
       const maxTargets = f.maxTargets ?? 1;
       return [
@@ -105,7 +123,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         {
           op: 'chooseTargets',
           var: 't',
-          from: { sel: 'controllerLeaderOrCharacters' },
+          from: { sel: 'controllerLeaderOrCharacters', ...f.filter },
           min: 0,
           max: maxTargets,
           prompt: `Give up to ${maxTargets} of your Leader or Character cards +${f.amount} power (or decline).`,

@@ -18,7 +18,7 @@ export type Selector =
   | { sel: 'self' } // the source card
   | { sel: 'controllerLeader' }
   | { sel: 'controllerCharacters'; maxCost?: number; exactCost?: number; color?: Color }
-  | { sel: 'controllerLeaderOrCharacters' }
+  | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; excludeSelf?: boolean }
   | { sel: 'opponentLeaderOrCharacters' }
   | { sel: 'allCharacters'; maxCost?: number; maxPower?: number } // any player's Characters
   | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number; rested?: boolean } // optional "cost/power N or less" and/or rested filter
@@ -82,6 +82,7 @@ export type EffectOp =
   | ({ op: 'ko'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'rest'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'returnToHand'; target: Selector } & EffectOpSequenceGate) // bounce a Character to its owner's hand
+  | ({ op: 'moveToBottomDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's deck
   | ({ op: 'playFromHand'; target: Selector } & EffectOpSequenceGate) // put a chosen Character from hand into play (no cost)
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
   | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
