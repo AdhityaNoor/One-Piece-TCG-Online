@@ -35,7 +35,7 @@ export type AbilityFunction =
   | { fn: 'koOpponentCharacter'; filter: { maxCost?: number; exactCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean }; maxTargets?: number }
   | { fn: 'restOpponentCharacter'; filter: { maxCost?: number; maxPower?: number; rested?: boolean }; maxTargets?: number }
   | { fn: 'returnToHand'; maxCost: number; target: 'any' | 'opponent' }
-  | { fn: 'moveToBottomDeck'; maxCost: number; target: 'any' | 'opponent' }
+  | { fn: 'moveToBottomDeck'; maxCost?: number; maxPower?: number; target: 'any' | 'opponent' }
   | { fn: 'modifyCostOpponent'; amount: number; maxTargets?: number }
   | { fn: 'modifyPowerOpponent'; amount: number; maxTargets?: number }
   | { fn: 'addPowerController'; amount: number; duration: IrDuration; maxTargets?: number; filter?: { typeIncludes?: string; excludeSelf?: boolean } }

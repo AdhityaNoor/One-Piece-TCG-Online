@@ -87,11 +87,13 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     }
     case 'moveToBottomDeck': {
+      const filter = { ...(f.maxCost !== undefined ? { maxCost: f.maxCost } : {}), ...(f.maxPower !== undefined ? { maxPower: f.maxPower } : {}) };
       const from =
         f.target === 'any'
-          ? ({ sel: 'allCharacters', maxCost: f.maxCost } as const)
-          : ({ sel: 'opponentCharacters', maxCost: f.maxCost } as const);
+          ? ({ sel: 'allCharacters', ...filter } as const)
+          : ({ sel: 'opponentCharacters', ...filter } as const);
       const promptSubject = f.target === 'any' ? 'Character' : "of your opponent's Characters";
+      const limit = f.maxPower !== undefined ? `with ${f.maxPower} power or less` : `with a cost of ${f.maxCost} or less`;
       return [
         {
           op: 'chooseTargets',
@@ -99,7 +101,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           from,
           min: 0,
           max: 1,
-          prompt: `Place up to 1 ${promptSubject} with a cost of ${f.maxCost} or less at the bottom of the owner's deck (or decline).`,
+          prompt: `Place up to 1 ${promptSubject} ${limit} at the bottom of the owner's deck (or decline).`,
         },
         { op: 'moveToBottomDeck', target: { sel: 'var', name: 't' } },
       ];

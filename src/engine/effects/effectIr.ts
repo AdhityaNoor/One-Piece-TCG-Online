@@ -171,7 +171,8 @@ export type AbilityGate =
   | { kind: 'selfLifeLessThanOpponent' } // "If you have less Life cards than your opponent"
   | { kind: 'selfHand'; atLeast?: number; atMost?: number } // "If you have N or less cards in your hand"
   | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
-  | { kind: 'opponentDonMoreThanSelf' }; // "If your opponent has more DON!! cards on their field than you"
+  | { kind: 'opponentDonMoreThanSelf' } // "If your opponent has more DON!! cards on their field than you"
+  | { kind: 'opponentHand'; atLeast?: number; atMost?: number }; // "If your opponent has N or more/less cards in their hand"
 
 export interface Ability {
   timing: IrTiming;

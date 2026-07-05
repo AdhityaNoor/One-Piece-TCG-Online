@@ -78,13 +78,14 @@ function buildDeckBoxSurfaceStyles(colors: Color[] | undefined): {
  */
 
 // All values are plain numbers (rem) so we can compute derived values.
-const BW  = 13.75;   // box width  (rem)  — 11 × 1.25
-const BH  = 18.375;  // box height (rem)  — 14.7 × 1.25
+const BH  = 18.375;          // box height (rem)  — 14.7 × 1.25
+const BW  = BH * 63 / 88;    // ~13.16rem — front/back match a card's 63:88 ratio
 const BD  = 8.125;   // box depth  (rem)  — 6.5 × 1.25
-const HW  = BW / 2;  // 5.5rem
+const HW  = BW / 2;  // ~6.58rem
 const HH  = BH / 2;  // 7.35rem
 const HD  = BD / 2;  // 3.25rem
-const LID = BH * 0.24; // ~3.53rem — lid section on front/side faces
+const LID   = BH * 0.24 * 0.30; // ~1.06rem — lid section on front/side faces (30% of prior height)
+const FRAME = 0.45;             // rem — box-material bezel around the card window
 
 // Seam gradient — reused on both front and side faces
 const SEAM_BG = 'linear-gradient(180deg,rgba(0,0,0,0.75) 0%,rgba(255,255,255,0.14) 55%,rgba(0,0,0,0.55) 100%)';
@@ -188,23 +189,11 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
             boxShadow: '0 8px 32px rgba(0,0,0,0.55)',
           }}
         >
-          {/* Lid band */}
-          <div className="absolute left-0 right-0 top-0 overflow-hidden" style={{ height: `${LID}rem` }}>
-            <div className="absolute inset-0 bg-gradient-to-b from-white/32 via-white/12 to-transparent" />
-            {colors && colors.length > 0 && (
-              <div className="absolute bottom-2 right-2 flex gap-1">
-                {colors.map((c) => (
-                  <span key={c} className={['h-1.5 w-1.5 rounded-full ring-1 ring-black/40', CARD_COLOR_TOKENS[c].dotClassName].join(' ')} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Seam crease */}
-          <div className="absolute left-0 right-0" style={{ top: `${LID}rem`, height: '3px', background: SEAM_BG }} />
-
-          {/* Body: card art */}
-          <div className="absolute left-1.5 right-1.5 overflow-hidden rounded-[2px] border border-gold/15" style={{ top: `${LID + 0.3}rem`, bottom: '2.5rem' }}>
+          {/* Card window — inset so the box material (front face background)
+              reads as a bezel/frame around the card. Face and card share the
+              63:88 ratio, so object-cover shows the whole card, centred, with
+              only the thin bezel cropped. */}
+          <div className="absolute overflow-hidden rounded-[2px]" style={{ top: `${LID}rem`, left: `${FRAME}rem`, right: `${FRAME}rem`, bottom: `${FRAME}rem` }}>
             {imageUrl ? (
               <img src={resolveAssetUrl(imageUrl) ?? undefined} alt={leaderName} className="absolute inset-0 h-full w-full object-cover object-center" />
             ) : (
@@ -212,12 +201,27 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
                 No Image
               </div>
             )}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/70 to-transparent" />
+            <div className="pointer-events-none absolute inset-0 rounded-[2px] ring-1 ring-inset ring-black/40" />
           </div>
 
-          {/* Body: name strip */}
-          <div className="absolute bottom-0 left-0 right-0 flex h-9 items-center border-t border-white/10 px-2">
-            <p className="min-w-0 flex-1 truncate text-[7.5px] font-black uppercase tracking-[0.16em] text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+          {/* Lid — opaque box-material band covering the top of the card */}
+          <div className="absolute left-0 right-0 top-0 overflow-hidden" style={{ ...surf.top, height: `${LID}rem`, borderRadius: '3px 3px 0 0' }}>
+            {colors && colors.length > 0 && (
+              <div className="absolute bottom-1 right-2 flex gap-1">
+                {colors.map((c) => (
+                  <span key={c} className={['h-1.5 w-1.5 rounded-full ring-1 ring-black/40', CARD_COLOR_TOKENS[c].dotClassName].join(' ')} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Seam crease under the lid */}
+          <div className="absolute left-0 right-0" style={{ top: `${LID}rem`, height: '3px', background: SEAM_BG }} />
+
+          {/* Name label — overlays the bottom edge of the card, inside the bezel */}
+          <div className="absolute flex items-end px-2 pb-1" style={{ left: `${FRAME}rem`, right: `${FRAME}rem`, bottom: `${FRAME}rem`, height: '2.4rem' }}>
+            <div className="pointer-events-none absolute inset-0 rounded-b-[2px] bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+            <p className="relative min-w-0 flex-1 truncate text-[7.5px] font-black uppercase tracking-[0.16em] text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
               {entry.name}
             </p>
           </div>
@@ -403,7 +407,9 @@ export function SavedDecksScreen() {
           />
         </div>
       ) : (
-        <div className="flex h-full min-h-0 flex-col">
+        <div className="flex h-full min-h-0">
+          {/* ── Main column: carousel + card list ── */}
+          <div className="flex min-h-0 flex-1 flex-col">
           {/* ── Gallery area ── */}
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-hidden py-4">
             {/* Navigation row — arrows are absolute so the box is always the true centre */}
@@ -516,6 +522,50 @@ export function SavedDecksScreen() {
               )}
             </div>
           </div>
+          </div>
+
+          {/* ── Deck list sidebar — stays in sync with the carousel ── */}
+          <aside className="flex w-60 flex-shrink-0 flex-col border-l border-white/8 bg-[rgba(1,5,16,0.55)]">
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-white/8 px-4 py-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.20em] text-gold">All Decks</p>
+              <p className="text-[10px] text-white/35">{rows.length}</p>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-2">
+              <div className="flex flex-col gap-1.5">
+                {rows.map((row, i) => {
+                  const active = i === clampedIndex;
+                  const leaderName = row.deck.ok ? row.deck.deck.leader.definition.name : null;
+                  const leaderImg = row.deck.ok ? row.deck.deck.leader.imageUrl : null;
+                  return (
+                    <button
+                      key={row.entry.deckId}
+                      type="button"
+                      onClick={() => setCurrentIndex(i)}
+                      className={[
+                        'flex items-center gap-2.5 rounded border px-2.5 py-2 text-left transition-colors',
+                        active ? 'border-gold/60 bg-gold/12' : 'border-white/8 bg-white/4 hover:bg-white/8',
+                      ].join(' ')}
+                    >
+                      <div className="h-10 w-7 flex-shrink-0 overflow-hidden rounded-sm border border-white/15 bg-slate-900">
+                        {leaderImg && (
+                          <img src={resolveAssetUrl(leaderImg) ?? undefined} alt="" className="h-full w-full object-cover object-top" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className={['truncate text-[11px] font-bold uppercase tracking-[0.04em]', active ? 'text-white' : 'text-white/80'].join(' ')}>
+                          {row.entry.name}
+                        </p>
+                        <p className="truncate text-[9px] font-bold uppercase tracking-[0.08em] text-white/35">
+                          {leaderName ?? 'Unavailable'}
+                        </p>
+                      </div>
+                      {active && <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gold" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </aside>
         </div>
       )}
 

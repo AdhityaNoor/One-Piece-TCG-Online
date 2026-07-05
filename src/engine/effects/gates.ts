@@ -155,5 +155,13 @@ function evaluateGate(
       const opponentId = getOpponentId(state, ownerId);
       return fieldDonIds(state, opponentId).length > fieldDonIds(state, ownerId).length;
     }
+
+    case 'opponentHand': {
+      const opponentId = getOpponentId(state, ownerId);
+      const count = state.players[opponentId].hand.cardIds.length;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
   }
 }
