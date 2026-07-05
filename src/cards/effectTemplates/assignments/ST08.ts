@@ -33,7 +33,7 @@ export const ST08_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'ST08-002',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', attackerCategory: 'leader' }] } },
-      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'modifyCostOpponent', amount: -2 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, optional: true }] } },
     ],
   },
 
@@ -41,7 +41,7 @@ export const ST08_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST08-004',
     templateId: 'ability',
-    params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 2 } }] },
+    params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] },
   },
 
   // ST08-005 Shanks — [On Play] You may trash 1 card from your hand: K.O. all Characters with a cost of 1 or less.
@@ -52,13 +52,13 @@ export const ST08_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // ST08-006 Shirahoshi — [Blocker] (card data) + [On Play] Give up to 1 opponent Character −4 cost.
-  { cardNumber: 'ST08-006', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'modifyCostOpponent', amount: -4 }] } },
+  { cardNumber: 'ST08-006', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, optional: true }] } },
 
   // ST08-007 Nefeltari Vivi — [Blocker] (card data) + [Trigger] Play this card.
   { cardNumber: 'ST08-007', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
   // ST08-008 Higuma — [On Play] Give up to 1 opponent Character −2 cost during this turn.
-  { cardNumber: 'ST08-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'modifyCostOpponent', amount: -2 }] } },
+  { cardNumber: 'ST08-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, optional: true }] } },
 
   // ST08-009 Makino — [On Play] If there is a Character with a cost of 0, draw 1 card.
   {
@@ -71,7 +71,7 @@ export const ST08_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST08-015',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 2 } }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },
@@ -81,7 +81,7 @@ export const ST08_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST08-013',
     templateId: 'ability',
-    params: { timing: 'onBattle', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'koBattleOpponent' }, { fn: 'koSelf', ifPrevious: 'previousMovedAny' }] },
+    params: { timing: 'onBattle', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'ko', target: { ref: 'battleOpponent' }, optional: true }, { fn: 'ko', target: { ref: 'self' }, ifPrevious: 'previousMovedAny' }] },
   },
 
   // ST08-014 (event) Gum-Gum Bell — [Main] You may add 1 card from the top of your Life cards to your hand:
@@ -89,8 +89,8 @@ export const ST08_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST08-014',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'modifyCostOpponent', amount: -7, ifPrevious: 'previousMovedAny' }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveFromTrashToHand', filter: { color: 'black', category: 'character', maxCost: 2 } }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -7, optional: true, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { color: 'black', category: 'character', maxCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
     ],
   },
 ];

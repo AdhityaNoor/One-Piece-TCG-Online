@@ -37,7 +37,7 @@ function buildCostModifiedCardView() {
     {
       cardNumber: source.cardDefinitionId,
       templateId: 'ability',
-      params: { timing: 'activateMain', functions: [{ fn: 'modifyCostOpponent', amount: -4 }] },
+      params: { timing: 'activateMain', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, optional: true }] },
     },
   ]);
   const activate = executeAction(

@@ -35,14 +35,14 @@ export const ST04_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST04-003',
     templateId: 'ability',
-    params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 5 }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 6 } }, { fn: 'addKeywordSelf', keyword: 'rush', duration: 'duringThisTurn' }] },
+    params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 5 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] },
   },
 
   // ST04-004 King — [On Play] DON!! −1: K.O. up to 1 opponent Character cost <=4.
   {
     cardNumber: 'ST04-004',
     templateId: 'ability',
-    params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 4 } }] },
+    params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] },
   },
 
   // ST04-005 Queen — [Blocker] (card data) + [On Play] DON!! −1: Draw 2 and trash 1 from hand.
@@ -70,7 +70,7 @@ export const ST04_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST04-010',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 3 } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
     ],
   },
@@ -89,7 +89,7 @@ export const ST04_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST04-015',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 6 } }, { fn: 'addDonFromDeck', count: 1, rested: false }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }, { fn: 'addDonFromDeck', count: 1, rested: false }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
     ],
   },
@@ -98,7 +98,7 @@ export const ST04_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST04-016',
     templateId: 'ability',
-    params: { timing: 'counter', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPowerController', amount: 4000, duration: 'duringThisBattle' }] },
+    params: { timing: 'counter', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] },
   },
 
   // ST04-017 (stage) Onigashima Island — [Activate: Main] rest this Stage: If your Leader has the

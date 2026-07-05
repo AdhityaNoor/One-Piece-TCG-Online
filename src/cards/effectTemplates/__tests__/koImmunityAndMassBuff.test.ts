@@ -78,7 +78,7 @@ describe("family: 'any'-scope K.O. immunity blocks effect K.O.s", () => {
     const koProgram: CardEffectAssignment = {
       cardNumber: 'SYN-KO',
       templateId: 'ability',
-      params: { timing: 'onPlay', functions: [{ fn: 'koOpponentCharacter', filter: {} }] },
+      params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: {} }, optional: true }] },
     };
     const registry = buildRegistryFromAssignments([koProgram]);
 

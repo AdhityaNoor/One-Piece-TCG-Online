@@ -44,7 +44,7 @@ export const ST05_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST05-004',
     templateId: 'ability',
-    params: { timing: 'onBlock', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 5 }, maxTargets: 1 }] },
+    params: { timing: 'onBlock', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true, maxTargets: 1 }] },
   },
 
   // ST05-005 Carina — [Activate: Main] [Once Per Turn] rest this Character + trash 1 {FILM} card:
@@ -96,7 +96,7 @@ export const ST05_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'activateMain',
       oncePerTurn: true,
       cost: [{ kind: 'donMinus', count: 4 }],
-      functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 6 }, maxTargets: 2 }, { fn: 'addKeywordSelf', keyword: 'doubleAttack', duration: 'duringThisTurn' }],
+      functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, maxTargets: 2 }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'duringThisTurn' }],
     },
   },
 
@@ -113,7 +113,7 @@ export const ST05_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST05-016',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 5 } }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
     ],
   },
@@ -124,7 +124,7 @@ export const ST05_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST05-017',
     templates: [
-      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPowerController', amount: 4000, duration: 'duringThisBattle', filter: { typeIncludes: 'FILM' } }, { fn: 'koImmunityChosen', scope: 'any', duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'FILM' } }, amount: 4000, duration: 'duringThisBattle', optional: true }, { fn: 'koImmunityChosen', scope: 'any', duration: 'duringThisTurn' }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
     ],
   },

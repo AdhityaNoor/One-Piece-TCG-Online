@@ -32,29 +32,45 @@ export type MoveCardSource =
   | { zone: 'life'; player: 'controller' | 'opponent'; position: 'top' | 'bottom' | 'topOrBottom'; hiddenChoice?: boolean; count?: number }
   | { zone: 'deck'; player: 'controller'; position: 'top'; count?: number }
   | { zone: 'hand'; player: 'controller'; filter?: SearchFilter }
+  | { zone: 'trash'; player: 'controller'; filter?: SearchFilter }
   | { zone: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: { maxCost?: number; exactCost?: number; maxPower?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] } };
 
 export type MoveCardDestination =
   | { zone: 'hand'; player: 'owner' }
   | { zone: 'life'; player: 'owner' | 'controller'; position: 'top'; faceUp?: boolean }
+  | { zone: 'deck'; player: 'owner'; position: 'bottom' }
   | { zone: 'trash'; player: 'owner' };
+
+export interface TargetFilter {
+  maxCost?: number;
+  exactCost?: number;
+  maxPower?: number;
+  rested?: boolean;
+  hasBlocker?: boolean;
+  typeIncludes?: string;
+  anyOfTypes?: string[];
+  color?: Color;
+  name?: string;
+  excludeSelf?: boolean;
+}
+
+export type TargetSpec =
+  | { ref: 'self' }
+  | { ref: 'previous' }
+  | { ref: 'battleOpponent' }
+  | { group: 'leader'; player: 'controller' }
+  | { group: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: TargetFilter }
+  | { group: 'leaderOrCharacters'; player: 'controller' | 'opponent'; filter?: TargetFilter };
 
 export type AbilityFunction =
   | { fn: 'draw'; amount: number }
   | { fn: 'addDonFromDeck'; count: number; rested: boolean }
   | { fn: 'giveDon'; count: number }
-  | { fn: 'koOpponentCharacter'; filter: { maxCost?: number; exactCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean }; maxTargets?: number }
-  | { fn: 'restOpponentCharacter'; filter: { maxCost?: number; maxPower?: number; rested?: boolean }; maxTargets?: number }
-  | { fn: 'returnToHand'; maxCost: number; target: 'any' | 'opponent' }
-  | { fn: 'moveToBottomDeck'; maxCost?: number; maxPower?: number; target: 'any' | 'opponent' }
-  | { fn: 'modifyCostOpponent'; amount: number; maxTargets?: number }
-  | { fn: 'modifyPowerOpponent'; amount: number; maxTargets?: number }
-  | { fn: 'addPowerController'; amount: number; duration: IrDuration; maxTargets?: number; filter?: { typeIncludes?: string; excludeSelf?: boolean } }
-  | { fn: 'addPowerControllerLeader'; amount: number; duration: IrDuration }
-  | { fn: 'addPowerControllerCharacter'; amount: number; duration: IrDuration; filter?: { maxCost?: number; exactCost?: number; color?: Color }; maxTargets?: number }
-  | { fn: 'modifyPowerOpponentLeaderOrCharacter'; amount: number; duration: IrDuration; maxTargets?: number }
-  | { fn: 'addKeywordSelf'; keyword: ContinuousKeyword; duration: IrDuration; condition?: IrCondition }
-  | { fn: 'addKeywordControllerLeaderOrCharacter'; keyword: ContinuousKeyword; duration: IrDuration; filter?: { name?: string }; maxTargets?: number }
+  | { fn: 'ko'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
+  | { fn: 'rest'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
+  | { fn: 'addCost'; target: TargetSpec; amount: number; duration?: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
+  | { fn: 'addPower'; target: TargetSpec; amount: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
+  | { fn: 'addKeyword'; target: TargetSpec; keyword: ContinuousKeyword; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'preventBlockers'; duration: IrDuration; target?: 'self' | 'chosenControllerLeaderOrCharacter'; filter?: { typeIncludes?: string }; blockerPowerAtLeast?: number }
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
   | { fn: 'trashFromHand'; count: number }
@@ -66,7 +82,6 @@ export type AbilityFunction =
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
   | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number }
-  | { fn: 'moveFromTrashToHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'triggerPlaySelf' }
   | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination }
   | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition }
@@ -94,10 +109,6 @@ export type AbilityFunction =
   // K.O. ALL Characters (both players) matching a cost/power filter, no target choice
   // ("K.O. all Characters with a cost of 1 or less").
   | { fn: 'koAllCharacters'; filter?: { maxCost?: number; maxPower?: number } }
-  // K.O. the source card itself ("K.O. this Character"); usually gated with ifPrevious.
-  | { fn: 'koSelf' }
-  // K.O. the opponent Character the source is battling (onBattle), the player may decline.
-  | { fn: 'koBattleOpponent' }
   // Give up to `count` rested DON!! to the controller's Leader (no target choice) — "give ... to this Leader".
   | { fn: 'giveDonControllerLeader'; count: number };
 

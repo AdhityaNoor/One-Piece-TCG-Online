@@ -23,7 +23,7 @@ describe('semantic family: optional Life payment into battle modifiers', () => {
         functions: [
           { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true },
           { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
-          { fn: 'addKeywordSelf', keyword: 'banish', duration: 'duringThisBattle', ifPrevious: 'previousSelectedAny' },
+          { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'duringThisBattle', ifPrevious: 'previousSelectedAny' },
         ],
       },
     };
@@ -154,12 +154,12 @@ describe('semantic family: named leader/character keyword grants', () => {
       {
         cardNumber: 'SYN-KEYWORD-A',
         templateId: 'ability',
-        params: { timing: 'activateMain', functions: [{ fn: 'addKeywordControllerLeaderOrCharacter', keyword: 'banish', duration: 'duringThisTurn', filter: { name: 'Named Captain' } }] },
+        params: { timing: 'activateMain', functions: [{ fn: 'addKeyword', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Named Captain' } }, keyword: 'banish', duration: 'duringThisTurn', optional: true }] },
       },
       {
         cardNumber: 'SYN-KEYWORD-B',
         templateId: 'ability',
-        params: { timing: 'activateMain', functions: [{ fn: 'addKeywordControllerLeaderOrCharacter', keyword: 'doubleAttack', duration: 'duringThisTurn', filter: { name: 'Named Captain' } }] },
+        params: { timing: 'activateMain', functions: [{ fn: 'addKeyword', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Named Captain' } }, keyword: 'doubleAttack', duration: 'duringThisTurn', optional: true }] },
       },
     ];
 
@@ -269,7 +269,7 @@ describe('semantic family: look at top Life from either player and place top/bot
         timing: 'onPlay',
         functions: [
           { fn: 'peekLifeAndPlace', from: 'controllerOrOpponentTop', placement: 'topOrBottom' },
-          { fn: 'addKeywordSelf', keyword: 'rush', duration: 'duringThisTurn', condition: { gate: [{ kind: 'selfLifeLessThanOpponent' }] } },
+          { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', condition: { gate: [{ kind: 'selfLifeLessThanOpponent' }] } },
         ],
       },
     };
@@ -321,7 +321,7 @@ describe('semantic family: mandatory Life payment into follow-up board effects',
         gate: [{ kind: 'selfLife', atLeast: 1 }],
         functions: [
           { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' } },
-          { fn: 'koOpponentCharacter', filter: { maxCost: 3 }, ifPrevious: 'previousMovedAny' },
+          { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true, ifPrevious: 'previousMovedAny' },
         ],
       },
     };

@@ -1,7 +1,7 @@
 /**
  * Tests for the two small reusable additions ST09/ST10 needed:
  *   - `opponentHand` board gate (ST10-010).
- *   - `maxPower` filter on moveToBottomDeck (ST10-001).
+ *   - `maxPower` filter on generic moveCards to deck bottom (ST10-001).
  * Synthetic cards + generic assignments.
  */
 import { describe, expect, it } from 'vitest';
@@ -37,11 +37,11 @@ describe('gate: opponentHand (ST10-010 shape)', () => {
   });
 });
 
-describe('template: moveToBottomDeck by maxPower (ST10-001 shape)', () => {
+describe('template: moveCards to deck bottom by maxPower (ST10-001 shape)', () => {
   const assignment: CardEffectAssignment = {
     cardNumber: 'SYN-SRC',
     templateId: 'ability',
-    params: { timing: 'activateMain', functions: [{ fn: 'moveToBottomDeck', maxPower: 3000, target: 'opponent' }] },
+    params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] },
   };
   const LOW = makeCharacterDef({ cardDefinitionId: 'SYN-LOW', cardNumber: 'SYN-LOW', category: 'character', baseCost: 2, basePower: 2000 });
   const HIGH = makeCharacterDef({ cardDefinitionId: 'SYN-HIGH', cardNumber: 'SYN-HIGH', category: 'character', baseCost: 4, basePower: 5000 });

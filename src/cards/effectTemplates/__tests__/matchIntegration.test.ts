@@ -1108,7 +1108,7 @@ describe('curated effect template integration with match engine dispatch', () =>
       {
         cardNumber: 'TEST-BOTTOM-DECK-EVENT',
         templateId: 'ability',
-        params: { timing: 'activateMain', functions: [{ fn: 'moveToBottomDeck', maxCost: 3, target: 'opponent' }] },
+        params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] },
       },
     ]);
 
@@ -1192,7 +1192,7 @@ describe('curated effect template integration with match engine dispatch', () =>
         params: {
           timing: 'whenAttacking',
           condition: { donAttachedAtLeast: 1 },
-          functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn', filter: { typeIncludes: 'Straw Hat Crew', excludeSelf: true } }],
+          functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Straw Hat Crew', excludeSelf: true } }, amount: 1000, duration: 'duringThisTurn', optional: true }],
         },
       },
     ]);

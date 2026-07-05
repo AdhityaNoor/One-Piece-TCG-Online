@@ -51,7 +51,7 @@ export const ST02_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST02-005',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'koOpponentCharacter', filter: { rested: true, maxCost: 3 } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 3 } }, optional: true }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
     ],
   },
@@ -84,7 +84,7 @@ export const ST02_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST02-015',
     templates: [
-      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPowerController', amount: 2000, duration: 'duringThisBattle' }, { fn: 'setActiveControllerDon', maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }, { fn: 'setActiveControllerDon', maxTargets: 1 }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
     ],
   },
@@ -94,7 +94,7 @@ export const ST02_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST02-016',
     templateId: 'ability',
-    params: { timing: 'counter', functions: [{ fn: 'addPowerController', amount: 4000, duration: 'duringThisBattle' }, { fn: 'setActiveControllerDon', maxTargets: 1 }] },
+    params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }, { fn: 'setActiveControllerDon', maxTargets: 1 }] },
   },
 
   // ST02-017 (event) Straw Sword — [Main] Rest up to 1 of your opponent's Characters.
@@ -102,7 +102,7 @@ export const ST02_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST02-017',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'restOpponentCharacter', filter: {}, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: {} }, optional: true, maxTargets: 1 }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { typeIncludes: 'Supernovas', maxCost: 2 } }] } },
     ],
   },

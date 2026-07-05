@@ -52,7 +52,7 @@ describe('family: battleOpponent K.O. exchange (ST08-013 shape)', () => {
   const assignment: CardEffectAssignment = {
     cardNumber: 'SYN-MR2',
     templateId: 'ability',
-    params: { timing: 'onBattle', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'koBattleOpponent' }, { fn: 'koSelf', ifPrevious: 'previousMovedAny' }] },
+    params: { timing: 'onBattle', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'ko', target: { ref: 'battleOpponent' }, optional: true }, { fn: 'ko', target: { ref: 'self' }, ifPrevious: 'previousMovedAny' }] },
   };
   const MR2 = makeCharacterDef({ cardDefinitionId: 'SYN-MR2', cardNumber: 'SYN-MR2', category: 'character', baseCost: 4, basePower: 5000 });
   const FOE = makeCharacterDef({ cardDefinitionId: 'SYN-FOE', cardNumber: 'SYN-FOE', category: 'character', baseCost: 4, basePower: 5000 });

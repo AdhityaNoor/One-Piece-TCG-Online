@@ -76,7 +76,7 @@ describe('semantic family: static conditional self keyword grant (same shape, ke
   const assignment: CardEffectAssignment = {
     cardNumber: 'SYN-STATIC',
     templateId: 'ability',
-    params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordSelf', keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] },
+    params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] },
   };
 
   it('grants the keyword only at/above the DON!! threshold, re-evaluated per read', () => {

@@ -26,7 +26,7 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // ST01-007 — [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
   // ST01-004 - [DON!! x2] This Character gains [Rush].
-  { cardNumber: 'ST01-004', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordSelf', keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
+  { cardNumber: 'ST01-004', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
 
   { cardNumber: 'ST01-007', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
@@ -37,7 +37,7 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'ST01-012', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle' }] } },
 
   // ST01-005 - [DON!! x1] [When Attacking] Give another Leader/Character +1000 power.
-  { cardNumber: 'ST01-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn', filter: { excludeSelf: true } }] } },
+  { cardNumber: 'ST01-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { excludeSelf: true } }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
 
   // ST01-013 — [DON!! x1] This Character gains +1000 power (static, while >=1 DON!! attached).
   // The DON!! gate belongs on the continuous power MODIFIER (re-evaluated on every power
@@ -49,8 +49,8 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST01-014',
     templates: [
-      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPowerController', amount: 3000, duration: 'duringThisBattle' }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
     ],
   },
 
@@ -58,8 +58,8 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST01-015',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 6000 } }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 6000 } }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 6000 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 6000 } }, optional: true }] } },
     ],
   },
 
@@ -68,10 +68,10 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'ST01-016',
     templates: [
       { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', target: 'chosenControllerLeaderOrCharacter', filter: { typeIncludes: 'Straw Hat Crew' } }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'koOpponentCharacter', filter: { hasBlocker: true, maxCost: 3 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { hasBlocker: true, maxCost: 3 } }, optional: true }] } },
     ],
   },
 
   // ST01-017 - [Activate: Main] Rest this Stage: give Straw Hat Crew Leader/Character +1000.
-  { cardNumber: 'ST01-017', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addPowerController', amount: 1000, duration: 'duringThisTurn', filter: { typeIncludes: 'Straw Hat Crew' } }] } },
+  { cardNumber: 'ST01-017', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Straw Hat Crew' } }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
 ];

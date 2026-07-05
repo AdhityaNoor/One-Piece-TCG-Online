@@ -3,8 +3,8 @@
  *
  * A DON!! ramp / DON!!-return deck. Most cards are parameterization of existing templates
  * (DON!! −N cost, addDonFromDeck, koOpponentCharacter by power, addPowerControllerLeader, gates).
- * Two tiny reusable additions this pass: `opponentHand` gate (ST10-010) and `maxPower` on
- * moveToBottomDeck (ST10-001).
+ * Two tiny reusable additions this pass: `opponentHand` gate (ST10-010) and `maxPower`
+ * character filtering for generic moveCards to deck bottom (ST10-001).
  *
  * DEFERRED (need engine capability not yet present):
  *   ST10-002 (leader) — "If you have 0 OR 8+ DON!! on your field": a disjunctive DON!!-count gate. NEW.
@@ -24,7 +24,7 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST10-001',
     templateId: 'ability',
-    params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 3 }], functions: [{ fn: 'moveToBottomDeck', maxPower: 3000, target: 'opponent' }, { fn: 'playFromHand', filter: { maxCost: 4 } }] },
+    params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 3 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }, { fn: 'playFromHand', filter: { maxCost: 4 } }] },
   },
 
   // ST10-003 (leader) Kid — [Your Turn] If you have 4 or more Life, −1000 self.
@@ -38,7 +38,7 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // ST10-005 Jinbe — [DON!! x1] [When Attacking] Give up to 1 opponent Character −2000 power this turn.
-  { cardNumber: 'ST10-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'modifyPowerOpponent', amount: -2000 }] } },
+  { cardNumber: 'ST10-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
   // ST10-008 Shachi & Penguin — [On Play] If you have 3 or less DON!! on your field, add 2 DON!! and rest them.
   {
@@ -75,8 +75,8 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST10-013',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPowerControllerLeader', amount: 1000, duration: 'untilStartOfNextTurn' }] } },
-      { templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPowerControllerLeader', amount: 1000, duration: 'untilStartOfNextTurn' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'untilStartOfNextTurn' }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'untilStartOfNextTurn' }] } },
     ],
   },
 
@@ -85,7 +85,7 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST10-015',
     templateId: 'ability',
-    params: { timing: 'counter', functions: [{ fn: 'addPowerController', amount: 2000, duration: 'duringThisBattle' }, { fn: 'koOpponentCharacter', filter: { maxPower: 2000 } }] },
+    params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 2000 } }, optional: true }] },
   },
 
   // ST10-016 (event) Gum-Gum Kong Gatling — [Main] K.O. up to 1 opponent Character with 7000 power or less.
@@ -93,8 +93,8 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST10-016',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'koOpponentCharacter', filter: { maxPower: 7000 } }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPowerControllerLeader', amount: 1000, duration: 'untilStartOfNextTurn' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 7000 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'untilStartOfNextTurn' }] } },
     ],
   },
 
@@ -103,7 +103,7 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST10-017',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 2 } }, { fn: 'addDonFromDeck', count: 1, rested: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }, { fn: 'addDonFromDeck', count: 1, rested: true }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
     ],
   },

@@ -32,10 +32,10 @@ describe('buildRegistryFromAssignments', () => {
     const assignments: CardEffectAssignment[] = [
       { cardNumber: 'A', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
       { cardNumber: 'B', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 2 }] } },
-      { cardNumber: 'C', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'returnToHand', maxCost: 5, target: 'opponent' }] } },
+      { cardNumber: 'C', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
       { cardNumber: 'D', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
-      { cardNumber: 'E', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'modifyCostOpponent', amount: -3 }] } },
-      { cardNumber: 'F', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'modifyPowerOpponent', amount: -2000 }] } },
+      { cardNumber: 'E', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, optional: true }] } },
+      { cardNumber: 'F', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
     ];
     const registry = buildRegistryFromAssignments(assignments);
     const roundTripped = JSON.parse(JSON.stringify(registry));
@@ -56,7 +56,7 @@ describe('buildRegistryFromAssignments', () => {
         cardNumber: 'COMBO-001',
         templates: [
           { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
-          { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'modifyCostOpponent', amount: -4 }] } },
+          { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, optional: true }] } },
         ],
       },
     ]);
@@ -95,17 +95,17 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0].oncePerTurn).toBe(true);
   });
 
-  it('returnToHand function targets opponent characters filtered by maxCost', () => {
-    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'returnToHand', maxCost: 5, target: 'opponent' }] });
+  it('moveCards can move opponent Characters filtered by maxCost to their owner hand', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] });
     const choose = p.abilities[0].ops[0];
     expect(choose.op).toBe('chooseTargets');
     // @ts-expect-error - narrow to chooseTargets shape
     expect(choose.from).toMatchObject({ sel: 'opponentCharacters', maxCost: 5 });
-    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'returnToHand' });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'moveToHand' });
   });
 
-  it('returnToHand function can target any Character when text says Character', () => {
-    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'returnToHand', maxCost: 7, target: 'any' }] });
+  it('moveCards can target any Character when text says Character', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 7 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] });
     const choose = p.abilities[0].ops[0];
     expect(choose.op).toBe('chooseTargets');
     // @ts-expect-error - narrow to chooseTargets shape
@@ -138,12 +138,21 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'trashCards' });
   });
 
+  it('moveCards can move chosen cards to trash through the generic movement path', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerHand' }, min: 0, max: 1 });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'trashCards', target: { sel: 'var', name: 't' } });
+  });
+
   it('optionalTrashFromHand can gate a follow-up on whether a card was trashed', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onPlay',
       functions: [
         { fn: 'optionalTrashFromHand', count: 1 },
-        { fn: 'koOpponentCharacter', filter: { exactCost: 0 }, ifPrevious: 'previousMovedAny' },
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { exactCost: 0 } }, optional: true, ifPrevious: 'previousMovedAny' },
       ],
     });
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerHand' }, min: 0, max: 1 });
@@ -164,7 +173,7 @@ describe('template factories - structural correctness', () => {
   });
 
   it('modifyCostOpponent function produces chooseTargets then addCost duringThisTurn', () => {
-    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'modifyCostOpponent', amount: -3 }] });
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, optional: true }] });
     expect(p.abilities[0].ops[0].op).toBe('chooseTargets');
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'addCost', amount: -3, duration: 'duringThisTurn' });
   });
@@ -173,8 +182,8 @@ describe('template factories - structural correctness', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'activateMain',
       functions: [
-        { fn: 'restOpponentCharacter', filter: { maxCost: 2, rested: true }, maxTargets: 2 },
-        { fn: 'modifyCostOpponent', amount: -2, maxTargets: 2 },
+        { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2, rested: true } }, optional: true, maxTargets: 2 },
+        { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, optional: true, maxTargets: 2 },
       ],
     });
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters', maxCost: 2, rested: true }, max: 2 });
@@ -185,7 +194,7 @@ describe('template factories - structural correctness', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'whenAttacking',
       condition: { donAttachedAtLeast: 1 },
-      functions: [{ fn: 'modifyPowerOpponent', amount: -2000 }],
+      functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }],
     });
     expect(p.abilities[0].timing).toBe('whenAttacking');
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'addPower', amount: -2000, duration: 'duringThisTurn' });
@@ -195,9 +204,9 @@ describe('template factories - structural correctness', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'counter',
       functions: [
-        { fn: 'addPowerController', amount: 4000, duration: 'duringThisBattle' },
-        { fn: 'addPowerControllerLeader', amount: 4000, duration: 'duringThisTurn' },
-        { fn: 'modifyPowerOpponentLeaderOrCharacter', amount: -10000, duration: 'duringThisTurn' },
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true },
+        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 4000, duration: 'duringThisTurn' },
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -10000, duration: 'duringThisTurn', optional: true },
       ],
     });
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerLeaderOrCharacters' }, max: 1 });
@@ -210,7 +219,7 @@ describe('template factories - structural correctness', () => {
   it('addPowerControllerCharacter can filter own Characters by color and exact cost', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onPlay',
-      functions: [{ fn: 'addPowerControllerCharacter', amount: 3000, duration: 'duringThisTurn', filter: { color: 'red', exactCost: 1 } }],
+      functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { color: 'red', exactCost: 1 } }, amount: 3000, duration: 'duringThisTurn', optional: true }],
     });
     expect(p.abilities[0].ops[0]).toMatchObject({
       op: 'chooseTargets',
@@ -311,18 +320,24 @@ describe('template factories - structural correctness', () => {
     });
   });
 
-  it('moveFromTrashToHand chooses matching trash cards and moves them to hand', () => {
+  it('moveCards chooses matching trash cards and moves them to hand', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onPlay',
       functions: [
         {
-          fn: 'moveFromTrashToHand',
-          filter: {
-            category: 'character',
-            maxCost: 4,
-            excludeSelfName: true,
-            anyOf: [{ typeIncludes: 'The Seven Warlords of the Sea' }, { typeIncludes: 'Thriller Bark Pirates' }],
+          fn: 'moveCards',
+          from: {
+            zone: 'trash',
+            player: 'controller',
+            filter: {
+              category: 'character',
+              maxCost: 4,
+              excludeSelfName: true,
+              anyOf: [{ typeIncludes: 'The Seven Warlords of the Sea' }, { typeIncludes: 'Thriller Bark Pirates' }],
+            },
           },
+          to: { zone: 'hand', player: 'owner' },
+          optional: true,
         },
       ],
     });
@@ -367,7 +382,7 @@ describe('template factories - structural correctness', () => {
   it('addKeywordSelf produces a conditional keyword grant', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onEnterPlay',
-      functions: [{ fn: 'addKeywordSelf', keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }],
+      functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }],
     });
     expect(p.abilities[0].ops[0]).toMatchObject({
       op: 'addKeyword',

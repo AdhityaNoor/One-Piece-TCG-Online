@@ -16,12 +16,7 @@ describe('semantic family: effect K.O. immunity with conditional keyword grant',
         params: {
           timing: 'onEnterPlay',
           functions: [
-            {
-              fn: 'addKeywordSelf',
-              keyword: 'doubleAttack',
-              duration: 'permanent',
-              condition: { donAttachedAtLeast: 1, gate: [{ kind: 'anyCharacterExactCost', exactCost: 0 }] },
-            },
+            { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'anyCharacterExactCost', exactCost: 0 }] } },
           ],
         },
       },

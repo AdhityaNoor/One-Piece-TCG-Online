@@ -4,27 +4,63 @@
  * This file produces plain JSON-serializable EffectProgram data. It does not
  * execute card text, and callers never pass raw card effect text.
  */
-import type { Ability, EffectOp, EffectProgram, NonSuspendingEffectOp } from '../../../engine/effects/effectIr';
-import type { MoveCardDestination, MoveCardSource, SequencedAbilityFunction, TemplateId, TemplateParamMap } from './templateDefs';
+import type { Ability, EffectOp, EffectProgram, NonSuspendingEffectOp, Selector } from '../../../engine/effects/effectIr';
+import type { MoveCardDestination, MoveCardSource, SequencedAbilityFunction, TargetSpec, TemplateId, TemplateParamMap } from './templateDefs';
 
 function program(cardNumber: string, abilities: Ability[]): EffectProgram {
   return { cardNumber, abilities };
 }
 
-function chooseOpponentCharacter(
-  fn: 'koOpponentCharacter' | 'restOpponentCharacter',
-  filter: { maxCost?: number; exactCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean },
-  maxTargets = 1,
-): EffectOp {
-  const verb = fn === 'koOpponentCharacter' ? 'K.O.' : 'Rest';
-  return {
-    op: 'chooseTargets',
-    var: 't',
-    from: { sel: 'opponentCharacters', ...filter },
-    min: 0,
-    max: maxTargets,
-    prompt: `${verb} up to ${maxTargets} of your opponent's Characters (or decline).`,
-  };
+function selectorFromTarget(target: TargetSpec): Selector {
+  if ('ref' in target) {
+    if (target.ref === 'self') return { sel: 'self' };
+    if (target.ref === 'previous') return { sel: 'var', name: 't' };
+    if (target.ref === 'battleOpponent') return { sel: 'var', name: 't' };
+  }
+
+  if (target.group === 'leader' && target.player === 'controller') return { sel: 'controllerLeader' };
+  if (target.group === 'leaderOrCharacters' && target.player === 'controller') return { sel: 'var', name: 't' };
+  if (target.group === 'leaderOrCharacters' && target.player === 'opponent') return { sel: 'var', name: 't' };
+  if (target.group === 'characters') return { sel: 'var', name: 't' };
+
+  throw new Error(`Unsupported target ${JSON.stringify(target)}`);
+}
+
+function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTargets' }>['from'] | null {
+  if ('ref' in target) {
+    if (target.ref === 'battleOpponent') return { sel: 'battleOpponent' };
+    return null;
+  }
+
+  if (target.group === 'leader') return null;
+  if (target.group === 'leaderOrCharacters' && target.player === 'controller') return { sel: 'controllerLeaderOrCharacters', ...target.filter };
+  if (target.group === 'leaderOrCharacters' && target.player === 'opponent') return { sel: 'opponentLeaderOrCharacters' };
+  if (target.group === 'characters' && target.player === 'controller') return { sel: 'controllerCharacters', ...target.filter };
+  if (target.group === 'characters' && target.player === 'opponent') return { sel: 'opponentCharacters', ...target.filter };
+  if (target.group === 'characters' && target.player === 'any') return { sel: 'allCharacters', ...target.filter };
+
+  throw new Error(`Unsupported target choice source ${JSON.stringify(target)}`);
+}
+
+function targetOps(
+  target: TargetSpec,
+  effect: (target: Selector) => EffectOp,
+  options: { optional?: boolean; maxTargets?: number; prompt?: string } = {},
+): EffectOp[] {
+  const from = chooseFromTarget(target);
+  if (!from) return [effect(selectorFromTarget(target))];
+  const max = options.maxTargets ?? 1;
+  return [
+    {
+      op: 'chooseTargets',
+      var: 't',
+      from,
+      min: options.optional ?? true ? 0 : Math.min(1, max),
+      max,
+      prompt: options.prompt ?? `Choose ${options.optional ?? true ? 'up to ' : ''}${max} target${max === 1 ? '' : 's'}.`,
+    },
+    effect(selectorFromTarget(target)),
+  ];
 }
 
 function nonSuspendingBranchOps(functions: SequencedAbilityFunction[]): NonSuspendingEffectOp[] {
@@ -44,6 +80,9 @@ function selectorFromMoveSource(from: MoveCardSource): Extract<EffectOp, { op: '
     case 'hand':
       if (from.player === 'controller') return { sel: 'controllerHand', ...(from.filter ? { filter: from.filter } : {}) };
       break;
+    case 'trash':
+      if (from.player === 'controller') return { sel: 'controllerTrash', ...(from.filter ? { filter: from.filter } : {}) };
+      break;
     case 'characters':
       if (from.player === 'controller') return { sel: 'controllerCharacters', ...from.filter };
       if (from.player === 'opponent') return { sel: 'opponentCharacters', ...from.filter };
@@ -60,6 +99,8 @@ function moveOpForDestination(to: MoveCardDestination, target: Extract<EffectOp,
   if (to.zone === 'life' && (to.player === 'owner' || to.player === 'controller') && to.position === 'top') {
     return { op: 'moveToLifeTop', target, ...(to.faceUp ? { faceUp: true } : {}) };
   }
+  if (to.zone === 'deck' && to.player === 'owner' && to.position === 'bottom') return { op: 'moveToBottomDeck', target };
+  if (to.zone === 'trash' && to.player === 'owner') return { op: 'trashCards', target };
   throw new Error(`Unsupported move destination ${JSON.stringify(to)}`);
 }
 
@@ -137,144 +178,28 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
         { op: 'giveDon', target: { sel: 'var', name: 't' }, count: f.count },
       ];
-    case 'koOpponentCharacter':
-      return [chooseOpponentCharacter(f.fn, f.filter, f.maxTargets), { op: 'ko', target: { sel: 'var', name: 't' } }];
-    case 'restOpponentCharacter':
-      return [chooseOpponentCharacter(f.fn, f.filter, f.maxTargets), { op: 'rest', target: { sel: 'var', name: 't' } }];
-    case 'returnToHand': {
-      const from =
-        f.target === 'any'
-          ? ({ sel: 'allCharacters', maxCost: f.maxCost } as const)
-          : ({ sel: 'opponentCharacters', maxCost: f.maxCost } as const);
-      const promptSubject = f.target === 'any' ? 'Character' : "of your opponent's Characters";
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from,
-          min: 0,
-          max: 1,
-          prompt: `Return up to 1 ${promptSubject} with a cost of ${f.maxCost} or less to the owner's hand (or decline).`,
-        },
-        { op: 'returnToHand', target: { sel: 'var', name: 't' } },
-      ];
-    }
-    case 'moveToBottomDeck': {
-      const filter = { ...(f.maxCost !== undefined ? { maxCost: f.maxCost } : {}), ...(f.maxPower !== undefined ? { maxPower: f.maxPower } : {}) };
-      const from =
-        f.target === 'any'
-          ? ({ sel: 'allCharacters', ...filter } as const)
-          : ({ sel: 'opponentCharacters', ...filter } as const);
-      const promptSubject = f.target === 'any' ? 'Character' : "of your opponent's Characters";
-      const limit = f.maxPower !== undefined ? `with ${f.maxPower} power or less` : `with a cost of ${f.maxCost} or less`;
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from,
-          min: 0,
-          max: 1,
-          prompt: `Place up to 1 ${promptSubject} ${limit} at the bottom of the owner's deck (or decline).`,
-        },
-        { op: 'moveToBottomDeck', target: { sel: 'var', name: 't' } },
-      ];
-    }
-    case 'modifyCostOpponent': {
-      const maxTargets = f.maxTargets ?? 1;
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from: { sel: 'opponentCharacters' },
-          min: 0,
-          max: maxTargets,
-          prompt: `Give up to ${maxTargets} of your opponent's Characters ${f.amount} cost during this turn (or decline).`,
-        },
-        { op: 'addCost', target: { sel: 'var', name: 't' }, amount: f.amount, duration: 'duringThisTurn' },
-      ];
-    }
-    case 'modifyPowerOpponent': {
-      const maxTargets = f.maxTargets ?? 1;
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from: { sel: 'opponentCharacters' },
-          min: 0,
-          max: maxTargets,
-          prompt: `Give up to ${maxTargets} of your opponent's Characters ${f.amount} power during this turn (or decline).`,
-        },
-        { op: 'addPower', target: { sel: 'var', name: 't' }, amount: f.amount, duration: 'duringThisTurn' },
-      ];
-    }
-    case 'addPowerController': {
-      const maxTargets = f.maxTargets ?? 1;
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from: { sel: 'controllerLeaderOrCharacters', ...f.filter },
-          min: 0,
-          max: maxTargets,
-          prompt: `Give up to ${maxTargets} of your Leader or Character cards +${f.amount} power (or decline).`,
-        },
-        { op: 'addPower', target: { sel: 'var', name: 't' }, amount: f.amount, duration: f.duration },
-      ];
-    }
-    case 'addPowerControllerLeader':
-      return [{ op: 'addPower', target: { sel: 'controllerLeader' }, amount: f.amount, duration: f.duration }];
-    case 'addPowerControllerCharacter': {
-      const maxTargets = f.maxTargets ?? 1;
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from: { sel: 'controllerCharacters', ...f.filter },
-          min: 0,
-          max: maxTargets,
-          prompt: `Give up to ${maxTargets} of your Characters +${f.amount} power (or decline).`,
-        },
-        { op: 'addPower', target: { sel: 'var', name: 't' }, amount: f.amount, duration: f.duration },
-      ];
-    }
-    case 'modifyPowerOpponentLeaderOrCharacter': {
-      const maxTargets = f.maxTargets ?? 1;
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from: { sel: 'opponentLeaderOrCharacters' },
-          min: 0,
-          max: maxTargets,
-          prompt: `Give up to ${maxTargets} of your opponent's Leader or Character cards ${f.amount} power (or decline).`,
-        },
-        { op: 'addPower', target: { sel: 'var', name: 't' }, amount: f.amount, duration: f.duration },
-      ];
-    }
-    case 'addKeywordSelf':
-      return [
-        {
-          op: 'addKeyword',
-          target: { sel: 'self' },
-          keyword: f.keyword,
-          duration: f.duration,
-          ...(f.condition ? { condition: f.condition } : {}),
-        },
-      ];
-    case 'addKeywordControllerLeaderOrCharacter': {
-      const maxTargets = f.maxTargets ?? 1;
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from: { sel: 'controllerLeaderOrCharacters', ...f.filter },
-          min: 0,
-          max: maxTargets,
-          prompt: `Give up to ${maxTargets} of your Leader or Character cards ${f.keyword}.`,
-        },
-        { op: 'addKeyword', target: { sel: 'var', name: 't' }, keyword: f.keyword, duration: f.duration },
-      ];
-    }
+    case 'ko':
+      return targetOps(f.target, (target) => ({ op: 'ko', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
+    case 'rest':
+      return targetOps(f.target, (target) => ({ op: 'rest', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
+    case 'addCost':
+      return targetOps(
+        f.target,
+        (target) => ({ op: 'addCost', target, amount: f.amount, duration: f.duration ?? 'duringThisTurn', ...(f.condition ? { condition: f.condition } : {}) }),
+        { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
+      );
+    case 'addPower':
+      return targetOps(
+        f.target,
+        (target) => ({ op: 'addPower', target, amount: f.amount, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }),
+        { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
+      );
+    case 'addKeyword':
+      return targetOps(
+        f.target,
+        (target) => ({ op: 'addKeyword', target, keyword: f.keyword, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }),
+        { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
+      );
     case 'preventBlockers': {
       if (f.target === 'chosenControllerLeaderOrCharacter') {
         return [
@@ -411,20 +336,6 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
       ];
     }
-    case 'moveFromTrashToHand': {
-      const maxTargets = f.maxTargets ?? 1;
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from: { sel: 'controllerTrash', filter: f.filter },
-          min: 0,
-          max: maxTargets,
-          prompt: `Add up to ${maxTargets} matching card${maxTargets === 1 ? '' : 's'} from your trash to your hand.`,
-        },
-        { op: 'moveToHand', target: { sel: 'var', name: 't' } },
-      ];
-    }
     case 'triggerPlaySelf':
       return [{ op: 'playSelf' }];
     case 'searchTopDeck':
@@ -444,15 +355,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
       ];
     case 'addPowerSelf':
-      return [
-        {
-          op: 'addPower',
-          target: { sel: 'self' },
-          amount: f.amount,
-          duration: f.duration,
-          ...(f.condition ? { condition: f.condition } : {}),
-        },
-      ];
+      return targetOps({ ref: 'self' }, (target) => ({ op: 'addPower', target, amount: f.amount, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }));
     case 'restSelf':
       return [{ op: 'rest', target: { sel: 'self' } }];
     case 'setActiveSelf':
@@ -546,15 +449,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           target: { sel: 'allCharacters', ...(f.filter?.maxCost !== undefined ? { maxCost: f.filter.maxCost } : {}), ...(f.filter?.maxPower !== undefined ? { maxPower: f.filter.maxPower } : {}) },
         },
       ];
-    case 'koSelf':
-      return [{ op: 'ko', target: { sel: 'self' } }];
     case 'giveDonControllerLeader':
       return [{ op: 'giveDon', target: { sel: 'controllerLeader' }, count: f.count }];
-    case 'koBattleOpponent':
-      return [
-        { op: 'chooseTargets', var: 't', from: { sel: 'battleOpponent' }, min: 0, max: 1, prompt: "K.O. the opponent's Character you battled with (or decline)." },
-        { op: 'ko', target: { sel: 'var', name: 't' } },
-      ];
   }
   })();
 

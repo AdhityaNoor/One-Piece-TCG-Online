@@ -28,7 +28,7 @@ export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // ST09-002 Uzuki Tempura — [Trigger] Rest up to 1 opponent Character cost <=2 (and add this card
   //   to your hand — the return-to-hand clause is not yet modeled).
-  { cardNumber: 'ST09-002', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'restOpponentCharacter', filter: { maxCost: 2 } }] } },
+  { cardNumber: 'ST09-002', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
 
   // ST09-004 Kaido — [DON!! x1] If you have 2 or less Life, this Character cannot be K.O.'d in battle.
   {
@@ -42,7 +42,7 @@ export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST09-005',
     templates: [
-      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordSelf', keyword: 'doubleAttack', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
       { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'optionalTrashFromHand', count: 2 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, ifPrevious: 'previousMovedAny' }] } },
     ],
   },
@@ -71,14 +71,14 @@ export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // ST09-009 Fugetsu Omusubi — [Trigger] K.O. up to 1 opponent Character cost <=1 (add-to-hand clause omitted).
-  { cardNumber: 'ST09-009', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'koOpponentCharacter', filter: { maxCost: 1 } }] } },
+  { cardNumber: 'ST09-009', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
 
   // ST09-014 (event) Narikabura Arrow — [Counter] If you have 2 or less Life, give up to 1 opponent
   //   Leader/Character −3000 power this turn. [Trigger] You may trash 2: add top of deck to top of Life.
   {
     cardNumber: 'ST09-014',
     templates: [
-      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'modifyPowerOpponentLeaderOrCharacter', amount: -3000, duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 2 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, ifPrevious: 'previousMovedAny' }] } },
     ],
   },

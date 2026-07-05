@@ -56,7 +56,7 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'onPlay',
       functions: [
         { fn: 'peekLifeAndPlace', from: 'controllerOrOpponentTop', placement: 'topOrBottom' },
-        { fn: 'addKeywordSelf', keyword: 'rush', duration: 'duringThisTurn', condition: { gate: [{ kind: 'selfLifeLessThanOpponent' }] } },
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', condition: { gate: [{ kind: 'selfLifeLessThanOpponent' }] } },
       ],
     },
   },
@@ -71,7 +71,7 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [
         { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true },
         { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
-        { fn: 'addKeywordSelf', keyword: 'banish', duration: 'duringThisBattle', ifPrevious: 'previousSelectedAny' },
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'duringThisBattle', ifPrevious: 'previousSelectedAny' },
       ],
     },
   },
@@ -106,7 +106,7 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
       gate: [{ kind: 'selfLife', atLeast: 1 }],
       functions: [
         { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' } },
-        { fn: 'koOpponentCharacter', filter: { maxCost: 3 }, ifPrevious: 'previousMovedAny' },
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true, ifPrevious: 'previousMovedAny' },
       ],
     },
   },
@@ -132,7 +132,7 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'activateMain',
           cost: [{ kind: 'restThis' }],
-          functions: [{ fn: 'addKeywordControllerLeaderOrCharacter', keyword: 'banish', duration: 'duringThisTurn', filter: { name: 'Charlotte Linlin' } }],
+          functions: [{ fn: 'addKeyword', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Charlotte Linlin' } }, keyword: 'banish', duration: 'duringThisTurn', optional: true }],
         },
       },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
@@ -148,7 +148,7 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'activateMain',
           cost: [{ kind: 'restThis' }],
-          functions: [{ fn: 'addKeywordControllerLeaderOrCharacter', keyword: 'doubleAttack', duration: 'duringThisTurn', filter: { name: 'Charlotte Linlin' } }],
+          functions: [{ fn: 'addKeyword', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Charlotte Linlin' } }, keyword: 'doubleAttack', duration: 'duringThisTurn', optional: true }],
         },
       },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
@@ -190,7 +190,7 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
           timing: 'counter',
           functions: [
             { fn: 'peekLifeAndPlace', from: 'controllerOrOpponentTop', placement: 'topOrBottom' },
-            { fn: 'addPowerController', amount: 2000, duration: 'duringThisBattle' },
+            { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true },
           ],
         },
       },
