@@ -72,6 +72,17 @@ export class EffectContextImpl implements EffectContext {
   controllerDeckIds(): string[] {
     return [...this.working.players[this.controllerId].deck.cardIds];
   }
+  controllerLifeTopBottomIds(): string[] {
+    const ids = this.working.players[this.controllerId].lifeArea.cardIds;
+    if (ids.length === 0) return [];
+    const top = ids[0];
+    const bottom = ids[ids.length - 1];
+    return top === bottom ? [top] : [top, bottom];
+  }
+  controllerDeckTopIds(): string[] {
+    const top = this.working.players[this.controllerId].deck.cardIds[0];
+    return top ? [top] : [];
+  }
   powerOf(instanceId: string): number {
     return computeCurrentPower(this.defs, this.working, instanceId);
   }
@@ -445,6 +456,47 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  moveToLifeTop(instanceId: string, faceUp = false): void {
+    const inst = this.working.cardsById[instanceId];
+    if (!inst) return;
+    const owner = this.working.players[inst.ownerId];
+    if (!owner) return;
+    const fromZone = inst.currentZone;
+    const newOwner = {
+      ...owner,
+      hand: removeFromZone(owner.hand, instanceId),
+      deck: removeFromZone(owner.deck, instanceId),
+      trash: removeFromZone(owner.trash, instanceId),
+      characterArea: removeFromZone(owner.characterArea, instanceId),
+      stageArea: removeFromZone(owner.stageArea, instanceId),
+      lifeArea: addToZoneTop(removeFromZone(owner.lifeArea, instanceId), instanceId),
+    };
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [inst.ownerId]: newOwner },
+      cardsById: {
+        ...this.working.cardsById,
+        [instanceId]: {
+          ...inst,
+          currentZone: 'lifeArea',
+          faceState: faceUp ? 'faceUp' : 'faceDown',
+          donAttached: [],
+          summoningSick: false,
+          revealedTo: faceUp ? 'all' : [],
+        },
+      },
+      continuousEffects: this.working.continuousEffects.filter((ce) => ce.sourceInstanceId !== instanceId),
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'CARD_MOVED',
+      message: `${instanceId} was added to the top of its owner's Life cards${faceUp ? ' face-up' : ''}.`,
+      data: { from: fromZone, to: 'lifeArea', position: 'top', faceUp, instanceId },
+      relatedCardInstanceIds: [instanceId],
+      visibility: faceUp ? 'public' : { visibleTo: [inst.ownerId] },
+    });
+  }
+
   playSelf(): void {
     this.playCharacterFromHand(this.sourceInstanceId);
   }
@@ -600,9 +652,11 @@ export class EffectContextImpl implements EffectContext {
     const fromZone = inst.currentZone;
     const newOwner = {
       ...owner,
+      deck: removeFromZone(owner.deck, instanceId),
       trash: removeFromZone(owner.trash, instanceId),
       characterArea: removeFromZone(owner.characterArea, instanceId),
       stageArea: removeFromZone(owner.stageArea, instanceId),
+      lifeArea: removeFromZone(owner.lifeArea, instanceId),
       hand: addToZoneBottom(owner.hand, instanceId),
     };
     this.working = {
@@ -693,6 +747,33 @@ export class EffectContextImpl implements EffectContext {
       message: `${targetInstanceId} was set as active by an effect (2-4-3).`,
       data: { targetInstanceId },
       relatedCardInstanceIds: [targetInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  trashLife(playerId: string, n: number): void {
+    const player = this.working.players[playerId];
+    if (!player || n <= 0) return;
+    const moving = player.lifeArea.cardIds.slice(0, n); // top Life card(s); Life is face-down, so "up to N" is taken as the top N
+    if (moving.length === 0) return;
+    const remainingLife = player.lifeArea.cardIds.slice(moving.length);
+    let trash = player.trash;
+    const cardsById = { ...this.working.cardsById };
+    for (const id of moving) {
+      trash = addToZoneTop(trash, id);
+      cardsById[id] = { ...cardsById[id], currentZone: 'trash', faceState: 'faceUp', revealedTo: 'all' };
+    }
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [playerId]: { ...player, lifeArea: { ...player.lifeArea, cardIds: remainingLife }, trash } },
+      cardsById,
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'CARD_MOVED',
+      message: `Trashed the top ${moving.length} Life card(s) of ${playerId}.`,
+      data: { from: 'lifeArea', to: 'trash', count: moving.length, playerId },
+      relatedCardInstanceIds: moving,
       visibility: 'public',
     });
   }

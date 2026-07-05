@@ -31,6 +31,8 @@ export interface EffectContext {
   controllerHandIds(): string[];
   controllerTrashIds(): string[];
   controllerDeckIds(): string[];
+  controllerLifeTopBottomIds(): string[];
+  controllerDeckTopIds(): string[];
   opponentCharacterIds(): string[];
   opponentHandIds(): string[];
   /** Current power of an instance (2-6, incl. modifiers) — for cost/power-threshold target filters. */
@@ -100,6 +102,8 @@ export interface EffectContext {
   returnToHand(targetInstanceId: string): void;
   /** Move a card to the bottom of its owner's deck, dropping attachments/continuous effects it sourced. */
   moveToBottomDeck(instanceId: string): void;
+  /** Move a card to the top of its owner's Life cards, optionally face-up. */
+  moveToLifeTop(instanceId: string, faceUp?: boolean): void;
   /** Play the source Character itself from hand into the Character Area for free. */
   playSelf(): void;
   /** Play a Character from the controller's hand into the Character Area for free (3-7), summoning-sick; raises the 3-7-6-1 overflow choice if it makes a 6th. */
@@ -118,6 +122,8 @@ export interface EffectContext {
   setActive(targetInstanceId: string): void;
   /** Trash the top `n` cards of a player's own deck (self-mill); fewer if the deck is short. */
   trashTopOfDeck(playerId: string, n: number): void;
+  /** Trash the top `n` Life cards of a player (e.g. opponent Life removal); fewer if Life is short. */
+  trashLife(playerId: string, n: number): void;
   /** Add `n` DON!! from the player's DON!! deck to their cost area, active or rested (DON!! ramp); fewer if the DON!! deck is short. */
   addDonFromDeck(playerId: string, n: number, rested: boolean): void;
   /**

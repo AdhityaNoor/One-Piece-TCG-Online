@@ -154,6 +154,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     case 'controllerLeaderOrCharacters': {
       let ids = [ctx.controllerLeaderId(), ...ctx.controllerCharacterIds()];
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
+      if (sel.name !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name === sel.name);
       if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
       return ids;
     }
@@ -173,6 +174,10 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
       return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === false);
     }
+    case 'controllerLifeTopBottom':
+      return ctx.controllerLifeTopBottomIds();
+    case 'controllerDeckTop':
+      return ctx.controllerDeckTopIds();
     case 'allCharacters': {
       let ids = [...ctx.controllerCharacterIds(), ...ctx.opponentCharacterIds()];
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
@@ -279,6 +284,11 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTo
       for (const id of ids) ctx.moveToBottomDeck(id);
       return { selectedIds: ids, movedIds: ids };
     }
+    case 'moveToLifeTop': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.moveToLifeTop(id, op.faceUp);
+      return { selectedIds: ids, movedIds: ids };
+    }
     case 'playSelf':
       ctx.playSelf();
       return { selectedIds: [ctx.sourceInstanceId], movedIds: [ctx.sourceInstanceId] };
@@ -300,6 +310,11 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTo
     case 'trashTopDeck':
       ctx.trashTopOfDeck(ctx.controllerId, op.count);
       return { selectedIds: [], movedIds: op.count > 0 ? ['__trashTopDeck'] : [] };
+    case 'trashLife': {
+      const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      ctx.trashLife(playerId, op.count);
+      return { selectedIds: [], movedIds: op.count > 0 ? ['__trashLife'] : [] };
+    }
     case 'addDonFromDeck':
       ctx.addDonFromDeck(ctx.controllerId, op.count, op.rested);
       return { selectedIds: [], movedIds: op.count > 0 ? ['__addDonFromDeck'] : [] };

@@ -43,12 +43,16 @@ export type AbilityFunction =
   | { fn: 'addPowerControllerCharacter'; amount: number; duration: IrDuration; filter?: { maxCost?: number; exactCost?: number; color?: Color }; maxTargets?: number }
   | { fn: 'modifyPowerOpponentLeaderOrCharacter'; amount: number; duration: IrDuration; maxTargets?: number }
   | { fn: 'addKeywordSelf'; keyword: ContinuousKeyword; duration: IrDuration; condition?: IrCondition }
+  | { fn: 'addKeywordControllerLeaderOrCharacter'; keyword: ContinuousKeyword; duration: IrDuration; filter?: { name?: string }; maxTargets?: number }
   | { fn: 'preventBlockers'; duration: IrDuration; target?: 'self' | 'chosenControllerLeaderOrCharacter'; filter?: { typeIncludes?: string }; blockerPowerAtLeast?: number }
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
   | { fn: 'trashFromHand'; count: number }
   | { fn: 'optionalTrashFromHand'; count: number }
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
   | { fn: 'trashTopDeck'; count: number }
+  | { fn: 'optionalTakeLifeTopOrBottomToHand' }
+  | { fn: 'addDeckTopToLifeTop' }
+  | { fn: 'optionalAddDeckTopToLifeTop' }
   | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'moveFromTrashToHand'; filter: SearchFilter; maxTargets?: number }
@@ -74,7 +78,9 @@ export type AbilityFunction =
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
   | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
   // Trash exactly `count` cards of a given type from your hand (used to pay a typed hand cost).
-  | { fn: 'trashTypeFromHand'; count: number; filter: { typeIncludes?: string } };
+  | { fn: 'trashTypeFromHand'; count: number; filter: { typeIncludes?: string } }
+  // Trash the top `count` of the opponent's Life cards ("Trash up to N of your opponent's Life cards").
+  | { fn: 'trashOpponentLife'; count: number };
 
 export type SequencedAbilityFunction = AbilityFunction & {
   /** Gate this function on the prior function result, for "if you do" wording. */

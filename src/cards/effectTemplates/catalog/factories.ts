@@ -171,6 +171,20 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           ...(f.condition ? { condition: f.condition } : {}),
         },
       ];
+    case 'addKeywordControllerLeaderOrCharacter': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerLeaderOrCharacters', ...f.filter },
+          min: 0,
+          max: maxTargets,
+          prompt: `Give up to ${maxTargets} of your Leader or Character cards ${f.keyword}.`,
+        },
+        { op: 'addKeyword', target: { sel: 'var', name: 't' }, keyword: f.keyword, duration: f.duration },
+      ];
+    }
     case 'preventBlockers': {
       if (f.target === 'chosenControllerLeaderOrCharacter') {
         return [
@@ -263,6 +277,32 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'trashTopDeck':
       return [{ op: 'trashTopDeck', count: f.count }];
+    case 'optionalTakeLifeTopOrBottomToHand':
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerLifeTopBottom' },
+          min: 0,
+          max: 1,
+          prompt: 'You may add 1 card from the top or bottom of your Life cards to your hand.',
+        },
+        { op: 'moveToHand', target: { sel: 'var', name: 't' } },
+      ];
+    case 'addDeckTopToLifeTop':
+      return [{ op: 'moveToLifeTop', target: { sel: 'controllerDeckTop' } }];
+    case 'optionalAddDeckTopToLifeTop':
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerDeckTop' },
+          min: 0,
+          max: 1,
+          prompt: 'You may add the top card of your deck to the top of your Life cards.',
+        },
+        { op: 'moveToLifeTop', target: { sel: 'var', name: 't' } },
+      ];
     case 'playFromHand': {
       const maxTargets = f.maxTargets ?? 1;
       return [
@@ -415,6 +455,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'koImmunityChosen':
       return [{ op: 'addKoImmunity', target: { sel: 'var', name: 't' }, scope: f.scope, duration: f.duration }];
+    case 'trashOpponentLife':
+      return [{ op: 'trashLife', player: 'opponent', count: f.count }];
   }
   })();
 
