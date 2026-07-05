@@ -39,7 +39,7 @@ import { addToZoneTop, removeFromZone } from '../shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { computeCurrentPower } from '../shared/power';
 import { getOpponentId } from '../shared/players';
-import { fireOnKO, type EffectTemplateRegistry } from '../../effects';
+import { fireOnKO, fireOnBattle, type EffectTemplateRegistry } from '../../effects';
 
 export interface DamageStepResult {
   state: GameState;
@@ -68,6 +68,10 @@ export function resolveDamageAndEndOfBattle(
   const attackerPower = computeCurrentPower(defs, state, attackerId);
   const targetPower = computeCurrentPower(defs, state, targetId);
   const attackerDef = getDefinition(defs, state.cardsById[attackerId]);
+  // "battles an opponent Character" (for [On Battle], 8-1-3): true when the final
+  // target is a Character, regardless of the battle's outcome. Captured before any
+  // KO mutation moves the target to the trash.
+  const targetWasCharacter = state.cardsById[targetId]?.currentZone === 'characterArea';
 
   logger.push({
     actorPlayerId: attackerPlayerId,
@@ -219,6 +223,18 @@ export function resolveDamageAndEndOfBattle(
     });
   }
 
+  // [On Battle] (8-1-3): the attacker's ability fires when it battled a Character,
+  // win or lose (e.g. ST02-010 sets itself active). No-op without a curated onBattle
+  // ability; once-per-turn is enforced inside fireOnBattle.
+  let onBattleLog: GameLogEntry[] = [];
+  let onBattlePending: PendingChoice[] = [];
+  if (targetWasCharacter && !nextState.gameOver) {
+    const ob = fireOnBattle(nextState, attackerId, registry, defs, causedByActionId);
+    nextState = ob.state;
+    onBattleLog = ob.log;
+    onBattlePending = ob.pendingChoices;
+  }
+
   if (!nextState.gameOver) {
     logger.push({
       actorPlayerId: attackerPlayerId,
@@ -238,8 +254,8 @@ export function resolveDamageAndEndOfBattle(
     ...nextState,
     currentBattle: null,
     continuousEffects: nextState.continuousEffects.filter((ce) => ce.duration !== 'duringThisBattle'),
-    log: [...state.log, ...logger.log, ...koLog],
+    log: [...state.log, ...logger.log, ...koLog, ...onBattleLog],
   };
 
-  return { state: { ...nextState, pendingChoices: [...nextState.pendingChoices, ...triggerPending] }, log: [...logger.log, ...koLog], pendingChoices: [...koPending, ...triggerPending] };
+  return { state: { ...nextState, pendingChoices: [...nextState.pendingChoices, ...triggerPending] }, log: [...logger.log, ...koLog, ...onBattleLog], pendingChoices: [...koPending, ...triggerPending, ...onBattlePending] };
 }

@@ -4,7 +4,7 @@
  * standard ActionExecuteResult via finish(). Each primitive mirrors the
  * canonical engine implementation so behavior can't drift.
  */
-import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousKeyword, ContinuousPowerCondition, GameState } from '../state/game';
+import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousKeyword, ContinuousPowerCondition, GameState, PowerAuraGroup, SourceStateCondition } from '../state/game';
 import type { CardDefinition, CardInstance } from '../state/card';
 import type { PendingChoice } from '../events/pendingChoice';
 import { mintRuntimeInstanceId } from '../rules/shared/mintInstance';
@@ -147,6 +147,36 @@ export class EffectContextImpl implements EffectContext {
       message: `${record.description} applied to ${spec.appliesToInstanceId}.`,
       data: { continuousEffectId: record.id, amount: spec.amount, duration: spec.duration },
       relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  addContinuousPowerAura(spec: {
+    group: PowerAuraGroup;
+    amount: number;
+    duration: ContinuousEffectDuration;
+    sourceCondition?: SourceStateCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? `aura power ${spec.amount >= 0 ? '+' : ''}${spec.amount}`,
+      powerModifier: {
+        appliesToGroup: spec.group,
+        amount: spec.amount,
+        ...(spec.sourceCondition ? { sourceCondition: spec.sourceCondition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to a group.`,
+      data: { continuousEffectId: record.id, amount: spec.amount, duration: spec.duration },
+      relatedCardInstanceIds: [],
       visibility: 'public',
     });
   }
@@ -491,8 +521,15 @@ export class EffectContextImpl implements EffectContext {
 
   rest(targetInstanceId: string): void {
     const inst = this.working.cardsById[targetInstanceId];
-    if (!inst || inst.orientation === 'rested') return;
-    this.working = { ...this.working, cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, orientation: 'rested' } } };
+    if (!inst) return;
+    const isDon = inst.orientation === null; // DON!! track state via donRested, not orientation
+    if (isDon) {
+      if (inst.donRested === true) return;
+      this.working = { ...this.working, cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, donRested: true } } };
+    } else {
+      if (inst.orientation === 'rested') return;
+      this.working = { ...this.working, cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, orientation: 'rested' } } };
+    }
     this.logger.push({
       actorPlayerId: this.controllerId,
       type: 'EFFECT_RESOLVED',

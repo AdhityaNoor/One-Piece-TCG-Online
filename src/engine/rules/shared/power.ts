@@ -10,9 +10,48 @@
  * every read, so a conditional buff turns on/off as DON!! attaches or the turn
  * flips, with no extra bookkeeping. Cost modifiers use the same record model.
  */
-import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousPowerCondition, GameState } from '../../state/game';
+import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousPowerCondition, GameState, PowerAuraGroup, SourceStateCondition } from '../../state/game';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
+
+/** True if any of `types` (possibly slash/comma-joined tribal strings) includes `required` (case-insensitive substring). */
+function typeIncludes(types: string[], required: string): boolean {
+  const needle = required.toLowerCase();
+  return types.some((t) =>
+    t
+      .split(/[\/,]+/)
+      .map((p) => p.trim().toLowerCase())
+      .some((p) => p.includes(needle)),
+  );
+}
+
+/** True if `instanceId` is in the aura's dynamic target set (owner's Leader/Characters, optionally type-filtered). */
+function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
+  const target = state.cardsById[instanceId];
+  if (!target) return false;
+  if (target.controllerId !== record.ownerId) return false;
+  if (target.currentZone !== 'leaderArea' && target.currentZone !== 'characterArea') return false;
+  if (group.anyOfTypes !== undefined) {
+    const def = getDefinition(defs, target);
+    if (!group.anyOfTypes.some((t) => typeIncludes(def.types, t))) return false;
+  }
+  return true;
+}
+
+/** Gate evaluated against the modifier's SOURCE card, re-checked on every read. */
+function sourceConditionApplies(cond: SourceStateCondition | undefined, record: ContinuousEffectRecord, state: GameState): boolean {
+  if (!cond) return true;
+  const src = state.cardsById[record.sourceInstanceId];
+  if (!src) return false;
+  if (cond.rested !== undefined && (src.orientation === 'rested') !== cond.rested) return false;
+  if (cond.donAttachedAtLeast !== undefined && src.donAttached.length < cond.donAttachedAtLeast) return false;
+  if (cond.turn !== undefined) {
+    const isOwnersTurn = state.activePlayerId === src.ownerId;
+    if (cond.turn === 'your' && !isOwnersTurn) return false;
+    if (cond.turn === 'opponent' && isOwnersTurn) return false;
+  }
+  return true;
+}
 
 function conditionApplies(cond: ContinuousPowerCondition | undefined, record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
   if (!cond) return true;
@@ -30,8 +69,17 @@ function conditionApplies(cond: ContinuousPowerCondition | undefined, record: Co
 
 function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
   const mod = record.powerModifier;
-  if (!mod || mod.appliesToInstanceId !== instanceId) return false;
-  return conditionApplies(mod.condition, record, state, instanceId, defs);
+  if (!mod) return false;
+  // Target selection: a single fixed instance, or a dynamic aura group.
+  if (mod.appliesToInstanceId !== undefined) {
+    if (mod.appliesToInstanceId !== instanceId) return false;
+  } else if (mod.appliesToGroup !== undefined) {
+    if (!targetInAuraGroup(mod.appliesToGroup, record, state, instanceId, defs)) return false;
+  } else {
+    return false;
+  }
+  // Target-side gate (existing semantics) AND source-side gate (auras / source-state).
+  return conditionApplies(mod.condition, record, state, instanceId, defs) && sourceConditionApplies(mod.sourceCondition, record, state);
 }
 
 function costModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {

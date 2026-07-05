@@ -10,7 +10,7 @@
  * Card behavior is DATA (EffectProgram, see effectIr.ts), never code; nothing
  * here is per-card.
  */
-import type { ContinuousEffectDuration, ContinuousKeyword, ContinuousPowerCondition, GameState } from '../state/game';
+import type { ContinuousEffectDuration, ContinuousKeyword, ContinuousPowerCondition, GameState, PowerAuraGroup, SourceStateCondition } from '../state/game';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinition } from '../state/card';
 import type { EffectProgram, SearchPickDestination, SearchRemainderDestination } from './effectIr';
@@ -49,6 +49,14 @@ export interface EffectContext {
     amount: number;
     duration: ContinuousEffectDuration;
     condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void;
+  /** Register an aura power modifier over a dynamic target group (8-1-3-3), optionally gated on source state; both re-checked on every read. */
+  addContinuousPowerAura(spec: {
+    group: PowerAuraGroup;
+    amount: number;
+    duration: ContinuousEffectDuration;
+    sourceCondition?: SourceStateCondition;
     description?: string;
   }): void;
   /** Register a continuous cost modifier (8-1-3-3); condition re-checked on every read. */
@@ -90,7 +98,7 @@ export interface EffectContext {
   moveToHand(instanceId: string): void;
   /** Move a card (e.g. from the hand) to its owner's trash. */
   trashCard(instanceId: string): void;
-  /** Rest a card (4-4-1). */
+  /** Rest a card (4-4-1). Handles Leader/Character (orientation) and DON!! (donRested). */
   rest(targetInstanceId: string): void;
   /** Set a card as active — inverse of rest (2-4-3). Handles Leader/Character (orientation) and DON!! (donRested). */
   setActive(targetInstanceId: string): void;

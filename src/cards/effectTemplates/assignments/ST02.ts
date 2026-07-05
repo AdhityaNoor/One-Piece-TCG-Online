@@ -4,25 +4,20 @@
  * Set-first coverage. Card texts are reference only; behavior is composed from
  * reviewed template functions -> IR ops. Raw text never executes.
  *
- * NEW capability introduced for this set: `setActive` op (inverse of `rest`),
- * exposed via setActiveSelf / setActiveControllerCharacter / setActiveControllerDon.
+ * NEW capabilities introduced for this set:
+ *   - `setActive` op (inverse of `rest`) — setActiveSelf / setActiveControllerCharacter
+ *     / setActiveControllerDon.
+ *   - `rest` now also rests DON!!; `restOpponentDon` template (ST02-008 DON!! denial).
+ *   - `onBattle` timing — fires when the source attacks and battles an opponent
+ *     Character (ST02-010). Enforces [Once Per Turn] in fireOnBattle.
+ *   - `endOfTurn` timing — fires in the source controller's End Phase (ST02-013).
+ *   - `addPowerAura` op — dynamic filtered anthem gated on source state
+ *     (addPowerAuraControllerTypes) for X.Drake's lord effect (ST02-014).
  * Everything else here is parameterization of existing templates.
- *
- * DEFERRED (needs engine capability not yet present — tracked in effect-coverage.csv):
- *   ST02-008 Scratchmen Apoo — "Rest 1 of your opponent's DON!! cards": no
- *            opponent-DON rest capability yet (rest op targets Leaders/Characters;
- *            DON!! rest is a distinct mechanic). NEW family: opponent DON!! denial.
- *   ST02-010 Basil Hawkins — "If this Character battles ... set this card active":
- *            needs an on-battle effect-timing window (no 'onBattle' timing). NEW timing.
- *   ST02-013 Eustass Kid (char) — [Blocker] (card data) + "[End of Your Turn] Set this
- *            card as active": setActive is ready, but there is no 'endOfТurn' timing yet. NEW timing.
- *   ST02-014 X.Drake — "[Your Turn] If this Character is rested, your {Supernovas}/{Navy}
- *            Leaders and Characters gain +1000": a dynamic filtered aura gated on the
- *            SOURCE's rested state. NEW architecture (continuous effect over a dynamic
- *            group + source-state condition).
  *
  * Vanilla / keyword-only (no runtime program needed): ST02-002 Vito, ST02-004 Capone
  *   Bege ([Blocker] = card data), ST02-006 Koby, ST02-011 Heat, ST02-012 Bepo.
+ * ST02-013's [Blocker] is also card data; only its [End of Your Turn] ability is here.
  */
 import type { CardEffectAssignment } from '../assembler';
 
@@ -110,5 +105,39 @@ export const ST02_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'restOpponentCharacter', filter: {}, maxTargets: 1 }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { typeIncludes: 'Supernovas', maxCost: 2 } }] } },
     ],
+  },
+
+  // ST02-008 Scratchmen Apoo — [DON!! x1] [When Attacking] Rest up to 1 of your opponent's DON!! cards.
+  {
+    cardNumber: 'ST02-008',
+    templateId: 'ability',
+    params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'restOpponentDon', maxTargets: 1 }] },
+  },
+
+  // ST02-010 Basil Hawkins — [DON!! x1] [Once Per Turn] [Your Turn] If this Character battles
+  //   your opponent's Character, set this card as active.
+  {
+    cardNumber: 'ST02-010',
+    templateId: 'ability',
+    params: { timing: 'onBattle', oncePerTurn: true, condition: { donAttachedAtLeast: 1, turn: 'your' }, functions: [{ fn: 'setActiveSelf' }] },
+  },
+
+  // ST02-013 Eustass"Captain"Kid (character) — [Blocker] (card data) +
+  //   [DON!! x1] [End of Your Turn] Set this card as active.
+  {
+    cardNumber: 'ST02-013',
+    templateId: 'ability',
+    params: { timing: 'endOfTurn', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'setActiveSelf' }] },
+  },
+
+  // ST02-014 X.Drake — [DON!! x1] [Your Turn] If this Character is rested, your {Supernovas}
+  //   or {Navy} type Leaders and Characters gain +1000 power. (Dynamic anthem gated on source state.)
+  {
+    cardNumber: 'ST02-014',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{ fn: 'addPowerAuraControllerTypes', amount: 1000, duration: 'permanent', anyOfTypes: ['Supernovas', 'Navy'], sourceCondition: { rested: true, donAttachedAtLeast: 1, turn: 'your' } }],
+    },
   },
 ];

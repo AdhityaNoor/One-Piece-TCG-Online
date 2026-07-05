@@ -19,7 +19,7 @@ import type {
   SearchRemainderDestination,
   SequenceCondition,
 } from '../../../engine/effects/effectIr';
-import type { ContinuousKeyword } from '../../../engine/state/game';
+import type { ContinuousKeyword, SourceStateCondition } from '../../../engine/state/game';
 import type { Color } from '../../../engine/state/card';
 
 export const TEMPLATE_IDS = {
@@ -54,7 +54,12 @@ export type AbilityFunction =
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }
   | { fn: 'setActiveControllerCharacter'; filter?: { maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }; maxTargets?: number }
-  | { fn: 'setActiveControllerDon'; maxTargets: number };
+  | { fn: 'setActiveControllerDon'; maxTargets: number }
+  // Rest up to N of the opponent's active DON!! cards (DON!! denial).
+  | { fn: 'restOpponentDon'; maxTargets?: number }
+  // Aura: give the controller's own Leader + Characters (optionally type-filtered)
+  // a flat power delta, optionally gated on the source card's own state.
+  | { fn: 'addPowerAuraControllerTypes'; amount: number; duration: IrDuration; anyOfTypes?: string[]; sourceCondition?: SourceStateCondition };
 
 export type SequencedAbilityFunction = AbilityFunction & {
   /** Gate this function on the prior function result, for "if you do" wording. */

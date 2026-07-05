@@ -10,7 +10,7 @@
  * EffectContext primitives. Grow the vocabulary (new ops) rather than adding
  * bespoke card logic.
  */
-import type { ContinuousEffectDuration, ContinuousKeyword, ContinuousPowerCondition } from '../state/game';
+import type { ContinuousEffectDuration, ContinuousKeyword, ContinuousPowerCondition, PowerAuraGroup, SourceStateCondition } from '../state/game';
 import type { CardCategory, Color } from '../state/card';
 
 /** Resolves to a set of CardInstance ids at run time. Pure data. */
@@ -21,6 +21,7 @@ export type Selector =
   | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; excludeSelf?: boolean }
   | { sel: 'opponentLeaderOrCharacters' }
   | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
+  | { sel: 'opponentActiveDon' } // the opponent's active, un-attached DON!! in the cost area (rest targets)
   | { sel: 'allCharacters'; maxCost?: number; maxPower?: number } // any player's Characters
   | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean } // optional cost/power/rested/blocker filters
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
@@ -78,6 +79,9 @@ export interface EffectOpSequenceGate {
 export type EffectOp =
   | ({ op: 'draw'; amount: number } & EffectOpSequenceGate)
   | ({ op: 'addPower'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
+  // Register an "aura"/anthem power modifier over a dynamic target group (e.g. "your
+  // {Supernovas} Leaders and Characters gain +1000"), optionally gated on source state.
+  | ({ op: 'addPowerAura'; group: PowerAuraGroup; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition } & EffectOpSequenceGate)
   | ({ op: 'addCost'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
   | ({ op: 'addKeyword'; target: Selector; keyword: ContinuousKeyword; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
   | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
@@ -102,8 +106,13 @@ export type EffectOp =
   // Add `count` DON!! from the DON!! deck to the cost area, active or rested (DON!! ramp).
   | ({ op: 'addDonFromDeck'; count: number; rested: boolean } & EffectOpSequenceGate);
 
-/** When the ability is exposed/fires (mirrors EffectTimingKeyword). */
-export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'activateMain' | 'onKO' | 'counter' | 'lifeTrigger';
+/**
+ * When the ability is exposed/fires (mirrors EffectTimingKeyword).
+ *   onBattle    — [When this Character battles ...]: fires when the source is the
+ *                 attacker and the battle's target is an opponent Character.
+ *   endOfTurn   — [End of Your Turn]: fires during the source controller's End Phase.
+ */
+export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'onBattle' | 'activateMain' | 'onKO' | 'counter' | 'lifeTrigger' | 'endOfTurn';
 
 /**
  * An activation cost that must be PAID before an activated ability resolves

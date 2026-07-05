@@ -293,6 +293,30 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
         { op: 'setActive', target: { sel: 'var', name: 't' } },
       ];
+    case 'restOpponentDon': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'opponentActiveDon' },
+          min: 0,
+          max: maxTargets,
+          prompt: `Rest up to ${maxTargets} of your opponent's DON!! cards (or decline).`,
+        },
+        { op: 'rest', target: { sel: 'var', name: 't' } },
+      ];
+    }
+    case 'addPowerAuraControllerTypes':
+      return [
+        {
+          op: 'addPowerAura',
+          group: { ownLeaderAndCharacters: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) },
+          amount: f.amount,
+          duration: f.duration,
+          ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+        },
+      ];
   }
   })();
 

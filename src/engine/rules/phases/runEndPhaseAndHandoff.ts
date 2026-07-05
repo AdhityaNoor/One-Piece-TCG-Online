@@ -17,18 +17,25 @@
  */
 import type { GameState } from '../../state/game';
 import { createActionLogger } from '../shared/actionLogger';
+import type { CardDefinitionLookup } from '../shared/definitions';
+import { fireEndOfTurn, type EffectTemplateRegistry } from '../../effects';
 import type { PhaseStepResult } from './phaseStepResult';
 
-export function runEndPhaseAndHandoff(state: GameState): PhaseStepResult {
+export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLookup = {}, registry: EffectTemplateRegistry = {}): PhaseStepResult {
   const endingPlayerId = state.activePlayerId;
   const nextPlayerId = Object.keys(state.players).find((id) => id !== endingPlayerId);
   if (!nextPlayerId) {
     throw new Error('runEndPhaseAndHandoff: expected exactly two players.');
   }
 
-  const logger = createActionLogger(state, null);
+  // [End of Your Turn] triggers (10-2-x) fire before "until end of turn" effects
+  // expire and before the turn passes, with each of the ending player's cards as source.
+  const eot = fireEndOfTurn(state, endingPlayerId, registry, defs, null);
+  const working = eot.state;
 
-  const continuousEffects = state.continuousEffects.filter(
+  const logger = createActionLogger(working, null);
+
+  const continuousEffects = working.continuousEffects.filter(
     (effect) => effect.duration !== 'endOfTurn' && effect.duration !== 'duringThisTurn',
   );
 
@@ -44,21 +51,21 @@ export function runEndPhaseAndHandoff(state: GameState): PhaseStepResult {
   logger.push({
     actorPlayerId: nextPlayerId,
     type: 'TURN_PASSED',
-    message: `Turn passes to ${nextPlayerId} (turn ${state.turnNumber + 1}).`,
-    data: { turnNumber: state.turnNumber + 1, previousPlayerId: endingPlayerId },
+    message: `Turn passes to ${nextPlayerId} (turn ${working.turnNumber + 1}).`,
+    data: { turnNumber: working.turnNumber + 1, previousPlayerId: endingPlayerId },
     relatedCardInstanceIds: [],
     visibility: 'public',
   });
 
   const nextState: GameState = {
-    ...state,
+    ...working,
     continuousEffects,
-    turnNumber: state.turnNumber + 1,
+    turnNumber: working.turnNumber + 1,
     activePlayerId: nextPlayerId,
     isFirstTurnOfGame: false,
     currentPhase: 'refresh',
-    log: [...state.log, ...logger.log],
+    log: [...working.log, ...logger.log],
   };
 
-  return { state: nextState, log: logger.log };
+  return { state: nextState, log: [...eot.log, ...logger.log] };
 }

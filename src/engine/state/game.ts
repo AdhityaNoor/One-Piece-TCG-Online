@@ -97,13 +97,45 @@ export interface ContinuousPowerCondition {
   gate?: AbilityGate[];
 }
 
-/** A structured power delta applied to one instance, evaluated by computeCurrentPower. */
+/**
+ * A dynamic target group for an "aura"/anthem power modifier (e.g. "your
+ * {Supernovas}/{Navy} Leaders and Characters gain +1000"). Unlike a single-target
+ * modifier, the affected set is resolved at read time, so cards entering play
+ * later are covered automatically. Evaluated by computeCurrentPower.
+ */
+export interface PowerAuraGroup {
+  /** The modifier owner's own Leader + Characters. */
+  ownLeaderAndCharacters: true;
+  /** Restrict to cards carrying any of these tribal types (OR). Omitted = all. */
+  anyOfTypes?: string[];
+}
+
+/**
+ * A gate evaluated against the modifier's SOURCE card (not the buffed card),
+ * re-checked on every read. Used by auras whose activation depends on the
+ * source's own state, e.g. X.Drake "[Your Turn] If this Character is rested".
+ */
+export interface SourceStateCondition {
+  /** Source must be rested / active. */
+  rested?: boolean;
+  /** Source has >= N DON!! attached ([DON!! xN]). */
+  donAttachedAtLeast?: number;
+  /** [Your Turn]/[Opponent's Turn] relative to the source's owner. */
+  turn?: 'your' | 'opponent';
+}
+
+/** A structured power delta, evaluated by computeCurrentPower. */
 export interface ContinuousPowerModifier {
-  appliesToInstanceId: string;
+  /** Single fixed target. Exactly one of appliesToInstanceId / appliesToGroup is set. */
+  appliesToInstanceId?: string;
+  /** Dynamic aura target set, resolved at read time. */
+  appliesToGroup?: PowerAuraGroup;
   /** Signed power delta (can be negative, e.g. "−2000 power"; 1-3-6-1 allows negative power). */
   amount: number;
-  /** Omitted when the modifier is unconditional. */
+  /** Gate evaluated against the buffed (modified) card. Omitted when unconditional. */
   condition?: ContinuousPowerCondition;
+  /** Gate evaluated against the SOURCE card. Omitted when the modifier does not depend on source state. */
+  sourceCondition?: SourceStateCondition;
 }
 
 export interface ContinuousCostModifier {

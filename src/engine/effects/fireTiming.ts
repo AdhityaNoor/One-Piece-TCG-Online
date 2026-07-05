@@ -8,10 +8,36 @@ import type { GameState } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { runTimings, resumeProgram } from './interpreter';
+import { evaluateGates } from './gates';
+import type { Ability } from './effectIr';
 import type { EffectTemplateRegistry } from './effectTemplate';
+
+/** Per-instance once-per-turn key for a triggered [On Battle] ability. Cleared in the Refresh Phase. */
+const ON_BATTLE_OPT_KEY = 'onBattle';
 
 function noop(state: GameState): ActionExecuteResult {
   return { state, log: [], pendingChoices: [] };
+}
+
+/**
+ * Whether a triggered ability's [DON!! xN] / [Your Turn] / "If <board state>"
+ * gate holds right now, evaluated against `source`. Mirrors the interpreter's
+ * own condition/gate checks so once-per-turn is only consumed when the ability
+ * would actually resolve.
+ */
+function triggeredAbilityWouldFire(ability: Ability, source: { donAttached: string[]; ownerId: string; controllerId: string }, state: GameState, defs: CardDefinitionLookup): boolean {
+  const c = ability.condition;
+  if (c) {
+    if (c.donAttachedAtLeast !== undefined && source.donAttached.length < c.donAttachedAtLeast) return false;
+    if (c.turn !== undefined) {
+      const isOwnersTurn = state.activePlayerId === source.ownerId;
+      if (c.turn === 'your' && !isOwnersTurn) return false;
+      if (c.turn === 'opponent' && isOwnersTurn) return false;
+    }
+    if (c.gate && !evaluateGates(c.gate, state, defs, source.controllerId)) return false;
+  }
+  if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, source.controllerId)) return false;
+  return true;
 }
 
 /**
@@ -120,6 +146,74 @@ export function fireLifeTrigger(
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
   return runTimings(program, ['lifeTrigger'], state, instanceId, defs, actionId, registry);
+}
+
+/**
+ * Fires a card's [When this Character battles ...] ability (timing 'onBattle').
+ * Call from the Damage Step with the ATTACKER as source, only when the battle's
+ * target is an opponent Character. Enforces [Once Per Turn] (10-2-13) itself,
+ * since this is a triggered ability (no ACTIVATE handler to track it).
+ */
+export function fireOnBattle(
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const instance = state.cardsById[instanceId];
+  if (!instance) return noop(state);
+  const program = registry[instance.cardDefinitionId];
+  if (!program) return noop(state);
+  const ability = program.abilities.find((a) => a.timing === 'onBattle');
+  if (!ability) return noop(state);
+  // Gate + once-per-turn are checked here so the flag is only consumed on a real fire.
+  if (!triggeredAbilityWouldFire(ability, instance, state, defs)) return noop(state);
+  if (ability.oncePerTurn && instance.oncePerTurnUsed.includes(ON_BATTLE_OPT_KEY)) return noop(state);
+
+  const result = runTimings(program, ['onBattle'], state, instanceId, defs, actionId, registry);
+  if (!ability.oncePerTurn) return result;
+  const fired = result.state.cardsById[instanceId];
+  if (!fired) return result;
+  return {
+    ...result,
+    state: { ...result.state, cardsById: { ...result.state.cardsById, [instanceId]: { ...fired, oncePerTurnUsed: [...fired.oncePerTurnUsed, ON_BATTLE_OPT_KEY] } } },
+  };
+}
+
+/**
+ * Fires every [End of Your Turn] ability (timing 'endOfTurn') for the cards
+ * `playerId` controls, in board order, during their End Phase.
+ *
+ * KNOWN LIMITATION: the automatic phase cascade cannot pause for input, so an
+ * end-of-turn effect that emits a PendingChoice is left on state.pendingChoices
+ * but not interactively resolved mid-handoff. No current card needs a choice
+ * here (ST02-013 is a no-choice self set-active).
+ */
+export function fireEndOfTurn(
+  state: GameState,
+  playerId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const player = state.players[playerId];
+  if (!player) return noop(state);
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  let pendingChoices: ActionExecuteResult['pendingChoices'] = [];
+  const ids = [player.leaderInstanceId, ...player.characterArea.cardIds, ...player.stageArea.cardIds];
+  for (const id of ids) {
+    const inst = working.cardsById[id];
+    if (!inst) continue;
+    const program = registry[inst.cardDefinitionId];
+    if (!program || !program.abilities.some((a) => a.timing === 'endOfTurn')) continue;
+    const res = runTimings(program, ['endOfTurn'], working, id, defs, actionId, registry);
+    working = res.state;
+    log = [...log, ...res.log];
+    pendingChoices = [...pendingChoices, ...res.pendingChoices];
+  }
+  return { state: working, log, pendingChoices };
 }
 
 /**

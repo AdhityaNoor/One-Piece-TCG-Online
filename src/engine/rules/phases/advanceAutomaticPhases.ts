@@ -10,6 +10,8 @@
  */
 import type { GameState } from '../../state/game';
 import type { GameLogEntry } from '../../logs/logEntry';
+import type { CardDefinitionLookup } from '../shared/definitions';
+import type { EffectTemplateRegistry } from '../../effects';
 import { runRefreshPhase } from './runRefreshPhase';
 import { runDrawPhase } from './runDrawPhase';
 import { runDonPhase } from './runDonPhase';
@@ -20,7 +22,7 @@ export interface AdvanceAutomaticPhasesResult {
   log: GameLogEntry[];
 }
 
-export function advanceAutomaticPhases(state: GameState): AdvanceAutomaticPhasesResult {
+export function advanceAutomaticPhases(state: GameState, defs: CardDefinitionLookup = {}, registry: EffectTemplateRegistry = {}): AdvanceAutomaticPhasesResult {
   let current = state;
   const log: GameLogEntry[] = [];
 
@@ -53,7 +55,7 @@ export function advanceAutomaticPhases(state: GameState): AdvanceAutomaticPhases
         break;
       }
       case 'end': {
-        const result = runEndPhaseAndHandoff(current);
+        const result = runEndPhaseAndHandoff(current, defs, registry);
         current = result.state;
         log.push(...result.log);
         break;

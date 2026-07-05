@@ -217,7 +217,7 @@ export function executeAction(
     }
   }
 
-  const cascade = advanceAutomaticPhases(result.state);
+  const cascade = advanceAutomaticPhases(result.state, defs, registry);
   return {
     state: cascade.state,
     log: [...result.log, ...cascade.log],

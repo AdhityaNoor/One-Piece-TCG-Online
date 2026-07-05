@@ -166,6 +166,13 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
       return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === true);
     }
+    case 'opponentActiveDon': {
+      const state = ctx.state();
+      const player = state.players[ctx.opponentId];
+      const attached = new Set<string>();
+      for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
+      return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === false);
+    }
     case 'allCharacters': {
       let ids = [...ctx.controllerCharacterIds(), ...ctx.opponentCharacterIds()];
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
@@ -200,6 +207,10 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTo
         ctx.addContinuousPower({ appliesToInstanceId: id, amount: op.amount, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
       }
       return { selectedIds: ids, movedIds: [] };
+    }
+    case 'addPowerAura': {
+      ctx.addContinuousPowerAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}) });
+      return { selectedIds: [], movedIds: [] };
     }
     case 'addCost': {
       const ids = resolveSelector(op.target, ctx, bindings);
