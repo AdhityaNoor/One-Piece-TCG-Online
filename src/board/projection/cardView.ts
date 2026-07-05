@@ -19,6 +19,8 @@ export interface CardView {
   cardNumber: string;
   colors: Color[];
   text: string;
+  /** The card's [Trigger] text if it has one (from the definition), else null. */
+  triggerText: string | null;
   imageUrl: string | null;
   /** Leader/Character only; null for Event/Stage/DON!!. */
   power: number | null;
@@ -47,6 +49,7 @@ export interface CardView {
   hasBlocker: boolean;
   hasRush: boolean;
   hasDoubleAttack: boolean;
+  hasBanish: boolean;
   isUnblockable: boolean;
   hasTrigger: boolean;
   /** True if defs lookup was missing this card's definition — display fallback, never thrown (UI must stay resilient; see definitions.ts which DOES throw for the engine). */
@@ -71,6 +74,7 @@ export function buildCardView(
       cardNumber: '???',
       colors: [],
       text: '',
+      triggerText: null,
       imageUrl: null,
       power: null,
       basePower: null,
@@ -89,6 +93,7 @@ export function buildCardView(
       hasBlocker: false,
       hasRush: false,
       hasDoubleAttack: false,
+      hasBanish: false,
       isUnblockable: false,
       hasTrigger: false,
       isUnknownDefinition: true,
@@ -111,6 +116,7 @@ export function buildCardView(
     cardNumber: def.cardNumber,
     colors: def.colors,
     text: def.text,
+    triggerText: def.triggerText ?? null,
     imageUrl: images[instance.cardDefinitionId] ?? null,
     power,
     basePower,
@@ -129,6 +135,7 @@ export function buildCardView(
     hasBlocker: def.hasBlocker,
     hasRush: def.hasRush,
     hasDoubleAttack: def.hasDoubleAttack,
+    hasBanish: def.hasBanish ?? false,
     isUnblockable: def.isUnblockable,
     hasTrigger: def.hasTrigger,
     isUnknownDefinition: false,

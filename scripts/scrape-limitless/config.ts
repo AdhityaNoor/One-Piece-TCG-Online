@@ -18,6 +18,14 @@ export const SITE_BASE = 'https://onepiece.limitlesstcg.com';
 export const IMAGE_CDN = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece';
 
 export const PROVIDER = 'limitlesstcg' as const;
+/**
+ * Left at 1 on purpose. Alternate-art (prints[]) capture is ADDITIVE, so
+ * existing progress.json / card files stay valid and a re-run RESUMES the
+ * earlier crawl rather than starting over. Which cards still need their
+ * alternate arts is tracked separately in progress.printsCompleted (see
+ * progress.ts + run.ts), so the base scrape is never redone and images already
+ * on disk are skipped.
+ */
 export const SCRAPE_SCHEMA_VERSION = 1;
 
 /** All output lives under scrape/limitless/ (sibling to the optcgapi scraper's scrape/ output). */

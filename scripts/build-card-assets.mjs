@@ -24,24 +24,58 @@ const OUT_DATA = resolve(ROOT, 'public', 'cards');
 const OUT_SETS = resolve(OUT_DATA, 'sets');
 const OUT_IMAGES = resolve(ROOT, 'public', 'card-images');
 
-/** Web path (served from public/) for a card image, or null if the file isn't available. */
-async function placeImage(setCode, cardNumber, lang) {
-  const file = `${cardNumber}_${lang.toUpperCase()}.webp`;
+/**
+ * Web path (served from public/) for a card image, or null if unavailable.
+ * `variantId` is '' for the base print, 'p1'/'p2'/… for alternate arts, so the
+ * filename mirrors the scrape/CDN: OP01-016_EN.webp / OP01-016_p1_EN.webp.
+ */
+async function placeImage(setCode, cardNumber, lang, variantId = '') {
+  const infix = variantId ? `_${variantId}` : '';
+  const file = `${cardNumber}${infix}_${lang.toUpperCase()}.webp`;
   const target = resolve(OUT_IMAGES, setCode, file);
   const webPath = `/card-images/${setCode}/${file}`;
   if (existsSync(target)) return webPath; // already placed (idempotent)
   const source = resolve(SCRAPE_IMAGES, setCode, file);
-  if (!existsSync(source)) return null; // no art for this language/card
+  if (!existsSync(source)) return null; // no art for this language/card/print
   await mkdir(dirname(target), { recursive: true });
   await rename(source, target);
   return webPath;
 }
 
-function toLocalCard(scraped, enImage, jpImage) {
+/**
+ * Promotes every printing's art (base + alternate arts) from the scrape into
+ * public/card-images and returns the LocalCard `prints[]`. Falls back to a
+ * single base print for cards scraped before alt-art support (no scraped.prints).
+ */
+async function placePrints(scraped) {
+  const setCode = scraped.setCode;
+  const scrapedPrints = Array.isArray(scraped.prints) && scraped.prints.length
+    ? scraped.prints
+    : [{ variantId: '', isAlternateArt: false, printKind: scraped.rarity ?? null }];
+
+  const prints = [];
+  for (const p of scrapedPrints) {
+    const variantId = p.variantId ?? '';
+    const enImage = await placeImage(setCode, scraped.cardNumber, 'en', variantId);
+    const jpImage = await placeImage(setCode, scraped.cardNumber, 'jp', variantId);
+    prints.push({
+      variantId,
+      isAlternateArt: Boolean(p.isAlternateArt),
+      printKind: p.printKind ?? null,
+      image: enImage,
+      imageJp: jpImage,
+    });
+  }
+  return prints;
+}
+
+function toLocalCard(scraped, prints) {
   const effectText = scraped.en?.effectText ?? '';
   const definition = scraped.definition
     ? { ...scraped.definition, hasBanish: effectText.includes('[Banish]') }
     : scraped.definition;
+
+  const basePrint = prints.find((p) => !p.isAlternateArt) ?? prints[0] ?? null;
 
   return {
     cardNumber: scraped.cardNumber,
@@ -61,14 +95,17 @@ function toLocalCard(scraped, enImage, jpImage) {
       name: scraped.en?.name ?? scraped.definition?.name ?? scraped.cardNumber,
       effectText,
       types: scraped.en?.types ?? [],
-      image: enImage,
+      image: basePrint?.image ?? null,
     },
     jp: {
       name: scraped.jp?.name ?? null,
       effectText: scraped.jp?.effectText ?? '',
       types: scraped.jp?.types ?? [],
-      image: jpImage,
+      image: basePrint?.imageJp ?? null,
     },
+    // Base first, then alternate arts — consumed by the card catalog loader to
+    // offer art variants in the library/deck builder.
+    prints,
     definition,
   };
 }
@@ -89,19 +126,19 @@ async function main() {
     const setDirPath = join(SCRAPE_CARDS, dir.name);
     const files = (await readdir(setDirPath)).filter((f) => f.endsWith('.json'));
     const cards = [];
+    let altArtImages = 0;
     for (const f of files) {
       const scraped = JSON.parse(await readFile(join(setDirPath, f), 'utf8'));
-      const setCode = scraped.setCode;
-      const enImage = await placeImage(setCode, scraped.cardNumber, 'en');
-      const jpImage = await placeImage(setCode, scraped.cardNumber, 'jp');
-      cards.push(toLocalCard(scraped, enImage, jpImage));
+      const prints = await placePrints(scraped);
+      altArtImages += prints.filter((p) => p.isAlternateArt && p.image).length;
+      cards.push(toLocalCard(scraped, prints));
     }
     cards.sort((a, b) => a.cardNumber.localeCompare(b.cardNumber));
     const setCode = cards[0]?.setCode ?? dir.name;
     await writeFile(join(OUT_SETS, `${setCode}.json`), JSON.stringify(cards), 'utf8');
     index.sets.push({ code: setCode, name: setCode, count: cards.length });
     index.total += cards.length;
-    console.log(`[build:assets] ${setCode}: ${cards.length} cards`);
+    console.log(`[build:assets] ${setCode}: ${cards.length} cards${altArtImages ? `, ${altArtImages} alt-art image(s)` : ''}`);
   }
 
   index.sets.sort((a, b) => a.code.localeCompare(b.code));

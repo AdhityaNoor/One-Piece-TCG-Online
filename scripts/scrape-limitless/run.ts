@@ -30,10 +30,13 @@ import {
   ensureCardsDir,
   imageUrl,
   setCodeOf,
+  variantIdFromImageUrl,
   writeIndex,
   writeLimitlessCard,
   type IndexEntry,
+  type PrintInput,
 } from './scrapeOutput';
+import type { ParsedCardPage } from './types';
 
 interface Flags {
   refresh: boolean;
@@ -44,6 +47,7 @@ interface Flags {
   jitterMs: number | null;
   concurrency: number;
   images: boolean;
+  variants: boolean;
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -56,6 +60,7 @@ function parseFlags(argv: string[]): Flags {
     jitterMs: null,
     concurrency: DEFAULTS.concurrency,
     images: true,
+    variants: true,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -63,6 +68,8 @@ function parseFlags(argv: string[]): Flags {
     else if (a === '--force') f.force = true;
     else if (a === '--no-images') f.images = false;
     else if (a === '--images') f.images = true;
+    else if (a === '--no-variants') f.variants = false;
+    else if (a === '--variants') f.variants = true;
     else if (a === '--limit') f.limit = Number(argv[++i]);
     else if (a === '--set') f.set = (argv[++i] ?? '').toUpperCase();
     else if (a === '--delay') f.delayMs = Number(argv[++i]);
@@ -105,12 +112,16 @@ async function main(): Promise<void> {
   await ensureCardsDir();
   if (flags.images) await ensureImagesDir();
   console.log(`[limitless] images: ${flags.images ? 'ON (EN + JP)' : 'off (--no-images)'}`);
+  console.log(`[limitless] alternate arts: ${flags.variants ? 'ON (base + every ?v=N print)' : 'off (--no-variants, base print only)'}`);
 
   let progress = (await loadProgress()) ?? emptyProgress();
   const resumed = progress.completed.length > 0 || progress.cardNumbers.length > 0;
   if (resumed) {
+    const altPending = flags.variants ? progress.completed.filter((n) => !progress.printsCompleted.includes(n)).length : 0;
     console.log(
-      `[limitless] resuming: ${progress.completed.length}/${progress.cardNumbers.length} cards already done.`,
+      `[limitless] resuming: ${progress.completed.length}/${progress.cardNumbers.length} cards base-scraped, ` +
+        `${progress.printsCompleted.length} with alt arts` +
+        `${altPending > 0 ? ` (${altPending} base-done card(s) still need alt arts)` : ''}.`,
     );
   }
 
@@ -120,6 +131,7 @@ async function main(): Promise<void> {
 
   // Graceful shutdown: first Ctrl+C stops after the current card; second forces exit.
   const completedSet = new Set(progress.completed);
+  const printsDoneSet = new Set(progress.printsCompleted);
   const indexEntries = new Map<string, IndexEntry>();
   process.on('SIGINT', () => {
     if (stopping) {
@@ -132,7 +144,13 @@ async function main(): Promise<void> {
 
   let targets = progress.cardNumbers;
   if (flags.set) targets = targets.filter((n) => setCodeOf(n) === flags.set);
-  if (!flags.force) targets = targets.filter((n) => !completedSet.has(n));
+  if (!flags.force) {
+    // With alt arts ON, "done" means alt arts captured — so base-only cards from
+    // an earlier crawl are re-visited to backfill their alternate arts (base
+    // images on disk are skipped). With --no-variants, fall back to base-done.
+    const doneSet = flags.variants ? printsDoneSet : completedSet;
+    targets = targets.filter((n) => !doneSet.has(n));
+  }
   if (flags.limit !== null) targets = targets.slice(0, flags.limit);
 
   const concurrency = Math.min(flags.concurrency, Math.max(1, targets.length));
@@ -148,22 +166,44 @@ async function main(): Promise<void> {
     saving = true;
     try {
       progress.completed = [...completedSet].sort();
+      progress.printsCompleted = [...printsDoneSet].sort();
       await saveProgress(progress);
     } finally {
       saving = false;
     }
   }
 
-  async function processCard(cardNumber: string): Promise<void> {
-    const enRes = await client.getHtml(`${SITE_BASE}/cards/en/${cardNumber}`);
-    const jpRes = await client.getHtml(`${SITE_BASE}/cards/jp/${cardNumber}`);
+  /** Fetches+parses one language's print page (base = param 0, alt art = param N). */
+  async function fetchPrintPage(cardNumber: string, lang: 'en' | 'jp', variantParam: number): Promise<ParsedCardPage | null> {
+    const q = variantParam > 0 ? `?v=${variantParam}` : '';
+    const res = await client.getHtml(`${SITE_BASE}/cards/${lang}/${cardNumber}${q}`);
+    return res.ok ? parseCardPage(res.html, cardNumber) : null;
+  }
 
-    const enParse = enRes.ok ? parseCardPage(enRes.html, cardNumber) : null;
-    const jpParse = jpRes.ok ? parseCardPage(jpRes.html, cardNumber) : null;
+  /** Downloads one print's art for one language, preferring the exact og:image URL over a constructed one. */
+  async function downloadPrintImage(
+    setCode: string,
+    cardNumber: string,
+    lang: 'en' | 'jp',
+    parse: ParsedCardPage | null,
+    variantId: string,
+  ): Promise<ImageResult | undefined> {
+    if (!flags.images || !parse) return undefined;
+    const url = parse.ogImage ?? imageUrl(setCode, cardNumber, lang, variantId);
+    const result = await downloadImage(cdnClient, url, setCode, cardNumber, lang, variantId);
+    if (result.status === 'downloaded') imagesDownloaded++;
+    return result;
+  }
+
+  async function processCard(cardNumber: string): Promise<void> {
+    const setCode = setCodeOf(cardNumber);
+    // Base print first — it lists which alternate arts (?v=N) exist.
+    const enParse = await fetchPrintPage(cardNumber, 'en', 0);
+    const jpParse = await fetchPrintPage(cardNumber, 'jp', 0);
     const structural = enParse ?? jpParse;
 
     if (!structural) {
-      const reason = `en:${enRes.ok ? 'ok' : enRes.reason} jp:${jpRes.ok ? 'ok' : jpRes.reason}`;
+      const reason = `en/jp base pages unreachable`;
       progress.failed[cardNumber] = reason;
       failedThisRun++;
       console.warn(`[limitless] FAIL ${cardNumber} (${reason})`);
@@ -171,26 +211,35 @@ async function main(): Promise<void> {
     }
 
     try {
-      // Download both-language art (resumable: skips files already on disk).
-      let images: { en?: ImageResult; jp?: ImageResult } | undefined;
-      if (flags.images) {
-        const setCode = setCodeOf(cardNumber);
-        const [en, jp] = await Promise.all([
-          downloadImage(cdnClient, imageUrl(setCode, cardNumber, 'en'), setCode, cardNumber, 'en'),
-          downloadImage(cdnClient, imageUrl(setCode, cardNumber, 'jp'), setCode, cardNumber, 'jp'),
-        ]);
-        if (en.status === 'downloaded') imagesDownloaded++;
-        if (jp.status === 'downloaded') imagesDownloaded++;
-        images = { en, jp };
+      // Alternate-art ?v params come straight from the base page's prints table.
+      const altParams = flags.variants ? (structural.variantParams ?? []).filter((n) => n > 0) : [];
+      const allParams = [0, ...altParams];
+
+      const printInputs: PrintInput[] = [];
+      for (const variantParam of allParams) {
+        const ep = variantParam === 0 ? enParse : await fetchPrintPage(cardNumber, 'en', variantParam);
+        const jp = variantParam === 0 ? jpParse : await fetchPrintPage(cardNumber, 'jp', variantParam);
+        // variantId from the real CDN filename; fall back to p{param} only if no og:image.
+        const variantId =
+          variantIdFromImageUrl(ep?.ogImage ?? null, cardNumber) ??
+          variantIdFromImageUrl(jp?.ogImage ?? null, cardNumber) ??
+          (variantParam > 0 ? `p${variantParam}` : '');
+        const enImage = await downloadPrintImage(setCode, cardNumber, 'en', ep, variantId);
+        const jpImage = await downloadPrintImage(setCode, cardNumber, 'jp', jp, variantId);
+        printInputs.push({ variantParam, enParse: ep, jpParse: jp, enImage, jpImage });
       }
 
-      const card = buildLimitlessCard(cardNumber, structural, enParse, jpParse, fetchedAt, images);
+      const card = buildLimitlessCard(cardNumber, structural, enParse, jpParse, fetchedAt, printInputs);
       const entry = await writeLimitlessCard(card);
       indexEntries.set(cardNumber, entry);
       completedSet.add(cardNumber);
+      // Only mark alt arts done when we actually crawled them, so a later default
+      // run still backfills cards scraped under --no-variants.
+      if (flags.variants) printsDoneSet.add(cardNumber);
       delete progress.failed[cardNumber];
       const imgTag = flags.images ? `img ${card.en.imageStatus[0]}/${card.jp.imageStatus[0]}` : null; // e.g. "img d/d"
-      const flags2 = [card.jp.missing ? 'no-jp' : null, card.effectParse.needsReview ? 'review' : null, imgTag]
+      const altTag = entry.altArtCount > 0 ? `+${entry.altArtCount}aa` : null;
+      const flags2 = [card.jp.missing ? 'no-jp' : null, card.effectParse.needsReview ? 'review' : null, altTag, imgTag]
         .filter(Boolean)
         .join(',');
       console.log(`[limitless] ok   ${cardNumber} ${card.en.name ?? card.jp.name ?? ''}${flags2 ? ` [${flags2}]` : ''}`);
@@ -218,6 +267,7 @@ async function main(): Promise<void> {
   // Persist final progress (wait out any in-flight save first).
   while (saving) await new Promise((r) => setTimeout(r, 10));
   progress.completed = [...completedSet].sort();
+  progress.printsCompleted = [...printsDoneSet].sort();
   await saveProgress(progress);
 
   // Merge this run's index entries with any from prior runs and write the manifest.

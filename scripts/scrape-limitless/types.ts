@@ -36,6 +36,50 @@ export interface LimitlessLangData {
   missing: boolean;
 }
 
+/**
+ * Per-language image data for ONE print (base OR an alternate art). Unlike
+ * LimitlessLangData this only carries the image — name/effect/types are
+ * identical across prints of the same card number, so they stay on `en`/`jp`.
+ */
+export interface LimitlessPrintImage {
+  language: 'en' | 'jp';
+  /** Exact CDN image URL taken verbatim from that print page's og:image (authoritative, not constructed). */
+  imageUrl: string | null;
+  /** Outcome of downloading this print's image. */
+  imageStatus: 'downloaded' | 'exists' | 'missing' | 'failed' | 'skipped';
+  /** Local path relative to scrape/limitless/ (null if not on disk). */
+  imageFile: string | null;
+  /** The print page URL this image came from (…/cards/en/OP01-016?v=1). */
+  pageUrl: string;
+  /** True if this language's print page could not be fetched. */
+  missing: boolean;
+}
+
+/**
+ * One printing of a card. The BASE print is `variantParam: 0`, `variantId: ''`,
+ * `isAlternateArt: false`. Every other printing (parallel/alternate art, SP,
+ * manga, promo reprint) is an alternate art with `variantParam > 0` and a
+ * `variantId` like "p1"/"p2" derived from the ACTUAL CDN image filename — never
+ * assumed. `printKind`/`printLabel` come straight from the page's current-print
+ * line (e.g. "Alternate Art", "Rare"), so nothing here is guessed.
+ */
+export interface LimitlessPrint {
+  /** Limitless `?v=N` query param. 0 = base print. */
+  variantParam: number;
+  /** Filename infix used by the CDN: '' for base, 'p1'/'p2'/… for alternates. Derived from the real image filename. */
+  variantId: string;
+  /** True for any non-base printing (i.e. an alternate art). */
+  isAlternateArt: boolean;
+  /** Full current-print label, e.g. "Romance Dawn (OP01) Alternate Art". null if the line was absent. */
+  printLabel: string | null;
+  /** Just the trailing descriptor of printLabel, e.g. "Alternate Art" / "Rare" / "Special Card". */
+  printKind: string | null;
+  /** Illustrator credit for this print if the page shows one ("Illustrated by …"). */
+  illustrator: string | null;
+  en: LimitlessPrintImage;
+  jp: LimitlessPrintImage;
+}
+
 export interface LimitlessCard {
   schemaVersion: number;
   cardNumber: string; // "OP01-016"
@@ -50,6 +94,14 @@ export interface LimitlessCard {
   block?: string; // regulation/block marker, e.g. "Block 1"
   rarity?: string;
   legality: { standard?: string; extra?: string };
+
+  /**
+   * Every printing of this card number, base first then alternate arts in
+   * ?v order. Always has at least the base print. Localized name/effect/types
+   * live on `en`/`jp` below (shared across prints); this array is the per-art
+   * image + label data the art picker renders.
+   */
+  prints: LimitlessPrint[];
 
   en: LimitlessLangData;
   jp: LimitlessLangData;
@@ -79,5 +131,15 @@ export interface ParsedCardPage {
   legality: { standard?: string; extra?: string };
   effectText: string;
   types: string[];
+  /** Exact image URL for THIS page (from og:image meta). Authoritative per-print image. */
+  ogImage: string | null;
+  /** Current-print line label, e.g. "Romance Dawn (OP01) Alternate Art". */
+  printLabel: string | null;
+  /** Trailing descriptor of printLabel ("Alternate Art" / "Rare" / …). */
+  printKind: string | null;
+  /** Illustrator credit ("Illustrated by …" with the prefix stripped). */
+  illustrator: string | null;
+  /** Other prints' `?v=N` params linked from this page's prints table (does NOT include this page's own param). */
+  variantParams: number[];
   warnings: string[];
 }

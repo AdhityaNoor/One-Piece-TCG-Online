@@ -130,6 +130,37 @@ describe('createSavedDeck — new snapshot fields (variant, cachedImagePath, sou
     const namiSnapshot = result.deck.cards.find((c) => c.cardNumber === 'OP01-016');
     expect(namiSnapshot?.variant).toBe('p1');
     expect(namiSnapshot?.printingImageId).toBe('OP01-016_p1');
+    // The chosen alt art's IMAGE (not just its id) must be embedded, so a
+    // reloaded deck renders the alternate art, not the base — and it must be
+    // the p1 printing's image, distinct from the base OP01-016 art.
+    const p1Raw = namiEntry.rawPrintings.find((p) => p.card_image_id === 'OP01-016_p1');
+    const baseRaw = namiEntry.rawPrintings.find((p) => p.card_image_id === 'OP01-016');
+    expect(namiSnapshot?.imageUrl).toBe(p1Raw?.card_image);
+    expect(namiSnapshot?.imageUrl).not.toBe(baseRaw?.card_image);
+    // Full raw printing of the chosen art is frozen in for offline re-normalization.
+    expect(namiSnapshot?.rawPrinting.card_image_id).toBe('OP01-016_p1');
+  });
+
+  it('survives a JSON round-trip preserving the chosen alternate art (save -> serialize -> reload)', () => {
+    const namiEntry = buildCardLibraryEntry(sampleCharacterPrintings);
+    const selections = legalMainDeckSelections();
+    selections[0] = { libraryEntry: namiEntry, chosenPrintingImageId: 'OP01-016_p1', quantity: 4 };
+
+    const result = createSavedDeck({
+      deckId: 'deck-1',
+      name: 'Alt Art Deck',
+      leader: leaderSelection(),
+      mainDeck: selections,
+      now: () => '2026-06-28T00:00:00.000Z',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const reloaded = JSON.parse(JSON.stringify(result.deck));
+    const nami = reloaded.cards.find((c: { cardNumber: string }) => c.cardNumber === 'OP01-016');
+    expect(nami.printingImageId).toBe('OP01-016_p1');
+    expect(nami.variant).toBe('p1');
+    expect(nami.imageUrl).toBe(namiEntry.rawPrintings.find((p) => p.card_image_id === 'OP01-016_p1')?.card_image);
   });
 
   it('always sets cachedImagePath to null (Phase 1 placeholder — no asset caching implemented yet)', () => {

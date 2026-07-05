@@ -6,35 +6,18 @@
  * browse layout and the per-tile renderer.
  */
 import type { ReactNode } from 'react';
-import type { CardLibraryEntry } from '../../cards/library';
-import { CardDetailModal, CardTile } from '../components';
-import type { CardTileData } from '../components';
 import { useCardLibraryStore } from '../store/cardLibraryStore';
 import { useNavigationStore } from '../store/navigationStore';
+import { CardLibraryResultTile } from './CardLibraryResultTile';
 import { CardSetBrowserControls, CardSetBrowserResults } from './shared';
-
-function toTileData(entry: CardLibraryEntry): CardTileData {
-  return {
-    cardNumber: entry.cardNumber,
-    name: entry.definition.name,
-    imageUrl: entry.printings[0]?.imageUrl ?? null,
-    colors: entry.definition.colors,
-    category: entry.definition.category,
-  };
-}
 
 export function CardLibraryScreen() {
   const goBack = useNavigationStore((state) => state.goBack);
 
   const sets = useCardLibraryStore((state) => state.sets);
   const selectedSetId = useCardLibraryStore((state) => state.selectedSetId);
-  const entriesBySetId = useCardLibraryStore((state) => state.entriesBySetId);
-  const selectedCardNumber = useCardLibraryStore((state) => state.selectedCardNumber);
-  const selectCard = useCardLibraryStore((state) => state.selectCard);
 
   const selectedSetName = sets.find((s) => s.set_id === selectedSetId)?.set_name;
-  const selectedEntry: CardLibraryEntry | null =
-    selectedSetId && selectedCardNumber ? entriesBySetId[selectedSetId]?.find((entry) => entry.cardNumber === selectedCardNumber) ?? null : null;
 
   return (
     <CardLibraryGameShell
@@ -64,25 +47,21 @@ export function CardLibraryScreen() {
           <p className="mt-1 text-sm leading-6 text-slate-200/70">Browse or search the card library below.</p>
           <div className="mt-2 min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
             <CardSetBrowserResults
-              gridClassName="grid content-start gap-x-3 gap-y-5"
-              gridStyle={{ gridTemplateColumns: 'repeat(auto-fill, 9.25rem)' }}
+              gridClassName="grid content-start gap-x-4 gap-y-6"
+              // ~2x the old 9.25rem default, and responsive: auto-fill lays out as
+              // many columns as fit, each at least ~18.5rem (min() shrinks to the
+              // container on narrow screens) and 1fr so they grow to fill the row —
+              // so tile size scales with the viewport/panel width.
+              gridStyle={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(18.5rem, 100%), 1fr))' }}
               renderEntry={(entry) => (
-                <div key={entry.cardNumber} className="w-[9.25rem]">
-                  <CardTile card={toTileData(entry)} onClick={() => selectCard(entry.cardNumber)} />
+                <div key={entry.cardNumber} className="w-full">
+                  <CardLibraryResultTile entry={entry} setName={selectedSetName} />
                 </div>
               )}
             />
           </div>
         </section>
       </div>
-
-      <CardDetailModal
-        open={selectedEntry !== null}
-        onClose={() => selectCard(null)}
-        definition={selectedEntry?.definition ?? null}
-        imageUrl={selectedEntry?.printings[0]?.imageUrl ?? null}
-        setName={selectedSetName}
-      />
     </CardLibraryGameShell>
   );
 }

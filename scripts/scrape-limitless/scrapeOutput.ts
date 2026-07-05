@@ -17,7 +17,7 @@ import type { Attribute, CardCategory, CardDefinition, Color } from '../../src/e
 import { parseEffect } from '../../src/cards/effectParser';
 import { CARDS_DIR, IMAGE_CDN, INDEX_FILE, OUTPUT_DIR, PROVIDER, SCRAPE_SCHEMA_VERSION } from './config';
 import type { ImageResult } from './imageDownloader';
-import type { LimitlessCard, LimitlessLangData, ParsedCardPage } from './types';
+import type { LimitlessCard, LimitlessLangData, LimitlessPrint, LimitlessPrintImage, ParsedCardPage } from './types';
 
 const SKIPPED_IMAGE: ImageResult = { status: 'skipped', file: null };
 
@@ -25,8 +25,41 @@ export function setCodeOf(cardNumber: string): string {
   return cardNumber.split('-')[0].toUpperCase();
 }
 
-export function imageUrl(setCode: string, cardNumber: string, lang: 'en' | 'jp'): string {
-  return `${IMAGE_CDN}/${setCode}/${cardNumber}_${lang.toUpperCase()}.webp`;
+/**
+ * Constructed CDN image URL — the deterministic fallback used only when a
+ * print page had no og:image to read. `variantId` is '' for the base print,
+ * 'p1'/'p2'/… for alternate arts.
+ */
+export function imageUrl(setCode: string, cardNumber: string, lang: 'en' | 'jp', variantId = ''): string {
+  const infix = variantId ? `_${variantId}` : '';
+  return `${IMAGE_CDN}/${setCode}/${cardNumber}${infix}_${lang.toUpperCase()}.webp`;
+}
+
+/**
+ * Recovers the variant infix ('' | 'p1' | 'p2' | …) from a real CDN image URL,
+ * e.g. ".../OP01/OP01-016_p1_EN.webp" -> "p1", ".../OP01-016_EN.webp" -> "".
+ * This is how a print's `variantId` is determined — from the ACTUAL filename,
+ * not assumed from the ?v param.
+ */
+export function variantIdFromImageUrl(url: string | null, cardNumber: string): string | null {
+  if (!url) return null;
+  const base = url.split('/').pop() ?? '';
+  const m = base.match(/^(.+?)(?:_(p\d+|pr\d+|[a-z]\d+))?_(EN|JP)\.[a-z0-9]+$/i);
+  if (!m) return null;
+  // m[1] should equal the card number; m[2] is the variant infix (or undefined for base).
+  return m[2] ? m[2].toLowerCase() : '';
+}
+
+/**
+ * One print's parsed pages + downloaded images, as gathered by run.ts. `enParse`
+ * / `jpParse` are null when that language's print page was missing.
+ */
+export interface PrintInput {
+  variantParam: number;
+  enParse: ParsedCardPage | null;
+  jpParse: ParsedCardPage | null;
+  enImage?: ImageResult;
+  jpImage?: ImageResult;
 }
 
 const CATEGORY_TO_ENGINE: Record<ParsedCardPage['category'], CardCategory | undefined> = {
@@ -62,12 +95,61 @@ function buildDefinition(cardNumber: string, en: ParsedCardPage, enName: string 
   };
 }
 
+/** Canonical print page URL for a language + ?v param (param 0 = base, no query). */
+function variantPageUrl(cardNumber: string, lang: 'en' | 'jp', variantParam: number): string {
+  const q = variantParam > 0 ? `?v=${variantParam}` : '';
+  return `https://onepiece.limitlesstcg.com/cards/${lang}/${cardNumber}${q}`;
+}
+
+/** Builds one print's per-language image block. */
+function buildPrintImage(
+  lang: 'en' | 'jp',
+  parse: ParsedCardPage | null,
+  image: ImageResult,
+  setCode: string,
+  cardNumber: string,
+  variantId: string,
+  variantParam: number,
+): LimitlessPrintImage {
+  return {
+    language: lang,
+    imageUrl: parse?.ogImage ?? (parse ? imageUrl(setCode, cardNumber, lang, variantId) : null),
+    imageStatus: image.status,
+    imageFile: image.file,
+    pageUrl: variantPageUrl(cardNumber, lang, variantParam),
+    missing: parse === null,
+  };
+}
+
+/** Builds one LimitlessPrint (base or alternate art) from a gathered PrintInput. */
+export function buildPrint(cardNumber: string, setCode: string, input: PrintInput): LimitlessPrint {
+  const enImg = input.enImage ?? SKIPPED_IMAGE;
+  const jpImg = input.jpImage ?? SKIPPED_IMAGE;
+  // variantId comes from the REAL image filename (EN preferred, then JP); only
+  // if neither page had an og:image do we fall back to the ?v param.
+  const derived = variantIdFromImageUrl(input.enParse?.ogImage ?? null, cardNumber) ?? variantIdFromImageUrl(input.jpParse?.ogImage ?? null, cardNumber);
+  const variantId = derived ?? (input.variantParam > 0 ? `p${input.variantParam}` : '');
+  const meta = input.enParse ?? input.jpParse;
+  return {
+    variantParam: input.variantParam,
+    variantId,
+    isAlternateArt: input.variantParam > 0,
+    printLabel: meta?.printLabel ?? null,
+    printKind: meta?.printKind ?? null,
+    illustrator: input.enParse?.illustrator ?? input.jpParse?.illustrator ?? null,
+    en: buildPrintImage('en', input.enParse, enImg, setCode, cardNumber, variantId, input.variantParam),
+    jp: buildPrintImage('jp', input.jpParse, jpImg, setCode, cardNumber, variantId, input.variantParam),
+  };
+}
+
 /**
  * Assembles the final LimitlessCard.
  *
  * `structural` is whichever language page was available (category/colors/stats
  * carry English labels on BOTH pages, so either works). `enParse`/`jpParse` are
- * null when that specific language page was missing.
+ * the BASE print's parses (null when that language page was missing) and back
+ * the localized name/effect/types. `printInputs` is every print gathered by the
+ * crawler (base first); its param-0 entry supplies the base `en`/`jp` images.
  */
 export function buildLimitlessCard(
   cardNumber: string,
@@ -75,12 +157,20 @@ export function buildLimitlessCard(
   enParse: ParsedCardPage | null,
   jpParse: ParsedCardPage | null,
   fetchedAt: string,
-  images?: { en?: ImageResult; jp?: ImageResult },
+  printInputs: PrintInput[],
 ): LimitlessCard {
   const setCode = setCodeOf(cardNumber);
   const warnings = [...structural.warnings.map((w) => `struct: ${w}`)];
-  const enImg = images?.en ?? SKIPPED_IMAGE;
-  const jpImg = images?.jp ?? SKIPPED_IMAGE;
+
+  const prints = [...printInputs]
+    .sort((a, b) => a.variantParam - b.variantParam)
+    .map((input) => buildPrint(cardNumber, setCode, input));
+  const basePrint = prints.find((p) => p.variantParam === 0) ?? prints[0];
+  const altCount = prints.filter((p) => p.isAlternateArt).length;
+  if (altCount > 0) warnings.push(`prints: ${altCount} alternate art${altCount === 1 ? '' : 's'} captured`);
+
+  const enImg: ImageResult = { status: basePrint?.en.imageStatus ?? 'skipped', file: basePrint?.en.imageFile ?? null };
+  const jpImg: ImageResult = { status: basePrint?.jp.imageStatus ?? 'skipped', file: basePrint?.jp.imageFile ?? null };
 
   let en: LimitlessLangData;
   if (enParse) {
@@ -89,7 +179,7 @@ export function buildLimitlessCard(
       name: enParse.name,
       effectText: enParse.effectText ?? '',
       types: enParse.types,
-      imageUrl: imageUrl(setCode, cardNumber, 'en'),
+      imageUrl: basePrint?.en.imageUrl ?? imageUrl(setCode, cardNumber, 'en'),
       imageStatus: enImg.status,
       imageFile: enImg.file,
       pageUrl: `https://onepiece.limitlesstcg.com/cards/en/${cardNumber}`,
@@ -101,7 +191,7 @@ export function buildLimitlessCard(
       name: null,
       effectText: null,
       types: [],
-      imageUrl: imageUrl(setCode, cardNumber, 'en'),
+      imageUrl: basePrint?.en.imageUrl ?? imageUrl(setCode, cardNumber, 'en'),
       imageStatus: enImg.status,
       imageFile: enImg.file,
       pageUrl: `https://onepiece.limitlesstcg.com/cards/en/${cardNumber}`,
@@ -117,7 +207,7 @@ export function buildLimitlessCard(
       name: jpParse.name,
       effectText: jpParse.effectText ?? '',
       types: jpParse.types,
-      imageUrl: imageUrl(setCode, cardNumber, 'jp'),
+      imageUrl: basePrint?.jp.imageUrl ?? imageUrl(setCode, cardNumber, 'jp'),
       imageStatus: jpImg.status,
       imageFile: jpImg.file,
       pageUrl: `https://onepiece.limitlesstcg.com/cards/jp/${cardNumber}`,
@@ -130,7 +220,7 @@ export function buildLimitlessCard(
       name: null,
       effectText: null,
       types: [],
-      imageUrl: imageUrl(setCode, cardNumber, 'jp'),
+      imageUrl: basePrint?.jp.imageUrl ?? imageUrl(setCode, cardNumber, 'jp'),
       imageStatus: jpImg.status,
       imageFile: jpImg.file,
       pageUrl: `https://onepiece.limitlesstcg.com/cards/jp/${cardNumber}`,
@@ -159,6 +249,7 @@ export function buildLimitlessCard(
     block: structural.block,
     rarity: structural.rarity,
     legality: structural.legality,
+    prints,
     en,
     jp,
     definition,
@@ -166,6 +257,15 @@ export function buildLimitlessCard(
     warnings,
     source: { provider: PROVIDER, fetchedAt },
   };
+}
+
+/** Compact per-print record carried in the index so the manifest reflects alt arts without loading each card file. */
+export interface IndexPrint {
+  variantId: string; // '' = base, 'p1'/'p2'/… = alternate art
+  isAlternateArt: boolean;
+  printKind: string | null; // "Alternate Art" / "Rare" / … (from the print page)
+  enImage: LimitlessPrintImage['imageStatus'];
+  jpImage: LimitlessPrintImage['imageStatus'];
 }
 
 export interface IndexEntry {
@@ -178,6 +278,12 @@ export interface IndexEntry {
   jpMissing: boolean;
   enImage: LimitlessCard['en']['imageStatus'];
   jpImage: LimitlessCard['jp']['imageStatus'];
+  /** Total printings (base + alternate arts). */
+  printCount: number;
+  /** How many of `printCount` are alternate arts (non-base). */
+  altArtCount: number;
+  /** Every printing, base first — so the manifest alone can drive an art picker. */
+  prints: IndexPrint[];
 }
 
 const IMAGE_PRESENT = new Set(['downloaded', 'exists']);
@@ -208,6 +314,15 @@ export async function writeLimitlessCard(card: LimitlessCard): Promise<IndexEntr
     jpMissing: card.jp.missing,
     enImage: card.en.imageStatus,
     jpImage: card.jp.imageStatus,
+    printCount: card.prints.length,
+    altArtCount: card.prints.filter((p) => p.isAlternateArt).length,
+    prints: card.prints.map((p) => ({
+      variantId: p.variantId,
+      isAlternateArt: p.isAlternateArt,
+      printKind: p.printKind,
+      enImage: p.en.imageStatus,
+      jpImage: p.jp.imageStatus,
+    })),
   };
 }
 
@@ -217,18 +332,33 @@ export async function writeIndex(entries: IndexEntry[]): Promise<void> {
   let jpMissing = 0;
   let enImages = 0;
   let jpImages = 0;
+  let totalPrints = 0;
+  let altArts = 0;
+  let cardsWithAltArt = 0;
   for (const e of entries) {
     bySet[e.setCode] = (bySet[e.setCode] ?? 0) + 1;
     if (e.needsReview) needsReview++;
     if (e.jpMissing) jpMissing++;
     if (IMAGE_PRESENT.has(e.enImage)) enImages++;
     if (IMAGE_PRESENT.has(e.jpImage)) jpImages++;
+    totalPrints += e.printCount ?? 1;
+    altArts += e.altArtCount ?? 0;
+    if ((e.altArtCount ?? 0) > 0) cardsWithAltArt++;
   }
   const index = {
     schemaVersion: SCRAPE_SCHEMA_VERSION,
     provider: PROVIDER,
     generatedAt: new Date().toISOString(),
-    counts: { total: entries.length, needsReview, jpMissing, images: { en: enImages, jp: jpImages }, bySet },
+    counts: {
+      total: entries.length,
+      needsReview,
+      jpMissing,
+      prints: totalPrints,
+      altArts,
+      cardsWithAltArt,
+      images: { en: enImages, jp: jpImages },
+      bySet,
+    },
     cards: [...entries].sort((a, b) => a.cardNumber.localeCompare(b.cardNumber)),
   };
   await mkdir(OUTPUT_DIR, { recursive: true });

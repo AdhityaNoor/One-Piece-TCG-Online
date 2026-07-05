@@ -27,9 +27,14 @@ export interface ImageResult {
 
 const safe = (s: string): string => s.replace(/[^A-Za-z0-9._-]/g, '_');
 
-/** Relative-to-output path for a card image. */
-export function imageRelativePath(setCode: string, cardNumber: string, lang: 'en' | 'jp'): string {
-  return join('images', safe(setCode), `${safe(cardNumber)}_${lang.toUpperCase()}.webp`).split('\\').join('/');
+/**
+ * Relative-to-output path for a card image. `variantId` is '' for the base
+ * print and 'p1'/'p2'/… for alternate arts, producing filenames that mirror
+ * the CDN: `OP01-016_EN.webp` (base) / `OP01-016_p1_EN.webp` (alternate art).
+ */
+export function imageRelativePath(setCode: string, cardNumber: string, lang: 'en' | 'jp', variantId = ''): string {
+  const infix = variantId ? `_${safe(variantId)}` : '';
+  return join('images', safe(setCode), `${safe(cardNumber)}${infix}_${lang.toUpperCase()}.webp`).split('\\').join('/');
 }
 
 export async function downloadImage(
@@ -38,8 +43,9 @@ export async function downloadImage(
   setCode: string,
   cardNumber: string,
   lang: 'en' | 'jp',
+  variantId = '',
 ): Promise<ImageResult> {
-  const rel = imageRelativePath(setCode, cardNumber, lang);
+  const rel = imageRelativePath(setCode, cardNumber, lang, variantId);
   const abs = resolve(OUTPUT_DIR, rel);
 
   // Resume: already downloaded?

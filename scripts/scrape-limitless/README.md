@@ -28,7 +28,20 @@ npm run scrape:limitless -- --concurrency 24  # cards fetched in parallel (defau
 npm run scrape:limitless -- --delay 500        # re-add an inter-request throttle (default 0 = none)
 npm run scrape:limitless -- --force           # re-scrape even already-completed cards
 npm run scrape:limitless -- --no-images       # skip downloading card art (data only)
+npm run scrape:limitless -- --no-variants      # base print only (skip alternate arts)
 ```
+
+> **Alternate arts (resumes your existing crawl).** The scraper now captures
+> every printing of a card (base + each alternate art / SP / manga / promo
+> reprint), not just the base — and it does so **without redoing your earlier
+> base scrape**. It's additive, so `SCRAPE_SCHEMA_VERSION` stays `1` and your
+> existing `progress.json` / card files remain valid. A separate
+> `progress.printsCompleted` list tracks which cards already have their alt arts;
+> on a normal re-run the crawler **skips cards that are fully done**, and for a
+> card that was base-scraped earlier it re-visits it **only to fetch the
+> alternate arts** (it re-reads that one card page to discover which `?v=N`
+> prints exist, then downloads just the new alt-art images — base images already
+> on disk are skipped). Run `--no-variants` to keep the old base-only behavior.
 
 Output (gitignored — under the existing `scrape/` rule):
 

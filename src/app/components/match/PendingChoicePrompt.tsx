@@ -19,6 +19,7 @@ import { Modal } from '../Modal';
 import { Button } from '../Button';
 import { CardImage } from '../CardImage';
 import { ZoneSection } from './ZoneSection';
+import { CardChoiceGallery } from './CardChoiceGallery';
 import { StlCoinCanvas } from './StlCoinCanvas';
 
 export interface PendingChoicePromptProps {
@@ -383,11 +384,25 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
   // [Trigger] (then it's trashed) or be kept in hand.
   if (choice.sourceEffectId === 'rule:lifeTrigger') {
     const card = choice.sourceInstanceId ? buildCardView(defs, state, images, choice.sourceInstanceId) : null;
+    const triggerText = card?.triggerText ?? card?.text ?? '';
     return (
-      <Modal open onClose={() => {}} title="Life [Trigger]">
+      <Modal open onClose={() => {}} title="Life [Trigger]" maxWidthClassName="max-w-2xl">
         <div className="flex flex-col gap-3 p-5">
           <p className="text-sm text-white/70">{choice.prompt}</p>
-          {card && <p className="text-sm font-bold text-white">{card.name}</p>}
+          {card && (
+            <div className="flex gap-4">
+              <div className="w-40 shrink-0">
+                <CardImage src={card.imageUrl} alt={card.name} className="rounded-none ring-2 ring-gold/60" eager />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <p className="text-base font-black uppercase tracking-[0.06em] text-white">{card.name}</p>
+                <div className="border border-gold/30 bg-black/30 p-3">
+                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.16em] text-gold">Trigger</p>
+                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-100">{triggerText || 'No trigger text.'}</p>
+                </div>
+              </div>
+            </div>
+          )}
           {errorBanner}
           <div className="flex gap-2">
             <Button variant="primary" onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: choice.sourceInstanceId ? [choice.sourceInstanceId] : [] })}>
@@ -413,8 +428,7 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     const { min, max } = choice.constraints;
     const count = selectedIrIds.length;
     const canConfirm = count >= min && count <= max;
-    const isOrderingChoice = min === max && max > 1 && /order/i.test(choice.prompt);
-    const selectedCardsById = new Map(candidates.map((card) => [card.instanceId, card]));
+    const selectLabel = min === max ? `Select ${max}` : `Select ${min}–${max}`;
 
     const toggle = (instanceId: string): void => {
       setSelectedIrIds((prev) => {
@@ -426,17 +440,21 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     };
 
     return (
-      <Modal open onClose={() => {}} title="Choose">
+      <Modal open onClose={() => {}} title="Choose" maxWidthClassName="max-w-5xl">
         <div className="flex flex-col gap-3 p-5">
           <p className="text-sm text-white/70">{choice.prompt}</p>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/50">{selectLabel}</span>
+            <span className="text-[11px] font-semibold text-white/40">{count}/{max} selected</span>
+          </div>
           {errorBanner}
           {candidates.length > 0 ? (
-            <ZoneSection
-              label={`Select ${min === max ? max : `${min}–${max}`}`}
+            <CardChoiceGallery
               cards={candidates}
-              selectedIds={new Set(selectedIrIds)}
               selectableIds={new Set(candidateIds)}
-              onCardSelect={(card) => toggle(card.instanceId)}
+              selectedOrder={selectedIrIds}
+              max={max}
+              onToggle={toggle}
             />
           ) : (
             <p className="text-xs text-white/50">No eligible cards — confirm to continue.</p>
@@ -448,16 +466,6 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
           >
             {min === 0 && count === 0 ? 'Decline' : `Confirm (${count}/${max})`}
           </Button>
-          {isOrderingChoice && selectedIrIds.length > 0 && (
-            <ol className="flex flex-col gap-1 rounded-lg border border-white/10 bg-black/18 p-2 text-xs text-white/70">
-              {selectedIrIds.map((id, index) => (
-                <li key={id} className="flex items-center gap-2">
-                  <span className="text-gold">{index + 1}.</span>
-                  <span>{selectedCardsById.get(id)?.name ?? id}</span>
-                </li>
-              ))}
-            </ol>
-          )}
         </div>
       </Modal>
     );

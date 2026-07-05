@@ -69,6 +69,50 @@ function typeTextFromSection(section: Element): string[] {
   return value.split('/').map((type) => type.trim()).filter(Boolean);
 }
 
+/** The authoritative per-print image URL from the page's Open Graph / Twitter meta. */
+function ogImageUrl(doc: Document): string | null {
+  const meta =
+    doc.querySelector('meta[property="og:image"]') ??
+    doc.querySelector('meta[name="og:image"]') ??
+    doc.querySelector('meta[name="twitter:image"]');
+  const content = meta?.getAttribute('content');
+  return content && content.trim() ? content.trim() : null;
+}
+
+/**
+ * Collects the `?v=N` params of the OTHER printings linked from the prints
+ * table. Base print rows link with `?v=1`, `?v=2`, …; the row for the print
+ * you're currently viewing is not a link, so its own param never appears here.
+ */
+function extractVariantParams(doc: Document): number[] {
+  const params = new Set<number>();
+  for (const a of doc.querySelectorAll('a[href*="v="]')) {
+    const href = a.getAttribute('href') ?? '';
+    if (!/\/cards\//i.test(href)) continue;
+    const m = href.match(/[?&]v=(\d+)/);
+    if (m) params.add(Number(m[1]));
+  }
+  return [...params].sort((a, b) => a - b);
+}
+
+/** Strips the "SetName (SETID) " prefix off a print label, leaving the kind ("Alternate Art"/"Rare"/…). */
+function printKindFromLabel(label: string | null): string | null {
+  if (!label) return null;
+  const afterParen = label.match(/\)\s*(.+)$/);
+  const kind = clean(afterParen ? afterParen[1] : label);
+  return kind || null;
+}
+
+/** Finds an "Illustrated by X" section and returns X (or null). */
+function extractIllustrator(cardText: Element): string | null {
+  for (const section of sectionChildren(cardText)) {
+    const value = text(section);
+    const m = value.match(/^illustrated\s+by\s+(.+)$/i);
+    if (m) return clean(m[1]) || null;
+  }
+  return null;
+}
+
 export function parseCardPage(html: string, expectedCardNumber: string): ParsedCardPage {
   const warnings: string[] = [];
   const result: ParsedCardPage = {
@@ -80,6 +124,11 @@ export function parseCardPage(html: string, expectedCardNumber: string): ParsedC
     legality: {},
     effectText: '',
     types: [],
+    ogImage: null,
+    printLabel: null,
+    printKind: null,
+    illustrator: null,
+    variantParams: [],
     warnings,
   };
 
@@ -91,11 +140,26 @@ export function parseCardPage(html: string, expectedCardNumber: string): ParsedC
     return result;
   }
 
+  // og:image is the authoritative per-print CDN image URL (differs per ?v=N).
+  result.ogImage = ogImageUrl(doc);
+
+  // Prints table: which other printings (?v=N) exist, linked from THIS page.
+  result.variantParams = extractVariantParams(doc);
+
   const cardText = doc.querySelector('.card-text');
   if (!cardText) {
     warnings.push('no .card-text block found (page layout changed or non-card page)');
     return result;
   }
+
+  // Current-print label, e.g. "Romance Dawn (OP01) Alternate Art". The trailing
+  // descriptor after the "(SETID)" is the print kind ("Alternate Art"/"Rare"/…).
+  const printLabel = text(doc.querySelector('.card-prints-current')) || null;
+  result.printLabel = printLabel;
+  result.printKind = printKindFromLabel(printLabel);
+
+  // Illustrator credit, if the page shows one ("Illustrated by …").
+  result.illustrator = extractIllustrator(cardText);
 
   result.name = text(cardText.querySelector('.card-text-name')) || null;
   const idText = text(cardText.querySelector('.card-text-id'));
@@ -173,3 +237,5 @@ export function parseCardPage(html: string, expectedCardNumber: string): ParsedC
 
   return result;
 }
+
+export const _internals = { ogImageUrl, extractVariantParams, printKindFromLabel, extractIllustrator };

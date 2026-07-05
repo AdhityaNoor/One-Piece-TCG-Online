@@ -21,8 +21,17 @@ export interface Progress {
   setSlugs: string[];
   /** Every enumerated card number (deduped, sorted). */
   cardNumbers: string[];
-  /** Card numbers fully written. */
+  /** Card numbers fully written (base data). */
   completed: string[];
+  /**
+   * Card numbers whose alternate arts (prints[]) have also been captured.
+   * Separate from `completed` so adding alt-art support RESUMES an earlier
+   * base-only crawl: a card already in `completed` but not here is re-visited
+   * only to fetch its alternate arts (its base images on disk are skipped),
+   * and cards already here are skipped entirely. Absent in pre-alt-art
+   * progress.json files -> defaulted to [] on load.
+   */
+  printsCompleted: string[];
   /** Card numbers that failed, with the last reason. */
   failed: Record<string, string>;
 }
@@ -36,6 +45,7 @@ export function emptyProgress(): Progress {
     setSlugs: [],
     cardNumbers: [],
     completed: [],
+    printsCompleted: [],
     failed: {},
   };
 }
@@ -45,6 +55,9 @@ export async function loadProgress(): Promise<Progress | null> {
     const raw = await readFile(PROGRESS_FILE, 'utf8');
     const parsed = JSON.parse(raw) as Progress;
     if (parsed.schemaVersion !== SCRAPE_SCHEMA_VERSION) return null; // stale schema -> start fresh
+    // Back-compat: pre-alt-art progress files have no printsCompleted; default it
+    // to [] so those already-scraped cards get re-visited for their alt arts only.
+    if (!Array.isArray(parsed.printsCompleted)) parsed.printsCompleted = [];
     return parsed;
   } catch {
     return null; // no file yet, or unreadable

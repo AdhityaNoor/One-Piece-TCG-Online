@@ -228,6 +228,7 @@ function MatCell({
   labelClassName = '',
   style,
   allowOverflow = false,
+  padding = 'p-2',
 }: {
   label: string;
   children?: ReactNode;
@@ -239,6 +240,8 @@ function MatCell({
   style?: CSSProperties;
   /** When true, removes overflow-hidden so children (e.g. the stacked deck ghost layers) can render outside the cell boundary without being clipped. */
   allowOverflow?: boolean;
+  /** Padding utility for the cell box; pass 'p-0' for a full-bleed card (e.g. Stage). */
+  padding?: string;
 }) {
   const isInvisible = variant === 'invisible';
 
@@ -246,7 +249,8 @@ function MatCell({
     <section
       style={style}
       className={[
-        'relative flex min-h-0 min-w-0 items-center justify-center rounded-lg p-2',
+        'relative flex min-h-0 min-w-0 items-center justify-center rounded-lg',
+        padding,
         isInvisible ? 'border-0 bg-transparent' : (allowOverflow ? 'border' : 'overflow-hidden border'),
         variant === 'dark' ? 'border-white/10 bg-white/12' : variant === 'light' ? 'border-white/15 bg-white/[0.05]' : '',
         className,
@@ -335,8 +339,8 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   );
 
   const characterZone = (
-    <MatCell label="Character Area" className="h-full flex-1" labelClassName="sr-only">
-      <div className="flex h-full w-full min-w-0 items-center justify-center gap-2 overflow-hidden">
+    <MatCell label="Character Area" className="h-full flex-1" labelClassName="sr-only" allowOverflow>
+      <div className="flex h-full w-full min-w-0 items-center justify-center gap-2 overflow-visible">
         {board.characterArea.map((card) => (
           <BoardCardTile
             key={card.instanceId}
@@ -380,7 +384,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   );
 
   const leaderCell = <MatCell label="Leader Card" variant="invisible" labelClassName="sr-only">{leaderSlot}</MatCell>;
-  const stageCell = <MatCell label="Stage Card" labelClassName="sr-only">{stageSlot}</MatCell>;
+  const stageCell = <MatCell label="Stage Card" variant="invisible" labelClassName="sr-only">{stageSlot}</MatCell>;
   const trashCell = (
     <MatCell label="Trash" labelClassName="sr-only">
       <TrashPile cards={board.trash} onClick={() => setTrashGalleryOpen(true)} />
@@ -467,7 +471,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
 
   const stageTrashGroup = (
     <div
-      className={['absolute inset-y-0 grid gap-2', reverseRows ? 'left-0' : 'right-0'].join(' ')}
+      className={['absolute inset-y-0 grid gap-8', reverseRows ? 'left-0' : 'right-0'].join(' ')}
       style={{ gridTemplateColumns: `${BOARD_ZONE_TRACK} ${BOARD_ZONE_TRACK}` }}
     >
       {reverseRows ? (
