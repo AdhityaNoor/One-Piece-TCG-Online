@@ -163,6 +163,18 @@ export interface ContinuousKeywordModifier {
   condition?: ContinuousPowerCondition;
 }
 
+/**
+ * Grants "this card cannot be K.O.'d" to one instance (re-evaluated on every K.O.
+ * attempt). `scope` distinguishes "cannot be K.O.'d in battle" (7-1-4-2 only) from
+ * "cannot be K.O.'d" by any source (battle or card effect).
+ */
+export interface ContinuousKoImmunityModifier {
+  appliesToInstanceId: string;
+  scope: 'battle' | 'effect' | 'any';
+  /** Omitted when the immunity is unconditional. */
+  condition?: ContinuousPowerCondition;
+}
+
 export interface ContinuousEffectRecord {
   id: string;
   sourceInstanceId: string;
@@ -178,6 +190,8 @@ export interface ContinuousEffectRecord {
   blockerRestriction?: ContinuousBlockerRestriction;
   /** Structured keyword grant. Omitted for unrelated continuous effects. */
   keywordModifier?: ContinuousKeywordModifier;
+  /** Structured "cannot be K.O.'d" grant. Omitted for unrelated continuous effects. */
+  koImmunityModifier?: ContinuousKoImmunityModifier;
 }
 
 export interface GameState {

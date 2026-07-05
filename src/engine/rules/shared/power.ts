@@ -120,3 +120,19 @@ export function computeCurrentCost(defs: CardDefinitionLookup, state: GameState,
 export function hasContinuousKeyword(defs: CardDefinitionLookup, state: GameState, instanceId: string, keyword: ContinuousKeyword): boolean {
   return state.continuousEffects.some((record) => keywordModifierApplies(record, state, instanceId, keyword, defs));
 }
+
+/**
+ * Whether `instanceId` currently cannot be K.O.'d for the given `cause`
+ * (re-evaluated per K.O. attempt). A 'battle'-scope immunity only blocks battle
+ * K.O.s (7-1-4-2); an 'any'-scope immunity blocks any K.O. source. Each modifier's
+ * optional condition ([DON!! xN] / turn / board gate) must also hold.
+ */
+export function isKoImmune(defs: CardDefinitionLookup, state: GameState, instanceId: string, cause: 'battle' | 'effect'): boolean {
+  return state.continuousEffects.some((record) => {
+    const mod = record.koImmunityModifier;
+    if (!mod || mod.appliesToInstanceId !== instanceId) return false;
+    if (mod.scope === 'battle' && cause !== 'battle') return false;
+    if (mod.scope === 'effect' && cause !== 'effect') return false;
+    return conditionApplies(mod.condition, record, state, instanceId, defs);
+  });
+}

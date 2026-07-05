@@ -138,6 +138,20 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'trashCards' });
   });
 
+  it('optionalTrashFromHand can gate a follow-up on whether a card was trashed', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'koOpponentCharacter', filter: { exactCost: 0 }, ifPrevious: 'previousMovedAny' },
+      ],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerHand' }, min: 0, max: 1 });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'trashCards' });
+    expect(p.abilities[0].ops[2]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters', exactCost: 0 }, ifPrevious: 'previousMovedAny' });
+    expect(p.abilities[0].ops[3]).toMatchObject({ op: 'ko', ifPrevious: 'previousMovedAny' });
+  });
+
   it('trashTopDeck function mills from the controller deck without a choice', () => {
     const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 3 }] });
     expect(p.abilities[0].timing).toBe('onPlay');

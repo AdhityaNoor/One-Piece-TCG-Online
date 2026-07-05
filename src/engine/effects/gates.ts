@@ -20,6 +20,18 @@ function typeMatches(defTypes: string[], required: string): boolean {
   return defTypes.some((type) => type.toLowerCase().includes(normalized));
 }
 
+function currentCostForGate(state: GameState, defs: CardDefinitionLookup, instanceId: string): number {
+  const inst = state.cardsById[instanceId];
+  const base = inst ? defs[inst.cardDefinitionId]?.baseCost ?? 0 : 0;
+  let delta = 0;
+  for (const record of state.continuousEffects) {
+    const mod = record.costModifier;
+    if (!mod || mod.appliesToInstanceId !== instanceId) continue;
+    delta += mod.amount;
+  }
+  return Math.max(0, base + delta);
+}
+
 export function evaluateGates(
   gates: AbilityGate[],
   state: GameState,
@@ -124,6 +136,17 @@ function evaluateGate(
       if (gate.atLeast !== undefined && count < gate.atLeast) return false;
       if (gate.atMost !== undefined && count > gate.atMost) return false;
       return true;
+    }
+
+    case 'anyCharacterExactCost': {
+      const opponentId = getOpponentId(state, ownerId);
+      const ids = [...player.characterArea.cardIds, ...state.players[opponentId].characterArea.cardIds];
+      return ids.some((id) => currentCostForGate(state, defs, id) === gate.exactCost);
+    }
+
+    case 'opponentDonMoreThanSelf': {
+      const opponentId = getOpponentId(state, ownerId);
+      return fieldDonIds(state, opponentId).length > fieldDonIds(state, ownerId).length;
     }
   }
 }

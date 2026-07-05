@@ -37,7 +37,7 @@ import type { PendingChoice } from '../../events/pendingChoice';
 import { createActionLogger } from '../shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
-import { computeCurrentPower } from '../shared/power';
+import { computeCurrentPower, hasContinuousKeyword, isKoImmune } from '../shared/power';
 import { getOpponentId } from '../shared/players';
 import { fireOnKO, fireOnBattle, type EffectTemplateRegistry } from '../../effects';
 
@@ -95,7 +95,11 @@ export function resolveDamageAndEndOfBattle(
     const target = state.cardsById[targetId];
 
     if (target.currentZone === 'leaderArea') {
-      const hitCount = attackerDef.hasDoubleAttack ? 2 : 1;
+      const hasCuratedDoubleAttackGrant = registry[attackerDef.cardDefinitionId]?.abilities.some((ability) =>
+        ability.ops.some((op) => op.op === 'addKeyword' && op.keyword === 'doubleAttack'),
+      );
+      const hasDoubleAttack = (!hasCuratedDoubleAttackGrant && attackerDef.hasDoubleAttack) || hasContinuousKeyword(defs, state, attackerId, 'doubleAttack');
+      const hitCount = hasDoubleAttack ? 2 : 1;
       let player = nextState.players[defendingPlayerId];
       let cardsById = { ...nextState.cardsById };
       let lethal = false;
@@ -117,7 +121,7 @@ export function resolveDamageAndEndOfBattle(
 
         const [lifeCardId, ...restLife] = player.lifeArea.cardIds;
         const lifeDef = defs[cardsById[lifeCardId].cardDefinitionId];
-        const banished = !!attackerDef.hasBanish;
+        const banished = !!attackerDef.hasBanish || hasContinuousKeyword(defs, nextState, attackerId, 'banish');
         cardsById = {
           ...cardsById,
           [lifeCardId]: {
@@ -186,6 +190,17 @@ export function resolveDamageAndEndOfBattle(
       if (!lethal) {
         nextState = { ...nextState, players: { ...nextState.players, [defendingPlayerId]: player }, cardsById };
       }
+    } else if (isKoImmune(defs, nextState, targetId, 'battle')) {
+      // Character target that "cannot be K.O.'d in battle" (e.g. ST05-008 Shiki):
+      // the attack connects but the Character survives (7-1-4-2 K.O. is prevented).
+      logger.push({
+        actorPlayerId: attackerPlayerId,
+        type: 'DAMAGE_DEALT',
+        message: `'${targetId}' cannot be K.O.'d in battle — it survives (7-1-4-2 prevented).`,
+        data: { targetInstanceId: targetId, koPrevented: true },
+        relatedCardInstanceIds: [targetId],
+        visibility: 'public',
+      });
     } else {
       // Character target: KO'd (7-1-4-2). Attacker is never affected.
       const owner = nextState.players[target.ownerId];
@@ -229,10 +244,18 @@ export function resolveDamageAndEndOfBattle(
   let onBattleLog: GameLogEntry[] = [];
   let onBattlePending: PendingChoice[] = [];
   if (targetWasCharacter && !nextState.gameOver) {
-    const ob = fireOnBattle(nextState, attackerId, registry, defs, causedByActionId);
-    nextState = ob.state;
-    onBattleLog = ob.log;
-    onBattlePending = ob.pendingChoices;
+    // Attacker's [On Battle] (it battled a Character).
+    const obA = fireOnBattle(nextState, attackerId, registry, defs, causedByActionId);
+    nextState = obA.state;
+    onBattleLog = [...onBattleLog, ...obA.log];
+    onBattlePending = [...onBattlePending, ...obA.pendingChoices];
+    // Defender's [On Battle] too — "battles" is mutual — but only if it survived the Damage Step.
+    if (nextState.cardsById[targetId]?.currentZone === 'characterArea') {
+      const obD = fireOnBattle(nextState, targetId, registry, defs, causedByActionId);
+      nextState = obD.state;
+      onBattleLog = [...onBattleLog, ...obD.log];
+      onBattlePending = [...onBattlePending, ...obD.pendingChoices];
+    }
   }
 
   if (!nextState.gameOver) {

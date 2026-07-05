@@ -23,8 +23,9 @@ export type Selector =
   | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
   | { sel: 'opponentActiveDon' } // the opponent's active, un-attached DON!! in the cost area (rest targets)
   | { sel: 'allCharacters'; maxCost?: number; maxPower?: number } // any player's Characters
-  | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean } // optional cost/power/rested/blocker filters
+  | { sel: 'opponentCharacters'; maxCost?: number; exactCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean } // optional cost/power/rested/blocker filters
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
+  | { sel: 'opponentHand' } // opponent's hand cards, for effects where the opponent chooses/trashes
   | { sel: 'controllerTrash'; filter?: SearchFilter } // controller's trash cards matching a filter (for recover-to-hand)
   | { sel: 'controllerDeck'; filter?: SearchFilter } // controller's deck cards matching a filter (for play-from-deck)
   | { sel: 'var'; name: string }; // ids bound by a prior chooseTargets op
@@ -85,6 +86,8 @@ export type EffectOp =
   | ({ op: 'addPowerAura'; group: PowerAuraGroup; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition } & EffectOpSequenceGate)
   | ({ op: 'addCost'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
   | ({ op: 'addKeyword'; target: Selector; keyword: ContinuousKeyword; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
+  // Grant "cannot be K.O.'d" to the target. scope 'battle' = battle K.O. only (7-1-4-2); 'any' = any source.
+  | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
   | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
   | ({ op: 'giveDon'; target: Selector; count: number } & EffectOpSequenceGate)
   | ({ op: 'ko'; target: Selector } & EffectOpSequenceGate)
@@ -97,7 +100,7 @@ export type EffectOp =
   | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
   | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
-  | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string } & EffectOpSequenceGate)
+  | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string; chooser?: 'controller' | 'opponent' } & EffectOpSequenceGate)
   // Look at top `look` cards; player adds up to `pick` filter-matching cards to
   // `destination`; `reveal` means the added card identity is public ("reveal up to N").
   // Without that text, the added card remains secret to the controller.
@@ -141,7 +144,9 @@ export type AbilityGate =
   | { kind: 'selfRestedDonCount'; atLeast?: number; atMost?: number } // "rested DON!! cards" available in cost area and not already attached
   | { kind: 'selfLife'; atLeast?: number; atMost?: number } // "If you have N or less Life cards"
   | { kind: 'opponentLife'; atLeast?: number; atMost?: number } // "If your opponent has N or less Life cards"
-  | { kind: 'selfHand'; atLeast?: number; atMost?: number }; // "If you have N or less cards in your hand"
+  | { kind: 'selfHand'; atLeast?: number; atMost?: number } // "If you have N or less cards in your hand"
+  | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
+  | { kind: 'opponentDonMoreThanSelf' }; // "If your opponent has more DON!! cards on their field than you"
 
 export interface Ability {
   timing: IrTiming;
@@ -153,6 +158,12 @@ export interface Ability {
   oncePerTurn?: boolean;
   /** Activation cost(s) paid on use (8-3-1-5); [Activate: Main] and [Counter] handlers pay these before resolution. */
   cost?: AbilityCost[];
+  /**
+   * [When this Character battles ...] attribute filter (onBattle only): the card
+   * this one is battling (attacker<->defender) must be a Character whose attributes
+   * include this value, e.g. ST05-010 Zephyr ("battles ＜Strike＞ Characters"). Checked in fireOnBattle.
+   */
+  battlingOpponentAttribute?: string;
   ops: EffectOp[];
 }
 

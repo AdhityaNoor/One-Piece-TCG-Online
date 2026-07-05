@@ -32,7 +32,7 @@ export type AbilityFunction =
   | { fn: 'draw'; amount: number }
   | { fn: 'addDonFromDeck'; count: number; rested: boolean }
   | { fn: 'giveDon'; count: number }
-  | { fn: 'koOpponentCharacter'; filter: { maxCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean }; maxTargets?: number }
+  | { fn: 'koOpponentCharacter'; filter: { maxCost?: number; exactCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean }; maxTargets?: number }
   | { fn: 'restOpponentCharacter'; filter: { maxCost?: number; maxPower?: number; rested?: boolean }; maxTargets?: number }
   | { fn: 'returnToHand'; maxCost: number; target: 'any' | 'opponent' }
   | { fn: 'moveToBottomDeck'; maxCost: number; target: 'any' | 'opponent' }
@@ -46,6 +46,8 @@ export type AbilityFunction =
   | { fn: 'preventBlockers'; duration: IrDuration; target?: 'self' | 'chosenControllerLeaderOrCharacter'; filter?: { typeIncludes?: string }; blockerPowerAtLeast?: number }
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
   | { fn: 'trashFromHand'; count: number }
+  | { fn: 'optionalTrashFromHand'; count: number }
+  | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
   | { fn: 'trashTopDeck'; count: number }
   | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number }
@@ -53,6 +55,7 @@ export type AbilityFunction =
   | { fn: 'triggerPlaySelf' }
   | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination }
   | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition }
+  | { fn: 'restSelf' }
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }
   | { fn: 'setActiveControllerCharacter'; filter?: { maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }; maxTargets?: number }
@@ -61,7 +64,17 @@ export type AbilityFunction =
   | { fn: 'restOpponentDon'; maxTargets?: number }
   // Aura: give the controller's own Leader + Characters (optionally type-filtered)
   // a flat power delta, optionally gated on the source card's own state.
-  | { fn: 'addPowerAuraControllerTypes'; amount: number; duration: IrDuration; anyOfTypes?: string[]; sourceCondition?: SourceStateCondition };
+  | { fn: 'addPowerAuraControllerTypes'; amount: number; duration: IrDuration; anyOfTypes?: string[]; sourceCondition?: SourceStateCondition }
+  // Give ALL of the controller's own Characters (optionally type-filtered) a flat power delta —
+  // no target choice ("All of your {FILM} type Characters gain +2000").
+  | { fn: 'addPowerControllerCharactersAll'; amount: number; duration: IrDuration; filter?: { typeIncludes?: string; maxCost?: number } }
+  // "This card cannot be K.O.'d" — scope 'battle' (battle K.O. only) or 'any'.
+  | { fn: 'koImmunitySelf'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition }
+  | { fn: 'koImmunityControllerCharactersAll'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition }
+  // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
+  | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
+  // Trash exactly `count` cards of a given type from your hand (used to pay a typed hand cost).
+  | { fn: 'trashTypeFromHand'; count: number; filter: { typeIncludes?: string } };
 
 export type SequencedAbilityFunction = AbilityFunction & {
   /** Gate this function on the prior function result, for "if you do" wording. */
@@ -75,6 +88,8 @@ export interface AbilityTemplateParams {
   gate?: AbilityGate[];
   cost?: AbilityCost[];
   oncePerTurn?: boolean;
+  /** onBattle only: the battled Character must carry this attribute (e.g. 'strike'). */
+  battlingOpponentAttribute?: string;
 }
 
 export interface TemplateParamMap {

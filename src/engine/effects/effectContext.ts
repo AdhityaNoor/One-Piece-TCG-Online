@@ -13,7 +13,7 @@ import { createActionLogger, type ActionLogger } from '../rules/shared/actionLog
 import type { GameLogEntry } from '../logs/logEntry';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 import { getOpponentId } from '../rules/shared/players';
-import { computeCurrentCost, computeCurrentPower } from '../rules/shared/power';
+import { computeCurrentCost, computeCurrentPower, isKoImmune } from '../rules/shared/power';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { createSeededRng } from '../rng/seededRng';
 import type { EffectContext } from './effectTemplate';
@@ -59,6 +59,9 @@ export class EffectContextImpl implements EffectContext {
   }
   opponentCharacterIds(): string[] {
     return [...this.working.players[this.opponentId].characterArea.cardIds];
+  }
+  opponentHandIds(): string[] {
+    return [...this.working.players[this.opponentId].hand.cardIds];
   }
   controllerHandIds(): string[] {
     return [...this.working.players[this.controllerId].hand.cardIds];
@@ -245,6 +248,36 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  addContinuousKoImmunity(spec: {
+    appliesToInstanceId: string;
+    scope: 'battle' | 'effect' | 'any';
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? (spec.scope === 'battle' ? 'cannot be K.O.’d in battle' : 'cannot be K.O.’d'),
+      koImmunityModifier: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        scope: spec.scope,
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to ${spec.appliesToInstanceId}.`,
+      data: { continuousEffectId: record.id, scope: spec.scope, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
   preventBlockers(spec: {
     appliesToAttackerInstanceId: string;
     duration: ContinuousEffectDuration;
@@ -305,6 +338,18 @@ export class EffectContextImpl implements EffectContext {
   ko(targetInstanceId: string): void {
     const inst = this.working.cardsById[targetInstanceId];
     if (!inst) return;
+    // "Cannot be K.O.'d" (scope 'any', e.g. ST05-017 rider): an effect K.O. is prevented.
+    if (isKoImmune(this.defs, this.working, targetInstanceId, 'effect')) {
+      this.logger.push({
+        actorPlayerId: this.controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${targetInstanceId} cannot be K.O.'d — the K.O. is prevented.`,
+        data: { targetInstanceId, koPrevented: true },
+        relatedCardInstanceIds: [targetInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     const owner = this.working.players[inst.ownerId];
     const newOwner = {
       ...owner,

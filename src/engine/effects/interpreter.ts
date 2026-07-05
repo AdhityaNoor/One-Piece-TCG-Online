@@ -182,6 +182,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     case 'opponentCharacters': {
       let ids = ctx.opponentCharacterIds();
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.hasBlocker !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasBlocker === true) === sel.hasBlocker);
@@ -189,6 +190,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     }
     case 'controllerHand':
       return searchEligible(ctx.controllerHandIds(), sel.filter, ctx);
+    case 'opponentHand':
+      return ctx.opponentHandIds();
     case 'controllerTrash':
       return searchEligible(ctx.controllerTrashIds(), sel.filter, ctx);
     case 'controllerDeck':
@@ -225,6 +228,13 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTo
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
         ctx.addContinuousKeyword({ appliesToInstanceId: id, keyword: op.keyword, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
+    case 'addKoImmunity': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.addContinuousKoImmunity({ appliesToInstanceId: id, scope: op.scope, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
       }
       return { selectedIds: ids, movedIds: [] };
     }
@@ -310,9 +320,10 @@ function runOps(
     if (!conditionMet(op, workingBindings)) continue;
     if (op.op === 'chooseTargets') {
       const candidates = resolveSelector(op.from, ctx, workingBindings);
+      const chooserId = op.chooser === 'opponent' ? ctx.opponentId : ctx.controllerId;
       const choice: PendingChoice = {
         id: `${ctx.sourceInstanceId}__ir-${abilityIndex}-${i}`,
-        playerId: ctx.controllerId,
+        playerId: chooserId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
         constraints: { min: op.min, max: op.max, candidateInstanceIds: candidates },

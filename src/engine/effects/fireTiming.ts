@@ -185,6 +185,18 @@ export function fireOnBattle(
   if (!program) return noop(state);
   const ability = program.abilities.find((a) => a.timing === 'onBattle');
   if (!ability) return noop(state);
+  // [When this Character battles <attribute> Characters]: the OTHER battler (attacker<->defender
+  // relative to this source) must be a Character carrying the required attribute.
+  if (ability.battlingOpponentAttribute) {
+    const battle = state.currentBattle;
+    if (!battle) return noop(state);
+    const opposingId = battle.attackerInstanceId === instanceId ? battle.targetInstanceId : battle.attackerInstanceId;
+    const oppInst = state.cardsById[opposingId];
+    const oppDef = oppInst ? defs[oppInst.cardDefinitionId] : undefined;
+    const needle = ability.battlingOpponentAttribute.toLowerCase();
+    const isOpposingCharacter = oppInst?.currentZone === 'characterArea' && oppDef?.category === 'character';
+    if (!isOpposingCharacter || !(oppDef?.attributes ?? []).some((a) => a.toLowerCase() === needle)) return noop(state);
+  }
   // Gate + once-per-turn are checked here so the flag is only consumed on a real fire.
   if (!triggeredAbilityWouldFire(ability, instance, state, defs)) return noop(state);
   if (ability.oncePerTurn && instance.oncePerTurnUsed.includes(ON_BATTLE_OPT_KEY)) return noop(state);

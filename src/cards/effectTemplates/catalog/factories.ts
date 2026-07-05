@@ -13,7 +13,7 @@ function program(cardNumber: string, abilities: Ability[]): EffectProgram {
 
 function chooseOpponentCharacter(
   fn: 'koOpponentCharacter' | 'restOpponentCharacter',
-  filter: { maxCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean },
+  filter: { maxCost?: number; exactCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean },
   maxTargets = 1,
 ): EffectOp {
   const verb = fn === 'koOpponentCharacter' ? 'K.O.' : 'Rest';
@@ -224,6 +224,43 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
         { op: 'trashCards', target: { sel: 'var', name: 't' } },
       ];
+    case 'trashTypeFromHand':
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerHand', filter: { ...(f.filter.typeIncludes ? { typeIncludes: f.filter.typeIncludes } : {}) } },
+          min: f.count,
+          max: f.count,
+          prompt: `Trash ${f.count} ${f.filter.typeIncludes ? `{${f.filter.typeIncludes}} ` : ''}card${f.count === 1 ? '' : 's'} from your hand.`,
+        },
+        { op: 'trashCards', target: { sel: 'var', name: 't' } },
+      ];
+    case 'optionalTrashFromHand':
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerHand' },
+          min: 0,
+          max: f.count,
+          prompt: `You may trash ${f.count} card${f.count === 1 ? '' : 's'} from your hand.`,
+        },
+        { op: 'trashCards', target: { sel: 'var', name: 't' } },
+      ];
+    case 'trashFromOpponentHandChosenByOpponent':
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'opponentHand' },
+          min: f.count,
+          max: f.count,
+          chooser: 'opponent',
+          prompt: `Choose ${f.count} card${f.count === 1 ? '' : 's'} from your hand to trash.`,
+        },
+        { op: 'trashCards', target: { sel: 'var', name: 't' } },
+      ];
     case 'trashTopDeck':
       return [{ op: 'trashTopDeck', count: f.count }];
     case 'playFromHand': {
@@ -293,6 +330,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           ...(f.condition ? { condition: f.condition } : {}),
         },
       ];
+    case 'restSelf':
+      return [{ op: 'rest', target: { sel: 'self' } }];
     case 'setActiveSelf':
       return [{ op: 'setActive', target: { sel: 'self' } }];
     case 'setActiveControllerCharacter': {
@@ -345,6 +384,37 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
         },
       ];
+    case 'addPowerControllerCharactersAll':
+      return [
+        {
+          op: 'addPower',
+          target: { sel: 'controllerCharacters', ...(f.filter?.typeIncludes ? { typeIncludes: f.filter.typeIncludes } : {}), ...(f.filter?.maxCost !== undefined ? { maxCost: f.filter.maxCost } : {}) },
+          amount: f.amount,
+          duration: f.duration,
+        },
+      ];
+    case 'koImmunitySelf':
+      return [
+        {
+          op: 'addKoImmunity',
+          target: { sel: 'self' },
+          scope: f.scope,
+          duration: f.duration,
+          ...(f.condition ? { condition: f.condition } : {}),
+        },
+      ];
+    case 'koImmunityControllerCharactersAll':
+      return [
+        {
+          op: 'addKoImmunity',
+          target: { sel: 'controllerCharacters' },
+          scope: f.scope,
+          duration: f.duration,
+          ...(f.condition ? { condition: f.condition } : {}),
+        },
+      ];
+    case 'koImmunityChosen':
+      return [{ op: 'addKoImmunity', target: { sel: 'var', name: 't' }, scope: f.scope, duration: f.duration }];
   }
   })();
 
@@ -366,6 +436,7 @@ const FACTORY_MAP: {
         ...(gates.length > 0 ? { gate: gates } : {}),
         ...(p.cost && p.cost.length > 0 ? { cost: p.cost } : {}),
         ...(p.oncePerTurn ? { oncePerTurn: true } : {}),
+        ...(p.battlingOpponentAttribute ? { battlingOpponentAttribute: p.battlingOpponentAttribute } : {}),
         ops: p.functions.flatMap(functionOps),
       },
     ]);

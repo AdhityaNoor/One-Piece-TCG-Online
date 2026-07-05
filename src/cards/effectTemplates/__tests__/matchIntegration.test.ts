@@ -602,6 +602,88 @@ describe('curated effect template integration with match engine dispatch', () =>
     expect(afterBottomChoice.state.players.p1.hand.cardIds).not.toContain(thirdId);
   });
 
+  it('wires ST06-002 optional trash from hand into exact-cost K.O.', () => {
+    const koby = makeCharacterDef({
+      cardDefinitionId: 'ST06-002',
+      cardNumber: 'ST06-002',
+      name: 'Koby',
+      category: 'character',
+      baseCost: 0,
+      basePower: 1000,
+    });
+    const spareHandCard = makeCharacterDef({
+      cardDefinitionId: 'TEST-ST06-SPARE',
+      cardNumber: 'TEST-ST06-SPARE',
+      name: 'Spare',
+      category: 'character',
+    });
+    const costZeroTarget = makeCharacterDef({
+      cardDefinitionId: 'TEST-ST06-COST-ZERO',
+      cardNumber: 'TEST-ST06-COST-ZERO',
+      name: 'Cost Zero',
+      category: 'character',
+      baseCost: 0,
+      basePower: 1000,
+    });
+    const costOneTarget = makeCharacterDef({
+      cardDefinitionId: 'TEST-ST06-COST-ONE',
+      cardNumber: 'TEST-ST06-COST-ONE',
+      name: 'Cost One',
+      category: 'character',
+      baseCost: 1,
+      basePower: 1000,
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    let spareId: string;
+    let costZeroId: string;
+    let costOneId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', koby));
+    ({ rig, instanceId: spareId } = putInHand(rig, 'p1', spareHandCard));
+    ({ rig, instanceId: costZeroId } = putCharacterInPlay(rig, 'p2', costZeroTarget));
+    ({ rig, instanceId: costOneId } = putCharacterInPlay(rig, 'p2', costOneTarget));
+
+    const registry = buildCuratedEffectRegistry(rig.defs);
+    const playResult = executeAction(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+    const trashChoice = playResult.state.pendingChoices[0];
+    expect(trashChoice).toMatchObject({
+      sourceEffectId: 'ir',
+      constraints: { min: 0, max: 1, candidateInstanceIds: [spareId] },
+    });
+
+    const afterTrash = executeAction(
+      playResult.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: trashChoice.id, response: [spareId] },
+      rig.defs,
+      registry,
+    );
+    expect(afterTrash.state.players.p1.trash.cardIds).toContain(spareId);
+    const koChoice = afterTrash.state.pendingChoices[0];
+    expect(koChoice).toMatchObject({
+      sourceEffectId: 'ir',
+      constraints: { min: 0, max: 1, candidateInstanceIds: [costZeroId] },
+    });
+    expect(koChoice.constraints.candidateInstanceIds).not.toContain(costOneId);
+
+    const afterKo = executeAction(
+      afterTrash.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: koChoice.id, response: [costZeroId] },
+      rig.defs,
+      registry,
+    );
+
+    expect(afterKo.state.pendingChoices).toEqual([]);
+    expect(afterKo.state.players.p2.characterArea.cardIds).not.toContain(costZeroId);
+    expect(afterKo.state.players.p2.trash.cardIds).toContain(costZeroId);
+    expect(afterKo.state.players.p2.characterArea.cardIds).toContain(costOneId);
+  });
+
   it('can search top deck and trash the non-chosen remainder', () => {
     const searcher = makeCharacterDef({
       cardDefinitionId: 'TEST-TRASH-SEARCHER',

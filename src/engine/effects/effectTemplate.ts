@@ -32,6 +32,7 @@ export interface EffectContext {
   controllerTrashIds(): string[];
   controllerDeckIds(): string[];
   opponentCharacterIds(): string[];
+  opponentHandIds(): string[];
   /** Current power of an instance (2-6, incl. modifiers) — for cost/power-threshold target filters. */
   powerOf(instanceId: string): number;
   /** Current cost of an instance (2-7). */
@@ -72,6 +73,14 @@ export interface EffectContext {
   addContinuousKeyword(spec: {
     appliesToInstanceId: string;
     keyword: ContinuousKeyword;
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void;
+  /** Register a "cannot be K.O.'d" grant on the target (8-1-3-3); scope + condition re-checked on every K.O. attempt. */
+  addContinuousKoImmunity(spec: {
+    appliesToInstanceId: string;
+    scope: 'battle' | 'effect' | 'any';
     duration: ContinuousEffectDuration;
     condition?: ContinuousPowerCondition;
     description?: string;
