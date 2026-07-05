@@ -1,7 +1,7 @@
 /**
- * Engine-capability tests for the two families that were deferred in ST05:
- *   - `opponentDonMoreThanSelf` board gate (ST05-005 Carina).
- *   - onBattle `battlingOpponentAttribute` condition, attacker- AND defender-side (ST05-010 Zephyr).
+ * Engine-capability tests for reusable DON!! parity and battled-attribute families:
+ *   - `opponentDonMoreThanSelf` board gate.
+ *   - onBattle `battlingOpponentAttribute` condition, attacker- AND defender-side.
  *
  * Synthetic cards + generic assignments — the capability, not any single card number.
  */
@@ -12,7 +12,7 @@ import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putDon, putDonDeckC
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
 import type { BattleState, GameState } from '../../../engine/state/game';
 
-describe('family: opponentDonMoreThanSelf gate (ST05-005 shape)', () => {
+describe('family: opponentDonMoreThanSelf gate', () => {
   const assignment: CardEffectAssignment = {
     cardNumber: 'SYN-GATE',
     templateId: 'ability',
@@ -43,7 +43,7 @@ describe('family: opponentDonMoreThanSelf gate (ST05-005 shape)', () => {
   });
 });
 
-describe('family: onBattle battlingOpponentAttribute (ST05-010 shape)', () => {
+describe('family: onBattle battlingOpponentAttribute', () => {
   const assignment: CardEffectAssignment = {
     cardNumber: 'SYN-ZEPHYR',
     templateId: 'ability',

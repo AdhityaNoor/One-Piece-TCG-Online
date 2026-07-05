@@ -16,6 +16,29 @@ function activate(sourceInstanceId: string, donInstanceIds: string[] = []): Acti
 }
 
 describe('ACTIVATE_CARD_EFFECT ability costs', () => {
+  it('requires the ability condition before activation, not just cost payment', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const stageDef = makeStageDef({ cardDefinitionId: 'SYN-CONDITIONAL-ACTIVATE', baseCost: 0 });
+    const { rig, instanceId: stageId } = putStageInPlay(base, 'p1', stageDef, { donAttached: [] });
+    const registry: EffectTemplateRegistry = {
+      [stageDef.cardDefinitionId]: {
+        cardNumber: stageDef.cardDefinitionId,
+        abilities: [{ timing: 'activateMain', condition: { donAttachedAtLeast: 1 }, ops: [] }],
+      },
+    };
+
+    expect(validateActivateCardEffect(rig.state, activate(stageId), registry, rig.defs).legal).toBe(false);
+
+    const stateWithAttached = {
+      ...rig.state,
+      cardsById: {
+        ...rig.state.cardsById,
+        [stageId]: { ...rig.state.cardsById[stageId], donAttached: ['synthetic-attached-don'] },
+      },
+    };
+    expect(validateActivateCardEffect(stateWithAttached, activate(stageId), registry, rig.defs).legal).toBe(true);
+  });
+
   it('requires explicit DON!! selection for DON!! -N costs', () => {
     const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
     const stageDef = makeStageDef({ cardDefinitionId: 'STAGE-DON-MINUS', baseCost: 0 });

@@ -22,6 +22,16 @@ import { mintRuntimeInstanceId } from '../../rules/shared/mintInstance';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { fireOnPlay, type EffectTemplateRegistry } from '../../effects';
 
+function hasCuratedConditionalRushGrant(registry: EffectTemplateRegistry, cardDefinitionId: string): boolean {
+  return !!registry[cardDefinitionId]?.abilities.some((ability) =>
+    ability.ops.some((op) =>
+      op.op === 'addKeyword' &&
+      op.keyword === 'rush' &&
+      op.condition !== undefined,
+    ),
+  );
+}
+
 export function validatePlayCharacter(state: GameState, action: PlayCharacterAction, defs: CardDefinitionLookup): ValidationResult {
   const reasons: string[] = [];
   if (state.currentPhase !== 'main') {
@@ -104,7 +114,7 @@ export function executePlayCharacter(
     currentPower: def.basePower,
     appliedContinuousEffectIds: [],
     oncePerTurnUsed: [],
-    summoningSick: !def.hasRush, // 3-7-4, 10-1-6
+    summoningSick: hasCuratedConditionalRushGrant(registry, handInstance.cardDefinitionId) ? true : !def.hasRush, // 3-7-4, 10-1-6
     revealedTo: 'all', // 3-7-2, open zone
   };
 

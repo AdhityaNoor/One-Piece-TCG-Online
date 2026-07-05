@@ -246,6 +246,54 @@ export function fireEndOfTurn(
   return { state: working, log, pendingChoices };
 }
 
+/** Count Characters that were in play in `before` and are now in the trash in `after` (i.e. K.O.'d this action). */
+function charactersKoedBetween(before: GameState, after: GameState): number {
+  let count = 0;
+  for (const playerId of Object.keys(before.players)) {
+    for (const id of before.players[playerId].characterArea.cardIds) {
+      if (after.cardsById[id]?.currentZone === 'trash') count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * Fires reactive [When a Character is K.O.'d] abilities (timing 'onCharacterKoed'),
+ * once per Character K.O.'d over the course of an action (battle OR effect). Called
+ * from the dispatcher with the pre-action and post-action states so a single choke
+ * point catches every K.O. source. Each card's own [Your Turn]/gate condition still
+ * filters whether it actually resolves (e.g. ST08-001 fires only on its owner's turn).
+ */
+export function fireCharacterKoedReactions(
+  before: GameState,
+  after: GameState,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const koCount = charactersKoedBetween(before, after);
+  if (koCount === 0) return noop(after);
+  let working = after;
+  let log: ActionExecuteResult['log'] = [];
+  let pendingChoices: ActionExecuteResult['pendingChoices'] = [];
+  for (let i = 0; i < koCount; i += 1) {
+    for (const playerId of Object.keys(working.players)) {
+      const player = working.players[playerId];
+      for (const id of [player.leaderInstanceId, ...player.characterArea.cardIds]) {
+        const inst = working.cardsById[id];
+        if (!inst) continue;
+        const program = registry[inst.cardDefinitionId];
+        if (!program || !program.abilities.some((a) => a.timing === 'onCharacterKoed')) continue;
+        const res = runTimings(program, ['onCharacterKoed'], working, id, defs, actionId, registry);
+        working = res.state;
+        log = [...log, ...res.log];
+        pendingChoices = [...pendingChoices, ...res.pendingChoices];
+      }
+    }
+  }
+  return { state: working, log, pendingChoices };
+}
+
 /**
  * Resumes a suspended EffectProgram after its PendingChoice (sourceEffectId
  * 'ir') is answered. Called by the generic RESOLVE_PENDING_CHOICE handler.
@@ -253,7 +301,7 @@ export function fireEndOfTurn(
 export function resumeChoice(
   state: GameState,
   choiceId: string,
-  selectedInstanceIds: string[],
+  response: string[] | number,
   registry: EffectTemplateRegistry,
   defs: CardDefinitionLookup,
   actionId: string | null,
@@ -264,5 +312,5 @@ export function resumeChoice(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return resumeProgram(program, state, choice, selectedInstanceIds, defs, actionId, registry);
+  return resumeProgram(program, state, choice, response, defs, actionId, registry);
 }

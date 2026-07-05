@@ -18,9 +18,24 @@ import type { ActivateCardEffectAction, ValidationResult } from '../action';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import type { CardDefinitionLookup } from '../../rules/shared/definitions';
 import { fireActivate, evaluateGates, canPayAbilityCost, payAbilityCost, type EffectTemplateRegistry } from '../../effects';
+import type { Ability } from '../../effects/effectIr';
+import type { CardInstance } from '../../state/card';
 
 function isInPlay(zone: string): boolean {
   return zone === 'leaderArea' || zone === 'characterArea' || zone === 'stageArea';
+}
+
+function abilityConditionMet(ability: Ability, source: CardInstance, state: GameState, defs: CardDefinitionLookup): boolean {
+  const condition = ability.condition;
+  if (!condition) return true;
+  if (condition.donAttachedAtLeast !== undefined && source.donAttached.length < condition.donAttachedAtLeast) return false;
+  if (condition.turn !== undefined) {
+    const isOwnersTurn = state.activePlayerId === source.ownerId;
+    if (condition.turn === 'your' && !isOwnersTurn) return false;
+    if (condition.turn === 'opponent' && isOwnersTurn) return false;
+  }
+  if (condition.gate && !evaluateGates(condition.gate, state, defs, source.controllerId)) return false;
+  return true;
 }
 
 export function validateActivateCardEffect(
@@ -50,6 +65,9 @@ export function validateActivateCardEffect(
   }
   if (ability?.gate && !evaluateGates(ability.gate, state, defs, action.playerId)) {
     reasons.push(`'${source.cardDefinitionId}' can't be activated right now — its "If …" condition isn't met.`);
+  }
+  if (ability && !abilityConditionMet(ability, source, state, defs)) {
+    reasons.push(`'${source.cardDefinitionId}' can't be activated right now — its activation condition isn't met.`);
   }
   if (ability?.cost?.length) {
     reasons.push(...canPayAbilityCost(state, action.sourceInstanceId, action.playerId, ability.cost, action.donInstanceIds));

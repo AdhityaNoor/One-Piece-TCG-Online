@@ -50,10 +50,15 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
     // Interpreter-suspended card effect: validate the selection against the
     // choice's own candidate set + min/max (no registry needed for validation).
     const sel = action.response;
-    const { min, max, candidateInstanceIds } = choice.constraints;
-    if (!Array.isArray(sel)) {
+    if (choice.kind === 'SELECT_OPTION') {
+      const optionCount = choice.constraints.options?.length ?? 0;
+      if (typeof sel !== 'number' || !Number.isInteger(sel) || sel < 0 || sel >= optionCount) {
+        reasons.push(`A card-effect option choice expects an option index between 0 and ${Math.max(0, optionCount - 1)}.`);
+      }
+    } else if (!Array.isArray(sel)) {
       reasons.push('A card-effect choice expects an array of selected instance ids.');
     } else {
+      const { min, max, candidateInstanceIds } = choice.constraints;
       if (sel.length < min || sel.length > max) {
         reasons.push(`Select between ${min} and ${max} target(s) (got ${sel.length}) (8-4-4-1).`);
       }
@@ -95,7 +100,7 @@ export function executeResolvePendingChoice(
 
   // Interpreter-suspended card effect: resume the program with the selection.
   if (choice.sourceEffectId === 'ir') {
-    return resumeChoice(state, action.choiceId, action.response as string[], registry, defs, action.actionId);
+    return resumeChoice(state, action.choiceId, action.response as string[] | number, registry, defs, action.actionId);
   }
 
   // Life [Trigger] (10-1-5-2): activate → fire the trigger + trash the card;

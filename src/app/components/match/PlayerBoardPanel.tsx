@@ -119,7 +119,7 @@ function selectedAttackerIds(mode: BoardSelectionMode): Set<string> {
 // rule, just relocated alongside leaderCharacterSelectable above.
 function donSelectable(mode: BoardSelectionMode, isOwn: boolean, card: CardView): boolean {
   if (!isOwn) return false;
-  if (mode.kind === 'payingCost' || mode.kind === 'selectDonToGive') {
+  if (mode.kind === 'payingCost' || mode.kind === 'selectDonToGive' || mode.kind === 'payingCounterEventCost') {
     return !card.donRested;
   }
   if (mode.kind === 'payingActivateEffectCost') {
@@ -130,6 +130,7 @@ function donSelectable(mode: BoardSelectionMode, isOwn: boolean, card: CardView)
 
 function selectedDonInstanceIds(mode: BoardSelectionMode): Set<string> {
   if (mode.kind === 'payingCost') return new Set(mode.selectedDonIds);
+  if (mode.kind === 'payingCounterEventCost') return new Set(mode.selectedDonIds);
   if (mode.kind === 'selectDonToGive') return new Set(mode.selectedDonIds);
   if (mode.kind === 'payingActivateEffectCost') return new Set(mode.selectedDonIds);
   if (mode.kind === 'selectGiveDonTarget') return new Set(mode.selectedDonIds);

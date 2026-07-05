@@ -32,6 +32,7 @@ export interface EffectContext {
   controllerTrashIds(): string[];
   controllerDeckIds(): string[];
   controllerLifeTopBottomIds(): string[];
+  controllerOrOpponentLifeTopIds(): string[];
   controllerDeckTopIds(): string[];
   opponentCharacterIds(): string[];
   opponentHandIds(): string[];
@@ -85,6 +86,7 @@ export interface EffectContext {
     scope: 'battle' | 'effect' | 'any';
     duration: ContinuousEffectDuration;
     condition?: ContinuousPowerCondition;
+    attackerCategory?: 'leader' | 'character';
     description?: string;
   }): void;
   /** Prevent some/all [Blocker] activations while the target instance is attacking. */
@@ -104,6 +106,8 @@ export interface EffectContext {
   moveToBottomDeck(instanceId: string): void;
   /** Move a card to the top of its owner's Life cards, optionally face-up. */
   moveToLifeTop(instanceId: string, faceUp?: boolean): void;
+  /** Move a Life card to the bottom of its owner's Life cards. */
+  moveLifeToBottom(instanceId: string): void;
   /** Play the source Character itself from hand into the Character Area for free. */
   playSelf(): void;
   /** Play a Character from the controller's hand into the Character Area for free (3-7), summoning-sick; raises the 3-7-6-1 overflow choice if it makes a 6th. */

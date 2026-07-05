@@ -22,7 +22,10 @@ export type Selector =
   | { sel: 'opponentLeaderOrCharacters' }
   | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
   | { sel: 'opponentActiveDon' } // the opponent's active, un-attached DON!! in the cost area (rest targets)
+  | { sel: 'battleOpponent' } // the opponent Character the source is currently battling (in currentBattle), if still in play
+  | { sel: 'controllerLifeTop' } // the top card of the controller's own Life (for "add 1 from the top of your Life")
   | { sel: 'controllerLifeTopBottom' } // top and bottom Life cards, de-duplicated for 1-card Life
+  | { sel: 'controllerOrOpponentLifeTop' } // top Life card from either player, de-duplicated only by absent zones
   | { sel: 'controllerDeckTop' }
   | { sel: 'allCharacters'; maxCost?: number; maxPower?: number } // any player's Characters
   | { sel: 'opponentCharacters'; maxCost?: number; exactCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean } // optional cost/power/rested/blocker filters
@@ -72,6 +75,8 @@ export interface EffectOpSequenceGate {
    * still counts as resolving the prior function.
    */
   ifPrevious?: SequenceCondition;
+  /** Optional board-state gate checked at this exact sequence point. */
+  ifGate?: AbilityGate[];
 }
 
 /**
@@ -89,7 +94,8 @@ export type EffectOp =
   | ({ op: 'addCost'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
   | ({ op: 'addKeyword'; target: Selector; keyword: ContinuousKeyword; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
   // Grant "cannot be K.O.'d" to the target. scope 'battle' = battle K.O. only (7-1-4-2); 'any' = any source.
-  | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
+  // `attackerCategory` optionally restricts a battle immunity to a given attacker category ("by Leaders").
+  | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character' } & EffectOpSequenceGate)
   | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
   | ({ op: 'giveDon'; target: Selector; count: number } & EffectOpSequenceGate)
   | ({ op: 'ko'; target: Selector } & EffectOpSequenceGate)
@@ -98,12 +104,15 @@ export type EffectOp =
   | ({ op: 'returnToHand'; target: Selector } & EffectOpSequenceGate) // bounce a Character to its owner's hand
   | ({ op: 'moveToBottomDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's deck
   | ({ op: 'moveToLifeTop'; target: Selector; faceUp?: boolean } & EffectOpSequenceGate) // move chosen cards to the top of their owner's Life
+  | ({ op: 'peekLifeThenPlace'; from: Extract<Selector, { sel: 'controllerOrOpponentLifeTop' }>; prompt: string } & EffectOpSequenceGate) // privately look at a top Life card, then optionally place it at bottom
+  | ({ op: 'chooseLifeTopOrBottomToHand'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden top/bottom Life by position, then add it to hand
   | ({ op: 'playSelf' } & EffectOpSequenceGate) // play the source Character itself, e.g. "[Trigger] Play this card"
   | ({ op: 'playFromHand'; target: Selector } & EffectOpSequenceGate) // put a chosen Character from hand into play (no cost)
   | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
   | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
   | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string; chooser?: 'controller' | 'opponent' } & EffectOpSequenceGate)
+  | ({ op: 'chooseOption'; prompt: string; chooser?: 'controller' | 'opponent'; options: { label: string; ops: NonSuspendingEffectOp[] }[] } & EffectOpSequenceGate)
   // Look at top `look` cards; player adds up to `pick` filter-matching cards to
   // `destination`; `reveal` means the added card identity is public ("reveal up to N").
   // Without that text, the added card remains secret to the controller.
@@ -116,13 +125,23 @@ export type EffectOp =
   // Add `count` DON!! from the DON!! deck to the cost area, active or rested (DON!! ramp).
   | ({ op: 'addDonFromDeck'; count: number; rested: boolean } & EffectOpSequenceGate);
 
+export type NonSuspendingEffectOp = Exclude<
+  EffectOp,
+  | { op: 'chooseTargets' }
+  | { op: 'searchTopDeck' }
+  | { op: 'playFromDeck' }
+  | { op: 'peekLifeThenPlace' }
+  | { op: 'chooseLifeTopOrBottomToHand' }
+  | { op: 'chooseOption' }
+>;
+
 /**
  * When the ability is exposed/fires (mirrors EffectTimingKeyword).
  *   onBattle    — [When this Character battles ...]: fires when the source is the
  *                 attacker and the battle's target is an opponent Character.
  *   endOfTurn   — [End of Your Turn]: fires during the source controller's End Phase.
  */
-export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'onBlock' | 'onBattle' | 'activateMain' | 'onKO' | 'counter' | 'lifeTrigger' | 'endOfTurn';
+export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'onBlock' | 'onBattle' | 'activateMain' | 'onKO' | 'onCharacterKoed' | 'counter' | 'lifeTrigger' | 'endOfTurn';
 
 /**
  * An activation cost that must be PAID before an activated ability resolves
@@ -149,6 +168,7 @@ export type AbilityGate =
   | { kind: 'selfRestedDonCount'; atLeast?: number; atMost?: number } // "rested DON!! cards" available in cost area and not already attached
   | { kind: 'selfLife'; atLeast?: number; atMost?: number } // "If you have N or less Life cards"
   | { kind: 'opponentLife'; atLeast?: number; atMost?: number } // "If your opponent has N or less Life cards"
+  | { kind: 'selfLifeLessThanOpponent' } // "If you have less Life cards than your opponent"
   | { kind: 'selfHand'; atLeast?: number; atMost?: number } // "If you have N or less cards in your hand"
   | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
   | { kind: 'opponentDonMoreThanSelf' }; // "If your opponent has more DON!! cards on their field than you"

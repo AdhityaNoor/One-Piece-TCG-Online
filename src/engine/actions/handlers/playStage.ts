@@ -19,6 +19,7 @@ import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/def
 import { computeCurrentCost } from '../../rules/shared/power';
 import { mintRuntimeInstanceId } from '../../rules/shared/mintInstance';
 import type { ActionExecuteResult } from '../actionExecuteResult';
+import { fireOnPlay, type EffectTemplateRegistry } from '../../effects';
 
 export function validatePlayStage(state: GameState, action: PlayStageAction, defs: CardDefinitionLookup): ValidationResult {
   const reasons: string[] = [];
@@ -70,7 +71,12 @@ export function validatePlayStage(state: GameState, action: PlayStageAction, def
   return { legal: reasons.length === 0, reasons };
 }
 
-export function executePlayStage(state: GameState, action: PlayStageAction, defs: CardDefinitionLookup): ActionExecuteResult {
+export function executePlayStage(
+  state: GameState,
+  action: PlayStageAction,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+): ActionExecuteResult {
   const player = state.players[action.playerId];
   const handInstance = state.cardsById[action.handCardInstanceId];
   const def = getDefinition(defs, handInstance);
@@ -139,5 +145,6 @@ export function executePlayStage(state: GameState, action: PlayStageAction, defs
     log: [...state.log, ...logger.log],
   };
 
-  return { state: nextState, log: logger.log, pendingChoices: [] };
+  const fired = fireOnPlay(nextState, newInstanceId, registry, defs, action.actionId);
+  return { state: fired.state, log: [...logger.log, ...fired.log], pendingChoices: fired.pendingChoices };
 }

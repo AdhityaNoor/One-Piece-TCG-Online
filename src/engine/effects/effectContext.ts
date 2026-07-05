@@ -79,6 +79,11 @@ export class EffectContextImpl implements EffectContext {
     const bottom = ids[ids.length - 1];
     return top === bottom ? [top] : [top, bottom];
   }
+  controllerOrOpponentLifeTopIds(): string[] {
+    const controllerTop = this.working.players[this.controllerId].lifeArea.cardIds[0];
+    const opponentTop = this.working.players[this.opponentId].lifeArea.cardIds[0];
+    return [controllerTop, opponentTop].filter((id): id is string => id !== undefined);
+  }
   controllerDeckTopIds(): string[] {
     const top = this.working.players[this.controllerId].deck.cardIds[0];
     return top ? [top] : [];
@@ -264,6 +269,7 @@ export class EffectContextImpl implements EffectContext {
     scope: 'battle' | 'effect' | 'any';
     duration: ContinuousEffectDuration;
     condition?: ContinuousPowerCondition;
+    attackerCategory?: 'leader' | 'character';
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -275,6 +281,7 @@ export class EffectContextImpl implements EffectContext {
       koImmunityModifier: {
         appliesToInstanceId: spec.appliesToInstanceId,
         scope: spec.scope,
+        ...(spec.attackerCategory ? { attackerCategory: spec.attackerCategory } : {}),
         ...(spec.condition ? { condition: spec.condition } : {}),
       },
     };
@@ -497,8 +504,101 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  moveLifeToBottom(instanceId: string): void {
+    const inst = this.working.cardsById[instanceId];
+    if (!inst || inst.currentZone !== 'lifeArea') return;
+    const owner = this.working.players[inst.ownerId];
+    if (!owner) return;
+    const newOwner = {
+      ...owner,
+      lifeArea: addToZoneBottom(removeFromZone(owner.lifeArea, instanceId), instanceId),
+    };
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [inst.ownerId]: newOwner },
+      cardsById: {
+        ...this.working.cardsById,
+        [instanceId]: { ...inst, faceState: 'faceDown', revealedTo: [] },
+      },
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'CARD_MOVED',
+      message: `${instanceId} was placed at the bottom of its owner's Life cards.`,
+      data: { from: 'lifeArea', to: 'lifeArea', position: 'bottom', instanceId },
+      relatedCardInstanceIds: [instanceId],
+      visibility: { visibleTo: [this.controllerId] },
+    });
+  }
+
   playSelf(): void {
-    this.playCharacterFromHand(this.sourceInstanceId);
+    const inst = this.working.cardsById[this.sourceInstanceId];
+    const def = inst ? this.defs[inst.cardDefinitionId] : undefined;
+    if (!inst || !def) return;
+    if (def.category === 'character') {
+      this.playCharacterFromHand(this.sourceInstanceId);
+      return;
+    }
+    if (def.category === 'stage') {
+      this.playStageFromHand(this.sourceInstanceId);
+    }
+  }
+
+  private playStageFromHand(handInstanceId: string): void {
+    const handInst = this.working.cardsById[handInstanceId];
+    if (!handInst || handInst.currentZone !== 'hand') return;
+    const def = this.defs[handInst.cardDefinitionId];
+    if (!def || def.category !== 'stage') return;
+    const controllerId = handInst.controllerId;
+    const player = this.working.players[controllerId];
+    if (!player) return;
+
+    let trash = player.trash;
+    let cardsById = { ...this.working.cardsById };
+    const displacedStageId = player.stageArea.cardIds[0];
+    if (displacedStageId) {
+      const displaced = cardsById[displacedStageId];
+      if (displaced) {
+        trash = addToZoneTop(trash, displacedStageId);
+        cardsById[displacedStageId] = { ...displaced, currentZone: 'trash', orientation: null, donAttached: [], faceState: 'faceUp', revealedTo: 'all' };
+      }
+    }
+
+    const minted = mintRuntimeInstanceId({ ...this.working, cardsById });
+    const newId = minted.id;
+    const newInstance: CardInstance = {
+      instanceId: newId,
+      cardDefinitionId: handInst.cardDefinitionId,
+      ownerId: handInst.ownerId,
+      controllerId,
+      currentZone: 'stageArea',
+      orientation: 'active',
+      faceState: 'faceUp',
+      donAttached: [],
+      appliedContinuousEffectIds: [],
+      oncePerTurnUsed: [],
+      summoningSick: false,
+      revealedTo: 'all',
+    };
+    cardsById = { ...minted.state.cardsById, [newId]: newInstance };
+    delete cardsById[handInstanceId];
+
+    const newHand = removeFromZone(player.hand, handInstanceId);
+    const newStageArea = addToZoneBottom({ ...player.stageArea, cardIds: [] }, newId);
+    this.working = {
+      ...minted.state,
+      cardsById,
+      players: { ...minted.state.players, [controllerId]: { ...player, hand: newHand, stageArea: newStageArea, trash } },
+    };
+
+    this.logger.push({
+      actorPlayerId: controllerId,
+      type: 'CARD_PLAYED',
+      message: `${controllerId} played ${def.name} from hand via an effect (no cost).`,
+      data: { from: 'hand', to: 'stageArea', cost: 0, oldInstanceId: handInstanceId, displacedStageId },
+      relatedCardInstanceIds: displacedStageId ? [newId, displacedStageId] : [newId],
+      visibility: 'public',
+    });
   }
 
   playCharacterFromHand(handInstanceId: string): void {

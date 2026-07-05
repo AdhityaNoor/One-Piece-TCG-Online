@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { runRefreshPhase } from '../runRefreshPhase';
-import { buildBaseRig, putCharacterInPlay, putDon, makeCharacterDef } from '../../shared/__tests__/testRig';
+import { buildBaseRig, putCharacterInPlay, putDon, makeCharacterDef, makeStageDef, putStageInPlay } from '../../shared/__tests__/testRig';
 
 describe('runRefreshPhase', () => {
   it("returns given DON!!, activates rested field cards, clears summoning sickness, and un-rests cost-area DON!! for the active player only", () => {
@@ -16,7 +16,11 @@ describe('runRefreshPhase', () => {
       orientation: 'rested',
       summoningSick: true,
     });
-    const { rig, donIds } = putDon(r2, 'p1', 2, { rested: true });
+    const { rig: r3, instanceId: stageId } = putStageInPlay(r2, 'p1', makeStageDef(), {
+      orientation: 'rested',
+      oncePerTurnUsed: ['stage-effect'],
+    });
+    const { rig, donIds } = putDon(r3, 'p1', 2, { rested: true });
 
     const stateWithUsage = {
       ...rig.state,
@@ -38,6 +42,10 @@ describe('runRefreshPhase', () => {
     expect(result.state.cardsById[charId].summoningSick).toBe(false);
     expect(result.state.cardsById[charId].donAttached).toEqual([]);
     expect(result.state.cardsById[charId].oncePerTurnUsed).toEqual([]);
+
+    // Active player's Stage: active again and oncePerTurnUsed cleared.
+    expect(result.state.cardsById[stageId].orientation).toBe('active');
+    expect(result.state.cardsById[stageId].oncePerTurnUsed).toEqual([]);
 
     // Active player's cost-area DON!! un-rested.
     for (const donId of donIds) {

@@ -65,13 +65,33 @@ export function resolveDamageAndEndOfBattle(
   const attackerPlayerId = state.activePlayerId;
   const defendingPlayerId = getOpponentId(state, attackerPlayerId);
 
-  const attackerPower = computeCurrentPower(defs, state, attackerId);
-  const targetPower = computeCurrentPower(defs, state, targetId);
-  const attackerDef = getDefinition(defs, state.cardsById[attackerId]);
   // "battles an opponent Character" (for [On Battle], 8-1-3): true when the final
   // target is a Character, regardless of the battle's outcome. Captured before any
   // KO mutation moves the target to the trash.
   const targetWasCharacter = state.cardsById[targetId]?.currentZone === 'characterArea';
+
+  let nextState: GameState = state;
+  // [On Battle] (8-1-3) must fire before the power comparison so modifiers
+  // granted by that timing affect this Damage Step.
+  let onBattleLog: GameLogEntry[] = [];
+  let onBattlePending: PendingChoice[] = [];
+  if (targetWasCharacter && !nextState.gameOver) {
+    const obA = fireOnBattle(nextState, attackerId, registry, defs, causedByActionId);
+    nextState = obA.state;
+    onBattleLog = [...onBattleLog, ...obA.log];
+    onBattlePending = [...onBattlePending, ...obA.pendingChoices];
+
+    if (nextState.cardsById[targetId]?.currentZone === 'characterArea') {
+      const obD = fireOnBattle(nextState, targetId, registry, defs, causedByActionId);
+      nextState = obD.state;
+      onBattleLog = [...onBattleLog, ...obD.log];
+      onBattlePending = [...onBattlePending, ...obD.pendingChoices];
+    }
+  }
+
+  const attackerPower = computeCurrentPower(defs, nextState, attackerId);
+  const targetPower = computeCurrentPower(defs, nextState, targetId);
+  const attackerDef = getDefinition(defs, nextState.cardsById[attackerId]);
 
   logger.push({
     actorPlayerId: attackerPlayerId,
@@ -82,7 +102,6 @@ export function resolveDamageAndEndOfBattle(
     visibility: 'public',
   });
 
-  let nextState: GameState = state;
   // [On K.O.] effects can append their own log/choices once the Character is
   // trashed; collected here and merged into the final result.
   let koLog: GameLogEntry[] = [];
@@ -92,13 +111,13 @@ export function resolveDamageAndEndOfBattle(
   const triggerPending: PendingChoice[] = [];
 
   if (attackerPower >= targetPower) {
-    const target = state.cardsById[targetId];
+    const target = nextState.cardsById[targetId];
 
     if (target.currentZone === 'leaderArea') {
       const hasCuratedDoubleAttackGrant = registry[attackerDef.cardDefinitionId]?.abilities.some((ability) =>
         ability.ops.some((op) => op.op === 'addKeyword' && op.keyword === 'doubleAttack'),
       );
-      const hasDoubleAttack = (!hasCuratedDoubleAttackGrant && attackerDef.hasDoubleAttack) || hasContinuousKeyword(defs, state, attackerId, 'doubleAttack');
+      const hasDoubleAttack = (!hasCuratedDoubleAttackGrant && attackerDef.hasDoubleAttack) || hasContinuousKeyword(defs, nextState, attackerId, 'doubleAttack');
       const hitCount = hasDoubleAttack ? 2 : 1;
       let player = nextState.players[defendingPlayerId];
       let cardsById = { ...nextState.cardsById };
@@ -236,26 +255,6 @@ export function resolveDamageAndEndOfBattle(
       relatedCardInstanceIds: [attackerId, targetId],
       visibility: 'public',
     });
-  }
-
-  // [On Battle] (8-1-3): the attacker's ability fires when it battled a Character,
-  // win or lose (e.g. ST02-010 sets itself active). No-op without a curated onBattle
-  // ability; once-per-turn is enforced inside fireOnBattle.
-  let onBattleLog: GameLogEntry[] = [];
-  let onBattlePending: PendingChoice[] = [];
-  if (targetWasCharacter && !nextState.gameOver) {
-    // Attacker's [On Battle] (it battled a Character).
-    const obA = fireOnBattle(nextState, attackerId, registry, defs, causedByActionId);
-    nextState = obA.state;
-    onBattleLog = [...onBattleLog, ...obA.log];
-    onBattlePending = [...onBattlePending, ...obA.pendingChoices];
-    // Defender's [On Battle] too — "battles" is mutual — but only if it survived the Damage Step.
-    if (nextState.cardsById[targetId]?.currentZone === 'characterArea') {
-      const obD = fireOnBattle(nextState, targetId, registry, defs, causedByActionId);
-      nextState = obD.state;
-      onBattleLog = [...onBattleLog, ...obD.log];
-      onBattlePending = [...onBattlePending, ...obD.pendingChoices];
-    }
   }
 
   if (!nextState.gameOver) {

@@ -1,5 +1,5 @@
 /**
- * Engine-capability tests for the two families ST05 added:
+ * Engine-capability tests for reusable K.O. immunity and mass-buff families:
  *   - K.O. immunity ("cannot be K.O.'d", scope 'battle' | 'any') — `addKoImmunity`
  *     op, checked in the Damage Step (battle K.O.) and in effect K.O.s.
  *   - Mass self-buff ("All of your {type} Characters gain +power") — no target choice.
@@ -18,7 +18,7 @@ function reg(a: CardEffectAssignment) {
   return buildRegistryFromAssignments([a]);
 }
 
-describe('family: battle K.O. immunity gated on a board condition (ST05-008 shape)', () => {
+describe('family: battle K.O. immunity gated on a board condition', () => {
   const assignment: CardEffectAssignment = {
     cardNumber: 'SYN-IMMUNE',
     templateId: 'ability',
@@ -71,7 +71,7 @@ describe('family: battle K.O. immunity gated on a board condition (ST05-008 shap
   });
 });
 
-describe("family: 'any'-scope K.O. immunity blocks effect K.O.s (ST05-017 rider shape)", () => {
+describe("family: 'any'-scope K.O. immunity blocks effect K.O.s", () => {
   it('prevents an effect K.O. on the protected card', () => {
     // Program: choose an opponent Character and K.O. it — but first grant it 'any' immunity,
     // proving ctx.ko() honors the immunity.
@@ -90,7 +90,7 @@ describe("family: 'any'-scope K.O. immunity blocks effect K.O.s (ST05-017 rider 
     ({ rig, instanceId: srcId } = putCharacterInPlay(rig, 'p1', src));
     ({ rig, instanceId: victimId } = putCharacterInPlay(rig, 'p2', victimDef));
 
-    // Manually register an 'any'-scope immunity on the victim (as ST05-017's rider would).
+    // Manually register an 'any'-scope immunity on the victim.
     const immuneState: GameState = {
       ...rig.state,
       continuousEffects: [
@@ -108,7 +108,7 @@ describe("family: 'any'-scope K.O. immunity blocks effect K.O.s (ST05-017 rider 
   });
 });
 
-describe('family: mass self-buff to all matching own Characters (ST05-001 shape)', () => {
+describe('family: mass self-buff to all matching own Characters', () => {
   it('buffs every {FILM} Character with no target choice; leaves others and the opponent alone', () => {
     const assignment: CardEffectAssignment = {
       cardNumber: 'SYN-LEADER',

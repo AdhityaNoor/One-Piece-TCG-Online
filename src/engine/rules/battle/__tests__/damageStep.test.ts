@@ -9,6 +9,7 @@ import {
   makeLeaderDef,
   nextTestId,
 } from '../../shared/__tests__/testRig';
+import type { EffectTemplateRegistry } from '../../../effects';
 
 function battleAt(attackerInstanceId: string, targetInstanceId: string, overrides: Partial<BattleState> = {}): BattleState {
   return {
@@ -122,6 +123,43 @@ describe('resolveDamageAndEndOfBattle', () => {
     expect(result.state.players.p2.trash.cardIds).toContain(targetCharId);
     expect(result.log.some((e) => e.type === 'CHARACTER_KO')).toBe(true);
     expect(result.state.currentBattle).toBeNull();
+  });
+
+  it('[On Battle] power modifiers apply before the Damage Step comparison', () => {
+    const attackerDef = makeCharacterDef({
+      cardDefinitionId: 'SYN-ON-BATTLE',
+      cardNumber: 'SYN-ON-BATTLE',
+      basePower: 5000,
+      attributes: ['special'],
+    });
+    const targetDef = makeCharacterDef({
+      cardDefinitionId: 'SYN-STRIKE-TARGET',
+      cardNumber: 'SYN-STRIKE-TARGET',
+      basePower: 7000,
+      attributes: ['strike'],
+    });
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    let attackerId: string;
+    let targetId: string;
+    ({ rig, instanceId: attackerId } = putCharacterInPlay(rig, 'p1', attackerDef, { orientation: 'rested' }));
+    ({ rig, instanceId: targetId } = putCharacterInPlay(rig, 'p2', targetDef, { orientation: 'rested' }));
+    const registry: EffectTemplateRegistry = {
+      'SYN-ON-BATTLE': {
+        cardNumber: 'SYN-ON-BATTLE',
+        abilities: [
+          {
+            timing: 'onBattle',
+            battlingOpponentAttribute: 'strike',
+            ops: [{ op: 'addPower', target: { sel: 'self' }, amount: 3000, duration: 'duringThisTurn' }],
+          },
+        ],
+      },
+    };
+    const battling = { ...rig.state, currentBattle: battleAt(attackerId, targetId) };
+
+    const result = resolveDamageAndEndOfBattle(battling, rig.defs, 'action-x', registry);
+
+    expect(result.state.cardsById[targetId].currentZone).toBe('trash');
   });
 
   it('a failed attack (attacker power < target power) changes nothing but still ends the Battle', () => {

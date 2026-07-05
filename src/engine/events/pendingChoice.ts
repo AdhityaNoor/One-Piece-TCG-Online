@@ -33,6 +33,8 @@ export interface ChoiceConstraints {
    * only filter-matching cards are eligible to add/select.
    */
   visibleInstanceIds?: string[];
+  /** Discrete option labels for SELECT_OPTION choices; response is the selected option index. */
+  options?: { label: string }[];
 }
 
 /**

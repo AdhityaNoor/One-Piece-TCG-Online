@@ -18,8 +18,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { runTimings } from '../../../engine/effects/interpreter';
+import { executePlayCharacter } from '../../../engine/actions/handlers/playCharacter';
 import { computeCurrentPower, hasContinuousKeyword } from '../../../engine/rules/shared';
-import { buildBaseRig, makeCharacterDef, putCharacterInPlay } from '../../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putInHand } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
 import type { ContinuousKeyword } from '../../../engine/state/game';
 import type { CardInstance } from '../../../engine/state/card';
@@ -82,6 +83,31 @@ describe('semantic family: static conditional self keyword grant (same shape, ke
     const kw: ContinuousKeyword = 'rush';
     expect(hasContinuousKeyword(...toKwArgs(enterPlay(assignment, ['d1'], 'p1'), kw))).toBe(false); // below threshold
     expect(hasContinuousKeyword(...toKwArgs(enterPlay(assignment, ['d1', 'd2'], 'p1'), kw))).toBe(true); // at threshold
+  });
+
+  it('does not let conditional Rush bypass summoning sickness when the card is played with 0 DON!! attached', () => {
+    const registry = buildRegistryFromAssignments([assignment]);
+    const base = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    const printedConditionalRushDef = makeCharacterDef({
+      cardDefinitionId: 'SYN-STATIC',
+      cardNumber: 'SYN-STATIC',
+      category: 'character',
+      baseCost: 0,
+      basePower: 5000,
+      hasRush: true,
+    });
+    const { rig, instanceId: handId } = putInHand(base, 'p1', printedConditionalRushDef);
+
+    const played = executePlayCharacter(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: 'play-conditional-rush', playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+
+    const playedId = played.state.players.p1.characterArea.cardIds[0];
+    expect(played.state.cardsById[playedId].summoningSick).toBe(true);
+    expect(hasContinuousKeyword(rig.defs, played.state, playedId, 'rush')).toBe(false);
   });
 });
 

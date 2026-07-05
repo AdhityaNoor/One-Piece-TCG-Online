@@ -43,7 +43,7 @@ import type { GameState } from '../state/game';
 import type { GameAction, GameActionType, ValidationResult } from './action';
 import type { ActionExecuteResult } from './actionExecuteResult';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
-import type { EffectTemplateRegistry } from '../effects';
+import { fireCharacterKoedReactions, type EffectTemplateRegistry } from '../effects';
 import { advanceAutomaticPhases } from '../rules/phases';
 import {
   validatePlayCharacter,
@@ -170,7 +170,7 @@ export function executeAction(
       result = executePlayCharacter(state, action, defs, registry);
       break;
     case 'PLAY_STAGE':
-      result = executePlayStage(state, action, defs);
+      result = executePlayStage(state, action, defs, registry);
       break;
     case 'ACTIVATE_EVENT_MAIN':
       result = executeActivateEventMain(state, action, defs, registry);
@@ -218,9 +218,12 @@ export function executeAction(
   }
 
   const cascade = advanceAutomaticPhases(result.state, defs, registry);
+  // Reactive [When a Character is K.O.'d] abilities (e.g. ST08-001): a single choke point
+  // that catches K.O.s from any source this action (battle or effect), by diffing play->trash.
+  const reactive = fireCharacterKoedReactions(state, cascade.state, registry, defs, action.actionId);
   return {
-    state: cascade.state,
-    log: [...result.log, ...cascade.log],
-    pendingChoices: result.pendingChoices,
+    state: reactive.state,
+    log: [...result.log, ...cascade.log, ...reactive.log],
+    pendingChoices: [...result.pendingChoices, ...reactive.pendingChoices],
   };
 }

@@ -133,6 +133,12 @@ export function isKoImmune(defs: CardDefinitionLookup, state: GameState, instanc
     if (!mod || mod.appliesToInstanceId !== instanceId) return false;
     if (mod.scope === 'battle' && cause !== 'battle') return false;
     if (mod.scope === 'effect' && cause !== 'effect') return false;
+    // "by Leaders/Characters": the current battle's attacker must be of that category.
+    if (mod.attackerCategory !== undefined) {
+      const attackerId = state.currentBattle?.attackerInstanceId;
+      const attackerDef = attackerId ? defs[state.cardsById[attackerId]?.cardDefinitionId ?? ''] : undefined;
+      if (attackerDef?.category !== mod.attackerCategory) return false;
+    }
     return conditionApplies(mod.condition, record, state, instanceId, defs);
   });
 }

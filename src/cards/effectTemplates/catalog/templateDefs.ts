@@ -50,9 +50,11 @@ export type AbilityFunction =
   | { fn: 'optionalTrashFromHand'; count: number }
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
   | { fn: 'trashTopDeck'; count: number }
-  | { fn: 'optionalTakeLifeTopOrBottomToHand' }
-  | { fn: 'addDeckTopToLifeTop' }
-  | { fn: 'optionalAddDeckTopToLifeTop' }
+  | { fn: 'moveLifeToHand'; from: 'topOrBottom'; optional: boolean }
+  | { fn: 'peekLifeAndPlace'; from: 'controllerOrOpponentTop'; placement: 'topOrBottom' }
+  | { fn: 'moveDeckTopToLife'; position: 'top'; optional: boolean }
+  | { fn: 'moveHandToLife'; position: 'top'; optional: boolean; maxTargets?: number }
+  | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
   | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'moveFromTrashToHand'; filter: SearchFilter; maxTargets?: number }
@@ -63,6 +65,7 @@ export type AbilityFunction =
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }
   | { fn: 'setActiveControllerCharacter'; filter?: { maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }; maxTargets?: number }
+  | { fn: 'moveControllerCharacterToLifeTopFaceUp'; filter?: { maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }; maxTargets?: number }
   | { fn: 'setActiveControllerDon'; maxTargets: number }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
   | { fn: 'restOpponentDon'; maxTargets?: number }
@@ -73,18 +76,32 @@ export type AbilityFunction =
   // no target choice ("All of your {FILM} type Characters gain +2000").
   | { fn: 'addPowerControllerCharactersAll'; amount: number; duration: IrDuration; filter?: { typeIncludes?: string; maxCost?: number } }
   // "This card cannot be K.O.'d" — scope 'battle' (battle K.O. only) or 'any'.
-  | { fn: 'koImmunitySelf'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition }
+  // `attackerCategory` optionally limits a battle immunity to a given attacker ("by Leaders").
+  | { fn: 'koImmunitySelf'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character' }
   | { fn: 'koImmunityControllerCharactersAll'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition }
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
   | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
   // Trash exactly `count` cards of a given type from your hand (used to pay a typed hand cost).
   | { fn: 'trashTypeFromHand'; count: number; filter: { typeIncludes?: string } }
   // Trash the top `count` of the opponent's Life cards ("Trash up to N of your opponent's Life cards").
-  | { fn: 'trashOpponentLife'; count: number };
+  | { fn: 'trashOpponentLife'; count: number }
+  // K.O. ALL Characters (both players) matching a cost/power filter, no target choice
+  // ("K.O. all Characters with a cost of 1 or less").
+  | { fn: 'koAllCharacters'; filter?: { maxCost?: number; maxPower?: number } }
+  // K.O. the source card itself ("K.O. this Character"); usually gated with ifPrevious.
+  | { fn: 'koSelf' }
+  // K.O. the opponent Character the source is battling (onBattle), the player may decline.
+  | { fn: 'koBattleOpponent' }
+  // "You may add 1 card from the top of your Life cards to your hand" (optional; usually a cost).
+  | { fn: 'optionalTakeTopLifeToHand' }
+  // Give up to `count` rested DON!! to the controller's Leader (no target choice) — "give ... to this Leader".
+  | { fn: 'giveDonControllerLeader'; count: number };
 
 export type SequencedAbilityFunction = AbilityFunction & {
   /** Gate this function on the prior function result, for "if you do" wording. */
   ifPrevious?: SequenceCondition;
+  /** Gate this function at its exact sequence point, after prior effects/costs have resolved. */
+  ifGate?: AbilityGate[];
 };
 
 export interface AbilityTemplateParams {

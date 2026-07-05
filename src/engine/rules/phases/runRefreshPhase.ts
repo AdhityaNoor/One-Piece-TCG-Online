@@ -60,11 +60,15 @@ export function runRefreshPhase(state: GameState): PhaseStepResult {
     cardsById[id] = { ...cardsById[id], orientation: 'active', donAttached: [], summoningSick: false };
   }
 
+  for (const id of player.stageArea.cardIds) {
+    cardsById[id] = { ...cardsById[id], orientation: 'active', donAttached: [] };
+  }
+
   for (const id of player.costArea.cardIds) {
     cardsById[id] = { ...cardsById[id], donRested: false };
   }
 
-  const controlledIds = [player.leaderInstanceId, ...player.characterArea.cardIds];
+  const controlledIds = [player.leaderInstanceId, ...player.characterArea.cardIds, ...player.stageArea.cardIds];
   for (const id of controlledIds) {
     if (cardsById[id].oncePerTurnUsed.length > 0) {
       cardsById[id] = { ...cardsById[id], oncePerTurnUsed: [] };

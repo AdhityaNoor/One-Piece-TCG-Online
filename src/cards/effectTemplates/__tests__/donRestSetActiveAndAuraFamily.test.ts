@@ -1,5 +1,5 @@
 /**
- * Engine-capability tests for the four families ST02 added on top of `setActive`:
+ * Engine-capability tests for reusable DON!! denial, set-active, and aura families:
  *   - restOpponentDon            (DON!! denial: rest an opponent's active DON!!)
  *   - onBattle timing            (+ [Once Per Turn] enforcement in fireOnBattle)
  *   - endOfTurn timing           (fired for the ending player's cards)

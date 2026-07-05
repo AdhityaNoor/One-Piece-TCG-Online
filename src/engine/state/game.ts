@@ -171,6 +171,11 @@ export interface ContinuousKeywordModifier {
 export interface ContinuousKoImmunityModifier {
   appliesToInstanceId: string;
   scope: 'battle' | 'effect' | 'any';
+  /**
+   * Restrict a battle immunity to K.O.s dealt by an attacker of this category
+   * ("cannot be K.O.'d in battle by Leaders" → 'leader'). Omitted = any attacker.
+   */
+  attackerCategory?: 'leader' | 'character';
   /** Omitted when the immunity is unconditional. */
   condition?: ContinuousPowerCondition;
 }

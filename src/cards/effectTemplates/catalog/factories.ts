@@ -4,7 +4,7 @@
  * This file produces plain JSON-serializable EffectProgram data. It does not
  * execute card text, and callers never pass raw card effect text.
  */
-import type { Ability, EffectOp, EffectProgram } from '../../../engine/effects/effectIr';
+import type { Ability, EffectOp, EffectProgram, NonSuspendingEffectOp } from '../../../engine/effects/effectIr';
 import type { SequencedAbilityFunction, TemplateId, TemplateParamMap } from './templateDefs';
 
 function program(cardNumber: string, abilities: Ability[]): EffectProgram {
@@ -27,9 +27,24 @@ function chooseOpponentCharacter(
   };
 }
 
+function nonSuspendingBranchOps(functions: SequencedAbilityFunction[]): NonSuspendingEffectOp[] {
+  const ops = functions.flatMap(functionOps);
+  const suspending = ops.find((op) => op.op === 'chooseTargets' || op.op === 'searchTopDeck' || op.op === 'playFromDeck' || op.op === 'peekLifeThenPlace' || op.op === 'chooseLifeTopOrBottomToHand' || op.op === 'chooseOption');
+  if (suspending) {
+    throw new Error(`chooseOne branch cannot contain suspending op '${suspending.op}' yet.`);
+  }
+  return ops as NonSuspendingEffectOp[];
+}
+
 function functionOps(f: SequencedAbilityFunction): EffectOp[] {
   const withSequenceGate = (ops: EffectOp[]): EffectOp[] =>
-    f.ifPrevious ? ops.map((op) => ({ ...op, ifPrevious: f.ifPrevious })) : ops;
+    f.ifPrevious || f.ifGate
+      ? ops.map((op) => ({
+          ...op,
+          ...(f.ifPrevious ? { ifPrevious: f.ifPrevious } : {}),
+          ...(f.ifGate ? { ifGate: f.ifGate } : {}),
+        }))
+      : ops;
 
   const ops = ((): EffectOp[] => {
   switch (f.fn) {
@@ -277,21 +292,24 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'trashTopDeck':
       return [{ op: 'trashTopDeck', count: f.count }];
-    case 'optionalTakeLifeTopOrBottomToHand':
+    case 'moveLifeToHand':
       return [
         {
-          op: 'chooseTargets',
-          var: 't',
-          from: { sel: 'controllerLifeTopBottom' },
-          min: 0,
-          max: 1,
-          prompt: 'You may add 1 card from the top or bottom of your Life cards to your hand.',
+          op: 'chooseLifeTopOrBottomToHand',
+          optional: f.optional,
+          prompt: `${f.optional ? 'You may add' : 'Add'} 1 card from the top or bottom of your Life cards to your hand.`,
         },
-        { op: 'moveToHand', target: { sel: 'var', name: 't' } },
       ];
-    case 'addDeckTopToLifeTop':
-      return [{ op: 'moveToLifeTop', target: { sel: 'controllerDeckTop' } }];
-    case 'optionalAddDeckTopToLifeTop':
+    case 'peekLifeAndPlace':
+      return [
+        {
+          op: 'peekLifeThenPlace',
+          from: { sel: 'controllerOrOpponentLifeTop' },
+          prompt: 'Look at up to 1 card from the top of your or your opponent\'s Life cards. Select it to place it at the bottom; select none to leave it on top.',
+        },
+      ];
+    case 'moveDeckTopToLife':
+      if (!f.optional) return [{ op: 'moveToLifeTop', target: { sel: 'controllerDeckTop' } }];
       return [
         {
           op: 'chooseTargets',
@@ -302,6 +320,28 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           prompt: 'You may add the top card of your deck to the top of your Life cards.',
         },
         { op: 'moveToLifeTop', target: { sel: 'var', name: 't' } },
+      ];
+    case 'moveHandToLife':
+      if (!f.optional) return [{ op: 'moveToLifeTop', target: { sel: 'controllerHand' } }];
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerHand' },
+          min: 0,
+          max: f.maxTargets ?? 1,
+          prompt: `Add up to ${f.maxTargets ?? 1} card${(f.maxTargets ?? 1) === 1 ? '' : 's'} from your hand to the top of your Life cards.`,
+        },
+        { op: 'moveToLifeTop', target: { sel: 'var', name: 't' } },
+      ];
+    case 'chooseOne':
+      return [
+        {
+          op: 'chooseOption',
+          chooser: f.chooser,
+          prompt: f.prompt,
+          options: f.options.map((option) => ({ label: option.label, ops: nonSuspendingBranchOps(option.functions) })),
+        },
       ];
     case 'playFromHand': {
       const maxTargets = f.maxTargets ?? 1;
@@ -388,6 +428,20 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'setActive', target: { sel: 'var', name: 't' } },
       ];
     }
+    case 'moveControllerCharacterToLifeTopFaceUp': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerCharacters', ...f.filter },
+          min: 0,
+          max: maxTargets,
+          prompt: `Add up to ${maxTargets} of your Characters to the top of its owner's Life cards face-up (or decline).`,
+        },
+        { op: 'moveToLifeTop', target: { sel: 'var', name: 't' }, faceUp: true },
+      ];
+    }
     case 'setActiveControllerDon':
       return [
         {
@@ -441,6 +495,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           scope: f.scope,
           duration: f.duration,
           ...(f.condition ? { condition: f.condition } : {}),
+          ...(f.attackerCategory ? { attackerCategory: f.attackerCategory } : {}),
         },
       ];
     case 'koImmunityControllerCharactersAll':
@@ -457,6 +512,27 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'addKoImmunity', target: { sel: 'var', name: 't' }, scope: f.scope, duration: f.duration }];
     case 'trashOpponentLife':
       return [{ op: 'trashLife', player: 'opponent', count: f.count }];
+    case 'koAllCharacters':
+      return [
+        {
+          op: 'ko',
+          target: { sel: 'allCharacters', ...(f.filter?.maxCost !== undefined ? { maxCost: f.filter.maxCost } : {}), ...(f.filter?.maxPower !== undefined ? { maxPower: f.filter.maxPower } : {}) },
+        },
+      ];
+    case 'koSelf':
+      return [{ op: 'ko', target: { sel: 'self' } }];
+    case 'giveDonControllerLeader':
+      return [{ op: 'giveDon', target: { sel: 'controllerLeader' }, count: f.count }];
+    case 'optionalTakeTopLifeToHand':
+      return [
+        { op: 'chooseTargets', var: 't', from: { sel: 'controllerLifeTop' }, min: 0, max: 1, prompt: 'You may add the top card of your Life cards to your hand.' },
+        { op: 'moveToHand', target: { sel: 'var', name: 't' } },
+      ];
+    case 'koBattleOpponent':
+      return [
+        { op: 'chooseTargets', var: 't', from: { sel: 'battleOpponent' }, min: 0, max: 1, prompt: "K.O. the opponent's Character you battled with (or decline)." },
+        { op: 'ko', target: { sel: 'var', name: 't' } },
+      ];
   }
   })();
 

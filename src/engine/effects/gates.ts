@@ -131,6 +131,13 @@ function evaluateGate(
       return true;
     }
 
+    case 'selfLifeLessThanOpponent': {
+      const opponentId = getOpponentId(state, ownerId);
+      const opponent = state.players[opponentId];
+      if (!opponent) return false;
+      return player.lifeArea.cardIds.length < opponent.lifeArea.cardIds.length;
+    }
+
     case 'selfHand': {
       const count = player.hand.cardIds.length;
       if (gate.atLeast !== undefined && count < gate.atLeast) return false;

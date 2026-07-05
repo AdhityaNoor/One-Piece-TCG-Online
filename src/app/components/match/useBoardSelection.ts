@@ -22,6 +22,8 @@ import type { CardView } from '../../../board/projection';
 import { computeCurrentCost } from '../../../engine/rules/shared/power';
 import { getOpponentId } from '../../../engine/rules/shared';
 import { canPayAbilityCost, evaluateGates, fieldDonIds, requiredDonMinusCount } from '../../../engine/effects';
+import type { Ability } from '../../../engine/effects/effectIr';
+import type { CardInstance } from '../../../engine/state/card';
 
 export type BoardZoneKind = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'attachedDon' | 'trash';
 
@@ -45,6 +47,19 @@ const PLAY_ACTION_BY_CATEGORY: Record<'character' | 'stage' | 'event', GameActio
   event: 'ACTIVATE_EVENT_MAIN',
 };
 
+function abilityConditionMet(ability: Ability, source: CardInstance, state: NonNullable<ReturnType<typeof useMatchStore.getState>['state']>, defs: ReturnType<typeof useMatchStore.getState>['defs']): boolean {
+  const condition = ability.condition;
+  if (!condition) return true;
+  if (condition.donAttachedAtLeast !== undefined && source.donAttached.length < condition.donAttachedAtLeast) return false;
+  if (condition.turn !== undefined) {
+    const isOwnersTurn = state.activePlayerId === source.ownerId;
+    if (condition.turn === 'your' && !isOwnersTurn) return false;
+    if (condition.turn === 'opponent' && isOwnersTurn) return false;
+  }
+  if (condition.gate && !evaluateGates(condition.gate, state, defs, source.controllerId)) return false;
+  return true;
+}
+
 export function useBoardSelection(actingPlayerId: string | null) {
   const dispatch = useMatchStore((s) => s.dispatch);
   const state = useMatchStore((s) => s.state);
@@ -66,6 +81,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (state.currentPhase !== 'main' || actingPlayerId !== state.activePlayerId) return false;
     if (ability.oncePerTurn && card.oncePerTurnUsed.includes('activateMain')) return false;
     if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, actingPlayerId)) return false;
+    if (!abilityConditionMet(ability, inst, state, defs)) return false;
     if (ability.cost?.length) {
       const requiredDon = requiredDonMinusCount(ability.cost);
       const selectedDon = requiredDon > 0 ? fieldDonIds(state, actingPlayerId).slice(0, requiredDon) : [];
