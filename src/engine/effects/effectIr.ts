@@ -26,6 +26,7 @@ export type Selector =
   | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean } // optional cost/power/rested/blocker filters
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
   | { sel: 'controllerTrash'; filter?: SearchFilter } // controller's trash cards matching a filter (for recover-to-hand)
+  | { sel: 'controllerDeck'; filter?: SearchFilter } // controller's deck cards matching a filter (for play-from-deck)
   | { sel: 'var'; name: string }; // ids bound by a prior chooseTargets op
 
 export type IrCondition = ContinuousPowerCondition; // { donAttachedAtLeast?, turn? }
@@ -58,7 +59,7 @@ export interface SearchFilter {
 }
 
 export type SearchRemainderDestination = 'bottom' | 'trash';
-export type SearchPickDestination = 'hand' | 'lifeTop';
+export type SearchPickDestination = 'hand' | 'lifeTop' | 'deckTopOrBottom';
 export type SequenceCondition = 'previousSelectedAny' | 'previousMovedAny';
 
 export interface EffectOpSequenceGate {
@@ -93,6 +94,7 @@ export type EffectOp =
   | ({ op: 'moveToBottomDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's deck
   | ({ op: 'playSelf' } & EffectOpSequenceGate) // play the source Character itself, e.g. "[Trigger] Play this card"
   | ({ op: 'playFromHand'; target: Selector } & EffectOpSequenceGate) // put a chosen Character from hand into play (no cost)
+  | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
   | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
   | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string } & EffectOpSequenceGate)
@@ -112,7 +114,7 @@ export type EffectOp =
  *                 attacker and the battle's target is an opponent Character.
  *   endOfTurn   — [End of Your Turn]: fires during the source controller's End Phase.
  */
-export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'onBattle' | 'activateMain' | 'onKO' | 'counter' | 'lifeTrigger' | 'endOfTurn';
+export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'onBlock' | 'onBattle' | 'activateMain' | 'onKO' | 'counter' | 'lifeTrigger' | 'endOfTurn';
 
 /**
  * An activation cost that must be PAID before an activated ability resolves

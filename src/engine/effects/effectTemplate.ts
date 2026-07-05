@@ -30,6 +30,7 @@ export interface EffectContext {
   controllerCharacterIds(): string[];
   controllerHandIds(): string[];
   controllerTrashIds(): string[];
+  controllerDeckIds(): string[];
   opponentCharacterIds(): string[];
   /** Current power of an instance (2-6, incl. modifiers) — for cost/power-threshold target filters. */
   powerOf(instanceId: string): number;
@@ -94,6 +95,10 @@ export interface EffectContext {
   playSelf(): void;
   /** Play a Character from the controller's hand into the Character Area for free (3-7), summoning-sick; raises the 3-7-6-1 overflow choice if it makes a 6th. */
   playCharacterFromHand(handInstanceId: string): void;
+  /** Play a Character from the controller's deck into the Character Area for free (3-7), then the caller should shuffle the deck if card text instructs it. */
+  playCharacterFromDeck(deckInstanceId: string): void;
+  /** Shuffle a player's deck using the serialized seedable RNG state. */
+  shuffleDeck(playerId: string): void;
   /** Move a card (e.g. from the trash) to its owner's hand. */
   moveToHand(instanceId: string): void;
   /** Move a card (e.g. from the hand) to its owner's trash. */
@@ -113,6 +118,8 @@ export interface EffectContext {
    * may use a player-selected order when supplied.
    */
   searchResolve(playerId: string, lookedIds: string[], chosenIds: string[], remainder: SearchRemainderDestination, reveal: boolean, destination: SearchPickDestination, bottomOrderIds?: string[]): void;
+  /** Resolve a top-deck search/look whose placement returns cards to top and bottom in selected order. */
+  searchResolveTopOrBottom(playerId: string, lookedIds: string[], topOrderIds: string[], bottomOrderIds: string[]): void;
   /** Emit a fully-built PendingChoice (the interpreter uses this to suspend; carries its resume point). */
   emitChoice(choice: PendingChoice): void;
 }

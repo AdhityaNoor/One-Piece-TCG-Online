@@ -191,12 +191,14 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return searchEligible(ctx.controllerHandIds(), sel.filter, ctx);
     case 'controllerTrash':
       return searchEligible(ctx.controllerTrashIds(), sel.filter, ctx);
+    case 'controllerDeck':
+      return searchEligible(ctx.controllerDeckIds(), sel.filter, ctx);
     case 'var':
       return bindings[sel.name] ?? [];
   }
 }
 
-function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTopDeck' }>, ctx: EffectContextImpl, bindings: Record<string, string[]>): OpResult {
+function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTopDeck' } | { op: 'playFromDeck' }>, ctx: EffectContextImpl, bindings: Record<string, string[]>): OpResult {
   switch (op.op) {
     case 'draw':
       ctx.draw(ctx.controllerId, op.amount);
@@ -324,19 +326,42 @@ function runOps(
     if (op.op === 'searchTopDeck') {
       const looked = ctx.topOfDeck(ctx.controllerId, op.look);
       if (looked.length === 0) continue; // empty deck — nothing to look at, skip
-      const eligible = searchEligible(looked, op.filter, ctx);
+      const eligible = op.destination === 'deckTopOrBottom' ? looked : searchEligible(looked, op.filter, ctx);
       const remainder = op.remainder ?? 'bottom';
+      const max = op.destination === 'deckTopOrBottom' ? looked.length : op.pick;
       const choice: PendingChoice = {
         id: `${ctx.sourceInstanceId}__ir-${abilityIndex}-${i}`,
         playerId: ctx.controllerId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
-        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: looked },
+        constraints: { min: 0, max, candidateInstanceIds: eligible, visibleInstanceIds: looked },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
         // Stash the full looked-at set on the resume point so resolveSearch can
         // send the non-chosen remainder to the bottom of the deck.
         resumeState: { abilityIndex, opIndex: i, bindings: { ...workingBindings, __looked: looked, __remainder: [remainder], __reveal: [op.reveal ? 'true' : 'false'], __destination: [op.destination] } },
+      };
+      ctx.emitChoice(choice);
+      return true;
+    }
+    if (op.op === 'playFromDeck') {
+      const deckIds = ctx.controllerDeckIds();
+      if (deckIds.length === 0) continue;
+      const eligible = searchEligible(deckIds, op.filter, ctx);
+      if (eligible.length === 0) {
+        ctx.shuffleDeck(ctx.controllerId);
+        workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
+        continue;
+      }
+      const choice: PendingChoice = {
+        id: `${ctx.sourceInstanceId}__ir-${abilityIndex}-${i}`,
+        playerId: ctx.controllerId,
+        kind: 'SELECT_CARDS',
+        prompt: op.prompt,
+        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: deckIds },
+        sourceInstanceId: ctx.sourceInstanceId,
+        sourceEffectId: 'ir',
+        resumeState: { abilityIndex, opIndex: i, bindings: workingBindings },
       };
       ctx.emitChoice(choice);
       return true;
@@ -456,7 +481,7 @@ export function resumeProgram(
 
   const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
   const op = ability.ops[rs.opIndex];
-  if (!op || (op.op !== 'chooseTargets' && op.op !== 'searchTopDeck')) return noop(stateWithoutChoice);
+  if (!op || (op.op !== 'chooseTargets' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck')) return noop(stateWithoutChoice);
 
   if (op.op === 'searchTopDeck') {
     // The chosen subset goes to hand; resolveSearch sends the looked remainder
@@ -466,6 +491,34 @@ export function resumeProgram(
     const reveal = (rs.bindings.__reveal?.[0] ?? (op.reveal ? 'true' : 'false')) === 'true';
     const destination = (rs.bindings.__destination?.[0] ?? op.destination) as SearchPickDestination;
     const chosen = rs.bindings.__searchChosen ?? selection;
+    if (destination === 'deckTopOrBottom') {
+      const topOrder = rs.bindings.__searchTopOrder ?? selection;
+      if (!rs.bindings.__searchTopOrder) {
+        const topSet = new Set(selection);
+        const rest = looked.filter((id) => !topSet.has(id));
+        if (rest.length > 1) {
+          const bottomOrderChoice: PendingChoice = {
+            id: `${choice.sourceInstanceId}__ir-${rs.abilityIndex}-${rs.opIndex}-bottom-order`,
+            playerId: ctx.controllerId,
+            kind: 'SELECT_CARDS',
+            prompt: 'Choose the order to place the remaining looked cards at the bottom of your deck. First selected is placed first; last selected becomes the bottom card.',
+            constraints: { min: rest.length, max: rest.length, candidateInstanceIds: rest },
+            sourceInstanceId: choice.sourceInstanceId,
+            sourceEffectId: 'ir',
+            resumeState: { abilityIndex: rs.abilityIndex, opIndex: rs.opIndex, bindings: { ...rs.bindings, __searchTopOrder: selection } },
+          };
+          ctx.emitChoice(bottomOrderChoice);
+          return ctx.finish();
+        }
+        ctx.searchResolveTopOrBottom(ctx.controllerId, looked, selection, rest);
+      } else {
+        ctx.searchResolveTopOrBottom(ctx.controllerId, looked, topOrder, selection);
+      }
+      const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: topOrder, movedIds: looked });
+      const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterSearchBindings, ctx);
+      if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+      return finishWithCascade(ctx, defs, actionId, registry);
+    }
     if (remainder === 'bottom' && !rs.bindings.__searchChosen) {
       const chosenSet = new Set(selection);
       const rest = looked.filter((id) => !chosenSet.has(id));
@@ -487,6 +540,15 @@ export function resumeProgram(
     ctx.searchResolve(ctx.controllerId, looked, chosen, remainder, reveal, destination, rs.bindings.__searchChosen ? selection : undefined);
     const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: chosen, movedIds: chosen });
     const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterSearchBindings, ctx);
+    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+    return finishWithCascade(ctx, defs, actionId, registry);
+  }
+
+  if (op.op === 'playFromDeck') {
+    for (const id of selection) ctx.playCharacterFromDeck(id);
+    ctx.shuffleDeck(ctx.controllerId);
+    const afterPlayBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
+    const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterPlayBindings, ctx);
     if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
     return finishWithCascade(ctx, defs, actionId, registry);
   }

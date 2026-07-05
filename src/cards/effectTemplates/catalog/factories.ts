@@ -240,6 +240,31 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'playFromHand', target: { sel: 'var', name: 't' } },
       ];
     }
+    case 'playFromDeck': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'playFromDeck',
+          pick: maxTargets,
+          filter: f.filter,
+          prompt: `Play up to ${maxTargets} matching Character card${maxTargets === 1 ? '' : 's'} from your deck, then shuffle your deck.`,
+        },
+      ];
+    }
+    case 'moveFromTrashToHand': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerTrash', filter: f.filter },
+          min: 0,
+          max: maxTargets,
+          prompt: `Add up to ${maxTargets} matching card${maxTargets === 1 ? '' : 's'} from your trash to your hand.`,
+        },
+        { op: 'moveToHand', target: { sel: 'var', name: 't' } },
+      ];
+    }
     case 'triggerPlaySelf':
       return [{ op: 'playSelf' }];
     case 'searchTopDeck':
@@ -250,9 +275,12 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           pick: f.pick,
           reveal: f.reveal,
           destination: f.destination,
-          filter: f.filter,
+          ...(f.filter ? { filter: f.filter } : {}),
           ...(f.remainder ? { remainder: f.remainder } : {}),
-          prompt: `Look at the top ${f.look}: add up to ${f.pick} matching card${f.pick === 1 ? '' : 's'} to ${f.destination === 'lifeTop' ? 'the top of your Life cards' : 'your hand'}; the rest ${f.remainder === 'trash' ? 'go to your trash' : 'go to the bottom of your deck'}.`,
+          prompt:
+            f.destination === 'deckTopOrBottom'
+              ? `Look at the top ${f.look}: choose cards to return to the top of your deck in selected order; the rest go to the bottom.`
+              : `Look at the top ${f.look}: add up to ${f.pick} matching card${f.pick === 1 ? '' : 's'} to ${f.destination === 'lifeTop' ? 'the top of your Life cards' : 'your hand'}; the rest ${f.remainder === 'trash' ? 'go to your trash' : 'go to the bottom of your deck'}.`,
         },
       ];
     case 'addPowerSelf':

@@ -185,7 +185,7 @@ export function executeAction(
       result = executeDeclareAttack(state, action, defs, registry);
       break;
     case 'ACTIVATE_BLOCKER':
-      result = executeActivateBlocker(state, action, defs);
+      result = executeActivateBlocker(state, action, defs, registry);
       break;
     case 'ACTIVATE_COUNTER_CHARACTER':
       result = executeActivateCounterCharacter(state, action, defs);

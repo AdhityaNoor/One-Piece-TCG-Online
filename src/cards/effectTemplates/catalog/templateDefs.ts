@@ -48,8 +48,10 @@ export type AbilityFunction =
   | { fn: 'trashFromHand'; count: number }
   | { fn: 'trashTopDeck'; count: number }
   | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number }
+  | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number }
+  | { fn: 'moveFromTrashToHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'triggerPlaySelf' }
-  | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter: SearchFilter; remainder?: SearchRemainderDestination }
+  | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination }
   | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition }
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }

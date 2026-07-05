@@ -95,6 +95,24 @@ export function fireWhenAttacking(
 }
 
 /**
+ * Fires a card's [On Block] ability. Call after a Character successfully
+ * activates [Blocker] and becomes the battle target.
+ */
+export function fireOnBlock(
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const instance = state.cardsById[instanceId];
+  if (!instance) return noop(state);
+  const program = registry[instance.cardDefinitionId];
+  if (!program) return noop(state);
+  return runTimings(program, ['onBlock'], state, instanceId, defs, actionId, registry);
+}
+
+/**
  * Fires a card's [On K.O.] ability (10-2-17, timing onKO). Call AFTER the card
  * has been moved to the trash, with the K.O.'d card as source.
  */

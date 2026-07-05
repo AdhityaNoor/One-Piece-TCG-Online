@@ -35,20 +35,20 @@ interface BaseAction<T extends GameActionType> {
 /** 6-5-3-1, 2-7-2. donInstanceIds.length must equal the card's current cost. */
 export interface PlayCharacterAction extends BaseAction<'PLAY_CHARACTER'> {
   handCardInstanceId: string;
-  donInstanceIds: string[];
+  donInstanceIds: readonly string[];
 }
 
 /** 6-5-3-1, 2-7-4. */
 export interface PlayStageAction extends BaseAction<'PLAY_STAGE'> {
   handCardInstanceId: string;
-  donInstanceIds: string[];
+  donInstanceIds: readonly string[];
 }
 
 /** 2-7-3, 10-2-3. Event marked [Main]. */
 export interface ActivateEventMainAction extends BaseAction<'ACTIVATE_EVENT_MAIN'> {
   handCardInstanceId: string;
   /** Active DON!! used to pay the Event play cost. */
-  donInstanceIds: string[];
+  donInstanceIds: readonly string[];
   /** DON!! on field selected for structured ability costs such as DON!! -N. */
   abilityCostDonInstanceIds?: string[];
 }
@@ -58,7 +58,7 @@ export interface ActivateCardEffectAction extends BaseAction<'ACTIVATE_CARD_EFFE
   sourceInstanceId: string;
   effectId: string;
   /** DON!! on field selected for structured ability costs such as DON!! -N. */
-  donInstanceIds: string[];
+  donInstanceIds: readonly string[];
 }
 
 /** 6-5-5-1. */
@@ -88,7 +88,7 @@ export interface ActivateCounterCharacterAction extends BaseAction<'ACTIVATE_COU
 export interface ActivateCounterEventAction extends BaseAction<'ACTIVATE_COUNTER_EVENT'> {
   handCardInstanceId: string;
   /** Active DON!! used to pay the Event play cost. */
-  donInstanceIds: string[];
+  donInstanceIds: readonly string[];
   /** DON!! on field selected for structured ability costs such as DON!! -N. */
   abilityCostDonInstanceIds?: string[];
 }
@@ -99,7 +99,7 @@ export interface PassStepAction extends BaseAction<'PASS_STEP'> {}
 /** Answers an outstanding PendingChoice (blueprint Section 11). Shape of `response` depends on the choice's kind. */
 export interface ResolvePendingChoiceAction extends BaseAction<'RESOLVE_PENDING_CHOICE'> {
   choiceId: string;
-  response: string[] | number | boolean;
+  response: readonly string[] | number | boolean;
 }
 
 /** 6-5-2-1. */

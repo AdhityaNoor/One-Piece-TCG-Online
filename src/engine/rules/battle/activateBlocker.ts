@@ -11,6 +11,7 @@ import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
 import { computeCurrentPower } from '../shared/power';
+import { fireOnBlock, type EffectTemplateRegistry } from '../../effects';
 
 function isBlockedByRestriction(state: GameState, blockerInstanceId: string, defs: CardDefinitionLookup): boolean {
   const battle = state.currentBattle;
@@ -60,7 +61,12 @@ export function validateActivateBlocker(state: GameState, action: ActivateBlocke
   return { legal: reasons.length === 0, reasons };
 }
 
-export function executeActivateBlocker(state: GameState, action: ActivateBlockerAction, defs: CardDefinitionLookup): ActionExecuteResult {
+export function executeActivateBlocker(
+  state: GameState,
+  action: ActivateBlockerAction,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+): ActionExecuteResult {
   const battle = state.currentBattle!;
   const blocker = state.cardsById[action.blockerInstanceId];
   const def = getDefinition(defs, blocker);
@@ -87,5 +93,6 @@ export function executeActivateBlocker(state: GameState, action: ActivateBlocker
     log: [...state.log, ...logger.log],
   };
 
-  return { state: nextState, log: logger.log, pendingChoices: [] };
+  const fired = fireOnBlock(nextState, action.blockerInstanceId, registry, defs, action.actionId);
+  return { state: fired.state, log: [...logger.log, ...fired.log], pendingChoices: fired.pendingChoices };
 }

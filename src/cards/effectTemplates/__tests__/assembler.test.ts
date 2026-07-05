@@ -225,6 +225,22 @@ describe('template factories - structural correctness', () => {
     expect(op.filter).toMatchObject({ anyOf: [{ typeIncludes: 'Straw Hat Crew' }, { name: 'Sanji' }], excludeSelfName: true });
   });
 
+  it('searchTopDeck can return looked cards to top or bottom without adding cards to hand', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'searchTopDeck', look: 3, pick: 0, reveal: false, destination: 'deckTopOrBottom' }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({
+      op: 'searchTopDeck',
+      look: 3,
+      pick: 0,
+      reveal: false,
+      destination: 'deckTopOrBottom',
+    });
+    // @ts-expect-error - narrow
+    expect(p.abilities[0].ops[0].filter).toBeUndefined();
+  });
+
   it('can gate a follow-up function on the previous function result', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onPlay',
@@ -278,6 +294,59 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0]).toMatchObject({
       timing: 'lifeTrigger',
       ops: [{ op: 'playSelf' }],
+    });
+  });
+
+  it('moveFromTrashToHand chooses matching trash cards and moves them to hand', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [
+        {
+          fn: 'moveFromTrashToHand',
+          filter: {
+            category: 'character',
+            maxCost: 4,
+            excludeSelfName: true,
+            anyOf: [{ typeIncludes: 'The Seven Warlords of the Sea' }, { typeIncludes: 'Thriller Bark Pirates' }],
+          },
+        },
+      ],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({
+      op: 'chooseTargets',
+      from: {
+        sel: 'controllerTrash',
+        filter: {
+          category: 'character',
+          maxCost: 4,
+          excludeSelfName: true,
+          anyOf: [{ typeIncludes: 'The Seven Warlords of the Sea' }, { typeIncludes: 'Thriller Bark Pirates' }],
+        },
+      },
+      min: 0,
+      max: 1,
+    });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'moveToHand', target: { sel: 'var', name: 't' } });
+  });
+
+  it('playFromDeck produces a deck-play search op with a filter', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'activateMain',
+      condition: { donAttachedAtLeast: 1 },
+      cost: [{ kind: 'restDon', count: 2 }],
+      functions: [{ fn: 'playFromDeck', filter: { category: 'character', name: 'Pacifista', maxCost: 4 } }],
+    });
+    expect(p.abilities[0]).toMatchObject({
+      timing: 'activateMain',
+      condition: { donAttachedAtLeast: 1 },
+      cost: [{ kind: 'restDon', count: 2 }],
+      ops: [
+        {
+          op: 'playFromDeck',
+          pick: 1,
+          filter: { category: 'character', name: 'Pacifista', maxCost: 4 },
+        },
+      ],
     });
   });
 

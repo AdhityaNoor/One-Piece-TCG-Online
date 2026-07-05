@@ -41,7 +41,7 @@ export function canPayAbilityCost(
   sourceInstanceId: string,
   playerId: string,
   costs: AbilityCost[],
-  selectedDonMinusIds: string[] = [],
+  selectedDonMinusIds: readonly string[] = [],
 ): string[] {
   const reasons: string[] = [];
   const requiredDonMinus = requiredDonMinusCount(costs);
@@ -94,7 +94,7 @@ export function payAbilityCost(
   playerId: string,
   costs: AbilityCost[],
   actionId: string | null,
-  selectedDonMinusIds: string[] = [],
+  selectedDonMinusIds: readonly string[] = [],
 ): { state: GameState; log: GameLogEntry[] } {
   const logger = createActionLogger(state, actionId);
   let working = state;
@@ -137,7 +137,7 @@ export function payAbilityCost(
 function payDonMinus(
   state: GameState,
   playerId: string,
-  toReturn: string[],
+  toReturn: readonly string[],
   logger: ReturnType<typeof createActionLogger>,
 ): GameState {
   const player = state.players[playerId];
@@ -164,7 +164,7 @@ function payDonMinus(
     type: 'DON_RETURNED',
     message: `${playerId} returned ${toReturn.length} DON!! to the DON!! deck as an activation cost.`,
     data: { donInstanceIds: toReturn },
-    relatedCardInstanceIds: toReturn,
+    relatedCardInstanceIds: [...toReturn],
     visibility: 'public',
   });
 

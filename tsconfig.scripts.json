@@ -1,0 +1,8 @@
+{
+  "//": "Type-checks the Node/DOM build-time scripts (e.g. the Limitless scraper) and the scraper's test. Kept separate from tsconfig.json so the engine/cards config stays DOM-free and the UI-agnostic engine invariant is enforced by the type-checker.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": ["scripts", "src/cards/normalization/__tests__/limitlessParseCardPage.test.ts"]
+}

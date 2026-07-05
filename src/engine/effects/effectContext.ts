@@ -15,6 +15,7 @@ import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/z
 import { getOpponentId } from '../rules/shared/players';
 import { computeCurrentCost, computeCurrentPower } from '../rules/shared/power';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
+import { createSeededRng } from '../rng/seededRng';
 import type { EffectContext } from './effectTemplate';
 import type { SearchPickDestination, SearchRemainderDestination } from './effectIr';
 
@@ -64,6 +65,9 @@ export class EffectContextImpl implements EffectContext {
   }
   controllerTrashIds(): string[] {
     return [...this.working.players[this.controllerId].trash.cardIds];
+  }
+  controllerDeckIds(): string[] {
+    return [...this.working.players[this.controllerId].deck.cardIds];
   }
   powerOf(instanceId: string): number {
     return computeCurrentPower(this.defs, this.working, instanceId);
@@ -461,6 +465,88 @@ export class EffectContextImpl implements EffectContext {
     }
   }
 
+  playCharacterFromDeck(deckInstanceId: string): void {
+    const deckInst = this.working.cardsById[deckInstanceId];
+    if (!deckInst || deckInst.currentZone !== 'deck') return;
+    const def = this.defs[deckInst.cardDefinitionId];
+    if (!def || def.category !== 'character') return;
+    const controllerId = deckInst.controllerId;
+    const player = this.working.players[controllerId];
+    if (!player) return;
+
+    const minted = mintRuntimeInstanceId(this.working);
+    const newId = minted.id;
+    const newInstance: CardInstance = {
+      instanceId: newId,
+      cardDefinitionId: deckInst.cardDefinitionId,
+      ownerId: deckInst.ownerId,
+      controllerId,
+      currentZone: 'characterArea',
+      orientation: 'active',
+      faceState: 'faceUp',
+      donAttached: [],
+      currentPower: def.basePower ?? 0,
+      appliedContinuousEffectIds: [],
+      oncePerTurnUsed: [],
+      summoningSick: !def.hasRush,
+      revealedTo: 'all',
+    };
+    const cardsById = { ...minted.state.cardsById, [newId]: newInstance };
+    delete cardsById[deckInstanceId];
+    const newCharacterArea = addToZoneBottom(player.characterArea, newId);
+    const newDeck = removeFromZone(player.deck, deckInstanceId);
+    this.working = {
+      ...minted.state,
+      cardsById,
+      players: { ...minted.state.players, [controllerId]: { ...player, deck: newDeck, characterArea: newCharacterArea } },
+    };
+
+    this.logger.push({
+      actorPlayerId: controllerId,
+      type: 'CARD_PLAYED',
+      message: `${controllerId} played ${def.name} from deck via an effect (no cost).`,
+      data: { from: 'deck', to: 'characterArea', cost: 0, oldInstanceId: deckInstanceId },
+      relatedCardInstanceIds: [newId],
+      visibility: 'public',
+    });
+
+    const limit = newCharacterArea.maxSize ?? Infinity;
+    if (newCharacterArea.cardIds.length > limit) {
+      this.emitChoice({
+        id: `${controllerId}__character-overflow-${newId}`,
+        playerId: controllerId,
+        kind: 'SELECT_CARDS',
+        prompt: `Choose 1 Character to trash - more than ${limit} in your Character Area (3-7-6-1).`,
+        constraints: { min: 1, max: 1, zoneId: 'characterArea', filterDescription: 'Any Character currently in your Character Area.' },
+        sourceInstanceId: null,
+        sourceEffectId: 'rule:characterAreaOverflow',
+      });
+    }
+  }
+
+  shuffleDeck(playerId: string): void {
+    const player = this.working.players[playerId];
+    if (!player) return;
+    const seededRng = createSeededRng(this.working.rng.seed);
+    const shuffled = seededRng.shuffle(this.working.rng, player.deck.cardIds);
+    this.working = {
+      ...this.working,
+      rng: shuffled.nextState,
+      players: {
+        ...this.working.players,
+        [playerId]: { ...player, deck: { ...player.deck, cardIds: shuffled.result } },
+      },
+    };
+    this.logger.push({
+      actorPlayerId: playerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${playerId} shuffled their deck after an effect.`,
+      data: { zone: 'deck', count: shuffled.result.length },
+      relatedCardInstanceIds: [],
+      visibility: 'public',
+    });
+  }
+
   moveToHand(instanceId: string): void {
     const inst = this.working.cardsById[instanceId];
     if (!inst) return;
@@ -679,6 +765,44 @@ export class EffectContextImpl implements EffectContext {
       data: { lookedCount: lookedIds.length, addedCount: chosen.length, addedInstanceIds: reveal ? chosen : [], privateAddedInstanceIds: reveal ? [] : chosen, reveal, destination, remainder, remainderCount: orderedRest.length, remainderInstanceIds: orderedRest },
       relatedCardInstanceIds: chosen,
       visibility: reveal ? 'public' : { visibleTo: [playerId] },
+    });
+  }
+
+  searchResolveTopOrBottom(playerId: string, lookedIds: string[], topOrderIds: string[], bottomOrderIds: string[]): void {
+    const player = this.working.players[playerId];
+    if (!player || lookedIds.length === 0) return;
+
+    const lookedSet = new Set(lookedIds);
+    const top = topOrderIds.filter((id) => lookedSet.has(id));
+    const topSet = new Set(top);
+    const remaining = lookedIds.filter((id) => !topSet.has(id));
+    const remainingSet = new Set(remaining);
+    const bottom =
+      bottomOrderIds.length === remaining.length && bottomOrderIds.every((id) => remainingSet.has(id))
+        ? bottomOrderIds
+        : remaining;
+
+    const deck = {
+      ...player.deck,
+      cardIds: [...top, ...player.deck.cardIds.slice(lookedIds.length), ...bottom],
+    };
+    const cardsById = { ...this.working.cardsById };
+    for (const id of lookedIds) {
+      cardsById[id] = { ...cardsById[id], currentZone: 'deck', revealedTo: [] };
+    }
+
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [playerId]: { ...player, deck } },
+      cardsById,
+    };
+    this.logger.push({
+      actorPlayerId: playerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${playerId} reordered the top ${lookedIds.length} card(s) of their deck.`,
+      data: { lookedCount: lookedIds.length, topOrderIds: top, bottomOrderIds: bottom },
+      relatedCardInstanceIds: lookedIds,
+      visibility: { visibleTo: [playerId] },
     });
   }
 

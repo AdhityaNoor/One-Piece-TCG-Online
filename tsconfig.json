@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020"],
+    "target": "ES2022",
+    "lib": ["ES2022"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
@@ -12,5 +12,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["src/engine", "src/cards"]
+  "include": ["src/engine", "src/cards"],
+  "comment:exclude": "The Limitless scraper (and its test) depend on Node + DOM/jsdom types; they are type-checked by tsconfig.scripts.json so the engine/cards config can stay DOM-free (UI-agnostic engine invariant).",
+  "exclude": ["src/cards/normalization/__tests__/limitlessParseCardPage.test.ts"]
 }
