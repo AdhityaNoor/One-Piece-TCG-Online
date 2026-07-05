@@ -33,7 +33,7 @@ export type MoveCardSource =
   | { zone: 'deck'; player: 'controller'; position: 'top'; count?: number }
   | { zone: 'hand'; player: 'controller'; filter?: SearchFilter }
   | { zone: 'trash'; player: 'controller'; filter?: SearchFilter }
-  | { zone: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: { maxCost?: number; exactCost?: number; maxPower?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] } };
+  | { zone: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: { maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] } };
 
 export type MoveCardDestination =
   | { zone: 'hand'; player: 'owner' }
@@ -42,9 +42,23 @@ export type MoveCardDestination =
   | { zone: 'trash'; player: 'owner' };
 
 export interface TargetFilter {
+  /**
+   * CURRENT cost/power filters (include continuous modifiers + on-turn DON!! bonus). Use these for
+   * card text that says "a cost of N or less" / "N power or less".
+   */
   maxCost?: number;
   exactCost?: number;
   maxPower?: number;
+  /**
+   * BASE (printed) cost/power filters — the card's original values, IGNORING buffs/debuffs. Use these
+   * ONLY for card text that literally says "base cost" / "base power" (e.g. "6000 base power or less").
+   */
+  maxBaseCost?: number;
+  minBaseCost?: number;
+  exactBaseCost?: number;
+  maxBasePower?: number;
+  minBasePower?: number;
+  exactBasePower?: number;
   rested?: boolean;
   hasBlocker?: boolean;
   typeIncludes?: string;

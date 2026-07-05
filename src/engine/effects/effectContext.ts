@@ -784,8 +784,10 @@ export class EffectContextImpl implements EffectContext {
     const newOwner = {
       ...owner,
       hand: removeFromZone(owner.hand, instanceId),
+      deck: removeFromZone(owner.deck, instanceId),
       characterArea: removeFromZone(owner.characterArea, instanceId),
       stageArea: removeFromZone(owner.stageArea, instanceId),
+      lifeArea: removeFromZone(owner.lifeArea, instanceId),
       trash: addToZoneTop(owner.trash, instanceId),
     };
     this.working = {

@@ -65,7 +65,7 @@ function targetOps(
 
 function nonSuspendingBranchOps(functions: SequencedAbilityFunction[]): NonSuspendingEffectOp[] {
   const ops = functions.flatMap(functionOps);
-  const suspending = ops.find((op) => op.op === 'chooseTargets' || op.op === 'searchTopDeck' || op.op === 'playFromDeck' || op.op === 'peekLifeThenPlace' || op.op === 'chooseLifeToHand' || op.op === 'chooseOption');
+  const suspending = ops.find((op) => op.op === 'chooseTargets' || op.op === 'searchTopDeck' || op.op === 'playFromDeck' || op.op === 'peekLifeThenPlace' || op.op === 'chooseLifeToHand' || op.op === 'chooseLifeToTrash' || op.op === 'chooseOption');
   if (suspending) {
     throw new Error(`chooseOne branch cannot contain suspending op '${suspending.op}' yet.`);
   }
@@ -114,6 +114,16 @@ function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>)
         position: 'topOrBottom',
         optional,
         prompt: f.prompt ?? `${optional ? 'You may add' : 'Add'} 1 card from the top or bottom of your Life cards to your hand.`,
+      },
+    ];
+  }
+  if (f.from.zone === 'life' && f.from.position === 'topOrBottom' && f.from.player === 'controller' && f.to.zone === 'trash' && f.to.player === 'owner') {
+    return [
+      {
+        op: 'chooseLifeToTrash',
+        position: 'topOrBottom',
+        optional,
+        prompt: f.prompt ?? `${optional ? 'You may trash' : 'Trash'} 1 card from the top or bottom of your Life cards.`,
       },
     ];
   }

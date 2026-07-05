@@ -147,6 +147,14 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'trashCards', target: { sel: 'var', name: 't' } });
   });
 
+  it('moveCards keeps top-or-bottom Life choices hidden when moving to trash', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'trash', player: 'owner' }, optional: true }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseLifeToTrash', position: 'topOrBottom', optional: true });
+  });
+
   it('optionalTrashFromHand can gate a follow-up on whether a card was trashed', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onPlay',

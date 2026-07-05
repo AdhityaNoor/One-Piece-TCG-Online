@@ -180,6 +180,34 @@ Common target shapes:
 { group: 'leaderOrCharacters', player: 'opponent' }
 ```
 
+### CURRENT vs BASE cost/power filters (important)
+
+A `TargetFilter` on cards **in play** exposes two distinct families of cost/power filters. Choosing the
+wrong one silently mis-resolves the card, so match the card's exact wording:
+
+| Card text | Filter to use | Reads |
+| --- | --- | --- |
+| "…with a cost of N or less" / "…with N power or less" | `maxCost` / `maxPower` | **CURRENT** value — includes continuous buffs/debuffs and the on-turn +1000/DON!! bonus (`computeCurrentCost`/`computeCurrentPower`). |
+| "…with a **base** cost of N…" / "…with N **base** power…" | `maxBaseCost` / `minBaseCost` / `exactBaseCost` / `maxBasePower` / `minBasePower` / `exactBasePower` | **BASE** (printed) value — the card's original cost/power, ignoring all modifiers (`def.baseCost` / `def.basePower`). |
+
+```ts
+// "K.O. up to 1 of your opponent's Characters with 6000 power or less"  → CURRENT
+{ group: 'characters', player: 'opponent', filter: { maxPower: 6000 } }
+
+// "K.O. up to 1 of your opponent's Characters with 6000 BASE power or less"  → BASE
+{ group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }
+
+// "All of your Characters with a BASE cost of 1 …"  → BASE
+{ group: 'characters', player: 'controller', filter: { exactBaseCost: 1 } }
+```
+
+Why it matters: a Character printed at 5000 power but buffed to 7000 **passes** `maxBasePower: 5000`
+(base is still 5000) yet **fails** `maxPower: 5000` (current is 7000). ~123 cards (77 "base power",
+46 "base cost") require the base variants; using `maxPower`/`maxCost` for them is a bug.
+
+Note: for **off-field** search targets (hand / deck / trash via `SearchFilter`), `maxCost`/`maxPower`
+already read the base/printed value — a card not in play has no modifiers, so base ≡ current there.
+
 ## Targeted Effects
 
 Use generic targeted functions:

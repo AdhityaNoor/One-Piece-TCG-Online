@@ -17,7 +17,7 @@ import type { CardCategory, Color } from '../state/card';
 export type Selector =
   | { sel: 'self' } // the source card
   | { sel: 'controllerLeader' }
-  | { sel: 'controllerCharacters'; maxCost?: number; exactCost?: number; color?: Color; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }
+  | { sel: 'controllerCharacters'; maxCost?: number; exactCost?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; color?: Color; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }
   | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; name?: string; excludeSelf?: boolean }
   | { sel: 'opponentLeaderOrCharacters' }
   | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
@@ -27,8 +27,8 @@ export type Selector =
   | { sel: 'controllerLifeTopBottom' } // top and bottom Life cards, de-duplicated for 1-card Life
   | { sel: 'controllerOrOpponentLifeTop' } // top Life card from either player, de-duplicated only by absent zones
   | { sel: 'controllerDeckTop' }
-  | { sel: 'allCharacters'; maxCost?: number; maxPower?: number } // any player's Characters
-  | { sel: 'opponentCharacters'; maxCost?: number; exactCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean } // optional cost/power/rested/blocker filters
+  | { sel: 'allCharacters'; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number } // any player's Characters
+  | { sel: 'opponentCharacters'; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean } // optional cost/power (current) + base cost/power + rested/blocker filters
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
   | { sel: 'opponentHand' } // opponent's hand cards, for effects where the opponent chooses/trashes
   | { sel: 'controllerTrash'; filter?: SearchFilter } // controller's trash cards matching a filter (for recover-to-hand)
@@ -45,7 +45,7 @@ export type IrDuration = ContinuousEffectDuration;
  */
 export interface SearchFilter {
   /** OR branch: a card matches when it satisfies any child filter, plus any sibling gates on this filter. */
-  anyOf?: SearchFilter[];
+  anyOf?: readonly SearchFilter[];
   /** A free-text tribal type the card must carry (2-4), e.g. "Straw Hat Crew". */
   typeIncludes?: string;
   /** "other than [SelfName]" — exclude cards sharing the source card's name. */
@@ -106,6 +106,7 @@ export type EffectOp =
   | ({ op: 'moveToLifeTop'; target: Selector; faceUp?: boolean } & EffectOpSequenceGate) // move chosen cards to the top of their owner's Life
   | ({ op: 'peekLifeThenPlace'; from: Extract<Selector, { sel: 'controllerOrOpponentLifeTop' }>; prompt: string } & EffectOpSequenceGate) // privately look at a top Life card, then optionally place it at bottom
   | ({ op: 'chooseLifeToHand'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then add it to hand
+  | ({ op: 'chooseLifeToTrash'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then trash it
   | ({ op: 'playSelf' } & EffectOpSequenceGate) // play the source Character itself, e.g. "[Trigger] Play this card"
   | ({ op: 'playFromHand'; target: Selector } & EffectOpSequenceGate) // put a chosen Character from hand into play (no cost)
   | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
@@ -132,6 +133,7 @@ export type NonSuspendingEffectOp = Exclude<
   | { op: 'playFromDeck' }
   | { op: 'peekLifeThenPlace' }
   | { op: 'chooseLifeToHand' }
+  | { op: 'chooseLifeToTrash' }
   | { op: 'chooseOption' }
 >;
 
@@ -171,6 +173,7 @@ export type AbilityGate =
   | { kind: 'selfLifeLessThanOpponent' } // "If you have less Life cards than your opponent"
   | { kind: 'selfHand'; atLeast?: number; atMost?: number } // "If you have N or less cards in your hand"
   | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
+  | { kind: 'selfHasCharacterCostAtLeast'; atLeast: number } // "If you have a Character with a cost of N or more"
   | { kind: 'opponentDonMoreThanSelf' } // "If your opponent has more DON!! cards on their field than you"
   | { kind: 'opponentHand'; atLeast?: number; atMost?: number }; // "If your opponent has N or more/less cards in their hand"
 

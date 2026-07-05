@@ -118,6 +118,32 @@ function searchEligible(ids: string[], filter: SearchFilter | undefined, ctx: Ef
   return ids.filter((id) => matchesSearchFilter(id, filter, ctx));
 }
 
+/**
+ * BASE (printed) cost/power filters — the card's original values, ignoring buffs/debuffs. These are
+ * distinct from the maxCost/maxPower filters, which use CURRENT (live) cost/power via ctx.costOf/powerOf.
+ * Only card text that literally says "base cost" / "base power" should use these.
+ */
+interface BaseFilterFields {
+  maxBaseCost?: number;
+  minBaseCost?: number;
+  exactBaseCost?: number;
+  maxBasePower?: number;
+  minBasePower?: number;
+  exactBasePower?: number;
+}
+function applyBaseFilters(ids: string[], sel: BaseFilterFields, ctx: EffectContextImpl): string[] {
+  const baseCost = (id: string) => ctx.definitionOf(id)?.baseCost;
+  const basePower = (id: string) => ctx.definitionOf(id)?.basePower;
+  let out = ids;
+  if (sel.maxBaseCost !== undefined) out = out.filter((id) => (baseCost(id) ?? Infinity) <= sel.maxBaseCost!);
+  if (sel.minBaseCost !== undefined) out = out.filter((id) => (baseCost(id) ?? -Infinity) >= sel.minBaseCost!);
+  if (sel.exactBaseCost !== undefined) out = out.filter((id) => (baseCost(id) ?? -1) === sel.exactBaseCost);
+  if (sel.maxBasePower !== undefined) out = out.filter((id) => (basePower(id) ?? Infinity) <= sel.maxBasePower!);
+  if (sel.minBasePower !== undefined) out = out.filter((id) => (basePower(id) ?? -Infinity) >= sel.minBasePower!);
+  if (sel.exactBasePower !== undefined) out = out.filter((id) => (basePower(id) ?? -1) === sel.exactBasePower);
+  return out;
+}
+
 function lifePositionOptions(ctx: EffectContextImpl, position: 'top' | 'topOrBottom', optional: boolean): { label: string; position: 'decline' | 'top' | 'bottom' }[] {
   const life = ctx.state().players[ctx.controllerId]?.lifeArea.cardIds ?? [];
   if (life.length === 0) return optional ? [{ label: 'Do not add a Life card.', position: 'decline' }] : [];
@@ -136,6 +162,17 @@ function resolveLifePositionToHand(ctx: EffectContextImpl, position: 'top' | 'to
   const id = selected.position === 'top' ? life[0] : life[life.length - 1];
   if (!id) return EMPTY_RESULT;
   ctx.moveToHand(id);
+  return { selectedIds: [id], movedIds: [id] };
+}
+
+function resolveLifePositionToTrash(ctx: EffectContextImpl, position: 'top' | 'topOrBottom', optional: boolean, selectedIndex: number): OpResult {
+  const options = lifePositionOptions(ctx, position, optional);
+  const selected = options[selectedIndex];
+  if (!selected || selected.position === 'decline') return EMPTY_RESULT;
+  const life = ctx.state().players[ctx.controllerId]?.lifeArea.cardIds ?? [];
+  const id = selected.position === 'top' ? life[0] : life[life.length - 1];
+  if (!id) return EMPTY_RESULT;
+  ctx.trashCard(id);
   return { selectedIds: [id], movedIds: [id] };
 }
 
@@ -167,6 +204,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       let ids = ctx.controllerCharacterIds();
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
+      ids = applyBaseFilters(ids, sel, ctx);
       if (sel.color !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.colors.includes(sel.color!) === true);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
@@ -223,6 +261,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       let ids = [...ctx.controllerCharacterIds(), ...ctx.opponentCharacterIds()];
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
+      ids = applyBaseFilters(ids, sel, ctx);
       return ids;
     }
     case 'opponentCharacters': {
@@ -230,6 +269,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
+      ids = applyBaseFilters(ids, sel, ctx);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.hasBlocker !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasBlocker === true) === sel.hasBlocker);
       return ids;
@@ -453,7 +493,7 @@ function runOps(
       ctx.emitChoice(choice);
       return true;
     }
-    if (op.op === 'chooseLifeToHand') {
+    if (op.op === 'chooseLifeToHand' || op.op === 'chooseLifeToTrash') {
       const options = lifePositionOptions(ctx, op.position, op.optional);
       if (options.length === 0) {
         workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
@@ -603,7 +643,7 @@ export function resumeProgram(
 
   const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
   const op = ability.ops[rs.opIndex];
-  if (!op || (op.op !== 'chooseTargets' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseOption')) return noop(stateWithoutChoice);
+  if (!op || (op.op !== 'chooseTargets' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption')) return noop(stateWithoutChoice);
 
   if (op.op === 'searchTopDeck') {
     const selection = Array.isArray(response) ? response : [];
@@ -689,6 +729,14 @@ export function resumeProgram(
   if (op.op === 'chooseLifeToHand') {
     const selectedIndex = typeof response === 'number' ? response : -1;
     const afterLifeBindings = withResultBindings(rs.bindings, resolveLifePositionToHand(ctx, op.position, op.optional, selectedIndex));
+    const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterLifeBindings, ctx, defs);
+    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+    return finishWithCascade(ctx, defs, actionId, registry);
+  }
+
+  if (op.op === 'chooseLifeToTrash') {
+    const selectedIndex = typeof response === 'number' ? response : -1;
+    const afterLifeBindings = withResultBindings(rs.bindings, resolveLifePositionToTrash(ctx, op.position, op.optional, selectedIndex));
     const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterLifeBindings, ctx, defs);
     if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
     return finishWithCascade(ctx, defs, actionId, registry);

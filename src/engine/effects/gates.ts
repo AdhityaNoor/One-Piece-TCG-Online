@@ -151,6 +151,10 @@ function evaluateGate(
       return ids.some((id) => currentCostForGate(state, defs, id) === gate.exactCost);
     }
 
+    case 'selfHasCharacterCostAtLeast': {
+      return player.characterArea.cardIds.some((id) => currentCostForGate(state, defs, id) >= gate.atLeast);
+    }
+
     case 'opponentDonMoreThanSelf': {
       const opponentId = getOpponentId(state, ownerId);
       return fieldDonIds(state, opponentId).length > fieldDonIds(state, ownerId).length;
