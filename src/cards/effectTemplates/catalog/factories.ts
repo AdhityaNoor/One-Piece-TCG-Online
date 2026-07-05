@@ -265,6 +265,34 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           ...(f.condition ? { condition: f.condition } : {}),
         },
       ];
+    case 'setActiveSelf':
+      return [{ op: 'setActive', target: { sel: 'self' } }];
+    case 'setActiveControllerCharacter': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerCharacters', ...f.filter },
+          min: 0,
+          max: maxTargets,
+          prompt: `Set up to ${maxTargets} of your Characters as active (or decline).`,
+        },
+        { op: 'setActive', target: { sel: 'var', name: 't' } },
+      ];
+    }
+    case 'setActiveControllerDon':
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerRestedDon' },
+          min: 0,
+          max: f.maxTargets,
+          prompt: `Set up to ${f.maxTargets} of your DON!! cards as active (or decline).`,
+        },
+        { op: 'setActive', target: { sel: 'var', name: 't' } },
+      ];
   }
   })();
 

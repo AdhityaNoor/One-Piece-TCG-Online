@@ -50,7 +50,11 @@ export type AbilityFunction =
   | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'triggerPlaySelf' }
   | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter: SearchFilter; remainder?: SearchRemainderDestination }
-  | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition };
+  | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition }
+  // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
+  | { fn: 'setActiveSelf' }
+  | { fn: 'setActiveControllerCharacter'; filter?: { maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }; maxTargets?: number }
+  | { fn: 'setActiveControllerDon'; maxTargets: number };
 
 export type SequencedAbilityFunction = AbilityFunction & {
   /** Gate this function on the prior function result, for "if you do" wording. */

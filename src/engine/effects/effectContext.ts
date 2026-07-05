@@ -503,6 +503,32 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  /**
+   * Set a card as active — the inverse of rest() (2-4-3). Leaders/Characters use
+   * `orientation`; DON!! cards use the `donRested` flag. No-op if already active
+   * or the instance is unknown, mirroring rest()'s guard.
+   */
+  setActive(targetInstanceId: string): void {
+    const inst = this.working.cardsById[targetInstanceId];
+    if (!inst) return;
+    const isDon = inst.orientation === null; // DON!! carry orientation:null and track state via donRested
+    if (isDon) {
+      if (inst.donRested !== true) return;
+      this.working = { ...this.working, cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, donRested: false } } };
+    } else {
+      if (inst.orientation === 'active') return;
+      this.working = { ...this.working, cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, orientation: 'active' } } };
+    }
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${targetInstanceId} was set as active by an effect (2-4-3).`,
+      data: { targetInstanceId },
+      relatedCardInstanceIds: [targetInstanceId],
+      visibility: 'public',
+    });
+  }
+
   trashTopOfDeck(playerId: string, n: number): void {
     const player = this.working.players[playerId];
     if (!player || n <= 0) return;

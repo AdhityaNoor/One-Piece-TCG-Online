@@ -92,6 +92,8 @@ export interface EffectContext {
   trashCard(instanceId: string): void;
   /** Rest a card (4-4-1). */
   rest(targetInstanceId: string): void;
+  /** Set a card as active — inverse of rest (2-4-3). Handles Leader/Character (orientation) and DON!! (donRested). */
+  setActive(targetInstanceId: string): void;
   /** Trash the top `n` cards of a player's own deck (self-mill); fewer if the deck is short. */
   trashTopOfDeck(playerId: string, n: number): void;
   /** Add `n` DON!! from the player's DON!! deck to their cost area, active or rested (DON!! ramp); fewer if the DON!! deck is short. */

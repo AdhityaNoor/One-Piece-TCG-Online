@@ -17,9 +17,10 @@ import type { CardCategory, Color } from '../state/card';
 export type Selector =
   | { sel: 'self' } // the source card
   | { sel: 'controllerLeader' }
-  | { sel: 'controllerCharacters'; maxCost?: number; exactCost?: number; color?: Color }
+  | { sel: 'controllerCharacters'; maxCost?: number; exactCost?: number; color?: Color; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }
   | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; excludeSelf?: boolean }
   | { sel: 'opponentLeaderOrCharacters' }
+  | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
   | { sel: 'allCharacters'; maxCost?: number; maxPower?: number } // any player's Characters
   | { sel: 'opponentCharacters'; maxCost?: number; maxPower?: number; rested?: boolean; hasBlocker?: boolean } // optional cost/power/rested/blocker filters
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
@@ -83,6 +84,7 @@ export type EffectOp =
   | ({ op: 'giveDon'; target: Selector; count: number } & EffectOpSequenceGate)
   | ({ op: 'ko'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'rest'; target: Selector } & EffectOpSequenceGate)
+  | ({ op: 'setActive'; target: Selector } & EffectOpSequenceGate) // set a card as active — the inverse of `rest` (2-4-3 active/rested). Works on Leader/Character (orientation) and DON!! (donRested).
   | ({ op: 'returnToHand'; target: Selector } & EffectOpSequenceGate) // bounce a Character to its owner's hand
   | ({ op: 'moveToBottomDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's deck
   | ({ op: 'playSelf' } & EffectOpSequenceGate) // play the source Character itself, e.g. "[Trigger] Play this card"

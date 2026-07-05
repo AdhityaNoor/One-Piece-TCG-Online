@@ -146,6 +146,9 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
       if (sel.color !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.colors.includes(sel.color!) === true);
+      if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
+      if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
+      if (sel.anyOfTypes !== undefined) ids = ids.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
       return ids;
     }
     case 'controllerLeaderOrCharacters': {
@@ -156,6 +159,13 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     }
     case 'opponentLeaderOrCharacters':
       return [ctx.state().players[ctx.opponentId].leaderInstanceId, ...ctx.opponentCharacterIds()];
+    case 'controllerRestedDon': {
+      const state = ctx.state();
+      const player = state.players[ctx.controllerId];
+      const attached = new Set<string>();
+      for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
+      return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === true);
+    }
     case 'allCharacters': {
       let ids = [...ctx.controllerCharacterIds(), ...ctx.opponentCharacterIds()];
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
@@ -230,6 +240,11 @@ function applyOp(op: Exclude<EffectOp, { op: 'chooseTargets' } | { op: 'searchTo
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.rest(id);
       return { selectedIds: ids, movedIds: [] };
+    }
+    case 'setActive': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.setActive(id);
+      return { selectedIds: ids, movedIds: ids };
     }
     case 'returnToHand': {
       const ids = resolveSelector(op.target, ctx, bindings);
