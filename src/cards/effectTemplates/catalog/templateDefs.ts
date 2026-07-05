@@ -28,6 +28,17 @@ export const TEMPLATE_IDS = {
 
 export type TemplateId = (typeof TEMPLATE_IDS)[keyof typeof TEMPLATE_IDS];
 
+export type MoveCardSource =
+  | { zone: 'life'; player: 'controller' | 'opponent'; position: 'top' | 'bottom' | 'topOrBottom'; hiddenChoice?: boolean; count?: number }
+  | { zone: 'deck'; player: 'controller'; position: 'top'; count?: number }
+  | { zone: 'hand'; player: 'controller'; filter?: SearchFilter }
+  | { zone: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: { maxCost?: number; exactCost?: number; maxPower?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] } };
+
+export type MoveCardDestination =
+  | { zone: 'hand'; player: 'owner' }
+  | { zone: 'life'; player: 'owner' | 'controller'; position: 'top'; faceUp?: boolean }
+  | { zone: 'trash'; player: 'owner' };
+
 export type AbilityFunction =
   | { fn: 'draw'; amount: number }
   | { fn: 'addDonFromDeck'; count: number; rested: boolean }
@@ -50,10 +61,8 @@ export type AbilityFunction =
   | { fn: 'optionalTrashFromHand'; count: number }
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
   | { fn: 'trashTopDeck'; count: number }
-  | { fn: 'moveLifeToHand'; from: 'topOrBottom'; optional: boolean }
+  | { fn: 'moveCards'; from: MoveCardSource; to: MoveCardDestination; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'peekLifeAndPlace'; from: 'controllerOrOpponentTop'; placement: 'topOrBottom' }
-  | { fn: 'moveDeckTopToLife'; position: 'top'; optional: boolean }
-  | { fn: 'moveHandToLife'; position: 'top'; optional: boolean; maxTargets?: number }
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
   | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number }
@@ -65,7 +74,6 @@ export type AbilityFunction =
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }
   | { fn: 'setActiveControllerCharacter'; filter?: { maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }; maxTargets?: number }
-  | { fn: 'moveControllerCharacterToLifeTopFaceUp'; filter?: { maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }; maxTargets?: number }
   | { fn: 'setActiveControllerDon'; maxTargets: number }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
   | { fn: 'restOpponentDon'; maxTargets?: number }
@@ -83,8 +91,6 @@ export type AbilityFunction =
   | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
   // Trash exactly `count` cards of a given type from your hand (used to pay a typed hand cost).
   | { fn: 'trashTypeFromHand'; count: number; filter: { typeIncludes?: string } }
-  // Trash the top `count` of the opponent's Life cards ("Trash up to N of your opponent's Life cards").
-  | { fn: 'trashOpponentLife'; count: number }
   // K.O. ALL Characters (both players) matching a cost/power filter, no target choice
   // ("K.O. all Characters with a cost of 1 or less").
   | { fn: 'koAllCharacters'; filter?: { maxCost?: number; maxPower?: number } }
@@ -92,8 +98,6 @@ export type AbilityFunction =
   | { fn: 'koSelf' }
   // K.O. the opponent Character the source is battling (onBattle), the player may decline.
   | { fn: 'koBattleOpponent' }
-  // "You may add 1 card from the top of your Life cards to your hand" (optional; usually a cost).
-  | { fn: 'optionalTakeTopLifeToHand' }
   // Give up to `count` rested DON!! to the controller's Leader (no target choice) — "give ... to this Leader".
   | { fn: 'giveDonControllerLeader'; count: number };
 

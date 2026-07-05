@@ -7,7 +7,7 @@
  *   - `koAllCharacters` (ST08-005 mass wipe — reuses ko op + allCharacters selector).
  *   - `koImmunitySelf` gained `attackerCategory` (ST08-002 "cannot be K.O.'d in battle by Leaders").
  *   - `battleOpponent` selector + koBattleOpponent/koSelf (ST08-013 battle K.O. exchange, reuse ko op).
- *   - `controllerLifeTop` selector + optionalTakeTopLifeToHand (ST08-014 main, reuse moveToHand + modifyCostOpponent).
+ *   - generic moveCards from controller Life top to hand (ST08-014 main) + modifyCostOpponent.
  *   - `onCharacterKoed` reactive timing + giveDonControllerLeader (ST08-001, reuse giveDon op).
  *
  * KNOWN LIMITATION: ST08-001's reactive fires per Character trashed this action; a Character both
@@ -89,7 +89,7 @@ export const ST08_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST08-014',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'optionalTakeTopLifeToHand' }, { fn: 'modifyCostOpponent', amount: -7, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'modifyCostOpponent', amount: -7, ifPrevious: 'previousMovedAny' }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveFromTrashToHand', filter: { color: 'black', category: 'character', maxCost: 2 } }] } },
     ],
   },

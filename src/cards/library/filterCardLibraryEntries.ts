@@ -25,7 +25,28 @@ export interface CardLibraryFilter {
    * separate "effect" category. "any"/omitted = no timing filter.
    */
   timing?: 'any' | 'lifeTrigger' | 'no-lifeTrigger';
+  /**
+   * Inclusive cost range against CardDefinition.baseCost. Omitted bounds fall
+   * back to the full COST_FILTER_MIN..MAX range. When narrowed, cards without a
+   * cost (Leaders/DON!!) are excluded.
+   */
+  costMin?: number;
+  costMax?: number;
+  /**
+   * Inclusive power range against CardDefinition.basePower. Omitted bounds fall
+   * back to the full POWER_FILTER_MIN..MAX range. When narrowed, cards without a
+   * power (Events/Stages) are excluded.
+   */
+  powerMin?: number;
+  powerMax?: number;
 }
+
+// Slider bounds for the cost/power facet filters (shared by UI + filtering).
+export const COST_FILTER_MIN = 1;
+export const COST_FILTER_MAX = 10;
+export const POWER_FILTER_MIN = 0;
+export const POWER_FILTER_MAX = 14000;
+export const POWER_FILTER_STEP = 1000;
 
 export function normalizeTypeTags(types: string[]): string[] {
   return types
@@ -42,6 +63,13 @@ export function filterCardLibraryEntries(entries: CardLibraryEntry[], filter: Ca
   const type = filter.type?.trim().toLowerCase();
   const timing = filter.timing && filter.timing !== 'any' ? filter.timing : undefined;
 
+  const costMin = filter.costMin ?? COST_FILTER_MIN;
+  const costMax = filter.costMax ?? COST_FILTER_MAX;
+  const costActive = costMin > COST_FILTER_MIN || costMax < COST_FILTER_MAX;
+  const powerMin = filter.powerMin ?? POWER_FILTER_MIN;
+  const powerMax = filter.powerMax ?? POWER_FILTER_MAX;
+  const powerActive = powerMin > POWER_FILTER_MIN || powerMax < POWER_FILTER_MAX;
+
   return entries.filter((entry) => {
     const normalizedTypes = normalizeTypeTags(entry.definition.types);
     if (query) {
@@ -55,6 +83,14 @@ export function filterCardLibraryEntries(entries: CardLibraryEntry[], filter: Ca
     if (type && !normalizedTypes.some((cardType) => cardType.toLowerCase() === type)) return false;
     if (timing === 'lifeTrigger' && !entry.definition.hasTrigger) return false;
     if (timing === 'no-lifeTrigger' && entry.definition.hasTrigger) return false;
+    if (costActive) {
+      const cost = entry.definition.baseCost;
+      if (cost === undefined || cost < costMin || cost > costMax) return false;
+    }
+    if (powerActive) {
+      const power = entry.definition.basePower;
+      if (power === undefined || power < powerMin || power > powerMax) return false;
+    }
     return true;
   });
 }

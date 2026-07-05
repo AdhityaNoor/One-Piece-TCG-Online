@@ -26,12 +26,14 @@ export interface CanvasMenuButtonProps {
 }
 
 export function CanvasMenuButton({ label, onClick, disabled, badge, prominence = 'secondary', size = 'md', className }: CanvasMenuButtonProps) {
-  const fillClass =
+  const borderClass =
     prominence === 'primary'
-      ? 'border-gold/75 bg-[linear-gradient(180deg,_#ff3c28_0%,_#c2181d_54%,_#7d0d18_100%)] group-hover:brightness-110'
+      ? 'border-white/80 bg-red-600/55 group-hover:border-white group-hover:bg-red-600/70'
       : prominence === 'danger'
-        ? 'border-gold/60 bg-[linear-gradient(180deg,_#ff5b45_0%,_#b91d22_58%,_#5f0710_100%)] group-hover:brightness-110'
-        : 'border-cyan-200/35 bg-[linear-gradient(180deg,_rgba(32,68,126,0.98)_0%,_rgba(9,28,66,0.98)_58%,_rgba(3,10,29,0.98)_100%)] group-hover:border-gold/65 group-hover:brightness-110';
+        ? 'border-white/80 bg-red-600/55 group-hover:border-white group-hover:bg-red-600/70'
+        : 'border-white/75 bg-[rgba(11,28,62,0.42)] group-hover:border-white group-hover:bg-[rgba(11,28,62,0.62)]';
+  const textClass =
+    prominence === 'primary' ? 'text-white' : prominence === 'danger' ? 'text-red-200' : 'text-white';
 
   return (
     <button
@@ -39,10 +41,10 @@ export function CanvasMenuButton({ label, onClick, disabled, badge, prominence =
       onClick={onClick}
       disabled={disabled}
       className={[
-        'group relative w-full select-none overflow-visible text-center font-heading font-black uppercase text-white transition-all duration-200',
+        'group relative w-full select-none text-center font-heading font-black uppercase transition-transform duration-200 [transform-origin:center]',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-[#061024]',
         size === 'sm' ? 'h-11 max-w-[15rem] px-5 text-xs tracking-[0.1em]' : 'h-14 max-w-[21rem] px-7 text-base tracking-[0.12em]',
-        disabled ? 'cursor-not-allowed opacity-40 saturate-50' : 'hover:-translate-y-1 hover:scale-[1.06] active:translate-y-0.5 active:scale-100',
+        disabled ? 'cursor-not-allowed opacity-40' : 'hover:scale-x-150',
         className ?? '',
       ]
         .filter(Boolean)
@@ -50,21 +52,9 @@ export function CanvasMenuButton({ label, onClick, disabled, badge, prominence =
     >
       <span
         aria-hidden="true"
-        className={[
-          'absolute inset-0 -skew-x-12 border-2 shadow-[0_8px_0_rgba(1,5,16,0.78),_0_18px_28px_rgba(0,0,0,0.34)] transition-all duration-200',
-          'before:absolute before:inset-[5px] before:border before:border-white/16 before:content-[""]',
-          fillClass,
-        ].join(' ')}
+        className={['absolute inset-0 -skew-x-12 border transition-colors duration-200', borderClass].join(' ')}
       />
-      <span
-        aria-hidden="true"
-        className="absolute -left-2 top-1/2 h-7 w-4 -translate-y-1/2 -skew-x-12 border border-gold/55 bg-[#071126] shadow-[inset_0_0_0_2px_rgba(255,255,255,0.06)]"
-      />
-      <span
-        aria-hidden="true"
-        className="absolute -right-2 top-1/2 h-7 w-4 -translate-y-1/2 -skew-x-12 border border-gold/55 bg-[#071126] shadow-[inset_0_0_0_2px_rgba(255,255,255,0.06)]"
-      />
-      <span className="relative z-10 flex h-full items-center justify-center gap-3 drop-shadow-[0_2px_0_rgba(0,0,0,0.72)]">
+      <span className={['relative z-10 flex h-full items-center justify-center gap-3 transition-transform duration-200 group-hover:scale-x-[0.6667]', textClass].join(' ')}>
         {label}
         {badge !== undefined && (
           <span className="min-w-7 border border-gold/70 bg-black/35 px-2 py-0.5 text-xs text-gold shadow-inner shadow-black/40">
@@ -76,7 +66,7 @@ export function CanvasMenuButton({ label, onClick, disabled, badge, prominence =
   );
 }
 
-export function GameCanvasScreen({ kicker, status, title, onBack, topRight, footer, children }: GameCanvasScreenProps) {
+export function GameCanvasScreen({ title, onBack, topRight, footer, children }: GameCanvasScreenProps) {
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-[#071126] font-body text-white">
       <div className="absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-30 grayscale" />
@@ -88,12 +78,6 @@ export function GameCanvasScreen({ kicker, status, title, onBack, topRight, foot
         <div className="relative z-20 flex items-start justify-between gap-3">
           <div className="flex items-start gap-2">
             {onBack && <CanvasMenuButton label="Back" onClick={onBack} size="sm" className="max-w-[7rem]" />}
-            {(kicker || status) && (
-              <div className="border-l-4 border-gold bg-black/24 px-3 py-2 shadow-[0_10px_28px_rgba(0,0,0,0.22)] backdrop-blur-sm">
-                {kicker && <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{kicker}</p>}
-                {status && <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/70">{status}</p>}
-              </div>
-            )}
           </div>
           {topRight}
         </div>

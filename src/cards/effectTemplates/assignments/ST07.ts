@@ -17,6 +17,22 @@
  */
 import type { CardEffectAssignment } from '../assembler';
 
+const OPPONENT_TRASH_LIFE_OR_ADD_DECK_TOP_TO_LIFE = {
+  fn: 'chooseOne' as const,
+  chooser: 'opponent' as const,
+  prompt: 'Choose one effect to resolve.',
+  options: [
+    {
+      label: 'trashOpponentLifeTop',
+      functions: [{ fn: 'moveCards' as const, from: { zone: 'life' as const, player: 'opponent' as const, position: 'top' as const, count: 1 }, to: { zone: 'trash' as const, player: 'owner' as const } }],
+    },
+    {
+      label: 'moveControllerDeckTopToLifeTop',
+      functions: [{ fn: 'moveCards' as const, from: { zone: 'deck' as const, player: 'controller' as const, position: 'top' as const }, to: { zone: 'life' as const, player: 'controller' as const, position: 'top' as const } }],
+    },
+  ],
+};
+
 export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST07-001 - [DON!! x2] When Attacking, may take Life: if now at <=2 Life, add up to 1 hand card to Life.
   {
@@ -26,8 +42,8 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'whenAttacking',
       condition: { donAttachedAtLeast: 2 },
       functions: [
-        { fn: 'moveLifeToHand', from: 'topOrBottom', optional: true },
-        { fn: 'moveHandToLife', position: 'top', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfLife', atMost: 2 }] },
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'life', player: 'owner', position: 'top' }, optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfLife', atMost: 2 }] },
       ],
     },
   },
@@ -53,7 +69,7 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'whenAttacking',
       condition: { donAttachedAtLeast: 1 },
       functions: [
-        { fn: 'moveLifeToHand', from: 'topOrBottom', optional: true },
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true },
         { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
         { fn: 'addKeywordSelf', keyword: 'banish', duration: 'duringThisBattle', ifPrevious: 'previousSelectedAny' },
       ],
@@ -68,8 +84,8 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'whenAttacking',
       condition: { donAttachedAtLeast: 1 },
       functions: [
-        { fn: 'moveLifeToHand', from: 'topOrBottom', optional: true },
-        { fn: 'moveDeckTopToLife', position: 'top', optional: true, ifPrevious: 'previousMovedAny' },
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' },
       ],
     },
   },
@@ -89,7 +105,7 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
       cost: [{ kind: 'restThis' }],
       gate: [{ kind: 'selfLife', atLeast: 1 }],
       functions: [
-        { fn: 'moveLifeToHand', from: 'topOrBottom', optional: false },
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' } },
         { fn: 'koOpponentCharacter', filter: { maxCost: 3 }, ifPrevious: 'previousMovedAny' },
       ],
     },
@@ -102,15 +118,7 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
     params: {
       timing: 'onPlay',
       functions: [
-        {
-          fn: 'chooseOne',
-          chooser: 'opponent',
-          prompt: 'Choose one effect to resolve.',
-          options: [
-            { label: 'Trash 1 card from the top of your Life cards.', functions: [{ fn: 'trashOpponentLife', count: 1 }] },
-            { label: "Add 1 card from the top of your opponent's deck to the top of their Life cards.", functions: [{ fn: 'moveDeckTopToLife', position: 'top', optional: false }] },
-          ],
-        },
+        OPPONENT_TRASH_LIFE_OR_ADD_DECK_TOP_TO_LIFE,
       ],
     },
   },
@@ -156,15 +164,7 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'activateMain',
           functions: [
-            {
-              fn: 'chooseOne',
-              chooser: 'opponent',
-              prompt: 'Choose one effect to resolve.',
-              options: [
-                { label: 'Trash 1 card from the top of your Life cards.', functions: [{ fn: 'trashOpponentLife', count: 1 }] },
-                { label: "Add 1 card from the top of your opponent's deck to the top of their Life cards.", functions: [{ fn: 'moveDeckTopToLife', position: 'top', optional: false }] },
-              ],
-            },
+            OPPONENT_TRASH_LIFE_OR_ADD_DECK_TOP_TO_LIFE,
           ],
         },
       },
@@ -173,15 +173,7 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'lifeTrigger',
           functions: [
-            {
-              fn: 'chooseOne',
-              chooser: 'opponent',
-              prompt: 'Choose one effect to resolve.',
-              options: [
-                { label: 'Trash 1 card from the top of your Life cards.', functions: [{ fn: 'trashOpponentLife', count: 1 }] },
-                { label: "Add 1 card from the top of your opponent's deck to the top of their Life cards.", functions: [{ fn: 'moveDeckTopToLife', position: 'top', optional: false }] },
-              ],
-            },
+            OPPONENT_TRASH_LIFE_OR_ADD_DECK_TOP_TO_LIFE,
           ],
         },
       },
@@ -226,8 +218,8 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
           cost: [{ kind: 'restThis' }],
           gate: [{ kind: 'selfLife', atLeast: 1 }],
           functions: [
-            { fn: 'moveLifeToHand', from: 'topOrBottom', optional: false },
-            { fn: 'moveControllerCharacterToLifeTopFaceUp', filter: { exactCost: 3 }, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' } },
+            { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { exactCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'top', faceUp: true }, optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
           ],
         },
       },

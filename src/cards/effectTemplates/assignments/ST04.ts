@@ -3,7 +3,7 @@
  *
  * A DON!! −N deck: almost every card is parameterization of existing templates
  * (donMinus cost + K.O. / draw / ramp / play-from-hand). The one NEW capability is
- * `trashOpponentLife` (ST04-001 Kaido leader), via the `trashLife` op.
+ * generic `moveCards` from opponent Life to owner trash (ST04-001 Kaido leader).
  *
  * KNOWN LIMITATION: "Trash up to 1 of your opponent's Life cards" is taken as trashing the
  * TOP Life card (Life is face-down, so there is nothing to choose); the "up to" opt-out is
@@ -21,7 +21,7 @@ export const ST04_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST04-001',
     templateId: 'ability',
-    params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 7 }], functions: [{ fn: 'trashOpponentLife', count: 1 }] },
+    params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 7 }], functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'trash', player: 'owner' } }] },
   },
 
   // ST04-002 Ulti — [On Play] DON!! −1: Play up to 1 [Page One] card with a cost of 4 or less from your hand.

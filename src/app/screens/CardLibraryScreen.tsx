@@ -6,6 +6,7 @@
  * browse layout and the per-tile renderer.
  */
 import type { ReactNode } from 'react';
+import { CanvasMenuButton } from '../components';
 import { useCardLibraryStore } from '../store/cardLibraryStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { CardLibraryResultTile } from './CardLibraryResultTile';
@@ -20,18 +21,7 @@ export function CardLibraryScreen() {
   const selectedSetName = sets.find((s) => s.set_id === selectedSetId)?.set_name;
 
   return (
-    <CardLibraryGameShell
-      title="Card Library"
-      headerRight={
-        <button
-          type="button"
-          onClick={goBack}
-          className="h-10 border border-white/15 bg-black/28 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold"
-        >
-          Back
-        </button>
-      }
-    >
+    <CardLibraryGameShell onBack={goBack}>
       <div className="grid h-full min-h-0 flex-1 gap-3 overflow-hidden xl:grid-cols-[420px_minmax(0,1fr)]">
         <aside className="h-full min-h-0 overflow-hidden">
           <section className="op-panel flex h-full min-h-0 flex-col overflow-hidden p-3">
@@ -66,21 +56,15 @@ export function CardLibraryScreen() {
   );
 }
 
-function CardLibraryGameShell({ title, headerRight, children }: { title: string; headerRight?: ReactNode; children: ReactNode }) {
+function CardLibraryGameShell({ onBack, headerRight, children }: { onBack?: () => void; headerRight?: ReactNode; children: ReactNode }) {
   return (
     <main className="relative flex h-dvh w-full flex-col overflow-hidden bg-[#071126] font-body text-white">
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,211,74,0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
-      <header className="relative z-10 flex min-h-16 flex-shrink-0 items-center justify-between gap-3 border-b-2 border-gold/55 bg-black/28 px-4 py-3 shadow-[0_12px_34px_rgba(0,0,0,0.4)] backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <span className="h-8 w-1 bg-gold shadow-[0_0_18px_rgba(217,164,65,0.45)]" aria-hidden="true" />
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Local Hotseat</p>
-            <h1 className="font-display text-lg font-black uppercase tracking-[0.12em] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.65)]">{title}</h1>
-          </div>
-        </div>
+      <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 px-3 py-3 sm:px-4">
+        {onBack && <CanvasMenuButton label="Back" onClick={onBack} size="sm" className="max-w-[7rem]" />}
         {headerRight && <div className="flex flex-shrink-0 items-center gap-2">{headerRight}</div>}
-      </header>
+      </div>
       <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden px-2 py-2 sm:px-3">{children}</section>
     </main>
   );

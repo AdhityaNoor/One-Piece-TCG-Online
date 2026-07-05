@@ -3,8 +3,7 @@
  *
  * A yellow Life-manipulation deck. Almost every card is now PURE parameterization of existing
  * templates — evidence the effect language covers this archetype: static conditional self buffs
- * gated on Life count, "add top/bottom of Life to hand" costs (moveLifeToHand), and
- * "add top of deck to top of Life" (moveDeckTopToLife).
+ * gated on Life count and generic moveCards compositions for Life/deck movement.
  *
  * DEFERRED (need engine capability not yet present):
  *   ST09-010 Ace — "If this would be K.O.'d, trash 1 Life instead": a K.O. REPLACEMENT effect. NEW.
@@ -44,7 +43,7 @@ export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'ST09-005',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordSelf', keyword: 'doubleAttack', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
-      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'optionalTrashFromHand', count: 2 }, { fn: 'moveDeckTopToLife', position: 'top', optional: false, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'optionalTrashFromHand', count: 2 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, ifPrevious: 'previousMovedAny' }] } },
     ],
   },
 
@@ -53,7 +52,7 @@ export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST09-007',
     templateId: 'ability',
-    params: { timing: 'onBlock', functions: [{ fn: 'moveLifeToHand', from: 'topOrBottom', optional: true }, { fn: 'addPowerSelf', amount: 4000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' }] },
+    params: { timing: 'onBlock', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addPowerSelf', amount: 4000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' }] },
   },
 
   // ST09-008 Shimotsuki Ushimaru — [DON!! x1] [When Attacking] You may add 1 top/bottom Life to hand:
@@ -61,14 +60,14 @@ export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'ST09-008',
     templateId: 'ability',
-    params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'moveLifeToHand', from: 'topOrBottom', optional: true }, { fn: 'playFromHand', filter: { color: 'yellow', typeIncludes: 'Land of Wano', maxCost: 4 }, ifPrevious: 'previousMovedAny' }] },
+    params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'playFromHand', filter: { color: 'yellow', typeIncludes: 'Land of Wano', maxCost: 4 }, ifPrevious: 'previousMovedAny' }] },
   },
 
   // ST09-012 Yamato — [When Attacking] You may add 1 top/bottom Life to hand: +2000 until the start of your next turn.
   {
     cardNumber: 'ST09-012',
     templateId: 'ability',
-    params: { timing: 'whenAttacking', functions: [{ fn: 'moveLifeToHand', from: 'topOrBottom', optional: true }, { fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn', ifPrevious: 'previousMovedAny' }] },
+    params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn', ifPrevious: 'previousMovedAny' }] },
   },
 
   // ST09-009 Fugetsu Omusubi — [Trigger] K.O. up to 1 opponent Character cost <=1 (add-to-hand clause omitted).
@@ -80,7 +79,7 @@ export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'ST09-014',
     templates: [
       { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'modifyPowerOpponentLeaderOrCharacter', amount: -3000, duration: 'duringThisTurn' }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 2 }, { fn: 'moveDeckTopToLife', position: 'top', optional: false, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 2 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, ifPrevious: 'previousMovedAny' }] } },
     ],
   },
 ];

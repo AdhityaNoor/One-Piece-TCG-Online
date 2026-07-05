@@ -1,7 +1,7 @@
 /**
- * Pill-shaped action button with a more arcade-like visual treatment.
- * The behavior is unchanged; only the framing and motion have been pushed
- * toward a game UI rather than a generic app.
+ * Simple transparent parallelogram button. The frame is a skewed rectangle
+ * (-skew-x-12) with a transparent fill; the label is counter-skewed so the
+ * text stays upright. Variants differ only in border / text colour.
  */
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
@@ -17,19 +17,16 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary:
-    'border border-gold/35 bg-[linear-gradient(180deg,_#ff3026_0%,_#b91d22_100%)] text-white shadow-[0_8px_0_rgba(63,8,12,0.9),_0_16px_24px_rgba(185,29,34,0.26)] hover:brightness-110 active:translate-y-[2px] active:shadow-[0_4px_0_rgba(63,8,12,0.9),_0_10px_18px_rgba(185,29,34,0.24)] disabled:from-brand/50 disabled:to-brand/50',
-  secondary:
-    'border border-gold/20 bg-[linear-gradient(180deg,_rgba(255,255,255,0.12),_rgba(3,10,24,0.72))] text-white shadow-[0_6px_0_rgba(0,0,0,0.36)] hover:border-gold/50 hover:bg-white/12 active:translate-y-[2px] disabled:text-white/40',
-  ghost: 'border border-transparent bg-transparent text-white/80 hover:border-gold/30 hover:bg-white/8 active:translate-y-[1px] disabled:text-white/40',
-  danger:
-    'border border-gold/25 bg-[linear-gradient(180deg,_#ff4b3f_0%,_#9f1218_100%)] text-white shadow-[0_8px_0_rgba(63,8,12,0.9),_0_16px_24px_rgba(239,68,68,0.25)] hover:brightness-110 active:translate-y-[2px] disabled:from-red-500/50 disabled:to-red-500/50',
+  primary: 'border-gold/60 text-white hover:border-gold hover:bg-gold/10 disabled:text-white/40',
+  secondary: 'border-white/30 text-white/85 hover:border-white/60 hover:bg-white/8 disabled:text-white/40',
+  ghost: 'border-transparent text-white/75 hover:border-white/25 hover:bg-white/6 disabled:text-white/40',
+  danger: 'border-white/80 bg-red-600/55 text-white hover:border-white hover:bg-red-600/70 disabled:text-white/40',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  sm: 'h-9 px-3 text-xs gap-1.5',
-  md: 'h-11 px-4 text-sm gap-2',
-  lg: 'h-13 px-6 text-base gap-2',
+  sm: 'h-9 px-4 text-xs',
+  md: 'h-11 px-5 text-sm',
+  lg: 'h-13 px-7 text-base',
 };
 
 export function Button({ variant = 'primary', size = 'md', fullWidth, leading, className, children, ...rest }: ButtonProps) {
@@ -37,7 +34,8 @@ export function Button({ variant = 'primary', size = 'md', fullWidth, leading, c
   return (
     <button
       className={[
-        'inline-flex items-center justify-center font-heading font-black uppercase tracking-[0.08em] transition-all duration-200',
+        'inline-flex -skew-x-12 items-center justify-center border bg-transparent transition-colors duration-200',
+        'font-heading font-black uppercase tracking-[0.08em]',
         'disabled:cursor-not-allowed disabled:opacity-50',
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
@@ -48,8 +46,10 @@ export function Button({ variant = 'primary', size = 'md', fullWidth, leading, c
         .join(' ')}
       {...rest}
     >
-      {leading}
-      {children}
+      <span className="flex skew-x-12 items-center gap-2">
+        {leading}
+        {children}
+      </span>
     </button>
   );
 }

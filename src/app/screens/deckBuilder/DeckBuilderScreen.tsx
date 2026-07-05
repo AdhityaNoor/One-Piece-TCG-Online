@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Button, CardDetailModal, CardImage } from '../../components';
+import { Button, CanvasMenuButton, CardDetailModal, CardImage } from '../../components';
 import { useCardLibraryStore } from '../../store/cardLibraryStore';
 import { useDeckBuilderLegality, useDeckBuilderStore } from '../../store/deckBuilderStore';
 import { useCurrentScreen, useNavigationStore } from '../../store/navigationStore';
@@ -8,9 +8,8 @@ import { CardSetBrowserControls, CardSetBrowserResults } from '../shared';
 import { ClipboardImportTab } from './ClipboardImportTab';
 import { DeckBuilderResultTile } from './DeckBuilderResultTile';
 import { PrintingVariantPicker } from './PrintingVariantPicker';
-import { SearchByIdTab } from './SearchByIdTab';
 
-type DeckBuilderTab = 'browse' | 'search' | 'clipboard';
+type DeckBuilderTab = 'browse' | 'clipboard';
 
 function sameColors(left: string[] | undefined, right: string[]) {
   if (!left || left.length !== right.length) return false;
@@ -71,8 +70,12 @@ export function DeckBuilderScreen() {
       }
       return;
     }
-    if (cardLibraryFilter.query || (cardLibraryFilter.colors?.length ?? 0) > 0 || cardLibraryFilter.categories?.length !== 1 || cardLibraryFilter.categories[0] !== 'leader') {
-      setCardLibraryFilter({ categories: ['leader'] });
+    // No leader yet: restrict browsing to leaders, but preserve the search
+    // query so the field stays usable (don't reset on every keystroke).
+    const categoriesNeedReset = cardLibraryFilter.categories?.length !== 1 || cardLibraryFilter.categories[0] !== 'leader';
+    const colorsNeedReset = (cardLibraryFilter.colors?.length ?? 0) > 0;
+    if (categoriesNeedReset || colorsNeedReset) {
+      setCardLibraryFilter({ query: cardLibraryFilter.query, categories: ['leader'] });
     }
   }, [cardLibraryFilter, leaderSelection, setCardLibraryFilter]);
 
@@ -94,29 +97,7 @@ export function DeckBuilderScreen() {
   }
 
   return (
-    <DeckBuilderGameShell
-      title={deckIdToEdit ? 'Edit Deck' : 'New Deck'}
-      headerRight={
-        <>
-          <button
-            type="button"
-            onClick={goBack}
-            className="h-10 border border-white/15 bg-black/28 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold"
-          >
-            Back
-          </button>
-          <button
-            type="button"
-            title={saveTitle}
-            disabled={!legality.legal}
-            onClick={handleSaveDeck}
-            className="h-10 border border-gold/45 bg-[linear-gradient(180deg,_#ff3026_0%,_#b91d22_100%)] px-3 text-[11px] font-black uppercase tracking-[0.16em] text-white shadow-[0_8px_0_rgba(63,8,12,0.9),_0_16px_24px_rgba(185,29,34,0.26)] transition-all hover:brightness-110 active:translate-y-[2px] active:shadow-[0_4px_0_rgba(63,8,12,0.9),_0_10px_18px_rgba(185,29,34,0.24)] disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            Save Deck
-          </button>
-        </>
-      }
-    >
+    <DeckBuilderGameShell onBack={goBack}>
       <div className="grid h-full min-h-0 flex-1 gap-3 overflow-hidden xl:grid-cols-[420px_minmax(0,1fr)]">
         <aside className="h-full min-h-0 overflow-hidden">
           <section className="op-panel flex h-full min-h-0 flex-col overflow-hidden p-3">
@@ -124,9 +105,6 @@ export function DeckBuilderScreen() {
             <div className="mt-2 flex flex-col gap-1.5">
               <Button variant={tab === 'browse' ? 'primary' : 'secondary'} size="sm" onClick={() => setTab('browse')} fullWidth>
                 Browse
-              </Button>
-              <Button variant={tab === 'search' ? 'primary' : 'secondary'} size="sm" onClick={() => setTab('search')} fullWidth>
-                Search
               </Button>
               <Button variant={tab === 'clipboard' ? 'primary' : 'secondary'} size="sm" onClick={() => setTab('clipboard')} fullWidth>
                 Import
@@ -142,7 +120,6 @@ export function DeckBuilderScreen() {
                   lockedCategoryReason={leaderSelection ? undefined : 'Select a leader first. Showing leaders from all sets.'}
                 />
               )}
-              {tab === 'search' && <SearchByIdTab />}
               {tab === 'clipboard' && <ClipboardImportTab />}
             </div>
 
@@ -160,6 +137,15 @@ export function DeckBuilderScreen() {
                   View Saved Decks
                 </Button>
               )}
+              <Button
+                variant={legality.legal ? 'danger' : 'secondary'}
+                title={saveTitle}
+                disabled={!legality.legal}
+                onClick={handleSaveDeck}
+                fullWidth
+              >
+                Save Deck
+              </Button>
             </div>
           </section>
         </aside>
@@ -260,7 +246,6 @@ export function DeckBuilderScreen() {
                   renderEntry={(entry) => <DeckBuilderResultTile key={entry.cardNumber} entry={entry} />}
                 />
               )}
-              {tab === 'search' && <SearchByIdTab />}
               {tab === 'clipboard' && <ClipboardImportTab />}
             </div>
           </section>
@@ -278,11 +263,11 @@ export function DeckBuilderScreen() {
 }
 
 function DeckBuilderGameShell({
-  title,
+  onBack,
   headerRight,
   children,
 }: {
-  title: string;
+  onBack?: () => void;
   headerRight?: ReactNode;
   children: ReactNode;
 }) {
@@ -290,16 +275,10 @@ function DeckBuilderGameShell({
     <main className="relative flex h-dvh w-full flex-col overflow-hidden bg-[#071126] font-body text-white">
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,211,74,0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
-      <header className="relative z-10 flex min-h-16 flex-shrink-0 items-center justify-between gap-3 border-b-2 border-gold/55 bg-black/28 px-4 py-3 shadow-[0_12px_34px_rgba(0,0,0,0.4)] backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <span className="h-8 w-1 bg-gold shadow-[0_0_18px_rgba(217,164,65,0.45)]" aria-hidden="true" />
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Local Hotseat</p>
-            <h1 className="font-display text-lg font-black uppercase tracking-[0.12em] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.65)]">{title}</h1>
-          </div>
-        </div>
+      <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 px-3 py-3 sm:px-4">
+        {onBack && <CanvasMenuButton label="Back" onClick={onBack} size="sm" className="max-w-[7rem]" />}
         {headerRight && <div className="flex flex-shrink-0 items-center gap-2">{headerRight}</div>}
-      </header>
+      </div>
       <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden px-2 py-2 sm:px-3">{children}</section>
     </main>
   );

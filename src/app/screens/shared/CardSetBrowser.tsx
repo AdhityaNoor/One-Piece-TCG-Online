@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { useEffect } from 'react';
 import type { CardLibraryEntry } from '../../../cards/library';
+import { COST_FILTER_MIN, COST_FILTER_MAX, POWER_FILTER_MIN, POWER_FILTER_MAX, POWER_FILTER_STEP } from '../../../cards/library';
 import type { CardCategory, Color } from '../../../engine/state/card';
 import { Button } from '../../components';
 import { ALL_CARD_COLORS } from '../../lib/cardColors';
@@ -60,7 +61,30 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
   const unlockedColorFilterIsActive = !colorFilterIsLocked && (filter.colors?.length ?? 0) > 0;
   const unlockedCategoryFilterIsActive = !categoryFilterIsLocked && (filter.categories?.length ?? 0) > 0;
   const timingFilterIsActive = Boolean(filter.timing && filter.timing !== 'any');
-  const hasActiveFilter = Boolean(filter.query) || Boolean(filter.type) || Boolean(filter.typeQuery) || timingFilterIsActive || unlockedColorFilterIsActive || unlockedCategoryFilterIsActive;
+
+  const costMin = filter.costMin ?? COST_FILTER_MIN;
+  const costMax = filter.costMax ?? COST_FILTER_MAX;
+  const costFilterIsActive = costMin > COST_FILTER_MIN || costMax < COST_FILTER_MAX;
+  const powerMin = filter.powerMin ?? POWER_FILTER_MIN;
+  const powerMax = filter.powerMax ?? POWER_FILTER_MAX;
+  const powerFilterIsActive = powerMin > POWER_FILTER_MIN || powerMax < POWER_FILTER_MAX;
+
+  const hasActiveFilter =
+    Boolean(filter.query) ||
+    Boolean(filter.type) ||
+    Boolean(filter.typeQuery) ||
+    timingFilterIsActive ||
+    unlockedColorFilterIsActive ||
+    unlockedCategoryFilterIsActive ||
+    costFilterIsActive ||
+    powerFilterIsActive;
+
+  function setCostRange(min: number, max: number) {
+    setFilter({ ...filter, costMin: min, costMax: max });
+  }
+  function setPowerRange(min: number, max: number) {
+    setFilter({ ...filter, powerMin: min, powerMax: max });
+  }
 
   function toggleColor(color: Color) {
     if (colorFilterIsLocked) return;
@@ -153,6 +177,68 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
           <option value="lifeTrigger">Has [Trigger]</option>
           <option value="no-lifeTrigger">No [Trigger]</option>
         </select>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Cost</p>
+          <p className="font-heading text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">
+            {costFilterIsActive ? `${costMin}–${costMax}` : 'Any'}
+          </p>
+        </div>
+        <div className="mt-2 flex flex-col gap-1.5">
+          <input
+            type="range"
+            aria-label="Minimum cost"
+            min={COST_FILTER_MIN}
+            max={COST_FILTER_MAX}
+            step={1}
+            value={costMin}
+            onChange={(event) => setCostRange(Math.min(Number(event.target.value), costMax), costMax)}
+            className="op-range w-full accent-red-600"
+          />
+          <input
+            type="range"
+            aria-label="Maximum cost"
+            min={COST_FILTER_MIN}
+            max={COST_FILTER_MAX}
+            step={1}
+            value={costMax}
+            onChange={(event) => setCostRange(costMin, Math.max(Number(event.target.value), costMin))}
+            className="op-range w-full accent-red-600"
+          />
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Power</p>
+          <p className="font-heading text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">
+            {powerFilterIsActive ? `${powerMin}–${powerMax}` : 'Any'}
+          </p>
+        </div>
+        <div className="mt-2 flex flex-col gap-1.5">
+          <input
+            type="range"
+            aria-label="Minimum power"
+            min={POWER_FILTER_MIN}
+            max={POWER_FILTER_MAX}
+            step={POWER_FILTER_STEP}
+            value={powerMin}
+            onChange={(event) => setPowerRange(Math.min(Number(event.target.value), powerMax), powerMax)}
+            className="op-range w-full accent-red-600"
+          />
+          <input
+            type="range"
+            aria-label="Maximum power"
+            min={POWER_FILTER_MIN}
+            max={POWER_FILTER_MAX}
+            step={POWER_FILTER_STEP}
+            value={powerMax}
+            onChange={(event) => setPowerRange(powerMin, Math.max(Number(event.target.value), powerMin))}
+            className="op-range w-full accent-red-600"
+          />
+        </div>
       </div>
 
       <div>

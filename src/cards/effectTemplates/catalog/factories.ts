@@ -5,7 +5,7 @@
  * execute card text, and callers never pass raw card effect text.
  */
 import type { Ability, EffectOp, EffectProgram, NonSuspendingEffectOp } from '../../../engine/effects/effectIr';
-import type { SequencedAbilityFunction, TemplateId, TemplateParamMap } from './templateDefs';
+import type { MoveCardDestination, MoveCardSource, SequencedAbilityFunction, TemplateId, TemplateParamMap } from './templateDefs';
 
 function program(cardNumber: string, abilities: Ability[]): EffectProgram {
   return { cardNumber, abilities };
@@ -29,11 +29,84 @@ function chooseOpponentCharacter(
 
 function nonSuspendingBranchOps(functions: SequencedAbilityFunction[]): NonSuspendingEffectOp[] {
   const ops = functions.flatMap(functionOps);
-  const suspending = ops.find((op) => op.op === 'chooseTargets' || op.op === 'searchTopDeck' || op.op === 'playFromDeck' || op.op === 'peekLifeThenPlace' || op.op === 'chooseLifeTopOrBottomToHand' || op.op === 'chooseOption');
+  const suspending = ops.find((op) => op.op === 'chooseTargets' || op.op === 'searchTopDeck' || op.op === 'playFromDeck' || op.op === 'peekLifeThenPlace' || op.op === 'chooseLifeToHand' || op.op === 'chooseOption');
   if (suspending) {
     throw new Error(`chooseOne branch cannot contain suspending op '${suspending.op}' yet.`);
   }
   return ops as NonSuspendingEffectOp[];
+}
+
+function selectorFromMoveSource(from: MoveCardSource): Extract<EffectOp, { op: 'chooseTargets' }>['from'] {
+  switch (from.zone) {
+    case 'deck':
+      if (from.player === 'controller' && from.position === 'top') return { sel: 'controllerDeckTop' };
+      break;
+    case 'hand':
+      if (from.player === 'controller') return { sel: 'controllerHand', ...(from.filter ? { filter: from.filter } : {}) };
+      break;
+    case 'characters':
+      if (from.player === 'controller') return { sel: 'controllerCharacters', ...from.filter };
+      if (from.player === 'opponent') return { sel: 'opponentCharacters', ...from.filter };
+      if (from.player === 'any') return { sel: 'allCharacters', ...from.filter };
+      break;
+    case 'life':
+      break;
+  }
+  throw new Error(`Unsupported move source ${JSON.stringify(from)}`);
+}
+
+function moveOpForDestination(to: MoveCardDestination, target: Extract<EffectOp, { op: 'moveToHand' }>['target']): EffectOp {
+  if (to.zone === 'hand' && to.player === 'owner') return { op: 'moveToHand', target };
+  if (to.zone === 'life' && (to.player === 'owner' || to.player === 'controller') && to.position === 'top') {
+    return { op: 'moveToLifeTop', target, ...(to.faceUp ? { faceUp: true } : {}) };
+  }
+  throw new Error(`Unsupported move destination ${JSON.stringify(to)}`);
+}
+
+function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>): EffectOp[] {
+  const optional = f.optional ?? false;
+  const count = ('count' in f.from ? f.from.count : undefined) ?? f.maxTargets ?? 1;
+  if (f.from.zone === 'life' && f.from.position === 'topOrBottom' && f.from.player === 'controller' && f.to.zone === 'hand' && f.to.player === 'owner') {
+    return [
+      {
+        op: 'chooseLifeToHand',
+        position: 'topOrBottom',
+        optional,
+        prompt: f.prompt ?? `${optional ? 'You may add' : 'Add'} 1 card from the top or bottom of your Life cards to your hand.`,
+      },
+    ];
+  }
+  if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'opponent' && f.to.zone === 'trash' && f.to.player === 'owner') {
+    return [{ op: 'trashLife', player: 'opponent', count }];
+  }
+  if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'controller' && f.to.zone === 'hand' && f.to.player === 'owner') {
+    return [
+      {
+        op: 'chooseLifeToHand',
+        position: 'top',
+        optional,
+        prompt: f.prompt ?? `${optional ? 'You may add' : 'Add'} the top card of your Life cards to your hand.`,
+      },
+    ];
+  }
+
+  const from = selectorFromMoveSource(f.from);
+  const target = { sel: 'var', name: 't' } as const;
+  const moveOp = moveOpForDestination(f.to, target);
+  if (!optional && f.from.zone === 'deck' && f.from.position === 'top') {
+    return [moveOpForDestination(f.to, { sel: 'controllerDeckTop' })];
+  }
+  return [
+    {
+      op: 'chooseTargets',
+      var: 't',
+      from,
+      min: optional ? 0 : Math.min(1, count),
+      max: count,
+      prompt: f.prompt ?? `${optional ? 'Choose up to' : 'Choose'} ${count} card${count === 1 ? '' : 's'} to move.`,
+    },
+    moveOp,
+  ];
 }
 
 function functionOps(f: SequencedAbilityFunction): EffectOp[] {
@@ -294,14 +367,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'trashTopDeck':
       return [{ op: 'trashTopDeck', count: f.count }];
-    case 'moveLifeToHand':
-      return [
-        {
-          op: 'chooseLifeTopOrBottomToHand',
-          optional: f.optional,
-          prompt: `${f.optional ? 'You may add' : 'Add'} 1 card from the top or bottom of your Life cards to your hand.`,
-        },
-      ];
+    case 'moveCards':
+      return moveCardsOps(f);
     case 'peekLifeAndPlace':
       return [
         {
@@ -309,32 +376,6 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           from: { sel: 'controllerOrOpponentLifeTop' },
           prompt: 'Look at up to 1 card from the top of your or your opponent\'s Life cards. Select it to place it at the bottom; select none to leave it on top.',
         },
-      ];
-    case 'moveDeckTopToLife':
-      if (!f.optional) return [{ op: 'moveToLifeTop', target: { sel: 'controllerDeckTop' } }];
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from: { sel: 'controllerDeckTop' },
-          min: 0,
-          max: 1,
-          prompt: 'You may add the top card of your deck to the top of your Life cards.',
-        },
-        { op: 'moveToLifeTop', target: { sel: 'var', name: 't' } },
-      ];
-    case 'moveHandToLife':
-      if (!f.optional) return [{ op: 'moveToLifeTop', target: { sel: 'controllerHand' } }];
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from: { sel: 'controllerHand' },
-          min: 0,
-          max: f.maxTargets ?? 1,
-          prompt: `Add up to ${f.maxTargets ?? 1} card${(f.maxTargets ?? 1) === 1 ? '' : 's'} from your hand to the top of your Life cards.`,
-        },
-        { op: 'moveToLifeTop', target: { sel: 'var', name: 't' } },
       ];
     case 'chooseOne':
       return [
@@ -430,20 +471,6 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'setActive', target: { sel: 'var', name: 't' } },
       ];
     }
-    case 'moveControllerCharacterToLifeTopFaceUp': {
-      const maxTargets = f.maxTargets ?? 1;
-      return [
-        {
-          op: 'chooseTargets',
-          var: 't',
-          from: { sel: 'controllerCharacters', ...f.filter },
-          min: 0,
-          max: maxTargets,
-          prompt: `Add up to ${maxTargets} of your Characters to the top of its owner's Life cards face-up (or decline).`,
-        },
-        { op: 'moveToLifeTop', target: { sel: 'var', name: 't' }, faceUp: true },
-      ];
-    }
     case 'setActiveControllerDon':
       return [
         {
@@ -512,8 +539,6 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'koImmunityChosen':
       return [{ op: 'addKoImmunity', target: { sel: 'var', name: 't' }, scope: f.scope, duration: f.duration }];
-    case 'trashOpponentLife':
-      return [{ op: 'trashLife', player: 'opponent', count: f.count }];
     case 'koAllCharacters':
       return [
         {
@@ -525,11 +550,6 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'ko', target: { sel: 'self' } }];
     case 'giveDonControllerLeader':
       return [{ op: 'giveDon', target: { sel: 'controllerLeader' }, count: f.count }];
-    case 'optionalTakeTopLifeToHand':
-      return [
-        { op: 'chooseTargets', var: 't', from: { sel: 'controllerLifeTop' }, min: 0, max: 1, prompt: 'You may add the top card of your Life cards to your hand.' },
-        { op: 'moveToHand', target: { sel: 'var', name: 't' } },
-      ];
     case 'koBattleOpponent':
       return [
         { op: 'chooseTargets', var: 't', from: { sel: 'battleOpponent' }, min: 0, max: 1, prompt: "K.O. the opponent's Character you battled with (or decline)." },

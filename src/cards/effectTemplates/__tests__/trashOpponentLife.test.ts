@@ -1,5 +1,5 @@
 /**
- * Engine-capability test for trashing an opponent's Life card.
+ * Engine-capability test for moving an opponent's Life card to trash.
  * Synthetic card + generic assignment.
  */
 import { describe, expect, it } from 'vitest';
@@ -7,11 +7,11 @@ import { runTimings } from '../../../engine/effects';
 import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putLifeCards } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
 
-describe('family: trash opponent Life card', () => {
+describe('family: move opponent Life card to trash', () => {
   const assignment: CardEffectAssignment = {
     cardNumber: 'SYN-LIFE',
     templateId: 'ability',
-    params: { timing: 'activateMain', functions: [{ fn: 'trashOpponentLife', count: 1 }] },
+    params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'trash', player: 'owner' } }] },
   };
   const SRC = makeCharacterDef({ cardDefinitionId: 'SYN-LIFE', cardNumber: 'SYN-LIFE', category: 'character', baseCost: 1, basePower: 1000 });
   // hasTrigger: true so the test proves trashing does NOT route through the damage flow (which

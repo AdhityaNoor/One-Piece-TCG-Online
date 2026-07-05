@@ -105,7 +105,7 @@ export type EffectOp =
   | ({ op: 'moveToBottomDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's deck
   | ({ op: 'moveToLifeTop'; target: Selector; faceUp?: boolean } & EffectOpSequenceGate) // move chosen cards to the top of their owner's Life
   | ({ op: 'peekLifeThenPlace'; from: Extract<Selector, { sel: 'controllerOrOpponentLifeTop' }>; prompt: string } & EffectOpSequenceGate) // privately look at a top Life card, then optionally place it at bottom
-  | ({ op: 'chooseLifeTopOrBottomToHand'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden top/bottom Life by position, then add it to hand
+  | ({ op: 'chooseLifeToHand'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then add it to hand
   | ({ op: 'playSelf' } & EffectOpSequenceGate) // play the source Character itself, e.g. "[Trigger] Play this card"
   | ({ op: 'playFromHand'; target: Selector } & EffectOpSequenceGate) // put a chosen Character from hand into play (no cost)
   | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
@@ -131,7 +131,7 @@ export type NonSuspendingEffectOp = Exclude<
   | { op: 'searchTopDeck' }
   | { op: 'playFromDeck' }
   | { op: 'peekLifeThenPlace' }
-  | { op: 'chooseLifeTopOrBottomToHand' }
+  | { op: 'chooseLifeToHand' }
   | { op: 'chooseOption' }
 >;
 

@@ -118,18 +118,18 @@ function searchEligible(ids: string[], filter: SearchFilter | undefined, ctx: Ef
   return ids.filter((id) => matchesSearchFilter(id, filter, ctx));
 }
 
-function lifePositionOptions(ctx: EffectContextImpl, optional: boolean): { label: string; position: 'decline' | 'top' | 'bottom' }[] {
+function lifePositionOptions(ctx: EffectContextImpl, position: 'top' | 'topOrBottom', optional: boolean): { label: string; position: 'decline' | 'top' | 'bottom' }[] {
   const life = ctx.state().players[ctx.controllerId]?.lifeArea.cardIds ?? [];
   if (life.length === 0) return optional ? [{ label: 'Do not add a Life card.', position: 'decline' }] : [];
   const options: { label: string; position: 'decline' | 'top' | 'bottom' }[] = [];
   if (optional) options.push({ label: 'Do not add a Life card.', position: 'decline' });
   options.push({ label: 'Top Life card', position: 'top' });
-  if (life.length > 1) options.push({ label: 'Bottom Life card', position: 'bottom' });
+  if (position === 'topOrBottom' && life.length > 1) options.push({ label: 'Bottom Life card', position: 'bottom' });
   return options;
 }
 
-function resolveLifePositionToHand(ctx: EffectContextImpl, optional: boolean, selectedIndex: number): OpResult {
-  const options = lifePositionOptions(ctx, optional);
+function resolveLifePositionToHand(ctx: EffectContextImpl, position: 'top' | 'topOrBottom', optional: boolean, selectedIndex: number): OpResult {
+  const options = lifePositionOptions(ctx, position, optional);
   const selected = options[selectedIndex];
   if (!selected || selected.position === 'decline') return EMPTY_RESULT;
   const life = ctx.state().players[ctx.controllerId]?.lifeArea.cardIds ?? [];
@@ -453,8 +453,8 @@ function runOps(
       ctx.emitChoice(choice);
       return true;
     }
-    if (op.op === 'chooseLifeTopOrBottomToHand') {
-      const options = lifePositionOptions(ctx, op.optional);
+    if (op.op === 'chooseLifeToHand') {
+      const options = lifePositionOptions(ctx, op.position, op.optional);
       if (options.length === 0) {
         workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
         continue;
@@ -603,7 +603,7 @@ export function resumeProgram(
 
   const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
   const op = ability.ops[rs.opIndex];
-  if (!op || (op.op !== 'chooseTargets' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeTopOrBottomToHand' && op.op !== 'chooseOption')) return noop(stateWithoutChoice);
+  if (!op || (op.op !== 'chooseTargets' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseOption')) return noop(stateWithoutChoice);
 
   if (op.op === 'searchTopDeck') {
     const selection = Array.isArray(response) ? response : [];
@@ -686,9 +686,9 @@ export function resumeProgram(
     return finishWithCascade(ctx, defs, actionId, registry);
   }
 
-  if (op.op === 'chooseLifeTopOrBottomToHand') {
+  if (op.op === 'chooseLifeToHand') {
     const selectedIndex = typeof response === 'number' ? response : -1;
-    const afterLifeBindings = withResultBindings(rs.bindings, resolveLifePositionToHand(ctx, op.optional, selectedIndex));
+    const afterLifeBindings = withResultBindings(rs.bindings, resolveLifePositionToHand(ctx, op.position, op.optional, selectedIndex));
     const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterLifeBindings, ctx, defs);
     if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
     return finishWithCascade(ctx, defs, actionId, registry);
