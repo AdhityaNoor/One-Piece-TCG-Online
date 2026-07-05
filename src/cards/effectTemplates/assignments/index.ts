@@ -23,6 +23,8 @@ import { ST07_ASSIGNMENTS } from './ST07';
 import { ST08_ASSIGNMENTS } from './ST08';
 import { ST09_ASSIGNMENTS } from './ST09';
 import { ST10_ASSIGNMENTS } from './ST10';
+import { ST11_ASSIGNMENTS } from './ST11';
+import { ST12_ASSIGNMENTS } from './ST12';
 import { ST13_ASSIGNMENTS } from './ST13';
 import { ST18_ASSIGNMENTS } from './ST18';
 import { ST23_ASSIGNMENTS } from './ST23';
@@ -42,6 +44,8 @@ export const ALL_ASSIGNMENTS: readonly CardEffectAssignment[] = [
   ...ST08_ASSIGNMENTS,
   ...ST09_ASSIGNMENTS,
   ...ST10_ASSIGNMENTS,
+  ...ST11_ASSIGNMENTS,
+  ...ST12_ASSIGNMENTS,
   ...ST13_ASSIGNMENTS,
   ...ST18_ASSIGNMENTS,
   ...ST23_ASSIGNMENTS,
