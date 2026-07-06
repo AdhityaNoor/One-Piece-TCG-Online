@@ -216,4 +216,9 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP14-087',
     templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Baroque Works', excludeSelfName: true }, remainder: 'trash' }] },
   },
+
+  // --- codegen batch ---
+  { cardNumber: 'OP14-051', templateId: 'ability', params: { timing: 'onKO', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'draw', amount: 1 }] } },
+  { cardNumber: 'OP14-071', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'leaderType', type: 'Donquixote Pirates' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+
 ];

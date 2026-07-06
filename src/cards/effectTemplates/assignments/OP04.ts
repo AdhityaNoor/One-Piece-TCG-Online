@@ -243,4 +243,15 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-072 — [On Your Opponent's Attack] [Once Per Turn] DON!! −2 + rest this: K.O. up to 1 opp Character cost<=4.
   { cardNumber: 'OP04-072', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 2 }, { kind: 'restThis' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
+
+  // --- codegen batch ---
+  { cardNumber: 'OP04-032', templateId: 'ability', params: { timing: 'endOfTurn', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
+  {
+    cardNumber: 'OP04-085',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Dressrosa' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 1 }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'leaderType', type: 'Dressrosa' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 1 }] } },
+    ],
+  },
+
 ];

@@ -210,4 +210,14 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-029 — [When Attacking] If you have [Bunkov], play up to 1 Character cost<=2 from hand.
   { cardNumber: 'OP16-029', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfControlsNamed', name: 'Bunkov' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 2 } }] } },
 
+
+  // --- codegen batch ---
+  {
+    cardNumber: 'OP16-069',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+    ],
+  },
+
 ];
