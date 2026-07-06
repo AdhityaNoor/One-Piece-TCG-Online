@@ -15,25 +15,10 @@ export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST22-002 — [On Play] Look 5, reveal up to 1 {Whitebeard Pirates} to hand, rest to bottom (exclude-[Izo] dropped). PARTIAL: opp-attack trash-self deferred.
   { cardNumber: 'ST22-002', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Whitebeard Pirates' }, remainder: 'bottom' }] } },
 
-  // ST22-003 (character) Edward.Newgate —
-  //   [Double Attack] (This card deals 2 damage.)[On Play] Reveal 1 card from the top of your deck. If that
-  //   card's type includes "Whitebeard Pirates", draw 2 cards.
-  // NOTE: not yet implemented (needs template).
-
   // ST22-005 (character) Kouzuki Oden —
   //   If this Character would be removed from the field by your opponent's effect, you may trash 2 cards
   //   from your hand instead.[Activate: Main] [Once Per Turn] You may rest 3 of your DON!! cards and return
   //   1 of your Characters other than this Character to the owner's hand: Set this Character as active.
-  // NOTE: not yet implemented (needs template).
-
-  // ST22-006 (character) Jozu —
-  //   [On Play] Reveal 1 card from the top of your deck. If that card's type includes "Whitebeard Pirates",
-  //   draw 2 cards and trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
-
-  // ST22-007 (character) Squard —
-  //   [Activate: Main] [Once Per Turn] Reveal 1 card from the top of your deck. If that card's type
-  //   includes "Whitebeard Pirates", give up to 1 rested DON!! card to your Leader or 1 of your Characters.
   // NOTE: not yet implemented (needs template).
 
   // ST22-011 (character) Whitey Bay —
@@ -60,4 +45,9 @@ export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // ST22-017 — [Trigger] Return up to 1 Character cost ≤3 to hand. PARTIAL: the reveal-from-hand [Main] is deferred.
   { cardNumber: 'ST22-017', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+
+  // --- codegen batch ---
+  { cardNumber: 'ST22-003', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'draw', amount: 2 }] }] } },
+  { cardNumber: 'ST22-006', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] }] } },
+  { cardNumber: 'ST22-007', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'giveDon', count: 1 }] }] } },
 ];

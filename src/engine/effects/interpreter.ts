@@ -32,6 +32,7 @@ function boolBinding(value: boolean): string[] {
 function conditionMet(op: EffectOp, bindings: Record<string, string[]>, ctx: EffectContextImpl, defs: CardDefinitionLookup): boolean {
   if (op.ifPrevious === 'previousSelectedAny' && bindings.__lastSelected?.[0] !== 'true') return false;
   if (op.ifPrevious === 'previousMovedAny' && bindings.__lastMoved?.[0] !== 'true') return false;
+  if (op.ifPrevious === 'previousRevealMatched' && bindings.__lastRevealMatched?.[0] !== 'true') return false;
   if (op.ifGate?.length && !evaluateGates(op.ifGate, ctx.state(), defs, ctx.controllerId)) return false;
   return true;
 }
@@ -109,6 +110,7 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
   if (filter.minCost !== undefined && (def.baseCost ?? -Infinity) < filter.minCost) return false;
   if (filter.exactCost !== undefined && (def.baseCost ?? -1) !== filter.exactCost) return false;
   if (filter.maxPower !== undefined && (def.basePower ?? Infinity) > filter.maxPower) return false;
+  if (filter.minPower !== undefined && (def.basePower ?? -Infinity) < filter.minPower) return false;
   if (filter.exactPower !== undefined && (def.basePower ?? -1) !== filter.exactPower) return false;
   if (filter.hasTrigger !== undefined && !!def.hasTrigger !== filter.hasTrigger) return false;
   return true;
@@ -415,6 +417,10 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     case 'addDonFromDeck':
       ctx.addDonFromDeck(ctx.controllerId, op.count, op.rested);
       return { selectedIds: [], movedIds: op.count > 0 ? ['__addDonFromDeck'] : [] };
+    case 'revealTopDeck':
+      // Handled specially in runOps (it must set the __lastRevealMatched binding);
+      // this branch keeps the switch exhaustive and is never reached at runtime.
+      return { selectedIds: [], movedIds: [] };
   }
 }
 
@@ -542,6 +548,19 @@ function runOps(
       };
       ctx.emitChoice(choice);
       return true;
+    }
+    if (op.op === 'revealTopDeck') {
+      // Reveal the top card (public), leave it in place, and record whether it
+      // matched the predicate so the branch ops (ifPrevious: 'previousRevealMatched')
+      // run only on a match. __lastRevealMatched persists across later ops/suspends.
+      const [topId] = ctx.topOfDeck(ctx.controllerId, 1);
+      let matched = false;
+      if (topId) {
+        ctx.revealCard(topId);
+        matched = op.filter ? matchesSearchFilter(topId, op.filter, ctx) : true;
+      }
+      workingBindings = { ...withResultBindings(workingBindings, EMPTY_RESULT), __lastRevealMatched: boolBinding(matched) };
+      continue;
     }
     workingBindings = withResultBindings(workingBindings, applyOp(op, ctx, workingBindings));
   }

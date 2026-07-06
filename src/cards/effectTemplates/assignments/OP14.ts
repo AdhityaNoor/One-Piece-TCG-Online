@@ -206,11 +206,6 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP14-044 (character) Edward.Newgate —
-  //   [Blocker][On Play] Reveal 1 card from the top of your deck. If that card's type includes "Whitebeard
-  //   Pirates", draw 2 cards and trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
-
   // OP14-045 — [On K.O.] Draw 1. PARTIAL: the "when a card is trashed from hand → [Rush]" trigger is deferred.
   { cardNumber: 'OP14-045', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
 
@@ -569,6 +564,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // NOTE: not yet implemented (needs template).
 
   // --- codegen batch ---
+  { cardNumber: 'OP14-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] }] } },
   { cardNumber: 'OP14-051', templateId: 'ability', params: { timing: 'onKO', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'draw', amount: 1 }] } },
   { cardNumber: 'OP14-071', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'leaderType', type: 'Donquixote Pirates' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
   { cardNumber: 'OP14-106', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },

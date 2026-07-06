@@ -12,11 +12,16 @@ ROOT = __file__.rsplit('/scripts/', 1)[0]
 CSV = ROOT + '/effect-coverage.csv'
 ASSIGN = ROOT + '/src/cards/effectTemplates/assignments/'
 STATIC_KW = re.compile(r'\[(Blocker|Rush|Double Attack|Banish)\]', re.I)
+KWMAP = {'Rush':'rush','Blocker':'blocker','Double Attack':'doubleAttack','Banish':'banish'}
 TIMING = {'On Play':'onPlay','When Attacking':'whenAttacking','On K.O.':'onKO','On Block':'onBlock',
           'Activate: Main':'activateMain','Main':'activateMain','Counter':'counter','Trigger':'lifeTrigger','End of Your Turn':'endOfTurn'}
 
 def norm(t):
-    t = re.sub(r'\([^)]*\)', '', t); t = STATIC_KW.sub('', t)
+    t = re.sub(r'\([^)]*\)', '', t)
+    # protect keyword GRANTS ("gains [Rush]") so the static-keyword strip below
+    # doesn't eat them; they become "gains KW_<name>" for m_keyword to match.
+    t = re.sub(r'gains? \[(Blocker|Rush|Double Attack|Banish)\]', lambda m: 'gains KW_' + KWMAP[m.group(1)], t)
+    t = STATIC_KW.sub('', t)
     return re.sub(r'\s+', ' ', t).strip()
 def set_file(cn):
     s = cn.split('-')[0]
@@ -158,9 +163,24 @@ def m_playself(b):
     # [Trigger] Play this card. — resolve the Event/Character itself for free.
     if re.fullmatch(r"[Pp]lay this card\.?",b): return "{ fn: 'triggerPlaySelf' }"
     return None
+def m_keyword(b):
+    # Keyword grants (norm() rewrote "gains [Rush]" -> "gains KW_rush"). No duration
+    # word => permanent (while in play); "during this turn" => duringThisTurn.
+    m=re.fullmatch(r"[Tt]his Character gains KW_(\w+)( during this turn)?\.?",b)
+    if m: return f"{{ fn: 'addKeyword', target: {{ ref: 'self' }}, keyword: '{m.group(1)}', duration: '{'duringThisTurn' if m.group(2) else 'permanent'}' }}"
+    m=re.fullmatch(r"[Uu]p to 1 of your Characters gains KW_(\w+)( during this turn)?\.?",b)
+    if m: return f"{{ fn: 'addKeyword', target: {{ group: 'characters', player: 'controller' }}, keyword: '{m.group(1)}', duration: '{'duringThisTurn' if m.group(2) else 'permanent'}', optional: true }}"
+    m=re.fullmatch(r"[Uu]p to 1 of your Leader gains KW_(\w+)( during this turn)?\.?",b)
+    if m: return f"{{ fn: 'addKeyword', target: {{ group: 'leader', player: 'controller' }}, keyword: '{m.group(1)}', duration: '{'duringThisTurn' if m.group(2) else 'permanent'}', optional: true }}"
+    return None
+def m_scry(b):
+    # Pure top-deck reorder — searchTopDeck destination 'deckTopOrBottom' (cf. ST17-003).
+    m=re.fullmatch(r"Look at (\d+) cards? from the top of your deck and place them at the top or bottom of the deck in any order\.?",b)
+    if m: return f"{{ fn: 'searchTopDeck', look: {m.group(1)}, pick: {m.group(1)}, reveal: false, destination: 'deckTopOrBottom' }}"
+    return None
 
 BODIES=[m_searcher,m_ko,m_koall,m_rest,m_preventrefresh,m_draw,m_minuspower,m_buff,m_allbuff,m_selfbuff,
-        m_koimmself,m_addcost,m_bottomdeck,m_returnhand,m_givedon,m_setdon,m_restopdon,m_adddon,
+        m_keyword,m_scry,m_koimmself,m_addcost,m_bottomdeck,m_returnhand,m_givedon,m_setdon,m_restopdon,m_adddon,
         m_trashtop,m_life_to_hand,m_playhand,m_playtrash,m_playself]
 
 def match_one(b):

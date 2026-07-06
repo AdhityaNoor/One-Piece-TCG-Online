@@ -61,6 +61,7 @@ export interface SearchFilter {
   /** Exact cost (2-7), e.g. "with a cost of 6" (no "or less"). */
   exactCost?: number;
   maxPower?: number;
+  minPower?: number;
   exactPower?: number;
   /** [Trigger] presence gate (2-11): the card must (true) or must not (false) carry a [Trigger]. */
   hasTrigger?: boolean;
@@ -68,7 +69,7 @@ export interface SearchFilter {
 
 export type SearchRemainderDestination = 'bottom' | 'trash';
 export type SearchPickDestination = 'hand' | 'lifeTop' | 'deckTopOrBottom';
-export type SequenceCondition = 'previousSelectedAny' | 'previousMovedAny';
+export type SequenceCondition = 'previousSelectedAny' | 'previousMovedAny' | 'previousRevealMatched';
 
 export interface EffectOpSequenceGate {
   /**
@@ -124,6 +125,11 @@ export type EffectOp =
   // Without that text, the added card remains secret to the controller.
   // The rest go to the configured destination (bottom by default).
   | ({ op: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination; prompt: string } & EffectOpSequenceGate)
+  // Reveal the top card of the controller's own deck (public), test it against an
+  // optional predicate, and record whether it matched via the __lastRevealMatched
+  // binding. Non-suspending: the card stays on top; the conditional "then" branch
+  // is expressed as following ops gated on `ifPrevious: 'previousRevealMatched'`.
+  | ({ op: 'revealTopDeck'; filter?: SearchFilter } & EffectOpSequenceGate)
   // Trash the top `count` cards of the controller's own deck (self-mill).
   | ({ op: 'trashTopDeck'; count: number } & EffectOpSequenceGate)
   // Trash the top `count` Life cards of a player (e.g. "Trash up to 1 of your opponent's Life cards").

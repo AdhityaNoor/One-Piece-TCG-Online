@@ -104,6 +104,25 @@ export class EffectContextImpl implements EffectContext {
     return player.deck.cardIds.slice(0, Math.max(0, n));
   }
 
+  /**
+   * Publicly reveal a card without moving it (e.g. "Reveal 1 card from the top of
+   * your deck"). Emits a public log naming the card; leaves zone/order untouched so
+   * a following draw/search sees it in place. No-op if the instance is unknown.
+   */
+  revealCard(instanceId: string): void {
+    const inst = this.working.cardsById[instanceId];
+    if (!inst) return;
+    const def = this.defs[inst.cardDefinitionId];
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${this.controllerId} revealed ${def?.name ?? instanceId} from the top of their deck.`,
+      data: { revealedInstanceId: instanceId, cardDefinitionId: inst.cardDefinitionId },
+      relatedCardInstanceIds: [instanceId],
+      visibility: 'public',
+    });
+  }
+
   draw(playerId: string, n: number): void {
     for (let i = 0; i < n; i++) {
       if (this.working.gameOver) return;

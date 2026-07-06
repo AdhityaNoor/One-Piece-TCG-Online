@@ -296,23 +296,12 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x1] [Your Turn] This Character gains +1000 power for every card in your hand.
   // NOTE: not yet implemented (needs template).
 
-  // OP01-073 (character) Donquixote Doflamingo —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.) [On Play] Look at 5 cards from the top of your deck and place them at the top or
-  //   bottom of the deck in any order.
-  // NOTE: not yet implemented (needs template).
-
   // OP01-074 — [Blocker] [On K.O.] Play up to 1 [Pacifista] cost<=4 from hand.
   { cardNumber: 'OP01-074', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Pacifista', maxCost: 4 } }] } },
 
   // OP01-075 (character) Pacifista —
   //   Under the rules of this game, you may have any number of this card in your deck. [Blocker] (After
   //   your opponent declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
-
-  // OP01-077 (character) Perona —
-  //   [On Play] Look at 5 cards from the top of your deck and place them at the top or bottom of the deck
-  //   in any order.
   // NOTE: not yet implemented (needs template).
 
   // OP01-078 — [Blocker] [DON!! x1] [When Attacking]/[On Block] Draw 1 if you have 5 or less cards in hand.
@@ -511,4 +500,8 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   //   deals 2 damage.) [Banish] (When this card deals damage, the target card is trashed without activating
   //   its Trigger.)
   // NOTE: not yet implemented (needs template).
+
+  // --- codegen batch ---
+  { cardNumber: 'OP01-073', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
+  { cardNumber: 'OP01-077', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
 ];

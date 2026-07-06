@@ -330,11 +330,6 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-064 — [Activate: Main] DON!! −2 + rest this: If you have [Satori] and [Hotori], rest up to 1 opp Character with 5000 power or less.
   { cardNumber: 'OP15-064', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 2 }, { kind: 'restThis' }], gate: [{ kind: 'selfControlsNamed', name: 'Satori' }, { kind: 'selfControlsNamed', name: 'Hotori' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxPower: 5000 } }, optional: true }] } },
 
-  // OP15-065 (character) Goro —
-  //   [On Play] Reveal 1 card from the top of your deck. If the revealed card has a cost of 2 or less, add
-  //   up to 1 DON!! card from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
-
   {
     cardNumber: 'OP15-066',
     templates: [
@@ -603,4 +598,7 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   activates an Event or [Blocker], reveal up to 1 card from the top of your Life cards. This Character
   //   gains +1000 power during this turn per 1 cost on the revealed card.
   // NOTE: not yet implemented (needs template).
+
+  // --- codegen batch ---
+  { cardNumber: 'OP15-065', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { maxCost: 2 }, then: [{ fn: 'addDonFromDeck', count: 1, rested: true }] }] } },
 ];

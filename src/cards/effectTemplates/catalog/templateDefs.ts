@@ -100,6 +100,11 @@ export type AbilityFunction =
   | { fn: 'playFromTrash'; filter: SearchFilter; maxTargets?: number; rested?: boolean }
   | { fn: 'triggerPlaySelf' }
   | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination }
+  // "Reveal 1 card from the top of your deck. If <filter>, <then>." Reveals the top card
+  // (public), leaves it on top, and runs `then` only when the card matches `filter`
+  // (omit filter for an unconditional reveal). `then` branch functions must not use
+  // their own ifPrevious — the compiler gates every branch op on the reveal result.
+  | { fn: 'revealTopThen'; filter?: SearchFilter; then: SequencedAbilityFunction[] }
   | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition }
   // Continuous self-buff that scales: +amountPer power for every `step` of `per` (e.g. cards in hand, Events in trash).
   | { fn: 'addPowerSelfScaling'; per: PowerScaleSource; step: number; amountPer: number; duration: IrDuration; condition?: IrCondition }

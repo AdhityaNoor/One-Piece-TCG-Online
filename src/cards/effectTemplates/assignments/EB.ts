@@ -767,11 +767,6 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB03-022 — [Blocker] [On Play] Place up to 1 Character cost<=4 at bottom of deck.
   { cardNumber: 'EB03-022', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 4 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
-  // EB03-023 (character) Kaya —
-  //   [On Play] Look at 5 cards from the top of your deck and place them at the top or bottom of the deck
-  //   in any order.
-  // NOTE: not yet implemented (needs template).
-
   // EB03-024 (character) Nefeltari Vivi —
   //   [Blocker][On Play] Play up to 1 {Alabasta} or {Straw Hat Crew} type Character card with a cost of 5
   //   or less from your hand. Then, you cannot play any Character cards on your field during this turn.
@@ -1370,4 +1365,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   from your hand: Your Leader gains +2000 power until the end of your opponent's next End Phase. Then,
   //   this Character gains [Blocker] until the end of your opponent's next End Phase.
   // NOTE: not yet implemented (needs template).
+
+  // --- codegen batch ---
+  { cardNumber: 'EB03-023', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
 ];

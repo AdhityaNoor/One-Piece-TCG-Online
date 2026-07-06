@@ -489,6 +489,14 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'giveDonControllerLeader':
       return [{ op: 'giveDon', target: { sel: 'controllerLeader' }, count: f.count }];
+    case 'revealTopThen': {
+      // Reveal the top card, then run the branch only if it matched: every branch op
+      // is gated on `previousRevealMatched` (the reveal op sets that binding and it
+      // persists across the branch, including across suspensions). Branch functions
+      // must not carry their own ifPrevious — it is overwritten here.
+      const branch = f.then.flatMap(functionOps).map((op) => ({ ...op, ifPrevious: 'previousRevealMatched' as const }));
+      return [{ op: 'revealTopDeck', ...(f.filter ? { filter: f.filter } : {}) }, ...branch];
+    }
   }
   })();
 
