@@ -128,4 +128,10 @@ export interface CardInstance {
   summoningSick: boolean;
   /** Transient reveal tracking for cards in secret areas (11-2-2). 'all' or specific player ids. */
   revealedTo: 'all' | string[];
+  /**
+   * "This card will not become active in its controller's next Refresh Phase" (a common DON-denial
+   * effect). When true, the Refresh Phase leaves the card rested (Character/Leader) or rested DON!!
+   * and clears the flag — so it only skips one Refresh. undefined/false = normal refresh.
+   */
+  skipNextRefresh?: boolean;
 }

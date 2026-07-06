@@ -355,6 +355,11 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       for (const id of ids) ctx.setActive(id);
       return { selectedIds: ids, movedIds: ids };
     }
+    case 'preventRefresh': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.preventNextRefresh(id);
+      return { selectedIds: ids, movedIds: [] };
+    }
     case 'returnToHand': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.returnToHand(id);
@@ -376,6 +381,11 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     case 'playFromHand': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.playCharacterFromHand(id);
+      return { selectedIds: ids, movedIds: ids };
+    }
+    case 'playFromTrash': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.playCharacterFromTrash(id, op.rested === true);
       return { selectedIds: ids, movedIds: ids };
     }
     case 'moveToHand': {

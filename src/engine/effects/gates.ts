@@ -85,6 +85,13 @@ function evaluateGate(
       return true;
     }
 
+    case 'selfRestedCharacterCount': {
+      const count = player.characterArea.cardIds.filter((id) => state.cardsById[id]?.orientation === 'rested').length;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
     case 'opponentCharacterCount': {
       const opponentId = getOpponentId(state, ownerId);
       const opponent = state.players[opponentId];
@@ -158,6 +165,11 @@ function evaluateGate(
     case 'opponentDonMoreThanSelf': {
       const opponentId = getOpponentId(state, ownerId);
       return fieldDonIds(state, opponentId).length > fieldDonIds(state, ownerId).length;
+    }
+
+    case 'selfDonAtMostOpponent': {
+      const opponentId = getOpponentId(state, ownerId);
+      return fieldDonIds(state, ownerId).length <= fieldDonIds(state, opponentId).length;
     }
 
     case 'opponentHand': {

@@ -192,6 +192,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return targetOps(f.target, (target) => ({ op: 'ko', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
     case 'rest':
       return targetOps(f.target, (target) => ({ op: 'rest', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
+    case 'preventRefresh':
+      return targetOps(f.target, (target) => ({ op: 'preventRefresh', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
     case 'addCost':
       return targetOps(
         f.target,
@@ -344,6 +346,20 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           filter: f.filter,
           prompt: `Play up to ${maxTargets} matching Character card${maxTargets === 1 ? '' : 's'} from your deck, then shuffle your deck.`,
         },
+      ];
+    }
+    case 'playFromTrash': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerTrash', filter: f.filter },
+          min: 0,
+          max: maxTargets,
+          prompt: `Play up to ${maxTargets} matching Character card${maxTargets === 1 ? '' : 's'} from your trash${f.rested ? ' rested' : ''}.`,
+        },
+        { op: 'playFromTrash', target: { sel: 'var', name: 't' }, ...(f.rested ? { rested: true } : {}) },
       ];
     }
     case 'triggerPlaySelf':

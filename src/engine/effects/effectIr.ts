@@ -101,6 +101,7 @@ export type EffectOp =
   | ({ op: 'ko'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'rest'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'setActive'; target: Selector } & EffectOpSequenceGate) // set a card as active — the inverse of `rest` (2-4-3 active/rested). Works on Leader/Character (orientation) and DON!! (donRested).
+  | ({ op: 'preventRefresh'; target: Selector } & EffectOpSequenceGate) // "will not become active in its controller's next Refresh Phase"
   | ({ op: 'returnToHand'; target: Selector } & EffectOpSequenceGate) // bounce a Character to its owner's hand
   | ({ op: 'moveToBottomDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's deck
   | ({ op: 'moveToLifeTop'; target: Selector; faceUp?: boolean } & EffectOpSequenceGate) // move chosen cards to the top of their owner's Life
@@ -109,6 +110,7 @@ export type EffectOp =
   | ({ op: 'chooseLifeToTrash'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then trash it
   | ({ op: 'playSelf' } & EffectOpSequenceGate) // play the source Character itself, e.g. "[Trigger] Play this card"
   | ({ op: 'playFromHand'; target: Selector } & EffectOpSequenceGate) // put a chosen Character from hand into play (no cost)
+  | ({ op: 'playFromTrash'; target: Selector; rested?: boolean } & EffectOpSequenceGate) // put a chosen Character from trash into play (no cost); `rested` plays it rested
   | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
   | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
@@ -154,6 +156,7 @@ export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'onBlock' | 
 export type AbilityCost =
   | { kind: 'donMinus'; count: number } // return N DON!! from the field to the DON!! deck
   | { kind: 'restThis' } // rest the source card
+  | { kind: 'trashThis' } // trash the source card (not a K.O.; does not fire [On K.O.])
   | { kind: 'restDon'; count: number }; // rest N of your active DON!! cards
 
 /**
@@ -165,6 +168,7 @@ export type AbilityGate =
   | { kind: 'leaderType'; type: string } // "If your Leader has the {Y} type"
   | { kind: 'leaderMulticolor' } // "If your Leader is multicolored"
   | { kind: 'selfCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more/less Characters"
+  | { kind: 'selfRestedCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more rested Characters"
   | { kind: 'opponentCharacterCount'; atLeast?: number; atMost?: number } // "If your opponent has N or less Characters"
   | { kind: 'selfDonFieldCount'; atLeast?: number; atMost?: number } // "If you have N or less DON!! cards on your field"
   | { kind: 'selfRestedDonCount'; atLeast?: number; atMost?: number } // "rested DON!! cards" available in cost area and not already attached
@@ -175,6 +179,7 @@ export type AbilityGate =
   | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
   | { kind: 'selfHasCharacterCostAtLeast'; atLeast: number } // "If you have a Character with a cost of N or more"
   | { kind: 'opponentDonMoreThanSelf' } // "If your opponent has more DON!! cards on their field than you"
+  | { kind: 'selfDonAtMostOpponent' } // "If the number of DON!! on your field is equal to or less than your opponent's"
   | { kind: 'opponentHand'; atLeast?: number; atMost?: number }; // "If your opponent has N or more/less cards in their hand"
 
 export interface Ability {

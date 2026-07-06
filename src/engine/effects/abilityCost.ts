@@ -76,6 +76,13 @@ export function canPayAbilityCost(
         }
         break;
       }
+      case 'trashThis': {
+        const source = state.cardsById[sourceInstanceId];
+        if (!source || source.currentZone !== 'characterArea') {
+          reasons.push('Cost requires trashing the source Character, but it is not in play.');
+        }
+        break;
+      }
       case 'restDon': {
         const active = activeDonCount(state, playerId);
         if (active < cost.count) {
@@ -119,6 +126,36 @@ export function payAbilityCost(
           type: 'CARD_RESTED',
           message: `${playerId} rested '${sourceInstanceId}' as an activation cost.`,
           data: { sourceInstanceId },
+          relatedCardInstanceIds: [sourceInstanceId],
+          visibility: 'public',
+        });
+        break;
+      }
+      case 'trashThis': {
+        const source = working.cardsById[sourceInstanceId];
+        const owner = working.players[source.ownerId];
+        const fromZone = source.currentZone;
+        working = {
+          ...working,
+          players: {
+            ...working.players,
+            [source.ownerId]: {
+              ...owner,
+              characterArea: removeFromZone(owner.characterArea, sourceInstanceId),
+              trash: addToZoneTop(owner.trash, sourceInstanceId),
+            },
+          },
+          cardsById: {
+            ...working.cardsById,
+            [sourceInstanceId]: { ...source, currentZone: 'trash', donAttached: [], revealedTo: 'all' },
+          },
+          continuousEffects: working.continuousEffects.filter((ce) => ce.sourceInstanceId !== sourceInstanceId),
+        };
+        logger.push({
+          actorPlayerId: playerId,
+          type: 'CARD_MOVED',
+          message: `${playerId} trashed '${sourceInstanceId}' as an activation cost (from ${fromZone}).`,
+          data: { from: fromZone, to: 'trash', instanceId: sourceInstanceId },
           relatedCardInstanceIds: [sourceInstanceId],
           visibility: 'public',
         });

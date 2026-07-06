@@ -297,3 +297,118 @@ Use semantic labels for UI/options:
 ```
 
 Do not use labels like "Your opponent trashes 1 Life card" in assignment params.
+
+## Pipeline: from card data to engine execution
+
+This section is for new contributors. A card effect flows through **four layers**. The important
+thing to internalise: `gate` (and `cost`, `condition`, `timing`) are **wrapper fields that ride
+along the whole way** — they are *not* stages in the pipeline. The only real transformation is
+`functions → ops`.
+
+```mermaid
+flowchart TD
+    A["<b>1. Card data (raw, non-executable)</b><br/>public/cards/sets/OPxx.json<br/>cardNumber · en.effectText · types · cost · power"]
+    B["<b>2. Reviewed assignment — the card-facing DSL</b><br/>src/cards/effectTemplates/assignments/OPxx.ts<br/>{ timing, condition, gate, cost, oncePerTurn, functions: [ { fn, target, ... } ] }"]
+    C["<b>3. IR — EffectProgram (plain JSON)</b><br/>catalog/factories.ts → applyTemplate<br/>{ cardNumber, abilities: [ { timing, gate, cost, condition, ops: EffectOp[] } ] }"]
+    D["<b>4. Engine execution</b><br/>engine/effects/interpreter.ts → runTimings / resumeProgram<br/>evalCondition + evaluateGates(gate) → payCost → run ops on GameState"]
+
+    W["wrapper fields carried unchanged:<br/>timing · gate · cost · condition · oncePerTurn"]
+
+    A -->|"a human reviews the text and writes a structural binding<br/>(raw text is NEVER parsed into logic)"| B
+    B -->|"factory translates: functions → ops;<br/>timing / gate / cost / condition carried across unchanged"| C
+    C -->|"interpreter walks each ability for the fired timing"| D
+
+    B -.-> W
+    C -.-> W
+    style W fill:#f6f6f6,stroke:#bbb,stroke-dasharray:4 3
+```
+
+ASCII fallback (same thing):
+
+```
+ raw card data ──(a reviewer writes)──▶ assignment params { timing, gate, cost, functions }
+                                               │  factories.ts: functions ─▶ ops
+                                               ▼
+                                     IR ability { timing, gate, cost, ops }
+                                               │  interpreter.ts runs it
+                                               ▼
+   engine: evalCondition + evaluateGates(gate) ─▶ payCost ─▶ execute ops on GameState
+```
+
+### Where each field is defined vs. evaluated
+
+| Concern | Declared in (layer 2, assignment) | Type lives in | Evaluated / executed in (layer 4) |
+| --- | --- | --- | --- |
+| `timing` | `params.timing` | `IrTiming` (effectIr.ts) | which fire hook calls `runTimings` (fireTiming.ts) |
+| `condition` (`[DON!! xN]`, `[Your Turn]`) | `params.condition` | `IrCondition` | `evalCondition` (interpreter.ts) |
+| `gate` (`If <board state>…`) | `params.gate` | `AbilityGate` (effectIr.ts) | `evaluateGates` (gates.ts) |
+| `cost` (`DON!! −N`, rest this, …) | `params.cost` | `AbilityCost` (effectIr.ts) | `canPayAbilityCost` / `payAbilityCost` (abilityCost.ts) |
+| the actual effect | `params.functions` | `AbilityFunction` (templateDefs.ts) | becomes `EffectOp[]`, run by the interpreter |
+
+### Worked example — OP06-075
+
+Card text: `[On Play] DON!! −1: Rest up to 2 of your opponent's Characters with a cost of 2 or less.`
+
+**Layer 2 — assignment** (`assignments/OP06.ts`): timing + a `cost` wrapper + one function.
+
+```ts
+{ cardNumber: 'OP06-075', templateId: 'ability', params: {
+  timing: 'onPlay',
+  cost: [{ kind: 'donMinus', count: 1 }],
+  functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, maxTargets: 2 },
+  ],
+} }
+```
+
+**Layer 3 — IR** (produced by `applyTemplate`): the `rest` function expanded into two ops; the
+`cost` and `timing` carried straight across.
+
+```jsonc
+{ "cardNumber": "OP06-075", "abilities": [ {
+  "timing": "onPlay",
+  "cost": [{ "kind": "donMinus", "count": 1 }],
+  "ops": [
+    { "op": "chooseTargets", "var": "t", "from": { "sel": "opponentCharacters", "maxCost": 2 }, "min": 0, "max": 2 },
+    { "op": "rest", "target": { "sel": "var", "name": "t" } }
+  ]
+} ] }
+```
+
+**Layer 4 — engine**: `fireOnPlay` → `runTimings(program, ['onPlay'], …)` → checks condition/gate
+(none here) → pays the DON!! −1 cost → runs `chooseTargets` (suspends for player input) →
+`resumeProgram` binds the selection → runs `rest`.
+
+### A gated example — OP09-066
+
+Card text: `[On Play] If your opponent has more DON!! cards than you, K.O. up to 1 of your opponent's Characters with a cost of 3 or less.`
+
+Only difference from the shape above: the `[If …]` clause becomes a **`gate`** on the wrapper, and
+there is no `cost`.
+
+```ts
+{ cardNumber: 'OP09-066', templateId: 'ability', params: {
+  timing: 'onPlay',
+  gate: [{ kind: 'opponentDonMoreThanSelf' }],
+  functions: [ { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true } ],
+} }
+```
+
+At layer 4, `runTimings` calls `evaluateGates([{ kind: 'opponentDonMoreThanSelf' }], …)` *before*
+running the ops; if it returns false the whole ability is skipped.
+
+### Adding a new capability — which file changes
+
+- **New gate** (a new `If <board state>` precondition): add the variant to `AbilityGate` in
+  `engine/effects/effectIr.ts`, then a `case` in `engine/effects/gates.ts`. Two files, no factory
+  change — it's just data flowing through. (This is exactly how `selfDonAtMostOpponent` and
+  `selfRestedCharacterCount` were added; see their `__tests__`.)
+- **New cost**: add to `AbilityCost` (effectIr.ts) + handle it in `engine/effects/abilityCost.ts`.
+- **New effect verb**: add to `AbilityFunction` (`catalog/templateDefs.ts`) and its `functions → ops`
+  translation in `catalog/factories.ts`; if it needs a genuinely new runtime operation, also add the
+  `EffectOp` to `effectIr.ts` and implement it in `engine/effects/interpreter.ts`.
+- **New timing**: add to `IrTiming` (effectIr.ts) and wire a fire hook in `engine/effects/fireTiming.ts`.
+
+Prefer, in order: a new **parameter** on an existing function → a new **gate/cost** (data only) →
+a new **function that composes existing ops** → a brand-new **`EffectOp`** (real engine capability).
+Only reach for the last when the effect is a new game action, not a new phrasing of an old one.

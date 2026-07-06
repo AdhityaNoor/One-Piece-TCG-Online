@@ -114,6 +114,8 @@ export interface EffectContext {
   playCharacterFromHand(handInstanceId: string): void;
   /** Play a Character from the controller's deck into the Character Area for free (3-7), then the caller should shuffle the deck if card text instructs it. */
   playCharacterFromDeck(deckInstanceId: string): void;
+  /** Play a Character from the controller's trash into the Character Area for free (3-7); `rested` plays it rested. Raises the 3-7-6-1 overflow choice if it makes a 6th. */
+  playCharacterFromTrash(trashInstanceId: string, rested?: boolean): void;
   /** Shuffle a player's deck using the serialized seedable RNG state. */
   shuffleDeck(playerId: string): void;
   /** Move a card (e.g. from the trash) to its owner's hand. */
@@ -122,6 +124,8 @@ export interface EffectContext {
   trashCard(instanceId: string): void;
   /** Rest a card (4-4-1). Handles Leader/Character (orientation) and DON!! (donRested). */
   rest(targetInstanceId: string): void;
+  /** Flag a card so it will not become active in its controller's next Refresh Phase (one-shot). */
+  preventNextRefresh(targetInstanceId: string): void;
   /** Set a card as active — inverse of rest (2-4-3). Handles Leader/Character (orientation) and DON!! (donRested). */
   setActive(targetInstanceId: string): void;
   /** Trash the top `n` cards of a player's own deck (self-mill); fewer if the deck is short. */

@@ -50,22 +50,34 @@ export function runRefreshPhase(state: GameState): PhaseStepResult {
 
   const cardsById = { ...state.cardsById };
 
-  cardsById[player.leaderInstanceId] = {
-    ...cardsById[player.leaderInstanceId],
-    orientation: 'active',
-    donAttached: [],
+  // A card flagged `skipNextRefresh` (a "will not become active" effect) stays rested for exactly
+  // this one Refresh; the flag is consumed here so it never persists to a later Refresh.
+  const setActiveUnlessFlagged = (id: string, extra: Partial<(typeof cardsById)[string]> = {}): void => {
+    const inst = cardsById[id];
+    if (inst.skipNextRefresh) {
+      cardsById[id] = { ...inst, ...extra, skipNextRefresh: false };
+    } else {
+      cardsById[id] = { ...inst, ...extra, orientation: 'active' };
+    }
   };
 
+  setActiveUnlessFlagged(player.leaderInstanceId, { donAttached: [] });
+
   for (const id of player.characterArea.cardIds) {
-    cardsById[id] = { ...cardsById[id], orientation: 'active', donAttached: [], summoningSick: false };
+    setActiveUnlessFlagged(id, { donAttached: [], summoningSick: false });
   }
 
   for (const id of player.stageArea.cardIds) {
-    cardsById[id] = { ...cardsById[id], orientation: 'active', donAttached: [] };
+    setActiveUnlessFlagged(id, { donAttached: [] });
   }
 
   for (const id of player.costArea.cardIds) {
-    cardsById[id] = { ...cardsById[id], donRested: false };
+    const inst = cardsById[id];
+    if (inst.skipNextRefresh) {
+      cardsById[id] = { ...inst, skipNextRefresh: false }; // stays rested this Refresh
+    } else {
+      cardsById[id] = { ...inst, donRested: false };
+    }
   }
 
   const controlledIds = [player.leaderInstanceId, ...player.characterArea.cardIds, ...player.stageArea.cardIds];

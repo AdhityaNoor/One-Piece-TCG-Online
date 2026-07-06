@@ -82,6 +82,7 @@ export type AbilityFunction =
   | { fn: 'giveDon'; count: number }
   | { fn: 'ko'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'rest'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
+  | { fn: 'preventRefresh'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'addCost'; target: TargetSpec; amount: number; duration?: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'addPower'; target: TargetSpec; amount: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'addKeyword'; target: TargetSpec; keyword: ContinuousKeyword; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
@@ -96,6 +97,7 @@ export type AbilityFunction =
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
   | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number }
+  | { fn: 'playFromTrash'; filter: SearchFilter; maxTargets?: number; rested?: boolean }
   | { fn: 'triggerPlaySelf' }
   | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination }
   | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition }

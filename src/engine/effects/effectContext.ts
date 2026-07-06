@@ -662,6 +662,65 @@ export class EffectContextImpl implements EffectContext {
     }
   }
 
+  playCharacterFromTrash(trashInstanceId: string, rested = false): void {
+    const trashInst = this.working.cardsById[trashInstanceId];
+    if (!trashInst || trashInst.currentZone !== 'trash') return;
+    const def = this.defs[trashInst.cardDefinitionId];
+    if (!def || def.category !== 'character') return; // only Characters can be played to the field
+    const controllerId = trashInst.controllerId;
+    const player = this.working.players[controllerId];
+    if (!player) return;
+
+    const minted = mintRuntimeInstanceId(this.working); // 3-1-6: fresh instance entering play
+    const newId = minted.id;
+    const newInstance: CardInstance = {
+      instanceId: newId,
+      cardDefinitionId: trashInst.cardDefinitionId,
+      ownerId: trashInst.ownerId,
+      controllerId,
+      currentZone: 'characterArea',
+      orientation: rested ? 'rested' : 'active',
+      faceState: 'faceUp',
+      donAttached: [],
+      currentPower: def.basePower ?? 0,
+      appliedContinuousEffectIds: [],
+      oncePerTurnUsed: [],
+      summoningSick: !def.hasRush, // 3-7-4, 10-1-6
+      revealedTo: 'all',
+    };
+    const cardsById = { ...minted.state.cardsById, [newId]: newInstance };
+    delete cardsById[trashInstanceId]; // old trash instance retired
+    const newCharacterArea = addToZoneBottom(player.characterArea, newId);
+    const newTrash = removeFromZone(player.trash, trashInstanceId);
+    this.working = {
+      ...minted.state,
+      cardsById,
+      players: { ...minted.state.players, [controllerId]: { ...player, trash: newTrash, characterArea: newCharacterArea } },
+    };
+
+    this.logger.push({
+      actorPlayerId: controllerId,
+      type: 'CARD_PLAYED',
+      message: `${controllerId} played ${def.name} from trash via an effect (no cost, ${rested ? 'rested' : 'active'}).`,
+      data: { from: 'trash', to: 'characterArea', cost: 0, oldInstanceId: trashInstanceId },
+      relatedCardInstanceIds: [newId],
+      visibility: 'public',
+    });
+
+    const limit = newCharacterArea.maxSize ?? Infinity;
+    if (newCharacterArea.cardIds.length > limit) {
+      this.emitChoice({
+        id: `${controllerId}__character-overflow-${newId}`,
+        playerId: controllerId,
+        kind: 'SELECT_CARDS',
+        prompt: `Choose 1 Character to trash — more than ${limit} in your Character Area (3-7-6-1).`,
+        constraints: { min: 1, max: 1, zoneId: 'characterArea', filterDescription: 'Any Character currently in your Character Area.' },
+        sourceInstanceId: null,
+        sourceEffectId: 'rule:characterAreaOverflow',
+      });
+    }
+  }
+
   playCharacterFromDeck(deckInstanceId: string): void {
     const deckInst = this.working.cardsById[deckInstanceId];
     if (!deckInst || deckInst.currentZone !== 'deck') return;
@@ -821,6 +880,25 @@ export class EffectContextImpl implements EffectContext {
       actorPlayerId: this.controllerId,
       type: 'EFFECT_RESOLVED',
       message: `${targetInstanceId} was rested by an effect (4-4-1).`,
+      data: { targetInstanceId },
+      relatedCardInstanceIds: [targetInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  /**
+   * "This card will not become active in its controller's next Refresh Phase." Sets a one-shot flag
+   * the Refresh Phase honours then clears (see runRefreshPhase.ts). Works for Leader/Character and
+   * cost-area DON!! alike. No-op if the instance is unknown.
+   */
+  preventNextRefresh(targetInstanceId: string): void {
+    const inst = this.working.cardsById[targetInstanceId];
+    if (!inst || inst.skipNextRefresh === true) return;
+    this.working = { ...this.working, cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, skipNextRefresh: true } } };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${targetInstanceId} will not become active in its controller's next Refresh Phase.`,
       data: { targetInstanceId },
       relatedCardInstanceIds: [targetInstanceId],
       visibility: 'public',
