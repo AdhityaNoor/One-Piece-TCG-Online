@@ -1,12 +1,12 @@
 # Effect triage worklist
 
-Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP09, OP10, OP11, OP12, OP13, OP14, OP15, OP16, P, PRB01, PRB02, ST01, ST02, ST03, ST04, ST05, ST06, ST07, ST08, ST09, ST10, ST11, ST12, ST13, ST14, ST15, ST16, ST17, ST18, ST19, ST20, ST21, ST22, ST23, ST24, ST25, ST26, ST27, ST28, ST29, ST30 · needsTemplate cards analyzed: 1731
+Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP09, OP10, OP11, OP12, OP13, OP14, OP15, OP16, P, PRB01, PRB02, ST01, ST02, ST03, ST04, ST05, ST06, ST07, ST08, ST09, ST10, ST11, ST12, ST13, ST14, ST15, ST16, ST17, ST18, ST19, ST20, ST21, ST22, ST23, ST24, ST25, ST26, ST27, ST28, ST29, ST30 · needsTemplate cards analyzed: 1650
 
 | Bucket | Cards | Meaning |
 | --- | ---: | --- |
-| expressible | 1237 | maps to existing primitives - curate now |
-| needsPrimitive | 261 | one small addition unlocks it |
-| defer | 233 | needs real new engine capability |
+| expressible | 1165 | maps to existing primitives - curate now |
+| needsPrimitive | 255 | one small addition unlocks it |
+| defer | 230 | needs real new engine capability |
 
 ## By set
 
@@ -16,12 +16,12 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 | EB02 | 40 | 4 | 5 |
 | EB03 | 44 | 4 | 8 |
 | EB04 | 37 | 9 | 12 |
-| OP01 | 46 | 11 | 11 |
-| OP02 | 52 | 12 | 8 |
+| OP01 | 21 | 8 | 9 |
+| OP02 | 23 | 10 | 7 |
 | OP03 | 55 | 15 | 4 |
 | OP04 | 71 | 13 | 14 |
 | OP05 | 67 | 12 | 9 |
-| OP06 | 41 | 23 | 22 |
+| OP06 | 23 | 22 | 22 |
 | OP07 | 52 | 9 | 6 |
 | OP08 | 44 | 12 | 13 |
 | OP09 | 47 | 15 | 11 |
@@ -68,10 +68,10 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 
 ## Top blocking reasons
 
-- `unmatched-clause` — 196
+- `unmatched-clause` — 190
 - `delayed-effect` — 88
 - `attack-restriction` — 49
-- `dynamic-scaling` — 29
+- `dynamic-scaling` — 28
 - `custom-trigger` — 23
 - `opp-deck-manip` — 20
 - `static-conditional-no-timing` — 18
@@ -82,8 +82,8 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 - `look-and-play` — 9
 - `top-or-bottom-life` — 7
 - `power-based-gate` — 6
-- `hand-reset` — 6
 - `ko-own-as-cost` — 5
+- `hand-reset` — 4
 - `attribute-target` — 4
 - `same-power-as` — 4
 - `rest-named-cost` — 3
@@ -93,7 +93,7 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 - `place-self-bottom-cost` — 2
 - `rest-all` — 1
 
-## Expressible now (curate these) (1237)
+## Expressible now (curate these) (1165)
 
 | Card | Name | Cat | Reasons | Text |
 | --- | --- | --- | --- | --- |
@@ -249,97 +249,43 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 | EB04-060 | Gum-Gum Hawk Gatling | event | draw,power-buff,trash-hand | [Main] You may add 1 card from the top or bottom of your Life cards to your hand: Add up to 1 {Egghead} type Character card from your hand to the top of your Li |
 | OP01-002 | Trafalgar Law | leader | play-from,return-hand | [Activate: Main] [Once Per Turn] ➁ (You may rest the specified number of DON!! cards in your cost area.): If you have 5 Characters, return 1 of your Characters  |
 | OP01-003 | Monkey.D.Luffy | leader | power-buff,set-active | [Activate: Main] [Once Per Turn] ➃ (You may rest the specified number of DON!! cards in your cost area.): Set up to 1 of your {Supernovas} or {Straw Hat Crew} t |
-| OP01-008 | Cavendish | character | keyword | [On Play] You may add 1 card from your Life area to your hand: This Character gains [Rush] during this turn. (This card can attack on the turn in which it is pl |
-| OP01-011 | Gordon | character | draw,move-bottom-deck | [On Play] You may place 1 card from your hand at the bottom of your deck: Draw 1 card. |
 | OP01-013 | Sanji | character | power-buff | [Activate: Main] [Once Per Turn] You may add 1 card from your Life area to your hand: This Character gains +2000 power during this turn. Then, give this Charact |
-| OP01-014 | Jinbe | character | play-from | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [DON!! x1] [On Block] Play up to 1 red Chara |
-| OP01-015 | Tony Tony.Chopper | character | trash-hand | [DON!! x1] [When Attacking] You may trash 1 card from your hand: Add up to 1 {Straw Hat Crew} type Character card other than [Tony Tony.Chopper] with a cost of  |
 | OP01-019 | Bartolomeo | character | power-buff | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [DON!! x2] [Opponent's Turn] This Character  |
 | OP01-024 | Monkey.D.Luffy | character | ko-immunity | [DON!! x2] This Character cannot be K.O.'d in battle by ＜Strike＞ attribute Characters. [Activate: Main] [Once Per Turn] Give this Character up to 2 rested DON!! |
-| OP01-031 | Kouzuki Oden | leader | set-active | [Activate: Main] [Once Per Turn] You can trash 1 {Land of Wano} type card from your hand: Set up to 2 of your DON!! cards as active. |
 | OP01-032 | Ashura Doji | character | power-buff | [DON!! x1] If your opponent has 2 or more rested Characters, this Character gains +2000 power. |
-| OP01-034 | Inuarashi | character | set-active | [DON!! x2] [When Attacking] Set up to 1 of your DON!! cards as active. |
 | OP01-038 | Kanjuro | character | ko | [DON!! x1] [When Attacking] K.O. up to 1 of your opponent's rested Characters with a cost of 2 or less. [On K.O.] Your opponent chooses 1 card from your hand; t |
-| OP01-039 | Killer | character | draw | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [DON!! x1] [On Block] If you have 3 or more  |
-| OP01-040 | Kin'emon | character | play-from,set-active | [On Play] If your Leader is [Kouzuki Oden], play up to 1 {The Akazaya Nine} type Character card with a cost of 3 or less from your hand. [DON!! x1] [When Attack |
-| OP01-041 | Kouzuki Momonosuke | character | search,move-bottom-deck | [Activate: Main] ➀ (You may rest the specified number of DON!! cards in your cost area) You may rest this Character: Look at 5 cards from the top of your deck;  |
-| OP01-042 | Komurasaki | character | set-active | [On Play] ③ (You may rest the specified number of DON!! cards in your cost area.): If your Leader is [Kouzuki Oden], set up to 1 of your {Land of Wano} type Cha |
 | OP01-044 | Shachi | character | play-from | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [On Play] If you don't have [Penguin], play  |
-| OP01-046 | Denjiro | character | set-active | [DON!! x1] [When Attacking] If your Leader is [Kouzuki Oden], set up to 2 of your DON!! cards as active. |
 | OP01-047 | Trafalgar Law | character | play-from | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [On Play] You may return 1 Character to your |
-| OP01-049 | Bepo | character | play-from | [DON!! x1] [When Attacking] Play up to 1 {Heart Pirates} type Character card other than [Bepo] with a cost of 4 or less from your hand. |
 | OP01-050 | Penguin | character | play-from | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [On Play] If you don't have [Shachi], play u |
-| OP01-052 | Raizo | character | draw | [When Attacking] [Once Per Turn] If you have 2 or more rested Characters, draw 1 card. |
 | OP01-055 | You Can Be My Samurai!! | event | draw | [Main] You may rest 2 of your Characters: Draw 2 cards. |
-| OP01-057 | Paradise Waterfall | event | ko,power-buff,set-active | [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, set up to 1 of your Characters as active. [Trigger] K.O. up to 1 |
-| OP01-059 | BE-BENG!! | event | set-active | [Main] You may trash 1 {Land of Wano} type card from your hand: Set up to 1 of your {Land of Wano} type Character cards with a cost of 3 or less as active. |
 | OP01-062 | Crocodile | leader | draw | [DON!! x1] When you activate an Event, you may draw 1 card if you have 4 or less cards in your hand and haven't drawn a card using this Leader's effect during t |
 | OP01-063 | Arlong | character | move-bottom-deck | [DON!! x1] [Activate: Main] You may rest this Character: Choose 1 card from your opponent's hand; your opponent reveals that card. If the revealed card is an Ev |
-| OP01-064 | Alvida | character | trash-hand,return-hand | [DON!! x1] [When Attacking] You may trash 1 card from your hand: Return up to 1 of your opponent's Characters with a cost of 3 or less to the owner's hand. |
 | OP01-068 | Gecko Moria | character | keyword | [Your Turn] This Character gains [Double Attack] if you have 5 or more cards in your hand. (This card deals 2 damage.) |
 | OP01-073 | Donquixote Doflamingo | character | search | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [On Play] Look at 5 cards from the top of yo |
-| OP01-074 | Bartholomew Kuma | character | play-from | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [On K.O.] Play up to 1 [Pacifista] with a co |
 | OP01-077 | Perona | character | search | [On Play] Look at 5 cards from the top of your deck and place them at the top or bottom of the deck in any order. |
-| OP01-078 | Boa Hancock | character | draw | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [DON!! x1] [When Attacking]/[On Block] Draw  |
-| OP01-087 | Officer Agents | event | play-from | [Counter] Play up to 1 {Baroque Works} type Character card with a cost of 3 or less from your hand. [Trigger] Activate this card's [Counter] effect. |
 | OP01-088 | Desert Spada | event | draw,power-buff,search,trash-hand | [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, look at 3 cards from the top of your deck and place them at the  |
 | OP01-091 | King | leader | power-buff | [Your Turn] If you have 10 DON!! cards on your field, give all of your opponent's Characters −1000 power. |
-| OP01-097 | Queen | character | power-buff,keyword,don-minus | [On Play] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): This Character gains [Rush] during this turn. Then, |
 | OP01-099 | Kurozumi Semimaru | character | ko-immunity | {Kurozumi Clan} type Characters other than your [Kurozumi Semimaru] cannot be K.O.'d in battle. |
-| OP01-101 | Sasaki | character | trash-hand | [DON!! x1] [When Attacking] You may trash 1 card from your hand: Add up to 1 DON!! card from your DON!! deck and rest it. |
-| OP01-102 | Jack | character | don-minus | [When Attacking] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Your opponent trashes 1 card from their hand |
 | OP01-109 | Who's.Who | character | power-buff | [DON!! x1] [Your Turn] If you have 8 or more DON!! cards on your field, this Character gains +1000 power. |
-| OP01-111 | Black Maria | character | power-buff,don-minus | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [On Block] DON!! −1 (You may return the spec |
-| OP01-114 | X.Drake | character | don-minus | [On Play] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Your opponent trashes 1 card from their hand. |
 | OP01-116 | Artificial Devil Fruit SMILE | event | search,play-from,move-bottom-deck | [Main] Look at 5 cards from the top of your deck; play up to 1 {SMILE} type Character card with a cost of 3 or less. Then, place the rest at the bottom of your  |
-| OP01-119 | Thunder Bagua | event | power-buff | [Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, if you have 2 or less Life cards, add up to 1 DON!! card from yo |
-| OP02-001 | Edward.Newgate | leader | add-life-to-hand | [End of Your Turn] Add 1 card from the top of your Life cards to your hand. |
 | OP02-004 | Edward.Newgate | character | ko,power-buff | [On Play] Up to 1 of your Leader gains +2000 power until the start of your next turn. Then, you cannot add Life cards to your hand using your own effects during |
 | OP02-008 | Jozu | character | keyword | [DON!! x1] If you have 2 or less Life cards and your Leader's type includes "Whitebeard Pirates", this Character gains [Rush]. (This card can attack on the turn |
-| OP02-009 | Squard | character | power-buff,add-life-to-hand | [On Play] If your Leader's type includes "Whitebeard Pirates", give up to 1 of your opponent's Characters −4000 power during this turn and add 1 card from the t |
-| OP02-010 | Dogura | character | play-from | [Activate: Main] You may rest this Character: Play up to 1 red Character other than [Dogura] with a cost of 1 from your hand. |
-| OP02-013 | Portgas.D.Ace | character | power-buff,keyword | [On Play] Give up to 2 of your opponent's Characters −3000 power during this turn. Then, if your Leader's type includes "Whitebeard Pirates", this Character gai |
-| OP02-015 | Makino | character | power-buff | [Activate: Main] You may rest this Character: Up to 1 of your red Characters with a cost of 1 gains +3000 power during this turn. |
-| OP02-021 | Seaquake | event | ko,power-buff | [Main] If your Leader's type includes "Whitebeard Pirates", K.O. up to 1 of your opponent's Characters with 3000 power or less. [Trigger] Give up to 1 of your o |
 | OP02-023 | You May Be a Fool...but I Still Love You | event | power-buff | [Main] If you have 3 or less Life cards, you cannot add Life cards to your hand using your own effects during this turn. [Trigger] Up to 1 of your Leader gains  |
 | OP02-026 | Sanji | leader | set-active | [Once Per Turn] When you play a Character with no base effect from your hand, if you have 3 or less Characters, set up to 2 of your DON!! cards as active. |
-| OP02-029 | Carrot | character | set-active | [End of Your Turn] Set up to 1 of your DON!! cards as active. |
 | OP02-031 | Kouzuki Toki | character | keyword | If you have a [Kouzuki Oden] Character, this Character gains [Blocker]. (After your opponent declares an attack, you may rest this card to make it the new targe |
-| OP02-032 | Shishilian | character | set-active | [On Play] ② (You may rest the specified number of DON!! cards in your cost area.): Set up to 1 of your {Minks} type Characters with a cost of 5 or less as activ |
 | OP02-035 | Trafalgar Law | character | play-from,return-hand | [Activate: Main] ➀ (You may rest the specified number of DON!! cards in your cost area.) You may return this Character to the owner's hand: Play up to 1 Charact |
-| OP02-036 | Nami | character | search,move-bottom-deck | [On Play]/[When Attacking] ➀ (You may rest the specified number of DON!! cards in your cost area.): Look at 3 cards from the top of your deck; reveal up to 1 {F |
-| OP02-037 | Nico Robin | character | play-from | [On Play] Play up to 1 {FILM} or {Straw Hat Crew} type Character card with a cost of 2 or less from your hand. |
-| OP02-040 | Brook | character | play-from | [On Play] Play up to 1 {FILM} or {Straw Hat Crew} type Character card with a cost of 3 or less from your hand. |
-| OP02-041 | Monkey.D.Luffy | character | play-from | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [On Play] Play up to 1 {FILM} or {Straw Hat  |
-| OP02-042 | Yamato | character | rest | Also treat this card's name as [Kouzuki Oden] according to the rules. [On Play] Rest up to 1 of your opponent's Characters with a cost of 6 or less. |
-| OP02-044 | Wanda | character | play-from | [On Play] Play up to 1 {Minks} type Character card other than [Wanda] with a cost of 3 or less from your hand. |
 | OP02-045 | Three Sword Style Oni Giri | event | rest,power-buff,play-from | [Counter] Up to 1 of your Leader or Character cards gains +6000 power during this battle. Then, play up to 1 Character card with a cost of 3 or less and no base |
 | OP02-046 | Diable Jambe Venaison Shoot | event | ko,play-from | [Main] K.O. up to 1 of your opponent's rested Characters with a cost of 4 or less. [Trigger] Play up to 1 Character card with a cost of 4 or less and no base ef |
-| OP02-048 | Land of Wano | stage | set-active | [Activate: Main] You may trash 1 {Land of Wano} type card from your hand and rest this Stage: Set up to 1 of your DON!! cards as active. |
-| OP02-049 | Emporio.Ivankov | leader | draw | [End of Your Turn] If you have 0 cards in your hand, draw 2 cards. |
 | OP02-050 | Inazuma | character | power-buff | If you have 1 or less cards in your hand, this Character gains +2000 power. [Blocker] (After your opponent declares an attack, you may rest this card to make it |
 | OP02-051 | Emporio.Ivankov | character | play-from | [On Play] Draw card(s) so that you have 3 cards in your hand and then play up to 1 blue {Impel Down} type Character card with a cost of 6 or less from your hand |
 | OP02-052 | Cabaji | character | draw,trash-hand | [On Play] If you have [Mohji], draw 2 cards and trash 1 card from your hand. |
 | OP02-056 | Donquixote Doflamingo | character | search,move-bottom-deck,trash-hand | [On Play] Look at 3 cards from the top of your deck and place them at the top or bottom of the deck in any order. [DON!! x1] [When Attacking] You may trash 1 ca |
 | OP02-057 | Bartholomew Kuma | character | search | [On Play] Look at 2 cards from the top of your deck; reveal up to 1 {The Seven Warlords of the Sea} type card and add it to your hand. Then, place the rest at t |
-| OP02-059 | Boa Hancock | character | draw,trash-hand | [When Attacking] Draw 1 card and trash 1 card from your hand. Then, trash up to 3 cards from your hand. |
-| OP02-062 | Monkey.D.Luffy | character | keyword,trash-hand,return-hand | [On Play]/[When Attacking] You may trash 2 cards from your hand: Return up to 1 Character with a cost of 4 or less to the owner's hand. Then, this Character gai |
 | OP02-064 | Mr.2.Bon.Kurei(Bentham) | character | move-bottom-deck,trash-hand | [DON!! x1] [When Attacking] You may trash 1 card from your hand: Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck. Then, at th |
-| OP02-065 | Mr.3(Galdino) | character | trash-hand,set-active | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [End of Your Turn] You may trash 1 card from |
-| OP02-066 | Impel Down All Stars | event | draw,trash-hand | [Main] You may trash 2 cards from your hand: If your Leader has the {Impel Down} type, draw up to 2 cards. [Trigger] Draw 2 cards. |
-| OP02-068 | Gum-Gum Rain | event | power-buff,trash-hand,return-hand | [Counter] You may trash 1 card from your hand: Up to 1 of your Leader or Character cards gains +3000 power during this battle. [Trigger] Return up to 1 Characte |
 | OP02-069 | DEATH WINK | event | power-buff,return-hand | [Counter] Up to 1 of your Leader or Character cards gains +6000 power during this battle. Then, draw cards so that you have 2 cards in your hand. [Trigger] Retu |
-| OP02-070 | New Kama Land | stage | draw,trash-hand | [Activate: Main] You may rest this Stage: If your Leader is [Emporio.Ivankov], draw 1 card and trash 1 card from your hand. Then, trash up to 3 cards from your  |
-| OP02-073 | Little Sadi | character | play-from | [On Play] Play up to 1 {Jailer Beast} type Character card from your hand. |
 | OP02-074 | Saldeath | character | keyword | Your [Blugori] gains [Blocker]. (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) |
 | OP02-075 | Shiki | character | don-minus | [Trigger] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Play this card. |
-| OP02-078 | Daifugo | character | play-from | [On Play] DON!! −2 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Play up to 1 {SMILE} type Character card other than |
-| OP02-082 | Byrnndi World | character | power-buff | [Activate: Main] DON!! −8 (You may return the specified number of DON!! cards from your field to your DON!! deck.): This Character gains +792000 power during th |
-| OP02-092 | Impel Down | stage | search,move-bottom-deck,trash-hand | [Activate: Main] You may trash 1 card from your hand and rest this Stage: Look at 3 cards from the top of your deck; reveal up to 1 {Impel Down} type card and a |
-| OP02-093 | Smoker | leader | power-buff | [DON!! x1] [Activate: Main] [Once Per Turn] Give up to 1 of your opponent's Characters −1 cost during this turn. Then, if there is a Character with a cost of 0, |
 | OP02-094 | Isuka | character | set-active | [DON!! x1] [Once Per Turn] When this Character battles and K.O.'s your opponent's Character, set this Character as active. |
-| OP02-098 | Koby | character | ko,trash-hand | [On Play] You may trash 1 card from your hand: K.O. up to 1 of your opponent's Characters with a cost of 3 or less. |
-| OP02-099 | Sakazuki | character | ko,trash-hand | [On Play] You may trash 1 card from your hand: K.O. up to 1 of your opponent's Characters with a cost of 5 or less. |
 | OP02-102 | Smoker | character | power-buff,ko-immunity | This Character cannot be K.O.'d by effects. [When Attacking] If there is a Character with a cost of 0, this Character gains +2000 power during this battle. |
 | OP02-111 | Fullbody | character | power-buff | [When Attacking] If you have [Jango], this card gains +3000 power during this battle. |
 | OP02-114 | Borsalino | character | power-buff,ko-immunity | [Opponent's Turn] This Character gains +1000 power and cannot be K.O.'d by effects. [Blocker] (After your opponent declares an attack, you may rest this card to |
@@ -539,46 +485,28 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 | OP05-109 | Pagaya | character | draw,trash-hand | [Once Per Turn] When a [Trigger] activates, draw 2 cards and trash 2 cards from your hand. |
 | OP05-119 | Monkey.D.Luffy | character | move-bottom-deck,don-minus | [On Play] DON!! −10: Place all of your Characters except this Character at the bottom of your deck in any order. Then, take an extra turn after this one.[Activa |
 | OP06-001 | Uta | leader | power-buff | [When Attacking] You may trash 1 {FILM} type card from your hand: Give up to 1 of your opponent's Characters −2000 power during this turn. Then, add up to 1 DON |
-| OP06-004 | Baron Omatsuri | character | play-from | [On Play] Play up to 1 [Lily Carnation] from your hand. |
 | OP06-010 | Douglas Bullet | character | keyword | If your Leader has the {FILM} type, this Character gains [Blocker].(After your opponent declares an attack, you may rest this card to make it the new target of  |
 | OP06-017 | Meteor-Strike of Love | event | power-buff,add-life-to-hand | [Main]/[Counter] You may add 1 card from the top of your Life cards to your hand: Up to 1 of your Leader or Character cards gains +3000 power during this turn. |
 | OP06-020 | Hody Jones | leader | rest | [Activate: Main] You may rest this Leader: Rest up to 1 of your opponent's DON!! cards or Characters with a cost of 3 or less. Then, you cannot add Life cards t |
 | OP06-021 | Perona | leader | rest,choose-one | [Activate: Main] [Once Per Turn] Choose one:• Rest up to 1 of your opponent's Characters with a cost of 4 or less.• Give up to 1 of your opponent's Characters − |
-| OP06-022 | Yamato | leader | give-don | [Double Attack] (This card deals 2 damage.)[Activate: Main] [Once Per Turn] If your opponent has 3 or less Life cards, give up to 2 rested DON!! cards to 1 of y |
-| OP06-024 | Ikaros Much | character | play-from,add-life-to-hand | [On Play] If your Leader has the {New Fish-Man Pirates} type, play up to 1 {Fish-Man} type Character card with a cost of 4 or less from your hand. Then, add 1 c |
-| OP06-028 | Zeo | character | power-buff,add-life-to-hand,set-active | [DON!! x1] [When Attacking] If your Leader has the {New Fish-Man Pirates} type, set up to 1 of your DON!! cards as active and this Character gains +1000 power d |
-| OP06-029 | Daruma | character | power-buff,add-life-to-hand,set-active | [DON!! x1] [When Attacking] [Once Per Turn] If your Leader has the {New Fish-Man Pirates} type, set this Character as active and this Character gains +1000 powe |
-| OP06-030 | Dosun | character | power-buff,add-life-to-hand,ko-immunity | [When Attacking] If your Leader has the {New Fish-Man Pirates} type, this Character cannot be K.O.'d in battle and gains +2000 power until the start of your nex |
-| OP06-031 | Hatchan | character | play-from | [Trigger] Play up to 1 {Fish-Man} or {Merfolk} type Character card with a cost of 3 or less from your hand. |
 | OP06-033 | Vander Decken IX | character | ko | [On Play] You may trash 1 {Fish-Man} type card from your hand or 1 [The Ark Noah] from your hand or field: K.O. up to 1 of your opponent's rested Characters. |
-| OP06-034 | Hyouzou | character | rest,power-buff,add-life-to-hand | [Activate: Main] [Once Per Turn] Rest up to 1 of your opponent's Characters with a cost of 4 or less and this Character gains +1000 power during this turn. Then |
 | OP06-039 | You Ain't Even Worth Killing Time!! | event | ko,rest,choose-one | [Main] Choose one:• Rest up to 1 of your opponent's Characters with a cost of 6 or less.• K.O. up to 1 of your opponent's rested Characters with a cost of 6 or  |
 | OP06-043 | Aramaki | character | power-buff,move-bottom-deck,trash-hand | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[Activate: Main] [Once Per Turn] You may tras |
-| OP06-045 | Kuzan | character | draw,move-bottom-deck | [On Play] Draw 2 cards and place 2 cards from your hand at the bottom of your deck in any order. |
 | OP06-052 | Tokikake | character | ko-immunity | [DON!! x1] If you have 4 or less cards in your hand, this Character cannot be K.O.'d in battle. |
 | OP06-054 | Borsalino | character | keyword | If you have 5 or less cards in your hand, this Character gains [Blocker].(After your opponent declares an attack, you may rest this card to make it the new targ |
 | OP06-057 | But I Will Never Doubt a Woman's Tears!!!! | event | power-buff,play-from | [Main] Up to 1 of your Leader or Character cards gains +1000 power during this turn. Then, reveal 1 card from the top of your deck, play up to 1 Character card  |
 | OP06-059 | White Snake | event | draw,power-buff,search | [Counter] Up to 1 of your Leader or Character cards gains +1000 power during this turn, and draw 1 card. [Trigger] Look at 5 cards from the top of your deck and |
 | OP06-062 | Vinsmoke Judge | character | rest,play-from,trash-hand,don-minus | [On Play] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.) You may trash 2 cards from your hand: Play up to 4 { |
-| OP06-063 | Vinsmoke Sora | character | trash-hand | [On Play] You may trash 1 card from your hand: If the number of DON!! cards on your field is equal to or less than the number on your opponent's field, add up t |
 | OP06-065 | Vinsmoke Niji | character | ko,choose-one,return-hand | [On Play] If the number of DON!! cards on your field is equal to or less than the number on your opponent's field, choose one:• K.O. up to 1 of your opponent's  |
 | OP06-067 | Vinsmoke Yonji | character | power-buff | If the number of DON!! cards on your field is equal to or less than the number on your opponent's field, this Character gains +1000 power.[Blocker] (After your  |
-| OP06-071 | Gild Tesoro | character | don-minus | [On Play] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): If your Leader has the {FILM} type, add up to 2 {FI |
 | OP06-072 | Cosette | character | keyword | If your Leader has the {GERMA 66} type and the number of DON!! cards on your field is at least 2 less than the number on your opponent's field, this Character g |
-| OP06-073 | Shiki | character | draw,trash-hand | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Play] If you have 8 or more DON!! cards o |
-| OP06-079 | Kingdom of GERMA | stage | search,move-bottom-deck,trash-hand | [Activate: Main] You may trash 1 card from your hand and rest this Stage: Look at 3 cards from the top of your deck; reveal up to 1 card with a type including " |
-| OP06-080 | Gecko Moria | leader | play-from,trash-hand,trash-top | [DON!! x1] [When Attacking] ➁ (You may rest the specified number of DON!! cards in your cost area.) You may trash 1 card from your hand: Trash 2 cards from the  |
 | OP06-081 | Absalom | character | ko | [On Play] You may return 2 cards from your trash to the bottom of your deck in any order: K.O. up to 1 Character with a cost of 2 or less. |
-| OP06-082 | Inuppe | character | draw,trash-hand | [On Play]/[On K.O.] If your Leader has the {Thriller Bark Pirates} type, draw 2 cards and trash 2 cards from your hand. |
-| OP06-091 | Victoria Cindry | character | trash-top | [On Play] If your Leader has the {Thriller Bark Pirates} type, trash 5 cards from the top of your deck. |
 | OP06-093 | Perona | character | choose-one | [On Play] If your opponent has 5 or more cards in their hand, choose one:• Your opponent trashes 1 card from their hand.• Give up to 1 of your opponent's Charac |
 | OP06-096 | ...Nothing...at All!!! | event | add-life-to-hand,ko-immunity | [Counter] You may add 1 card from the top of your Life cards to your hand: Your Characters with a cost of 7 or less cannot be K.O.'d in battle during this turn. |
-| OP06-099 | Aisa | character | peek-life | [On Play] Look at up to 1 card from the top of your or your opponent's Life cards and place it at the top or bottom of the Life cards. |
 | OP06-109 | Denjiro | character | ko-immunity | [DON!! x2] If your opponent has 3 or less Life cards, this Character cannot be K.O.'d by effects. [Trigger] If your opponent has 3 or less Life cards, play this |
 | OP06-113 | Raki | character | keyword | If you have a {Shandian Warrior} type Character other than [Raki], this Character gains [Blocker].(After your opponent declares an attack, you may rest this car |
 | OP06-115 | You're the One Who Should Disappear. | event | power-buff,trash-hand | [Counter] You may trash 1 card from your hand: Up to 1 of your Leader or Character cards gains +3000 power during this battle. [Trigger] If you have 0 Life card |
 | OP06-117 | The Ark Maxim | stage | ko | [Activate: Main] [Once Per Turn] You may rest this card and 1 of your [Enel] cards: K.O. all of your opponent's Characters with a cost of 2 or less. |
-| OP06-118 | Roronoa Zoro | character | set-active | [When Attacking] [Once Per Turn] ➀ (You may rest the specified number of DON!! cards in your cost area.): Set this Character as active.[Activate: Main] [Once Pe |
 | OP07-006 | Sterry | character | draw,power-buff,trash-hand | [On Play] You may give your 1 active Leader −5000 power during this turn: Draw 1 card and trash 1 card from your hand. |
 | OP07-010 | Baccarat | character | power-buff,trash-hand | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Your Opponent's Attack] [Once Per Turn] Y |
 | OP07-017 | Dragon Breath | event | ko | [Main] K.O. up to 1 of your opponent's Characters with 3000 power or less and up to 1 of your opponent's Stages with a cost of 1 or less. [Trigger] Activate thi |
@@ -1335,7 +1263,7 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 | ST30-016 | Can You Still Fight, Luffy?! Of Course!! | event | draw,power-buff | [Counter] Up to 1 of your Leader or Character cards gains +3000 power during this battle. Then, if you have [Portgas.D.Ace] and [Monkey.D.Luffy] Characters with |
 | ST30-017 | And You Get Yourself in Big Trouble!! | event | search,move-bottom-deck | [Main] Look at 5 cards from the top of your deck; reveal up to 1 Character card with 6000 power and add it to your hand. Then, place the rest at the bottom of y |
 
-## Needs one small primitive (261)
+## Needs one small primitive (255)
 
 | Card | Name | Cat | Reasons | Text |
 | --- | --- | --- | --- | --- |
@@ -1365,12 +1293,9 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 | EB04-054 | Bartholomew Kuma | character | unmatched-clause | [On Play] If you have 2 or less Life cards, add up to 1 card from the top of your deck to the top of your Life cards.[On K.O.] Add up to 1 card from the top of  |
 | EB04-058 | Borsalino | character | unmatched-clause | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Play] If you have 2 or less Life cards, a |
 | OP01-001 | Roronoa Zoro | leader | unmatched-clause | [DON!! x1] [Your Turn] All of your Characters gain +1000 power. |
-| OP01-005 | Uta | character | unmatched-clause | [On Play] Add up to 1 red Character card other than [Uta] with a cost of 3 or less from your trash to your hand. |
 | OP01-060 | Donquixote Doflamingo | leader | unmatched-clause | [DON!! x2] [When Attacking] ➀ (You may rest the specified number of DON!! cards in your cost area.): Reveal 1 card from the top of your deck. If that card is a  |
 | OP01-061 | Kaido | leader | unmatched-clause | [DON!! x1] [Your Turn] [Once Per Turn] When your opponent's Character is K.O.'d, add up to 1 DON!! card from your DON!! deck and set it as active. |
 | OP01-067 | Crocodile | character | unmatched-clause | [Banish] (When this card deals damage, the target card is trashed without activating its Trigger.) [DON!! x1] Give blue Events in your hand −1 cost. |
-| OP01-079 | Ms. All Sunday | character | unmatched-clause | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [On K.O.] If your Leader has the {Baroque Wo |
-| OP01-093 | Ulti | character | unmatched-clause | [On Play] ① (You may rest the specified number of DON!! cards in your cost area.): Add up to 1 DON!! card from your DON!! deck and rest it. |
 | OP01-094 | Kaido | character | unmatched-clause | [On Play] DON!! −6 (You may return the specified number of DON!! cards from your field to your DON!! deck.): If your Leader has the {Animal Kingdom Pirates} typ |
 | OP01-105 | Bao Huang | character | unmatched-clause | [On Play] Choose 2 cards from your opponent's hand; your opponent reveals those cards. |
 | OP01-120 | Shanks | character | unmatched-clause | [Rush] (This card can attack on the turn in which it is played.) [When Attacking] Your opponent cannot activate a [Blocker] Character that has 2000 or less powe |
@@ -1382,11 +1307,9 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 | OP02-025 | Kin'emon | leader | unmatched-clause | [Activate: Main] [Once Per Turn] If you have 1 or less Characters, the next time you play a {Land of Wano} type Character card with a cost of 3 or more from you |
 | OP02-027 | Inuarashi | character | static-conditional-no-timing | If all of your DON!! cards are rested, this Character cannot be removed from the field by your opponent's effects. |
 | OP02-061 | Morley | character | unmatched-clause | [When Attacking] If you have 1 or less cards in your hand, your opponent cannot activate the [Blocker] of any Character with a cost of 5 or less during this bat |
-| OP02-063 | Mr.1(Daz.Bonez) | character | unmatched-clause | [On Play] Add up to 1 blue Event card with a cost of 1 from your trash to your hand. |
 | OP02-095 | Onigumo | character | static-conditional-no-timing | If there is a Character with a cost of 0, this Character gains [Banish]. (When this card deals damage, the target card is trashed without activating its Trigger |
 | OP02-100 | Jango | character | static-conditional-no-timing | If you have [Fullbody], this Character cannot be K.O.'d in battle. |
 | OP02-101 | Strawberry | character | unmatched-clause | [When Attacking] If there is a Character with a cost of 0, your opponent cannot activate the [Blocker] of any Character with a cost of 5 or less during this bat |
-| OP02-120 | Uta | character | unmatched-clause | [On Play] DON!! −2 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Your Leader and all of your Characters gain +1000 p |
 | OP03-002 | Adio | character | unmatched-clause | [DON!! x1] [When Attacking] Your opponent cannot activate a [Blocker] Character that has 2000 or less power during this battle. |
 | OP03-032 | Buggy | character | static-conditional-no-timing | This Character cannot be K.O.'d in battle by <Slash> attribute cards. |
 | OP03-033 | Hatchan | character | unmatched-clause | [Trigger] If your Leader has the {East Blue} type, play this card. |
@@ -1444,7 +1367,6 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 | OP06-090 | Dr. Hogback | character | unmatched-clause | [On Play] You may return 2 cards from your trash to the bottom of your deck in any order: Add up to 1 {Thriller Bark Pirates} type card other than [Dr. Hogback] |
 | OP06-102 | Kamakiri | character | place-stage-cost | [Activate: Main] [Once Per Turn] You may place 1 Stage with a cost of 1 at the bottom of the owner's deck: K.O. up to 1 of your opponent's Characters with a cos |
 | OP06-103 | Kawamatsu | character | top-or-bottom-life | [When Attacking] You may trash 2 cards from your hand: Add up to 1 of your Characters with 0 power to the top or bottom of the owner's Life cards face-up. [Trig |
-| OP06-104 | Kikunojo | character | unmatched-clause | [On K.O.] If your opponent has 3 or less Life cards, add up to 1 card from the top of your deck to the top of your Life cards. [Trigger] If your opponent has 3  |
 | OP06-106 | Kouzuki Hiyori | character | unmatched-clause | [On Play] You may add 1 card from the top or bottom of your Life cards to your hand: Add up to 1 card from your hand to the top of your Life cards. |
 | OP06-107 | Kouzuki Momonosuke | character | top-or-bottom-life | [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)[On Play] Add up to 1 of your {Land of Wano}  |
 | OP06-111 | Braham | character | place-stage-cost | [Activate: Main] [Once Per Turn] You may place 1 Stage with a cost of 1 at the bottom of the owner's deck: Rest up to 1 of your opponent's Characters with a cos |
@@ -1601,7 +1523,7 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 | ST30-011 | Buggy | character | unmatched-clause | If your Character with 6000 base power would be removed from the field by your opponent's effect, you may rest this Character instead.[Blocker] (After your oppo |
 | ST30-014 | Mr.3(Galdino) | character | unmatched-clause | [Activate: Main] You may rest this Character: Give up to 2 of your Characters with 6000 base power up to 2 rested DON!! cards each. |
 
-## Defer (needs new capability) (233)
+## Defer (needs new capability) (230)
 
 | Card | Name | Cat | Reasons | Text |
 | --- | --- | --- | --- | --- |
@@ -1635,9 +1557,7 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 | EB04-061 | Monkey.D.Luffy | character | delayed-effect | If you have 1 or less Life cards, give this card in your hand −1 cost.[On Play] You may trash 1 card from your hand: Your Leader gains +2000 power until the end |
 | OP01-004 | Usopp | character | custom-trigger | [DON!! x1] [Your Turn] [Once Per Turn] Draw 1 card when your opponent activates an Event. |
 | OP01-021 | Franky | character | attack-restriction | [DON!! x1] This Character can also attack your opponent's active Characters. |
-| OP01-029 | Radical Beam!! | event | dynamic-scaling | [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if you have 2 or less Life cards, that card gains an additional  |
 | OP01-051 | Eustass"Captain"Kid | character | attack-restriction | [DON!! x1] [Opponent's Turn] If this Character is rested, your opponent cannot attack any card other than the Character [Eustass"Captain"Kid]. [Activate: Main]  |
-| OP01-069 | Caesar Clown | character | hand-reset | [On K.O.] Play up to 1 [Smiley] from your deck, then shuffle your deck. |
 | OP01-072 | Smiley | character | dynamic-scaling | [DON!! x1] [Your Turn] This Character gains +1000 power for every card in your hand. |
 | OP01-075 | Pacifista | character | variable-count | Under the rules of this game, you may have any number of this card in your deck. [Blocker] (After your opponent declares an attack, you may rest this card to ma |
 | OP01-083 | Mr.1(Daz.Bonez) | character | dynamic-scaling | [DON!! x1] [Your Turn] If your Leader has the {Baroque Works} type, this Character gains +1000 power for every 2 Events in your trash. |
@@ -1645,7 +1565,6 @@ Sets: EB01, EB02, EB03, EB04, OP01, OP02, OP03, OP04, OP05, OP06, OP07, OP08, OP
 | OP01-098 | Kurozumi Orochi | character | hand-reset | [On Play] Reveal up to 1 [Artificial Devil Fruit SMILE] from your deck and add it to your hand. Then, shuffle your deck. |
 | OP01-112 | Page One | character | attack-restriction | [Activate: Main] [Once Per Turn] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): This Character can also atta |
 | OP02-014 | Whitey Bay | character | attack-restriction | [DON!! x1] This Character can also attack your opponent's active Characters. |
-| OP02-030 | Kouzuki Oden | character | hand-reset | [Activate: Main] [Once Per Turn] ③ (You may rest the specified number of DON!! cards in your cost area.): Set this Character as active. [On K.O.] Play up to 1 g |
 | OP02-071 | Magellan | leader | custom-trigger | [Your Turn] [Once Per Turn] When a DON!! card on the field is returned to your DON!! deck, this Leader gains +1000 power during this turn. |
 | OP02-085 | Magellan | character | opp-deck-manip | [On Play] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Your opponent returns 1 DON!! card from their field |
 | OP02-089 | Judgment of Hell | event | opp-deck-manip | [Counter] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Give up to a total of 2 of your opponent's Leader o |
