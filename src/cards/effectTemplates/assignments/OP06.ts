@@ -151,4 +151,115 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP06-025',
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Fish-Man' }, { typeIncludes: 'Merfolk' }], excludeSelfName: true } }] },
   },
+
+  // --- Batch 2: further OP06 cards expressible with existing primitives ---
+
+  // OP06-004 — [On Play] Play up to 1 [Lily Carnation] from your hand.
+  { cardNumber: 'OP06-004', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Lily Carnation' } }] } },
+
+  // OP06-022 — (Leader) [Activate: Main] [Once Per Turn] If opponent has 3 or less Life, give up to 2 rested DON!! to 1 of your Characters.
+  { cardNumber: 'OP06-022', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'giveDon', count: 2 }] } },
+
+  // OP06-024 — [On Play] If Leader {New Fish-Man Pirates}, play up to 1 {Fish-Man} cost<=4 from hand. Then add 1 top Life to hand.
+  { cardNumber: 'OP06-024', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'New Fish-Man Pirates' }], functions: [
+    { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Fish-Man', maxCost: 4 } },
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } },
+  ] } },
+
+  // OP06-028 — [DON!! x1] [When Attacking] If Leader {New Fish-Man Pirates}, set up to 1 DON!! active, this +1000, add 1 top Life to hand.
+  { cardNumber: 'OP06-028', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'leaderType', type: 'New Fish-Man Pirates' }], functions: [
+    { fn: 'setActiveControllerDon', maxTargets: 1 },
+    { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' },
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } },
+  ] } },
+
+  // OP06-029 — [DON!! x1] [When Attacking] [Once Per Turn] If Leader {New Fish-Man Pirates}, set this active, +1000, add 1 top Life to hand.
+  { cardNumber: 'OP06-029', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'New Fish-Man Pirates' }], functions: [
+    { fn: 'setActiveSelf' },
+    { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' },
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } },
+  ] } },
+
+  // OP06-030 — [When Attacking] If Leader {New Fish-Man Pirates}, cannot be KO'd in battle + +2000 until start of next turn, add 1 top Life to hand.
+  { cardNumber: 'OP06-030', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'leaderType', type: 'New Fish-Man Pirates' }], functions: [
+    { fn: 'koImmunitySelf', scope: 'battle', duration: 'untilStartOfNextTurn' },
+    { fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn' },
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } },
+  ] } },
+
+  // OP06-031 — [Trigger] Play up to 1 {Fish-Man} or {Merfolk} Character cost<=3 from your hand.
+  { cardNumber: 'OP06-031', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', anyOf: [{ typeIncludes: 'Fish-Man' }, { typeIncludes: 'Merfolk' }], maxCost: 3 } }] } },
+
+  // OP06-034 — [Activate: Main] [Once Per Turn] Rest up to 1 opp Character cost<=4, this +1000, add 1 top Life to hand.
+  { cardNumber: 'OP06-034', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true },
+    { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' },
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } },
+  ] } },
+
+  // OP06-045 — [On Play] Draw 2 cards and place 2 cards from your hand at the bottom of your deck.
+  { cardNumber: 'OP06-045', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'draw', amount: 2 },
+    { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 2 },
+  ] } },
+
+  // OP06-063 — [On Play] You may trash 1 from hand: if DON!! <= opponent's, add up to 1 {The Vinsmoke Family} Character (<=4000 power) from trash to hand.
+  { cardNumber: 'OP06-063', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [
+    { fn: 'optionalTrashFromHand', count: 1 },
+    { fn: 'moveCards', ifPrevious: 'previousMovedAny', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'The Vinsmoke Family', maxPower: 4000 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
+  ] } },
+
+  // OP06-071 — [On Play] DON!! −1: if Leader {FILM}, add up to 2 {FILM} Character cards cost<=4 from trash to hand.
+  { cardNumber: 'OP06-071', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'FILM' }], functions: [
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'FILM', maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 2 },
+  ] } },
+
+  // OP06-073 — [Blocker] [On Play] If you have 8+ DON!! on field, draw 1 and trash 1 from hand.
+  { cardNumber: 'OP06-073', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
+
+  // OP06-079 — (Stage) [Activate: Main] trash 1 from hand + rest this Stage: look 3, reveal up to 1 "GERMA" type, add to hand, rest to bottom.
+  { cardNumber: 'OP06-079', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [
+    { fn: 'trashFromHand', count: 1 },
+    { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'GERMA' }, remainder: 'bottom' },
+  ] } },
+
+  // OP06-080 — (Leader) [DON!! x1] [When Attacking] rest 2 DON!! + trash 1 from hand: trash 2 top of deck, play up to 1 {Thriller Bark Pirates} cost<=4 from trash.
+  { cardNumber: 'OP06-080', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, cost: [{ kind: 'restDon', count: 2 }], functions: [
+    { fn: 'trashFromHand', count: 1 },
+    { fn: 'trashTopDeck', count: 2 },
+    { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 4 } },
+  ] } },
+
+  // OP06-082 — [On Play]/[On K.O.] If Leader {Thriller Bark Pirates}, draw 2 and trash 2 from hand.
+  {
+    cardNumber: 'OP06-082',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Thriller Bark Pirates' }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
+      { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Thriller Bark Pirates' }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
+    ],
+  },
+
+  // OP06-091 — [On Play] If Leader {Thriller Bark Pirates}, trash 5 cards from the top of your deck.
+  { cardNumber: 'OP06-091', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Thriller Bark Pirates' }], functions: [{ fn: 'trashTopDeck', count: 5 }] } },
+
+  // OP06-099 — [On Play] Look at up to 1 card from the top of your or your opponent's Life; place it at the top or bottom.
+  { cardNumber: 'OP06-099', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'peekLifeAndPlace', from: 'controllerOrOpponentTop', placement: 'topOrBottom' }] } },
+
+  // OP06-104 — [On K.O.] If opponent has 3 or less Life, add up to 1 top of deck to top of Life. [Trigger] If opponent has 3 or less Life, play this.
+  {
+    cardNumber: 'OP06-104',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
+
+  // OP06-118 — [When Attacking] [Once Per Turn] rest 1 DON!!: set this active. [Activate: Main] [Once Per Turn] rest 2 DON!!: set this active.
+  {
+    cardNumber: 'OP06-118',
+    templates: [
+      { templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'setActiveSelf' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'setActiveSelf' }] } },
+    ],
+  },
 ];

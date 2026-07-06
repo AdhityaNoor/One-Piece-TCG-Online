@@ -72,3 +72,8 @@ pnpm-debug.log*
 # Generated asset staging areas
 /incoming-assets/generated/
 /incoming-assets/tmp/
+
+# graphify
+graphify-out/
+
+.history/
