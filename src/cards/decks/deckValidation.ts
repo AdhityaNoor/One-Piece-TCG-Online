@@ -9,6 +9,7 @@
  * becomes a CardInstance in a running game.
  */
 import type { CardDefinition, Color } from '../../engine/state/card';
+import { hasUnlimitedCopies } from './unlimitedCopyCards';
 
 export interface DeckConstructionEntry {
   definition: CardDefinition;
@@ -24,13 +25,13 @@ const MAIN_DECK_SIZE = 50; // 5-1-2
 const MAX_COPIES_PER_CARD_NUMBER = 4; // 5-1-2-3
 
 /**
- * The per-card-number copy cap (5-1-2-3). Normally 4, but cards flagged
- * `unlimitedCopies` ("you may have any number of this card in your deck", e.g.
- * Pacifista) have no cap. Shared so the interactive deck builder and this
- * validator agree on the limit.
+ * The per-card-number copy cap (5-1-2-3). Normally 4, but card numbers listed in
+ * the UNLIMITED_COPY_CARD_NUMBERS config ("you may have any number of this card
+ * in your deck", e.g. Pacifista) have no cap. Shared so the interactive deck
+ * builder and this validator agree on the limit.
  */
 export function copyLimitForCard(definition: CardDefinition): number {
-  return definition.unlimitedCopies ? Infinity : MAX_COPIES_PER_CARD_NUMBER;
+  return hasUnlimitedCopies(definition.cardNumber) ? Infinity : MAX_COPIES_PER_CARD_NUMBER;
 }
 
 /**
@@ -61,7 +62,7 @@ export function validateDeckConstruction(leader: CardDefinition, mainDeck: DeckC
   }
 
   // 5-1-2-3: max 4 copies of the same card number, summed across every printing/art choice of that number.
-  // Cards flagged `unlimitedCopies` (Pacifista and friends) are exempt from the cap.
+  // Card numbers in UNLIMITED_COPY_CARD_NUMBERS (Pacifista and friends) are exempt from the cap.
   const countsByCardNumber = new Map<string, number>();
   const definitionByCardNumber = new Map<string, CardDefinition>();
   for (const entry of mainDeck) {

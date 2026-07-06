@@ -55,6 +55,26 @@ describe('validateDeckConstruction', () => {
     expect(result.reasons.some((r) => r.includes('at most 4'))).toBe(true);
   });
 
+  it('allows more than 4 copies of a card in UNLIMITED_COPY_CARD_NUMBERS (5-1-2-3 exception, e.g. Pacifista OP01-075)', () => {
+    // OP01-075 x10 (exempt) + 10 normal numbers x4 = 50; the 10 copies must be legal.
+    const deck: DeckConstructionEntry[] = [{ definition: makeDef('OP01-075', 'character', ['red']), quantity: 10 }];
+    for (let i = 1; i <= 10; i++) deck.push({ definition: makeDef(`C-${i}`, 'character', ['red']), quantity: 4 });
+    const result = validateDeckConstruction(redLeader, deck);
+    expect(result.legal).toBe(true);
+    expect(result.reasons).toEqual([]);
+  });
+
+  it('still caps a normal card at 4 even when an unlimited-copy card is also present', () => {
+    const deck: DeckConstructionEntry[] = [
+      { definition: makeDef('OP01-075', 'character', ['red']), quantity: 6 }, // unlimited-copy card: legal at 6
+      { definition: makeDef('C-NORMAL', 'character', ['red']), quantity: 6 }, // illegal: normal card over 4
+    ];
+    for (let i = 1; i <= 12; i++) deck.push({ definition: makeDef(`C-f${i}`, 'character', ['red']), quantity: i === 12 ? 2 : 3 });
+    const result = validateDeckConstruction(redLeader, deck);
+    expect(result.reasons.some((r) => r.includes('C-NORMAL') && r.includes('at most 4'))).toBe(true);
+    expect(result.reasons.some((r) => r.includes('OP01-075'))).toBe(false);
+  });
+
   it('rejects a Leader or DON!! card placed in the main deck (5-1-2-1)', () => {
     const deck = legalMainDeck();
     deck[0] = { definition: makeDef('LEAD-02', 'leader', ['red']), quantity: deck[0].quantity };

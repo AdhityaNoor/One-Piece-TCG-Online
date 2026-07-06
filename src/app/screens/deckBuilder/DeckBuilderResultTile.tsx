@@ -80,7 +80,7 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
                 }
                 handleSelect();
               }}
-              disabled={isLeaderCard ? isCurrentLeader && leaderSelection?.chosenPrintingImageId === selectedPrintingImageId : !hasLeader || totalQuantityForCardNumber >= 4}
+              disabled={isLeaderCard ? isCurrentLeader && leaderSelection?.chosenPrintingImageId === selectedPrintingImageId : !hasLeader || atCopyLimit}
               className="flex h-7 min-w-7 items-center justify-center border border-gold/70 bg-gold px-2 font-heading text-sm font-black text-black shadow-[0_5px_0_rgba(68,39,0,0.75)] transition hover:bg-yellow-200 active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-45"
               title={isLeaderCard ? (isCurrentLeader ? 'Current leader' : 'Set leader') : 'Add one copy'}
             >

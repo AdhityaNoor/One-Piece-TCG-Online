@@ -155,9 +155,6 @@ export function normalizeCardPrintings(printings: CardPrintingDto[]): NormalizeC
     hasDoubleAttack: canonical.card_text.includes('[Double Attack]'),
     hasBanish: canonical.card_text.includes('[Banish]'),
     isUnblockable: canonical.card_text.includes('[Unblockable]'),
-    // 5-1-2-3 exception: "you may have any number of this card in your deck".
-    // Set only when present so unaffected cards keep an unchanged shape.
-    ...(/any number of this card in your deck/i.test(canonical.card_text) ? { unlimitedCopies: true } : {}),
     cardNumber,
     rarity: canonical.rarity,
     // blockSymbol, illustration, illustrator: not exposed by the OPTCG API at all (no source field) —
