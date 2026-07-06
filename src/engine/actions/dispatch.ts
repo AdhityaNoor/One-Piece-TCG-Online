@@ -74,6 +74,8 @@ import {
   executeActivateCounterCharacter,
   validatePassStep,
   executePassStep,
+  validateActivateOnOpponentsAttack,
+  executeActivateOnOpponentsAttack,
 } from '../rules/battle';
 import {
   validateChooseGoingFirst,
@@ -134,6 +136,8 @@ export function validateAction(
       return validateActivateCounterCharacter(state, action, defs);
     case 'ACTIVATE_COUNTER_EVENT':
       return validateActivateCounterEvent(state, action, defs, registry);
+    case 'ACTIVATE_ON_OPPONENTS_ATTACK':
+      return validateActivateOnOpponentsAttack(state, action, registry, defs);
     case 'PASS_STEP':
       return validatePassStep(state, action, defs);
     case 'RESOLVE_PENDING_CHOICE':
@@ -192,6 +196,9 @@ export function executeAction(
       break;
     case 'ACTIVATE_COUNTER_EVENT':
       result = executeActivateCounterEvent(state, action, defs, registry);
+      break;
+    case 'ACTIVATE_ON_OPPONENTS_ATTACK':
+      result = executeActivateOnOpponentsAttack(state, action, defs, registry);
       break;
     case 'PASS_STEP':
       result = executePassStep(state, action, defs, registry);

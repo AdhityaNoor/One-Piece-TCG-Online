@@ -99,6 +99,16 @@ function moveOpForDestination(to: MoveCardDestination, target: Extract<EffectOp,
   if (to.zone === 'life' && (to.player === 'owner' || to.player === 'controller') && to.position === 'top') {
     return { op: 'moveToLifeTop', target, ...(to.faceUp ? { faceUp: true } : {}) };
   }
+  if (to.zone === 'life' && (to.player === 'owner' || to.player === 'controller') && to.position === 'topOrBottom') {
+    return {
+      op: 'chooseOption',
+      prompt: 'Place the card at the top or bottom of the Life cards.',
+      options: [
+        { label: 'top', ops: [{ op: 'moveToLifeTop', target, ...(to.faceUp ? { faceUp: true } : {}) }] },
+        { label: 'bottom', ops: [{ op: 'moveToLifeBottom', target, ...(to.faceUp ? { faceUp: true } : {}) }] },
+      ],
+    };
+  }
   if (to.zone === 'deck' && to.player === 'owner' && to.position === 'bottom') return { op: 'moveToBottomDeck', target };
   if (to.zone === 'trash' && to.player === 'owner') return { op: 'trashCards', target };
   throw new Error(`Unsupported move destination ${JSON.stringify(to)}`);
@@ -270,8 +280,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         {
           op: 'chooseTargets',
           var: 't',
-          from: { sel: 'controllerHand', filter: { ...(f.filter.typeIncludes ? { typeIncludes: f.filter.typeIncludes } : {}) } },
-          min: f.count,
+          from: { sel: 'controllerHand', filter: { ...(f.filter.typeIncludes ? { typeIncludes: f.filter.typeIncludes } : {}), ...(f.filter.hasTrigger !== undefined ? { hasTrigger: f.filter.hasTrigger } : {}) } },
+          min: f.optional ? 0 : f.count,
           max: f.count,
           prompt: `Trash ${f.count} ${f.filter.typeIncludes ? `{${f.filter.typeIncludes}} ` : ''}card${f.count === 1 ? '' : 's'} from your hand.`,
         },
@@ -382,6 +392,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'addPowerSelf':
       return targetOps({ ref: 'self' }, (target) => ({ op: 'addPower', target, amount: f.amount, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }));
+    case 'addPowerSelfScaling':
+      return [{ op: 'addPower', target: { sel: 'self' }, amount: 0, duration: f.duration, scale: { per: f.per, step: f.step, amountPer: f.amountPer }, ...(f.condition ? { condition: f.condition } : {}) }];
     case 'restSelf':
       return [{ op: 'rest', target: { sel: 'self' } }];
     case 'setActiveSelf':

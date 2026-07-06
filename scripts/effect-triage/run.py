@@ -34,6 +34,11 @@ DEFAULT_SETS = ("OP06", "OP07", "OP08", "OP09", "OP10", "OP11")
 # ---------------------------------------------------------------------------
 # Hard blockers: presence => needs real new engine capability (defer).
 DEFER = {
+    "opp-attack-timing": re.compile(r"\[On Your Opponent's Attack\]", re.I),
+    "give-all-opp-aura": re.compile(r"[Gg]ive all of your opponent", re.I),
+    "active-don-gate": re.compile(r"active DON!! cards", re.I),
+    "trash-count-gate": re.compile(r"or more cards in your trash", re.I),
+    "deck-count-gate": re.compile(r"cards in your deck|reduced to 0", re.I),
     "dynamic-scaling": re.compile(r"\bfor every\b|\bfor each\b|additional \+?\d|\bgains an additional\b", re.I),
     "negate-effect": re.compile(r"\bnegate", re.I),
     "attack-restriction": re.compile(r"cannot attack|can also attack|cannot be attacked", re.I),
@@ -51,6 +56,10 @@ DEFER = {
 
 # Costs / clauses that currently have no modeled equivalent (=> needsPrimitive).
 NEEDS_PRIMITIVE = {
+    "named-control-gate": re.compile(r"[Ii]f you have \[|[Ii]f you don't have \[", re.I),
+    "trigger-filter-play": re.compile(r"\[Trigger\] from your hand|card with a \[Trigger\]", re.I),
+    "top-or-bottom-life": re.compile(r"top or bottom of (your|the owner's|your opponent's) Life", re.I),
+    "chooseone-targeting": re.compile(r"Choose one:", re.I),
     "place-self-bottom-cost": re.compile(r"place this (Character|card) at the bottom of the owner's deck:", re.I),
     "place-stage-cost": re.compile(r"place 1 Stage .* at the bottom of the owner's deck:", re.I),
     "rest-named-cost": re.compile(r"rest 1 of your \[[^\]]+\] cards?:", re.I),

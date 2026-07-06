@@ -110,6 +110,7 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
   if (filter.exactCost !== undefined && (def.baseCost ?? -1) !== filter.exactCost) return false;
   if (filter.maxPower !== undefined && (def.basePower ?? Infinity) > filter.maxPower) return false;
   if (filter.exactPower !== undefined && (def.basePower ?? -1) !== filter.exactPower) return false;
+  if (filter.hasTrigger !== undefined && !!def.hasTrigger !== filter.hasTrigger) return false;
   return true;
 }
 
@@ -295,7 +296,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     case 'addPower': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
-        ctx.addContinuousPower({ appliesToInstanceId: id, amount: op.amount, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
+        ctx.addContinuousPower({ appliesToInstanceId: id, amount: op.amount, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}), ...(op.scale ? { scale: op.scale } : {}) });
       }
       return { selectedIds: ids, movedIds: [] };
     }
@@ -373,6 +374,11 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     case 'moveToLifeTop': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.moveToLifeTop(id, op.faceUp);
+      return { selectedIds: ids, movedIds: ids };
+    }
+    case 'moveToLifeBottom': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.moveToLifeBottom(id, op.faceUp);
       return { selectedIds: ids, movedIds: ids };
     }
     case 'playSelf':

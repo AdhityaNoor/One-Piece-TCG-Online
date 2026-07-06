@@ -262,4 +262,15 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP10-111',
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Supernovas', excludeSelfName: true } }] },
   },
+
+  // OP10-008 — [Blocker] [On Play] If you don't have [Rock], play up to 1 [Rock] from hand.
+  { cardNumber: 'OP10-008', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDoesNotControlNamed', name: 'Rock' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Rock' } }] } },
+
+  // OP10-017 — [On Play] If you don't have [Scotch], play up to 1 [Scotch] from hand.
+  { cardNumber: 'OP10-017', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDoesNotControlNamed', name: 'Scotch' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Scotch' } }] } },
+
+
+  // OP10-066 — [On Your Opponent's Attack] [Once Per Turn] rest 2 DON!!: rest up to 1 opp Character cost<=4.
+  { cardNumber: 'OP10-066', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+
 ];

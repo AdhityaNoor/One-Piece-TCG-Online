@@ -35,6 +35,8 @@ const INSTRUCTIONS: Record<string, string> = {
   payingCounterEventCost: 'Tap active DON!! to pay the Counter Event cost, then Confirm.',
   selectActivateSource: 'Tap your own Leader, Character, or Stage that has an [Activate: Main] effect.',
   payingActivateEffectCost: 'Tap DON!! in your Cost Area to return for the activation cost, then Confirm.',
+  selectOnOppAttackSource: "Tap your own Character with an [On Your Opponent's Attack] ability.",
+  payingOnOppAttackCost: 'Tap DON!! in your Cost Area to return for the ability cost, then Confirm.',
 };
 
 function formatCardNames(cards: { name: string }[]): string {
@@ -93,12 +95,15 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
     beginGiveDon,
     beginActivateBlocker,
     beginActivateCounter,
+    beginActivateOnOppAttack,
     hasActivateMain,
     hasUnusedActivateMain,
     hasCounter,
+    hasOnOpponentsAttack,
     confirmPlayCard,
     confirmCounterEvent,
     confirmActivateMainCost,
+    confirmOnOppAttackCost,
     confirmGiveDonSelection,
     passStep,
     endMainPhase,
@@ -132,6 +137,11 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
               Activate ({mode.selectedDonIds.length}/{mode.cost} DON!!)
             </Button>
           )}
+          {mode.kind === 'payingOnOppAttackCost' && (
+            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmOnOppAttackCost}>
+              Activate ({mode.selectedDonIds.length}/{mode.cost} DON!!)
+            </Button>
+          )}
           {mode.kind === 'selectDonToGive' && (
             <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length === 0} onClick={confirmGiveDonSelection}>
               Choose Target ({mode.selectedDonIds.length} DON!!)
@@ -145,11 +155,13 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
 
   if (battle && battle.step === 'block') {
     const hasEligibleBlocker = actingBoard.characterArea.some((card) => card.orientation === 'active' && card.hasBlocker);
+    const hasEligibleOnOppAttack = actingBoard.characterArea.some((card) => hasOnOpponentsAttack(card));
     return (
       <div className="flex flex-col gap-2">
         {errorBanner}
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" disabled={!hasEligibleBlocker} onClick={beginActivateBlocker}>Activate Blocker</Button>
+          <Button variant="secondary" size="sm" disabled={!hasEligibleOnOppAttack} onClick={beginActivateOnOppAttack}>[On Opponent's Attack]</Button>
           <Button variant="ghost" size="sm" onClick={passStep}>Pass (skip Block)</Button>
         </div>
       </div>

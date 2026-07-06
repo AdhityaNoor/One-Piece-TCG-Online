@@ -311,4 +311,17 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP07-041',
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Amazon Lily' }, { typeIncludes: 'Kuja Pirates' }], excludeSelfName: true } }] },
   },
+
+  // OP07-010 — [Blocker] [On Your Opponent's Attack] [Once Per Turn] trash 1 from hand: up to 1 Leader/Character +2000 battle.
+  { cardNumber: 'OP07-010', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [
+    { fn: 'optionalTrashFromHand', count: 1 },
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
+
+  // OP07-019 — (Leader) [On Your Opponent's Attack] [Once Per Turn] rest 1 DON!!: rest up to 1 opp Leader/Character.
+  { cardNumber: 'OP07-019', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent' }, optional: true }] } },
+
+  // OP07-024 — [On Your Opponent's Attack] rest this: up to 1 {Fish-Man} Character cost<=5 gains [Blocker] this turn.
+  { cardNumber: 'OP07-024', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Fish-Man', maxCost: 5 } }, keyword: 'blocker', duration: 'duringThisTurn', optional: true }] } },
+
 ];

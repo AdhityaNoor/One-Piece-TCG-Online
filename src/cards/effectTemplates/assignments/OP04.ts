@@ -192,4 +192,55 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },
+
+  // OP04-105 — [Activate: Main] [Once Per Turn] you may trash 1 card with a [Trigger] from hand: rest up to 1 opp Character cost<=2.
+  { cardNumber: 'OP04-105', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
+
+
+  // OP04-097 — [On Play] Add up to 1 opp {Animal}/{SMILE} Character cost<=3 to the top of opponent's Life face-up.
+  { cardNumber: 'OP04-097', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { anyOfTypes: ['Animal', 'SMILE'], maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'top', faceUp: true }, optional: true }] } },
+
+  // OP04-110 — [Blocker] [On K.O.] Add up to 1 opp Character cost<=3 to the top or bottom of opponent's Life face-up.
+  { cardNumber: 'OP04-110', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] } },
+
+  // OP04-117 — (Event) [Main] Add up to 1 opp Character cost<=3 to top or bottom of opponent's Life face-up. [Trigger] add 1 top/bottom Life to hand: add up to 1 from hand to top of Life.
+  {
+    cardNumber: 'OP04-117',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'moveCards', ifPrevious: 'previousMovedAny', from: { zone: 'hand', player: 'controller' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true },
+      ] } },
+    ],
+  },
+
+
+  // OP04-021 — [On Your Opponent's Attack] rest 2 DON!!: rest up to 1 of opponent's DON!!.
+  { cardNumber: 'OP04-021', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'restOpponentDon', maxTargets: 1 }] } },
+
+  // OP04-025 — [On Your Opponent's Attack] rest 2 DON!!: rest up to 1 opp Character cost<=4.
+  { cardNumber: 'OP04-025', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+
+  // OP04-059 — [On Your Opponent's Attack] DON!! −1: If Leader {Water Seven}, this Character gains [Blocker] this turn.
+  { cardNumber: 'OP04-059', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Water Seven' }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'duringThisTurn' }] } },
+
+  // OP04-063 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: If Leader {Water Seven}, up to 1 Leader/Character +1000 battle.
+  { cardNumber: 'OP04-063', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Water Seven' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisBattle', optional: true }] } },
+
+  // OP04-070 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: give up to 1 opp Character −1000 this turn.
+  { cardNumber: 'OP04-070', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
+
+  // OP04-071 — [On Your Opponent's Attack] DON!! −1: this Character gains [Blocker] and +1000 battle.
+  { cardNumber: 'OP04-071', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'donMinus', count: 1 }], functions: [
+    { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'duringThisBattle' },
+    { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle' },
+  ] } },
+
+  // OP04-072 — [On Your Opponent's Attack] [Once Per Turn] DON!! −2 + rest this: K.O. up to 1 opp Character cost<=4.
+  { cardNumber: 'OP04-072', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 2 }, { kind: 'restThis' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+
 ];

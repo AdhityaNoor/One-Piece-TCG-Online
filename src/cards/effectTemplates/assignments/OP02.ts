@@ -294,4 +294,11 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP02-120 — [On Play] DON!! −2: your Leader and all Characters gain +1000 until the start of your next turn.
   { cardNumber: 'OP02-120', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'addPowerAuraControllerTypes', amount: 1000, duration: 'untilStartOfNextTurn' }] } },
+
+  // OP02-052 — [On Play] If you have [Mohji], draw 2 and trash 1 from hand.
+  { cardNumber: 'OP02-052', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfControlsNamed', name: 'Mohji' }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+
+  // OP02-111 — [When Attacking] If you have [Jango], this Character +3000 battle.
+  { cardNumber: 'OP02-111', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfControlsNamed', name: 'Jango' }], functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'duringThisBattle' }] } },
+
 ];

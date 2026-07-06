@@ -39,7 +39,9 @@ export type BoardSelectionMode =
   | { kind: 'selectCounterBoostTarget'; handCardInstanceId: string }
   | { kind: 'payingCounterEventCost'; handCardInstanceId: string; cost: number; selectedDonIds: string[] }
   | { kind: 'selectActivateSource' }
-  | { kind: 'payingActivateEffectCost'; sourceInstanceId: string; cost: number; selectedDonIds: string[] };
+  | { kind: 'payingActivateEffectCost'; sourceInstanceId: string; cost: number; selectedDonIds: string[] }
+  | { kind: 'selectOnOppAttackSource' }
+  | { kind: 'payingOnOppAttackCost'; sourceInstanceId: string; cost: number; selectedDonIds: string[] };
 
 const PLAY_ACTION_BY_CATEGORY: Record<'character' | 'stage' | 'event', GameAction['type']> = {
   character: 'PLAY_CHARACTER',
@@ -114,6 +116,40 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
   const activateMainDonMinusCost = (card: CardView): number => {
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'activateMain');
+    return ability?.cost
+      ?.filter((cost) => cost.kind === 'donMinus')
+      .reduce((sum, cost) => sum + cost.count, 0) ?? 0;
+  };
+
+  /** True if the card's curated program exposes an [On Your Opponent's Attack] ability usable now
+   *  (7-1-2 Block-Step window, defending player only). */
+  const hasOnOpponentsAttack = (card: CardView): boolean => {
+    if (!state || !actingPlayerId) return false;
+    const battle = state.currentBattle;
+    if (!battle || battle.step !== 'block') return false;
+    if (actingPlayerId === state.activePlayerId) return false; // defender only
+    const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'onOpponentsAttack');
+    if (!ability) return false;
+    const inst = state.cardsById[card.instanceId];
+    if (!inst || inst.controllerId !== actingPlayerId || inst.currentZone !== 'characterArea') return false;
+    if (ability.oncePerTurn && card.oncePerTurnUsed.includes('onOpponentsAttack')) return false;
+    if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, actingPlayerId)) return false;
+    if (!abilityConditionMet(ability, inst, state, defs)) return false;
+    if (ability.cost?.length) {
+      const requiredDon = requiredDonMinusCount(ability.cost);
+      const selectedDon = requiredDon > 0 ? fieldDonIds(state, actingPlayerId).slice(0, requiredDon) : [];
+      return canPayAbilityCost(state, card.instanceId, actingPlayerId, ability.cost, selectedDon).length === 0;
+    }
+    return validateAction(
+      state,
+      { type: 'ACTIVATE_ON_OPPONENTS_ATTACK', actionId: 'ui-preview', playerId: actingPlayerId, sourceInstanceId: card.instanceId, effectId: 'onOpponentsAttack', donInstanceIds: [] },
+      defs,
+      registry,
+    ).legal;
+  };
+
+  const onOppAttackDonMinusCost = (card: CardView): number => {
+    const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'onOpponentsAttack');
     return ability?.cost
       ?.filter((cost) => cost.kind === 'donMinus')
       .reduce((sum, cost) => sum + cost.count, 0) ?? 0;
@@ -223,6 +259,37 @@ export function useBoardSelection(actingPlayerId: string | null) {
       sourceInstanceId: card.instanceId,
       effectId: 'activateMain',
       donInstanceIds: [],
+    }));
+  }
+
+  const beginActivateOnOppAttack = (): void => { setMode({ kind: 'selectOnOppAttackSource' }); setLastError(null); };
+
+  function activateOnOppAttackFromCard(card: CardView): void {
+    const donMinusCost = onOppAttackDonMinusCost(card);
+    if (donMinusCost > 0) {
+      setMode({ kind: 'payingOnOppAttackCost', sourceInstanceId: card.instanceId, cost: donMinusCost, selectedDonIds: [] });
+      setLastError(null);
+      return;
+    }
+    withActingPlayer((playerId) => ({
+      type: 'ACTIVATE_ON_OPPONENTS_ATTACK',
+      actionId: createActionId(),
+      playerId,
+      sourceInstanceId: card.instanceId,
+      effectId: 'onOpponentsAttack',
+      donInstanceIds: [],
+    }));
+  }
+
+  function confirmOnOppAttackCost(): void {
+    if (mode.kind !== 'payingOnOppAttackCost' || mode.selectedDonIds.length !== mode.cost) return;
+    withActingPlayer((playerId) => ({
+      type: 'ACTIVATE_ON_OPPONENTS_ATTACK',
+      actionId: createActionId(),
+      playerId,
+      sourceInstanceId: mode.sourceInstanceId,
+      effectId: 'onOpponentsAttack',
+      donInstanceIds: mode.selectedDonIds,
     }));
   }
 
@@ -412,6 +479,25 @@ export function useBoardSelection(actingPlayerId: string | null) {
         return;
       }
 
+      case 'selectOnOppAttackSource': {
+        // [On Your Opponent's Attack]: defender taps one of their Characters with the ability.
+        if (!isOwnCard || zone !== 'characterArea') return;
+        if (!hasOnOpponentsAttack(card)) return;
+        activateOnOppAttackFromCard(card);
+        return;
+      }
+
+      case 'payingOnOppAttackCost': {
+        if (!isOwnCard || (zone !== 'costArea' && zone !== 'attachedDon')) return;
+        const already = mode.selectedDonIds.includes(card.instanceId);
+        if (already) {
+          setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => id !== card.instanceId) });
+        } else if (mode.selectedDonIds.length < mode.cost) {
+          setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, card.instanceId] });
+        }
+        return;
+      }
+
       default:
         return;
     }
@@ -419,7 +505,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
   function handleAttachedDonLabelTap(ownerPlayerId: string, card: CardView): void {
     if (!actingPlayerId || ownerPlayerId !== actingPlayerId) return;
-    if (mode.kind !== 'payingActivateEffectCost') return;
+    if (mode.kind !== 'payingActivateEffectCost' && mode.kind !== 'payingOnOppAttackCost') return;
     if (card.donAttachedIds.length === 0) return;
 
     const selectedAttachedIds = card.donAttachedIds.filter((id) => mode.selectedDonIds.includes(id));
@@ -448,13 +534,16 @@ export function useBoardSelection(actingPlayerId: string | null) {
     beginActivateBlocker,
     beginActivateCounter,
     beginActivateMain,
+    beginActivateOnOppAttack,
     hasActivateMain,
+    hasOnOpponentsAttack,
     hasUnusedActivateMain,
     hasCounter,
     canDeclareAttackWith,
     confirmPlayCard,
     confirmCounterEvent,
     confirmActivateMainCost,
+    confirmOnOppAttackCost,
     confirmGiveDonSelection,
     beginAttackWithCard,
     passStep,

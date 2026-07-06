@@ -19,7 +19,7 @@ import type {
   SearchRemainderDestination,
   SequenceCondition,
 } from '../../../engine/effects/effectIr';
-import type { ContinuousKeyword, SourceStateCondition } from '../../../engine/state/game';
+import type { ContinuousKeyword, PowerScaleSource, SourceStateCondition } from '../../../engine/state/game';
 import type { Color } from '../../../engine/state/card';
 
 export const TEMPLATE_IDS = {
@@ -37,7 +37,7 @@ export type MoveCardSource =
 
 export type MoveCardDestination =
   | { zone: 'hand'; player: 'owner' }
-  | { zone: 'life'; player: 'owner' | 'controller'; position: 'top'; faceUp?: boolean }
+  | { zone: 'life'; player: 'owner' | 'controller'; position: 'top' | 'topOrBottom'; faceUp?: boolean }
   | { zone: 'deck'; player: 'owner'; position: 'bottom' }
   | { zone: 'trash'; player: 'owner' };
 
@@ -101,6 +101,8 @@ export type AbilityFunction =
   | { fn: 'triggerPlaySelf' }
   | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination }
   | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition }
+  // Continuous self-buff that scales: +amountPer power for every `step` of `per` (e.g. cards in hand, Events in trash).
+  | { fn: 'addPowerSelfScaling'; per: PowerScaleSource; step: number; amountPer: number; duration: IrDuration; condition?: IrCondition }
   | { fn: 'restSelf' }
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }
@@ -121,7 +123,7 @@ export type AbilityFunction =
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
   | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
   // Trash exactly `count` cards of a given type from your hand (used to pay a typed hand cost).
-  | { fn: 'trashTypeFromHand'; count: number; filter: { typeIncludes?: string } }
+  | { fn: 'trashTypeFromHand'; count: number; filter: { typeIncludes?: string; hasTrigger?: boolean }; optional?: boolean }
   // K.O. ALL Characters (both players) matching a cost/power filter, no target choice
   // ("K.O. all Characters with a cost of 1 or less").
   | { fn: 'koAllCharacters'; filter?: { maxCost?: number; maxPower?: number } }

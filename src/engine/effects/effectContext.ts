@@ -149,6 +149,7 @@ export class EffectContextImpl implements EffectContext {
     amount: number;
     duration: ContinuousEffectDuration;
     condition?: ContinuousPowerCondition;
+    scale?: import('../state/game').PowerScale;
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -161,6 +162,7 @@ export class EffectContextImpl implements EffectContext {
         appliesToInstanceId: spec.appliesToInstanceId,
         amount: spec.amount,
         ...(spec.condition ? { condition: spec.condition } : {}),
+        ...(spec.scale ? { scale: spec.scale } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -499,6 +501,40 @@ export class EffectContextImpl implements EffectContext {
       type: 'CARD_MOVED',
       message: `${instanceId} was added to the top of its owner's Life cards${faceUp ? ' face-up' : ''}.`,
       data: { from: fromZone, to: 'lifeArea', position: 'top', faceUp, instanceId },
+      relatedCardInstanceIds: [instanceId],
+      visibility: faceUp ? 'public' : { visibleTo: [inst.ownerId] },
+    });
+  }
+
+  moveToLifeBottom(instanceId: string, faceUp = false): void {
+    const inst = this.working.cardsById[instanceId];
+    if (!inst) return;
+    const owner = this.working.players[inst.ownerId];
+    if (!owner) return;
+    const fromZone = inst.currentZone;
+    const newOwner = {
+      ...owner,
+      hand: removeFromZone(owner.hand, instanceId),
+      deck: removeFromZone(owner.deck, instanceId),
+      trash: removeFromZone(owner.trash, instanceId),
+      characterArea: removeFromZone(owner.characterArea, instanceId),
+      stageArea: removeFromZone(owner.stageArea, instanceId),
+      lifeArea: addToZoneBottom(removeFromZone(owner.lifeArea, instanceId), instanceId),
+    };
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [inst.ownerId]: newOwner },
+      cardsById: {
+        ...this.working.cardsById,
+        [instanceId]: { ...inst, currentZone: 'lifeArea', faceState: faceUp ? 'faceUp' : 'faceDown', donAttached: [], summoningSick: false, revealedTo: faceUp ? 'all' : [] },
+      },
+      continuousEffects: this.working.continuousEffects.filter((ce) => ce.sourceInstanceId !== instanceId),
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'CARD_MOVED',
+      message: `${instanceId} was added to the bottom of its owner's Life cards${faceUp ? ' face-up' : ''}.`,
+      data: { from: fromZone, to: 'lifeArea', position: 'bottom', faceUp, instanceId },
       relatedCardInstanceIds: [instanceId],
       visibility: faceUp ? 'public' : { visibleTo: [inst.ownerId] },
     });

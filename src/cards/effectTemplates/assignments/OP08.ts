@@ -259,4 +259,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP08-087',
     templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -1, optional: true }] },
   },
+
+  // OP08-004 — [On Play] If you have [Chess], K.O. up to 1 opp Character with 3000 power or less.
+  { cardNumber: 'OP08-004', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfControlsNamed', name: 'Chess' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
+
 ];

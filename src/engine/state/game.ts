@@ -125,6 +125,16 @@ export interface SourceStateCondition {
 }
 
 /** A structured power delta, evaluated by computeCurrentPower. */
+/** Count source for a dynamic "+X power for every N of <source>" scaling modifier. */
+export type PowerScaleSource = 'controllerHand' | 'controllerTrash' | 'controllerTrashEvents' | 'controllerRestedDon';
+
+/** Dynamic scaling term: effective bonus = floor(count(per) / step) * amountPer, re-read each time. */
+export interface PowerScale {
+  per: PowerScaleSource;
+  step: number;
+  amountPer: number;
+}
+
 export interface ContinuousPowerModifier {
   /** Single fixed target. Exactly one of appliesToInstanceId / appliesToGroup is set. */
   appliesToInstanceId?: string;
@@ -136,6 +146,8 @@ export interface ContinuousPowerModifier {
   condition?: ContinuousPowerCondition;
   /** Gate evaluated against the SOURCE card. Omitted when the modifier does not depend on source state. */
   sourceCondition?: SourceStateCondition;
+  /** Dynamic "+X for every N" scaling term added to `amount` at read time. */
+  scale?: PowerScale;
 }
 
 export interface ContinuousCostModifier {

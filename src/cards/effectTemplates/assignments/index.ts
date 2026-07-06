@@ -13,6 +13,7 @@ import type { CardEffectAssignment } from '../assembler';
 import { EB_ASSIGNMENTS } from './EB';
 import { OP_ASSIGNMENTS } from './OP';
 import { P_ASSIGNMENTS } from './P';
+import { PRB_ASSIGNMENTS } from './PRB';
 import { ST01_ASSIGNMENTS } from './ST01';
 import { ST02_ASSIGNMENTS } from './ST02';
 import { ST03_ASSIGNMENTS } from './ST03';
@@ -47,6 +48,7 @@ export const ALL_ASSIGNMENTS: readonly CardEffectAssignment[] = [
   ...EB_ASSIGNMENTS,
   ...OP_ASSIGNMENTS,
   ...P_ASSIGNMENTS,
+  ...PRB_ASSIGNMENTS,
   ...ST01_ASSIGNMENTS,
   ...ST02_ASSIGNMENTS,
   ...ST03_ASSIGNMENTS,

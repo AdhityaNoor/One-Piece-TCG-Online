@@ -290,4 +290,15 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
     ],
   },
+
+  // OP01-044 — [Blocker] [On Play] If you don't have [Penguin], play up to 1 [Penguin] from hand.
+  { cardNumber: 'OP01-044', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDoesNotControlNamed', name: 'Penguin' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Penguin' } }] } },
+
+  // OP01-050 — [Blocker] [On Play] If you don't have [Shachi], play up to 1 [Shachi] from hand.
+  { cardNumber: 'OP01-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDoesNotControlNamed', name: 'Shachi' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Shachi' } }] } },
+
+
+  // OP01-083 — [DON!! x1] [Your Turn] If Leader {Baroque Works}, +1000 power for every 2 Events in trash.
+  { cardNumber: 'OP01-083', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelfScaling', per: 'controllerTrashEvents', step: 2, amountPer: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 1, turn: 'your', gate: [{ kind: 'leaderType', type: 'Baroque Works' }] } }] } },
+
 ];

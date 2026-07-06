@@ -172,6 +172,14 @@ function evaluateGate(
       return fieldDonIds(state, ownerId).length <= fieldDonIds(state, opponentId).length;
     }
 
+    case 'selfControlsNamed': {
+      return player.characterArea.cardIds.some((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name);
+    }
+
+    case 'selfDoesNotControlNamed': {
+      return !player.characterArea.cardIds.some((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name);
+    }
+
     case 'opponentHand': {
       const opponentId = getOpponentId(state, ownerId);
       const count = state.players[opponentId].hand.cardIds.length;

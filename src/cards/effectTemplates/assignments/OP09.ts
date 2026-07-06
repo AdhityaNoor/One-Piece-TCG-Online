@@ -282,4 +282,35 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromHand', count: 1 }] } },
     ],
   },
+
+  // OP09-102 — [On Play] If Leader [Nico Robin], look 3, reveal up to 1 card with a [Trigger], add to hand, rest to bottom. [Trigger] Activate this effect.
+  {
+    cardNumber: 'OP09-102',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Nico Robin' }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { hasTrigger: true }, remainder: 'bottom' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Nico Robin' }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { hasTrigger: true }, remainder: 'bottom' }] } },
+    ],
+  },
+
+
+  // OP09-062 — (Leader) [Banish] [When Attacking] you may trash 1 card with a [Trigger] from hand: add 1 DON!! from deck rested.
+  { cardNumber: 'OP09-062', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+    { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
+    { fn: 'addDonFromDeck', count: 1, rested: true, ifPrevious: 'previousMovedAny' },
+  ] } },
+
+
+  // OP09-032 — [Blocker] [On Your Opponent's Attack] [Once Per Turn] Set this Character as active.
+  { cardNumber: 'OP09-032', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [{ fn: 'setActiveSelf' }] } },
+
+
+  // OP09-086 — This Character cannot be K.O.'d by opponent's effects. If Leader {Blackbeard Pirates}, +1000 power for every 4 cards in trash.
+  {
+    cardNumber: 'OP09-086',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelfScaling', per: 'controllerTrash', step: 4, amountPer: 1000, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }] } }] } },
+    ],
+  },
+
 ];

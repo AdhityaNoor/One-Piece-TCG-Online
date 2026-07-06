@@ -224,4 +224,12 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP11-047',
     templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'The Vinsmoke Family' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'GERMA' }, remainder: 'trash' }] },
   },
+
+  // OP11-109 — [On Play] If you have [Camie], draw 2 and trash 2 from hand.
+  { cardNumber: 'OP11-109', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfControlsNamed', name: 'Camie' }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
+
+
+  // OP11-025 — [On Your Opponent's Attack] [Once Per Turn] rest 1 DON!! + rest this: up to 1 Leader/Character +1000 battle.
+  { cardNumber: 'OP11-025', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisBattle', optional: true }] } },
+
 ];

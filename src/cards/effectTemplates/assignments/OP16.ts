@@ -203,4 +203,11 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP16-091',
     templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Land of Wano' }], functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Land of Wano', excludeSelfName: true }, remainder: 'trash' }] },
   },
+
+  // OP16-025 — [When Attacking] If you have [Antlerkov], play up to 1 Character cost<=2 from hand.
+  { cardNumber: 'OP16-025', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfControlsNamed', name: 'Antlerkov' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 2 } }] } },
+
+  // OP16-029 — [When Attacking] If you have [Bunkov], play up to 1 Character cost<=2 from hand.
+  { cardNumber: 'OP16-029', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfControlsNamed', name: 'Bunkov' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 2 } }] } },
+
 ];

@@ -10,7 +10,7 @@
  * every read, so a conditional buff turns on/off as DON!! attaches or the turn
  * flips, with no extra bookkeeping. Cost modifiers use the same record model.
  */
-import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousPowerCondition, GameState, PowerAuraGroup, SourceStateCondition } from '../../state/game';
+import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousPowerCondition, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
 
@@ -94,6 +94,36 @@ function keywordModifierApplies(record: ContinuousEffectRecord, state: GameState
   return conditionApplies(mod.condition, record, state, instanceId, defs);
 }
 
+
+/** Dynamic "+X for every N of <source>" term, counted against the modifier's owner. */
+function scaleAmount(scale: PowerScale | undefined, ownerId: string, state: GameState, defs: CardDefinitionLookup): number {
+  if (!scale) return 0;
+  const player = state.players[ownerId];
+  if (!player) return 0;
+  let count = 0;
+  switch (scale.per) {
+    case 'controllerHand':
+      count = player.hand.cardIds.length;
+      break;
+    case 'controllerTrash':
+      count = player.trash.cardIds.length;
+      break;
+    case 'controllerTrashEvents':
+      count = player.trash.cardIds.filter((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.category === 'event').length;
+      break;
+    case 'controllerRestedDon': {
+      const attached = new Set<string>();
+      for (const inst of Object.values(state.cardsById)) {
+        if (inst.controllerId !== ownerId) continue;
+        for (const d of inst.donAttached) attached.add(d);
+      }
+      count = player.costArea.cardIds.filter((id) => state.cardsById[id]?.donRested === true && !attached.has(id)).length;
+      break;
+    }
+  }
+  return scale.step > 0 ? Math.floor(count / scale.step) * scale.amountPer : 0;
+}
+
 export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState, instanceId: string): number {
   const instance = state.cardsById[instanceId];
   const def = getDefinition(defs, instance);
@@ -102,7 +132,7 @@ export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState
   const battleBonus = state.currentBattle?.battlePowerBonuses[instanceId] ?? 0; // 7-1-3-2-1
   let continuousBonus = 0; // 8-1-3-3 card-effect power modifiers
   for (const record of state.continuousEffects) {
-    if (powerModifierApplies(record, state, instanceId, defs)) continuousBonus += record.powerModifier!.amount;
+    if (powerModifierApplies(record, state, instanceId, defs)) continuousBonus += record.powerModifier!.amount + scaleAmount(record.powerModifier!.scale, record.ownerId, state, defs);
   }
   return base + donBonus + battleBonus + continuousBonus;
 }

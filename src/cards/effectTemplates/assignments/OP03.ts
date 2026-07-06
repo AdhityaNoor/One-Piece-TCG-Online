@@ -307,4 +307,40 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 6 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
     { fn: 'drawAndTrash', drawCount: 2, trashCount: 2 },
   ] } },
+
+  // OP03-022 — (Leader) [DON!! x2] [When Attacking] rest 1 DON!!: play up to 1 Character cost<=4 with a [Trigger] from hand.
+  { cardNumber: 'OP03-022', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 4, hasTrigger: true } }] } },
+
+  // OP03-027 — [On Play] If Leader {East Blue}, rest up to 1 opp Character cost<=2; and if you don't have [Buchi], play up to 1 [Buchi] from hand.
+  { cardNumber: 'OP03-027', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'East Blue' }], functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true },
+    { fn: 'playFromHand', filter: { category: 'character', name: 'Buchi' }, ifGate: [{ kind: 'selfDoesNotControlNamed', name: 'Buchi' }] },
+  ] } },
+
+  // OP03-119 — (Event) [Main] If less Life than opponent, K.O. up to 1 opp Character cost<=4. [Trigger] play up to 1 Character cost<=4 with a [Trigger] from hand.
+  {
+    cardNumber: 'OP03-119',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfLifeLessThanOpponent' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 4, hasTrigger: true } }] } },
+    ],
+  },
+
+
+  // OP03-105 — [DON!! x1] [When Attacking] you may trash 1 card with a [Trigger] from hand: this Character +3000 battle.
+  { cardNumber: 'OP03-105', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [
+    { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
+    { fn: 'addPowerSelf', amount: 3000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+  ] } },
+
+  // OP03-115 — [On Play] you may trash 1 card with a [Trigger] from hand: K.O. up to 1 opp Character cost<=1.
+  { cardNumber: 'OP03-115', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
+
+
+  // OP03-123 — [On Play] Add up to 1 Character cost<=8 to the top or bottom of owner's Life face-up.
+  { cardNumber: 'OP03-123', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 8 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] } },
+
 ];

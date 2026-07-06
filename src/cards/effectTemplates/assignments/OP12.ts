@@ -147,4 +147,14 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
       reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Revolutionary Army', excludeSelfName: true }, { name: 'Nico Robin' }] },
       remainder: 'trash' }] },
   },
+
+  // OP12-008 — [Blocker] [On Your Opponent's Attack] [Once Per Turn] trash 1 from hand: give up to 1 opp Leader/Character −2000 this turn.
+  { cardNumber: 'OP12-008', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [
+    { fn: 'optionalTrashFromHand', count: 1 },
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
+
+  // OP12-069 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: If Leader {Baroque Works}, up to 1 Leader/Character +2000 battle.
+  { cardNumber: 'OP12-069', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
+
 ];

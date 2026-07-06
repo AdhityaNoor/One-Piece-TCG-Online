@@ -235,4 +235,11 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
     ],
   },
+
+  // OP05-029 — [On Your Opponent's Attack] [Once Per Turn] rest 1 DON!!: rest up to 1 opp Character cost<=6.
+  { cardNumber: 'OP05-029', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },
+
+  // OP05-075 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: play up to 1 {Baroque Works} Character cost<=3 from hand.
+  { cardNumber: 'OP05-075', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 3 } }] } },
+
 ];

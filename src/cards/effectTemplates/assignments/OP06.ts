@@ -301,4 +301,17 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 0 }], functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }, { fn: 'trashFromHand', count: 1 }] } },
     ],
   },
+
+  // OP06-103 — [When Attacking] trash 2 from hand: add up to 1 of your Characters with 0 power to top or bottom of owner's Life face-up. [Trigger] If opp <=3 Life, play this.
+  {
+    cardNumber: 'OP06-103',
+    templates: [
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+        { fn: 'optionalTrashFromHand', count: 2 },
+        { fn: 'moveCards', ifPrevious: 'previousMovedAny', from: { zone: 'characters', player: 'controller', filter: { maxPower: 0 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
+
 ];

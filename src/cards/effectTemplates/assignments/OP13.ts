@@ -187,4 +187,17 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromHand', count: 1 }] } },
     ],
   },
+
+  // OP13-110 — [Blocker] [On Play] If Leader {Egghead}, play up to 1 Character cost<=5 with a [Trigger] from hand.
+  { cardNumber: 'OP13-110', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Egghead' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 5, hasTrigger: true } }] } },
+
+  // OP13-113 — [On Play] look 4, reveal up to 1 card with a [Trigger] (other than [Lilith]), add to hand, rest to bottom. [Trigger] Activate this effect.
+  {
+    cardNumber: 'OP13-113',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { hasTrigger: true, excludeSelfName: true }, remainder: 'bottom' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { hasTrigger: true, excludeSelfName: true }, remainder: 'bottom' }] } },
+    ],
+  },
+
 ];

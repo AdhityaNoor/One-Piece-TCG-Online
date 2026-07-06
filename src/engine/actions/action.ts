@@ -19,6 +19,7 @@ export type GameActionType =
   | 'ACTIVATE_BLOCKER'
   | 'ACTIVATE_COUNTER_CHARACTER'
   | 'ACTIVATE_COUNTER_EVENT'
+  | 'ACTIVATE_ON_OPPONENTS_ATTACK'
   | 'PASS_STEP'
   | 'RESOLVE_PENDING_CHOICE'
   | 'END_MAIN_PHASE'
@@ -85,6 +86,13 @@ export interface ActivateCounterCharacterAction extends BaseAction<'ACTIVATE_COU
 }
 
 /** 7-1-3-2-2. */
+export interface ActivateOnOpponentsAttackAction extends BaseAction<'ACTIVATE_ON_OPPONENTS_ATTACK'> {
+  sourceInstanceId: string;
+  effectId: string;
+  /** DON!! on field selected for structured ability costs such as DON!! -N. */
+  donInstanceIds: readonly string[];
+}
+
 export interface ActivateCounterEventAction extends BaseAction<'ACTIVATE_COUNTER_EVENT'> {
   handCardInstanceId: string;
   /** Active DON!! used to pay the Event play cost. */
@@ -127,6 +135,7 @@ export type GameAction =
   | DeclareAttackAction
   | ActivateBlockerAction
   | ActivateCounterCharacterAction
+  | ActivateOnOpponentsAttackAction
   | ActivateCounterEventAction
   | PassStepAction
   | ResolvePendingChoiceAction

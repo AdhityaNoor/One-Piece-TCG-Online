@@ -113,6 +113,25 @@ export function fireOnBlock(
 }
 
 /**
+ * Fires a card's [On Your Opponent's Attack] ability (timing 'onOpponentsAttack').
+ * Called from the ACTIVATE_ON_OPPONENTS_ATTACK handler after the ability's cost is
+ * paid, during the defending player's Block-Step window.
+ */
+export function fireOnOpponentsAttack(
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const instance = state.cardsById[instanceId];
+  if (!instance) return noop(state);
+  const program = registry[instance.cardDefinitionId];
+  if (!program) return noop(state);
+  return runTimings(program, ['onOpponentsAttack'], state, instanceId, defs, actionId, registry, false);
+}
+
+/**
  * Fires a card's [On K.O.] ability (10-2-17, timing onKO). Call AFTER the card
  * has been moved to the trash, with the K.O.'d card as source.
  */
