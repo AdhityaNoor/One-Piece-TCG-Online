@@ -1,4 +1,5 @@
 import type { CardLibraryEntry } from '../../../cards/library';
+import { copyLimitForCard } from '../../../cards/decks';
 import { CardDetailModal, CardImage } from '../../components';
 import { useDeckBuilderStore } from '../../store/deckBuilderStore';
 import { useState } from 'react';
@@ -28,13 +29,16 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
     .reduce((sum, selection) => sum + selection.quantity, 0);
   const hasLeader = leaderSelection !== null;
   const imageUrl = selectedPrinting?.imageUrl ?? null;
+  // 5-1-2-3: normally 4, but Infinity for "any number of this card" cards (e.g. Pacifista).
+  const copyLimit = copyLimitForCard(entry.definition);
+  const atCopyLimit = totalQuantityForCardNumber >= copyLimit;
 
   function handleSelect() {
     if (isLeaderCard) {
       setLeader(entry, selectedPrintingImageId);
       return;
     }
-    if (hasLeader && totalQuantityForCardNumber < 4) addMainDeckCard(entry, selectedPrintingImageId, 1);
+    if (hasLeader && !atCopyLimit) addMainDeckCard(entry, selectedPrintingImageId, 1);
   }
 
   return (
@@ -45,7 +49,7 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
             event.preventDefault();
             setZoomOpen(true);
           }}
-          className={['group relative block w-full text-left', !isLeaderCard && (!hasLeader || totalQuantityForCardNumber >= 4) ? 'opacity-55' : ''].join(' ')}
+          className={['group relative block w-full text-left', !isLeaderCard && (!hasLeader || atCopyLimit) ? 'opacity-55' : ''].join(' ')}
           title={isLeaderCard ? (isCurrentLeader ? 'Current leader' : 'Set leader') : hasLeader ? 'Add to deck' : 'Pick a leader first'}
         >
           <CardImage src={imageUrl} alt={entry.definition.name} className="rounded-none" />

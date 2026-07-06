@@ -24,6 +24,16 @@ const MAIN_DECK_SIZE = 50; // 5-1-2
 const MAX_COPIES_PER_CARD_NUMBER = 4; // 5-1-2-3
 
 /**
+ * The per-card-number copy cap (5-1-2-3). Normally 4, but cards flagged
+ * `unlimitedCopies` ("you may have any number of this card in your deck", e.g.
+ * Pacifista) have no cap. Shared so the interactive deck builder and this
+ * validator agree on the limit.
+ */
+export function copyLimitForCard(definition: CardDefinition): number {
+  return definition.unlimitedCopies ? Infinity : MAX_COPIES_PER_CARD_NUMBER;
+}
+
+/**
  * 5-1-2-2: only cards of colors included on the Leader card can be included
  * in a deck. A card is legal when every color listed on that card is present
  * on the Leader. This supports single-color and multicolor Leaders.
@@ -51,14 +61,18 @@ export function validateDeckConstruction(leader: CardDefinition, mainDeck: DeckC
   }
 
   // 5-1-2-3: max 4 copies of the same card number, summed across every printing/art choice of that number.
+  // Cards flagged `unlimitedCopies` (Pacifista and friends) are exempt from the cap.
   const countsByCardNumber = new Map<string, number>();
+  const definitionByCardNumber = new Map<string, CardDefinition>();
   for (const entry of mainDeck) {
     countsByCardNumber.set(entry.definition.cardNumber, (countsByCardNumber.get(entry.definition.cardNumber) ?? 0) + entry.quantity);
+    definitionByCardNumber.set(entry.definition.cardNumber, entry.definition);
   }
 
   for (const [cardNumber, count] of countsByCardNumber) {
-    if (count > MAX_COPIES_PER_CARD_NUMBER) {
-      reasons.push(`Card number ${cardNumber} appears ${count} times; deck construction allows at most ${MAX_COPIES_PER_CARD_NUMBER} (5-1-2-3).`);
+    const limit = copyLimitForCard(definitionByCardNumber.get(cardNumber)!);
+    if (count > limit) {
+      reasons.push(`Card number ${cardNumber} appears ${count} times; deck construction allows at most ${limit} (5-1-2-3).`);
     }
   }
 

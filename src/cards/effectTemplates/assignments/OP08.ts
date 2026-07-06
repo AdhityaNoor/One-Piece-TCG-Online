@@ -6,6 +6,73 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
+  // ── Triage batch (OP08 expressible). "top or bottom of deck" placement is approximated as bottom. ──
+  // OP08-002 (leader) — [DON!! x1][Activate: Main][OPT] Draw 1, place 1 from hand at bottom of deck, then give up to 1 opp Character −2000.
+  { cardNumber: 'OP08-002', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'draw', amount: 1 }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' } }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+  // OP08-005 — [On Play] Give up to 1 opp Character −2000 this turn. PARTIAL: "if you don't have [Kuromarimo], play it" needs a named-absence gate (deferred).
+  { cardNumber: 'OP08-005', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+  // OP08-008 — [On Play] give up to 1 opp Character −1000. [DON!! x1][Activate: Main][OPT] add 1 top Life to hand → this gains [Rush] this turn.
+  {
+    cardNumber: 'OP08-008',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
+  // OP08-010 — [DON!! x1][Activate: Main][OPT] up to 1 of your {Animal} Characters +1000 this turn (self-exclusion dropped).
+  { cardNumber: 'OP08-010', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Animal' } }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
+  // OP08-013 — [DON!! x2] This Character gains [Rush].
+  { cardNumber: 'OP08-013', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
+  // OP08-050 — [Blocker][On Play] Draw 2, place 2 from hand at bottom of deck.
+  { cardNumber: 'OP08-050', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 2 }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 2 }] } },
+  // OP08-053 — [Main] If Leader {Whitebeard Pirates}: Look 3, reveal up to 1 {Whitebeard Pirates}/[Monkey.D.Luffy] to hand, rest to bottom. [Trigger] Draw 1.
+  {
+    cardNumber: 'OP08-053',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Whitebeard Pirates' }, { name: 'Monkey.D.Luffy' }] }, remainder: 'bottom' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
+  // OP08-069 — [On Play] DON!! −1, trash 1 → add top of deck to top of Life. PARTIAL: "add opp Character to their Life face-up" is deferred.
+  { cardNumber: 'OP08-069', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+  // OP08-075 — [Main] DON!! −1: Rest up to 1 opp Character cost ≤2. [Trigger] add 1 DON!! (active). PARTIAL: "turn all your Life face-down" deferred.
+  {
+    cardNumber: 'OP08-075',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+    ],
+  },
+  // OP08-084 — static: this Character +4 cost. [Activate: Main] rest this: draw 1, trash 1, then K.O. up to 1 opp Character cost ≤3.
+  {
+    cardNumber: 'OP08-084',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCost', target: { ref: 'self' }, amount: 4, duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+    ],
+  },
+  // OP08-105 — [Trigger] Draw 2, trash 1. PARTIAL: the [DON!! x1] custom "when a card leaves opp Life" trigger is deferred.
+  { cardNumber: 'OP08-105', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+  // OP08-114 — [DON!! x1] If fewer Life than opp, this Character +2000. [Trigger] trash 1 → if ≤2 Life play this.
+  //   PARTIAL: the "cannot be K.O.'d in battle by <Slash>" attribute immunity is deferred.
+  {
+    cardNumber: 'OP08-114',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfLifeLessThanOpponent' }] } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
+  // OP08-115 — [Counter] If Leader {Shandian Warrior}: up to 1 Leader/Char +3000 this battle. [Trigger] Draw 2, trash 1.
+  //   PARTIAL: "then play [Upper Yard]" (a Stage) is deferred — playFromHand plays Characters only.
+  {
+    cardNumber: 'OP08-115',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderType', type: 'Shandian Warrior' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+    ],
+  },
+  // OP08-116 — [Counter] up to 1 Leader/Char +4000 this battle, then add 1 top/bottom Life to hand → add 1 {Shandian Warrior} from hand to top of Life face-up.
+  { cardNumber: 'OP08-116', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }, { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { typeIncludes: 'Shandian Warrior' } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 
   // OP08-022 — [On Play] If Leader {Minks}, up to 2 opp rested Characters cost<=5 won't become active next Refresh.
   { cardNumber: 'OP08-022', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Minks' }], functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 5 } }, optional: true, maxTargets: 2 }] } },

@@ -262,4 +262,43 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'setActiveSelf' }] } },
     ],
   },
+
+  // --- Batch 3: remaining OP06 cleanly-expressible cards (life-to-hand buffs, conditional immunity) ---
+
+  // OP06-017 — [Main]/[Counter] add 1 top Life to hand → up to 1 Leader/Char +3000 this turn.
+  {
+    cardNumber: 'OP06-017',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
+  // OP06-052 — [DON!! x1] If ≤4 cards in hand, this Character cannot be K.O.'d in battle.
+  { cardNumber: 'OP06-052', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfHand', atMost: 4 }] } }] } },
+  // OP06-059 — [Counter] up to 1 Leader/Char +1000 this turn, and draw 1. [Trigger] Look at 5, place top or bottom in any order.
+  {
+    cardNumber: 'OP06-059',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }, { fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
+    ],
+  },
+  // OP06-067 — static: if your DON!! ≤ opponent's, this Character +1000 (Blocker is card data).
+  { cardNumber: 'OP06-067', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfDonAtMostOpponent' }] } }] } },
+  // OP06-109 — [DON!! x2] If opp ≤3 Life, cannot be K.O.'d by effects. [Trigger] If opp ≤3 Life, play this.
+  {
+    cardNumber: 'OP06-109',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { donAttachedAtLeast: 2, gate: [{ kind: 'opponentLife', atMost: 3 }] } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
+  // OP06-115 — [Counter] trash 1 → +3000 battle. [Trigger] If 0 Life, add top of deck to top of Life, then trash 1 from hand.
+  {
+    cardNumber: 'OP06-115',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 0 }], functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }, { fn: 'trashFromHand', count: 1 }] } },
+    ],
+  },
 ];

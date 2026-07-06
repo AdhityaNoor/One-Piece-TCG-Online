@@ -7,6 +7,108 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
 
+  // ── Triage batch (OP07 expressible): Warlords/Fish-Man/Foxy/Egghead lines. ──
+  // OP07-017 Bombardment — [Main]/[Trigger] K.O. up to 1 opp Character with 3000 power or less.
+  //   PARTIAL: the "and up to 1 opp Stage cost ≤1" clause needs a Stage target (no Stage selector yet).
+  {
+    cardNumber: 'OP07-017',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
+    ],
+  },
+  // OP07-020 — [Blocker][On K.O.] If Leader {Fish-Man}: play up to 1 {Fish-Man}/{Merfolk} Character cost ≤3 from hand.
+  { cardNumber: 'OP07-020', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Fish-Man' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', anyOf: [{ typeIncludes: 'Fish-Man' }, { typeIncludes: 'Merfolk' }], maxCost: 3 } }] } },
+  // OP07-023 — static: if 6+ rested DON!!, this Character +1000 (Blocker is card data).
+  { cardNumber: 'OP07-023', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfRestedDonCount', atLeast: 6 }] } }] } },
+  // OP07-036 — [Main] up to 1 Leader/Char +3000 this turn. [Trigger] Rest up to 1 opp Character cost ≤4.
+  //   PARTIAL: the "rest your cost-3+ Character → rest opp cost ≤5" mid-clause needs a min-cost in-play filter (deferred).
+  {
+    cardNumber: 'OP07-036',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+    ],
+  },
+  // OP07-055 — [Counter] +4000 battle, then return up to 1 of your Characters to hand. [Trigger] return own → return 1 opp Character cost ≤5.
+  {
+    cardNumber: 'OP07-055',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }, { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
+  // OP07-058 (stage) — [Activate: Main] rest this Stage + trash 1: If Leader {Kuja Pirates}, return up to 1 {Amazon Lily}/{Kuja Pirates} Character to hand.
+  { cardNumber: 'OP07-058', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { anyOfTypes: ['Amazon Lily', 'Kuja Pirates'] } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+  // OP07-061 — [On Play] DON!! −1: If Leader {The Vinsmoke Family}, draw 1.
+  { cardNumber: 'OP07-061', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'The Vinsmoke Family' }], functions: [{ fn: 'draw', amount: 1 }] } },
+  // OP07-071 — [Activate: Main][Once Per Turn] Add 1 DON!! and rest it.
+  //   PARTIAL: the [Opponent's Turn] "give all opp Characters −1000" aura needs an opponent-group power aura (deferred).
+  { cardNumber: 'OP07-071', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  // OP07-072 — [On Play] DON!! −1: Look 5, reveal up to 1 {Foxy Pirates} to hand (rest to bottom), then play up to 1 purple Character (≤4000 base power) from hand.
+  { cardNumber: 'OP07-072', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Foxy Pirates' }, remainder: 'bottom' }, { fn: 'playFromHand', filter: { category: 'character', color: 'purple', maxPower: 4000 } }] } },
+  // OP07-073 — [Activate: Main][Once Per Turn] DON!! −3: If opp has 3+ Characters, set this active.
+  { cardNumber: 'OP07-073', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 3 }], gate: [{ kind: 'opponentCharacterCount', atLeast: 3 }], functions: [{ fn: 'setActiveSelf' }] } },
+  // OP07-076 — [Counter] DON!! −1: +2000 battle, then rest up to 1 opp Character. [Trigger] add 1 DON!! (active).
+  {
+    cardNumber: 'OP07-076',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }, { fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+    ],
+  },
+  // OP07-079 (leader) — [When Attacking] trash 2 from top of deck: give up to 1 opp Character −1 cost this turn.
+  { cardNumber: 'OP07-079', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'trashTopDeck', count: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -1, duration: 'duringThisTurn', optional: true }] } },
+  // OP07-094 — [Counter] up to 1 Leader/Char +2000 this battle. [Trigger] Return up to 1 of your Characters to hand.
+  //   PARTIAL: the "if 10+ trash, return your CP-type Character" rider needs a trash-count gate (deferred).
+  {
+    cardNumber: 'OP07-094',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+    ],
+  },
+  // OP07-096 — [Main] Draw 1. [Trigger] K.O. up to 1 opp Character cost ≤3.
+  //   PARTIAL: the "if 10+ trash, give opp −3 cost" rider needs a trash-count gate (deferred).
+  {
+    cardNumber: 'OP07-096',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+    ],
+  },
+  // OP07-098 — static: if fewer Life than opponent, cannot be K.O.'d in battle. [Trigger] If Leader [Vegapunk], play this.
+  {
+    cardNumber: 'OP07-098',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { gate: [{ kind: 'selfLifeLessThanOpponent' }] } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Vegapunk' }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
+  // OP07-102 — [Trigger] Return up to 1 opp Character cost ≤4 to hand.
+  //   PARTIAL: the "and add this card to your hand" self-return clause is deferred (trigger-returns-to-hand family).
+  { cardNumber: 'OP07-102', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  // OP07-106 — [DON!! x1][When Attacking] If ≤1 Life, K.O. up to 1 opp Character cost ≤3.
+  { cardNumber: 'OP07-106', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfLife', atMost: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+  // OP07-110 — [On Play] add 1 top/bottom Life to hand → K.O. up to 1 opp Character cost ≤2. [Trigger] If Leader [Vegapunk], play this.
+  {
+    cardNumber: 'OP07-110',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Vegapunk' }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
+  // OP07-112 — [When Attacking][Once Per Turn] add 1 top/bottom Life to hand → rest up to 1 opp Character cost ≤4, then if ≤1 Life add top of deck to top of Life.
+  { cardNumber: 'OP07-112', templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, ifPrevious: 'previousMovedAny' }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifGate: [{ kind: 'selfLife', atMost: 1 }] }] } },
+  // OP07-117 (stage) — [End of Your Turn] If ≤3 Life, set up to 1 {Egghead} Character cost ≤5 active. [Trigger] Play this.
+  {
+    cardNumber: 'OP07-117',
+    templates: [
+      { templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfLife', atMost: 3 }], functions: [{ fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { typeIncludes: 'Egghead', maxCost: 5 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
+
   // OP07-105 — [On K.O.] If <=2 Life, play {Egghead} cost<=4 from trash rested. [Trigger] If Leader [Vegapunk], play this.
   {
     cardNumber: 'OP07-105',

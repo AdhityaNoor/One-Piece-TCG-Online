@@ -73,6 +73,16 @@ export interface CardDefinition {
   hasDoubleAttack: boolean;
   hasBanish?: boolean;
   isUnblockable: boolean;
+  /**
+   * 5-1-2-3 exception. A few cards (e.g. Pacifista OP01-075, Biscuit Warrior
+   * OP08-072, Prisoner of Impel Down OP16-042) carry "Under the rules of this
+   * game, you may have any number of this card in your deck." When true, the
+   * 4-copies-per-card-number deck-construction cap does not apply. This is a
+   * STRUCTURAL deckbuilding property detected from text in normalization — the
+   * same category as hasBlocker/hasRush above — never interpreted as effect
+   * logic. Omitted (undefined) for the overwhelming majority of cards.
+   */
+  unlimitedCopies?: boolean;
   cardNumber: string; // 2-14, deck-construction max-4-copies key
   // 2-12, 2-13, 2-15, 2-16, 2-17: explicitly no gameplay effect — metadata only.
   rarity?: string;

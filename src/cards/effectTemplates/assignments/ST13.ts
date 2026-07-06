@@ -17,6 +17,12 @@ const SEARCH_BROTHERS = {
 } as const;
 
 export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
+  // ST13-006 — [Blocker][On Play] play up to 1 each of [Sabo], [Portgas.D.Ace], [Monkey.D.Luffy] with cost 2 from hand.
+  { cardNumber: 'ST13-006', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Sabo', exactCost: 2 } }, { fn: 'playFromHand', filter: { category: 'character', name: 'Portgas.D.Ace', exactCost: 2 } }, { fn: 'playFromHand', filter: { category: 'character', name: 'Monkey.D.Luffy', exactCost: 2 } }] } },
+  // ST13-015 — [Activate: Main][OPT] this Character +2000 until start of next turn, then if 1+ Life draw 1.
+  //   PARTIAL: the "trash 1 from top of your Life" drawback needs a controller-Life-to-trash op (deferred).
+  { cardNumber: 'ST13-015', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn' }, { fn: 'draw', amount: 1, ifGate: [{ kind: 'selfLife', atLeast: 1 }] }] } },
+
   // ST13-008 Sabo — [On Play] You may trash 1 from the top/bottom of your Life: K.O. up to 1 opponent Character cost <=5.
   {
     cardNumber: 'ST13-008',

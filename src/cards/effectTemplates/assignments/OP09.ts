@@ -6,6 +6,120 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
+  // ── Triage batch (OP09 expressible). "return 1 or more DON!!" is approximated as DON!! −1. ──
+  // OP09-007 — [Blocker][On Play] your Leader +1000 this turn (the "4000 power or less" leader filter is dropped).
+  { cardNumber: 'OP09-007', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'duringThisTurn' }] } },
+  // OP09-010 — [On Play] Play up to 1 [Monster] from hand. [DON!! x1][When Attacking] +2000 this turn.
+  {
+    cardNumber: 'OP09-010',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Monster' } }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
+    ],
+  },
+  // OP09-011 — [Activate: Main] rest this: If Leader {Red-Haired Pirates}, give up to 1 opp Character −2000.
+  { cardNumber: 'OP09-011', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+  // OP09-015 — [Blocker][On K.O.] If Leader {Red-Haired Pirates}, K.O. up to 1 opp Character with base power 6000 or less.
+  { cardNumber: 'OP09-015', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }, optional: true }] } },
+  // OP09-019 — [Main] If Leader {Red-Haired Pirates}, give up to 1 opp Character −3000. [Trigger] Draw 1.
+  //   PARTIAL: the "if opp has a 5000+ power Character, draw 1" rider needs a power-based gate (deferred).
+  {
+    cardNumber: 'OP09-019',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
+  // OP09-021 (stage) — [Activate: Main] rest this: If Leader {Red-Haired Pirates}, give up to 1 opp Character −1000.
+  { cardNumber: 'OP09-021', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
+  // OP09-023 — [On Play] If Leader {ODYSSEY}, set up to 3 DON!! active. PARTIAL: the [On Opponent's Attack] rest-DON buff is deferred.
+  { cardNumber: 'OP09-023', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'ODYSSEY' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 3 }] } },
+  // OP09-039 — [Trigger] K.O. up to 1 opp rested Character cost ≤4. PARTIAL: the [Counter] buff needs a rested-Character-count gate (deferred).
+  { cardNumber: 'OP09-039', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 4 } }, optional: true }] } },
+  // OP09-042 (leader) — [Activate: Main] rest 5 DON!! + trash 1: Play up to 1 {Cross Guild} Character from hand.
+  { cardNumber: 'OP09-042', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 5 }], functions: [{ fn: 'trashFromHand', count: 1 }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Cross Guild' } }] } },
+  // OP09-051 — [On Play] Place up to 1 opp Character at bottom of deck. PARTIAL: the conditional "place this Character at bottom" self-clause is deferred.
+  { cardNumber: 'OP09-051', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
+  // OP09-059 — [Counter] up to 1 Leader/Char +3000 this battle. [Trigger] Draw 1. PARTIAL: the "trash up to 2 → mill same number" clause needs dynamic-count mill (deferred).
+  {
+    cardNumber: 'OP09-059',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
+  // OP09-060 (stage) — [Activate: Main] place 2 from hand at bottom + rest this: If Leader {Cross Guild}, draw 2.
+  { cardNumber: 'OP09-060', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Cross Guild' }], functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 2 }, { fn: 'draw', amount: 2 }] } },
+  // OP09-065 — [On Play] DON!! −1: this gains [Rush] this turn, then rest up to 1 opp Character cost ≤6.
+  { cardNumber: 'OP09-065', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },
+  // OP09-070 — [On Play] DON!! −1: give up to 2 rested DON!! to your Leader or 1 Character.
+  { cardNumber: 'OP09-070', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'giveDon', count: 2 }] } },
+  // OP09-073 — [When Attacking] DON!! −1: give up to 2 opp Characters −2000 this turn.
+  { cardNumber: 'OP09-073', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, maxTargets: 2 }] } },
+  // OP09-075 — [On Play] If Leader {Kid Pirates}: add 1 top Life to hand → add 1 DON!! (active).
+  { cardNumber: 'OP09-075', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Kid Pirates' }], functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addDonFromDeck', count: 1, rested: false, ifPrevious: 'previousMovedAny' }] } },
+  // OP09-083 — [Activate: Main] rest this: If Leader {Blackbeard Pirates}, give up to 1 opp Character −3 cost. [On K.O.] Draw 1.
+  {
+    cardNumber: 'OP09-083',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
+  // OP09-088 — [DON!! x1][When Attacking] trash 2 from hand: Draw 2.
+  { cardNumber: 'OP09-088', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'trashFromHand', count: 2 }, { fn: 'draw', amount: 2 }] } },
+  // OP09-090 — [Activate: Main] rest this: If Leader {Blackbeard Pirates}, K.O. up to 1 opp Character cost ≤1. [On K.O.] Draw 1.
+  {
+    cardNumber: 'OP09-090',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
+  // OP09-095 — [Activate: Main] rest 1 DON!! + rest this: Look 5, reveal up to 1 {Blackbeard Pirates} to hand, rest to bottom.
+  { cardNumber: 'OP09-095', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Blackbeard Pirates' }, remainder: 'bottom' }] } },
+  // OP09-099 (stage) — [Activate: Main] rest this + trash 1: Look 3, reveal up to 1 {Blackbeard Pirates} to hand, rest to bottom.
+  { cardNumber: 'OP09-099', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Blackbeard Pirates' }, remainder: 'bottom', ifPrevious: 'previousMovedAny' }] } },
+  // OP09-103 — [Blocker][On Play] add 1 top/bottom Life to hand → play up to 1 {Revolutionary Army} cost ≤4 from hand; if you do, draw 1.
+  { cardNumber: 'OP09-103', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Revolutionary Army', maxCost: 4 } }, { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }] } },
+  // OP09-104 — [On Play] add 1 {Revolutionary Army} from hand to top of Life face-up, then if 2+ Life add 1 top/bottom Life to hand. [Trigger] If Leader multicolored, draw 2.
+  {
+    cardNumber: 'OP09-104',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { typeIncludes: 'Revolutionary Army' } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true }, { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true, ifGate: [{ kind: 'selfLife', atLeast: 2 }] }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderMulticolor' }], functions: [{ fn: 'draw', amount: 2 }] } },
+    ],
+  },
+  // OP09-105 — [Trigger] If Leader {Egghead}, add top of deck to top of Life, then trash 2 from hand.
+  { cardNumber: 'OP09-105', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Egghead' }], functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }, { fn: 'trashFromHand', count: 2 }] } },
+  // OP09-106 — [On Play] your Leader +3000 this turn. [Trigger] If Leader [Nico Robin], draw 3, trash 2.
+  {
+    cardNumber: 'OP09-106',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Nico Robin' }], functions: [{ fn: 'drawAndTrash', drawCount: 3, trashCount: 2 }] } },
+    ],
+  },
+  // OP09-107 — [On Play] If opp has 3+ Life, trash up to 1 of opp's top Life. [Trigger] Play up to 1 yellow Character cost ≤3 from hand.
+  {
+    cardNumber: 'OP09-107',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentLife', atLeast: 3 }], functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top' }, to: { zone: 'trash', player: 'owner' } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'yellow', maxCost: 3 } }] } },
+    ],
+  },
+  // OP09-112 — [On Play] If ≤2 Life, draw 1. PARTIAL: the [Trigger] needs a combined-Life gate (deferred).
+  { cardNumber: 'OP09-112', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'draw', amount: 1 }] } },
+  // OP09-116 — [Counter] up to 1 Leader/Char +2000 this battle. [Trigger] Play up to 1 {Revolutionary Army} cost ≤4 from hand.
+  {
+    cardNumber: 'OP09-116',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Revolutionary Army', maxCost: 4 } }] } },
+    ],
+  },
+  // OP09-119 — [On Play] DON!! −1: Draw 1 and this Character gains [Rush] this turn.
+  { cardNumber: 'OP09-119', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
   // OP09-085 — [On Play] Play up to 1 {Thriller Bark Pirates} Character cost<=2 from your trash rested.
   { cardNumber: 'OP09-085', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 2 }, rested: true }] } },
