@@ -5,6 +5,11 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST15_ASSIGNMENTS: CardEffectAssignment[] = [
+  // ST15-001 (character) Atmos —
+  //   [When Attacking] If your Leader is [Edward.Newgate], you cannot add Life cards to your hand using
+  //   your own effects during this turn.
+  // NOTE: not yet implemented (needs template).
+
   // ST15-002 — [On Play] give up to 1 rested DON!! to Leader/1 Char. [Activate: Main] rest this: K.O. up to 1 opp Character 5000 power or less.
   {
     cardNumber: 'ST15-002',
@@ -13,8 +18,16 @@ export const ST15_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 5000 } }, optional: true }] } },
     ],
   },
+
+  // ST15-003 (character) Kingdew —
+  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
+  //   of the attack.)[Opponent's Turn] When this Character is K.O.'d by an effect, up to 1 of your Leader
+  //   gains +2000 power during this turn.
+  // NOTE: not yet implemented (needs template).
+
   // ST15-004 — [On Play] If Leader {Whitebeard Pirates}, give up to 1 opp Character −2000, then add 1 top Life to hand.
   { cardNumber: 'ST15-004', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }, { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } }] } },
+
   // ST15-005 — static: if Leader {Whitebeard Pirates}, this Character gains [Rush]. PARTIAL: removal-replacement deferred.
   { cardNumber: 'ST15-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }] } }] } },
 ];

@@ -67,15 +67,6 @@ export const ST08_ASSIGNMENTS: CardEffectAssignment[] = [
     params: { timing: 'onPlay', gate: [{ kind: 'anyCharacterExactCost', exactCost: 0 }], functions: [{ fn: 'draw', amount: 1 }] },
   },
 
-  // ST08-015 (event) Gum-Gum Pistol — [Main] K.O. up to 1 opponent Character cost <=2. [Trigger] Draw 1.
-  {
-    cardNumber: 'ST08-015',
-    templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
-    ],
-  },
-
   // ST08-013 Mr.2 Bon Kurei — [DON!! x1] At the end of a battle in which this Character battles your
   //   opponent's Character, you may K.O. the opponent's Character you battled with. If you do, K.O. this Character.
   {
@@ -91,6 +82,15 @@ export const ST08_ASSIGNMENTS: CardEffectAssignment[] = [
     templates: [
       { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -7, optional: true, ifPrevious: 'previousMovedAny' }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { color: 'black', category: 'character', maxCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+    ],
+  },
+
+  // ST08-015 (event) Gum-Gum Pistol — [Main] K.O. up to 1 opponent Character cost <=2. [Trigger] Draw 1.
+  {
+    cardNumber: 'ST08-015',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },
 ];

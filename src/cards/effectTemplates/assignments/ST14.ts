@@ -21,6 +21,11 @@ import type { CardEffectAssignment } from '../assembler';
 const BIG_COST_8 = { kind: 'selfHasCharacterCostAtLeast', atLeast: 8 } as const;
 
 export const ST14_ASSIGNMENTS: CardEffectAssignment[] = [
+  // ST14-001 (leader) Monkey.D.Luffy —
+  //   [DON!! x1] All of your Characters gain +1 cost. If you have a Character with a cost of 8 or more,
+  //   this Leader gains +1000 power.
+  // NOTE: not yet implemented (needs template).
+
   // ST14-002 Usopp — [DON!! x1] [When Attacking] If you have a cost-8+ Character, K.O. up to 1 opponent Character cost <=4.
   {
     cardNumber: 'ST14-002',

@@ -27,6 +27,11 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
     params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 3 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }, { fn: 'playFromHand', filter: { maxCost: 4 } }] },
   },
 
+  // ST10-002 (leader) Monkey.D.Luffy —
+  //   [Activate: Main] [Once Per Turn] If you have 0 DON!! cards on your field or 8 or more DON!! cards on
+  //   your field, add up to 1 DON!! card from your DON!! deck and set it as active.
+  // NOTE: not yet implemented (needs template).
+
   // ST10-003 (leader) Kid — [Your Turn] If you have 4 or more Life, −1000 self.
   //   [When Attacking] DON!! −1: +2000 self during this turn.
   {
@@ -37,8 +42,23 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // ST10-004 (character) Sanji —
+  //   [On Play] If your opponent has a Character with 5000 or more power, this Character gains [Rush]
+  //   during this turn.(This card can attack on the turn in which it is played.)
+  // NOTE: not yet implemented (needs template).
+
   // ST10-005 Jinbe — [DON!! x1] [When Attacking] Give up to 1 opponent Character −2000 power this turn.
   { cardNumber: 'ST10-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+
+  // ST10-006 (character) Monkey.D.Luffy —
+  //   [Rush] (This card can attack on the turn in which it is played.)[Once Per Turn] When your opponent
+  //   activates a [Blocker], K.O. up to 1 of your opponent's Characters with 8000 power or less.
+  // NOTE: not yet implemented (needs template).
+
+  // ST10-007 (character) Killer —
+  //   [Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, K.O. up
+  //   to 1 of your opponent's rested Characters with a cost of 3 or less.
+  // NOTE: not yet implemented (needs template).
 
   // ST10-008 Shachi & Penguin — [On Play] If you have 3 or less DON!! on your field, add 2 DON!! and rest them.
   {
@@ -62,6 +82,11 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
     params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'opponentHand', atLeast: 7 }], functions: [{ fn: 'trashFromOpponentHandChosenByOpponent', count: 2 }] },
   },
 
+  // ST10-011 (character) Heat —
+  //   [Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, this
+  //   Character gains +2000 power until the start of your next turn.
+  // NOTE: not yet implemented (needs template).
+
   // ST10-012 Bepo — [On Play]/[When Attacking] If your opponent has more DON!! than you, add 1 DON!! and rest it.
   {
     cardNumber: 'ST10-012',
@@ -79,6 +104,12 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'untilStartOfNextTurn' }] } },
     ],
   },
+
+  // ST10-014 (character) Wire —
+  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
+  //   of the attack.)[Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, draw 1
+  //   card and trash 1 card from your hand.
+  // NOTE: not yet implemented (needs template).
 
   // ST10-015 (event) Gum-Gum Giant Sumo Slap — [Counter] Up to 1 of your Leader/Character +2000 during
   //   this battle, and K.O. up to 1 opponent Character with 2000 power or less.

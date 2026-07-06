@@ -28,6 +28,9 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST01-004 - [DON!! x2] This Character gains [Rush].
   { cardNumber: 'ST01-004', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
 
+  // ST01-005 - [DON!! x1] [When Attacking] Give another Leader/Character +1000 power.
+  { cardNumber: 'ST01-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { excludeSelf: true } }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
+
   { cardNumber: 'ST01-007', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
   // ST01-011 — [On Play] Give up to 2 rested DON!! cards to your Leader or 1 of your Characters.
@@ -35,9 +38,6 @@ export const ST01_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // ST01-012 - [DON!! x2] [When Attacking] opponent cannot activate [Blocker] during this battle. [Rush] is static card data.
   { cardNumber: 'ST01-012', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle' }] } },
-
-  // ST01-005 - [DON!! x1] [When Attacking] Give another Leader/Character +1000 power.
-  { cardNumber: 'ST01-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { excludeSelf: true } }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
 
   // ST01-013 — [DON!! x1] This Character gains +1000 power (static, while >=1 DON!! attached).
   // The DON!! gate belongs on the continuous power MODIFIER (re-evaluated on every power

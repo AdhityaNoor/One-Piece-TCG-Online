@@ -68,6 +68,13 @@ export const ST02_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
+  // ST02-008 Scratchmen Apoo — [DON!! x1] [When Attacking] Rest up to 1 of your opponent's DON!! cards.
+  {
+    cardNumber: 'ST02-008',
+    templateId: 'ability',
+    params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'restOpponentDon', maxTargets: 1 }] },
+  },
+
   // ST02-009 Trafalgar Law — [On Play] Set up to 1 of your {Supernovas}/{Heart Pirates}
   //   rested Characters with cost <=5 as active.
   {
@@ -76,6 +83,33 @@ export const ST02_ASSIGNMENTS: CardEffectAssignment[] = [
     params: {
       timing: 'onPlay',
       functions: [{ fn: 'setActiveControllerCharacter', filter: { rested: true, maxCost: 5, anyOfTypes: ['Supernovas', 'Heart Pirates'] } }],
+    },
+  },
+
+  // ST02-010 Basil Hawkins — [DON!! x1] [Once Per Turn] [Your Turn] If this Character battles
+  //   your opponent's Character, set this card as active.
+  {
+    cardNumber: 'ST02-010',
+    templateId: 'ability',
+    params: { timing: 'onBattle', oncePerTurn: true, condition: { donAttachedAtLeast: 1, turn: 'your' }, functions: [{ fn: 'setActiveSelf' }] },
+  },
+
+  // ST02-013 Eustass"Captain"Kid (character) — [Blocker] (card data) +
+  //   [DON!! x1] [End of Your Turn] Set this card as active.
+  {
+    cardNumber: 'ST02-013',
+    templateId: 'ability',
+    params: { timing: 'endOfTurn', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'setActiveSelf' }] },
+  },
+
+  // ST02-014 X.Drake — [DON!! x1] [Your Turn] If this Character is rested, your {Supernovas}
+  //   or {Navy} type Leaders and Characters gain +1000 power. (Dynamic anthem gated on source state.)
+  {
+    cardNumber: 'ST02-014',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{ fn: 'addPowerAuraControllerTypes', amount: 1000, duration: 'permanent', anyOfTypes: ['Supernovas', 'Navy'], sourceCondition: { rested: true, donAttachedAtLeast: 1, turn: 'your' } }],
     },
   },
 
@@ -105,39 +139,5 @@ export const ST02_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: {} }, optional: true, maxTargets: 1 }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { typeIncludes: 'Supernovas', maxCost: 2 } }] } },
     ],
-  },
-
-  // ST02-008 Scratchmen Apoo — [DON!! x1] [When Attacking] Rest up to 1 of your opponent's DON!! cards.
-  {
-    cardNumber: 'ST02-008',
-    templateId: 'ability',
-    params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'restOpponentDon', maxTargets: 1 }] },
-  },
-
-  // ST02-010 Basil Hawkins — [DON!! x1] [Once Per Turn] [Your Turn] If this Character battles
-  //   your opponent's Character, set this card as active.
-  {
-    cardNumber: 'ST02-010',
-    templateId: 'ability',
-    params: { timing: 'onBattle', oncePerTurn: true, condition: { donAttachedAtLeast: 1, turn: 'your' }, functions: [{ fn: 'setActiveSelf' }] },
-  },
-
-  // ST02-013 Eustass"Captain"Kid (character) — [Blocker] (card data) +
-  //   [DON!! x1] [End of Your Turn] Set this card as active.
-  {
-    cardNumber: 'ST02-013',
-    templateId: 'ability',
-    params: { timing: 'endOfTurn', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'setActiveSelf' }] },
-  },
-
-  // ST02-014 X.Drake — [DON!! x1] [Your Turn] If this Character is rested, your {Supernovas}
-  //   or {Navy} type Leaders and Characters gain +1000 power. (Dynamic anthem gated on source state.)
-  {
-    cardNumber: 'ST02-014',
-    templateId: 'ability',
-    params: {
-      timing: 'onEnterPlay',
-      functions: [{ fn: 'addPowerAuraControllerTypes', amount: 1000, duration: 'permanent', anyOfTypes: ['Supernovas', 'Navy'], sourceCondition: { rested: true, donAttachedAtLeast: 1, turn: 'your' } }],
-    },
   },
 ];

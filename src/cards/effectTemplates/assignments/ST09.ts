@@ -63,15 +63,20 @@ export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
     params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'playFromHand', filter: { color: 'yellow', typeIncludes: 'Land of Wano', maxCost: 4 }, ifPrevious: 'previousMovedAny' }] },
   },
 
+  // ST09-009 Fugetsu Omusubi — [Trigger] K.O. up to 1 opponent Character cost <=1 (add-to-hand clause omitted).
+  { cardNumber: 'ST09-009', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
+
+  // ST09-010 (character) Portgas.D.Ace —
+  //   [Once Per Turn] If this Character would be K.O.'d, you may trash 1 card from the top or bottom of
+  //   your Life cards instead.
+  // NOTE: not yet implemented (needs template).
+
   // ST09-012 Yamato — [When Attacking] You may add 1 top/bottom Life to hand: +2000 until the start of your next turn.
   {
     cardNumber: 'ST09-012',
     templateId: 'ability',
     params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn', ifPrevious: 'previousMovedAny' }] },
   },
-
-  // ST09-009 Fugetsu Omusubi — [Trigger] K.O. up to 1 opponent Character cost <=1 (add-to-hand clause omitted).
-  { cardNumber: 'ST09-009', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
 
   // ST09-014 (event) Narikabura Arrow — [Counter] If you have 2 or less Life, give up to 1 opponent
   //   Leader/Character −3000 power this turn. [Trigger] You may trash 2: add top of deck to top of Life.
@@ -82,4 +87,10 @@ export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 2 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, ifPrevious: 'previousMovedAny' }] } },
     ],
   },
+
+  // ST09-015 (event) Thunder Bagua —
+  //   [Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, if
+  //   you have 2 or less Life cards, add up to 1 of your opponent's Characters with a cost of 3 or less to
+  //   the top or bottom of the owner's Life cards face-up. [Trigger] Draw 1 card.
+  // NOTE: not yet implemented (needs template).
 ];
