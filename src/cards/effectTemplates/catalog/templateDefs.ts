@@ -127,6 +127,8 @@ export type AbilityFunction =
   | { fn: 'addPowerControllerCharactersAll'; amount: number; duration: IrDuration; filter?: { typeIncludes?: string; maxCost?: number } }
   // Dynamic aura over ALL the controller's Characters (chars only), optionally type-filtered + gated on source state ([DON!! xN]/[Your/Opponent's Turn]).
   | { fn: 'addPowerAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; sourceCondition?: SourceStateCondition }
+  // Dynamic aura over ALL the opponent's Characters ("give all of your opponent's Characters -N power").
+  | { fn: 'addPowerAuraOpponentCharacters'; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition }
   // "This card cannot be K.O.'d" — scope 'battle' (battle K.O. only) or 'any'.
   // `attackerCategory` optionally limits a battle immunity to a given attacker ("by Leaders").
   | { fn: 'koImmunitySelf'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character' }
@@ -134,7 +136,7 @@ export type AbilityFunction =
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
   | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
   // Trash exactly `count` cards of a given type from your hand (used to pay a typed hand cost).
-  | { fn: 'trashTypeFromHand'; count: number; filter: { typeIncludes?: string; hasTrigger?: boolean }; optional?: boolean }
+  | { fn: 'trashTypeFromHand'; count: number; filter: SearchFilter; optional?: boolean }
   // K.O. ALL Characters (both players) matching a cost/power filter, no target choice
   // ("K.O. all Characters with a cost of 1 or less").
   | { fn: 'koAllCharacters'; filter?: { maxCost?: number; maxPower?: number } }

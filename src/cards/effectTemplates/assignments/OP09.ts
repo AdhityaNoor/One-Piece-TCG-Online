@@ -22,6 +22,9 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-003 — [When Attacking] Give up to 1 of your opponent's Characters −2000 power.
   { cardNumber: 'OP09-003', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
+  // OP09-004 — Give all of your opponent's Characters −1000 power. [Rush]
+  { cardNumber: 'OP09-004', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraOpponentCharacters', amount: -1000, duration: 'permanent' }] } },
+
   // OP09-004 (character) Shanks —
   //   Give all of your opponent's Characters −1000 power.[Rush] (This card can attack on the turn in which
   //   it is played.)

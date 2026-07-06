@@ -19,6 +19,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // ST10-001 (leader) Law — [Activate: Main] [Once Per Turn] DON!! −3: Place up to 1 opponent
   //   Character with 3000 power or less at the bottom of the owner's deck, and play up to 1 Character (cost <=4) from hand.
   {
@@ -41,6 +42,9 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
     ],
   },
+
+  // ST10-004 — [On Play] If opponent has a Character with 5000+ power, this Character gains [Rush] this turn.
+  { cardNumber: 'ST10-004', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', ifGate: [{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 5000 }] }] } },
 
   // ST10-004 (character) Sanji —
   //   [On Play] If your opponent has a Character with 5000 or more power, this Character gains [Rush]
@@ -138,4 +142,5 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
     ],
   },
+
 ];

@@ -280,7 +280,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         {
           op: 'chooseTargets',
           var: 't',
-          from: { sel: 'controllerHand', filter: { ...(f.filter.typeIncludes ? { typeIncludes: f.filter.typeIncludes } : {}), ...(f.filter.hasTrigger !== undefined ? { hasTrigger: f.filter.hasTrigger } : {}) } },
+          from: { sel: 'controllerHand', filter: { ...f.filter } },
           min: f.optional ? 0 : f.count,
           max: f.count,
           prompt: `Trash ${f.count} ${f.filter.typeIncludes ? `{${f.filter.typeIncludes}} ` : ''}card${f.count === 1 ? '' : 's'} from your hand.`,
@@ -458,6 +458,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
         },
       ];
+    case 'addPowerAuraOpponentCharacters':
+      return [{ op: 'addPowerAura', group: { opponentCharacters: true }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}) }];
     case 'addPowerAuraControllerCharacters':
       return [{ op: 'addPowerAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}) }];
     case 'addPowerControllerCharactersAll':

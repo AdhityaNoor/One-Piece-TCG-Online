@@ -7,6 +7,9 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
 
+  // OP16-002 — [On Play] reveal 1 Character with 8000 power from hand: draw 1.
+  { cardNumber: 'OP16-002', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'draw', amount: 1 }] } },
+
   // OP16-001 (leader) Portgas.D.Ace —
   //   [Activate: Main] [Once Per Turn] Up to 1 of your [Monkey.D.Luffy] Characters or up to 1 of your
   //   Characters with a type including "Whitebeard Pirates", with 8000 power or more, gains [Rush] during
@@ -362,6 +365,9 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // OP16-083 — [Blocker] [On Play] trash 1 Character cost 8+ from hand: draw 2.
+  { cardNumber: 'OP16-083', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { category: 'character', minCost: 8 }, optional: true }, { fn: 'draw', amount: 2, ifPrevious: 'previousSelectedAny' }] } },
+
   // OP16-083 (character) Kouzuki Oden —
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
   //   of the attack.)[On Play] You may trash 1 Character card with a cost of 8 or more from your hand: Draw
@@ -391,6 +397,9 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Land of Wano' }], functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Land of Wano', excludeSelfName: true }, remainder: 'trash' }] },
   },
 
+  // OP16-092 — [On Play] trash 1 Character cost 8+ from hand: draw 2.
+  { cardNumber: 'OP16-092', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { category: 'character', minCost: 8 }, optional: true }, { fn: 'draw', amount: 2, ifPrevious: 'previousSelectedAny' }] } },
+
   // OP16-092 (character) Nico Robin —
   //   [On Play] You may trash 1 Character card with a cost of 8 or more from your hand: Draw 2 cards.
   // NOTE: not yet implemented (needs template).
@@ -404,6 +413,9 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
     ],
   },
+
+  // OP16-095 — [On Play] up to 1 black {Land of Wano} Character gains [Unblockable] this turn.
+  { cardNumber: 'OP16-095', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { color: 'black', typeIncludes: 'Land of Wano' } }, keyword: 'unblockable', duration: 'duringThisTurn', optional: true }] } },
 
   // OP16-095 (character) Monkey.D.Luffy —
   //   [On Play] Up to 1 of your black {Land of Wano} type Characters gains [Unblockable] during this

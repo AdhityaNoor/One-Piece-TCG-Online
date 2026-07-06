@@ -29,8 +29,13 @@ function typeIncludes(types: string[], required: string): boolean {
 function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
   const target = state.cardsById[instanceId];
   if (!target) return false;
-  if (target.controllerId !== record.ownerId) return false;
-  if (target.currentZone !== 'leaderArea' && target.currentZone !== 'characterArea') return false;
+  if (group.opponentCharacters) {
+    if (target.currentZone !== 'characterArea') return false;
+    if (target.controllerId === record.ownerId) return false;
+  } else {
+    if (target.controllerId !== record.ownerId) return false;
+    if (target.currentZone !== 'leaderArea' && target.currentZone !== 'characterArea') return false;
+  }
   if (group.charactersOnly && target.currentZone === 'leaderArea') return false;
   if (group.anyOfTypes !== undefined) {
     const def = getDefinition(defs, target);

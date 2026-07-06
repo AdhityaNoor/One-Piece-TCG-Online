@@ -75,6 +75,9 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   // P-078 — if 2+ rested {ODYSSEY} Characters, +1000
   { cardNumber: 'P-078', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'ODYSSEY', atLeast: 2, rested: true }] } }] } },
 
+  // P-079 — [Blocker] [End of Your Turn] If 2+ rested {ODYSSEY} Characters, set this Character as active.
+  { cardNumber: 'P-079', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'ODYSSEY', atLeast: 2, rested: true }], functions: [{ fn: 'setActiveSelf' }] } },
+
   // P-078 (character) Adio —
   //   If you have 2 or more rested {ODYSSEY} type Characters, this Character gains +1000 power.
   // NOTE: not yet implemented (needs template).

@@ -105,11 +105,13 @@ export interface ContinuousPowerCondition {
  */
 export interface PowerAuraGroup {
   /** The modifier owner's own Leader + Characters. */
-  ownLeaderAndCharacters: true;
+  ownLeaderAndCharacters?: true;
   /** Restrict to cards carrying any of these tribal types (OR). Omitted = all. */
   anyOfTypes?: string[];
   /** Exclude the Leader (chars only) — for "all of your Characters" auras. */
   charactersOnly?: boolean;
+  /** Target the OPPONENT's Characters instead of the controller's — for "give all of your opponent's Characters -N". */
+  opponentCharacters?: boolean;
 }
 
 /**

@@ -193,13 +193,15 @@ export type AbilityGate =
   | { kind: 'selfDonAtMostOpponent' } // "If the number of DON!! on your field is equal to or less than your opponent's"
   | { kind: 'selfControlsNamed'; name: string } // "If you have [X]" — you control a Character named X
   | { kind: 'selfDoesNotControlNamed'; name: string } // "If you don't have [X]"
-  | { kind: 'selfHandMatching'; atLeast: number; typeIncludes?: string; category?: Exclude<CardCategory, 'don'> } // "reveal N {type}/Event cards from your hand" (reveal is costless -> a hand-composition gate)
+  | { kind: 'selfHandMatching'; atLeast: number; typeIncludes?: string; category?: Exclude<CardCategory, 'don'>; exactPower?: number; minPower?: number } // "reveal N {type}/Event/power cards from your hand"
   | { kind: 'opponentHand'; atLeast?: number; atMost?: number } // "If your opponent has N or more/less cards in their hand"
   | { kind: 'selfTrashCount'; atLeast?: number; atMost?: number } // "N or more/less cards in your trash"
   | { kind: 'selfDeckCount'; atLeast?: number; atMost?: number } // "N or less cards in your deck"
   | { kind: 'selfTypedCharacterCount'; typeIncludes: string; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {type} Characters"
   | { kind: 'selfTrashMatching'; atLeast?: number; atMost?: number; category?: Exclude<CardCategory, 'don'>; typeIncludes?: string } // "N or more Events/{type} cards in your trash"
   | { kind: 'opponentRestedCharacterCount'; atLeast?: number; atMost?: number } // "opponent has N or more rested Characters"
+  | { kind: 'selfGivenDonCount'; atLeast?: number; atMost?: number } // "you have N or more given DON!!" (DON attached to your Leader/Characters)
+  | { kind: 'opponentGivenDonCount'; atLeast?: number; atMost?: number } // "opponent has N or more given DON!!"
   | { kind: 'opponentHasCharacterBasePowerAtLeast'; power: number } // "opponent has a Leader or Character with base power N or more"
   | { kind: 'anyCharacterCostAtLeast'; atLeast: number } // "if there is a Character with a cost of N or more"
   | { kind: 'opponentHasCharacterExactCost'; exactCost: number } // "if your opponent has a Character with a cost of N"

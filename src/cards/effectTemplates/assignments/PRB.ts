@@ -6,6 +6,10 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
+
+  // PRB02-003 — [Blocker] [On Play] trash 1 Character with 6000+ power from hand: draw 2.
+  { cardNumber: 'PRB02-003', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { category: 'character', minPower: 6000 }, optional: true }, { fn: 'draw', amount: 2, ifPrevious: 'previousSelectedAny' }] } },
+
   // PRB01-001 (leader) Sanji —
   //   [Activate: Main] [Once Per Turn] Up to 1 of your Characters without an [On Play] effect and with a
   //   cost of 8 or less gains [Rush] during this turn. (This card can attack on the turn in which it is
@@ -104,5 +108,7 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // --- codegen batch ---
   { cardNumber: 'PRB02-008', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 2 }] } },
+
   { cardNumber: 'PRB02-011', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderMulticolor' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+
 ];

@@ -9,6 +9,15 @@ export const ST28_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST28-001 — [On Play] If Leader {Land of Wano} and opp has 3+ Life, K.O. up to 1 opp Character base cost ≤5.
   { cardNumber: 'ST28-001', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Land of Wano' }, { kind: 'opponentLife', atLeast: 3 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 5 } }, optional: true }] } },
 
+  // ST28-002 — [DON!! x2] [Blocker]; [On Play] your Leader gains [Banish] this turn.
+  {
+    cardNumber: 'ST28-002',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'leader', player: 'controller' }, keyword: 'banish', duration: 'duringThisTurn' }] } },
+    ],
+  },
+
   // ST28-003 — [Trigger] If Leader {Land of Wano} and opponent has 3 or less Life, play this.
   { cardNumber: 'ST28-003', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Land of Wano' }, { kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 

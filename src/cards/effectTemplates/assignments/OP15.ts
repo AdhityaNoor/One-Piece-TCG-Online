@@ -7,6 +7,9 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
 
+  // OP15-005 — [When Attacking] If opponent has any given DON!!, this Character +2000 this turn.
+  { cardNumber: 'OP15-005', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'opponentGivenDonCount', atLeast: 1 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
+
   // OP15-006 — if 4+ Events in trash, +2000
   { cardNumber: 'OP15-006', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }] } },
 
@@ -169,6 +172,9 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-032 — [On Play] Rest up to 1 opp Character. PARTIAL: trash-self activate deferred.
   { cardNumber: 'OP15-032', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
 
+  // OP15-034 — [Your Turn] [On Play] up to 1 [Brook] +2000 this turn.
+  { cardNumber: 'OP15-034', templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Brook' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
+
   // OP15-033 (character) Hody Jones —
   //   [On Play] Set your {Fish-Man} type Leader as active. Then, add 1 card from the top of your Life cards
   //   to your hand.
@@ -240,6 +246,9 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP15-045 — [Blocker][On Play] trash 1 → Draw 2 (Event-category filter approximated as any card).
   { cardNumber: 'OP15-045', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'draw', amount: 2, ifPrevious: 'previousMovedAny' }] } },
+
+  // OP15-047 — [Blocker] [On Play] up to 1 of your Characters gains [Unblockable] this turn.
+  { cardNumber: 'OP15-047', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller' }, keyword: 'unblockable', duration: 'duringThisTurn', optional: true }] } },
 
   // OP15-050 — if you have [Kelly Funk], +3000
   { cardNumber: 'OP15-050', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Kelly Funk' }] } }] } },
@@ -569,6 +578,9 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP15-110 — [On K.O.] If Leader {Shandian Warrior}, add up to 1 top of deck to top of Life.
   { cardNumber: 'OP15-110', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Shandian Warrior' }], functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
+
+  // OP15-111 — [DON!! x1] [When Attacking] up to 1 [Kalgara] gains [Rush] this turn.
+  { cardNumber: 'OP15-111', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { name: 'Kalgara' } }, keyword: 'rush', duration: 'duringThisTurn', optional: true }] } },
 
   // OP15-110 (character) Braham —
   //   [On K.O.] If your Leader has the {Shandian Warrior} type, add up to 1 card from the top of your deck

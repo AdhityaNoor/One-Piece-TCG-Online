@@ -4,6 +4,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST30_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // ST30-001 (leader) Luffy & Ace —
   //   If you have a Character with 7000 base power or more, give this Leader −2000 power.[Opponent's Turn]
   //   All of your [Portgas.D.Ace] and [Monkey.D.Luffy] cards gain +3000 power.
@@ -14,6 +15,12 @@ export const ST30_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'ST30-002',
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', exactPower: 6000 } }] },
   },
+
+  // ST30-004 — [On Play] reveal 2 Characters with 6000 power from hand: draw 3 and trash 2.
+  { cardNumber: 'ST30-004', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 6000, atLeast: 2 }], functions: [{ fn: 'drawAndTrash', drawCount: 3, trashCount: 2 }] } },
+
+  // ST30-006 — [On Play] trash 1 Character with 6000 power from hand: draw 2.
+  { cardNumber: 'ST30-006', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { category: 'character', exactPower: 6000 }, optional: true }, { fn: 'draw', amount: 2, ifPrevious: 'previousSelectedAny' }] } },
 
   // ST30-003 (character) Edward.Newgate —
   //   [Your Turn] All of your Characters with 6000 base power gain +1000 power.
@@ -37,6 +44,9 @@ export const ST30_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
     ],
   },
+
+  // --- codegen batch ---
+  { cardNumber: 'ST30-010', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 }] } },
 
   // ST30-008 (character) Marco —
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
@@ -84,6 +94,4 @@ export const ST30_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // --- codegen batch ---
-  { cardNumber: 'ST30-010', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 }] } },
 ];

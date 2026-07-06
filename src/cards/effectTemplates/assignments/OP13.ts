@@ -273,6 +273,9 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-062 — [When Attacking] Return up to 1 opp Character base power ≤3000 to hand. PARTIAL: any-DON-given [On Play] ramp deferred.
   { cardNumber: 'OP13-062', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxBasePower: 3000 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
+  // OP13-063 — [Blocker] [On Play] If you have any given DON!!, add up to 1 DON!! from deck rested.
+  { cardNumber: 'OP13-063', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfGivenDonCount', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+
   // OP13-063 (character) Kouzuki Oden —
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
   //   of the attack.)[On Play] If you have any DON!! cards given, add up to 1 DON!! card from your DON!!
@@ -311,6 +314,9 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP13-069', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'stage', maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
   { cardNumber: 'OP13-071', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 3000 } }, optional: true }] } },
+
+  // OP13-072 — [On Play] If Leader {Roger Pirates} and you have any given DON!!, add up to 1 DON!! from deck rested.
+  { cardNumber: 'OP13-072', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Roger Pirates' }, { kind: 'selfGivenDonCount', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
   // OP13-072 (character) Buggy —
   //   [On Play] If your Leader's type includes "Roger Pirates" and you have any DON!! cards given, add up
@@ -453,6 +459,9 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP13-110 — [Blocker] [On Play] If Leader {Egghead}, play up to 1 Character cost<=5 with a [Trigger] from hand.
   { cardNumber: 'OP13-110', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Egghead' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 5, hasTrigger: true } }] } },
+
+  // OP13-112 — If you have 2 or more given DON!!, this Character gains [Blocker].
+  { cardNumber: 'OP13-112', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfGivenDonCount', atLeast: 2 }] } }] } },
 
   // OP13-112 (character) Vegapunk —
   //   If you have a total of 2 or more given DON!! cards, this Character gains [Blocker].(After your

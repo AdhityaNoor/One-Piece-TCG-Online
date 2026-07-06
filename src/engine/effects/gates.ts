@@ -188,6 +188,8 @@ function evaluateGate(
         if (!def) return false;
         if (gate.typeIncludes !== undefined && !typeMatches(def.types, gate.typeIncludes)) return false;
         if (gate.category !== undefined && def.category !== gate.category) return false;
+        if (gate.exactPower !== undefined && (def.basePower ?? -1) !== gate.exactPower) return false;
+        if (gate.minPower !== undefined && (def.basePower ?? -1) < gate.minPower) return false;
         return true;
       }).length;
       return n >= gate.atLeast;
@@ -256,6 +258,23 @@ function evaluateGate(
       const c = opp.characterArea.cardIds.filter((id) => state.cardsById[id]?.orientation === 'rested').length;
       if (gate.atLeast !== undefined && c < gate.atLeast) return false;
       if (gate.atMost !== undefined && c > gate.atMost) return false;
+      return true;
+    }
+
+    case 'selfGivenDonCount': {
+      let n = 0;
+      for (const inst of Object.values(state.cardsById)) if (inst.controllerId === ownerId) n += inst.donAttached.length;
+      if (gate.atLeast !== undefined && n < gate.atLeast) return false;
+      if (gate.atMost !== undefined && n > gate.atMost) return false;
+      return true;
+    }
+
+    case 'opponentGivenDonCount': {
+      const opponentId = getOpponentId(state, ownerId);
+      let n = 0;
+      for (const inst of Object.values(state.cardsById)) if (inst.controllerId === opponentId) n += inst.donAttached.length;
+      if (gate.atLeast !== undefined && n < gate.atLeast) return false;
+      if (gate.atMost !== undefined && n > gate.atMost) return false;
       return true;
     }
 
