@@ -13,4 +13,8 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   // --- codegen batch ---
   { cardNumber: 'PRB02-008', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 2 }] } },
 
+
+  // --- codegen batch ---
+  { cardNumber: 'PRB02-011', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderMulticolor' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+
 ];

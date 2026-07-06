@@ -254,4 +254,9 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+
+  // --- codegen batch ---
+  { cardNumber: 'OP04-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRefresh', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 3 }] } },
+  { cardNumber: 'OP04-061', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Water Seven' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+
 ];

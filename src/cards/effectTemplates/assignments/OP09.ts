@@ -313,4 +313,9 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+
+  // --- codegen batch ---
+  { cardNumber: 'OP09-031', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'setActiveSelf' }] } },
+  { cardNumber: 'OP09-109', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Nico Robin' }], functions: [{ fn: 'triggerPlaySelf' }] } },
+
 ];

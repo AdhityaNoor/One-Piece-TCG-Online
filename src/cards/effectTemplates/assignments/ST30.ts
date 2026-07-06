@@ -39,4 +39,8 @@ export const ST30_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'ST30-002',
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', exactPower: 6000 } }] },
   },
+
+  // --- codegen batch ---
+  { cardNumber: 'ST30-010', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 }] } },
+
 ];

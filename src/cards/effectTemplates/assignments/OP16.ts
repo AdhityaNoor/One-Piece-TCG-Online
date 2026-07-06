@@ -220,4 +220,8 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+
+  // --- codegen batch ---
+  { cardNumber: 'OP16-111', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+
 ];
