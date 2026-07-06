@@ -6,6 +6,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // --- Batch: OP11 expressible with existing primitives ---
   // OP11-001 (leader) Koby —
   //   Your {SWORD} type Characters can attack Characters on the turn in which they are played.[Once Per
@@ -198,6 +199,9 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // OP11-042 — [On Play] you may trash 1 {Firetank Pirates} card from hand: this Character gains [Rush] this turn.
+  { cardNumber: 'OP11-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Firetank Pirates' }, optional: true }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' }] } },
+
   // OP11-040 (leader) Monkey.D.Luffy —
   //   This effect can be activated at the start of your turn. If you have 8 or more DON!! cards on your
   //   field, look at 5 cards from the top of your deck; reveal up to 1 {Straw Hat Crew} type card and add
@@ -266,6 +270,9 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP11-056 — [Blocker][On Play] Place up to 1 Character with a base cost of 1 at the bottom of the deck.
   { cardNumber: 'OP11-056', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { exactBaseCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
+
+  // OP11-057 — if 4 or less cards in hand, [Blocker]
+  { cardNumber: 'OP11-057', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfHand', atMost: 4 }] } }] } },
 
   // OP11-057 (character) Pedro —
   //   If you have 4 or less cards in your hand, this Character gains [Blocker].(After your opponent
@@ -461,6 +468,15 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // OP11-100 — [On Play] If Leader [Shirahoshi], turn 1 top Life face-down: draw 1.
+  { cardNumber: 'OP11-100', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Shirahoshi' }], functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'draw', amount: 1, ifPrevious: 'previousSelectedAny' }] } },
+
+  // OP11-103 — [Activate: Main] If Leader [Shirahoshi], rest this + turn 1 top Life face-down: K.O. up to 1 opp Character cost<=3.
+  { cardNumber: 'OP11-103', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderName', name: 'Shirahoshi' }], functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true, ifPrevious: 'previousSelectedAny' }] } },
+
+  // OP11-104 — [Blocker] [On Play] turn 1 top Life face-down: look 3, reveal up to 1 {Fish-Man Island}, add to hand, rest to bottom.
+  { cardNumber: 'OP11-104', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Fish-Man Island' }, remainder: 'bottom', ifPrevious: 'previousSelectedAny' }] } },
+
   // OP11-100 (character) Otohime —
   //   [On Play] If your Leader is [Shirahoshi], you may turn 1 card from the top of your Life cards
   //   face-down: Draw 1 card.
@@ -496,6 +512,9 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
 
+  // OP11-108 — [On Play] If Leader [Shirahoshi], turn 1 top Life face-down: draw 2 and trash 1.
+  { cardNumber: 'OP11-108', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Shirahoshi' }], functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'drawAndTrash', drawCount: 2, trashCount: 1, ifPrevious: 'previousSelectedAny' }] } },
+
   // OP11-107 (character) Topknot Neptunian —
   //   [Blocker][Activate: Main] [Once Per Turn] If your Leader is [Shirahoshi], you may turn 1 card from
   //   the top of your Life cards face-down: Set this Character as active at the end of this turn.
@@ -527,6 +546,15 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // OP11-116 — (Event) [Main] add up to 1 Character cost<=6 to top/bottom of owner's Life face-up. [Trigger] add up to 1 opp Character cost<=4 to top/bottom of owner's Life face-up.
+  {
+    cardNumber: 'OP11-116',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 6 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] } },
+    ],
+  },
+
   // OP11-116 (event) Merman Combat Ultramarine —
   //   [Main] Add up to 1 Character with a cost of 6 or less to the top or bottom of the owner's Life cards
   //   face-up. [Trigger] Add up to 1 of your opponent's Characters with a cost of 4 or less to the top or
@@ -546,9 +574,4 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // OP11-119 (character) Koby —
-  //   [On Play] Up to 1 of your Characters can also attack active Characters during this turn.[When
-  //   Attacking] You may place 2 cards from your trash at the bottom of your deck in any order: Up to 1 of
-  //   your Leader or Character cards gains +1000 power until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
 ];

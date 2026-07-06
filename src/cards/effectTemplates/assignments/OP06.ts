@@ -6,6 +6,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // --- Batch: OP06 cards expressible with existing primitives (no new capability) ---
   // --- Batch 2: further OP06 cards expressible with existing primitives ---
   // --- Batch 3: remaining OP06 cleanly-expressible cards (life-to-hand buffs, conditional immunity) ---
@@ -35,6 +36,12 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP06-007 — [On Play] K.O. up to 1 of your opponent's Characters with 10000 power or less.
   { cardNumber: 'OP06-007', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 10000 } }, optional: true }] } },
+
+  // OP06-010 — if Leader {FILM}, [Blocker]
+  { cardNumber: 'OP06-010', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'FILM' }] } }] } },
+
+  // OP06-012 — if opponent has a Leader/Character with 6000+ base power, cannot be K.O.'d in battle
+  { cardNumber: 'OP06-012', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { gate: [{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 6000 }] } }] } },
 
   // OP06-009 (character) Shuraiya —
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
@@ -275,6 +282,12 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-053 — [On K.O.] Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.
   { cardNumber: 'OP06-053', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
+  // OP06-054 — if 5 or less cards in hand, [Blocker]
+  { cardNumber: 'OP06-054', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfHand', atMost: 5 }] } }] } },
+
+  // OP06-055 — [DON!! x2] [When Attacking] If 4 or less cards in hand, opponent cannot activate [Blocker] this battle.
+  { cardNumber: 'OP06-055', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, gate: [{ kind: 'selfHand', atMost: 4 }], functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle' }] } },
+
   // OP06-054 (character) Borsalino —
   //   If you have 5 or less cards in your hand, this Character gains [Blocker].(After your opponent
   //   declares an attack, you may rest this card to make it the new target of the attack.)
@@ -460,6 +473,9 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP06-084 — [On K.O.] Up to 1 of your Leader or Character cards gains +1000 power during this turn.
   { cardNumber: 'OP06-084', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
+
+  // OP06-085 — [DON!! x2] [Your Turn] +1000 power for every 5 cards in your trash.
+  { cardNumber: 'OP06-085', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelfScaling', per: 'controllerTrash', step: 5, amountPer: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 2, turn: 'your' } }] } },
 
   // OP06-085 (character) Kumacy —
   //   [DON!! x2] [Your Turn] This Character gains +1000 power for every 5 cards in your trash.
@@ -658,8 +674,4 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-119 (character) Sanji —
-  //   [On Play] Reveal 1 card from the top of your deck and play up to 1 Character with a cost of 9 or less
-  //   other than [Sanji]. Then, place the rest at the bottom of your deck.
-  // NOTE: not yet implemented (needs template).
 ];

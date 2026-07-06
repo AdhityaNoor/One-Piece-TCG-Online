@@ -5,6 +5,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // ST29-001 (leader) — [When Attacking] If ≤2 Life, draw 1, trash 1.
   { cardNumber: 'ST29-001', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
 
@@ -25,8 +26,13 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // --- codegen batch ---
+  { cardNumber: 'ST29-005', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Monkey.D.Luffy' }], functions: [{ fn: 'triggerPlaySelf' }] } },
+
   // ST29-007 — [On K.O.] add 1 top/bottom Life to hand → add 1 from hand to top of Life. PARTIAL: name-target [Trigger] buff deferred.
   { cardNumber: 'ST29-007', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+
+  { cardNumber: 'ST29-009', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Monkey.D.Luffy' }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
   // ST29-008 (character) Nami —
   //   If your {Egghead} type Character would be K.O.'d by your opponent's effect, you may turn 1 card from
@@ -42,6 +48,13 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
     ],
   },
+
+  // ST29-014 — [Activate: Main] [Once Per Turn] trash 1 [Trigger] card from hand: draw 1 and give up to 1 rested DON!! to your Leader or 1 Character.
+  { cardNumber: 'ST29-014', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
+    { fn: 'draw', amount: 1, ifPrevious: 'previousSelectedAny' },
+    { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // ST29-013 (character) Rob Lucci —
   //   [Trigger] K.O. up to 1 of your opponent's Characters with a cost equal to or less than the total of
@@ -75,7 +88,4 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // --- codegen batch ---
-  { cardNumber: 'ST29-005', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Monkey.D.Luffy' }], functions: [{ fn: 'triggerPlaySelf' }] } },
-  { cardNumber: 'ST29-009', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Monkey.D.Luffy' }], functions: [{ fn: 'triggerPlaySelf' }] } },
 ];

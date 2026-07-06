@@ -6,6 +6,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // OP16-001 (leader) Portgas.D.Ace —
   //   [Activate: Main] [Once Per Turn] Up to 1 of your [Monkey.D.Luffy] Characters or up to 1 of your
   //   Characters with a type including "Whitebeard Pirates", with 8000 power or more, gains [Rush] during
@@ -164,6 +165,9 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP16-040', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
 
+  // OP16-043 — [Blocker] [On K.O.] rest 1 {Dressrosa} Leader/Stage: return up to 1 opp Character cost<=5 to hand.
+  { cardNumber: 'OP16-043', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'restControllerLeaderOrStage', typeIncludes: 'Dressrosa' }, { fn: 'moveCards', ifPrevious: 'previousSelectedAny', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+
   // OP16-041 (leader) Buggy —
   //   [DON!! x1] [Once Per Turn] This effect can be activated when your {Impel Down} type Character card is
   //   removed from the field. Play up to 1 [Prisoner of Impel Down] card from your hand.
@@ -268,6 +272,22 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     templates: [
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
       { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'leaderType', type: 'Donquixote Pirates' }], functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'duringThisTurn' }] } },
+    ],
+  },
+
+  // OP16-119 (character) Marshall.D.Teach —
+  //   [On Play] Look at 3 cards from the top of your deck; add up to 1 card to the top of your Life cards.
+  //   Then, place the rest at the bottom of your deck in any order. [Trigger] Negate the effect of up to 1
+  //   of your opponent's Characters during this turn. Then, K.O. up to 1 of your opponent's Characters with
+  //   a cost of 5 or less.
+  // NOTE: not yet implemented (needs template).
+
+  // --- codegen batch ---
+  {
+    cardNumber: 'OP16-069',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
     ],
   },
 
@@ -467,6 +487,8 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  { cardNumber: 'OP16-111', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+
   // OP16-113 — [Trigger] If Leader {Kuja Pirates}, play this. PARTIAL: conditional [Blocker] deferred.
   { cardNumber: 'OP16-113', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
@@ -508,20 +530,4 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-119 (character) Marshall.D.Teach —
-  //   [On Play] Look at 3 cards from the top of your deck; add up to 1 card to the top of your Life cards.
-  //   Then, place the rest at the bottom of your deck in any order. [Trigger] Negate the effect of up to 1
-  //   of your opponent's Characters during this turn. Then, K.O. up to 1 of your opponent's Characters with
-  //   a cost of 5 or less.
-  // NOTE: not yet implemented (needs template).
-
-  // --- codegen batch ---
-  {
-    cardNumber: 'OP16-069',
-    templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
-      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
-    ],
-  },
-  { cardNumber: 'OP16-111', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 ];

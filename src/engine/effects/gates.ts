@@ -173,12 +173,94 @@ function evaluateGate(
     }
 
     case 'selfControlsNamed': {
-      return player.characterArea.cardIds.some((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name);
+      const ids = [...player.characterArea.cardIds, ...player.stageArea.cardIds, player.leaderInstanceId];
+      return ids.some((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name);
     }
 
     case 'selfDoesNotControlNamed': {
-      return !player.characterArea.cardIds.some((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name);
+      const ids = [...player.characterArea.cardIds, ...player.stageArea.cardIds, player.leaderInstanceId];
+      return !ids.some((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name);
     }
+
+    case 'selfHandMatching': {
+      const n = player.hand.cardIds.filter((id) => {
+        const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
+        if (!def) return false;
+        if (gate.typeIncludes !== undefined && !typeMatches(def.types, gate.typeIncludes)) return false;
+        if (gate.category !== undefined && def.category !== gate.category) return false;
+        return true;
+      }).length;
+      return n >= gate.atLeast;
+    }
+
+    case 'selfTrashCount': {
+      const c = player.trash.cardIds.length;
+      if (gate.atLeast !== undefined && c < gate.atLeast) return false;
+      if (gate.atMost !== undefined && c > gate.atMost) return false;
+      return true;
+    }
+
+    case 'selfDeckCount': {
+      const c = player.deck.cardIds.length;
+      if (gate.atLeast !== undefined && c < gate.atLeast) return false;
+      if (gate.atMost !== undefined && c > gate.atMost) return false;
+      return true;
+    }
+
+    case 'selfTypedCharacterCount': {
+      const c = player.characterArea.cardIds.filter((id) => {
+        if (gate.rested !== undefined && (state.cardsById[id]?.orientation === 'rested') !== gate.rested) return false;
+        return typeMatches(defs[state.cardsById[id]?.cardDefinitionId ?? '']?.types ?? [], gate.typeIncludes);
+      }).length;
+      if (gate.atLeast !== undefined && c < gate.atLeast) return false;
+      if (gate.atMost !== undefined && c > gate.atMost) return false;
+      return true;
+    }
+
+    case 'opponentHasCharacterBasePowerAtLeast': {
+      const opponentId = getOpponentId(state, ownerId);
+      const opp = state.players[opponentId];
+      if (!opp) return false;
+      const ids = [opp.leaderInstanceId, ...opp.characterArea.cardIds];
+      return ids.some((id) => (defs[state.cardsById[id]?.cardDefinitionId ?? '']?.basePower ?? -1) >= gate.power);
+    }
+
+    case 'anyCharacterCostAtLeast': {
+      const opponentId = getOpponentId(state, ownerId);
+      const ids = [...player.characterArea.cardIds, ...state.players[opponentId].characterArea.cardIds];
+      return ids.some((id) => currentCostForGate(state, defs, id) >= gate.atLeast);
+    }
+
+    case 'opponentHasCharacterExactCost': {
+      const opponentId = getOpponentId(state, ownerId);
+      return state.players[opponentId].characterArea.cardIds.some((id) => currentCostForGate(state, defs, id) === gate.exactCost);
+    }
+
+    case 'selfTrashMatching': {
+      const c = player.trash.cardIds.filter((id) => {
+        const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
+        if (!def) return false;
+        if (gate.category !== undefined && def.category !== gate.category) return false;
+        if (gate.typeIncludes !== undefined && !typeMatches(def.types, gate.typeIncludes)) return false;
+        return true;
+      }).length;
+      if (gate.atLeast !== undefined && c < gate.atLeast) return false;
+      if (gate.atMost !== undefined && c > gate.atMost) return false;
+      return true;
+    }
+
+    case 'opponentRestedCharacterCount': {
+      const opponentId = getOpponentId(state, ownerId);
+      const opp = state.players[opponentId];
+      if (!opp) return false;
+      const c = opp.characterArea.cardIds.filter((id) => state.cardsById[id]?.orientation === 'rested').length;
+      if (gate.atLeast !== undefined && c < gate.atLeast) return false;
+      if (gate.atMost !== undefined && c > gate.atMost) return false;
+      return true;
+    }
+
+    case 'anyOf':
+      return gate.gates.some((g) => evaluateGate(g, state, defs, ownerId));
 
     case 'opponentHand': {
       const opponentId = getOpponentId(state, ownerId);

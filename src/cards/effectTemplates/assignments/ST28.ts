@@ -5,8 +5,12 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST28_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // ST28-001 — [On Play] If Leader {Land of Wano} and opp has 3+ Life, K.O. up to 1 opp Character base cost ≤5.
   { cardNumber: 'ST28-001', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Land of Wano' }, { kind: 'opponentLife', atLeast: 3 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 5 } }, optional: true }] } },
+
+  // ST28-003 — [Trigger] If Leader {Land of Wano} and opponent has 3 or less Life, play this.
+  { cardNumber: 'ST28-003', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Land of Wano' }, { kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
   // ST28-002 (character) Izo —
   //   [DON!! x2] This Character gains [Blocker].[On Play] Your {Land of Wano} type Leader gains [Banish]
@@ -33,4 +37,5 @@ export const ST28_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Land of Wano', minCost: 2 }, remainder: 'bottom' }] } },
     ],
   },
+
 ];

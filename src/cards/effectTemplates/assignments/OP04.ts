@@ -6,24 +6,13 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
-  // OP04-001 (leader) Nefeltari Vivi —
-  //   This Leader cannot attack.[Activate: Main] [Once Per Turn] ➁ (You may rest the specified number of
-  //   DON!! cards in your cost area.): Draw 1 card and up to 1 of your Characters gains [Rush] during this
-  //   turn.(This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
 
-  // OP04-002 (character) Igaram —
-  //   [Activate: Main] You may rest this Character and give your 1 active Leader −5000 power during this
-  //   turn: Look at 5 cards from the top of your deck; reveal up to 1 {Alabasta} type card and add it to
   //   your hand. Then, place the rest at the bottom of your deck in any order.
   // NOTE: not yet implemented (needs template).
 
   // OP04 coverage batch: base-power targeting, trigger-play, and simple activated draw.
   { cardNumber: 'OP04-003', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 5000 } }, optional: true }] } },
 
-  // OP04-004 (character) Karoo —
-  //   [Activate: Main] You may rest this Character: Give up to 1 rested DON!! card to each of your
-  //   {Alabasta} type Characters.
   // NOTE: not yet implemented (needs template).
 
   // OP04-005 (character) Kung Fu Jugon —
@@ -40,22 +29,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-008 Chaka — [DON!! x1][When Attacking] If Leader [Nefeltari Vivi]: −3000 to 1 opp, then K.O. one at 0 power or less.
   { cardNumber: 'OP04-008', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'leaderName', name: 'Nefeltari Vivi' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 0 } }, optional: true }] } },
 
-  // OP04-009 (character) Super Spot-Billed Duck Troops —
-  //   [When Attacking] You may give your 1 active Leader −5000 power during this turn: Return this
-  //   Character to the owner's hand at the end of this turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-010 Tony Tony.Chopper — [On Play] Play up to 1 {Animal} Character with base power 3000 or less from hand.
   { cardNumber: 'OP04-010', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { typeIncludes: 'Animal', maxPower: 3000 } }] } },
 
-  // OP04-011 (character) Nami —
-  //   [When Attacking] Reveal 1 card from the top of your deck. If the revealed card is a Character card
-  //   with 6000 power or more, this Character gains +3000 power during this turn. Then, place the revealed
-  //   card at the bottom of your deck.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-012 (character) Nefeltari Cobra —
-  //   [Your Turn] All of your {Alabasta} type Characters other than this Character gain +1000 power.
   // NOTE: not yet implemented (needs template).
 
   // OP04-013 Pell — [DON!! x1][When Attacking] K.O. up to 1 opp Character with 4000 power or less.
@@ -77,7 +52,6 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the "if your Leader is active, −1000 more" rider needs a leader-active gate (deferred).
   { cardNumber: 'OP04-017', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP04-018 Enchanting Vertigo Dance — [Main]/[Trigger] If Leader {Alabasta}: give up to 2 opp Characters −2000 this turn.
   {
     cardNumber: 'OP04-018',
     templates: [
@@ -104,18 +78,12 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] },
   },
 
-  // OP04-024 (character) Sugar —
-  //   [Opponent's Turn] [Once Per Turn] When your opponent plays a Character, if your Leader has the
-  //   {Donquixote Pirates} type, rest up to 1 of your opponent's Characters. Then, rest this Character.[On
   //   Play] Rest up to 1 of your opponent's Characters with a cost of 4 or less.
   // NOTE: not yet implemented (needs template).
 
   // OP04-025 — [On Your Opponent's Attack] rest 2 DON!!: rest up to 1 opp Character cost<=4.
   { cardNumber: 'OP04-025', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
-  // OP04-026 (character) Senor Pink —
-  //   [When Attacking] ➀ (You may rest the specified number of DON!! cards in your cost area.): If your
-  //   Leader has the {Donquixote Pirates} type, rest up to 1 of your opponent's Characters with a cost of 4
   //   or less. Then, set up to 1 of your DON!! cards as active at the end of this turn.
   // NOTE: not yet implemented (needs template).
 
@@ -135,8 +103,22 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   (The [On Your Opponent's Attack] rest clause needs an onOpponentAttack timing — deferred.)
   { cardNumber: 'OP04-030', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 5 } }, optional: true }] } },
 
-  // OP04-033 (character) Machvise —
-  //   [On Play] If your Leader has the {Donquixote Pirates} type, rest up to 1 of your opponent's
+  // OP04-118 (character) Nefeltari Vivi —
+  //   All of your red Characters with a cost of 3 or more other than this Character gain [Rush].(This card
+  //   can attack on the turn in which it is played.)
+  // NOTE: not yet implemented (needs template).
+
+  // OP04-119 (character) Donquixote Rosinante —
+  //   [Opponent's Turn] If this Character is rested, your active Characters with a base cost of 5 cannot be
+  //   K.O.'d by effects.[On Play] You may rest this Character: Play up to 1 green Character card with a
+  //   cost of 5 from your hand.
+  // NOTE: not yet implemented (needs template).
+
+  // --- codegen batch ---
+  { cardNumber: 'OP04-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRefresh', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 3 }] } },
+
+  { cardNumber: 'OP04-032', templateId: 'ability', params: { timing: 'endOfTurn', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
+
   //   Characters with a cost of 5 or less. Then, set up to 1 of your DON!! cards as active at the end of
   //   this turn.
   // NOTE: not yet implemented (needs template).
@@ -155,7 +137,6 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-036 Donquixote Family — [Counter]/[Trigger] Look at 5; reveal up to 1 {Donquixote Pirates} to hand, rest to bottom.
   {
     cardNumber: 'OP04-036',
     templates: [
@@ -164,7 +145,6 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-037 Flapping Thread — [Counter] If Leader {Donquixote Pirates}: +2000 this turn. [Trigger] K.O. 1 opp rested Char cost ≤4.
   {
     cardNumber: 'OP04-037',
     templates: [
@@ -183,21 +163,6 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-039 (leader) Rebecca —
-  //   This Leader cannot attack.[Activate: Main] [Once Per Turn] ➀ (You may rest the specified number of
-  //   DON!! cards in your cost area.): If you have 6 or less cards in your hand, look at 2 cards from the
-  //   top of your deck; reveal up to 1 {Dressrosa} type card and add it to your hand. Then, trash the rest.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-040 (leader) Queen —
-  //   [DON!! x1] [When Attacking] If you have a total of 4 or less cards in your Life area and hand, draw 1
-  //   card. If you have a Character with a cost of 8 or more, you may add up to 1 card from the top of your
-  //   deck to the top of your Life cards instead of drawing 1 card.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-041 (character) Apis —
-  //   [On Play] You may trash 2 cards from your hand: Look at 5 cards from the top of your deck; reveal up
-  //   to 1 {East Blue} type card and add it to your hand. Then, place the rest at the bottom of your deck
   //   in any order.
   // NOTE: not yet implemented (needs template).
 
@@ -217,8 +182,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-045 — [On Play] Draw 1 card.
   { cardNumber: 'OP04-045', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
 
-  // OP04-046 (character) Queen —
-  //   [On Play] If your Leader has the {Animal Kingdom Pirates} type, look at 7 cards from the top of your
+  { cardNumber: 'OP04-046', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }], functions: [{ fn: 'searchTopDeck', look: 7, pick: 2, reveal: true, destination: 'hand', filter: { anyOf: [{ name: 'Plague Rounds' }, { name: 'Ice Oni' }] }, remainder: 'bottom' }] } },
+
   //   deck; reveal a total of up to 2 [Plague Rounds] or [Ice Oni] cards and add them to your hand. Then,
   //   place the rest at the bottom of your deck in any order.
   // NOTE: not yet implemented (needs template).
@@ -235,6 +200,9 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP04-049 — [On K.O.] Draw 1 card.
   { cardNumber: 'OP04-049', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+
+  // OP04-050 — [Activate: Main] trash 1 from hand + rest this: draw 1.
+  { cardNumber: 'OP04-050', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'trashFromHand', count: 1 }, { fn: 'draw', amount: 1 }] } },
 
   // OP04-050 (character) Hanger —
   //   [Activate: Main] You may trash 1 card from your hand and rest this Character: Draw 1 card.
@@ -283,23 +251,32 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-058 (leader) Crocodile —
-  //   [Opponent's Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck by
-  //   your effect, add up to 1 DON!! card from your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-059 — [On Your Opponent's Attack] DON!! −1: If Leader {Water Seven}, this Character gains [Blocker] this turn.
   { cardNumber: 'OP04-059', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Water Seven' }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'duringThisTurn' }] } },
 
-  // OP04-060 (character) Crocodile —
-  //   [On Play] DON!! −2 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): If your Leader's type includes "Baroque Works", add up to 1 card from the top of your deck to
-  //   the top of your Life cards.[On Your Opponent's Attack] [Once Per Turn] DON!! −1: Draw 1 card and
-  //   trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP04-061', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Water Seven' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
-  // OP04-063 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: If Leader {Water Seven}, up to 1 Leader/Character +1000 battle.
   { cardNumber: 'OP04-063', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Water Seven' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisBattle', optional: true }] } },
+
+  // OP04-064 — [On Play] add 1 DON!! rested; then if 6+ DON!! draw 1. [Trigger] DON!! −2: play this.
+  {
+    cardNumber: 'OP04-064',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }, { fn: 'draw', amount: 1, ifGate: [{ kind: 'selfDonFieldCount', atLeast: 6 }] }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
+
+  // OP04-066 — [On Play] look 5, reveal up to 1 "Baroque Works" type, add to hand, rest to bottom. [Trigger] DON!! −1: play this.
+  {
+    cardNumber: 'OP04-066',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Baroque Works' }, remainder: 'bottom' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
+
+  // OP04-067 — [Blocker] [Trigger] DON!! −1: play this.
+  { cardNumber: 'OP04-067', templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
   // OP04-064 (character) Ms. All Sunday —
   //   [On Play] Add up to 1 DON!! card from your DON!! deck and rest it. Then, if you have 6 or more DON!!
@@ -383,57 +360,17 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-079 (character) Orlumbus —
-  //   [Activate: Main] [Once Per Turn] Give up to 1 of your opponent's Characters −4 cost during this turn
-  //   and trash 2 cards from the top of your deck. Then, K.O. 1 of your {Dressrosa} type Characters.
-  // NOTE: not yet implemented (needs template).
+  // OP04-083 — [Blocker] [On Play] none of your Characters can be K.O.'d by effects until start of next turn; then draw 2 and trash 2.
+  { cardNumber: 'OP04-083', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'koImmunityControllerCharactersAll', scope: 'effect', duration: 'untilStartOfNextTurn' }, { fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
 
-  // OP04-080 (character) Gyats —
-  //   [On Play] Up to 1 of your {Dressrosa} type Characters can also attack active Characters during this
-  //   turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP04-085',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Dressrosa' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 1 }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'leaderType', type: 'Dressrosa' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 1 }] } },
+    ],
+  },
 
-  // OP04-081 (character) Cavendish —
-  //   [DON!! x1] This Character can also attack active Characters.[When Attacking] You may rest your
-  //   Leader: K.O. up to 1 of your opponent's Characters with a cost of 1 or less. Then, trash 2 cards from
-  //   the top of your deck.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-082 (character) Kyros —
-  //   If this Character would be K.O.'d, you may rest your Leader or 1 [Corrida Coliseum] instead.[On Play]
-  //   If your Leader is [Rebecca], K.O. up to 1 of your opponent's Characters with a cost of 1 or less.
-  //   Then, trash 1 card from the top of your deck.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-083 (character) Sabo —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On Play] None of your Characters can be K.O.'d by effects until the start of your
-  //   next turn. Then, draw 2 cards and trash 2 cards from your hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-084 (character) Stussy —
-  //   [On Play] Look at 3 cards from the top of your deck and play up to 1 Character card with a type
-  //   including "CP" other than [Stussy] and a cost of 2 or less. Then, trash the rest.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-086 (character) Chinjao —
-  //   [DON!! x1] When this Character battles and K.O.'s your opponent's Character, draw 2 cards and trash 2
-  //   cards from your hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-088 (character) Hajrudin —
-  //   [Activate: Main] You may rest your 1 Leader: Give up to 1 of your opponent's Characters −4 cost
-  //   during this turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-090 (character) Monkey.D.Luffy —
-  //   This Character can also attack active Characters.[Activate: Main] [Once Per Turn] You may return 7
-  //   cards from your trash to the bottom of your deck in any order: Set this Character as active. Then,
-  //   this Character will not become active in your next Refresh Phase.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-091 (character) Leo —
-  //   [On Play] You may rest your 1 Leader: If your Leader has the {Dressrosa} type, K.O. up to 1 of your
   //   opponent's Characters with a cost of 1 or less. Then, trash 2 cards from the top of your deck.
   // NOTE: not yet implemented (needs template).
 
@@ -443,7 +380,6 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Dressrosa', excludeSelfName: true }, remainder: 'trash' }] },
   },
 
-  // OP04-093 Gum-Gum King Kong Gun — [Main] up to 1 {Dressrosa} Character +6000 this turn. [Trigger] draw 3, trash 2.
   //   PARTIAL: the "if 15+ trash, that card gains [Double Attack]" rider needs a trash-count gate (deferred).
   {
     cardNumber: 'OP04-093',
@@ -457,22 +393,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the "if 15+ trash, cost ≤6 instead" upgrade (trash gate) and the [Trigger] "rest your Leader: K.O." (rest-leader cost) are deferred.
   { cardNumber: 'OP04-094', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
-  // OP04-095 (event) Barrier!! —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if
-  //   you have 15 or more cards in your trash, that card gains an additional +2000 power during this
-  //   battle. [Trigger] Draw 2 cards and trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-096 (stage) Corrida Coliseum —
-  //   If your Leader has the {Dressrosa} type, your {Dressrosa} type Characters can attack Characters on
-  //   the turn in which they are played.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-097 — [On Play] Add up to 1 opp {Animal}/{SMILE} Character cost<=3 to the top of opponent's Life face-up.
   { cardNumber: 'OP04-097', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { anyOfTypes: ['Animal', 'SMILE'], maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'top', faceUp: true }, optional: true }] } },
 
-  // OP04-098 (character) Toko —
-  //   [On Play] You may trash 2 {Land of Wano} type cards from your hand: If you have 1 or less Life cards,
   //   add 1 card from the top of your deck to the top of your Life cards.
   // NOTE: not yet implemented (needs template).
 
@@ -507,6 +429,9 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // OP04-104 — [Blocker] [Trigger] trash 1 from hand: play this.
+  { cardNumber: 'OP04-104', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
+
   // OP04-104 (character) Sanji —
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
   //   of the attack.) [Trigger] You may trash 1 card from your hand: Play this card.
@@ -518,26 +443,14 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // OP04-106 (character) Charlotte Bavarois —
-  //   [DON!! x1] If you have less Life cards than your opponent, this Character gains +1000 power.
-  //   [Trigger] You may trash 1 card from your hand: Play this card.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP04-109', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Land of Wano' } }, amount: 3000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP04-108 (character) Charlotte Moscato —
-  //   [DON!! x1] This Character gains [Banish].(When this card deals damage, the target card is trashed
-  //   without activating its Trigger.) [Trigger] You may trash 1 card from your hand: Play this card.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-109 (character) Tonoyasu —
-  //   [Activate: Main] You may trash this Character: Up to 1 of your {Land of Wano} type Leader or
   //   Character cards gains +3000 power during this turn.
   // NOTE: not yet implemented (needs template).
 
   // OP04-110 — [Blocker] [On K.O.] Add up to 1 opp Character cost<=3 to the top or bottom of opponent's Life face-up.
   { cardNumber: 'OP04-110', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] } },
 
-  // OP04-111 (character) Hera —
-  //   [Activate: Main] You may trash 1 of your {Homies} type Characters other than this Character and rest
   //   this Character: Set up to 1 of your [Charlotte Linlin] Characters as active. [Trigger] Play this
   //   card.
   // NOTE: not yet implemented (needs template).
@@ -550,7 +463,6 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP04-113', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP04-115 Gun Modoki — [Main] add 1 top/bottom Life to hand → up to 1 {Land of Wano} Character gains [Double Attack] this turn. [Trigger] Leader/Char +1000 this turn.
   {
     cardNumber: 'OP04-115',
     templates: [
@@ -581,26 +493,4 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-118 (character) Nefeltari Vivi —
-  //   All of your red Characters with a cost of 3 or more other than this Character gain [Rush].(This card
-  //   can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-119 (character) Donquixote Rosinante —
-  //   [Opponent's Turn] If this Character is rested, your active Characters with a base cost of 5 cannot be
-  //   K.O.'d by effects.[On Play] You may rest this Character: Play up to 1 green Character card with a
-  //   cost of 5 from your hand.
-  // NOTE: not yet implemented (needs template).
-
-  // --- codegen batch ---
-  { cardNumber: 'OP04-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRefresh', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 3 }] } },
-  { cardNumber: 'OP04-032', templateId: 'ability', params: { timing: 'endOfTurn', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
-  { cardNumber: 'OP04-061', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Water Seven' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
-  {
-    cardNumber: 'OP04-085',
-    templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Dressrosa' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 1 }] } },
-      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'leaderType', type: 'Dressrosa' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 1 }] } },
-    ],
-  },
 ];

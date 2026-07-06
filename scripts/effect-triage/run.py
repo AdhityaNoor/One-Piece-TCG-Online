@@ -34,7 +34,6 @@ DEFAULT_SETS = ("OP06", "OP07", "OP08", "OP09", "OP10", "OP11")
 # ---------------------------------------------------------------------------
 # Hard blockers: presence => needs real new engine capability (defer).
 DEFER = {
-    "opp-attack-timing": re.compile(r"\[On Your Opponent's Attack\]", re.I),
     "give-all-opp-aura": re.compile(r"[Gg]ive all of your opponent", re.I),
     "active-don-gate": re.compile(r"active DON!! cards", re.I),
     "trash-count-gate": re.compile(r"or more cards in your trash", re.I),
@@ -57,15 +56,12 @@ DEFER = {
 # Costs / clauses that currently have no modeled equivalent (=> needsPrimitive).
 NEEDS_PRIMITIVE = {
     "named-control-gate": re.compile(r"[Ii]f you have \[|[Ii]f you don't have \[", re.I),
-    "trigger-filter-play": re.compile(r"\[Trigger\] from your hand|card with a \[Trigger\]", re.I),
-    "top-or-bottom-life": re.compile(r"top or bottom of (your|the owner's|your opponent's) Life", re.I),
     "chooseone-targeting": re.compile(r"Choose one:", re.I),
     "place-self-bottom-cost": re.compile(r"place this (Character|card) at the bottom of the owner's deck:", re.I),
     "place-stage-cost": re.compile(r"place 1 Stage .* at the bottom of the owner's deck:", re.I),
     "rest-named-cost": re.compile(r"rest 1 of your \[[^\]]+\] cards?:", re.I),
     "ko-own-as-cost": re.compile(r"K\.O\. 1 of your .*Characters?:|trash 1 of your Characters with", re.I),
     "rest-all": re.compile(r"Rest all of your opponent's Characters", re.I),
-    "top-or-bottom-life": re.compile(r"to the top or bottom of the owner's Life", re.I),
     "play-from-hand-or-trash": re.compile(r"from your hand or trash", re.I),
     "look-and-play": re.compile(r"(Look at \d+ cards? from the top|Reveal 1 card from the top) of your deck and play", re.I),
     "mixed-char-or-don": re.compile(r"Characters? or DON!! cards?", re.I),

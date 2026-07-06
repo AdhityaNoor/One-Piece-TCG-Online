@@ -6,6 +6,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // --- Batch: OP09 expressible with existing primitives (+ selfRestedCharacterCount gate) ---
   // OP09-001 (leader) Shanks —
   //   [Once Per Turn] This effect can be activated when your opponent attacks. Give up to 1 of your
@@ -113,6 +114,9 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-024 — [On Play] If 2+ rested Characters, draw 2 & trash 2.
   { cardNumber: 'OP09-024', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
 
+  // OP09-025 — if Leader {ODYSSEY}, cannot be K.O.'d in battle by Leaders
+  { cardNumber: 'OP09-025', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', attackerCategory: 'leader', condition: { gate: [{ kind: 'leaderType', type: 'ODYSSEY' }] } }] } },
+
   // OP09-025 (character) Crocodile —
   //   If your Leader has the {ODYSSEY} type, this Character cannot be K.O.'d in battle by Leaders.
   // NOTE: not yet implemented (needs template).
@@ -131,6 +135,9 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP09-029 — [End of Your Turn] Set up to 1 of your {ODYSSEY} Characters with a cost of 4 or less as active.
   { cardNumber: 'OP09-029', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerCharacter', filter: { typeIncludes: 'ODYSSEY', maxCost: 4 } }] } },
+
+  // --- codegen batch ---
+  { cardNumber: 'OP09-031', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'setActiveSelf' }] } },
 
   // OP09-030 (character) Trafalgar Law —
   //   [On Play] You may return 1 of your Characters to the owner's hand: Play up to 1 {ODYSSEY} type
@@ -206,6 +213,9 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Land of Wano' }, { typeIncludes: 'Whitebeard Pirates' }] }, remainder: 'bottom' },
     { fn: 'trashFromHand', count: 1 },
   ] } },
+
+  // OP09-045 — if you have [Buggy] or [Mohji], cannot be K.O.'d in battle
+  { cardNumber: 'OP09-045', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { gate: [{ kind: 'anyOf', gates: [{ kind: 'selfControlsNamed', name: 'Buggy' }, { kind: 'selfControlsNamed', name: 'Mohji' }] }] } }] } },
 
   // OP09-045 (character) Cabaji —
   //   If you have a [Buggy] or [Mohji] Character, this Character cannot be K.O.'d in battle.
@@ -506,6 +516,8 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  { cardNumber: 'OP09-109', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Nico Robin' }], functions: [{ fn: 'triggerPlaySelf' }] } },
+
   // OP09-108 (character) Bartholomew Kuma —
   //   [Trigger] If your Leader has the {Revolutionary Army} type and you and your opponent have a total of
   //   5 or less Life cards, play this card.
@@ -519,6 +531,9 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
     ],
   },
+
+  // OP09-111 — [Trigger] If Leader {Egghead} and opponent has 6+ cards in hand, opponent trashes 2 from hand.
+  { cardNumber: 'OP09-111', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Egghead' }, { kind: 'opponentHand', atLeast: 6 }], functions: [{ fn: 'trashFromOpponentHandChosenByOpponent', count: 2 }] } },
 
   // OP09-111 (character) Brook —
   //   [Trigger] If your Leader has the {Egghead} type and your opponent has 6 or more cards in their hand,
@@ -562,7 +577,4 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-119 — [On Play] DON!! −1: Draw 1 and this Character gains [Rush] this turn.
   { cardNumber: 'OP09-119', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
-  // --- codegen batch ---
-  { cardNumber: 'OP09-031', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'setActiveSelf' }] } },
-  { cardNumber: 'OP09-109', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Nico Robin' }], functions: [{ fn: 'triggerPlaySelf' }] } },
 ];

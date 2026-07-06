@@ -4,6 +4,10 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const P_ASSIGNMENTS: CardEffectAssignment[] = [
+
+  // --- codegen batch ---
+  { cardNumber: 'P-014', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
+
   // ── Triage batch (P expressible). ──
   // P-029 — [End of Your Turn] rest this: set up to 1 {FILM} Character active (exclude-[Bartolomeo] dropped).
   { cardNumber: 'P-029', templateId: 'ability', params: { timing: 'endOfTurn', cost: [{ kind: 'restThis' }], functions: [{ fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { typeIncludes: 'FILM' } }] } },
@@ -46,6 +50,8 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   // P-063 — [On Play] Rest up to 1 of your opponent's Characters with a cost of 1 or less.
   { cardNumber: 'P-063', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
 
+  { cardNumber: 'P-068', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
+
   // P-069 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
   { cardNumber: 'P-069', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
@@ -65,6 +71,9 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }], functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
     ],
   },
+
+  // P-078 — if 2+ rested {ODYSSEY} Characters, +1000
+  { cardNumber: 'P-078', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'ODYSSEY', atLeast: 2, rested: true }] } }] } },
 
   // P-078 (character) Adio —
   //   If you have 2 or more rested {ODYSSEY} type Characters, this Character gains +1000 power.
@@ -111,7 +120,4 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   // P-105 — [On Play] add 1 top/bottom Life to hand → give up to 1 rested DON!! to Leader/1 Char. PARTIAL: static [Blocker]/+4 cost deferred.
   { cardNumber: 'P-105', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' }] } },
 
-  // --- codegen batch ---
-  { cardNumber: 'P-014', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
-  { cardNumber: 'P-068', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
 ];

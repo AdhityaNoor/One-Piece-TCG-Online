@@ -6,6 +6,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // --- Batch: OP08 cards expressible with existing primitives (+ new selfDonAtMostOpponent gate) ---
   // OP08-001 (leader) Tony Tony.Chopper —
   //   [Activate: Main] [Once Per Turn] Give up to 3 of your {Animal} or {Drum Kingdom} type Characters up
@@ -166,6 +167,18 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Minks', excludeSelfName: true } }] },
   },
 
+  // OP08-037 — (Event) [Main] rest 1 {Minks} Character: rest up to 1 opp Character. [Trigger] draw 1.
+  {
+    cardNumber: 'OP08-037',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'rest', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Minks' } }, optional: true },
+        { fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, ifPrevious: 'previousSelectedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
+
   // OP08-036 (event) Electrical Luna —
   //   [Main] All of your opponent's rested Characters with a cost of 7 or less will not become active in
   //   your opponent's next Refresh Phase. [Trigger] Rest up to 1 of your opponent's Characters.
@@ -205,6 +218,9 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP08-042 — [DON!! x1] [When Attacking] Return up to 1 Character with a cost of 3 or less to the owner's hand.
   { cardNumber: 'OP08-042', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+
+  // OP08-044 — [Activate: Main] [Once Per Turn] reveal 2 {Whitebeard Pirates} cards from hand: this Character +2000 this turn.
+  { cardNumber: 'OP08-044', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 2 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
 
   // OP08-043 (character) Edward.Newgate —
   //   [On Play] If your Leader's type includes "Whitebeard Pirates" and you have 2 or less Life cards,
@@ -261,6 +277,9 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // OP08-055 — (Event) [Main] reveal 2 {Whitebeard Pirates} cards from hand: place up to 1 Character cost<=6 at bottom of deck.
+  { cardNumber: 'OP08-055', templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 6 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
+
   // OP08-054 (event) You Can't Take Our King This Early in the Game. —
   //   [Counter] Up to 1 of your Leader or Character cards gains +3000 power during this battle. Then,
   //   reveal 1 card from the top of your deck and play up to 1 Character card with a type including
@@ -300,6 +319,9 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP08-061 — [When Attacking] DON!! −1: K.O. up to 1 opp Character with a cost of 3 or less.
   { cardNumber: 'OP08-061', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+
+  // OP08-063 — [On Play] turn 1 top Life face-down: add 1 DON!! from deck active.
+  { cardNumber: 'OP08-063', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'addDonFromDeck', count: 1, rested: false, ifPrevious: 'previousSelectedAny' }] } },
 
   // OP08-062 (character) Charlotte Katakuri —
   //   [Activate: Main] You may trash this Character: If your Leader has the {Big Mom Pirates} type, play up
@@ -389,6 +411,9 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Animal Kingdom Pirates', excludeSelfName: true } }] },
   },
 
+  // OP08-081 — [When Attacking] place 3 CP from trash at bottom: K.O. up to 1 opp Character cost 0.
+  { cardNumber: 'OP08-081', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'CP' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 3 }, { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 0 } }, optional: true }] } },
+
   // OP08-081 (character) Guernica —
   //   [When Attacking] You may place 3 cards with a type including "CP" from your trash at the bottom of
   //   your deck in any order: K.O. up to 1 of your opponent's Characters with a cost of 0.
@@ -414,6 +439,9 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP08-085 — [DON!! x1] [When Attacking] If you have a Character with cost 8+, K.O. up to 1 opp Character cost<=4.
   { cardNumber: 'OP08-085', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+
+  // OP08-086 — [On Play] If opponent has a cost-0 Character, draw 2 and trash 2.
+  { cardNumber: 'OP08-086', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
 
   // OP08-086 (character) Ginrummy —
   //   [On Play] If your opponent has a Character with a cost of 0, draw 2 cards and trash 2 cards from your
@@ -447,6 +475,19 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP08-092 — [On Play] Play up to 1 [Ulti] with a cost of 4 or less from your trash.
   { cardNumber: 'OP08-092', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromTrash', filter: { category: 'character', name: 'Ulti', maxCost: 4 } }] } },
+
+  // OP08-093 — [DON!! x1] This Character gains +2 cost (continuous).
+  { cardNumber: 'OP08-093', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCost', target: { ref: 'self' }, amount: 2, duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+
+  // OP08-094 — (Event) [Main]/[Counter] place 3 from trash at bottom: K.O. up to 1 opp Character cost<=2. [Trigger] Activate [Main].
+  {
+    cardNumber: 'OP08-094',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 3 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 3 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 3 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
   // OP08-093 (character) X.Drake —
   //   [DON!! x1] This Character gains +2 cost.
@@ -587,21 +628,4 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-116 — [Counter] up to 1 Leader/Char +4000 this battle, then add 1 top/bottom Life to hand → add 1 {Shandian Warrior} from hand to top of Life face-up.
   { cardNumber: 'OP08-116', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }, { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { typeIncludes: 'Shandian Warrior' } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 
-  // OP08-117 (event) Burn Blade —
-  //   [Main] You may trash 1 card from the top of your Life cards: K.O. up to 1 of your opponent's
-  //   Characters with a cost of 7 or less. [Trigger] You may add 1 card from the top of your Life cards to
-  //   your hand: Add up to 1 card from your hand to the top of your Life cards.
-  // NOTE: not yet implemented (needs template).
-
-  // OP08-118 (character) Silvers Rayleigh —
-  //   [On Play] Select up to 2 of your opponent's Characters, and give 1 Character −3000 power and the
-  //   other −2000 power until the end of your opponent's next turn. Then, K.O. up to 1 of your opponent's
-  //   Characters with 3000 power or less.
-  // NOTE: not yet implemented (needs template).
-
-  // OP08-119 (character) Kaido & Linlin —
-  //   [When Attacking] DON!! −10: K.O. all Characters other than this Character. Then, add up to 1 card
-  //   from the top of your deck to the top of your Life cards and trash up to 1 card from the top of your
-  //   opponent's Life cards.
-  // NOTE: not yet implemented (needs template).
 ];

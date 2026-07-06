@@ -223,6 +223,12 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     }
     case 'opponentLeaderOrCharacters':
       return [ctx.state().players[ctx.opponentId].leaderInstanceId, ...ctx.opponentCharacterIds()];
+    case 'controllerLeaderOrStage': {
+      const p = ctx.state().players[ctx.controllerId];
+      let ids = [p.leaderInstanceId, ...p.stageArea.cardIds];
+      if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
+      return ids;
+    }
     case 'controllerRestedDon': {
       const state = ctx.state();
       const player = state.players[ctx.controllerId];
@@ -381,6 +387,11 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     case 'moveToLifeBottom': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.moveToLifeBottom(id, op.faceUp);
+      return { selectedIds: ids, movedIds: ids };
+    }
+    case 'turnLifeFace': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.turnLifeFace(id, op.faceUp);
       return { selectedIds: ids, movedIds: ids };
     }
     case 'playSelf':

@@ -19,6 +19,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // ST09-001 (leader) Yamato — [DON!! x1] [Opponent's Turn] If you have 2 or less Life, +1000.
   {
     cardNumber: 'ST09-001',
@@ -88,9 +89,10 @@ export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST09-015 (event) Thunder Bagua —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, if
-  //   you have 2 or less Life cards, add up to 1 of your opponent's Characters with a cost of 3 or less to
-  //   the top or bottom of the owner's Life cards face-up. [Trigger] Draw 1 card.
-  // NOTE: not yet implemented (needs template).
+  // ST09-015 — (Event) [Counter] +4000 battle; then if 2 or less Life, add up to 1 opp Character cost<=3 to top/bottom of owner's Life face-up.
+  { cardNumber: 'ST09-015', templateId: 'ability', params: { timing: 'counter', functions: [
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true },
+    { fn: 'moveCards', ifGate: [{ kind: 'selfLife', atMost: 2 }], from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true },
+  ] } },
+
 ];

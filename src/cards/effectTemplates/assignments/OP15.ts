@@ -6,6 +6,10 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
+
+  // OP15-006 — if 4+ Events in trash, +2000
+  { cardNumber: 'OP15-006', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }] } },
+
   // OP15-001 (leader) Krieg —
   //   [DON!! x1] [Opponent's Turn] If the only Characters on your field are {East Blue} type Characters,
   //   give all of your opponent's Characters −2000 power.[Activate: Main] [Once Per Turn] Rest up to 1 of
@@ -237,6 +241,9 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-045 — [Blocker][On Play] trash 1 → Draw 2 (Event-category filter approximated as any card).
   { cardNumber: 'OP15-045', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'draw', amount: 2, ifPrevious: 'previousMovedAny' }] } },
 
+  // OP15-050 — if you have [Kelly Funk], +3000
+  { cardNumber: 'OP15-050', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Kelly Funk' }] } }] } },
+
   // OP15-046 (character) Sabo —
   //   [Blocker][On Play] If your Leader has the {Dressrosa} type, activate up to 1 {Dressrosa} type Event
   //   from your hand.
@@ -330,6 +337,15 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-064 — [Activate: Main] DON!! −2 + rest this: If you have [Satori] and [Hotori], rest up to 1 opp Character with 5000 power or less.
   { cardNumber: 'OP15-064', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 2 }, { kind: 'restThis' }], gate: [{ kind: 'selfControlsNamed', name: 'Satori' }, { kind: 'selfControlsNamed', name: 'Hotori' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxPower: 5000 } }, optional: true }] } },
 
+  // OP15-119 (character) Monkey.D.Luffy —
+  //   If you have 6 or more DON!! cards on your field, this Character gains [Rush].When your opponent
+  //   activates an Event or [Blocker], reveal up to 1 card from the top of your Life cards. This Character
+  //   gains +1000 power during this turn per 1 cost on the revealed card.
+  // NOTE: not yet implemented (needs template).
+
+  // --- codegen batch ---
+  { cardNumber: 'OP15-065', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { maxCost: 2 }, then: [{ fn: 'addDonFromDeck', count: 1, rested: true }] }] } },
+
   {
     cardNumber: 'OP15-066',
     templates: [
@@ -345,6 +361,9 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },
+
+  // OP15-068 — if 6 or less DON!! on field, [Blocker]
+  { cardNumber: 'OP15-068', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfDonFieldCount', atMost: 6 }] } }] } },
 
   // OP15-068 (character) Heavenly Warriors —
   //   If you have 6 or less DON!! cards on your field, this Character gains [Blocker].(After your opponent
@@ -548,6 +567,9 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-109 — [On Play] If Leader {Straw Hat Crew}: add 1 top Life to hand → add top of deck to top of Life → play {Sky Island} cost ≤5 from hand.
   { cardNumber: 'OP15-109', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Sky Island', maxCost: 5 } }] } },
 
+  // OP15-110 — [On K.O.] If Leader {Shandian Warrior}, add up to 1 top of deck to top of Life.
+  { cardNumber: 'OP15-110', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Shandian Warrior' }], functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
+
   // OP15-110 (character) Braham —
   //   [On K.O.] If your Leader has the {Shandian Warrior} type, add up to 1 card from the top of your deck
   //   to the top of your Life cards.
@@ -593,12 +615,4 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-119 (character) Monkey.D.Luffy —
-  //   If you have 6 or more DON!! cards on your field, this Character gains [Rush].When your opponent
-  //   activates an Event or [Blocker], reveal up to 1 card from the top of your Life cards. This Character
-  //   gains +1000 power during this turn per 1 cost on the revealed card.
-  // NOTE: not yet implemented (needs template).
-
-  // --- codegen batch ---
-  { cardNumber: 'OP15-065', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { maxCost: 2 }, then: [{ fn: 'addDonFromDeck', count: 1, rested: true }] }] } },
 ];

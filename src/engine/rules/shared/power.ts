@@ -31,6 +31,7 @@ function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffectRecord
   if (!target) return false;
   if (target.controllerId !== record.ownerId) return false;
   if (target.currentZone !== 'leaderArea' && target.currentZone !== 'characterArea') return false;
+  if (group.charactersOnly && target.currentZone === 'leaderArea') return false;
   if (group.anyOfTypes !== undefined) {
     const def = getDefinition(defs, target);
     if (!group.anyOfTypes.some((t) => typeIncludes(def.types, t))) return false;

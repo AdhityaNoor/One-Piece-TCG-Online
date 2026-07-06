@@ -6,6 +6,10 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
+
+  // OP01-001 — (Leader) [DON!! x1] [Your Turn] All of your Characters gain +1000 power.
+  { cardNumber: 'OP01-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 1000, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
+
   // --- Batch: OP01 cards expressible with existing primitives ---
   // OP01-001 (leader) Roronoa Zoro —
   //   [DON!! x1] [Your Turn] All of your Characters gain +1000 power.
@@ -75,6 +79,9 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-017 - [DON!! x1] [When Attacking] K.O. up to 1 opponent Character with 3000 power or less.
   { cardNumber: 'OP01-017', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
 
+  // OP01-019 — [DON!! x2] [Opponent's Turn] +3000
+  { cardNumber: 'OP01-019', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { donAttachedAtLeast: 2, turn: 'opponent' } }] } },
+
   // OP01-019 (character) Bartolomeo —
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
   //   of the attack.) [DON!! x2] [Opponent's Turn] This Character gains +3000 power.
@@ -139,6 +146,9 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'setActiveControllerDon', maxTargets: 2 },
   ] } },
 
+  // OP01-032 — [DON!! x1] if opponent has 2+ rested Characters, +2000
+  { cardNumber: 'OP01-032', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'opponentRestedCharacterCount', atLeast: 2 }] } }] } },
+
   // OP01-032 (character) Ashura Doji —
   //   [DON!! x1] If your opponent has 2 or more rested Characters, this Character gains +2000 power.
   // NOTE: not yet implemented (needs template).
@@ -181,6 +191,12 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP01-046 — [DON!! x1] [When Attacking] If Leader [Kouzuki Oden], set up to 2 DON!! active.
   { cardNumber: 'OP01-046', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'leaderName', name: 'Kouzuki Oden' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
+
+  // OP01-047 — [Blocker] [On Play] return 1 Character to hand: play up to 1 Character cost<=3 from hand.
+  { cardNumber: 'OP01-047', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'any' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'playFromHand', filter: { category: 'character', maxCost: 3 }, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP01-047 (character) Trafalgar Law —
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
@@ -269,6 +285,9 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'moveCards', ifPrevious: 'previousMovedAny', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
   ] } },
 
+  // OP01-068 — [Your Turn] [Double Attack] if 5+ cards in hand
+  { cardNumber: 'OP01-068', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent', condition: { turn: 'your', gate: [{ kind: 'selfHand', atLeast: 5 }] } }] } },
+
   // OP01-067 (character) Crocodile —
   //   [Banish] (When this card deals damage, the target card is trashed without activating its Trigger.)
   //   [DON!! x1] Give blue Events in your hand −1 cost.
@@ -292,12 +311,31 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // OP01-072 — [DON!! x1] [Your Turn] +1000 power for every card in your hand.
+  { cardNumber: 'OP01-072', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelfScaling', per: 'controllerHand', step: 1, amountPer: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
+
+  // OP01-120 (character) Shanks —
+  //   [Rush] (This card can attack on the turn in which it is played.) [When Attacking] Your opponent
+  //   cannot activate a [Blocker] Character that has 2000 or less power during this battle.
+  // NOTE: not yet implemented (needs template).
+
+  // OP01-121 (character) Yamato —
+  //   Also treat this card's name as [Kouzuki Oden] according to the rules. [Double Attack] (This card
+  //   deals 2 damage.) [Banish] (When this card deals damage, the target card is trashed without activating
+  //   its Trigger.)
+  // NOTE: not yet implemented (needs template).
+
+  // --- codegen batch ---
+  { cardNumber: 'OP01-073', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
+
   // OP01-072 (character) Smiley —
   //   [DON!! x1] [Your Turn] This Character gains +1000 power for every card in your hand.
   // NOTE: not yet implemented (needs template).
 
   // OP01-074 — [Blocker] [On K.O.] Play up to 1 [Pacifista] cost<=4 from hand.
   { cardNumber: 'OP01-074', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Pacifista', maxCost: 4 } }] } },
+
+  { cardNumber: 'OP01-077', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
 
   // OP01-075 (character) Pacifista —
   //   Under the rules of this game, you may have any number of this card in your deck. [Blocker] (After
@@ -432,6 +470,9 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-108 - [On K.O.] DON!! -1: K.O. cost <=5.
   { cardNumber: 'OP01-108', templateId: 'ability', params: { timing: 'onKO', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
 
+  // OP01-109 — [DON!! x1] [Your Turn] if 8+ DON!!, +1000
+  { cardNumber: 'OP01-109', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 1, turn: 'your', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }] } }] } },
+
   // OP01-109 (character) Who's.Who —
   //   [DON!! x1] [Your Turn] If you have 8 or more DON!! cards on your field, this Character gains +1000
   //   power.
@@ -490,18 +531,4 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP01-120 (character) Shanks —
-  //   [Rush] (This card can attack on the turn in which it is played.) [When Attacking] Your opponent
-  //   cannot activate a [Blocker] Character that has 2000 or less power during this battle.
-  // NOTE: not yet implemented (needs template).
-
-  // OP01-121 (character) Yamato —
-  //   Also treat this card's name as [Kouzuki Oden] according to the rules. [Double Attack] (This card
-  //   deals 2 damage.) [Banish] (When this card deals damage, the target card is trashed without activating
-  //   its Trigger.)
-  // NOTE: not yet implemented (needs template).
-
-  // --- codegen batch ---
-  { cardNumber: 'OP01-073', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
-  { cardNumber: 'OP01-077', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
 ];

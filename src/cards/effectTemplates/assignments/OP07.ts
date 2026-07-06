@@ -6,6 +6,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // --- Batch: OP07 cards expressible with existing primitives (no new capability) ---
   // OP07-001 (leader) Monkey.D.Dragon —
   //   [Activate: Main] [Once Per Turn] Give up to 2 total of your currently given DON!! cards to 1 of your
@@ -27,6 +28,9 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP07-005 — [Blocker] [On Play] Give up to 1 of your opponent's Characters −2000 power during this turn.
   { cardNumber: 'OP07-005', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+
+  // --- codegen batch ---
+  { cardNumber: 'OP07-008', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
   // OP07-006 (character) Sterry —
   //   [On Play] You may give your 1 active Leader −5000 power during this turn: Draw 1 card and trash 1
@@ -112,6 +116,12 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP07-024 — [On Your Opponent's Attack] rest this: up to 1 {Fish-Man} Character cost<=5 gains [Blocker] this turn.
   { cardNumber: 'OP07-024', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Fish-Man', maxCost: 5 } }, keyword: 'blocker', duration: 'duringThisTurn', optional: true }] } },
+
+  // OP07-029 — if Leader {Supernovas}, [Blocker]
+  { cardNumber: 'OP07-029', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Supernovas' }] } }] } },
+
+  // OP07-030 — if you have [Camie], [Blocker]
+  { cardNumber: 'OP07-030', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Camie' }] } }] } },
 
   // OP07-025 (character) Coribou —
   //   [On Play] Play up to 1 [Caribou] with a cost of 4 or less from your hand rested.
@@ -222,6 +232,9 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP07-046',
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'The Seven Warlords of the Sea' } }] },
   },
+
+  // OP07-053 — [Blocker] [On Play] Draw 2 and place 2 from hand at the bottom of your deck.
+  { cardNumber: 'OP07-053', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 2 }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 2 }] } },
 
   // OP07-047 (character) Trafalgar Law —
   //   [Activate: Main] You may return this Character to the owner's hand: If your opponent has 6 or more
@@ -380,6 +393,9 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-079 (leader) — [When Attacking] trash 2 from top of deck: give up to 1 opp Character −1 cost this turn.
   { cardNumber: 'OP07-079', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'trashTopDeck', count: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -1, duration: 'duringThisTurn', optional: true }] } },
 
+  // OP07-080 — [On Play] place 2 CP from trash at bottom: give up to 1 opp Character −3 cost this turn.
+  { cardNumber: 'OP07-080', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'CP' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 2 }, { fn: 'addCost', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true }] } },
+
   // OP07-080 (character) Kaku —
   //   [On Play] You may place 2 cards with a type including "CP" from your trash at the bottom of your deck
   //   in any order: Give up to 1 of your opponent's Characters −3 cost during this turn.
@@ -405,12 +421,18 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-086 — [On Play] Trash 2 from the top of your deck and give up to 1 opponent Character −2 cost during this turn.
   { cardNumber: 'OP07-086', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, optional: true }] } },
 
+  // OP07-087 — [Your Turn] if opponent has a cost-0 Character, +3000
+  { cardNumber: 'OP07-087', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { turn: 'your', gate: [{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }] } }] } },
+
   // OP07-087 (character) Baskerville —
   //   [Your Turn] If your opponent has a Character with a cost of 0, this Character gains +3000 power.
   // NOTE: not yet implemented (needs template).
 
   // OP07-088 — [On Play] Up to 1 of your [Rob Lucci] cards gains +2000 power during this turn.
   { cardNumber: 'OP07-088', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Rob Lucci' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
+
+  // OP07-092 — [On Play] place 2 CP from trash at bottom: K.O. up to 1 opp Character cost<=1.
+  { cardNumber: 'OP07-092', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'CP' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 2 }, { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
 
   // OP07-090 (character) Morgans —
   //   [On Play] Your opponent trashes 1 card from their hand and reveals their hand. Then, your opponent
@@ -615,6 +637,4 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     ] },
   },
 
-  // --- codegen batch ---
-  { cardNumber: 'OP07-008', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 ];

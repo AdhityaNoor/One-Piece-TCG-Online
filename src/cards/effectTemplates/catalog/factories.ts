@@ -396,6 +396,16 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'addPower', target: { sel: 'self' }, amount: 0, duration: f.duration, scale: { per: f.per, step: f.step, amountPer: f.amountPer }, ...(f.condition ? { condition: f.condition } : {}) }];
     case 'restSelf':
       return [{ op: 'rest', target: { sel: 'self' } }];
+    case 'turnTopLifeFace':
+      return [
+        { op: 'chooseTargets', var: 't', from: { sel: 'controllerLifeTop' }, min: 0, max: 1, prompt: `You may turn the top card of your Life face-${f.faceUp ? 'up' : 'down'}.` },
+        { op: 'turnLifeFace', target: { sel: 'var', name: 't' }, faceUp: f.faceUp },
+      ];
+    case 'restControllerLeaderOrStage':
+      return [
+        { op: 'chooseTargets', var: 't', from: { sel: 'controllerLeaderOrStage', ...(f.typeIncludes ? { typeIncludes: f.typeIncludes } : {}) }, min: 0, max: 1, prompt: f.typeIncludes ? `You may rest 1 of your {${f.typeIncludes}} Leader or Stage cards.` : 'You may rest 1 of your Leader or Stage cards.' },
+        { op: 'rest', target: { sel: 'var', name: 't' } },
+      ];
     case 'setActiveSelf':
       return [{ op: 'setActive', target: { sel: 'self' } }];
     case 'setActiveControllerCharacter': {
@@ -448,6 +458,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
         },
       ];
+    case 'addPowerAuraControllerCharacters':
+      return [{ op: 'addPowerAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}) }];
     case 'addPowerControllerCharactersAll':
       return [
         {

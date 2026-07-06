@@ -6,6 +6,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // OP14-001 (leader) Trafalgar Law —
   //   [Activate: Main] [Once Per Turn] Select 2 of your {Supernovas} or {Heart Pirates} type Characters.
   //   Swap the base power of the selected Characters with each other during this turn.
@@ -30,6 +31,9 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // Note: [Rush] is an engine keyword flag. Only the when-attacking effect is templated.
   // OP14-005 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
   { cardNumber: 'OP14-005', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
+
+  // OP14-011 — [DON!! x2] [Blocker]
+  { cardNumber: 'OP14-011', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
 
   // OP14-006 (character) Shachi & Penguin —
   //   [When Attacking] If this Character has 5000 power or more, give up to 1 of your opponent's Characters
@@ -89,6 +93,9 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },
+
+  // OP14-022 — [End of Your Turn] If Leader {FILM} or {Straw Hat Crew}, set up to 2 DON!! active.
+  { cardNumber: 'OP14-022', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'FILM' }, { kind: 'leaderType', type: 'Straw Hat Crew' }] }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
 
   // OP14-020 (leader) Dracule Mihawk —
   //   If your opponent's Leader has the <Slash> attribute, this Leader gains +1000 power.[Activate: Main]
@@ -206,8 +213,34 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // OP14-118 (event) You'll Frighten Me... ♡ —
+  //   [Counter] If you have 2 or less Life cards, up to 1 of your opponent's active Characters cannot
+  //   attack during this turn. [Trigger] Play up to 1 Character card with 6000 power or less and a
+  //   [Trigger] from your hand.
+  // NOTE: not yet implemented (needs template).
+
+  // OP14-119 (character) Dracule Mihawk —
+  //   [Your Turn] When this Character becomes rested, up to 1 of your opponent's Characters with a cost of
+  //   9 or less cannot be rested until the end of your opponent's next End Phase.[On Your Opponent's
+  //   Attack] [Once Per Turn] You may trash 1 card from your hand: Up to 1 of your Leader or Character
+  //   cards gains +2000 power during this battle.
+  // NOTE: not yet implemented (needs template).
+
+  // OP14-120 (character) Crocodile —
+  //   [On Play] Up to 1 of your opponent's Characters with a cost of 9 or less cannot attack until the end
+  //   of your opponent's next End Phase. Then, if your opponent has a Character with a cost of 0 or with a
+  //   cost of 8 or more, draw 1 card.[On K.O.] You may trash 1 card from your hand: Play this Character
+  //   card from your trash.
+  // NOTE: not yet implemented (needs template).
+
+  // --- codegen batch ---
+  { cardNumber: 'OP14-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] }] } },
+
   // OP14-045 — [On K.O.] Draw 1. PARTIAL: the "when a card is trashed from hand → [Rush]" trigger is deferred.
   { cardNumber: 'OP14-045', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+
+  // OP14-046 — [Activate: Main] trash this: up to 1 {Fish-Man}/{Merfolk} Leader/Character +2000 this turn.
+  { cardNumber: 'OP14-046', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { anyOfTypes: ['Fish-Man', 'Merfolk'] } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
   // OP14-046 (character) Koala —
   //   [Activate: Main] You may trash this Character: Up to 1 of your {Fish-Man} or {Merfolk} type Leader or
@@ -225,6 +258,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP14-049', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 7 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
   { cardNumber: 'OP14-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Fish-Man' }], functions: [{ fn: 'draw', amount: 1 }] } },
+
+  { cardNumber: 'OP14-051', templateId: 'ability', params: { timing: 'onKO', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'draw', amount: 1 }] } },
 
   // OP14-052 — [Blocker][On Play] trash 3 from hand: play up to 1 {Impel Down} cost ≤6 from hand.
   { cardNumber: 'OP14-052', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromHand', count: 3 }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Impel Down', maxCost: 6 } }] } },
@@ -285,6 +320,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP14-067', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }, { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Donquixote Pirates' }, remainder: 'bottom' }] } },
+
+  { cardNumber: 'OP14-071', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'leaderType', type: 'Donquixote Pirates' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
 
   // OP14-068 (character) Trebol —
   //   [Opponent's Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, if
@@ -361,6 +398,9 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { exactBaseCost: 1 } }, optional: true }] } },
     ],
   },
+
+  // OP14-083 — [Activate: Main] trash this: give up to 1 opp 0-cost Character −3000 this turn.
+  { cardNumber: 'OP14-083', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent', filter: { exactCost: 0 } }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
 
   // OP14-082 (character) Oinkchuck —
   //   [On K.O.] All of your {Thriller Bark Pirates} type Characters gain +4 cost until the end of your
@@ -470,6 +510,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-104 — [Trigger] Play up to 1 Character cost ≤4 from trash. PARTIAL: the play-or-add-to-Life [On Play] choice is deferred.
   { cardNumber: 'OP14-104', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', maxCost: 4 } }] } },
 
+  { cardNumber: 'OP14-106', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
+
   // OP14-105 (character) Gorgon Sisters —
   //   [Activate: Main] [Once Per Turn] You may reveal 3 {Amazon Lily} or {Kuja Pirates} type cards from
   //   your hand: Give your Leader and all of your Characters up to 1 rested DON!! card each. [Trigger] If
@@ -543,29 +585,4 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP14-118 (event) You'll Frighten Me... ♡ —
-  //   [Counter] If you have 2 or less Life cards, up to 1 of your opponent's active Characters cannot
-  //   attack during this turn. [Trigger] Play up to 1 Character card with 6000 power or less and a
-  //   [Trigger] from your hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP14-119 (character) Dracule Mihawk —
-  //   [Your Turn] When this Character becomes rested, up to 1 of your opponent's Characters with a cost of
-  //   9 or less cannot be rested until the end of your opponent's next End Phase.[On Your Opponent's
-  //   Attack] [Once Per Turn] You may trash 1 card from your hand: Up to 1 of your Leader or Character
-  //   cards gains +2000 power during this battle.
-  // NOTE: not yet implemented (needs template).
-
-  // OP14-120 (character) Crocodile —
-  //   [On Play] Up to 1 of your opponent's Characters with a cost of 9 or less cannot attack until the end
-  //   of your opponent's next End Phase. Then, if your opponent has a Character with a cost of 0 or with a
-  //   cost of 8 or more, draw 1 card.[On K.O.] You may trash 1 card from your hand: Play this Character
-  //   card from your trash.
-  // NOTE: not yet implemented (needs template).
-
-  // --- codegen batch ---
-  { cardNumber: 'OP14-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] }] } },
-  { cardNumber: 'OP14-051', templateId: 'ability', params: { timing: 'onKO', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'draw', amount: 1 }] } },
-  { cardNumber: 'OP14-071', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'leaderType', type: 'Donquixote Pirates' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
-  { cardNumber: 'OP14-106', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 ];

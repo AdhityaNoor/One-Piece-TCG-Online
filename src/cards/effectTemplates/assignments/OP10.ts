@@ -6,6 +6,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // --- Batch: OP10 expressible with existing primitives (+ rested-char gate) ---
   // OP10-001 (leader) Smoker —
   //   [Opponent's Turn] All of your {Navy} or {Punk Hazard} type Characters gain +1000 power.[Activate:
@@ -120,6 +121,9 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP10-025 — [On Play] If 2+ rested Characters, draw 3 & trash 2.
   { cardNumber: 'OP10-025', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'drawAndTrash', drawCount: 3, trashCount: 2 }] } },
 
+  // OP10-028 — [Activate: Main] rest 2 DON!! + trash this: look 5, reveal up to 2 {The Akazaya Nine}, add to hand, rest to bottom.
+  { cardNumber: 'OP10-028', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 2 }, { kind: 'trashThis' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'hand', filter: { typeIncludes: 'The Akazaya Nine' }, remainder: 'bottom' }] } },
+
   // OP10-026 (character) Kin'emon —
   //   [Activate: Main] You may place this Character and 1 [Kin'emon] with 0 power from your trash at the
   //   bottom of your deck in any order: Play up to 1 [Kin'emon] with a cost of 6 from your hand.
@@ -168,6 +172,9 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP10-037 — [End of Your Turn] Set up to 1 of your {ODYSSEY} Characters active. PARTIAL: the removal-replacement clause is deferred.
   { cardNumber: 'OP10-037', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { typeIncludes: 'ODYSSEY' } }] } },
 
+  // OP10-038 — [Opponent's Turn] If you have 2 or more rested Characters, this Character gains +2000 power.
+  { cardNumber: 'OP10-038', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }] } }] } },
+
   // OP10-038 (character) Roronoa Zoro —
   //   [Opponent's Turn] If you have 2 or more rested Characters, this Character gains +2000 power.
   // NOTE: not yet implemented (needs template).
@@ -193,6 +200,12 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // OP10-043 — [On Play] rest 1 {Dressrosa} Leader/Stage: up to 1 [Monkey.D.Luffy] gains [Banish] this turn.
+  { cardNumber: 'OP10-043', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'restControllerLeaderOrStage', typeIncludes: 'Dressrosa' }, { fn: 'addKeyword', ifPrevious: 'previousSelectedAny', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy' } }, keyword: 'banish', duration: 'duringThisTurn', optional: true }] } },
+
+  // OP10-044 — [On Play] rest 1 {Dressrosa} Leader/Stage: return up to 1 opp Character cost<=1 to hand.
+  { cardNumber: 'OP10-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'restControllerLeaderOrStage', typeIncludes: 'Dressrosa' }, { fn: 'moveCards', ifPrevious: 'previousSelectedAny', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+
   // OP10-042 (leader) Usopp —
   //   All of your {Dressrosa} type Characters with a cost of 2 or more gain +1 cost.[Opponent's Turn] [Once
   //   Per Turn] This effect can be activated when your {Dressrosa} type Character is removed from the field
@@ -215,6 +228,9 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP10-046 — [On Play] Return up to 1 Character with a cost of 5 or less to the owner's hand.
   { cardNumber: 'OP10-046', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
+  // OP10-048 — [On Play] rest 1 {Dressrosa} Leader/Stage: return up to 1 opp Character cost<=1 to hand.
+  { cardNumber: 'OP10-048', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'restControllerLeaderOrStage', typeIncludes: 'Dressrosa' }, { fn: 'moveCards', ifPrevious: 'previousSelectedAny', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+
   // OP10-047 (character) Koala —
   //   [When Attacking] You may return 1 of your {Revolutionary Army} type Characters with a cost of 3 or
   //   more to the owner's hand: This Character gains +3000 power during this turn.
@@ -235,6 +251,9 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP10-052 — [Blocker][On Play] Place up to 1 Character cost ≤1 at bottom of deck.
   { cardNumber: 'OP10-052', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
+
+  // OP10-053 — If you have a {The Tontattas} Character other than [Bian], this Character gains [Blocker].
+  { cardNumber: 'OP10-053', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'The Tontattas', atLeast: 2 }] } }] } },
 
   // OP10-053 (character) Bian —
   //   If you have a {The Tontattas} type Character other than [Bian], this Character gains [Blocker].
@@ -372,6 +391,13 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // OP10-081 — [On Play] rest 1 {Dressrosa} Leader/Stage: K.O. up to 1 opp Character cost<=2, then trash 2 from top of deck.
+  { cardNumber: 'OP10-081', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'restControllerLeaderOrStage', typeIncludes: 'Dressrosa' },
+    { fn: 'trashTopDeck', count: 2, ifPrevious: 'previousSelectedAny' },
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
+
   // OP10-081 (character) Usopp —
   //   [On Play] You may rest 1 of your {Dressrosa} type Leader or Stage cards: K.O. up to 1 of your
   //   opponent's Characters with a cost of 2 or less. Then, trash 2 cards from the top of your deck.
@@ -379,6 +405,9 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP10-082 — static: cannot be removed by opp effects (modeled as effect-K.O. immunity). PARTIAL: the trash-self activate ability is deferred.
   { cardNumber: 'OP10-082', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent' }] } },
+
+  // OP10-085 — [DON!! x1] if 8+ cards in trash, [Rush]
+  { cardNumber: 'OP10-085', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfTrashCount', atLeast: 8 }] } }] } },
 
   // OP10-083 (character) Kouzuki Momonosuke —
   //   [Activate: Main] You may rest this Character and 1 of your {Dressrosa} type Leader or Stage cards:
@@ -391,6 +420,13 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP10-086 — [Opponent's Turn] this Character +2000. PARTIAL: the "played this turn" activated K.O. is deferred.
   { cardNumber: 'OP10-086', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'opponent' } }] } },
+
+  // OP10-088 — [Activate: Main] rest this + 1 {Dressrosa} Leader/Stage: draw 1, then trash 2 from top of deck.
+  { cardNumber: 'OP10-088', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [
+    { fn: 'restControllerLeaderOrStage', typeIncludes: 'Dressrosa' },
+    { fn: 'draw', amount: 1, ifPrevious: 'previousSelectedAny' },
+    { fn: 'trashTopDeck', count: 2, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP10-087 (character) Tony Tony.Chopper —
   //   [Activate: Main] You may rest this Character and 1 of your {Dressrosa} type Leader or Stage cards: If
@@ -405,6 +441,16 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP10-090 — [Blocker] [On K.O.] Play up to 1 {Dressrosa} Character cost<=3 from your trash rested.
   { cardNumber: 'OP10-090', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Dressrosa', maxCost: 3 }, rested: true }] } },
+
+  // OP10-091 — [Activate: Main] rest this + 1 {Dressrosa} Leader/Stage: K.O. up to 1 opp Character cost<=1, then trash 2 from top of deck.
+  { cardNumber: 'OP10-091', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [
+    { fn: 'restControllerLeaderOrStage', typeIncludes: 'Dressrosa' },
+    { fn: 'trashTopDeck', count: 2, ifPrevious: 'previousSelectedAny' },
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
+
+  // OP10-092 — [Activate: Main] [OPT] place 2 {Thriller Bark Pirates} from trash at bottom: up to 1 Character (other than self) +2000 this turn.
+  { cardNumber: 'OP10-092', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 2 }, { fn: 'addPower', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'controller', filter: { excludeSelf: true } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
   // OP10-091 (character) Brook —
   //   [Activate: Main] You may rest this Character and 1 of your {Dressrosa} type Leader or Stage cards:
@@ -423,6 +469,22 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP10-094 — [DON!! x1] This Character gains [Double Attack].
   { cardNumber: 'OP10-094', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+
+  // OP10-095 — [On Play] rest 1 {Dressrosa} Leader/Stage: K.O. up to 1 opp Character cost<=4, then trash 2 from top of deck.
+  { cardNumber: 'OP10-095', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'restControllerLeaderOrStage', typeIncludes: 'Dressrosa' },
+    { fn: 'trashTopDeck', count: 2, ifPrevious: 'previousSelectedAny' },
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
+
+  // OP10-096 — (Event) [Main] K.O. up to 1 opp {Seven Warlords} Character cost<=8. [Trigger] cost<=4.
+  {
+    cardNumber: 'OP10-096',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { typeIncludes: 'The Seven Warlords of the Sea', maxCost: 8 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { typeIncludes: 'The Seven Warlords of the Sea', maxCost: 4 } }, optional: true }] } },
+    ],
+  },
 
   // OP10-095 (character) Roronoa Zoro —
   //   [On Play] You may rest 1 of your {Dressrosa} type Leader or Stage cards: K.O. up to 1 of your
@@ -568,4 +630,5 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP10-119 — [On Play] add 1 {Supernovas} from hand to top of Life face-down, then give 1 rested DON!! to Leader/1 Char.
   { cardNumber: 'OP10-119', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { typeIncludes: 'Supernovas' } }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }, { fn: 'giveDon', count: 1 }] } },
+
 ];

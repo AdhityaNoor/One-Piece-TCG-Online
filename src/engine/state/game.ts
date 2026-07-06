@@ -108,6 +108,8 @@ export interface PowerAuraGroup {
   ownLeaderAndCharacters: true;
   /** Restrict to cards carrying any of these tribal types (OR). Omitted = all. */
   anyOfTypes?: string[];
+  /** Exclude the Leader (chars only) — for "all of your Characters" auras. */
+  charactersOnly?: boolean;
 }
 
 /**

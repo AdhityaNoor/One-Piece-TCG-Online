@@ -559,6 +559,23 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  turnLifeFace(instanceId: string, faceUp: boolean): void {
+    const inst = this.working.cardsById[instanceId];
+    if (!inst || inst.currentZone !== 'lifeArea') return;
+    this.working = {
+      ...this.working,
+      cardsById: { ...this.working.cardsById, [instanceId]: { ...inst, faceState: faceUp ? 'faceUp' : 'faceDown', revealedTo: faceUp ? 'all' : [] } },
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'CARD_MOVED',
+      message: `${instanceId} (top of Life) was turned ${faceUp ? 'face-up' : 'face-down'}.`,
+      data: { from: 'lifeArea', to: 'lifeArea', faceUp, instanceId },
+      relatedCardInstanceIds: [instanceId],
+      visibility: 'public',
+    });
+  }
+
   moveLifeToBottom(instanceId: string): void {
     const inst = this.working.cardsById[instanceId];
     if (!inst || inst.currentZone !== 'lifeArea') return;

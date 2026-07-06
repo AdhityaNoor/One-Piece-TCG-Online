@@ -6,6 +6,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // OP05-001 (leader) Sabo —
   //   [DON!! x1] [Opponent's Turn] [Once Per Turn] If your Character with 5000 power or more would be
   //   K.O.'d, you may give that Character −1000 power during this turn instead of that Character being
@@ -125,6 +126,17 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] },
   },
 
+  // OP05-119 (character) Monkey.D.Luffy —
+  //   [On Play] DON!! −10: Place all of your Characters except this Character at the bottom of your deck in
+  //   any order. Then, take an extra turn after this one.[Activate: Main] [Once Per Turn] ➀: Add up to 1
+  //   DON!! card from your DON!! deck and set it as active.
+  // NOTE: not yet implemented (needs template).
+
+  // --- codegen batch ---
+  { cardNumber: 'OP05-027', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+
+  { cardNumber: 'OP05-028', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 2 } }, optional: true }] } },
+
   // OP05-026 (character) Sarquiss —
   //   [DON!! x1] [When Attacking] [Once Per Turn] You may rest 1 of your Characters with a cost of 3 or
   //   more: Set this Character as active.
@@ -132,6 +144,9 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP05-029 — [On Your Opponent's Attack] [Once Per Turn] rest 1 DON!!: rest up to 1 opp Character cost<=6.
   { cardNumber: 'OP05-029', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },
+
+  // OP05-031 — [When Attacking] [Once Per Turn] If you have 2 or more rested Characters, set up to 1 of your rested Characters (cost 1) as active.
+  { cardNumber: 'OP05-031', templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'setActiveControllerCharacter', filter: { exactCost: 1, rested: true }, maxTargets: 1 }] } },
 
   // OP05-030 (character) Donquixote Rosinante —
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
@@ -275,6 +290,9 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-061 — [DON!! x1][When Attacking] If 8+ DON!!: rest up to 1 opp Character cost ≤4.
   { cardNumber: 'OP05-061', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
+  // OP05-062 — if 10 DON!! on field, [Blocker]
+  { cardNumber: 'OP05-062', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfDonFieldCount', atLeast: 10 }] } }] } },
+
   // OP05-062 (character) O-Nami —
   //   If you have 10 DON!! cards on your field, this Character gains [Blocker].(After your opponent
   //   declares an attack, you may rest this card to make it the new target of the attack.)
@@ -291,6 +309,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP05-066 — [Blocker][Opponent's Turn] If 10 DON!!: this Character +1000 (continuous, opponent's turn only).
   { cardNumber: 'OP05-066', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'selfDonFieldCount', atLeast: 10 }] } }] } },
+
+  { cardNumber: 'OP05-067', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfLife', atMost: 3 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
 
   // OP05-068 (character) Chopa-Emon —
   //   [On Play] If you have 8 or more DON!! cards on your field, set up to 1 of your purple {Straw Hat
@@ -350,6 +370,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  { cardNumber: 'OP05-081', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true }] } },
+
   // OP05-079 (character) Viola —
   //   [On Play] Your opponent places 3 cards from their trash at the bottom of their deck in any order.
   // NOTE: not yet implemented (needs template).
@@ -372,6 +394,9 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP05-085 — [Blocker][On Play] Trash 1 card from the top of your deck.
   { cardNumber: 'OP05-085', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 1 }] } },
+
+  // OP05-086 — if 10+ cards in trash, [Blocker]
+  { cardNumber: 'OP05-086', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 10 }] } }] } },
 
   // OP05-086 (character) Nefeltari Vivi —
   //   If you have 10 or more cards in your trash, this Character gains [Blocker].(After your opponent
@@ -545,15 +570,4 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP05-118', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'draw', amount: 4 }] } },
 
-  // OP05-119 (character) Monkey.D.Luffy —
-  //   [On Play] DON!! −10: Place all of your Characters except this Character at the bottom of your deck in
-  //   any order. Then, take an extra turn after this one.[Activate: Main] [Once Per Turn] ➀: Add up to 1
-  //   DON!! card from your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
-
-  // --- codegen batch ---
-  { cardNumber: 'OP05-027', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
-  { cardNumber: 'OP05-028', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 2 } }, optional: true }] } },
-  { cardNumber: 'OP05-067', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfLife', atMost: 3 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
-  { cardNumber: 'OP05-081', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true }] } },
 ];

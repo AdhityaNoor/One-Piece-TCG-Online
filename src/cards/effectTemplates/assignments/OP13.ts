@@ -6,6 +6,7 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
+
   // OP13-001 (leader) Monkey.D.Luffy —
   //   [DON!! x1] [On Your Opponent's Attack] If you have 5 or less active DON!! cards, you may rest any
   //   number of your DON!! cards. For every DON!! card rested this way, this Leader or up to 1 of your
@@ -33,6 +34,9 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-006', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 2 }] } },
 
+  // OP13-009 — If you have a {Mountain Bandits} Character other than this card, this Character gains [Double Attack].
+  { cardNumber: 'OP13-009', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent', condition: { gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Mountain Bandits', atLeast: 2 }] } }] } },
+
   // OP13-007 (character) Ace & Sabo & Luffy —
   //   [Activate: Main] You may give 1 of your active DON!! cards to 1 of your Leader or Character cards and
   //   trash this Character: Give up to 1 of your opponent's Characters −3000 power during this turn.
@@ -56,6 +60,12 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP13-013 — [On Play] K.O. up to 1 of your opponent's Characters with 0 power.
   { cardNumber: 'OP13-013', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 0 } }, optional: true }] } },
+
+  // OP13-014 — [Trigger] up to 1 [Portgas.D.Ace] +3000 this turn.
+  { cardNumber: 'OP13-014', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Portgas.D.Ace' } }, amount: 3000, duration: 'duringThisTurn', optional: true }] } },
+
+  // OP13-015 — [Activate: Main] rest this: up to 1 [Monkey.D.Luffy] +2000 this turn.
+  { cardNumber: 'OP13-015', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
   // OP13-014 (character) Portgas.D.Rouge —
   //   [Trigger] Up to 1 of your [Portgas.D.Ace] cards gains +3000 power during this turn.
@@ -148,6 +158,9 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-033 — [On K.O.] Rest up to 2 opp Characters (the "or DON!!" option is dropped).
   { cardNumber: 'OP13-033', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 2 }] } },
 
+  // OP13-034 — [On Play] If Leader {FILM} or {Straw Hat Crew}, set up to 1 DON!! active.
+  { cardNumber: 'OP13-034', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'FILM' }, { kind: 'leaderType', type: 'Straw Hat Crew' }] }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
+
   // OP13-034 (character) Brook —
   //   [On Play] If your Leader has the {FILM} or {Straw Hat Crew} type, set up to 1 of your DON!! cards as
   //   active.
@@ -204,6 +217,9 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP13-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Boa Hancock' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Boa Hancock', maxCost: 3 } }] } },
+
+  // OP13-051 — [On K.O.] If Leader [Boa Hancock] or multicolored, draw 2.
+  { cardNumber: 'OP13-051', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderName', name: 'Boa Hancock' }, { kind: 'leaderMulticolor' }] }], functions: [{ fn: 'draw', amount: 2 }] } },
 
   // OP13-051 (character) Boa Hancock —
   //   [On K.O.] If your Leader is [Boa Hancock] or multicolored, draw 2 cards.
@@ -487,8 +503,4 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP13-120 (character) Sabo —
-  //   [Blocker][Activate: Main] [Once Per Turn] Up to 1 of your Characters gains +2 cost until the end of
-  //   your opponent's next turn. Then, give up to 1 rested DON!! card to your Leader.
-  // NOTE: not yet implemented (needs template).
 ];

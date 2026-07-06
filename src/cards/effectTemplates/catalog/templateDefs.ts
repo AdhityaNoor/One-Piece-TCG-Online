@@ -109,6 +109,10 @@ export type AbilityFunction =
   // Continuous self-buff that scales: +amountPer power for every `step` of `per` (e.g. cards in hand, Events in trash).
   | { fn: 'addPowerSelfScaling'; per: PowerScaleSource; step: number; amountPer: number; duration: IrDuration; condition?: IrCondition }
   | { fn: 'restSelf' }
+  // Rest 1 chosen controller Leader/Stage matching a type (for 'You may rest 1 of your {X} Leader or Stage cards:' costs). Binds var 't'.
+  | { fn: 'restControllerLeaderOrStage'; typeIncludes?: string }
+  // 'You may turn 1 card from the top of your Life cards face-up/down:' cost. Optional flip of the top Life card; binds var 't'.
+  | { fn: 'turnTopLifeFace'; faceUp: boolean }
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }
   | { fn: 'setActiveControllerCharacter'; filter?: { maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }; maxTargets?: number }
@@ -121,6 +125,8 @@ export type AbilityFunction =
   // Give ALL of the controller's own Characters (optionally type-filtered) a flat power delta —
   // no target choice ("All of your {FILM} type Characters gain +2000").
   | { fn: 'addPowerControllerCharactersAll'; amount: number; duration: IrDuration; filter?: { typeIncludes?: string; maxCost?: number } }
+  // Dynamic aura over ALL the controller's Characters (chars only), optionally type-filtered + gated on source state ([DON!! xN]/[Your/Opponent's Turn]).
+  | { fn: 'addPowerAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; sourceCondition?: SourceStateCondition }
   // "This card cannot be K.O.'d" — scope 'battle' (battle K.O. only) or 'any'.
   // `attackerCategory` optionally limits a battle immunity to a given attacker ("by Leaders").
   | { fn: 'koImmunitySelf'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character' }

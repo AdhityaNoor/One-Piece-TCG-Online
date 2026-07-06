@@ -19,6 +19,7 @@ export type Selector =
   | { sel: 'controllerLeader' }
   | { sel: 'controllerCharacters'; maxCost?: number; exactCost?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; color?: Color; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }
   | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; name?: string; excludeSelf?: boolean }
+  | { sel: 'controllerLeaderOrStage'; typeIncludes?: string } // controller's Leader + Stage cards (for 'rest 1 of your {X} Leader or Stage' costs)
   | { sel: 'opponentLeaderOrCharacters' }
   | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
   | { sel: 'opponentActiveDon' } // the opponent's active, un-attached DON!! in the cost area (rest targets)
@@ -109,6 +110,7 @@ export type EffectOp =
   | ({ op: 'moveToBottomDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's deck
   | ({ op: 'moveToLifeTop'; target: Selector; faceUp?: boolean } & EffectOpSequenceGate) // move chosen cards to the top of their owner's Life
   | ({ op: 'moveToLifeBottom'; target: Selector; faceUp?: boolean } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's Life
+  | ({ op: 'turnLifeFace'; target: Selector; faceUp: boolean } & EffectOpSequenceGate) // flip chosen Life cards face-up/face-down in place
   | ({ op: 'peekLifeThenPlace'; from: Extract<Selector, { sel: 'controllerOrOpponentLifeTop' }>; prompt: string } & EffectOpSequenceGate) // privately look at a top Life card, then optionally place it at bottom
   | ({ op: 'chooseLifeToHand'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then add it to hand
   | ({ op: 'chooseLifeToTrash'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then trash it
@@ -191,7 +193,17 @@ export type AbilityGate =
   | { kind: 'selfDonAtMostOpponent' } // "If the number of DON!! on your field is equal to or less than your opponent's"
   | { kind: 'selfControlsNamed'; name: string } // "If you have [X]" — you control a Character named X
   | { kind: 'selfDoesNotControlNamed'; name: string } // "If you don't have [X]"
-  | { kind: 'opponentHand'; atLeast?: number; atMost?: number }; // "If your opponent has N or more/less cards in their hand"
+  | { kind: 'selfHandMatching'; atLeast: number; typeIncludes?: string; category?: Exclude<CardCategory, 'don'> } // "reveal N {type}/Event cards from your hand" (reveal is costless -> a hand-composition gate)
+  | { kind: 'opponentHand'; atLeast?: number; atMost?: number } // "If your opponent has N or more/less cards in their hand"
+  | { kind: 'selfTrashCount'; atLeast?: number; atMost?: number } // "N or more/less cards in your trash"
+  | { kind: 'selfDeckCount'; atLeast?: number; atMost?: number } // "N or less cards in your deck"
+  | { kind: 'selfTypedCharacterCount'; typeIncludes: string; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {type} Characters"
+  | { kind: 'selfTrashMatching'; atLeast?: number; atMost?: number; category?: Exclude<CardCategory, 'don'>; typeIncludes?: string } // "N or more Events/{type} cards in your trash"
+  | { kind: 'opponentRestedCharacterCount'; atLeast?: number; atMost?: number } // "opponent has N or more rested Characters"
+  | { kind: 'opponentHasCharacterBasePowerAtLeast'; power: number } // "opponent has a Leader or Character with base power N or more"
+  | { kind: 'anyCharacterCostAtLeast'; atLeast: number } // "if there is a Character with a cost of N or more"
+  | { kind: 'opponentHasCharacterExactCost'; exactCost: number } // "if your opponent has a Character with a cost of N"
+  | { kind: 'anyOf'; gates: AbilityGate[] }; // OR: satisfied if any sub-gate holds ("if Leader is X or Y")
 
 export interface Ability {
   timing: IrTiming;

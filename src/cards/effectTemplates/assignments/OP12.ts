@@ -6,6 +6,13 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
+
+  // OP12-003 — [On K.O.] reveal 2 Events from hand: play up to 1 red Character with 3000 power or less from hand.
+  { cardNumber: 'OP12-003', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'selfHandMatching', category: 'event', atLeast: 2 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'red', maxPower: 3000 } }] } },
+
+  // OP12-004 — [Activate: Main] [Once Per Turn] reveal 2 Events from hand: this Character +2000 this turn.
+  { cardNumber: 'OP12-004', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfHandMatching', category: 'event', atLeast: 2 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
+
   // OP12-001 (leader) Silvers Rayleigh —
   //   Under the rules of this game, you cannot include cards with a cost of 5 or more in your
   //   deck.[Activate: Main] [Once Per Turn] You may reveal 2 Events from your hand: Up to 1 of your
@@ -37,6 +44,30 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'optionalTrashFromHand', count: 1 },
     { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
+
+  // OP12-013 — [Activate: Main] rest this + reveal 2 Events from hand: give up to 2 rested DON!! to your Leader or 1 Character.
+  { cardNumber: 'OP12-013', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'selfHandMatching', category: 'event', atLeast: 2 }], functions: [{ fn: 'giveDon', count: 2 }] } },
+
+  // OP12-117 (event) Slam Gibson —
+  //   [Main] You may rest 5 of your DON!! cards: If your Leader has the {Supernovas} type, add up to 1
+  //   Character with a cost of 9 or less to the top or bottom of the owner's Life cards face-down.[Counter]
+  //   Your Leader gains +3000 power during this battle.
+  // NOTE: not yet implemented (needs template).
+
+  // OP12-118 (character) Jewelry Bonney —
+  //   [Blocker][On Play] If you have 8 or more rested cards, draw 2 cards and trash 1 card from your hand.
+  //   Then, set up to 1 of your DON!! cards as active.
+  // NOTE: not yet implemented (needs template).
+
+  // OP12-119 (character) Bartholomew Kuma —
+  //   [On Play] You may trash 1 card from your hand: Add up to 1 card from the top of your deck to the top
+  //   of your Life cards. Then, this Character gains +2 cost until the end of your opponent's next End
+  //   Phase.[Opponent's Turn] [On K.O.] Add up to 1 card from the top of your deck to the top of your Life
+  //   cards.
+  // NOTE: not yet implemented (needs template).
+
+  // OP12-014 — [On Play] look 5, reveal up to 1 [Monkey.D.Luffy] or red Event, add to hand, rest to bottom.
+  { cardNumber: 'OP12-014', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ name: 'Monkey.D.Luffy' }, { color: 'red', category: 'event' }] }, remainder: 'bottom' }] } },
 
   // OP12-009 (character) Jinbe —
   //   [On Play] You may reveal 2 Events from your hand: This Character gains [Rush] during this turn. Then,
@@ -132,6 +163,12 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP12-030 — [Blocker][On Play] Set up to 4 DON!! active. PARTIAL: the "cannot play base-cost-7+ Characters this turn" restriction is deferred.
   { cardNumber: 'OP12-030', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 4 }] } },
+
+  // OP12-031 — [On Play] Rest up to 1 opp Character (base cost 6 or less); then give up to 3 rested DON!! to your Leader.
+  { cardNumber: 'OP12-031', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 6 } }, optional: true },
+    { fn: 'giveDonControllerLeader', count: 3 },
+  ] } },
 
   // OP12-031 (character) Tashigi —
   //   [On Play] Rest up to 1 of your opponent's Characters with a base cost of 6 or less. Then, give up to
@@ -257,6 +294,9 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-062 — [On Play] If Leader [Sanji] and your DON!! ≤ opponent's, add 1 DON!! (rested), then draw 1.
   { cardNumber: 'OP12-062', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Sanji' }, { kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }, { fn: 'draw', amount: 1 }] } },
 
+  // OP12-066 — if 4+ Events in trash, [Blocker]
+  { cardNumber: 'OP12-066', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }] } },
+
   // OP12-063 (character) Vinsmoke Reiju —
   //   If you have 4 or more Events in your trash, this Character gains +2000 power and +5 cost.[Blocker]
   //   (After your opponent declares an attack, you may rest this card to make it the new target of the
@@ -366,6 +406,18 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-090 — [When Attacking] trash 2 from top of deck: give up to 1 opp Character −2 cost this turn.
   { cardNumber: 'OP12-090', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'trashTopDeck', count: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true }] } },
 
+  // OP12-091 — [Activate: Main] [OPT] place 3 from trash at bottom: up to 2 {SMILE} Characters +2000 this turn.
+  { cardNumber: 'OP12-091', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 3 }, { fn: 'addPower', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'SMILE' } }, amount: 2000, duration: 'duringThisTurn', optional: true, maxTargets: 2 }] } },
+
+  // OP12-093 — If Leader {Revolutionary Army}, this Character gains +4 cost (continuous).
+  { cardNumber: 'OP12-093', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCost', target: { ref: 'self' }, amount: 4, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }] } }] } },
+
+  // OP12-094 — [On Play] place 3 {Revolutionary Army} from trash at bottom: If Leader {Revolutionary Army}, play up to 1 Character cost<=6 from trash.
+  { cardNumber: 'OP12-094', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }], functions: [
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Revolutionary Army' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 3 },
+    { fn: 'playFromTrash', filter: { category: 'character', maxCost: 6 }, ifPrevious: 'previousMovedAny' },
+  ] } },
+
   // OP12-091 (character) Poker —
   //   [Activate: Main] [Once Per Turn] You may place 3 cards from your trash at the bottom of your deck in
   //   any order: Up to 2 of your {SMILE} type Characters gain +2000 power during this turn.
@@ -433,6 +485,9 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-104 — [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 4 or less.
   { cardNumber: 'OP12-104', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
+  // OP12-105 — [Your Turn] [On Play] up to 1 [Trafalgar Law] +2000 this turn.
+  { cardNumber: 'OP12-105', templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Trafalgar Law' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
+
   // OP12-105 (character) Trafalgar Lammy —
   //   [Your Turn] [On Play] Up to 1 of your [Trafalgar Law] cards gains +2000 power during this turn.
   // NOTE: not yet implemented (needs template).
@@ -473,21 +528,4 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP12-117 (event) Slam Gibson —
-  //   [Main] You may rest 5 of your DON!! cards: If your Leader has the {Supernovas} type, add up to 1
-  //   Character with a cost of 9 or less to the top or bottom of the owner's Life cards face-down.[Counter]
-  //   Your Leader gains +3000 power during this battle.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-118 (character) Jewelry Bonney —
-  //   [Blocker][On Play] If you have 8 or more rested cards, draw 2 cards and trash 1 card from your hand.
-  //   Then, set up to 1 of your DON!! cards as active.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-119 (character) Bartholomew Kuma —
-  //   [On Play] You may trash 1 card from your hand: Add up to 1 card from the top of your deck to the top
-  //   of your Life cards. Then, this Character gains +2 cost until the end of your opponent's next End
-  //   Phase.[Opponent's Turn] [On K.O.] Add up to 1 card from the top of your deck to the top of your Life
-  //   cards.
-  // NOTE: not yet implemented (needs template).
 ];
