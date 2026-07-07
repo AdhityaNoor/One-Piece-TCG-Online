@@ -17,6 +17,8 @@
     "build:assets": "node scripts/build-card-assets.mjs",
     "worklist": "tsx scripts/effect-worklist/run.ts",
     "coverage": "tsx scripts/effect-coverage/run.ts",
+    "triage": "tsx scripts/effect-triage/run.ts",
+    "capability:doc": "tsx scripts/capability-doc/run.ts",
     "upload:blob-assets": "node scripts/upload-blob-assets.mjs"
   },
   "dependencies": {

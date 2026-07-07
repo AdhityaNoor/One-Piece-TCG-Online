@@ -17,7 +17,7 @@ import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
 import { hasContinuousKeyword, cannotAttack } from '../shared/power';
-import { fireWhenAttacking, type EffectTemplateRegistry } from '../../effects';
+import { fireWhenAttacking, fireRestTransitions, type EffectTemplateRegistry } from '../../effects';
 
 export function validateDeclareAttack(state: GameState, action: DeclareAttackAction, defs: CardDefinitionLookup): ValidationResult {
   const reasons: string[] = [];
@@ -124,9 +124,13 @@ export function executeDeclareAttack(
   // ability; any targeting it needs surfaces as a PendingChoice (resolved
   // before the Block/Counter Step proceeds, via the dispatch pending-choice gate).
   const fired = fireWhenAttacking(nextState, action.attackerInstanceId, registry, defs, action.actionId);
+  if (fired.pendingChoices.length > 0) {
+    return { state: fired.state, log: [...logger.log, ...fired.log], pendingChoices: fired.pendingChoices };
+  }
+  const rested = fireRestTransitions(fired.state, [action.attackerInstanceId], registry, defs, action.actionId);
   return {
-    state: fired.state,
-    log: [...logger.log, ...fired.log],
-    pendingChoices: fired.pendingChoices,
+    state: rested.state,
+    log: [...logger.log, ...fired.log, ...rested.log],
+    pendingChoices: rested.pendingChoices,
   };
 }

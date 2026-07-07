@@ -18,7 +18,8 @@
 import { useState } from 'react';
 import { validateAction, type GameAction } from '../../../engine/actions';
 import { createActionId, useMatchStore } from '../../store/matchStore';
-import type { CardView } from '../../../board/projection';
+import type { CardView, PlayerBoardView } from '../../../board/projection';
+import { findFirstAvailableDonId } from '../../../board/projection';
 import { computeCurrentCost } from '../../../engine/rules/shared/power';
 import { getOpponentId } from '../../../engine/rules/shared';
 import { canPayAbilityCost, evaluateGates, fieldDonIds, requiredDonMinusCount } from '../../../engine/effects';
@@ -30,8 +31,6 @@ export type BoardZoneKind = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea
 export type BoardSelectionMode =
   | { kind: 'idle' }
   | { kind: 'payingCost'; handCardInstanceId: string; cardCategory: 'character' | 'stage' | 'event'; cost: number; selectedDonIds: string[] }
-  | { kind: 'selectDonToGive'; selectedDonIds: string[] }
-  | { kind: 'selectGiveDonTarget'; selectedDonIds: string[] }
   | { kind: 'selectAttacker' }
   | { kind: 'selectAttackTarget'; attackerInstanceId: string }
   | { kind: 'selectBlocker' }
@@ -65,6 +64,7 @@ function abilityConditionMet(ability: Ability, source: CardInstance, state: NonN
 export function useBoardSelection(actingPlayerId: string | null) {
   const dispatch = useMatchStore((s) => s.dispatch);
   const state = useMatchStore((s) => s.state);
+  const localPlayerId = useMatchStore((s) => s.localPlayerId);
   const defs = useMatchStore((s) => s.defs);
   const registry = useMatchStore((s) => s.registry);
   const [mode, setMode] = useState<BoardSelectionMode>({ kind: 'idle' });
@@ -195,7 +195,6 @@ export function useBoardSelection(actingPlayerId: string | null) {
   }
 
   // --- Mode entry points, called from ActionBar's mode-switch buttons ---
-  const beginGiveDon = (): void => { setMode({ kind: 'selectDonToGive', selectedDonIds: [] }); setLastError(null); };
   const beginDeclareAttack = (): void => { setMode({ kind: 'selectAttacker' }); setLastError(null); };
   const beginActivateBlocker = (): void => { setMode({ kind: 'selectBlocker' }); setLastError(null); };
   const beginActivateCounter = (): void => { setMode({ kind: 'selectCounterCard' }); setLastError(null); };
@@ -237,12 +236,6 @@ export function useBoardSelection(actingPlayerId: string | null) {
       effectId: 'activateMain',
       donInstanceIds: mode.selectedDonIds,
     }));
-  }
-
-  function confirmGiveDonSelection(): void {
-    if (mode.kind !== 'selectDonToGive' || mode.selectedDonIds.length === 0) return;
-    setMode({ kind: 'selectGiveDonTarget', selectedDonIds: mode.selectedDonIds });
-    setLastError(null);
   }
 
   function activateMainFromCard(card: CardView): void {
@@ -304,6 +297,43 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const endMainPhase = (): void => withActingPlayer((playerId) => ({ type: 'END_MAIN_PHASE', actionId: createActionId(), playerId }));
   const concede = (): void => withActingPlayer((playerId) => ({ type: 'CONCEDE', actionId: createActionId(), playerId }));
 
+  /** True when the card hover Give DON stepper should appear (Main Phase, idle, own Leader/Character). */
+  const canGiveDonOnCard = (board: PlayerBoardView, card: CardView): boolean => {
+    if (!state || !actingPlayerId || mode.kind !== 'idle') return false;
+    if (state.currentPhase !== 'main' || actingPlayerId !== state.activePlayerId) return false;
+    if (board.playerId !== actingPlayerId) return false;
+    if (card.category !== 'leader' && card.category !== 'character') return false;
+    const canReturn = localPlayerId === null && card.donAttachedCount > 0;
+    return findFirstAvailableDonId(board) !== null || canReturn;
+  };
+
+  function giveDonToCard(board: PlayerBoardView, card: CardView): void {
+    if (!actingPlayerId || !state) return;
+    const donInstanceId = findFirstAvailableDonId(board);
+    if (!donInstanceId) return;
+    runDispatch({
+      type: 'GIVE_DON',
+      actionId: createActionId(),
+      playerId: actingPlayerId,
+      donInstanceId,
+      targetInstanceId: card.instanceId,
+    });
+  }
+
+  function returnGivenDonFromCard(card: CardView): void {
+    if (localPlayerId !== null) return;
+    if (!actingPlayerId) return;
+    const donInstanceId = card.donAttachedIds[card.donAttachedIds.length - 1];
+    if (!donInstanceId) return;
+    runDispatch({
+      type: 'RETURN_GIVEN_DON',
+      actionId: createActionId(),
+      playerId: actingPlayerId,
+      donInstanceId,
+      targetInstanceId: card.instanceId,
+    });
+  }
+
   /** The single router every PlayerBoardPanel card tap calls into. ownerPlayerId is whose panel the tapped card lives in (not necessarily the acting player). */
   function handleCardTap(ownerPlayerId: string, zone: BoardZoneKind, card: CardView): void {
     if (!actingPlayerId) return;
@@ -344,38 +374,6 @@ export function useBoardSelection(actingPlayerId: string | null) {
         } else if (mode.selectedDonIds.length < mode.cost) {
           setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, card.instanceId] });
         }
-        return;
-      }
-
-      case 'selectDonToGive': {
-        if (!isOwnCard || zone !== 'costArea' || card.donRested) return;
-        const already = mode.selectedDonIds.includes(card.instanceId);
-        if (already) {
-          setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => id !== card.instanceId) });
-        } else {
-          setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, card.instanceId] });
-        }
-        return;
-      }
-
-      case 'selectGiveDonTarget': {
-        if (!isOwnCard || (zone !== 'leaderArea' && zone !== 'characterArea')) return;
-        if (!actingPlayerId) return;
-        for (const donInstanceId of mode.selectedDonIds) {
-          const result = dispatch({
-            type: 'GIVE_DON',
-            actionId: createActionId(),
-            playerId: actingPlayerId,
-            donInstanceId,
-            targetInstanceId: card.instanceId,
-          });
-          if (!result.ok) {
-            setLastError(result.reasons);
-            return;
-          }
-        }
-        setLastError(null);
-        reset();
         return;
       }
 
@@ -529,7 +527,6 @@ export function useBoardSelection(actingPlayerId: string | null) {
     mode,
     lastError,
     cancel,
-    beginGiveDon,
     beginDeclareAttack,
     beginActivateBlocker,
     beginActivateCounter,
@@ -540,11 +537,13 @@ export function useBoardSelection(actingPlayerId: string | null) {
     hasUnusedActivateMain,
     hasCounter,
     canDeclareAttackWith,
+    canGiveDonOnCard,
+    giveDonToCard,
+    returnGivenDonFromCard,
     confirmPlayCard,
     confirmCounterEvent,
     confirmActivateMainCost,
     confirmOnOppAttackCost,
-    confirmGiveDonSelection,
     beginAttackWithCard,
     passStep,
     endMainPhase,

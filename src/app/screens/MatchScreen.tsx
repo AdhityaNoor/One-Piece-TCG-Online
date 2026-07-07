@@ -317,6 +317,10 @@ export function MatchScreen() {
                   onCardZoom={openZoom}
                   onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
                   boardFocused={boardHovered}
+                  canGiveDonOnCard={(card) => selection.canGiveDonOnCard(topPlayerBoard, card)}
+                  onGiveDon={(card) => selection.giveDonToCard(topPlayerBoard, card)}
+                  onReturnGivenDon={selection.returnGivenDonFromCard}
+                  allowReturnGivenDon={!isCasual}
                 />
 
                 <div className="flex flex-shrink-0 items-center justify-center gap-3 py-0.5">
@@ -340,6 +344,10 @@ export function MatchScreen() {
                   onCardZoom={openZoom}
                   onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
                   boardFocused={boardHovered}
+                  canGiveDonOnCard={(card) => selection.canGiveDonOnCard(bottomPlayerBoard, card)}
+                  onGiveDon={(card) => selection.giveDonToCard(bottomPlayerBoard, card)}
+                  onReturnGivenDon={selection.returnGivenDonFromCard}
+                  allowReturnGivenDon={!isCasual}
                 />
               </div>
             </ScaleToFit>
@@ -835,6 +843,10 @@ function PlayerSideRow({
   canAttackCard,
   battlePowerInstanceIds,
   boardFocused,
+  canGiveDonOnCard,
+  onGiveDon,
+  onReturnGivenDon,
+  allowReturnGivenDon,
 }: {
   board: ReturnType<typeof projectPlayerBoard>;
   isOwn: boolean;
@@ -850,6 +862,10 @@ function PlayerSideRow({
   canAttackCard: (card: CardView) => boolean;
   battlePowerInstanceIds: Set<string>;
   boardFocused: boolean;
+  canGiveDonOnCard: (card: CardView) => boolean;
+  onGiveDon: (card: CardView) => void;
+  onReturnGivenDon: (card: CardView) => void;
+  allowReturnGivenDon: boolean;
 }) {
   return (
     <div className="relative min-h-0 flex-1 overflow-visible">
@@ -868,6 +884,10 @@ function PlayerSideRow({
         onAttachedDonLabelTap={onAttachedDonLabelTap}
         onCardZoom={onCardZoom}
         onAttackTargetHover={onAttackTargetHover}
+        canGiveDonOnCard={canGiveDonOnCard}
+        onGiveDon={onGiveDon}
+        onReturnGivenDon={onReturnGivenDon}
+        allowReturnGivenDon={allowReturnGivenDon}
       />
     </div>
   );

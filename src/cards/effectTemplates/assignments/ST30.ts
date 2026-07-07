@@ -8,7 +8,13 @@ export const ST30_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST30-001 (leader) Luffy & Ace —
   //   If you have a Character with 7000 base power or more, give this Leader −2000 power.[Opponent's Turn]
   //   All of your [Portgas.D.Ace] and [Monkey.D.Luffy] cards gain +3000 power.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'ST30-001',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: -2000, duration: 'permanent', condition: { gate: [{ kind: 'selfHasCharacterBasePowerAtLeast', power: 7000 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerTypes', amount: 3000, duration: 'permanent', anyOfNames: ['Portgas.D.Ace', 'Monkey.D.Luffy'], sourceCondition: { turn: 'opponent' } }] } },
+    ],
+  },
 
   // ST30-002 - [On Play] Look at 5; add Character card with exactly 6000 power.
   {

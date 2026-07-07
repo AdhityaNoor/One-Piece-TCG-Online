@@ -51,4 +51,41 @@ describe('evaluateGates', () => {
     // No sourceInstanceId supplied -> cannot resolve "this Character", so the gate fails closed.
     expect(evaluateGates([{ kind: 'selfPlayedThisTurn' }], rig.state, rig.defs, 'p1')).toBe(false);
   });
+
+  it('checks selfHasCharacterBasePowerAtLeast against printed base power on your Characters', () => {
+    const base = buildBaseRig();
+    const mid = putCharacterInPlay(base, 'p1', makeCharacterDef({ basePower: 6000 }));
+    const big = putCharacterInPlay(mid.rig, 'p1', makeCharacterDef({ basePower: 7000 }));
+
+    expect(evaluateGates([{ kind: 'selfHasCharacterBasePowerAtLeast', power: 7000 }], big.rig.state, big.rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfHasCharacterBasePowerAtLeast', power: 8000 }], big.rig.state, big.rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks selfAllCharactersTyped — all field Characters must match the type (empty field passes)', () => {
+    let rig = buildBaseRig();
+    expect(evaluateGates([{ kind: 'selfAllCharactersTyped', typeIncludes: 'East Blue' }], rig.state, rig.defs, 'p1')).toBe(true);
+
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['East Blue'] })));
+    expect(evaluateGates([{ kind: 'selfAllCharactersTyped', typeIncludes: 'East Blue' }], rig.state, rig.defs, 'p1')).toBe(true);
+
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Navy'] })));
+    expect(evaluateGates([{ kind: 'selfAllCharactersTyped', typeIncludes: 'East Blue' }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks selfLeaderPowerAtMost against current Leader power', () => {
+    let rig = buildBaseRig();
+    const leaderId = rig.state.players.p1.leaderInstanceId!;
+    rig = {
+      ...rig,
+      defs: {
+        ...rig.defs,
+        [rig.state.cardsById[leaderId].cardDefinitionId]: makeCharacterDef({
+          cardDefinitionId: rig.state.cardsById[leaderId].cardDefinitionId,
+          basePower: 5000,
+        }),
+      },
+    };
+    expect(evaluateGates([{ kind: 'selfLeaderPowerAtMost', power: 5000 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfLeaderPowerAtMost', power: 4999 }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
 });

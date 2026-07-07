@@ -36,6 +36,13 @@ export interface BoardCardTileProps {
   onZoom?: () => void;
   onHoverStart?: () => void;
   onHoverEnd?: () => void;
+  /** Main-phase Give DON stepper — shown in the stacked hover menu. */
+  giveDonControls?: {
+    availableActiveDon: number;
+    allowReturnGivenDon?: boolean;
+    onGive: () => void;
+    onReturn: () => void;
+  };
 }
 
 function CardActionButton({
@@ -62,6 +69,53 @@ function CardActionButton({
       <img src={iconSrc} alt="" className="h-4 w-4 shrink-0 object-contain" />
       <span className="truncate">{label}</span>
     </button>
+  );
+}
+
+function GiveDonStepper({
+  attachedCount,
+  availableActiveDon,
+  allowReturnGivenDon = true,
+  onGive,
+  onReturn,
+}: {
+  attachedCount: number;
+  availableActiveDon: number;
+  allowReturnGivenDon?: boolean;
+  onGive: () => void;
+  onReturn: () => void;
+}) {
+  return (
+    <div
+      className="flex h-8 min-w-[7.5rem] items-center gap-1 rounded-md border border-cyan-200/75 bg-cyan-100/95 px-1.5 text-[0.58rem] font-black uppercase leading-none tracking-[0.04em] text-slate-950 shadow-[0_8px_20px_rgba(0,0,0,0.42)]"
+      title={`${availableActiveDon} active DON available`}
+    >
+      <span className="ml-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-slate-900/25 bg-white/90 text-[0.5rem] font-black leading-none">D</span>
+      <span className="min-w-0 flex-1 truncate">Give DON</span>
+      {allowReturnGivenDon && (
+        <button
+          type="button"
+          disabled={attachedCount === 0}
+          onClick={(event) => { event.stopPropagation(); onReturn(); }}
+          aria-label="Return 1 given DON"
+          title="Return 1 given DON"
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-900/20 bg-white/80 text-sm leading-none transition enabled:hover:bg-white disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          −
+        </button>
+      )}
+      <span className="min-w-[1rem] text-center tabular-nums">{attachedCount}</span>
+      <button
+        type="button"
+        disabled={availableActiveDon === 0}
+        onClick={(event) => { event.stopPropagation(); onGive(); }}
+        aria-label="Give 1 DON"
+        title={`Give 1 DON (${availableActiveDon} available)`}
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-900/20 bg-white/80 text-sm leading-none transition enabled:hover:bg-white disabled:cursor-not-allowed disabled:opacity-35"
+      >
+        +
+      </button>
+    </div>
   );
 }
 
@@ -199,13 +253,14 @@ export function BoardCardTile({
   onZoom,
   onHoverStart,
   onHoverEnd,
+  giveDonControls,
 }: BoardCardTileProps) {
   const dims = SIZE_PX[size];
   const isField = size === 'field';
   const rested = card.orientation === 'rested';
   const visiblePowerDelta = !showBattlePower && card.powerDelta !== null && card.powerDelta !== 0 ? card.powerDelta : null;
   const visibleCostDelta = !showBattlePower && card.costDelta !== null && card.costDelta !== 0 ? card.costDelta : null;
-  const hasCardActions = !!onActivate || !!onAttack || !!onZoom;
+  const hasCardActions = !!onActivate || !!onAttack || !!onZoom || !!giveDonControls;
   const hasAttachedDon = card.donAttachedCount > 0 && !showBattlePower;
   // Keyword labels are hidden while the battle-power overlay is up so they
   // don't fight the big centered number during a battle.
@@ -315,6 +370,15 @@ export function BoardCardTile({
               ariaLabel={`Declare attack with ${card.name}`}
               title="Declare attack"
               onClick={onAttack}
+            />
+          )}
+          {giveDonControls && (
+            <GiveDonStepper
+              attachedCount={card.donAttachedCount}
+              availableActiveDon={giveDonControls.availableActiveDon}
+              allowReturnGivenDon={giveDonControls.allowReturnGivenDon}
+              onGive={giveDonControls.onGive}
+              onReturn={giveDonControls.onReturn}
             />
           )}
           {onActivate && (

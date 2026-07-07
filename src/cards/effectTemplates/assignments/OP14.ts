@@ -129,18 +129,24 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP14-026 (character) Kouzuki Oden —
   //   [Opponent's Turn] If this Character is rested, this Character gains +2000 power.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP14-026', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'opponent', rested: true } }] } },
 
   // OP14-027 (character) Shanks —
   //   [Your Turn] When this Character becomes rested, rest up to 1 of your opponent's Characters with 7000
   //   base power or less.[Opponent's Turn] If this Character is rested, give all of your opponent's
   //   Characters −1000 power.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP14-027',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraOpponentCharacters', amount: -1000, duration: 'permanent', sourceCondition: { turn: 'opponent', rested: true } }] } },
+      { templateId: 'ability', params: { timing: 'onRested', condition: { turn: 'your' }, functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 7000 } }, optional: true }] } },
+    ],
+  },
 
   // OP14-028 (character) Johnny —
   //   [Your Turn] When this Character becomes rested, K.O. up to 1 of your opponent's rested Characters
   //   with a cost of 2 or less.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP14-028', templateId: 'ability', params: { timing: 'onRested', condition: { turn: 'your' }, functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 2 } }, optional: true }] } },
 
   // OP14-029 (character) Tashigi —
   //   [Opponent's Turn] If this Character would be removed from the field by your opponent's effect, you
@@ -156,7 +162,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-032 (character) Humandrill —
   //   [Your Turn] When this Character becomes rested, rest up to 1 of your opponent's Characters with a
   //   cost of 4 or less.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP14-032', templateId: 'ability', params: { timing: 'onRested', condition: { turn: 'your' }, functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
   // OP14-033 (character) Perona —
   //   [On Play] Up to 2 of your opponent's Characters with a cost of 5 or less cannot be rested until the
@@ -173,7 +179,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-035 (character) Yosaku —
   //   [Your Turn] When this Character becomes rested, up to 1 of your opponent's rested Characters with a
   //   cost of 4 or less will not become active in your opponent's next Refresh Phase.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP14-035', templateId: 'ability', params: { timing: 'onRested', condition: { turn: 'your' }, functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 4 } }, optional: true, maxTargets: 1 }] } },
 
   // OP14-036 (event) Strive to Surpass me, Roronoa Zoro!!! —
   //   [Counter] You may rest 1 of your cards: Up to 1 of your Leader or Character cards gains +4000 power

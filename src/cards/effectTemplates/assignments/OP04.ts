@@ -71,7 +71,13 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x1] [Your Turn] Give all of your opponent's Characters −1 cost.[End of Your Turn] ➀ (You may
   //   rest the specified number of DON!! cards in your cost area.): Set up to 1 of your Characters with a
   //   cost of 5 or less as active.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP04-020',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -1, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
+      { templateId: 'ability', params: { timing: 'endOfTurn', cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { maxCost: 5 }, optional: true }] } },
+    ],
+  },
 
   // OP04-021 — [On Your Opponent's Attack] rest 2 DON!!: rest up to 1 of opponent's DON!!.
   { cardNumber: 'OP04-021', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'restOpponentDon', maxTargets: 1 }] } },

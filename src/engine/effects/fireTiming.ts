@@ -314,6 +314,37 @@ export function fireCharacterKoedReactions(
 }
 
 /**
+ * Fires [When this Character becomes rested] abilities (timing onRested) for each
+ * instance that just transitioned active→rested. Called after attack declaration,
+ * activation costs, and from finishWithCascade when rest() ops resolve.
+ */
+export function fireRestTransitions(
+  state: GameState,
+  restedInstanceIds: readonly string[],
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  if (restedInstanceIds.length === 0) return noop(state);
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  const seen = new Set<string>();
+  for (const id of restedInstanceIds) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const inst = working.cardsById[id];
+    if (!inst || inst.orientation !== 'rested') continue;
+    const program = registry[inst.cardDefinitionId];
+    if (!program?.abilities.some((a) => a.timing === 'onRested')) continue;
+    const fired = runTimings(program, ['onRested'], working, id, defs, actionId, registry, false);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
+/**
  * Resumes a suspended EffectProgram after its PendingChoice (sourceEffectId
  * 'ir') is answered. Called by the generic RESOLVE_PENDING_CHOICE handler.
  */

@@ -151,9 +151,12 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   },
 
   dispatch(action) {
-    const { state, defs, registry } = get();
+    const { state, defs, registry, localPlayerId } = get();
     if (!state) {
       return { ok: false, reasons: ['No match is in progress.'] };
+    }
+    if (action.type === 'RETURN_GIVEN_DON' && localPlayerId !== null) {
+      return { ok: false, reasons: ['Returning given DON!! is not allowed in Casual matches.'] };
     }
     const validation = validateAction(state, action, defs, registry);
     if (!validation.legal) {

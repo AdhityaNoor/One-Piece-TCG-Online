@@ -54,6 +54,8 @@ import {
   executeActivateEventMain,
   validateGiveDon,
   executeGiveDon,
+  validateReturnGivenDon,
+  executeReturnGivenDon,
   validateEndMainPhase,
   executeEndMainPhase,
   validateResolvePendingChoice,
@@ -128,6 +130,8 @@ export function validateAction(
       return validateActivateCardEffect(state, action, registry, defs);
     case 'GIVE_DON':
       return validateGiveDon(state, action);
+    case 'RETURN_GIVEN_DON':
+      return validateReturnGivenDon(state, action);
     case 'DECLARE_ATTACK':
       return validateDeclareAttack(state, action, defs);
     case 'ACTIVATE_BLOCKER':
@@ -184,6 +188,9 @@ export function executeAction(
       break;
     case 'GIVE_DON':
       result = executeGiveDon(state, action);
+      break;
+    case 'RETURN_GIVEN_DON':
+      result = executeReturnGivenDon(state, action);
       break;
     case 'DECLARE_ATTACK':
       result = executeDeclareAttack(state, action, defs, registry);

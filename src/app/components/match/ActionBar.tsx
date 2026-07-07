@@ -25,8 +25,6 @@ interface EndPhaseWarning {
 
 const INSTRUCTIONS: Record<string, string> = {
   payingCost: 'Tap active DON!! cards in your Cost Area to pay the cost, then Confirm.',
-  selectDonToGive: 'Tap one or more active DON!! cards in your Cost Area, then choose a target.',
-  selectGiveDonTarget: 'Tap your own Leader or Character to receive the selected DON!!.',
   selectAttacker: 'Tap your own active Leader or Character to attack with.',
   selectAttackTarget: "Tap the opponent's Leader, or a RESTED Character, to attack.",
   selectBlocker: 'Tap your own active [Blocker] Character.',
@@ -92,7 +90,6 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
     mode,
     lastError,
     cancel,
-    beginGiveDon,
     beginActivateBlocker,
     beginActivateCounter,
     beginActivateOnOppAttack,
@@ -104,7 +101,6 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
     confirmCounterEvent,
     confirmActivateMainCost,
     confirmOnOppAttackCost,
-    confirmGiveDonSelection,
     passStep,
     endMainPhase,
   } = selection;
@@ -140,11 +136,6 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
           {mode.kind === 'payingOnOppAttackCost' && (
             <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmOnOppAttackCost}>
               Activate ({mode.selectedDonIds.length}/{mode.cost} DON!!)
-            </Button>
-          )}
-          {mode.kind === 'selectDonToGive' && (
-            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length === 0} onClick={confirmGiveDonSelection}>
-              Choose Target ({mode.selectedDonIds.length} DON!!)
             </Button>
           )}
           <Button variant="ghost" size="sm" onClick={cancel}>Cancel</Button>
@@ -246,7 +237,6 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
     <div className="flex flex-col gap-2">
       {errorBanner}
       <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" size="sm" disabled={availableDon === 0} onClick={beginGiveDon}>Give DON!! ({availableDon} available)</Button>
         <Button variant="primary" size="sm" onClick={requestEndMainPhase}>End Main Phase</Button>
       </div>
 

@@ -17,7 +17,7 @@ import type { CardCategory, Color } from '../state/card';
 export type Selector =
   | { sel: 'self' } // the source card
   | { sel: 'controllerLeader' }
-  | { sel: 'controllerCharacters'; maxCost?: number; exactCost?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; color?: Color; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }
+  | { sel: 'controllerCharacters'; maxCost?: number; exactCost?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; color?: Color; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; minDonAttached?: number }
   | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; name?: string; excludeSelf?: boolean }
   | { sel: 'controllerLeaderOrStage'; typeIncludes?: string } // controller's Leader + Stage cards (for 'rest 1 of your {X} Leader or Stage' costs)
   | { sel: 'opponentLeaderOrCharacters' }
@@ -29,11 +29,13 @@ export type Selector =
   | { sel: 'controllerOrOpponentLifeTop' } // top Life card from either player, de-duplicated only by absent zones
   | { sel: 'controllerDeckTop' }
   | { sel: 'allCharacters'; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number } // any player's Characters
-  | { sel: 'opponentCharacters'; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean } // optional cost/power (current) + base cost/power + rested/blocker filters
+  | { sel: 'opponentCharacters'; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; minDonAttached?: number } // optional cost/power (current) + base cost/power + rested/blocker/given-DON!! filters
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
   | { sel: 'opponentHand' } // opponent's hand cards, for effects where the opponent chooses/trashes
   | { sel: 'controllerTrash'; filter?: SearchFilter } // controller's trash cards matching a filter (for recover-to-hand)
+  | { sel: 'opponentTrash'; filter?: SearchFilter } // opponent's trash cards matching a filter
   | { sel: 'controllerDeck'; filter?: SearchFilter } // controller's deck cards matching a filter (for play-from-deck)
+  | { sel: 'allStages' } // any player's Stage in the stage area
   | { sel: 'var'; name: string }; // ids bound by a prior chooseTargets op
 
 export type IrCondition = ContinuousPowerCondition; // { donAttachedAtLeast?, turn? }
@@ -94,11 +96,20 @@ export type EffectOp =
   | ({ op: 'addPower'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition; scale?: PowerScale } & EffectOpSequenceGate)
   // Register an "aura"/anthem power modifier over a dynamic target group (e.g. "your
   // {Supernovas} Leaders and Characters gain +1000"), optionally gated on source state.
-  | ({ op: 'addPowerAura'; group: PowerAuraGroup; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition } & EffectOpSequenceGate)
+  | ({ op: 'addPowerAura'; group: PowerAuraGroup; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
+  // Register a "base power becomes N" aura over a dynamic target group (e.g. "[Opponent's Turn]
+  // all of your [Shura] cards' base power become 6000"), optionally gated on source state.
+  | ({ op: 'setBasePowerAura'; group: PowerAuraGroup; value: number; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
   | ({ op: 'addCost'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
+  // Register a continuous cost "aura" over a dynamic target group (e.g. "all of your {Navy}
+  // Characters gain +2 cost", "give all of your opponent's Characters −1 cost").
+  | ({ op: 'addCostAura'; group: PowerAuraGroup; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
   | ({ op: 'setBasePower'; target: Selector; value: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate) // "base power BECOMES N" (2-6): overwrite base; additive modifiers still stack on top
   | ({ op: 'setBaseCost'; target: Selector; value: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate) // "base cost BECOMES N" (2-7): overwrite base cost
   | ({ op: 'addKeyword'; target: Selector; keyword: ContinuousKeyword; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
+  // Register a continuous keyword grant over a dynamic target group (e.g. "all of your [Shura]
+  // cards gain [Unblockable]"), optionally gated on source state.
+  | ({ op: 'addKeywordAura'; group: PowerAuraGroup; keyword: ContinuousKeyword; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
   // Grant "cannot be K.O.'d" to the target. scope 'battle' = battle K.O. only (7-1-4-2); 'any' = any source.
   // `attackerCategory` optionally restricts a battle immunity to a given attacker category ("by Leaders").
   | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character' } & EffectOpSequenceGate)
@@ -160,7 +171,7 @@ export type NonSuspendingEffectOp = Exclude<
  *                 attacker and the battle's target is an opponent Character.
  *   endOfTurn   — [End of Your Turn]: fires during the source controller's End Phase.
  */
-export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'onBlock' | 'onOpponentsAttack' | 'onBattle' | 'activateMain' | 'onKO' | 'onCharacterKoed' | 'counter' | 'lifeTrigger' | 'endOfTurn';
+export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'onBlock' | 'onOpponentsAttack' | 'onBattle' | 'activateMain' | 'onKO' | 'onCharacterKoed' | 'onRested' | 'counter' | 'lifeTrigger' | 'endOfTurn';
 
 /**
  * An activation cost that must be PAID before an activated ability resolves
@@ -193,6 +204,7 @@ export type AbilityGate =
   | { kind: 'selfHand'; atLeast?: number; atMost?: number } // "If you have N or less cards in your hand"
   | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
   | { kind: 'selfHasCharacterCostAtLeast'; atLeast: number } // "If you have a Character with a cost of N or more"
+  | { kind: 'selfHasCharacterBasePowerAtLeast'; power: number } // "If you have a Character with a base power of N or more"
   | { kind: 'opponentDonMoreThanSelf' } // "If your opponent has more DON!! cards on their field than you"
   | { kind: 'selfDonAtMostOpponent' } // "If the number of DON!! on your field is equal to or less than your opponent's"
   | { kind: 'selfControlsNamed'; name: string } // "If you have [X]" — you control a Character named X
@@ -204,6 +216,8 @@ export type AbilityGate =
   | { kind: 'selfTrashCount'; atLeast?: number; atMost?: number } // "N or more/less cards in your trash"
   | { kind: 'selfDeckCount'; atLeast?: number; atMost?: number } // "N or less cards in your deck"
   | { kind: 'selfTypedCharacterCount'; typeIncludes: string; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {type} Characters"
+  | { kind: 'selfAllCharactersTyped'; typeIncludes: string } // "if the only Characters on your field are {type} type Characters"
+  | { kind: 'selfLeaderPowerAtMost'; power: number } // "if your Leader has N power or less"
   | { kind: 'selfTrashMatching'; atLeast?: number; atMost?: number; category?: Exclude<CardCategory, 'don'>; typeIncludes?: string } // "N or more Events/{type} cards in your trash"
   | { kind: 'opponentRestedCharacterCount'; atLeast?: number; atMost?: number } // "opponent has N or more rested Characters"
   | { kind: 'selfGivenDonCount'; atLeast?: number; atMost?: number } // "you have N or more given DON!!" (DON attached to your Leader/Characters)

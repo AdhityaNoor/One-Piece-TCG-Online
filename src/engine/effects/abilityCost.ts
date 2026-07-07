@@ -102,10 +102,11 @@ export function payAbilityCost(
   costs: AbilityCost[],
   actionId: string | null,
   selectedDonMinusIds: readonly string[] = [],
-): { state: GameState; log: GameLogEntry[] } {
+): { state: GameState; log: GameLogEntry[]; restedInstanceIds: string[] } {
   const logger = createActionLogger(state, actionId);
   let working = state;
   let selectedCursor = 0;
+  const restedInstanceIds: string[] = [];
 
   for (const cost of costs) {
     switch (cost.kind) {
@@ -117,6 +118,7 @@ export function payAbilityCost(
       }
       case 'restThis': {
         const source = working.cardsById[sourceInstanceId];
+        if (source?.orientation === 'active') restedInstanceIds.push(sourceInstanceId);
         working = {
           ...working,
           cardsById: { ...working.cardsById, [sourceInstanceId]: { ...source, orientation: 'rested' } },
@@ -168,7 +170,7 @@ export function payAbilityCost(
     }
   }
 
-  return { state: { ...working, log: [...working.log, ...logger.log] }, log: logger.log };
+  return { state: { ...working, log: [...working.log, ...logger.log] }, log: logger.log, restedInstanceIds };
 }
 
 function payDonMinus(

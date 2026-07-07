@@ -93,6 +93,8 @@ export interface ContinuousPowerCondition {
   donAttachedAtLeast?: number;
   /** [Your Turn] / [Opponent's Turn] gating, relative to the modifier's owner. */
   turn?: 'your' | 'opponent';
+  /** The card the modifier applies to must be rested / active (e.g. "If this Character is rested"). */
+  rested?: boolean;
   /** "If <board state>" gate(s), re-checked on every power read (e.g. "If you have 2 or less Life cards"). */
   gate?: AbilityGate[];
 }
@@ -108,6 +110,8 @@ export interface PowerAuraGroup {
   ownLeaderAndCharacters?: true;
   /** Restrict to cards carrying any of these tribal types (OR). Omitted = all. */
   anyOfTypes?: string[];
+  /** Restrict to cards whose printed name matches any of these (OR). Includes Leader when ownLeaderAndCharacters is set. */
+  anyOfNames?: string[];
   /** Exclude the Leader (chars only) — for "all of your Characters" auras. */
   charactersOnly?: boolean;
   /** Target the OPPONENT's Characters instead of the controller's — for "give all of your opponent's Characters -N". */
@@ -163,7 +167,13 @@ export interface ContinuousPowerModifier {
 }
 
 export interface ContinuousCostModifier {
-  appliesToInstanceId: string;
+  /** Single fixed target. Exactly one of appliesToInstanceId / appliesToGroup is set. */
+  appliesToInstanceId?: string;
+  /**
+   * Dynamic aura target set, resolved at read time (e.g. "all of your {Navy} Characters
+   * gain +2 cost", "give all of your opponent's Characters −1 cost"). Reuses PowerAuraGroup.
+   */
+  appliesToGroup?: PowerAuraGroup;
   /** Signed cost delta; final computed cost is floored at 0. */
   amount: number;
   /**
@@ -172,8 +182,10 @@ export interface ContinuousCostModifier {
    * records still stack on top. Last-applied set wins. Final cost is still floored at 0.
    */
   setBase?: number;
-  /** Omitted when the modifier is unconditional. */
+  /** Gate evaluated against the buffed (modified) card. Omitted when the modifier is unconditional. */
   condition?: ContinuousPowerCondition;
+  /** Gate evaluated against the SOURCE card. Omitted when the modifier does not depend on source state. */
+  sourceCondition?: SourceStateCondition;
 }
 
 /** Prevents some or all [Blocker] activations while a specific attacker is attacking. */
@@ -196,12 +208,17 @@ export interface ContinuousAttackRestriction {
  */
 export type ContinuousKeyword = 'rush' | 'blocker' | 'doubleAttack' | 'banish' | 'unblockable' | 'canAttackActive';
 
-/** A structured keyword grant applied to one instance, with optional dynamic conditions. */
+/** A structured keyword grant applied to one instance or a dynamic aura group, with optional dynamic conditions. */
 export interface ContinuousKeywordModifier {
-  appliesToInstanceId: string;
+  /** Single fixed target. Exactly one of appliesToInstanceId / appliesToGroup is set. */
+  appliesToInstanceId?: string;
+  /** Dynamic aura target set, resolved at read time (Leader + Characters or chars only). */
+  appliesToGroup?: PowerAuraGroup;
   keyword: ContinuousKeyword;
-  /** Omitted when the granted keyword is unconditional. */
+  /** Gate evaluated against the buffed (modified) card. Omitted when the grant is unconditional. */
   condition?: ContinuousPowerCondition;
+  /** Gate evaluated against the SOURCE card. Omitted when the grant does not depend on source state. */
+  sourceCondition?: SourceStateCondition;
 }
 
 /**

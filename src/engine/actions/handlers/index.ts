@@ -8,6 +8,7 @@ export * from './playCharacter';
 export * from './playStage';
 export * from './activateEventMain';
 export * from './giveDon';
+export * from './returnGivenDon';
 export * from './endMainPhase';
 export * from './resolvePendingChoice';
 export * from './concede';

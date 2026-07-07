@@ -349,8 +349,14 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP07-070', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'playFromHand', filter: { typeIncludes: 'Foxy Pirates', maxCost: 4 } }] } },
 
   // OP07-071 — [Activate: Main][Once Per Turn] Add 1 DON!! and rest it.
-  //   PARTIAL: the [Opponent's Turn] "give all opp Characters −1000" aura needs an opponent-group power aura (deferred).
-  { cardNumber: 'OP07-071', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  //   [Opponent's Turn] Give all of your opponent's Characters −1000 power.
+  {
+    cardNumber: 'OP07-071',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraOpponentCharacters', amount: -1000, duration: 'permanent', sourceCondition: { turn: 'opponent' } }] } },
+    ],
+  },
 
   // OP07-072 — [On Play] DON!! −1: Look 5, reveal up to 1 {Foxy Pirates} to hand (rest to bottom), then play up to 1 purple Character (≤4000 base power) from hand.
   { cardNumber: 'OP07-072', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Foxy Pirates' }, remainder: 'bottom' }, { fn: 'playFromHand', filter: { category: 'character', color: 'purple', maxPower: 4000 } }] } },
@@ -401,7 +407,7 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP07-081 (character) Kalifa —
   //   [DON!! x1] [Your Turn] Give all of your opponent's Characters −1 cost.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP07-081', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -1, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
 
   // OP07-082 — [On Play] Trash 2 from the top of your deck and give up to 1 opponent Character −1 cost during this turn.
   { cardNumber: 'OP07-082', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -1, optional: true }] } },

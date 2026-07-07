@@ -14,6 +14,7 @@ import type { GameState } from '../state/game';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { getOpponentId } from '../rules/shared/players';
 import { fieldDonIds } from './abilityCost';
+import { computeCurrentPower } from '../rules/shared/power';
 
 function typeMatches(defTypes: string[], required: string): boolean {
   const normalized = required.toLowerCase();
@@ -164,6 +165,10 @@ function evaluateGate(
       return player.characterArea.cardIds.some((id) => currentCostForGate(state, defs, id) >= gate.atLeast);
     }
 
+    case 'selfHasCharacterBasePowerAtLeast': {
+      return player.characterArea.cardIds.some((id) => (defs[state.cardsById[id]?.cardDefinitionId ?? '']?.basePower ?? -1) >= gate.power);
+    }
+
     case 'opponentDonMoreThanSelf': {
       const opponentId = getOpponentId(state, ownerId);
       return fieldDonIds(state, opponentId).length > fieldDonIds(state, ownerId).length;
@@ -219,6 +224,18 @@ function evaluateGate(
       if (gate.atLeast !== undefined && c < gate.atLeast) return false;
       if (gate.atMost !== undefined && c > gate.atMost) return false;
       return true;
+    }
+
+    case 'selfAllCharactersTyped': {
+      const chars = player.characterArea.cardIds;
+      if (chars.length === 0) return true;
+      return chars.every((id) => typeMatches(defs[state.cardsById[id]?.cardDefinitionId ?? '']?.types ?? [], gate.typeIncludes));
+    }
+
+    case 'selfLeaderPowerAtMost': {
+      const leaderId = player.leaderInstanceId;
+      if (!leaderId) return false;
+      return computeCurrentPower(defs, state, leaderId) <= gate.power;
     }
 
     case 'opponentHasCharacterBasePowerAtLeast': {

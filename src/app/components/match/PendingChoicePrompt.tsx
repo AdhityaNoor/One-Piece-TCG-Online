@@ -20,7 +20,7 @@ import { Button } from '../Button';
 import { CardImage } from '../CardImage';
 import { ZoneSection } from './ZoneSection';
 import { CardChoiceGallery } from './CardChoiceGallery';
-import { StlCoinCanvas } from './StlCoinCanvas';
+import { StlCoinCanvas, COIN_FLIP_DURATION_MS } from './StlCoinCanvas';
 
 export interface PendingChoicePromptProps {
   state: GameState;
@@ -149,8 +149,6 @@ function MatchSetupCoin({ pick, result, resolved }: { pick: CoinSide | null; res
     <StlCoinCanvas
       result={result}
       flipping={!!pick && !resolved}
-      loadModel={!!pick}
-      className="h-[min(42vh,24rem)] w-[min(42vh,24rem)]"
     />
   );
 }
@@ -187,7 +185,7 @@ function SetupTossOverlay({
           P1 calls Jolly Roger or Sunny Go. If correct, P1 chooses first or second. If wrong, P2 chooses.
         </p>
 
-        <div className="my-8 flex h-[min(34vh,18rem)] min-h-[12rem] items-center justify-center">
+        <div className="my-8 flex min-h-[min(17vh,9rem)] items-center justify-center">
           <MatchSetupCoin pick={pick} result={result} resolved={resolved} />
         </div>
 
@@ -284,7 +282,7 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
   function callToss(side: CoinSide): void {
     setTossPick(side);
     setTossResolved(false);
-    window.setTimeout(() => setTossResolved(true), 1650);
+    window.setTimeout(() => setTossResolved(true), COIN_FLIP_DURATION_MS);
   }
 
   const errorBanner = error && error.length > 0 && (

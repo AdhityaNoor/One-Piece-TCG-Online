@@ -67,3 +67,10 @@ export function countAvailableDon(board: PlayerBoardView): number {
   const attached = attachedDonIds(board);
   return board.costArea.filter((don) => !don.donRested && !attached.has(don.instanceId)).length;
 }
+
+/** First active, unattached DON!! in cost area — stable pick for GIVE_DON dispatch. */
+export function findFirstAvailableDonId(board: PlayerBoardView): string | null {
+  const attached = attachedDonIds(board);
+  const don = board.costArea.find((entry) => !entry.donRested && !attached.has(entry.instanceId));
+  return don?.instanceId ?? null;
+}

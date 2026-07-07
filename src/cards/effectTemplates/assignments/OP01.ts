@@ -411,7 +411,7 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-091 (leader) King —
   //   [Your Turn] If you have 10 DON!! cards on your field, give all of your opponent's Characters −1000
   //   power.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP01-091', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraOpponentCharacters', amount: -1000, duration: 'permanent', gate: [{ kind: 'selfDonFieldCount', atLeast: 10 }], sourceCondition: { turn: 'your' } }] } },
 
   // OP01-093 — [On Play] rest 1 DON!!: add 1 DON!! from deck rested.
   { cardNumber: 'OP01-093', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },

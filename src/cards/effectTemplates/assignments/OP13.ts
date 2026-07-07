@@ -22,12 +22,19 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-003 (leader) Gol.D.Roger —
   //   If you have any DON!! cards on your field, 1 DON!! card placed during your DON!! Phase is given to
   //   your Leader.If you have 9 or less DON!! cards on your field, give this Leader −2000 power.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: the DON-placement routing rule is deferred (needs DON-phase modifier).
+  { cardNumber: 'OP13-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: -2000, duration: 'permanent', condition: { gate: [{ kind: 'selfDonFieldCount', atMost: 9 }] } }] } },
 
   // OP13-004 (leader) Sabo —
   //   If you have 4 or more Life cards, give this Leader −1000 power.[DON!! x1] If you have a Character
   //   with a cost of 8 or more, your Leader and all of your Characters gain +1000 power.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP13-004',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: -1000, duration: 'permanent', condition: { gate: [{ kind: 'selfLife', atLeast: 4 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerTypes', amount: 1000, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }] } },
+    ],
+  },
 
   // ── Triage batch (OP13 expressible). "give DON!! to [named]" is approximated as give-to-Leader/Char; OR-type/attr gates, any-DON-given & trash-count gates, and "turn Life face-up" cost are deferred. ──
   { cardNumber: 'OP13-005', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 1 }] } },
@@ -237,7 +244,9 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-055 (character) Rakuyo —
   //   [When Attacking] If you have 4 or less cards in your hand, all of your Characters with a type
   //   including "Whitebeard Pirates" gain +1000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  //   The "if 4 or less cards" is checked once at attack time (ability gate); the granted +1000 then
+  //   lasts the whole turn regardless of later hand size, so the aura itself carries no board gate.
+  { cardNumber: 'OP13-055', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfHand', atMost: 4 }], functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 1000, duration: 'duringThisTurn', anyOfTypes: ['Whitebeard Pirates'] }] } },
 
   { cardNumber: 'OP13-056', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'draw', amount: 1 }] } },
 

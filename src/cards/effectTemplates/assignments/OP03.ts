@@ -424,7 +424,8 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-078 (character) Issho —
   //   [DON!! x1] [Your Turn] Give all of your opponent's Characters −3 cost.[On Play] If your opponent has
   //   6 or more cards in their hand, trash 2 cards from your opponent's hand.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: the [On Play] opponent-hand-trash clause is deferred (no trash-from-opponent-hand primitive).
+  { cardNumber: 'OP03-078', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -3, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
 
   // OP03-079 (character) Vergo —
   //   [DON!! x1] This Character cannot be K.O.'d in battle.

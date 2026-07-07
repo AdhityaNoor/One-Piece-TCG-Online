@@ -41,6 +41,10 @@ function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffectRecord
     const def = getDefinition(defs, target);
     if (!group.anyOfTypes.some((t) => typeIncludes(def.types, t))) return false;
   }
+  if (group.anyOfNames !== undefined) {
+    const def = getDefinition(defs, target);
+    if (!group.anyOfNames.includes(def.name)) return false;
+  }
   return true;
 }
 
@@ -68,6 +72,7 @@ function conditionApplies(cond: ContinuousPowerCondition | undefined, record: Co
     if (cond.turn === 'your' && !isOwnersTurn) return false;
     if (cond.turn === 'opponent' && isOwnersTurn) return false;
   }
+  if (cond.rested !== undefined && (instance.orientation === 'rested') !== cond.rested) return false;
   // "If <board state>" gate, re-evaluated each read against the modifier's owner.
   if (cond.gate && !evaluateGates(cond.gate, state, defs, record.ownerId)) return false;
   return true;
@@ -90,14 +95,29 @@ function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, 
 
 function costModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
   const mod = record.costModifier;
-  if (!mod || mod.appliesToInstanceId !== instanceId) return false;
-  return conditionApplies(mod.condition, record, state, instanceId, defs);
+  if (!mod) return false;
+  // Target selection: a single fixed instance, or a dynamic aura group (mirrors powerModifierApplies).
+  if (mod.appliesToInstanceId !== undefined) {
+    if (mod.appliesToInstanceId !== instanceId) return false;
+  } else if (mod.appliesToGroup !== undefined) {
+    if (!targetInAuraGroup(mod.appliesToGroup, record, state, instanceId, defs)) return false;
+  } else {
+    return false;
+  }
+  return conditionApplies(mod.condition, record, state, instanceId, defs) && sourceConditionApplies(mod.sourceCondition, record, state);
 }
 
 function keywordModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, keyword: ContinuousKeyword, defs: CardDefinitionLookup): boolean {
   const mod = record.keywordModifier;
-  if (!mod || mod.appliesToInstanceId !== instanceId || mod.keyword !== keyword) return false;
-  return conditionApplies(mod.condition, record, state, instanceId, defs);
+  if (!mod || mod.keyword !== keyword) return false;
+  if (mod.appliesToInstanceId !== undefined) {
+    if (mod.appliesToInstanceId !== instanceId) return false;
+  } else if (mod.appliesToGroup !== undefined) {
+    if (!targetInAuraGroup(mod.appliesToGroup, record, state, instanceId, defs)) return false;
+  } else {
+    return false;
+  }
+  return conditionApplies(mod.condition, record, state, instanceId, defs) && sourceConditionApplies(mod.sourceCondition, record, state);
 }
 
 

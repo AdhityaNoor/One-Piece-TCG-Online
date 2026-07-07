@@ -54,6 +54,7 @@ import { TrashGalleryModal } from './TrashGalleryModal';
 import { TrashPile } from './TrashPile';
 import type { BoardSelectionMode } from './useBoardSelection';
 import type { CardView, PlayerBoardView } from '../../../board/projection';
+import { countAvailableDon } from '../../../board/projection';
 
 export interface PlayerBoardPanelProps {
   board: PlayerBoardView;
@@ -76,6 +77,11 @@ export interface PlayerBoardPanelProps {
   onAttachedDonLabelTap?: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
   onAttackTargetHover?: (card: CardView | null) => void;
+  canGiveDonOnCard?: (card: CardView) => boolean;
+  onGiveDon?: (card: CardView) => void;
+  onReturnGivenDon?: (card: CardView) => void;
+  /** Hotseat-only undo for mis-clicks; disabled in Casual matches. */
+  allowReturnGivenDon?: boolean;
 }
 
 function leaderCharacterSelectable(
@@ -93,7 +99,6 @@ function leaderCharacterSelectable(
       if (!isOpponent) return false;
       if (zone === 'leaderArea') return true;
       return zone === 'characterArea' && card.orientation === 'rested';
-    case 'selectGiveDonTarget':
     case 'selectCounterBoostTarget':
       return zone !== 'stageArea' && isOwn;
     case 'selectBlocker':
@@ -119,7 +124,7 @@ function selectedAttackerIds(mode: BoardSelectionMode): Set<string> {
 // rule, just relocated alongside leaderCharacterSelectable above.
 function donSelectable(mode: BoardSelectionMode, isOwn: boolean, card: CardView): boolean {
   if (!isOwn) return false;
-  if (mode.kind === 'payingCost' || mode.kind === 'selectDonToGive' || mode.kind === 'payingCounterEventCost') {
+  if (mode.kind === 'payingCost' || mode.kind === 'payingCounterEventCost') {
     return !card.donRested;
   }
   if (mode.kind === 'payingActivateEffectCost') {
@@ -131,9 +136,7 @@ function donSelectable(mode: BoardSelectionMode, isOwn: boolean, card: CardView)
 function selectedDonInstanceIds(mode: BoardSelectionMode): Set<string> {
   if (mode.kind === 'payingCost') return new Set(mode.selectedDonIds);
   if (mode.kind === 'payingCounterEventCost') return new Set(mode.selectedDonIds);
-  if (mode.kind === 'selectDonToGive') return new Set(mode.selectedDonIds);
   if (mode.kind === 'payingActivateEffectCost') return new Set(mode.selectedDonIds);
-  if (mode.kind === 'selectGiveDonTarget') return new Set(mode.selectedDonIds);
   return new Set();
 }
 
@@ -263,11 +266,21 @@ function MatCell({
   );
 }
 
-export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, canAttackCard, battlePowerInstanceIds, boardFocused = false, onCardTap, onCardAttack, onAttachedDonLabelTap, onCardZoom, onAttackTargetHover }: PlayerBoardPanelProps) {
+export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, canAttackCard, battlePowerInstanceIds, boardFocused = false, onCardTap, onCardAttack, onAttachedDonLabelTap, onCardZoom, onAttackTargetHover, canGiveDonOnCard, onGiveDon, onReturnGivenDon, allowReturnGivenDon = true }: PlayerBoardPanelProps) {
   const attackerSelected = selectedAttackerIds(mode);
   // Mark/select own in-play cards that can activate a [Activate: Main] effect.
   const canActivate = (card: CardView): boolean => isOwn && !!canActivateCard?.(card);
   const canAttack = (card: CardView): boolean => isOwn && !!canAttackCard?.(card);
+  const availableActiveDon = countAvailableDon(board);
+  const giveDonControlsFor = (card: CardView) =>
+    canGiveDonOnCard?.(card)
+      ? {
+          availableActiveDon,
+          allowReturnGivenDon,
+          onGive: () => onGiveDon?.(card),
+          onReturn: () => onReturnGivenDon?.(card),
+        }
+      : undefined;
   const leaderCard: CardView | null = board.leader;
   const stageCard: CardView | null = board.stageArea[0] ?? null;
   const attachedDon = attachedDonIds(board);
@@ -299,6 +312,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
       onZoom={() => onCardZoom(leaderCard)}
       onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(leaderCard) : undefined}
       onHoverEnd={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(null) : undefined}
+      giveDonControls={giveDonControlsFor(leaderCard)}
     />
   ) : (
     <EmptySlot size="leader" label="Leader" />
@@ -361,6 +375,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
             onZoom={() => onCardZoom(card)}
             onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(card) : undefined}
             onHoverEnd={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(null) : undefined}
+            giveDonControls={giveDonControlsFor(card)}
           />
         ))}
         {board.characterArea.length === 0 && <span className="font-display text-xl font-black uppercase tracking-[0.08em] text-white/20">Character Area</span>}

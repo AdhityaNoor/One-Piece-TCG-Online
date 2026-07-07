@@ -36,6 +36,7 @@ export interface EffectContext {
   controllerDeckTopIds(): string[];
   opponentCharacterIds(): string[];
   opponentHandIds(): string[];
+  opponentTrashIds(): string[];
   /** Current power of an instance (2-6, incl. modifiers) — for cost/power-threshold target filters. */
   powerOf(instanceId: string): number;
   /** Current cost of an instance (2-7). */
@@ -62,6 +63,16 @@ export interface EffectContext {
     amount: number;
     duration: ContinuousEffectDuration;
     sourceCondition?: SourceStateCondition;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void;
+  /** Register a "base power becomes N" aura over a dynamic target group (8-1-3-3). */
+  setContinuousBasePowerAura(spec: {
+    group: PowerAuraGroup;
+    value: number;
+    duration: ContinuousEffectDuration;
+    sourceCondition?: SourceStateCondition;
+    condition?: ContinuousPowerCondition;
     description?: string;
   }): void;
   /** Register a continuous cost modifier (8-1-3-3); condition re-checked on every read. */
@@ -77,6 +88,15 @@ export interface EffectContext {
     appliesToInstanceId: string;
     keyword: ContinuousKeyword;
     duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void;
+  /** Register a continuous keyword aura over a dynamic target group (8-1-3-3). */
+  addContinuousKeywordAura(spec: {
+    group: PowerAuraGroup;
+    keyword: ContinuousKeyword;
+    duration: ContinuousEffectDuration;
+    sourceCondition?: SourceStateCondition;
     condition?: ContinuousPowerCondition;
     description?: string;
   }): void;

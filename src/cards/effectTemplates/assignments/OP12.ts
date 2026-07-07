@@ -490,7 +490,9 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   //   effect, you may turn 1 card from the top of your Life cards face-up instead.[Opponent's Turn] If you
   //   have no other [Shirahoshi] with a base cost of 2, all of your {Neptunian} type Characters gain +2000
   //   power.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: the removal-replacement clause is deferred; the "no other [Shirahoshi] base cost 2" gate
+  //   is approximated with selfDoesNotControlNamed (ignores base-cost filter).
+  { cardNumber: 'OP12-102', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 2000, duration: 'permanent', anyOfTypes: ['Neptunian'], gate: [{ kind: 'selfDoesNotControlNamed', name: 'Shirahoshi' }], sourceCondition: { turn: 'opponent' } }] } },
 
   // OP12-104 — [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 4 or less.
   { cardNumber: 'OP12-104', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },

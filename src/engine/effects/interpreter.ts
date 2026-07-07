@@ -15,6 +15,7 @@ import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates } from './gates';
 import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
+import { fireRestTransitions } from './fireTiming';
 import type { EffectTemplateRegistry } from './effectTemplate';
 import type { Ability, EffectOp, EffectProgram, IrCondition, IrTiming, NonSuspendingEffectOp, SearchFilter, SearchPickDestination, SearchRemainderDestination, Selector } from './effectIr';
 
@@ -82,6 +83,20 @@ function finishWithCascade(
     queue.push(...sub.takeKoed());
     if (suspended) return { state: working, log, pendingChoices: subRes.pendingChoices };
   }
+
+  const restedQueue = ctx.takeRested();
+  guard = 0;
+  while (restedQueue.length > 0 && guard++ < 200) {
+    const id = restedQueue.shift()!;
+    const inst = working.cardsById[id];
+    const program = inst ? registry[inst.cardDefinitionId] : undefined;
+    if (!program?.abilities.some((a) => a.timing === 'onRested')) continue;
+    const subRes = runTimings(program, ['onRested'], working, id, defs, actionId, registry, false);
+    working = subRes.state;
+    log = [...log, ...subRes.log];
+    if (subRes.pendingChoices.length > 0) return { state: working, log, pendingChoices: subRes.pendingChoices };
+  }
+
   return { state: working, log, pendingChoices: [] };
 }
 
@@ -197,6 +212,11 @@ function evalCondition(cond: IrCondition | undefined, ctx: EffectContextImpl): b
   return true;
 }
 
+function applyDonAttachedFilter(ids: string[], minDonAttached: number | undefined, state: GameState): string[] {
+  if (minDonAttached === undefined) return ids;
+  return ids.filter((id) => (state.cardsById[id]?.donAttached.length ?? 0) >= minDonAttached);
+}
+
 function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record<string, string[]>): string[] {
   switch (sel.sel) {
     case 'self':
@@ -212,6 +232,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
       if (sel.anyOfTypes !== undefined) ids = ids.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
+      ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
       return ids;
     }
     case 'controllerLeaderOrCharacters': {
@@ -281,7 +302,12 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       ids = applyBaseFilters(ids, sel, ctx);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.hasBlocker !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasBlocker === true) === sel.hasBlocker);
+      ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
       return ids;
+    }
+    case 'allStages': {
+      const state = ctx.state();
+      return [...state.players.p1.stageArea.cardIds, ...state.players.p2.stageArea.cardIds];
     }
     case 'controllerHand':
       return searchEligible(ctx.controllerHandIds(), sel.filter, ctx);
@@ -289,6 +315,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return ctx.opponentHandIds();
     case 'controllerTrash':
       return searchEligible(ctx.controllerTrashIds(), sel.filter, ctx);
+    case 'opponentTrash':
+      return searchEligible(ctx.opponentTrashIds(), sel.filter, ctx);
     case 'controllerDeck':
       return searchEligible(ctx.controllerDeckIds(), sel.filter, ctx);
     case 'var':
@@ -309,7 +337,15 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return { selectedIds: ids, movedIds: [] };
     }
     case 'addPowerAura': {
-      ctx.addContinuousPowerAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}) });
+      ctx.addContinuousPowerAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}) });
+      return { selectedIds: [], movedIds: [] };
+    }
+    case 'setBasePowerAura': {
+      ctx.setContinuousBasePowerAura({ group: op.group, value: op.value, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}) });
+      return { selectedIds: [], movedIds: [] };
+    }
+    case 'addCostAura': {
+      ctx.addContinuousCostAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}) });
       return { selectedIds: [], movedIds: [] };
     }
     case 'addCost': {
@@ -339,6 +375,10 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
         ctx.addContinuousKeyword({ appliesToInstanceId: id, keyword: op.keyword, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
       }
       return { selectedIds: ids, movedIds: [] };
+    }
+    case 'addKeywordAura': {
+      ctx.addContinuousKeywordAura({ group: op.group, keyword: op.keyword, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}) });
+      return { selectedIds: [], movedIds: [] };
     }
     case 'addKoImmunity': {
       const ids = resolveSelector(op.target, ctx, bindings);
@@ -605,13 +645,14 @@ function runFollowingAbilities(
   defs: CardDefinitionLookup,
   actionId: string | null,
   payCosts: boolean,
+  registry: EffectTemplateRegistry,
 ): boolean {
   for (let i = startAbilityIndex; i < program.abilities.length; i += 1) {
     const ability = program.abilities[i];
     if (ability.timing !== timing) continue;
     if (!evalCondition(ability.condition, ctx)) continue;
     if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId)) continue;
-    if (payCosts && suspendOrPayAbilityCost(ability, i, ctx, actionId)) return true;
+    if (payCosts && suspendOrPayAbilityCost(ability, i, ctx, actionId, defs, registry)) return true;
     const suspended = runOps(ability, i, 0, {}, ctx, defs);
     if (suspended) return true;
   }
@@ -623,6 +664,8 @@ function suspendOrPayAbilityCost(
   abilityIndex: number,
   ctx: EffectContextImpl,
   actionId: string | null,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry,
 ): boolean {
   if (!ability.cost?.length) return false;
 
@@ -646,6 +689,10 @@ function suspendOrPayAbilityCost(
   if (canPayAbilityCost(ctx.state(), ctx.sourceInstanceId, ctx.controllerId, ability.cost, []).length > 0) return false;
   const paid = payAbilityCost(ctx.state(), ctx.sourceInstanceId, ctx.controllerId, ability.cost, actionId, []);
   ctx.replaceState(paid.state, paid.log);
+  if (paid.restedInstanceIds.length > 0) {
+    const rested = fireRestTransitions(paid.state, paid.restedInstanceIds, registry, defs, actionId);
+    if (ctx.absorbActionResult(rested)) return true;
+  }
   return false;
 }
 
@@ -670,7 +717,7 @@ export function runTimings(
     if (!evalCondition(ability.condition, ctx)) continue;
     // "If …" board-state gate: an unmet precondition means the ability does nothing.
     if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId)) continue;
-    if (payCosts && suspendOrPayAbilityCost(ability, index, ctx, actionId)) break;
+    if (payCosts && suspendOrPayAbilityCost(ability, index, ctx, actionId, defs, registry)) break;
     const suspended = runOps(ability, index, 0, {}, ctx, defs);
     if (suspended) break; // wait for the choice before any further ability runs
   }
@@ -700,8 +747,16 @@ export function resumeProgram(
     if (reasons.length > 0) return noop(stateWithoutChoice);
     const paid = payAbilityCost(stateWithoutChoice, choice.sourceInstanceId, choice.playerId, ability.cost, actionId, selection);
     const ctx = new EffectContextImpl(paid.state, choice.sourceInstanceId, defs, actionId);
+    if (paid.restedInstanceIds.length > 0) {
+      const rested = fireRestTransitions(paid.state, paid.restedInstanceIds, registry, defs, actionId);
+      ctx.absorbActionResult(rested);
+      if (rested.pendingChoices.length > 0) {
+        const finished = finishWithCascade(ctx, defs, actionId, registry);
+        return { state: finished.state, log: [...paid.log, ...rested.log, ...finished.log], pendingChoices: finished.pendingChoices };
+      }
+    }
     const suspended = runOps(ability, rs.abilityIndex, 0, rs.bindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     const finished = finishWithCascade(ctx, defs, actionId, registry);
     return { state: finished.state, log: [...paid.log, ...finished.log], pendingChoices: finished.pendingChoices };
   }
@@ -744,7 +799,7 @@ export function resumeProgram(
       }
       const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: topOrder, movedIds: looked });
       const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterSearchBindings, ctx, defs);
-      if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+      if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
       return finishWithCascade(ctx, defs, actionId, registry);
     }
     if (remainder === 'bottom' && !rs.bindings.__searchChosen) {
@@ -768,7 +823,7 @@ export function resumeProgram(
     ctx.searchResolve(ctx.controllerId, looked, chosen, remainder, reveal, destination, rs.bindings.__searchChosen ? selection : undefined);
     const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: chosen, movedIds: chosen });
     const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterSearchBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     return finishWithCascade(ctx, defs, actionId, registry);
   }
 
@@ -778,7 +833,7 @@ export function resumeProgram(
     ctx.shuffleDeck(ctx.controllerId);
     const afterPlayBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
     const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterPlayBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     return finishWithCascade(ctx, defs, actionId, registry);
   }
 
@@ -787,7 +842,7 @@ export function resumeProgram(
     for (const id of selection) ctx.moveLifeToBottom(id);
     const afterPeekBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
     const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterPeekBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     return finishWithCascade(ctx, defs, actionId, registry);
   }
 
@@ -795,7 +850,7 @@ export function resumeProgram(
     const selectedIndex = typeof response === 'number' ? response : -1;
     const afterLifeBindings = withResultBindings(rs.bindings, resolveLifePositionToHand(ctx, op.position, op.optional, selectedIndex));
     const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterLifeBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     return finishWithCascade(ctx, defs, actionId, registry);
   }
 
@@ -803,7 +858,7 @@ export function resumeProgram(
     const selectedIndex = typeof response === 'number' ? response : -1;
     const afterLifeBindings = withResultBindings(rs.bindings, resolveLifePositionToTrash(ctx, op.position, op.optional, selectedIndex));
     const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterLifeBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     return finishWithCascade(ctx, defs, actionId, registry);
   }
 
@@ -819,13 +874,13 @@ export function resumeProgram(
       branchBindings = withResultBindings(branchBindings, lastResult);
     }
     const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, branchBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     return finishWithCascade(ctx, defs, actionId, registry);
   }
 
   const selection = Array.isArray(response) ? response : [];
   const bindings: Record<string, string[]> = { ...rs.bindings, [op.var]: selection };
   const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, bindings, ctx, defs);
-  if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true);
+  if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
   return finishWithCascade(ctx, defs, actionId, registry);
 }

@@ -428,7 +428,7 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP08-083 (character) Sheepshead —
   //   [DON!! x1] [Your Turn] Give all of your opponent's Characters −1 cost.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP08-083', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -1, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
 
   // OP08-084 — static: this Character +4 cost. [Activate: Main] rest this: draw 1, trash 1, then K.O. up to 1 opp Character cost ≤3.
   {

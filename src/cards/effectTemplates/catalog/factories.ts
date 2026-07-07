@@ -82,6 +82,10 @@ function selectorFromMoveSource(from: MoveCardSource): Extract<EffectOp, { op: '
       break;
     case 'trash':
       if (from.player === 'controller') return { sel: 'controllerTrash', ...(from.filter ? { filter: from.filter } : {}) };
+      if (from.player === 'opponent') return { sel: 'opponentTrash', ...(from.filter ? { filter: from.filter } : {}) };
+      break;
+    case 'stages':
+      if (from.player === 'any') return { sel: 'allStages' };
       break;
     case 'characters':
       if (from.player === 'controller') return { sel: 'controllerCharacters', ...from.filter };
@@ -236,6 +240,28 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         (target) => ({ op: 'addKeyword', target, keyword: f.keyword, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }),
         { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
       );
+    case 'addKeywordAuraControllerTypes':
+      return [
+        {
+          op: 'addKeywordAura',
+          group: { ownLeaderAndCharacters: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) },
+          keyword: f.keyword,
+          duration: f.duration,
+          ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+          ...(f.gate ? { condition: { gate: f.gate } } : {}),
+        },
+      ];
+    case 'addKeywordAuraControllerCharacters':
+      return [
+        {
+          op: 'addKeywordAura',
+          group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) },
+          keyword: f.keyword,
+          duration: f.duration,
+          ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+          ...(f.gate ? { condition: { gate: f.gate } } : {}),
+        },
+      ];
     case 'preventBlockers': {
       if (f.target === 'chosenControllerLeaderOrCharacter') {
         return [
@@ -466,16 +492,32 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [
         {
           op: 'addPowerAura',
-          group: { ownLeaderAndCharacters: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) },
+          group: { ownLeaderAndCharacters: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) },
           amount: f.amount,
           duration: f.duration,
           ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+          ...(f.gate ? { condition: { gate: f.gate } } : {}),
+        },
+      ];
+    case 'setBasePowerAuraControllerTypes':
+      return [
+        {
+          op: 'setBasePowerAura',
+          group: { ownLeaderAndCharacters: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) },
+          value: f.value,
+          duration: f.duration,
+          ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+          ...(f.gate ? { condition: { gate: f.gate } } : {}),
         },
       ];
     case 'addPowerAuraOpponentCharacters':
-      return [{ op: 'addPowerAura', group: { opponentCharacters: true }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}) }];
+      return [{ op: 'addPowerAura', group: { opponentCharacters: true }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addPowerAuraControllerCharacters':
-      return [{ op: 'addPowerAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}) }];
+      return [{ op: 'addPowerAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
+    case 'addCostAuraControllerCharacters':
+      return [{ op: 'addCostAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
+    case 'addCostAuraOpponentCharacters':
+      return [{ op: 'addCostAura', group: { opponentCharacters: true }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addPowerControllerCharactersAll':
       return [
         {

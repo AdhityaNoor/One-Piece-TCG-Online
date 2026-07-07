@@ -29,6 +29,8 @@ export class EffectContextImpl implements EffectContext {
   private readonly logger: ActionLogger;
   private readonly externalLog: GameLogEntry[] = [];
   private readonly pending: PendingChoice[] = [];
+  /** Instance ids this resolution rested via rest(); drained by the interpreter to cascade [When Becomes Rested] (onRested). */
+  private readonly rested: string[] = [];
   /** Instance ids this resolution moved to the trash via ko(); drained by the interpreter to cascade [On K.O.] (10-2-17). */
   private readonly koed: string[] = [];
 
@@ -51,6 +53,14 @@ export class EffectContextImpl implements EffectContext {
     this.externalLog.push(...log);
   }
 
+  /** Merge an external ActionExecuteResult (e.g. onRested cascade) into this context. Returns true if suspended. */
+  absorbActionResult(result: ActionExecuteResult): boolean {
+    this.working = result.state;
+    this.externalLog.push(...result.log);
+    this.pending.push(...result.pendingChoices);
+    return result.pendingChoices.length > 0;
+  }
+
   controllerLeaderId(): string {
     return this.working.players[this.controllerId].leaderInstanceId;
   }
@@ -68,6 +78,9 @@ export class EffectContextImpl implements EffectContext {
   }
   controllerTrashIds(): string[] {
     return [...this.working.players[this.controllerId].trash.cardIds];
+  }
+  opponentTrashIds(): string[] {
+    return [...this.working.players[this.opponentId].trash.cardIds];
   }
   controllerDeckIds(): string[] {
     return [...this.working.players[this.controllerId].deck.cardIds];
@@ -200,6 +213,7 @@ export class EffectContextImpl implements EffectContext {
     amount: number;
     duration: ContinuousEffectDuration;
     sourceCondition?: SourceStateCondition;
+    condition?: ContinuousPowerCondition;
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -212,6 +226,72 @@ export class EffectContextImpl implements EffectContext {
         appliesToGroup: spec.group,
         amount: spec.amount,
         ...(spec.sourceCondition ? { sourceCondition: spec.sourceCondition } : {}),
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to a group.`,
+      data: { continuousEffectId: record.id, amount: spec.amount, duration: spec.duration },
+      relatedCardInstanceIds: [],
+      visibility: 'public',
+    });
+  }
+
+  setContinuousBasePowerAura(spec: {
+    group: PowerAuraGroup;
+    value: number;
+    duration: ContinuousEffectDuration;
+    sourceCondition?: SourceStateCondition;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? `aura base power becomes ${spec.value}`,
+      powerModifier: {
+        appliesToGroup: spec.group,
+        amount: 0,
+        setBase: spec.value,
+        ...(spec.sourceCondition ? { sourceCondition: spec.sourceCondition } : {}),
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to a group.`,
+      data: { continuousEffectId: record.id, setBasePower: spec.value, duration: spec.duration },
+      relatedCardInstanceIds: [],
+      visibility: 'public',
+    });
+  }
+
+  addContinuousCostAura(spec: {
+    group: PowerAuraGroup;
+    amount: number;
+    duration: ContinuousEffectDuration;
+    sourceCondition?: SourceStateCondition;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? `aura cost ${spec.amount >= 0 ? '+' : ''}${spec.amount}`,
+      costModifier: {
+        appliesToGroup: spec.group,
+        amount: spec.amount,
+        ...(spec.sourceCondition ? { sourceCondition: spec.sourceCondition } : {}),
+        ...(spec.condition ? { condition: spec.condition } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -345,6 +425,38 @@ export class EffectContextImpl implements EffectContext {
       message: `${record.description} applied to ${spec.appliesToInstanceId}.`,
       data: { continuousEffectId: record.id, keyword: spec.keyword, duration: spec.duration },
       relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  addContinuousKeywordAura(spec: {
+    group: PowerAuraGroup;
+    keyword: ContinuousKeyword;
+    duration: ContinuousEffectDuration;
+    sourceCondition?: SourceStateCondition;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? `aura gains ${spec.keyword}`,
+      keywordModifier: {
+        appliesToGroup: spec.group,
+        keyword: spec.keyword,
+        ...(spec.sourceCondition ? { sourceCondition: spec.sourceCondition } : {}),
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to a group.`,
+      data: { continuousEffectId: record.id, keyword: spec.keyword, duration: spec.duration },
+      relatedCardInstanceIds: [],
       visibility: 'public',
     });
   }
@@ -495,6 +607,13 @@ export class EffectContextImpl implements EffectContext {
       visibility: 'public',
     });
     this.koed.push(targetInstanceId); // cascade [On K.O.] after this resolution finishes
+  }
+
+  /** Drain and return the ids rested via rest() this resolution (for onRested cascade). */
+  takeRested(): string[] {
+    const drained = [...this.rested];
+    this.rested.length = 0;
+    return drained;
   }
 
   /** Drain and return the ids K.O.'d via ko() this resolution (for [On K.O.] cascade). */
@@ -1034,6 +1153,7 @@ export class EffectContextImpl implements EffectContext {
     } else {
       if (inst.orientation === 'rested') return;
       this.working = { ...this.working, cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, orientation: 'rested' } } };
+      this.rested.push(targetInstanceId);
     }
     this.logger.push({
       actorPlayerId: this.controllerId,

@@ -15,6 +15,7 @@ export type GameActionType =
   | 'ACTIVATE_EVENT_MAIN'
   | 'ACTIVATE_CARD_EFFECT'
   | 'GIVE_DON'
+  | 'RETURN_GIVEN_DON'
   | 'DECLARE_ATTACK'
   | 'ACTIVATE_BLOCKER'
   | 'ACTIVATE_COUNTER_CHARACTER'
@@ -66,6 +67,12 @@ export interface ActivateCardEffectAction extends BaseAction<'ACTIVATE_CARD_EFFE
 export interface GiveDonAction extends BaseAction<'GIVE_DON'> {
   donInstanceId: string;
   targetInstanceId: string; // Leader or Character receiving the DON!!
+}
+
+/** Hotseat undo — reverses GIVE_DON (not a printed CR action). */
+export interface ReturnGivenDonAction extends BaseAction<'RETURN_GIVEN_DON'> {
+  donInstanceId: string;
+  targetInstanceId: string;
 }
 
 /** 7-1-1-1, 7-1-1-2. */
@@ -132,6 +139,7 @@ export type GameAction =
   | ActivateEventMainAction
   | ActivateCardEffectAction
   | GiveDonAction
+  | ReturnGivenDonAction
   | DeclareAttackAction
   | ActivateBlockerAction
   | ActivateCounterCharacterAction
