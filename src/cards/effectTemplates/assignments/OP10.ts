@@ -352,11 +352,21 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP10-072 — [End of Your Turn] If 7+ DON!!, set up to 2 DON!! active. PARTIAL: the [On Play] "trash 1 Event → draw 2" is deferred (Event-category hand filter).
   { cardNumber: 'OP10-072', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfDonFieldCount', atLeast: 7 }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
 
-  // OP10-074 (character) Pica —
-  //   [Once Per Turn] If this Character would be K.O.'d by your opponent's effect, you may rest 2 of your
-  //   active DON!! cards instead.
-  // NOTE: not yet implemented (needs template).
-
+  // OP10-074 — [Once Per Turn] K.O. replacement: rest 2 active DON!! (effect scope only).
+  {
+    cardNumber: 'OP10-074',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementSelf',
+        scope: 'effect',
+        oncePerTurn: true,
+        restDon: { count: 2 },
+        duration: 'permanent',
+      }],
+    },
+  },
   // OP10-075 — [Activate: Main] Trash this: if your DON!! <= opponent's, draw 1.
   { cardNumber: 'OP10-075', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'draw', amount: 1 }] } },
 

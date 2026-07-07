@@ -653,11 +653,22 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy' } }, keyword: 'rush', duration: 'duringThisTurn', optional: true }],
     },
   },
-  // OP15-094 (character) Roronoa Zoro —
-  //   If your {Straw Hat Crew} type Character other than this Character would be removed from the field by
-  //   your opponent's effect, you may trash this Character instead.[Blocker]
-  // NOTE: not yet implemented (needs template).
-
+  // OP15-094 — PARTIAL: field-removal clause deferred; [Blocker] is engine keyword.
+  {
+    cardNumber: 'OP15-094',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        anyOfTypes: ['Straw Hat Crew'],
+        excludeSource: true,
+        trashSource: true,
+        duration: 'permanent',
+      }],
+    },
+  },
   {
     cardNumber: 'OP15-095',
     templates: [

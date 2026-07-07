@@ -263,6 +263,57 @@ describe('findKoReplacementRecord', () => {
     expect(result.state.players.p1.donDeck.cardIds).toContain(don.donIds[0]);
   });
 
+  it('finds restDon replacement when enough active DON are in cost area', () => {
+    const charDef = makeCharacterDef({ cardNumber: 'OP10-074' });
+    let rig = buildBaseRig();
+    const { rig: withChar, instanceId } = putCharacterInPlay(rig, 'p1', charDef);
+    rig = { ...withChar, defs: { ...withChar.defs, [charDef.cardDefinitionId]: charDef } };
+    const don = putDon(rig, 'p1', 2);
+    rig = don.rig;
+    const record: ContinuousEffectRecord = {
+      id: 'kr-rest-don',
+      sourceInstanceId: instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'rest don',
+      koReplacementModifier: {
+        appliesToInstanceId: instanceId,
+        scope: 'effect',
+        oncePerTurn: true,
+        action: { kind: 'payAbilityCosts', costs: [{ kind: 'restDon', count: 2 }] },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    expect(findKoReplacementRecord(state, instanceId, 'effect', rig.defs)).not.toBeNull();
+  });
+
+  it('applyKoReplacementCost rests DON and leaves Character in play', () => {
+    const charDef = makeCharacterDef({ cardNumber: 'OP10-074' });
+    let rig = buildBaseRig();
+    const { rig: withChar, instanceId } = putCharacterInPlay(rig, 'p1', charDef);
+    rig = { ...withChar, defs: { ...withChar.defs, [charDef.cardDefinitionId]: charDef } };
+    const don = putDon(rig, 'p1', 2);
+    rig = don.rig;
+    const record: ContinuousEffectRecord = {
+      id: 'kr-rest-don',
+      sourceInstanceId: instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'rest don',
+      koReplacementModifier: {
+        appliesToInstanceId: instanceId,
+        scope: 'effect',
+        oncePerTurn: true,
+        action: { kind: 'payAbilityCosts', costs: [{ kind: 'restDon', count: 2 }] },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    const result = applyKoReplacementCost(state, instanceId, record, [], rig.defs, null);
+    expect(result.state.cardsById[instanceId].currentZone).toBe('characterArea');
+    expect(result.state.cardsById[don.donIds[0]].donRested).toBe(true);
+    expect(result.state.cardsById[don.donIds[1]].donRested).toBe(true);
+  });
+
   it('applyKoReplacementCost moves top Life to hand and leaves Character in play', () => {
     const charDef = makeCharacterDef({ cardNumber: 'OP10-034' });
     const lifeDef = makeEventDef({ cardNumber: 'LIFE-1' });

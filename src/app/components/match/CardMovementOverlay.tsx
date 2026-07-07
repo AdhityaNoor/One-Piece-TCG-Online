@@ -102,8 +102,8 @@ function FlyingCard({
       const shellRect = shell.getBoundingClientRect();
       const fromCenter = anchorCenterInShell(shellRect, fromRect);
       const toCenter = anchorCenterInShell(shellRect, toRect);
-      const scale0 = cardScaleFromAnchorRect(fromRect, spec.from);
-      const scale1 = cardScaleFromAnchorRect(toRect, spec.to);
+      const scale0 = cardScaleFromAnchorRect(fromRect, spec.from, spec.isDon);
+      const scale1 = cardScaleFromAnchorRect(toRect, spec.to, spec.isDon);
       const dx = toCenter.x - fromCenter.x;
       const dy = toCenter.y - fromCenter.y;
       const midScale = scale0 + (scale1 - scale0) * FLIP_START;

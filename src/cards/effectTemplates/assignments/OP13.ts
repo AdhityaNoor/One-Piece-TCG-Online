@@ -222,12 +222,21 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-045', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfHand', atMost: 4 }], functions: [{ fn: 'draw', amount: 1 }] } },
 
-  // OP13-046 (character) Vista —
-  //   [Double Attack][Once Per Turn] If this Character would be K.O.'d or would be removed from the field
-  //   by your opponent's effect, you may trash 1 card with a type including "Whitebeard Pirates" from your
-  //   hand instead.
-  // NOTE: not yet implemented (needs template).
-
+  // OP13-046 — PARTIAL: field-removal clause and [Double Attack] keyword deferred.
+  {
+    cardNumber: 'OP13-046',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementSelf',
+        scope: 'effect',
+        oncePerTurn: true,
+        trashFromHand: { count: 1, filter: { typeIncludes: 'Whitebeard Pirates' } },
+        duration: 'permanent',
+      }],
+    },
+  },
   // OP13-047 — aura K.O. replacement: trash this Character to save ally Whitebeard Pirates from opp effect K.O.
   {
     cardNumber: 'OP13-047',
@@ -290,11 +299,21 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP13-060 (character) Amatsuki Toki —
-  //   If your Character with a type including "Roger Pirates" would be K.O.'d by your opponent's effect,
-  //   you may trash this Character instead.
-  // NOTE: not yet implemented (needs template).
-
+  // OP13-060 — aura K.O. replacement: trash this Character to save ally Roger Pirates from opp effect K.O.
+  {
+    cardNumber: 'OP13-060',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        anyOfTypes: ['Roger Pirates'],
+        trashSource: true,
+        duration: 'permanent',
+      }],
+    },
+  },
   // OP13-061 (character) Inuarashi —
   //   [On Play] If you have any DON!! cards given, add up to 1 DON!! card from your DON!! deck and rest it.
   //   Then, K.O. up to 1 of your opponent's Characters with a cost of 1 or less.

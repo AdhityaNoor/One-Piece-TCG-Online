@@ -114,9 +114,17 @@ export function DonStack({ label, playerId, cards, direction, selectable, select
         onMouseEnter={handleEnter}
       >
         {cards.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center rounded-md border border-dashed border-white/15 text-[8px] font-bold uppercase text-white/20">
-            None
-          </div>
+          <>
+            <div
+              aria-hidden="true"
+              data-board-card-anchor
+              className="pointer-events-none absolute left-0 top-0"
+              style={{ width: cqh(150), height: cqh(210) }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center rounded-md border border-dashed border-white/15 text-[8px] font-bold uppercase text-white/20">
+              None
+            </div>
+          </>
         ) : (
           <>
             {cards.map((don, index) => {

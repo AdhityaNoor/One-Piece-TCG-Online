@@ -255,6 +255,13 @@ function evaluateGate(
       });
     }
 
+    case 'selfCharacterCurrentPowerCount': {
+      const c = player.characterArea.cardIds.filter((id) => computeCurrentPower(defs, state, id) >= gate.power).length;
+      if (gate.atLeast !== undefined && c < gate.atLeast) return false;
+      if (gate.atMost !== undefined && c > gate.atMost) return false;
+      return true;
+    }
+
     case 'selfOtherNamedCharacterCount': {
       const c = player.characterArea.cardIds.filter((id) => {
         if (id === sourceInstanceId) return false;

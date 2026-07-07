@@ -124,6 +124,8 @@ export interface EffectContext {
   }): void;
   /** Give up to `count` un-attached DON!! from the controller's cost area to a Leader/Character (6-5-5). */
   giveDon(targetInstanceId: string, count: number): void;
+  /** Reassign one DON!! already given on the field onto another in-play card. */
+  giveGivenDon(donInstanceId: string, targetInstanceId: string): void;
   /** K.O. a Character: move it to its owner's trash, dropping attachments/continuous effects (7-1-4-1-2). */
   ko(targetInstanceId: string): void;
   /** Return a Character to its owner's hand (bounce), dropping attachments/continuous effects it sourced. */

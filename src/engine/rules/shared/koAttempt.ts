@@ -93,6 +93,7 @@ function koChoiceRouting(
 
 function replacementCostIsImmediate(action: KoReplacementAction): boolean {
   if (action.kind === 'chooseLifeToHand') return action.position === 'top';
+  if (action.kind === 'payAbilityCosts') return requiredDonMinusCount(action.costs) === 0;
   return action.kind === 'trashSelf' || action.kind === 'trashSource' || action.kind === 'restSource';
 }
 
@@ -160,6 +161,10 @@ function replacementCostAvailable(
       if (cost.kind === 'trashThis') {
         const source = state.cardsById[record.sourceInstanceId];
         if (!source || source.currentZone !== 'characterArea') return false;
+      }
+      if (cost.kind === 'restDon') {
+        const active = state.players[target.ownerId]?.costArea.cardIds.filter((id) => state.cardsById[id]?.donRested === false).length ?? 0;
+        if (active < cost.count) return false;
       }
     }
     return true;
@@ -519,6 +524,12 @@ export function koReplacementDescription(mod: ContinuousKoReplacementModifier): 
       return `Rest ${mod.action.count} of your Character${mod.action.count === 1 ? '' : 's'} to avoid this K.O.?`;
     case 'payAbilityCosts': {
       const donCount = requiredDonMinusCount(mod.action.costs);
+      const restDonCount = mod.action.costs
+        .filter((c): c is Extract<typeof c, { kind: 'restDon' }> => c.kind === 'restDon')
+        .reduce((sum, c) => sum + c.count, 0);
+      if (restDonCount > 0) {
+        return `Rest ${restDonCount} of your active DON!! card${restDonCount === 1 ? '' : 's'} to avoid this K.O.?`;
+      }
       if (donCount > 0) {
         return `Return ${donCount} DON!! card${donCount === 1 ? '' : 's'} from your field to your DON!! deck to avoid this K.O.?`;
       }

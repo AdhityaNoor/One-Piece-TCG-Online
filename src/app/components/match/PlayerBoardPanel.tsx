@@ -220,6 +220,7 @@ function LifeStack({ playerId, count, donDeckCount, donDeckFirst = false }: { pl
         aria-label={`${donDeckCount} DON!! Deck`}
         data-board-zone="donDeck"
         data-board-player={playerId}
+        data-board-card-anchor
       >
         <CardBackArt tone="teal" />
         <CountBadge count={donDeckCount} />

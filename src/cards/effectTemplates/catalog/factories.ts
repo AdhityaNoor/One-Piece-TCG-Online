@@ -12,12 +12,14 @@ function koReplacementAction(f: {
   trashSelf?: true;
   trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } };
   returnDon?: { count?: number };
+  restDon?: { count?: number };
   lifeToHand?: { position?: 'top' | 'topOrBottom' };
   trashSource?: true;
   restSource?: true;
   restCharacter?: true;
 }): KoReplacementAction {
   if (f.returnDon) return { kind: 'payAbilityCosts', costs: [{ kind: 'donMinus', count: f.returnDon.count ?? 1 }] };
+  if (f.restDon) return { kind: 'payAbilityCosts', costs: [{ kind: 'restDon', count: f.restDon.count ?? 1 }] };
   if (f.lifeToHand) return { kind: 'chooseLifeToHand', position: f.lifeToHand.position ?? 'top' };
   if (f.restSource) return { kind: 'restSource' };
   if (f.restCharacter) return { kind: 'restCharacter', count: 1 };
@@ -99,6 +101,7 @@ function selectorFromMoveSource(from: MoveCardSource): Extract<EffectOp, { op: '
       if (from.player === 'opponent') return { sel: 'opponentTrash', ...(from.filter ? { filter: from.filter } : {}) };
       break;
     case 'stages':
+      if (from.player === 'controller') return { sel: 'controllerStages' };
       if (from.player === 'any') return { sel: 'allStages' };
       break;
     case 'characters':
@@ -158,6 +161,12 @@ function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>)
   if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'opponent' && f.to.zone === 'trash' && f.to.player === 'owner') {
     return [{ op: 'trashLife', player: 'opponent', count }];
   }
+  if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'controller' && f.to.zone === 'trash' && f.to.player === 'owner') {
+    if ('untilLife' in f.from && f.from.untilLife !== undefined) {
+      return [{ op: 'trashLife', player: 'controller', untilLife: f.from.untilLife }];
+    }
+    return [{ op: 'trashLife', player: 'controller', count }];
+  }
   if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'controller' && f.to.zone === 'hand' && f.to.player === 'owner') {
     return [
       {
@@ -204,18 +213,47 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'draw', amount: f.amount }];
     case 'addDonFromDeck':
       return [{ op: 'addDonFromDeck', count: f.count, rested: f.rested }];
-    case 'giveDon':
+    case 'giveDon': {
+      const optional = f.optional ?? false;
+      const from = f.charactersOnly
+        ? ({ sel: 'controllerCharacters' as const, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}) })
+        : ({ sel: 'controllerLeaderOrCharacters' as const, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}) });
       return [
         {
           op: 'chooseTargets',
           var: 't',
-          from: { sel: 'controllerLeaderOrCharacters' },
-          min: 0,
+          from,
+          min: optional ? 0 : 1,
           max: 1,
           prompt: 'Give DON!! to your Leader or 1 of your Characters.',
         },
         { op: 'giveDon', target: { sel: 'var', name: 't' }, count: f.count },
       ];
+    }
+    case 'giveGivenDon': {
+      const optional = f.optional ?? true;
+      const count = f.count ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 'don',
+          from: { sel: 'controllerAttachedDon' },
+          min: optional ? 0 : count,
+          max: count,
+          prompt: 'Choose up to 1 of your currently given DON!! cards.',
+        },
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerCharacters', ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}) },
+          min: optional ? 0 : 1,
+          max: 1,
+          prompt: 'Give the chosen DON!! to 1 of your Characters.',
+          ifPrevious: 'previousSelectedAny',
+        },
+        { op: 'giveGivenDon', donTarget: { sel: 'var', name: 'don' }, characterTarget: { sel: 'var', name: 't' } },
+      ];
+    }
     case 'ko':
       return targetOps(f.target, (target) => ({ op: 'ko', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
     case 'rest':
@@ -662,7 +700,7 @@ const FACTORY_MAP: {
   [T in TemplateId]: (cardNumber: string, params: TemplateParamMap[T]) => EffectProgram;
 } = {
   ability: (cn, p) => {
-    const implicitGates = p.functions.some((f) => f.fn === 'giveDon')
+    const implicitGates = p.functions.some((f) => f.fn === 'giveDon' || f.fn === 'giveGivenDon')
       ? ([{ kind: 'selfRestedDonCount', atLeast: 1 }] as const)
       : [];
     const gates = [...(p.gate ?? []), ...implicitGates];

@@ -29,7 +29,7 @@ export const TEMPLATE_IDS = {
 export type TemplateId = (typeof TEMPLATE_IDS)[keyof typeof TEMPLATE_IDS];
 
 export type MoveCardSource =
-  | { zone: 'life'; player: 'controller' | 'opponent'; position: 'top' | 'bottom' | 'topOrBottom'; hiddenChoice?: boolean; count?: number }
+  | { zone: 'life'; player: 'controller' | 'opponent'; position: 'top' | 'bottom' | 'topOrBottom'; hiddenChoice?: boolean; count?: number; untilLife?: number }
   | { zone: 'deck'; player: 'controller'; position: 'top'; count?: number }
   | { zone: 'hand'; player: 'controller'; filter?: SearchFilter }
   | { zone: 'trash'; player: 'controller' | 'opponent'; filter?: SearchFilter }
@@ -71,6 +71,10 @@ export interface TargetFilter {
   minDonAttached?: number;
   /** When set, maxCost is resolved as the opponent's current Life count at selection time. */
   maxCostFromOpponentLife?: boolean;
+  /** When set, maxCost is resolved as the combined Life count of both players at selection time. */
+  maxCostFromCombinedLife?: boolean;
+  /** In-play target must have no base effect (2-8-5): vanilla / keywords only, no [Trigger]. */
+  noBaseEffect?: boolean;
 }
 
 export type TargetSpec =
@@ -84,7 +88,8 @@ export type TargetSpec =
 export type AbilityFunction =
   | { fn: 'draw'; amount: number }
   | { fn: 'addDonFromDeck'; count: number; rested: boolean }
-  | { fn: 'giveDon'; count: number }
+  | { fn: 'giveDon'; count: number; optional?: boolean; targetTypeIncludes?: string; charactersOnly?: boolean }
+  | { fn: 'giveGivenDon'; count?: number; optional?: boolean; targetTypeIncludes?: string }
   | { fn: 'ko'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'rest'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'preventRefresh'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
@@ -135,7 +140,7 @@ export type AbilityFunction =
   | { fn: 'setActiveControllerCharacter'; filter?: { maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }; maxTargets?: number }
   | { fn: 'setActiveControllerDon'; maxTargets: number }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
-  | { fn: 'restOpponentDon'; maxTargets?: number }
+  | { fn: 'restOpponentDon'; maxTargets?: number; optional?: boolean }
   // Aura: give the controller's own Leader + Characters (optionally type-filtered)
   // a flat power delta, optionally gated on the source card's own state.
   | { fn: 'addPowerAuraControllerTypes'; amount: number; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
@@ -161,9 +166,9 @@ export type AbilityFunction =
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
   | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
   // Register optional K.O. replacement on this card ("would be K.O.'d … instead").
-  | { fn: 'registerKoReplacementSelf'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number } }; trashSelf?: true; returnDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
+  | { fn: 'registerKoReplacementSelf'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; trashSelf?: true; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
   // Register optional K.O. replacement aura on ally Characters ("If your {Type} Character would be K.O.'d … trash this Character instead").
-  | { fn: 'registerKoReplacementAura'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfAttributes?: string[]; charactersOnly?: boolean; excludeSource?: boolean; targetCondition?: IrCondition; sourceCondition?: SourceStateCondition; trashSource?: true; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; restSource?: true; restCharacter?: true; returnDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
+  | { fn: 'registerKoReplacementAura'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfAttributes?: string[]; charactersOnly?: boolean; excludeSource?: boolean; targetCondition?: IrCondition; sourceCondition?: SourceStateCondition; trashSource?: true; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; restSource?: true; restCharacter?: true; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
   // Trash exactly `count` cards of a given type from your hand (used to pay a typed hand cost).
   | { fn: 'trashTypeFromHand'; count: number; filter: SearchFilter; optional?: boolean }
   // K.O. ALL Characters (both players) matching a cost/power filter, no target choice

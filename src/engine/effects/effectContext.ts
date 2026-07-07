@@ -520,7 +520,7 @@ export class EffectContextImpl implements EffectContext {
       type: 'EFFECT_RESOLVED',
       message: `${record.description} registered${spec.appliesToInstanceId ? ` on ${spec.appliesToInstanceId}` : ' as aura'}.`,
       data: { continuousEffectId: record.id, duration: spec.duration },
-      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      relatedCardInstanceIds: spec.appliesToInstanceId ? [spec.appliesToInstanceId] : [],
       visibility: 'public',
     });
   }
@@ -581,7 +581,6 @@ export class EffectContextImpl implements EffectContext {
     this.giveDonFromCostArea(targetInstanceId, count, this.controllerId, true);
   }
 
-  /** Attach up to `count` un-attached DON!! from `donOwnerId`'s cost area onto `targetInstanceId`. */
   giveDonFromCostArea(targetInstanceId: string, count: number, donOwnerId: string, restedOnly: boolean): void {
     const player = this.working.players[donOwnerId];
     if (!player) return;
@@ -610,6 +609,38 @@ export class EffectContextImpl implements EffectContext {
       message: `gave ${toGive.length} DON!! from ${donOwnerId}'s cost area to ${targetInstanceId} (+${toGive.length * 1000} power, 6-5-5).`,
       data: { count: toGive.length, targetInstanceId, donInstanceIds: toGive, donOwnerId, restedOnly },
       relatedCardInstanceIds: [targetInstanceId, ...toGive],
+      visibility: 'public',
+    });
+  }
+
+  /** Reassign one DON!! already given on the field onto another Leader/Character/Stage. */
+  giveGivenDon(donInstanceId: string, targetInstanceId: string): void {
+    const don = this.working.cardsById[donInstanceId];
+    const target = this.working.cardsById[targetInstanceId];
+    const donDef = this.defs[don?.cardDefinitionId ?? ''];
+    if (!don || !target || donDef?.category !== 'don') return;
+
+    let hostId: string | null = null;
+    for (const [id, inst] of Object.entries(this.working.cardsById)) {
+      if (inst.donAttached.includes(donInstanceId)) {
+        hostId = id;
+        break;
+      }
+    }
+    if (!hostId || hostId === targetInstanceId) return;
+
+    const host = this.working.cardsById[hostId];
+    const cardsById = { ...this.working.cardsById };
+    cardsById[hostId] = { ...host, donAttached: host.donAttached.filter((d) => d !== donInstanceId) };
+    cardsById[targetInstanceId] = { ...target, donAttached: [...target.donAttached, donInstanceId] };
+    this.working = { ...this.working, cardsById };
+
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'DON_GIVEN',
+      message: `moved 1 given DON!! from ${hostId} to ${targetInstanceId}.`,
+      data: { count: 1, targetInstanceId, donInstanceIds: [donInstanceId], fromInstanceId: hostId },
+      relatedCardInstanceIds: [targetInstanceId, hostId, donInstanceId],
       visibility: 'public',
     });
   }

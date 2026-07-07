@@ -155,6 +155,14 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseLifeToTrash', position: 'topOrBottom', optional: true });
   });
 
+  it('moveCards trashes controller top Life until a remaining count via trashLife.untilLife', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', untilLife: 1 }, to: { zone: 'trash', player: 'owner' } }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'trashLife', player: 'controller', untilLife: 1 });
+  });
+
   it('optionalTrashFromHand can gate a follow-up on whether a card was trashed', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onPlay',

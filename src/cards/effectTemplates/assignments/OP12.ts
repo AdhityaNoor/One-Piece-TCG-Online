@@ -348,12 +348,20 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-069 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: If Leader {Baroque Works}, up to 1 Leader/Character +2000 battle.
   { cardNumber: 'OP12-069', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
 
-  // OP12-070 (character) Sanji —
-  //   This Character gains +1000 power for every 5 Events in your trash.If this Character would be removed
-  //   from the field by your opponent's effect, you may return 1 DON!! card from your field to your DON!!
-  //   deck instead.
-  // NOTE: not yet implemented (needs template).
-
+  // OP12-070 — PARTIAL: +1000 per 5 Events in trash and field-removal clause deferred.
+  {
+    cardNumber: 'OP12-070',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementSelf',
+        scope: 'effect',
+        returnDon: { count: 1 },
+        duration: 'permanent',
+      }],
+    },
+  },
   // OP12-071 - [On Play] Look at 4; add [Sanji] or Event.
   {
     cardNumber: 'OP12-071',

@@ -12,6 +12,7 @@ import type { GameState } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
+import { cardHasNoBaseEffect } from './cardHasNoBaseEffect';
 import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoReplacementStep } from '../rules/shared/koAttempt';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates } from './gates';
@@ -128,7 +129,11 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
   if (filter.maxPower !== undefined && (def.basePower ?? Infinity) > filter.maxPower) return false;
   if (filter.minPower !== undefined && (def.basePower ?? -Infinity) < filter.minPower) return false;
   if (filter.exactPower !== undefined && (def.basePower ?? -1) !== filter.exactPower) return false;
+  if (filter.maxBasePower !== undefined && (def.basePower ?? Infinity) > filter.maxBasePower) return false;
+  if (filter.minBasePower !== undefined && (def.basePower ?? -Infinity) < filter.minBasePower) return false;
+  if (filter.exactBasePower !== undefined && (def.basePower ?? -1) !== filter.exactBasePower) return false;
   if (filter.hasTrigger !== undefined && !!def.hasTrigger !== filter.hasTrigger) return false;
+  if (filter.noBaseEffect === true && !cardHasNoBaseEffect(def)) return false;
   return true;
 }
 
@@ -218,7 +223,11 @@ function applyDonAttachedFilter(ids: string[], minDonAttached: number | undefine
   return ids.filter((id) => (state.cardsById[id]?.donAttached.length ?? 0) >= minDonAttached);
 }
 
-function effectiveMaxCost(sel: { maxCost?: number; maxCostFromOpponentLife?: boolean }, ctx: EffectContextImpl): number | undefined {
+function effectiveMaxCost(sel: { maxCost?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean }, ctx: EffectContextImpl): number | undefined {
+  if (sel.maxCostFromCombinedLife) {
+    const state = ctx.state();
+    return state.players[ctx.controllerId].lifeArea.cardIds.length + state.players[ctx.opponentId].lifeArea.cardIds.length;
+  }
   if (sel.maxCostFromOpponentLife) return ctx.state().players[ctx.opponentId].lifeArea.cardIds.length;
   return sel.maxCost;
 }
@@ -231,13 +240,15 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return [ctx.controllerLeaderId()];
     case 'controllerCharacters': {
       let ids = ctx.controllerCharacterIds();
-      if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      const maxCost = effectiveMaxCost(sel, ctx);
+      if (maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= maxCost);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
       ids = applyBaseFilters(ids, sel, ctx);
       if (sel.color !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.colors.includes(sel.color!) === true);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
       if (sel.anyOfTypes !== undefined) ids = ids.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
+      if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
       return ids;
     }
@@ -285,6 +296,16 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const p = ctx.state().players[ownerId];
       return [p.leaderInstanceId, ...p.characterArea.cardIds].filter((id): id is string => id != null);
     }
+    case 'controllerAttachedDon': {
+      const state = ctx.state();
+      const player = state.players[ctx.controllerId];
+      const hostIds = [player.leaderInstanceId, ...player.characterArea.cardIds, ...player.stageArea.cardIds].filter((id): id is string => id != null);
+      const donIds: string[] = [];
+      for (const hostId of hostIds) {
+        for (const donId of state.cardsById[hostId]?.donAttached ?? []) donIds.push(donId);
+      }
+      return donIds;
+    }
     case 'controllerLifeTop': {
       const life = ctx.state().players[ctx.controllerId].lifeArea.cardIds;
       return life.length > 0 ? [life[0]] : [];
@@ -324,6 +345,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       ids = applyBaseFilters(ids, sel, ctx);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.hasBlocker !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasBlocker === true) === sel.hasBlocker);
+      if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
       return ids;
     }
@@ -331,6 +353,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const state = ctx.state();
       return [...state.players.p1.stageArea.cardIds, ...state.players.p2.stageArea.cardIds];
     }
+    case 'controllerStages':
+      return ctx.state().players[ctx.controllerId]?.stageArea.cardIds ?? [];
     case 'controllerHand':
       return searchEligible(ctx.controllerHandIds(), sel.filter, ctx);
     case 'opponentHand':
@@ -429,6 +453,12 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.giveDon(id, op.count);
       return { selectedIds: ids, movedIds: ids };
+    }
+    case 'giveGivenDon': {
+      const donIds = resolveSelector(op.donTarget, ctx, bindings);
+      const charIds = resolveSelector(op.characterTarget, ctx, bindings);
+      if (donIds[0] && charIds[0]) ctx.giveGivenDon(donIds[0], charIds[0]);
+      return { selectedIds: [...donIds, ...charIds], movedIds: charIds };
     }
     case 'giveDonFromCostArea': {
       const ids = resolveSelector(op.target, ctx, bindings);
@@ -530,8 +560,10 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return { selectedIds: [], movedIds: op.count > 0 ? ['__trashTopDeck'] : [] };
     case 'trashLife': {
       const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
-      ctx.trashLife(playerId, op.count);
-      return { selectedIds: [], movedIds: op.count > 0 ? ['__trashLife'] : [] };
+      const lifeCount = ctx.state().players[playerId]?.lifeArea.cardIds.length ?? 0;
+      const n = op.untilLife !== undefined ? Math.max(0, lifeCount - op.untilLife) : (op.count ?? 0);
+      ctx.trashLife(playerId, n);
+      return { selectedIds: [], movedIds: n > 0 ? ['__trashLife'] : [] };
     }
     case 'addDonFromDeck':
       ctx.addDonFromDeck(ctx.controllerId, op.count, op.rested);

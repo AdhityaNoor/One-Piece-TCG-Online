@@ -37,6 +37,7 @@ export function DonChip({ card, selectable, selected, onSelect }: DonChipProps) 
     <div
       className={['relative flex-shrink-0', hiddenDuringFlight ? 'invisible' : ''].join(' ')}
       style={{ width: BOX, height: BOX }}
+      data-board-card-anchor
       data-card-instance-id={card.instanceId}
     >
       <div
