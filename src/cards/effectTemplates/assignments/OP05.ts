@@ -13,22 +13,18 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   //   K.O.'d.
   // NOTE: not yet implemented (needs template).
 
-  // OP05-002 (leader) Belo Betty —
-  //   [Activate: Main] [Once Per Turn] You may trash 1 {Revolutionary Army} type card from your hand: Up to
-  //   3 of your {Revolutionary Army} type Characters or Characters with a [Trigger] gain +3000 power during
-  //   this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP05-002 — [Activate: Main] [OPT] trash 1 Revolutionary Army: up to 3 Rev Army +3000 this turn.
+  // PARTIAL: Characters with [Trigger] omitted (no hasTrigger on addPower target filter).
+  { cardNumber: 'OP05-002', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Revolutionary Army' }, optional: true },
+    { fn: 'addPower', ifPrevious: 'previousSelectedAny', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Revolutionary Army' } }, amount: 3000, duration: 'duringThisTurn', optional: true, maxTargets: 3 },
+  ] } },
 
-  // OP05-003 (character) Inazuma —
-  //   If you have a Character with 7000 power or more other than this Character, this Character gains
-  //   [Rush].(This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
+  // OP05-003 — if another Character has 7000+ power, [Rush]. PARTIAL: uses base-power gate, not current power / self exclusion.
+  { cardNumber: 'OP05-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfHasCharacterBasePowerAtLeast', power: 7000 }] } }] } },
 
-  // OP05-004 (character) Emporio.Ivankov —
-  //   [Activate: Main] [Once Per Turn] If this Character has 7000 power or more, play up to 1
-  //   {Revolutionary Army} type Character card with 5000 power or less other than [Emporio.Ivankov] from
-  //   your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP05-004 — [Activate: Main] [OPT] if 7000+ power, play Rev Army ≤5000 other than self from hand. PARTIAL: self 7000+ gate deferred.
+  { cardNumber: 'OP05-004', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Revolutionary Army', maxPower: 5000, excludeSelfName: true } }] } },
 
   // ── Triage batch (OP05 expressible): Revolutionary Army / Donquixote / Kid / DON!!-ramp lines. ──
   // OP05-005 Belo Betty — [On Play] If Leader {Revolutionary Army}: give up to 1 opp Leader/Char −1000 this turn.
@@ -45,9 +41,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-008 — [DON!! x1][Activate: Main][Once Per Turn] Give up to 2 rested DON!! to your Leader or 1 Character.
   { cardNumber: 'OP05-008', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'giveDon', count: 2 }] } },
 
-  // OP05-009 (character) Toh-Toh —
-  //   [On Play] Draw 1 card if your Leader has 0 power or less.
-  // NOTE: not yet implemented (needs template).
+  // OP05-009 — [On Play] draw 1 if your Leader has 0 power or less.
+  { cardNumber: 'OP05-009', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfLeaderPowerAtMost', power: 0 }], functions: [{ fn: 'draw', amount: 1 }] } },
 
   // OP05-010 — [On Play] K.O. up to 1 of your opponent's Characters with 1000 power or less.
   { cardNumber: 'OP05-010', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 1000 } }, optional: true }] } },
@@ -70,17 +65,31 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Revolutionary Army', excludeSelfName: true } }] },
   },
 
-  // OP05-016 (character) Morley —
-  //   [When Attacking] If this Character has 7000 power or more, your opponent cannot activate [Blocker]
-  //   during this battle. [Trigger] You may trash 1 card from your hand: If your Leader is multicolored,
-  //   play this card.
-  // NOTE: not yet implemented (needs template).
+  // OP05-016 — [When Attacking] prevent Blockers this battle. PARTIAL: 7000+ self-power gate deferred.
+  // [Trigger] trash 1 from hand: if Leader multicolored, play this.
+  {
+    cardNumber: 'OP05-016',
+    templates: [
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderMulticolor' }], functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
+  },
 
-  // OP05-017 (character) Lindbergh —
-  //   [When Attacking] If this Character has 7000 power or more, K.O. up to 1 of your opponent's Characters
-  //   with 3000 power or less. [Trigger] You may trash 1 card from your hand: If your Leader is
-  //   multicolored, play this card.
-  // NOTE: not yet implemented (needs template).
+  // OP05-017 — [When Attacking] K.O. power<=3000. PARTIAL: 7000+ self-power gate deferred.
+  // [Trigger] trash 1 from hand: if Leader multicolored, play this.
+  {
+    cardNumber: 'OP05-017',
+    templates: [
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderMulticolor' }], functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
+  },
 
   // OP05 coverage batch: movement, search, DON!! -N, play-from-hand, and gated draw.
   {
@@ -111,11 +120,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-021 (stage) — [Activate: Main] rest this Stage + trash 1 hand: Look 3, reveal up to 1 {Revolutionary Army} to hand, rest to bottom.
   { cardNumber: 'OP05-021', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Revolutionary Army' }, ifPrevious: 'previousMovedAny' }] } },
 
-  // OP05-022 (leader) Donquixote Rosinante —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[End of Your Turn] If you have 6 or less cards in your hand, set this Leader as
-  //   active.
-  // NOTE: not yet implemented (needs template).
+  // OP05-022 — [End of Your Turn] if ≤6 cards in hand, set this Leader active.
+  { cardNumber: 'OP05-022', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfHand', atMost: 6 }], functions: [{ fn: 'setActiveSelf' }] } },
 
   // OP05-023 — [DON!! x1][When Attacking] K.O. up to 1 opp rested Character cost ≤3.
   { cardNumber: 'OP05-023', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 3 } }, optional: true }] } },
@@ -137,10 +143,11 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP05-028', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 2 } }, optional: true }] } },
 
-  // OP05-026 (character) Sarquiss —
-  //   [DON!! x1] [When Attacking] [Once Per Turn] You may rest 1 of your Characters with a cost of 3 or
-  //   more: Set this Character as active.
-  // NOTE: not yet implemented (needs template).
+  // OP05-026 — [DON!! x1] [When Attacking] [OPT] rest 1 of your Characters cost>=3: set this Character active.
+  { cardNumber: 'OP05-026', templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'controller', filter: { minBaseCost: 3 } }, optional: true },
+    { fn: 'setActiveSelf', ifPrevious: 'previousSelectedAny' },
+  ] } },
 
   // OP05-029 — [On Your Opponent's Attack] [Once Per Turn] rest 1 DON!!: rest up to 1 opp Character cost<=6.
   { cardNumber: 'OP05-029', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },
@@ -164,15 +171,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP05-031 (character) Buffalo —
-  //   [When Attacking] [Once Per Turn] If you have 2 or more rested Characters, set up to 1 of your rested
-  //   Characters with a cost of 1 as active.
-  // NOTE: not yet implemented (needs template).
-
-  // OP05-032 (character) Pica —
-  //   [End of Your Turn] ①: Set this Character as active.[Once Per Turn] If this Character would be K.O.'d,
-  //   you may rest 1 of your Characters with a cost of 3 or more other than [Pica] instead.
-  // NOTE: not yet implemented (needs template).
+  // OP05-032 — [End of Your Turn] ①: set this Character active. PARTIAL: K.O. replacement via rest ally deferred.
+  { cardNumber: 'OP05-032', templateId: 'ability', params: { timing: 'endOfTurn', cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'setActiveSelf' }] } },
 
   // OP05-033 — [Activate: Main] rest 1 DON!! + rest this: play up to 1 {Donquixote Pirates} Character cost ≤2 from hand.
   { cardNumber: 'OP05-033', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Donquixote Pirates', maxCost: 2 } }] } },
@@ -231,10 +231,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   //   start of your next turn.
   { cardNumber: 'OP05-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 7 } }, duration: 'untilStartOfNextTurn', optional: true }] } },
 
-  // OP05-043 (character) Ulti —
-  //   [On Play] If your Leader is multicolored, look at 3 cards from the top of your deck and add up to 1
-  //   card to your hand. Then, place the rest at the top or bottom of the deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP05-043 — [On Play] if Leader multicolored, look 3 add 1 to hand, rest to top/bottom.
+  { cardNumber: 'OP05-043', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderMulticolor' }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', remainder: 'deckTopOrBottom' }] } },
 
   // OP05-045 — [Activate: Main] rest this + trash 1 hand: place up to 1 Character cost ≤2 at bottom of deck.
   { cardNumber: 'OP05-045', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
@@ -264,10 +262,11 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-055 — [Blocker][On Play] Look at 5, place them at top or bottom of deck in any order.
   { cardNumber: 'OP05-055', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
 
-  // OP05-056 (character) X.Barrels —
-  //   [On Play] You may place 1 of your Characters other than this Character at the bottom of your deck:
-  //   Draw 1 card.
-  // NOTE: not yet implemented (needs template).
+  // OP05-056 — [On Play] place 1 of your other Characters at bottom of deck: draw 1.
+  { cardNumber: 'OP05-056', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { excludeSelf: true } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+    { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   {
     cardNumber: 'OP05-057',
@@ -291,22 +290,17 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP05-060 (leader) Monkey.D.Luffy —
-  //   [Activate: Main] [Once Per Turn] You may add 1 card from the top of your Life cards to your hand: If
-  //   you have 0 or 3 or more DON!! cards on your field, add up to 1 DON!! card from your DON!! deck and
-  //   set it as active.
-  // NOTE: not yet implemented (needs template).
+  // OP05-060 — [Activate: Main] [OPT] add Life top to hand: if 0 or 3+ DON!! on field, add 1 DON!! active.
+  { cardNumber: 'OP05-060', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'addDonFromDeck', count: 1, rested: false, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'anyOf', gates: [{ kind: 'selfDonFieldCount', atMost: 0 }, { kind: 'selfDonFieldCount', atLeast: 3 }] }] },
+  ] } },
 
   // OP05-061 — [DON!! x1][When Attacking] If 8+ DON!!: rest up to 1 opp Character cost ≤4.
   { cardNumber: 'OP05-061', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
   // OP05-062 — if 10 DON!! on field, [Blocker]
   { cardNumber: 'OP05-062', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfDonFieldCount', atLeast: 10 }] } }] } },
-
-  // OP05-062 (character) O-Nami —
-  //   If you have 10 DON!! cards on your field, this Character gains [Blocker].(After your opponent
-  //   declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
 
   // OP05-063 — [On Play] If 8+ DON!!: K.O. up to 1 opp Character cost ≤3.
   { cardNumber: 'OP05-063', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
@@ -322,10 +316,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP05-067', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfLife', atMost: 3 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
 
-  // OP05-068 (character) Chopa-Emon —
-  //   [On Play] If you have 8 or more DON!! cards on your field, set up to 1 of your purple {Straw Hat
-  //   Crew} type Characters with 6000 power or less as active.
-  // NOTE: not yet implemented (needs template).
+  // OP05-068 — [On Play] if 8+ DON!!, set up to 1 {Straw Hat Crew} cost<=6 active. PARTIAL: purple/color + power filter deferred.
+  { cardNumber: 'OP05-068', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'setActiveControllerCharacter', filter: { typeIncludes: 'Straw Hat Crew', maxCost: 6 }, maxTargets: 1 }] } },
 
   // OP05-069 — [When Attacking] If opp has more DON!! than you: Look 5, reveal up to 1 {Heart Pirates} to hand, rest to bottom.
   { cardNumber: 'OP05-069', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'opponentDonMoreThanSelf' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Heart Pirates' } }] } },
@@ -382,9 +374,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP05-081', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP05-079 (character) Viola —
-  //   [On Play] Your opponent places 3 cards from their trash at the bottom of their deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP05-079 — [On Play] opponent places 3 cards from their trash at the bottom of their deck.
+  { cardNumber: 'OP05-079', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 3 }] } },
 
   // OP05-080 (character) Elizabello II —
   //   [When Attacking] [Once Per Turn] You may return 20 cards from your trash to your deck and shuffle it:
@@ -397,10 +388,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   //   from their hand.
   // NOTE: not yet implemented (needs template).
 
-  // OP05-084 (character) Saint Charlos —
-  //   [Your Turn] If the only Characters on your field are {Celestial Dragons} type Characters, give all of
-  //   your opponent's Characters −4 cost.
-  // NOTE: not yet implemented (needs template).
+  // OP05-084 — [Your Turn] if only {Celestial Dragons} on field, all opp Characters −4 cost.
+  { cardNumber: 'OP05-084', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -4, duration: 'permanent', gate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'Celestial Dragons' }], sourceCondition: { turn: 'your' } }] } },
 
   // OP05-085 — [Blocker][On Play] Trash 1 card from the top of your deck.
   { cardNumber: 'OP05-085', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 1 }] } },
@@ -408,27 +397,23 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-086 — if 10+ cards in trash, [Blocker]
   { cardNumber: 'OP05-086', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 10 }] } }] } },
 
-  // OP05-086 (character) Nefeltari Vivi —
-  //   If you have 10 or more cards in your trash, this Character gains [Blocker].(After your opponent
-  //   declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
+  // OP05-087 — [DON!! x1] [When Attacking] K.O. 1 of your other Characters: give up to 1 opp Character −5 cost this turn.
+  { cardNumber: 'OP05-087', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [
+    { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { excludeSelf: true } }, optional: true, maxTargets: 1 },
+    { fn: 'addCost', ifPrevious: 'previousSelectedAny', target: { group: 'characters', player: 'opponent' }, amount: -5, duration: 'duringThisTurn', optional: true },
+  ] } },
 
-  // OP05-087 (character) Hakuba —
-  //   [DON!! x1] [When Attacking] You may K.O. 1 of your Characters other than this Character: Give up to 1
-  //   of your opponent's Characters −5 cost during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP05-088 — [Activate: Main] ① + rest this + place 2 from trash at bottom: add black Character cost 3–5 from trash to hand.
+  { cardNumber: 'OP05-088', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }], functions: [
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 2 },
+    { fn: 'moveCards', ifPrevious: 'previousMovedAny', from: { zone: 'trash', player: 'controller', filter: { category: 'character', color: 'black', minCost: 3, maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
+  ] } },
 
-  // OP05-088 (character) Mansherry —
-  //   [Activate: Main] ➀ (You may rest the specified number of DON!! cards in your cost area.) You may rest
-  //   this Character and place 2 cards from your trash at the bottom of your deck in any order: Add up to 1
-  //   black Character card with a cost of 3 to 5 from your trash to your hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP05-089 (character) Saint Mjosgard —
-  //   [Activate: Main] ➀ (You may rest the specified number of DON!! cards in your cost area.) You may rest
-  //   this Character and 1 of your Characters: Add up to 1 black Character card with a cost of 1 from your
-  //   trash to your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP05-089 — [Activate: Main] ① + rest this + rest 1 of your Characters: add black Character cost 1 from trash to hand.
+  { cardNumber: 'OP05-089', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }], functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'controller', filter: { excludeSelf: true } }, optional: true },
+    { fn: 'moveCards', ifPrevious: 'previousSelectedAny', from: { zone: 'trash', player: 'controller', filter: { category: 'character', color: 'black', exactCost: 1 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
+  ] } },
 
   // OP05-090 — [Blocker][On Play]/[On K.O.] up to 1 {Dressrosa} Character +2000 this turn.
   {
@@ -439,22 +424,21 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP05-091 (character) Rebecca —
-  //   [Blocker][On Play] Add up to 1 black Character card with a cost of 3 to 7 other than [Rebecca] from
-  //   your trash to your hand. Then, play up to 1 black Character card with a cost of 3 or less from your
-  //   hand rested.
-  // NOTE: not yet implemented (needs template).
+  // OP05-091 — [On Play] add black Character cost 3–7 (not Rebecca) from trash to hand; play black cost<=3 from hand. PARTIAL: played Character should enter rested.
+  { cardNumber: 'OP05-091', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', color: 'black', minCost: 3, maxCost: 7, excludeSelfName: true } }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'playFromHand', filter: { category: 'character', color: 'black', maxCost: 3 } },
+  ] } },
 
-  // OP05-092 (character) Saint Rosward —
-  //   [Your Turn] If the only Characters on your field are {Celestial Dragons} type Characters, give all of
-  //   your opponent's Characters −6 cost.
-  // NOTE: not yet implemented (needs template).
+  // OP05-092 — [Your Turn] if only {Celestial Dragons} on field, all opp Characters −6 cost.
+  { cardNumber: 'OP05-092', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -6, duration: 'permanent', gate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'Celestial Dragons' }], sourceCondition: { turn: 'your' } }] } },
 
-  // OP05-093 (character) Rob Lucci —
-  //   [On Play] You may place 3 cards from your trash at the bottom of your deck in any order: K.O. up to 1
-  //   of your opponent's Characters with a cost of 2 or less and up to 1 of your opponent's Characters with
-  //   a cost of 1 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP05-093 — [On Play] place 3 from trash at bottom: K.O. opp cost<=2 and cost<=1.
+  { cardNumber: 'OP05-093', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 3 },
+    { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true },
+    { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true },
+  ] } },
 
   // OP05-094 Overheat — [Main] give up to 1 opp Character −3 cost this turn. [Trigger] Draw 2, trash 1.
   //   PARTIAL: the "cost-0 opp Character won't become active next Refresh" rider (preventRefresh) is deferred.
@@ -470,13 +454,23 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the "if 15+ trash, K.O. 1 opp Char cost ≤4" rider needs a trash-count gate (deferred).
   { cardNumber: 'OP05-095', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
 
-  // OP05-096 (event) I Bid 500 Million!! —
-  //   [Main] Choose one:• K.O. up to 1 of your opponent's Characters with a cost of 1 or less.• Return up
-  //   to 1 of your opponent's Characters with a cost of 1 or less to the owner's hand.• Place up to 1 of
-  //   your opponent's Characters with a cost of 1 or less at the top or bottom of their Life cards
-  //   face-up.Then, if you have a {Celestial Dragons} type Character, draw 1 card. [Trigger] K.O. up to 1
-  //   of your opponent's Characters with a cost of 6 or less, or return it to the owner's hand.
-  // NOTE: not yet implemented (needs template).
+  // OP05-096 — [Main] choose one on opp cost<=1 Character; draw 1 if you have Celestial Dragons. PARTIAL: add-to-Life branch omitted.
+  // [Trigger] K.O. or return opp cost<=6 — mapped as K.O. only.
+  {
+    cardNumber: 'OP05-096',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Choose one:',
+        options: [
+          { label: 'koCost1', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] },
+          { label: 'returnCost1', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] },
+        ],
+      }, { fn: 'draw', amount: 1, ifGate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Celestial Dragons', atLeast: 1 }] }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },
+    ],
+  },
 
   // OP05-097 (stage) Mary Geoise —
   //   [Your Turn] The cost of playing {Celestial Dragons} type Character cards with a cost of 2 or more
@@ -508,20 +502,17 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP05-102 (character) Gedatsu —
-  //   [On Play] K.O. up to 1 of your opponent's Characters with a cost equal to or less than the number of
-  //   your opponent's Life cards.
-  // NOTE: not yet implemented (needs template).
+  // OP05-102 — [On Play] K.O. up to 1 opp Character with cost <= opp Life count.
+  { cardNumber: 'OP05-102', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromOpponentLife: true } }, optional: true }] } },
 
-  // OP05-103 (character) Kotori —
-  //   [On Play] If you have [Hotori], K.O. up to 1 of your opponent's Characters with a cost equal to or
-  //   less than the number of your opponent's Life cards.
-  // NOTE: not yet implemented (needs template).
+  // OP05-103 — [On Play] if [Hotori], K.O. up to 1 opp Character with cost <= opp Life count.
+  { cardNumber: 'OP05-103', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfControlsNamed', name: 'Hotori' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromOpponentLife: true } }, optional: true }] } },
 
-  // OP05-104 (character) Conis —
-  //   [On Play] You may place 1 of your Stages at the bottom of your deck: Draw 1 card and trash 1 card
-  //   from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP05-104 — [On Play] place 1 of your Stages at bottom of deck: draw 1 and trash 1 from hand.
+  { cardNumber: 'OP05-104', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'stages', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+    { fn: 'drawAndTrash', drawCount: 1, trashCount: 1, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP05-105 — [Trigger] trash 1 → play this card.
   { cardNumber: 'OP05-105', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
@@ -545,19 +536,25 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Once Per Turn] When a [Trigger] activates, draw 2 cards and trash 2 cards from your hand.
   // NOTE: not yet implemented (needs template).
 
-  // OP05-111 (character) Hotori —
-  //   [On Play] You may play 1 [Kotori] from your hand: Add up to 1 of your opponent's Characters with a
-  //   cost of 3 or less to the top or bottom of your opponent's Life cards face-up.
-  // NOTE: not yet implemented (needs template).
+  // OP05-111 — [On Play] play [Kotori] from hand: add up to 1 opp Character cost<=3 to opp Life face-up. PARTIAL: play-Kotori optional chain simplified.
+  { cardNumber: 'OP05-111', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'playFromHand', filter: { category: 'character', name: 'Kotori' } },
+    { fn: 'moveCards', ifPrevious: 'previousSelectedAny', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true },
+  ] } },
 
   { cardNumber: 'OP05-112', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Sky Island', exactCost: 1 } }] } },
 
-  // OP05-114 (event) El Thor —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if
-  //   your opponent has 2 or less Life cards, that card gains an additional +2000 power during this battle.
-  //   [Trigger] K.O. up to 1 of your opponent's Characters with a cost equal to or less than the number of
-  //   your opponent's Life cards.
-  // NOTE: not yet implemented (needs template).
+  // OP05-114 — [Counter] +2000 battle (+2000 more if opp ≤2 Life). [Trigger] K.O. cost <= opp Life count.
+  {
+    cardNumber: 'OP05-114',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true },
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifGate: [{ kind: 'opponentLife', atMost: 2 }] },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromOpponentLife: true } }, optional: true }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP05-115',
@@ -567,10 +564,14 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP05-116 (event) Hino Bird Zap —
-  //   [Main] K.O. up to 1 of your opponent's Characters with a cost equal to or less than the number of
-  //   your opponent's Life cards. [Trigger] Activate this card's [Main] effect.
-  // NOTE: not yet implemented (needs template).
+  // OP05-116 — [Main] K.O. up to 1 opp Character with cost <= opp Life count. [Trigger] activates [Main].
+  {
+    cardNumber: 'OP05-116',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromOpponentLife: true } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromOpponentLife: true } }, optional: true }] } },
+    ],
+  },
 
   // OP05-117 — [On Play] Look at 5; add up to 1 Sky Island type.
   {

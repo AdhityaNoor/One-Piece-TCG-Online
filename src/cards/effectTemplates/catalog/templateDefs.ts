@@ -14,6 +14,7 @@ import type {
   IrCondition,
   IrDuration,
   IrTiming,
+  CharacterMoveFilter,
   SearchFilter,
   SearchPickDestination,
   SearchRemainderDestination,
@@ -33,8 +34,8 @@ export type MoveCardSource =
   | { zone: 'deck'; player: 'controller'; position: 'top'; count?: number }
   | { zone: 'hand'; player: 'controller'; filter?: SearchFilter }
   | { zone: 'trash'; player: 'controller' | 'opponent'; filter?: SearchFilter }
-  | { zone: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: { maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; minDonAttached?: number } }
-  | { zone: 'stages'; player: 'controller' | 'opponent' | 'any' };
+  | { zone: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: CharacterMoveFilter }
+  | { zone: 'stages'; player: 'controller' | 'opponent' | 'any'; filter?: { maxCost?: number } };
 
 export type MoveCardDestination =
   | { zone: 'hand'; player: 'owner' }

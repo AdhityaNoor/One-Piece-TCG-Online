@@ -8,15 +8,9 @@ import type { CardEffectAssignment } from '../assembler';
 export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // --- Batch: OP03 cards expressible with existing primitives ---
-  // OP03-001 (leader) Portgas.D.Ace —
-  //   When this Leader attacks or is attacked, you may trash any number of Event or Stage cards from your
-  //   hand. This Leader gains +1000 power during this battle for every card trashed.
-  // NOTE: not yet implemented (needs template).
-
-  // OP03-002 (character) Adio —
-  //   [DON!! x1] [When Attacking] Your opponent cannot activate a [Blocker] Character that has 2000 or less
-  //   power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // OP03-001 — PARTIAL: attack/defend variable Event/Stage trash → scaling battle power deferred.
+  // OP03-002 — [DON!! x1] [When Attacking] opp cannot activate [Blocker] Characters with 2000 or less power.
+  { cardNumber: 'OP03-002', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle', blockerPowerAtLeast: 2001 }] } },
 
   // OP03-011 — [DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power.
   // OP03-003 - [On Play] Look at 5; add Whitebeard Pirates card other than this card's name.
@@ -30,31 +24,36 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   //   gains [Rush].(This card can attack on the turn in which it is played.)
   // NOTE: not yet implemented (needs attack restrictions that only bar attacks into Leaders, not Characters).
 
-  // OP03-005 (character) Thatch —
-  //   [Activate: Main] [Once Per Turn] This Character gains +2000 power during this turn. Then, trash this
-  //   Character at the end of this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP03-005 — [Activate: Main] [Once Per Turn] this +2000 this turn. PARTIAL: end-of-turn trash deferred.
+  { cardNumber: 'OP03-005', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
 
-  // OP03-008 (character) Buggy —
-  //   This Character cannot be K.O.'d in battle by <Slash> attribute cards.[On Play] Look at 5 cards from
-  //   the top of your deck; reveal up to 1 red Event and add it to your hand. Then, place the rest at the
-  //   bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP03-008 — PARTIAL: slash-attribute battle K.O. immunity deferred; mapped [On Play] red Event search.
+  { cardNumber: 'OP03-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'event', color: 'red' }, remainder: 'bottom' }] } },
 
   // OP03-009 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
   { cardNumber: 'OP03-009', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
   { cardNumber: 'OP03-011', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP03-012 (character) Marshall.D.Teach —
-  //   [When Attacking] You may trash 1 of your red Characters with 4000 power or more: Draw 1 card. Then,
-  //   this Character gains +1000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // OP03-012 — [When Attacking] trash 1 red Character power>=4000: draw 1, this +1000 this battle.
+  // PARTIAL: "4000 power or more" uses minBasePower proxy on the trash target filter.
+  { cardNumber: 'OP03-012', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { color: 'red', minBasePower: 4000 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
+    { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+  ] } },
 
-  // OP03-013 (character) Marco —
-  //   [Your Turn] [On Play] K.O. up to 1 of your opponent's Characters with 3000 power or less.[On K.O.]
-  //   You may trash 1 Event from your hand: You may play this Character card from your trash rested.
-  // NOTE: not yet implemented (needs template).
+  // OP03-013 — [Your Turn] [On Play] K.O. power<=3000. [On K.O.] trash 1 Event: play this from trash rested.
+  {
+    cardNumber: 'OP03-013',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [
+        { fn: 'trashTypeFromHand', count: 1, filter: { category: 'event' }, optional: true },
+        { fn: 'playFromTrash', filter: { name: 'Marco' }, rested: true, ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
+  },
 
   // OP03-014 — [When Attacking] Play up to 1 red Character (cost 1) from hand.
   { cardNumber: 'OP03-014', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'red', exactCost: 1 } }] } },
@@ -85,11 +84,18 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP03-018 (event) Fire Fist —
-  //   [Main] You may trash 1 Event from your hand: K.O. up to 1 of your opponent's Characters with 5000
-  //   power or less and up to 1 of your opponent's Characters with 4000 power or less. [Trigger] K.O. up to
-  //   1 of your opponent's Characters with 5000 power or less.
-  // NOTE: not yet implemented (needs template).
+  // OP03-018 — [Main] trash 1 Event: K.O. power<=5000 and power<=4000. [Trigger] K.O. power<=5000.
+  {
+    cardNumber: 'OP03-018',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'trashTypeFromHand', count: 1, filter: { category: 'event' }, optional: true },
+        { fn: 'ko', ifPrevious: 'previousSelectedAny', target: { group: 'characters', player: 'opponent', filter: { maxPower: 5000 } }, optional: true, maxTargets: 1 },
+        { fn: 'ko', ifPrevious: 'previousSelectedAny', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, optional: true, maxTargets: 1 },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 5000 } }, optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   // OP03-019 - [Main] Leader +4000. [Trigger] opponent Leader/Character -10000.
   {
@@ -100,11 +106,8 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP03-020 (stage) Striker —
-  //   [Activate: Main] ② (You may rest the specified number of DON!! cards in your cost area.) You may rest
-  //   this Stage: If your Leader is [Portgas.D.Ace], look at 5 cards from the top of your deck; reveal up
-  //   to 1 Event and add it to your hand. Then, place the rest at the bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP03-020 — [Activate: Main] rest 2 DON!! + rest this Stage: if Leader [Portgas.D.Ace], look 5 add Event.
+  { cardNumber: 'OP03-020', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 2 }, { kind: 'restThis' }], gate: [{ kind: 'leaderName', name: 'Portgas.D.Ace' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'event' }, remainder: 'bottom' }] } },
 
   // OP03-021 (leader) Kuro —
   //   [Activate: Main] ③ (You may rest the specified number of DON!! cards in your cost area.) You may rest
@@ -118,10 +121,17 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-024 - [On Play] If Leader has East Blue, rest up to 2 opponent Characters cost 4 or less.
   { cardNumber: 'OP03-024', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'East Blue' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, maxTargets: 2 }] } },
 
-  // OP03-025 (character) Krieg —
-  //   [On Play] You may trash 1 card from your hand: K.O. up to 2 of your opponent's rested Characters with
-  //   a cost of 4 or less.[DON!! x1] This Character gains [Double Attack].(This card deals 2 damage.)
-  // NOTE: not yet implemented (needs template).
+  // OP03-025 — [On Play] trash 1 from hand: K.O. up to 2 rested opp cost<=4. [DON!! x1] [Double Attack].
+  {
+    cardNumber: 'OP03-025',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 4 } }, optional: true, maxTargets: 2 },
+      ] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+    ],
+  },
 
   // OP03 coverage batch: East Blue trigger-play characters and Big Mom trigger-play support.
   {
@@ -138,10 +148,17 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'playFromHand', filter: { category: 'character', name: 'Buchi' }, ifGate: [{ kind: 'selfDoesNotControlNamed', name: 'Buchi' }] },
   ] } },
 
-  // OP03-028 (character) Jango —
-  //   [On Play] Choose one:- Set up to 1 of your {East Blue} type Leader or Character cards with a cost of
-  //   6 or less as active.- Rest this Character and up to 1 of your opponent's Characters.
-  // NOTE: not yet implemented (needs template).
+  // OP03-028 — [On Play] choose one: set East Blue cost<=6 active, or rest self + up to 1 opp Character.
+  // PARTIAL: Leader set-active branch deferred; mapped Character-only set active.
+  { cardNumber: 'OP03-028', templateId: 'ability', params: { timing: 'onPlay', functions: [{
+    fn: 'chooseOne',
+    chooser: 'controller',
+    prompt: 'Choose one:',
+    options: [
+      { label: 'setActiveEastBlue', functions: [{ fn: 'setActiveControllerCharacter', filter: { typeIncludes: 'East Blue', maxCost: 6 }, maxTargets: 1 }] },
+      { label: 'restBoth', functions: [{ fn: 'restSelf' }, { fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 1 }] },
+    ],
+  }] } },
 
   {
     cardNumber: 'OP03-029',
@@ -181,16 +198,18 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP03-036 (event) Out-of-the-Bag —
-  //   [Main] You may rest 1 of your {East Blue} type Characters: Set up to 1 of your [Kuro] cards as
-  //   active. [Trigger] K.O. up to 1 of your opponent's rested Characters with a cost of 3 or less.
-  // NOTE: not yet implemented (needs template).
-
-  // OP03-037 (event) Tooth Attack —
-  //   [Main] You may rest 1 of your {East Blue} type Characters: K.O. up to 1 of your opponent's rested
-  //   Characters with a cost of 3 or less. [Trigger] Play up to 1 Character card with a cost of 4 or less
-  //   and a [Trigger] from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP03-036 — [Main] rest 1 East Blue: set [Kuro] active. PARTIAL: name-specific set-active → East Blue cost<=6.
+  // [Trigger] K.O. rested opp cost<=3.
+  {
+    cardNumber: 'OP03-036',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'rest', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'East Blue' } }, optional: true },
+        { fn: 'setActiveControllerCharacter', filter: { typeIncludes: 'East Blue', maxCost: 6 }, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 3 } }, optional: true }] } },
+    ],
+  },
 
   // OP03-038 - [Main] Rest up to 2 opponent Characters cost 2 or less. [Trigger] rest cost 5 or less.
   {
@@ -235,12 +254,6 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-045 — [Blocker] [Opponent's Turn] If 20 or less cards in deck, this Character +3000.
   { cardNumber: 'OP03-045', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'selfDeckCount', atMost: 20 }] } }] } },
 
-  // OP03-045 (character) Carne —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[Opponent's Turn] If you have 20 or less cards in your deck, this Character gains
-  //   +3000 power.
-  // NOTE: not yet implemented (needs template).
-
   // OP03-047 (character) Zeff —
   //   [DON!! x1] When this Character's attack deals damage to your opponent's Life, you may trash 7 cards
   //   from the top of your deck. [On Play] You may return up to 1 Character with a cost of 3 or less to the
@@ -258,25 +271,6 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP03-053 — [DON!! x1] if 20 or less cards in deck, +2000
   { cardNumber: 'OP03-053', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfDeckCount', atMost: 20 }] } }] } },
-
-  // OP03-049 (character) Patty —
-  //   [On Play] If you have 20 or less cards in your deck, return up to 1 Character with a cost of 3 or
-  //   less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP03-050 (character) Boodle —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On K.O.] You may trash 1 card from the top of your deck.
-  // NOTE: not yet implemented (needs template).
-
-  // OP03-051 (character) Bell-mère —
-  //   [DON!! x1] When this Character's attack deals damage to your opponent's Life, you may trash 7 cards
-  //   from the top of your deck.[On K.O.] You may trash 3 cards from the top of your deck.
-  // NOTE: not yet implemented (needs template).
-
-  // OP03-053 (character) Yosaku & Johnny —
-  //   [DON!! x1] If you have 20 or less cards in your deck, this Character gains +2000 power.
-  // NOTE: not yet implemented (needs template).
 
   // OP03-054 — (Event) [Counter] +2000 battle, then trash 1 from top of deck. [Trigger] draw 1 and trash 1 from top of deck.
   {
@@ -362,11 +356,11 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-069 - [On K.O.] If Leader has Impel Down, draw 2 then trash 1.
   { cardNumber: 'OP03-069', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
 
-  // OP03-070 (character) Monkey.D.Luffy —
-  //   [On Play] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.) You may trash 1 Character card with a cost of 5 from your hand: This Character gains [Rush]
-  //   during this turn.(This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
+  // OP03-070 — [On Play] DON!! −1: trash 1 Character cost 5 from hand → this gains [Rush] this turn.
+  { cardNumber: 'OP03-070', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [
+    { fn: 'trashTypeFromHand', count: 1, filter: { category: 'character', exactCost: 5 }, optional: true },
+    { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny' },
+  ] } },
 
   // OP03-071 - [When Attacking] DON!! -1: rest opponent Character cost 5 or less.
   { cardNumber: 'OP03-071', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
@@ -422,27 +416,14 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // NOTE: not yet implemented (needs template).
 
   // OP03-078 (character) Issho —
-  //   [DON!! x1] [Your Turn] Give all of your opponent's Characters −3 cost.[On Play] If your opponent has
-  //   6 or more cards in their hand, trash 2 cards from your opponent's hand.
-  //   PARTIAL: the [On Play] opponent-hand-trash clause is deferred (no trash-from-opponent-hand primitive).
+  //   PARTIAL: [On Play] opponent-hand-trash deferred; mapped [DON!! x1] [Your Turn] −3 cost aura.
   { cardNumber: 'OP03-078', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -3, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
-
-  // OP03-079 (character) Vergo —
-  //   [DON!! x1] This Character cannot be K.O.'d in battle.
-  // NOTE: not yet implemented (needs template).
-
-  // OP03-080 (character) Kaku —
-  //   [On Play] You may place 2 cards with a type including "CP" from your trash at the bottom of your deck
-  //   in any order: K.O. up to 1 of your opponent's Characters with a cost of 3 or less.
-  // NOTE: not yet implemented (needs template).
 
   // OP03-081 - [On Play] Draw 2, trash 2, then give opponent Character -2 cost.
   { cardNumber: 'OP03-081', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, optional: true }] } },
 
-  // OP03-083 (character) Corgy —
-  //   [On Play] Look at 5 cards from the top of your deck and trash up to 2 cards. Then, place the rest at
-  //   the bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP03-083 — [On Play] look 5 trash up to 2, rest to bottom. PARTIAL: pick-to-trash → pick 1 to hand, remainder bottom.
+  { cardNumber: 'OP03-083', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', remainder: 'bottom' }] } },
 
   // OP03-086 - [On Play] If Leader type includes CP, look at 3; add CP card other than this card's name, trash rest.
   {
@@ -453,47 +434,44 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-088 — cannot be K.O.'d by effects
   { cardNumber: 'OP03-088', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent' }] } },
 
-  // OP03-088 (character) Fukurou —
-  //   This Character cannot be K.O.'d by effects.[Blocker] (After your opponent declares an attack, you may
-  //   rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
-
   // OP03-089 - [On Play] Look at 3; add Navy other than this card's name, trash rest.
   {
     cardNumber: 'OP03-089',
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Navy', excludeSelfName: true }, remainder: 'trash' }] },
   },
 
+  // OP03-090 — [DON!! x1] [Blocker]. [On K.O.] play up to 1 CP cost<=4 from trash rested.
+  {
+    cardNumber: 'OP03-090',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'CP', maxCost: 4 }, rested: true }] } },
+    ],
+  },
+
+  // OP03-091 — [On Play] set up to 1 opp vanilla Character cost to 0 this turn.
+  { cardNumber: 'OP03-091', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setBaseCost', target: { group: 'characters', player: 'opponent', filter: { noBaseEffect: true } }, value: 0, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+
   // OP03-092 — [On Play] place 2 CP from trash at bottom: this Character gains [Rush] this turn.
   { cardNumber: 'OP03-092', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'CP' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 2 }, { fn: 'addKeyword', ifPrevious: 'previousMovedAny', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
-  // OP03-090 (character) Blueno —
-  //   [DON!! x1] This Character gains [Blocker].(After your opponent declares an attack, you may rest this
-  //   card to make it the new target of the attack.)[On K.O.] Play up to 1 Character card with a type
-  //   including "CP" and a cost of 4 or less from your trash rested.
-  // NOTE: not yet implemented (needs template).
+  // OP03-093 — [On Play] trash 1 from hand: if Leader CP, K.O. up to 1 opp Character cost<=1.
+  { cardNumber: 'OP03-093', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'optionalTrashFromHand', count: 1 },
+    { fn: 'ko', ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'leaderType', type: 'CP' }], target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true },
+  ] } },
 
-  // OP03-091 (character) Helmeppo —
-  //   [On Play] Set the cost of up to 1 of your opponent's Characters with no base effect to 0 during this
-  //   turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP03-092 (character) Rob Lucci —
-  //   [On Play] You may place 2 cards with a type including "CP" from your trash at the bottom of your deck
-  //   in any order: This Character gains [Rush] during this turn.(This card can attack on the turn in which
-  //   it is played.)
-  // NOTE: not yet implemented (needs template).
-
-  // OP03-093 (character) Wanze —
-  //   [On Play] You may trash 1 card from your hand: If your Leader's type includes "CP", K.O. up to 1 of
-  //   your opponent's Characters with a cost of 1 or less.
-  // NOTE: not yet implemented (needs template).
-
-  // OP03-094 (event) Air Door —
-  //   [Main] If your Leader's type includes "CP", look at 5 cards from the top of your deck; play up to 1
-  //   Character card with a type including "CP" and a cost of 5 or less. Then, trash the rest. [Trigger]
-  //   Play up to 1 black Character card with a cost of 3 or less from your trash.
-  // NOTE: not yet implemented (needs template).
+  // OP03-094 — [Main] if Leader CP, look 5 play CP cost<=5, trash rest. [Trigger] play black Character cost<=3 from trash.
+  {
+    cardNumber: 'OP03-094',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderType', type: 'CP' }], functions: [
+        { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'CP', maxCost: 5 }, remainder: 'trash' },
+        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'CP', maxCost: 5 } },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', color: 'black', maxCost: 3 }, rested: false }] } },
+    ],
+  },
 
   // OP03-095 — (Event) [Main] Give up to 2 opp Characters −2 cost this turn. [Trigger] opponent trashes 1 from hand.
   {
@@ -504,10 +482,22 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP03-096 (event) Tempest Kick Sky Slicer —
-  //   [Main] K.O. up to 1 of your opponent's Characters with a cost of 0 or your opponent's Stages with a
-  //   cost of 3 or less. [Trigger] Draw 2 cards.
-  // NOTE: not yet implemented (needs template).
+  // OP03-096 — [Main] choose one: K.O. cost-0 Character or trash opp Stage cost<=3. [Trigger] draw 2.
+  {
+    cardNumber: 'OP03-096',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Choose one:',
+        options: [
+          { label: 'koCost0', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { exactCost: 0 } }, optional: true, maxTargets: 1 }] },
+          { label: 'trashStage', functions: [{ fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }] },
+        ],
+      }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }] } },
+    ],
+  },
 
   // OP03-097 — (Event) [Counter] trash 1 from hand: +3000 battle. [Trigger] draw 1, then K.O. up to 1 opp Character cost<=1.
   {
@@ -524,10 +514,14 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP03-098 (stage) Enies Lobby —
-  //   [Activate: Main] You may rest this Stage: If your Leader's type includes "CP", give up to 1 of your
-  //   opponent's Characters -2 cost during this turn. [Trigger] Play this card.
-  // NOTE: not yet implemented (needs template).
+  // OP03-098 — [Activate: Main] rest this Stage: if Leader CP, give up to 1 opp Character −2 cost. [Trigger] play this.
+  {
+    cardNumber: 'OP03-098',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'CP' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   // OP03-099 — (Leader) [DON!! x1] [When Attacking] look at top of your or opponent's Life, place top/bottom; then this Leader +1000 battle.
   { cardNumber: 'OP03-099', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [
@@ -535,14 +529,17 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle' },
   ] } },
 
-  // OP03-100 (character) Kingbaum —
-  //   [Trigger] You may trash 1 card from the top or bottom of your Life cards: Play this card.
-  // NOTE: not yet implemented (needs template).
+  // OP03-100 — [Trigger] trash 1 from top or bottom of Life: play this card.
+  { cardNumber: 'OP03-100', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'trash', player: 'owner' }, optional: true },
+    { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' },
+  ] } },
 
-  // OP03-102 (character) Sanji —
-  //   [DON!! x2] [When Attacking] You may add 1 card from the top or bottom of your Life cards to your
-  //   hand: Add up to 1 card from the top of your deck to the top of your Life cards.
-  // NOTE: not yet implemented (needs template).
+  // OP03-102 — [DON!! x2] [When Attacking] add Life top/bottom to hand: add deck top to Life top.
+  { cardNumber: 'OP03-102', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'moveCards', ifPrevious: 'previousMovedAny', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true },
+  ] } },
 
   // OP03-104 — [Blocker] [On Play] Look at top of your or opponent's Life, place it top or bottom.
   { cardNumber: 'OP03-104', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'peekLifeAndPlace', from: 'controllerOrOpponentTop', placement: 'topOrBottom' }] } },
@@ -553,22 +550,41 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'addPowerSelf', amount: 3000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // OP03-108 (character) Charlotte Cracker —
-  //   [DON!! x1] If you have less Life cards than your opponent, this Character gains [Double Attack] and
-  //   +1000 power.(This card deals 2 damage.) [Trigger] You may trash 1 card from your hand: Play this
-  //   card.
-  // NOTE: not yet implemented (needs template).
+  // OP03-108 — [DON!! x1] if less Life than opponent, [Double Attack] +1000. [Trigger] trash 1 from hand: play this.
+  {
+    cardNumber: 'OP03-108',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfLifeLessThanOpponent' }] } },
+        { fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfLifeLessThanOpponent' }] } },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
+  },
 
-  // OP03-109 (character) Charlotte Chiffon —
-  //   [On Play] You may trash 1 card from the top or bottom of your Life cards: Add up to 1 card from the
-  //   top of your deck to the top of your Life cards.
-  // NOTE: not yet implemented (needs template).
+  // OP03-109 — [On Play] trash 1 from top/bottom of Life: add deck top to Life top.
+  { cardNumber: 'OP03-109', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'trash', player: 'owner' }, optional: true },
+    { fn: 'moveCards', ifPrevious: 'previousMovedAny', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true },
+  ] } },
 
-  // OP03-110 (character) Charlotte Smoothie —
-  //   [When Attacking] You may add 1 card from the top or bottom of your Life cards to your hand: This
-  //   Character gains +2000 power during this battle. [Trigger] You may trash 1 card from your hand: Play
-  //   this card.
-  // NOTE: not yet implemented (needs template).
+  // OP03-110 — [When Attacking] add Life top/bottom to hand: +2000 this battle. [Trigger] trash 1 from hand: play this.
+  {
+    cardNumber: 'OP03-110',
+    templates: [
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'addPowerSelf', amount: 2000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
+  },
 
   // OP03-112 - [On Play] Look at 4; add [Sanji] or Big Mom Pirates other than this card's name.
   {
@@ -588,10 +604,10 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP03-114 (character) Charlotte Linlin —
-  //   [On Play] If your Leader has the {Big Mom Pirates} type, add up to 1 card from the top of your deck
-  //   to the top of your Life cards. Then, trash up to 1 card from the top of your opponent's Life cards.
-  // NOTE: not yet implemented (needs template).
+  // OP03-114 — [On Play] if Leader Big Mom Pirates, add deck top to Life. PARTIAL: trash opp Life top deferred.
+  { cardNumber: 'OP03-114', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Big Mom Pirates' }], functions: [
+    { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true },
+  ] } },
 
   // OP03-115 — [On Play] you may trash 1 card with a [Trigger] from hand: K.O. up to 1 opp Character cost<=1.
   { cardNumber: 'OP03-115', templateId: 'ability', params: { timing: 'onPlay', functions: [
@@ -636,16 +652,26 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP03-120 (event) Tropical Torment —
-  //   [Main] If your opponent has 4 or more Life cards, trash up to 1 card from the top of your opponent's
-  //   Life cards. [Trigger] Activate this card's [Main] effect.
-  // NOTE: not yet implemented (needs template).
+  // OP03-120 — [Main] if opp Life>=4, trash up to 1 from top of opp Life. [Trigger] activates [Main].
+  {
+    cardNumber: 'OP03-120',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'opponentLife', atLeast: 4 }], functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'opponentLife', atLeast: 4 }], functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true }] } },
+    ],
+  },
 
-  // OP03-121 (event) Thunder Bolt —
-  //   [Main] You may trash 1 card from the top of your Life cards: K.O. up to 1 of your opponent's
-  //   Characters with a cost of 5 or less. [Trigger] K.O. up to 1 of your opponent's Characters with a cost
-  //   of 5 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP03-121 — [Main] trash 1 from top of Life: K.O. opp cost<=5. [Trigger] K.O. opp cost<=5.
+  {
+    cardNumber: 'OP03-121',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true },
+        { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
+    ],
+  },
 
   // OP03-122 — [On Play] Return up to 1 Character cost<=6 to hand; then draw 2 and trash 2 from hand.
   { cardNumber: 'OP03-122', templateId: 'ability', params: { timing: 'onPlay', functions: [

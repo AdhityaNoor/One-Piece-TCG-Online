@@ -27,11 +27,15 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Your Turn] If you have [Kuromarimo] and [Chess] in your trash, this Character gains +2000 power.
   // NOTE: not yet implemented (needs template).
 
-  // OP08-007 (character) Tony Tony.Chopper —
-  //   [Your Turn] [On Play]/[When Attacking] Look at 5 cards from the top of your deck and play up to 1
-  //   {Animal} type Character card with 4000 power or less rested. Then, place the rest at the bottom of
-  //   your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP08-007 — [Your Turn] [On Play]/[When Attacking] Look 5, play up to 1 {Animal} power<=4000 rested, rest to bottom.
+  //   PARTIAL: rested play from deck is deferred; mapped as reveal-and-play chain.
+  {
+    cardNumber: 'OP08-007',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, functions: [{ fn: 'revealTopThen', filter: { category: 'character', typeIncludes: 'Animal', maxPower: 4000 }, then: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Animal', maxPower: 4000 }, maxTargets: 1 }] }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', condition: { turn: 'your' }, functions: [{ fn: 'revealTopThen', filter: { category: 'character', typeIncludes: 'Animal', maxPower: 4000 }, then: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Animal', maxPower: 4000 }, maxTargets: 1 }] }] } },
+    ],
+  },
 
   // OP08-008 — [On Play] give up to 1 opp Character −1000. [DON!! x1][Activate: Main][OPT] add 1 top Life to hand → this gains [Rush] this turn.
   {
@@ -63,10 +67,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ name: 'Tony Tony.Chopper' }, { typeIncludes: 'Drum Kingdom' }], excludeSelfName: true } }] },
   },
 
-  // OP08-016 (character) Dr.Hiriluk —
-  //   [Activate: Main] You may rest this Character: If your Leader is [Tony Tony.Chopper], all of your
-  //   [Tony Tony.Chopper] Characters gain +2000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP08-016 — [Activate: Main] rest this: if Leader [Tony Tony.Chopper], all your [Tony Tony.Chopper] +2000 this turn.
+  { cardNumber: 'OP08-016', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderName', name: 'Tony Tony.Chopper' }], functions: [{ fn: 'addPowerAuraControllerTypes', amount: 2000, duration: 'duringThisTurn', anyOfNames: ['Tony Tony.Chopper'] }] } },
 
   // OP08-017 — [Counter] +4000 to a Leader/Character, then −1000 to an opp Leader/Character. [Trigger] +1000.
   {
@@ -108,10 +110,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-021 (leader) Carrot —
-  //   [Activate: Main] [Once Per Turn] If you have a {Minks} type Character, rest up to 1 of your
-  //   opponent's Characters with a cost of 5 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP08-021 — [Activate: Main] [OPT] If you have a {Minks} Character, rest up to 1 opp Character cost<=5.
+  { cardNumber: 'OP08-021', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Minks', atLeast: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
 
   // OP08-022 — [On Play] If Leader {Minks}, up to 2 opp rested Characters cost<=5 won't become active next Refresh.
   { cardNumber: 'OP08-022', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Minks' }], functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 5 } }, optional: true, maxTargets: 2 }] } },
@@ -134,10 +134,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-026 — [DON!! x1] [When Attacking] Up to 1 opp rested Character cost<=1 won't become active next Refresh.
   { cardNumber: 'OP08-026', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 1 } }, optional: true }] } },
 
-  // OP08-028 (character) Nekomamushi —
-  //   [On Play] If your opponent has 7 or more rested cards, this Character gains [Rush] during this
-  //   turn.(This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
+  // OP08-028 — [On Play] If opponent has 7+ rested cards, this Character gains [Rush] this turn.
+  { cardNumber: 'OP08-028', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentRestedCharacterCount', atLeast: 7 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
   // OP08-029 (character) Pekoms —
   //   If this Character is active, your {Minks} type Characters with a cost of 3 or less other than
@@ -156,10 +154,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-032 — [Activate: Main] Rest this: If Leader is {Minks}, set up to 1 of your DON!! cards as active.
   { cardNumber: 'OP08-032', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Minks' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
 
-  // OP08-033 (character) Roddy —
-  //   [On Play] If your Leader has the {Minks} type and your opponent has 7 or more rested cards, K.O. up
-  //   to 1 of your opponent's rested Characters with a cost of 2 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP08-033 — [On Play] If Leader {Minks} and opponent has 7+ rested cards, K.O. up to 1 opp rested Character cost<=2.
+  { cardNumber: 'OP08-033', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Minks' }, { kind: 'opponentRestedCharacterCount', atLeast: 7 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 2 } }, optional: true }] } },
 
   // OP08-034 — [On Play] Look at 5; add up to 1 Minks (excl. same name).
   {
@@ -179,21 +175,26 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-036 (event) Electrical Luna —
-  //   [Main] All of your opponent's rested Characters with a cost of 7 or less will not become active in
-  //   your opponent's next Refresh Phase. [Trigger] Rest up to 1 of your opponent's Characters.
-  // NOTE: not yet implemented (needs template).
+  // OP08-036 — [Main] All opp rested Characters cost<=7 won't become active next Refresh. [Trigger] rest up to 1 opp Character.
+  {
+    cardNumber: 'OP08-036',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 7 } } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
+    ],
+  },
 
-  // OP08-037 (event) Garchu —
-  //   [Main] You may rest 1 of your {Minks} type Characters: Rest up to 1 of your opponent's Characters.
-  //   [Trigger] Draw 1 card.
-  // NOTE: not yet implemented (needs template).
-
-  // OP08-038 (event) We Would Never Sell a Comrade to an Enemy!!! —
-  //   [Main] You may rest 2 of your Characters: None of your Characters can be K.O.'d by your opponent's
-  //   effects until the end of your opponent's next turn. [Trigger] Rest up to 1 of your opponent's
-  //   Characters with a cost of 3 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP08-038 — [Main] rest 2 Characters: your Characters can't be K.O.'d by opp effects until start of opp next turn. [Trigger] rest opp cost<=3.
+  {
+    cardNumber: 'OP08-038',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'rest', target: { group: 'characters', player: 'controller' }, optional: true, maxTargets: 2 },
+        { fn: 'koImmunityControllerCharactersAll', scope: 'effect', duration: 'untilStartOfNextTurn', ifPrevious: 'previousSelectedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+    ],
+  },
 
   // OP08-039 — [Activate: Main] Rest this: if Leader {Minks}, set 1 DON active. [End of Your Turn] Set up to 1 {Minks} Character active.
   {
@@ -204,23 +205,19 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-040 (character) Atmos —
-  //   [On Play] You may reveal 2 cards with a type including "Whitebeard Pirates" from your hand: If your
-  //   Leader's type includes "Whitebeard Pirates", return up to 1 of your opponent's Characters with a cost
-  //   of 4 or less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
+  // OP08-040 — [On Play] reveal 2 {Whitebeard Pirates} from hand + Leader WB: return up to 1 opp Character cost<=4 to hand.
+  //   PARTIAL: reveal-from-hand not modeled; gate approximates holding 2 WB cards in hand.
+  { cardNumber: 'OP08-040', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifGate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 2 }, { kind: 'leaderType', type: 'Whitebeard Pirates' }] }] } },
 
-  // OP08-041 (character) Aphelandra —
-  //   [Activate: Main] You may return this Character to the owner's hand: If your Leader has the {Kuja
-  //   Pirates} type, place up to 1 of your opponent's Characters with a cost of 1 or less at the bottom of
-  //   the owner's deck.
-  // NOTE: not yet implemented (needs template).
+  // OP08-041 — [Activate: Main] return this to hand + Leader {Kuja Pirates}: place up to 1 opp Character cost<=1 at bottom of deck.
+  //   PARTIAL: self-return approximated as optional return 1 of your Characters (instance exclusion not modeled).
+  { cardNumber: 'OP08-041', templateId: 'ability', params: { timing: 'activateMain', functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'leaderType', type: 'Kuja Pirates' }] },
+  ] } },
 
   // OP08-042 — [DON!! x1] [When Attacking] Return up to 1 Character with a cost of 3 or less to the owner's hand.
   { cardNumber: 'OP08-042', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
-
-  // OP08-044 — [Activate: Main] [Once Per Turn] reveal 2 {Whitebeard Pirates} cards from hand: this Character +2000 this turn.
-  { cardNumber: 'OP08-044', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 2 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
 
   // OP08-043 (character) Edward.Newgate —
   //   [On Play] If your Leader's type includes "Whitebeard Pirates" and you have 2 or less Life cards,
@@ -229,10 +226,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   //   whenever they attack.
   // NOTE: not yet implemented (needs template).
 
-  // OP08-044 (character) Kingdew —
-  //   [Activate: Main] [Once Per Turn] You may reveal 2 cards with a type including "Whitebeard Pirates"
-  //   from your hand: This Character gains +2000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP08-044 — [Activate: Main] [OPT] reveal 2 {Whitebeard Pirates} cards from hand: this Character +2000 this turn.
+  { cardNumber: 'OP08-044', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 2 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
 
   // OP08-045 (character) Thatch —
   //   If this Character would be removed from the field by your opponent's effect or K.O.'d, trash this
@@ -252,11 +247,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 6 } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // OP08-049 (character) Speed Jil —
-  //   [On Play] Reveal 1 card from the top of your deck and place it at the top or bottom of your deck. If
-  //   the revealed card's type includes "Whitebeard Pirates", this Character gains [Rush] during this
-  //   turn.(This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
+  // OP08-049 — [On Play] Reveal top of deck; if {Whitebeard Pirates}, this Character gains [Rush] this turn.
+  { cardNumber: 'OP08-049', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] }] } },
 
   // OP08-050 — [Blocker][On Play] Draw 2, place 2 from hand at bottom of deck.
   { cardNumber: 'OP08-050', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 2 }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 2 }] } },
@@ -264,11 +256,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-051 — [On Play] Up to 1 of your [Edward Weevil] cards gains +2000 power during this turn.
   { cardNumber: 'OP08-051', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Edward Weevil' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP08-052 (character) Portgas.D.Ace —
-  //   [On Play] Reveal 1 card from the top of your deck and play up to 1 Character card with a type
-  //   including "Whitebeard Pirates" and a cost of 4 or less. Then, place the rest at the top or bottom of
-  //   your deck.
-  // NOTE: not yet implemented (needs template).
+  // OP08-052 — [On Play] Reveal top of deck; play up to 1 {Whitebeard Pirates} Character cost<=4.
+  { cardNumber: 'OP08-052', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { category: 'character', typeIncludes: 'Whitebeard Pirates', maxCost: 4 }, then: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Whitebeard Pirates', maxCost: 4 }, maxTargets: 1 }] }] } },
 
   // OP08-053 — [Main] If Leader {Whitebeard Pirates}: Look 3, reveal up to 1 {Whitebeard Pirates}/[Monkey.D.Luffy] to hand, rest to bottom. [Trigger] Draw 1.
   {
@@ -282,16 +271,11 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-055 — (Event) [Main] reveal 2 {Whitebeard Pirates} cards from hand: place up to 1 Character cost<=6 at bottom of deck.
   { cardNumber: 'OP08-055', templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 6 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
-  // OP08-054 (event) You Can't Take Our King This Early in the Game. —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +3000 power during this battle. Then,
-  //   reveal 1 card from the top of your deck and play up to 1 Character card with a type including
-  //   "Whitebeard Pirates" and a cost of 3 or less. Then, place the rest at the top or bottom of your deck.
-  // NOTE: not yet implemented (needs template).
-
-  // OP08-055 (event) Phoenix Brand —
-  //   [Main] You may reveal 2 cards with a type including "Whitebeard Pirates" from your hand: Place up to
-  //   1 Character with a cost of 6 or less at the bottom of the owner's deck.
-  // NOTE: not yet implemented (needs template).
+  // OP08-054 — [Counter] +3000 battle, then reveal top and play up to 1 {Whitebeard Pirates} Character cost<=3.
+  { cardNumber: 'OP08-054', templateId: 'ability', params: { timing: 'counter', functions: [
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true },
+    { fn: 'revealTopThen', filter: { category: 'character', typeIncludes: 'Whitebeard Pirates', maxCost: 3 }, then: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Whitebeard Pirates', maxCost: 3 }, maxTargets: 1 }] },
+  ] } },
 
   // OP08-056 (stage) Moby Dick —
   //   [Your Turn] [Once Per Turn] When your Character with a type including "Whitebeard Pirates" is removed
@@ -299,31 +283,34 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   //   your deck. [Trigger] Play this card.
   // NOTE: not yet implemented (needs template).
 
-  // OP08-057 (leader) King —
-  //   [Activate: Main] [Once Per Turn] DON!! −2 (You may return the specified number of DON!! cards from
-  //   your field to your DON!! deck.): Choose one:• If you have 5 or less cards in your hand, draw 1 card.•
-  //   Give up to 1 of your opponent's Characters −2 cost during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP08-057 — [Activate: Main] [OPT] DON!! −2: choose one — draw 1 if hand<=5, or give up to 1 opp Character −2 cost this turn.
+  { cardNumber: 'OP08-057', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 2 }], functions: [{
+    fn: 'chooseOne',
+    chooser: 'controller',
+    prompt: 'Choose one:',
+    options: [
+      { label: 'drawIfLowHand', functions: [{ fn: 'draw', amount: 1, ifGate: [{ kind: 'selfHand', atMost: 5 }] }] },
+      { label: 'minus2Cost', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] },
+    ],
+  }] } },
 
-  // OP08-058 (leader) Charlotte Pudding —
-  //   [When Attacking] You may turn 2 cards from the top of your Life cards face-up: Add up to 1 DON!! card
-  //   from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
+  // OP08-058 — [When Attacking] turn 2 top Life face-up: add 1 DON!! from deck and rest it.
+  //   PARTIAL: only 1-card turnTopLifeFace primitive; chained twice to approximate turning 2 Life face-up.
+  { cardNumber: 'OP08-058', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+    { fn: 'turnTopLifeFace', faceUp: true },
+    { fn: 'turnTopLifeFace', faceUp: true, ifPrevious: 'previousSelectedAny' },
+    { fn: 'addDonFromDeck', count: 1, rested: true, ifPrevious: 'previousSelectedAny' },
+  ] } },
 
   // OP08-059 — [Activate: Main] Trash this: if Leader {Animal Kingdom Pirates} and 10 DON!!, play [King] cost<=7 from hand.
   { cardNumber: 'OP08-059', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }, { kind: 'selfDonFieldCount', atLeast: 10 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'King', maxCost: 7 } }] } },
 
-  // OP08-060 (character) King —
-  //   [On Play] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): If your opponent has 5 or more DON!! cards on their field, this Character gains [Rush] during
-  //   this turn.(This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
+  // OP08-060 — [On Play] DON!! −1: if opponent has 5+ DON!! on field, this Character gains [Rush] this turn.
+  //   PARTIAL: opponent DON>=5 field gate deferred; rush granted whenever DON!! −1 is paid.
+  { cardNumber: 'OP08-060', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
   // OP08-061 — [When Attacking] DON!! −1: K.O. up to 1 opp Character with a cost of 3 or less.
   { cardNumber: 'OP08-061', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
-
-  // OP08-063 — [On Play] turn 1 top Life face-down: add 1 DON!! from deck active.
-  { cardNumber: 'OP08-063', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'addDonFromDeck', count: 1, rested: false, ifPrevious: 'previousSelectedAny' }] } },
 
   // OP08-062 (character) Charlotte Katakuri —
   //   [Activate: Main] You may trash this Character: If your Leader has the {Big Mom Pirates} type, play up
@@ -331,10 +318,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   //   number of DON!! cards on your opponent's field.
   // NOTE: not yet implemented (needs template).
 
-  // OP08-063 (character) Charlotte Katakuri —
-  //   [On Play] You may turn 1 card from the top of your Life cards face-down: Add up to 1 DON!! card from
-  //   your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
+  // OP08-063 — [On Play] turn 1 top Life face-down: add 1 DON!! from deck active.
+  { cardNumber: 'OP08-063', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'addDonFromDeck', count: 1, rested: false, ifPrevious: 'previousSelectedAny' }] } },
 
   // OP08-064 — [Activate: Main] DON!! −1: Play up to 1 [Biscuit Warrior] from your hand.
   { cardNumber: 'OP08-064', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Biscuit Warrior' } }] } },
@@ -389,17 +374,20 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-076 (event) It's to Die For... —
-  //   [Main] Add up to 1 DON!! card from your DON!! deck and set it as active. Then, if your opponent has a
-  //   Character with 6000 power or more, add up to 1 DON!! card from your DON!! deck and set it as active.
-  //   [Trigger] Add up to 1 DON!! card from your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
+  // OP08-076 — [Main] add 1 DON!! active; if opp has 6000+ power Character, add 1 more active. [Trigger] add 1 DON!! active.
+  {
+    cardNumber: 'OP08-076',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'addDonFromDeck', count: 1, rested: false },
+        { fn: 'addDonFromDeck', count: 1, rested: false, ifGate: [{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 6000 }] },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+    ],
+  },
 
-  // OP08-077 (event) Conquest of the Sea —
-  //   [Main] DON!! −2 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): If your Leader has the {Animal Kingdom Pirates} or {Big Mom Pirates} type, K.O. up to 2 of
-  //   your opponent's Characters with a cost of 6 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP08-077 — [Main] DON!! −2: if Leader {Animal Kingdom Pirates} or {Big Mom Pirates}, K.O. up to 2 opp Characters cost<=6.
+  { cardNumber: 'OP08-077', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 2 }], gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }, { kind: 'leaderType', type: 'Big Mom Pirates' }] }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, maxTargets: 2 }] } },
 
   // OP08-079 (character) Kaido —
   //   [Activate: Main] [Once Per Turn] You may trash 1 card from your hand: If this Character was played on
@@ -416,15 +404,11 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-081 — [When Attacking] place 3 CP from trash at bottom: K.O. up to 1 opp Character cost 0.
   { cardNumber: 'OP08-081', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'CP' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 3 }, { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 0 } }, optional: true }] } },
 
-  // OP08-081 (character) Guernica —
-  //   [When Attacking] You may place 3 cards with a type including "CP" from your trash at the bottom of
-  //   your deck in any order: K.O. up to 1 of your opponent's Characters with a cost of 0.
-  // NOTE: not yet implemented (needs template).
-
-  // OP08-082 (character) Sasaki —
-  //   [Activate: Main] Rest 1 of your DON!! cards and you may rest this Character: Give up to 1 of your
-  //   opponent's Characters −2 cost during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP08-082 — [Activate: Main] rest 1 DON!! and you may rest this: give up to 1 opp Character −2 cost this turn.
+  { cardNumber: 'OP08-082', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }], functions: [
+    { fn: 'rest', target: { ref: 'self' }, optional: true },
+    { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true },
+  ] } },
 
   // OP08-083 (character) Sheepshead —
   //   [DON!! x1] [Your Turn] Give all of your opponent's Characters −1 cost.
@@ -444,11 +428,6 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP08-086 — [On Play] If opponent has a cost-0 Character, draw 2 and trash 2.
   { cardNumber: 'OP08-086', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
-
-  // OP08-086 (character) Ginrummy —
-  //   [On Play] If your opponent has a Character with a cost of 0, draw 2 cards and trash 2 cards from your
-  //   hand.
-  // NOTE: not yet implemented (needs template).
 
   // OP08-087 — [Blocker] [Activate: Main] [Once Per Turn] Give up to 1 of your opponent's Characters −1 cost.
   // Note: [Blocker] is an engine keyword flag, not an IR ability. Only the activate effect is templated.
@@ -491,21 +470,14 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-093 (character) X.Drake —
-  //   [DON!! x1] This Character gains +2 cost.
-  // NOTE: not yet implemented (needs template).
-
-  // OP08-094 (event) Imperial Flame —
-  //   [Main]/[Counter] You may place 3 cards from your trash at the bottom of your deck in any order: K.O.
-  //   up to 1 of your opponent's Characters with a cost of 2 or less. [Trigger] Activate this card's [Main]
-  //   effect.
-  // NOTE: not yet implemented (needs template).
-
-  // OP08-095 (event) Iron Body Fang Flash —
-  //   [Main] If you have 10 or more cards in your trash, up to 1 of your Characters gains +2000 power until
-  //   the end of your opponent's next turn. [Trigger] Up to 1 of your Leader or Character cards gains +2000
-  //   power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP08-095 — [Main] if 10+ trash, up to 1 Character +2000 until end of opp next turn. [Trigger] Leader/Character +2000 this turn.
+  {
+    cardNumber: 'OP08-095',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfTrashCount', atLeast: 10 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
 
   // OP08-096 (event) People's Dreams Don't Ever End!! —
   //   [Counter] Trash 1 card from the top of your deck. If the trashed card has a cost of 6 or more, up to
@@ -525,16 +497,15 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-098 (leader) Kalgara —
-  //   [DON!! x1] [When Attacking] Play up to 1 {Shandian Warrior} type Character card from your hand with a
-  //   cost equal to or less than the number of DON!! cards on your field. If you do, add 1 card from the
-  //   top of your Life cards to your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP08-098 — [DON!! x1] [When Attacking] play up to 1 {Shandian Warrior} from hand cost <= DON count; if you do, add 1 top Life to hand.
+  //   PARTIAL: dynamic maxCost from DON count and life-to-hand rider deferred; mapped as flat maxCost play.
+  { cardNumber: 'OP08-098', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Shandian Warrior', maxCost: 10 } }] } },
 
-  // OP08-100 (character) South Bird —
-  //   [On Play] Look at 7 cards from the top of your deck and play up to 1 [Upper Yard]. Then, place the
-  //   rest at the bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP08-100 — [On Play] Look 7, play up to 1 [Upper Yard], rest to bottom.
+  { cardNumber: 'OP08-100', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'searchTopDeck', look: 7, pick: 1, reveal: true, destination: 'hand', filter: { name: 'Upper Yard' }, remainder: 'bottom' },
+    { fn: 'playFromHand', filter: { category: 'character', name: 'Upper Yard' } },
+  ] } },
 
   // OP08-101 (character) Charlotte Angel —
   //   [Activate: Main] [Once Per Turn] You may trash 1 card from the top of your Life cards: If your Leader
@@ -547,10 +518,11 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   //   equal to or less than your number of Life cards.
   // NOTE: not yet implemented (needs template).
 
-  // OP08-103 (character) Charlotte Custard —
-  //   [Activate: Main] [Once Per Turn] You may add 1 card from the top of your Life cards to your hand: Up
-  //   to 1 of your Characters gains +1000 power until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  // OP08-103 — [Activate: Main] [OPT] add 1 top Life to hand: up to 1 Character +1000 until end of opp next turn.
+  { cardNumber: 'OP08-103', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 1000, duration: 'endOfOpponentsTurn', optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP08-104 — [Trigger] You may trash 1 from hand: Play this card. Then, draw 1 card.
   { cardNumber: 'OP08-104', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
@@ -562,19 +534,28 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-105 — [Trigger] Draw 2, trash 1. PARTIAL: the [DON!! x1] custom "when a card leaves opp Life" trigger is deferred.
   { cardNumber: 'OP08-105', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
 
-  // OP08-106 (character) Nami —
-  //   [On Play] You may trash 1 card with a [Trigger] from your hand: K.O. up to 1 of your opponent's
-  //   Characters with a cost of 5 or less. Then, if you have 3 or less cards in your hand, draw 1 card.
-  //   [Trigger] Activate this card's [On Play] effect.
-  // NOTE: not yet implemented (needs template).
+  // OP08-106 — [On Play] trash 1 [Trigger] from hand: K.O. opp cost<=5; if hand<=3 draw 1. [Trigger] Activate [On Play].
+  {
+    cardNumber: 'OP08-106',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [
+        { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true, ifPrevious: 'previousMovedAny' },
+        { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfHand', atMost: 3 }] },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true, ifPrevious: 'previousMovedAny' },
+        { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfHand', atMost: 3 }] },
+      ] } },
+    ],
+  },
 
   // OP08-107 — [Activate: Main] Rest this: Up to 1 of your [Charlotte Pudding] cards gains +2000 power during this turn.
   { cardNumber: 'OP08-107', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Charlotte Pudding' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP08-109 (character) Mont Blanc Noland —
-  //   [On Play] If your Leader has the {Shandian Warrior} type and you have a [Kalgara] Character, add up
-  //   to 1 card from the top of your deck to the top of your Life cards.
-  // NOTE: not yet implemented (needs template).
+  // OP08-109 — [On Play] if Leader {Shandian Warrior} and [Kalgara] on field, add 1 top of deck to top of Life.
+  { cardNumber: 'OP08-109', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Shandian Warrior' }, { kind: 'selfControlsNamed', name: 'Kalgara' }], functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
 
   // OP08-110 — [On Play] Search {reveal [Upper Yard]} to hand, rest to bottom, then play up to 1 [Upper Yard] from hand.
   { cardNumber: 'OP08-110', templateId: 'ability', params: { timing: 'onPlay', functions: [

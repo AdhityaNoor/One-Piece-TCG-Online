@@ -79,7 +79,7 @@ describe('continuous power aura (addPowerAura)', () => {
       ...met,
       players: {
         ...met.players,
-        p1: { ...met.players.p1, donArea: { cardIds: donIds.slice(0, 9) } },
+        p1: { ...met.players.p1, costArea: { ...met.players.p1.costArea, cardIds: donIds.slice(0, 9) } },
       },
     };
     expect(computeCurrentPower(rig.defs, fewDon, opp.instanceId)).toBe(5000);

@@ -101,7 +101,8 @@ function selectorFromMoveSource(from: MoveCardSource): Extract<EffectOp, { op: '
       if (from.player === 'opponent') return { sel: 'opponentTrash', ...(from.filter ? { filter: from.filter } : {}) };
       break;
     case 'stages':
-      if (from.player === 'controller') return { sel: 'controllerStages' };
+      if (from.player === 'controller') return { sel: 'controllerStages', ...(from.filter?.maxCost !== undefined ? { maxCost: from.filter.maxCost } : {}) };
+      if (from.player === 'opponent') return { sel: 'opponentStages', ...(from.filter?.maxCost !== undefined ? { maxCost: from.filter.maxCost } : {}) };
       if (from.player === 'any') return { sel: 'allStages' };
       break;
     case 'characters':

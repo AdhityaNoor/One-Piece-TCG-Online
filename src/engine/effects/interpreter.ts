@@ -245,10 +245,16 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
       ids = applyBaseFilters(ids, sel, ctx);
       if (sel.color !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.colors.includes(sel.color!) === true);
+      if (sel.name !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name === sel.name);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
       if (sel.anyOfTypes !== undefined) ids = ids.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
       if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
+      if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
+      if (sel.excludeSelfName) {
+        const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
+        if (selfName !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name !== selfName);
+      }
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
       return ids;
     }
@@ -353,8 +359,16 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const state = ctx.state();
       return [...state.players.p1.stageArea.cardIds, ...state.players.p2.stageArea.cardIds];
     }
-    case 'controllerStages':
-      return ctx.state().players[ctx.controllerId]?.stageArea.cardIds ?? [];
+    case 'controllerStages': {
+      let ids = ctx.state().players[ctx.controllerId]?.stageArea.cardIds ?? [];
+      if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      return ids;
+    }
+    case 'opponentStages': {
+      let ids = ctx.state().players[ctx.opponentId]?.stageArea.cardIds ?? [];
+      if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      return ids;
+    }
     case 'controllerHand':
       return searchEligible(ctx.controllerHandIds(), sel.filter, ctx);
     case 'opponentHand':

@@ -17,7 +17,7 @@ import type { CardCategory, Color } from '../state/card';
 export type Selector =
   | { sel: 'self' } // the source card
   | { sel: 'controllerLeader' }
-  | { sel: 'controllerCharacters'; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; color?: Color; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; minDonAttached?: number; noBaseEffect?: boolean }
+  | ({ sel: 'controllerCharacters' } & CharacterMoveFilter)
   | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; name?: string; excludeSelf?: boolean }
   | { sel: 'controllerLeaderOrStage'; typeIncludes?: string } // controller's Leader + Stage cards (for 'rest 1 of your {X} Leader or Stage' costs)
   | { sel: 'opponentLeaderOrCharacters' }
@@ -39,7 +39,8 @@ export type Selector =
   | { sel: 'opponentTrash'; filter?: SearchFilter } // opponent's trash cards matching a filter
   | { sel: 'controllerDeck'; filter?: SearchFilter } // controller's deck cards matching a filter (for play-from-deck)
   | { sel: 'allStages' } // any player's Stage in the stage area
-  | { sel: 'controllerStages' } // controller's Stage in the stage area
+  | { sel: 'controllerStages'; maxCost?: number } // controller's Stage in the stage area
+  | { sel: 'opponentStages'; maxCost?: number } // opponent's Stage in the stage area
   | { sel: 'var'; name: string }; // ids bound by a prior chooseTargets op
 
 export type IrCondition = ContinuousPowerCondition; // { donAttachedAtLeast?, turn? }
@@ -77,6 +78,30 @@ export interface SearchFilter {
   hasTrigger?: boolean;
   /** Vanilla / no base effect (2-8-5): no effect text other than static keywords, and no [Trigger]. */
   noBaseEffect?: boolean;
+}
+
+/** Filters for moveCards when the source zone is the character field. */
+export interface CharacterMoveFilter {
+  maxCost?: number;
+  exactCost?: number;
+  maxPower?: number;
+  maxBaseCost?: number;
+  minBaseCost?: number;
+  exactBaseCost?: number;
+  maxBasePower?: number;
+  minBasePower?: number;
+  exactBasePower?: number;
+  rested?: boolean;
+  typeIncludes?: string;
+  anyOfTypes?: string[];
+  minDonAttached?: number;
+  noBaseEffect?: boolean;
+  color?: Color;
+  name?: string;
+  /** Exclude the source card instance (other than this Character). */
+  excludeSelf?: boolean;
+  /** Exclude cards sharing the source card's printed name. */
+  excludeSelfName?: boolean;
 }
 
 export type SearchRemainderDestination = 'bottom' | 'trash';
