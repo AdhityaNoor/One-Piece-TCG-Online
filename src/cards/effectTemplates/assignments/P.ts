@@ -21,6 +21,9 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   // P-053 — [On Play] If ≤3 hand, return up to 1 opp Character cost ≤3 to hand.
   { cardNumber: 'P-053', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHand', atMost: 3 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
+  // P-060 — (Event) [Main] rest 1 of your [Uta] Characters: rest up to 2 of opponent's DON!!.
+  { cardNumber: 'P-060', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'rest', target: { group: 'characters', player: 'controller', filter: { name: 'Uta' } }, optional: true }, { fn: 'restOpponentDon', maxTargets: 2, ifPrevious: 'previousSelectedAny' }] } },
+
   // P-055 (character) Monkey.D.Luffy —
   //   [On Play] You may trash 2 cards from your hand: Your opponent places 1 of their Characters at the
   //   bottom of the owner's deck.
