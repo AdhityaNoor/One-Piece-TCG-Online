@@ -147,10 +147,23 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   //   cost of 4 or less. Then, give up to 3 rested DON!! cards to your [Roronoa Zoro] Leader.
   // NOTE: not yet implemented (needs template).
 
-  // OP12-027 (character) Koushirou —
-  //   If your <Slash> attribute Character with a cost of 5 or less other than this Character would be
-  //   K.O.'d by your opponent's effect, you may rest this Character instead.[Blocker]
-  // NOTE: not yet implemented (needs template).
+  // OP12-027 — aura K.O. replacement: rest this Character to save ally <Slash> cost ≤5. PARTIAL: [Blocker] is printed.
+  {
+    cardNumber: 'OP12-027',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        anyOfAttributes: ['Slash'],
+        excludeSource: true,
+        targetCondition: { maxCost: 5 },
+        restSource: true,
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP12-028 (character) Kouzuki Hiyori —
   //   [Activate: Main] You may rest 1 of your DON!! cards and this Character: If your Leader is [Roronoa
@@ -297,12 +310,21 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   //   a cost of 4 or less to the owner's hand.• If you have 6 or less cards in your hand, draw 2 cards.
   // NOTE: not yet implemented (needs template).
 
-  // OP12-061 (leader) Donquixote Rosinante —
-  //   [Once Per Turn] If your [Trafalgar Law] would be K.O.'d, you may add 1 card from the top of your Life
-  //   cards to your hand instead.[Activate: Main] [Once Per Turn] DON!! −1: The next time you play
-  //   [Trafalgar Law] with a cost of 4 or more from your hand during this turn, the cost will be reduced by
-  //   2.
-  // NOTE: not yet implemented (needs template).
+  // OP12-061 — [Once Per Turn] [Trafalgar Law] K.O. replacement (top Life → hand). PARTIAL: activate Main deferred.
+  {
+    cardNumber: 'OP12-061',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        oncePerTurn: true,
+        anyOfNames: ['Trafalgar Law'],
+        lifeToHand: { position: 'top' },
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP12-062 — [On Play] If Leader [Sanji] and your DON!! ≤ opponent's, add 1 DON!! (rested), then draw 1.
   { cardNumber: 'OP12-062', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Sanji' }, { kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }, { fn: 'draw', amount: 1 }] } },

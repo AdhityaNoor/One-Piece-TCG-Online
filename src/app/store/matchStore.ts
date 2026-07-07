@@ -24,6 +24,10 @@ import { hashSeed } from '../../engine/rng';
 import { createPreGameState } from '../../engine/setup';
 import type { GameState } from '../../engine/state';
 import { buildCardDefinitionLookup, buildCardImageLookup, savedDeckToPlayerSetupInput } from '../lib/savedDeckToSetupInput';
+import { parseMovementSpecs } from '../../animations/cardMovement/parseLogEntries';
+import { applyMovementPresentation } from '../../animations/cardMovement/presentationHints';
+import { useSettingsStore } from './settingsStore';
+import { useCardAnimationStore } from './cardAnimationStore';
 
 /**
  * Build the match's card-effect registry from curated EffectProgram data.
@@ -165,11 +169,20 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     // executeAction re-validates internally — see dispatch.ts doc comment.
     // That's intentional, harmless redundancy, not a bug to "optimize away".
     const result = executeAction(state, action, defs, registry);
+    const { cardImagesByDefinitionId } = get();
+    if (useSettingsStore.getState().animationsEnabled && result.log.length > 0) {
+      const specs = applyMovementPresentation(
+        parseMovementSpecs(state, result.log, cardImagesByDefinitionId),
+        localPlayerId,
+      );
+      useCardAnimationStore.getState().enqueue(specs);
+    }
     set({ state: result.state });
     return { ok: true };
   },
 
   reset() {
+    useCardAnimationStore.getState().clear();
     set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {} });
   },
 }));

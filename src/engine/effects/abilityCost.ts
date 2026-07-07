@@ -173,7 +173,7 @@ export function payAbilityCost(
   return { state: { ...working, log: [...working.log, ...logger.log] }, log: logger.log, restedInstanceIds };
 }
 
-function payDonMinus(
+export function payDonMinus(
   state: GameState,
   playerId: string,
   toReturn: readonly string[],

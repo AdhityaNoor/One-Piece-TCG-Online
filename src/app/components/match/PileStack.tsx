@@ -128,6 +128,7 @@ export function PileStack({
           {/* Top card — centred when boardFocused, otherwise anchored at near corner */}
           <div
             aria-hidden="true"
+            data-board-card-anchor
             className="absolute overflow-hidden rounded-md group-hover/deck-pile:-translate-y-0.5"
             style={{
               width:  cqh(150),

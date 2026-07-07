@@ -156,10 +156,21 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   //   DON!! cards will not become active in your opponent's next Refresh Phase.
   // NOTE: not yet implemented (needs template).
 
-  // OP10-034 (character) Franky —
-  //   [Once Per Turn] If this Character would be K.O.'d in battle, you may add 1 card from the top of your
-  //   Life cards to your hand instead.
-  // NOTE: not yet implemented (needs template).
+  // OP10-034 — [Once Per Turn] battle K.O. replacement (top Life → hand).
+  {
+    cardNumber: 'OP10-034',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementSelf',
+        scope: 'battle',
+        oncePerTurn: true,
+        lifeToHand: { position: 'top' },
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP10-035 — [On K.O.] Rest up to 1 opp Character cost ≤5 (the "or Leader" option is dropped).
   { cardNumber: 'OP10-035', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },

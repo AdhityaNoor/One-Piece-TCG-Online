@@ -148,11 +148,21 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-031 — [When Attacking] [Once Per Turn] If you have 2 or more rested Characters, set up to 1 of your rested Characters (cost 1) as active.
   { cardNumber: 'OP05-031', templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'setActiveControllerCharacter', filter: { exactCost: 1, rested: true }, maxTargets: 1 }] } },
 
-  // OP05-030 (character) Donquixote Rosinante —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[Opponent's Turn] If your rested Character would be K.O.'d, you may trash this
-  //   Character instead.
-  // NOTE: not yet implemented (needs template).
+  // OP05-030 — PARTIAL: [Blocker] is printed; aura replacement for rested allies on opponent's turn.
+  {
+    cardNumber: 'OP05-030',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        targetCondition: { rested: true },
+        sourceCondition: { turn: 'opponent' },
+        trashSource: true,
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP05-031 (character) Buffalo —
   //   [When Attacking] [Once Per Turn] If you have 2 or more rested Characters, set up to 1 of your rested

@@ -4,7 +4,7 @@
  * standard ActionExecuteResult via finish(). Each primitive mirrors the
  * canonical engine implementation so behavior can't drift.
  */
-import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousKeyword, ContinuousKoReplacementModifier, ContinuousPowerCondition, GameState, PowerAuraGroup, SourceStateCondition } from '../state/game';
+import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousKeyword, ContinuousKoReplacementModifier, ContinuousPowerCondition, GameState, KoReplacementAuraGroup, PowerAuraGroup, SourceStateCondition } from '../state/game';
 import type { CardDefinition, CardInstance } from '../state/card';
 import type { PendingChoice } from '../events/pendingChoice';
 import { mintRuntimeInstanceId } from '../rules/shared/mintInstance';
@@ -495,12 +495,17 @@ export class EffectContextImpl implements EffectContext {
   }
 
   addContinuousKoReplacement(spec: {
-    appliesToInstanceId: string;
-    modifier: Omit<ContinuousKoReplacementModifier, 'appliesToInstanceId'>;
+    appliesToInstanceId?: string;
+    appliesToGroup?: KoReplacementAuraGroup;
+    modifier: Omit<ContinuousKoReplacementModifier, 'appliesToInstanceId' | 'appliesToGroup'>;
     duration: ContinuousEffectDuration;
     description?: string;
   }): void {
-    const mod: ContinuousKoReplacementModifier = { appliesToInstanceId: spec.appliesToInstanceId, ...spec.modifier };
+    const mod: ContinuousKoReplacementModifier = {
+      ...(spec.appliesToInstanceId !== undefined ? { appliesToInstanceId: spec.appliesToInstanceId } : {}),
+      ...(spec.appliesToGroup !== undefined ? { appliesToGroup: spec.appliesToGroup } : {}),
+      ...spec.modifier,
+    };
     const record: ContinuousEffectRecord = {
       id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
       sourceInstanceId: this.sourceInstanceId,
@@ -513,7 +518,7 @@ export class EffectContextImpl implements EffectContext {
     this.logger.push({
       actorPlayerId: this.controllerId,
       type: 'EFFECT_RESOLVED',
-      message: `${record.description} registered on ${spec.appliesToInstanceId}.`,
+      message: `${record.description} registered${spec.appliesToInstanceId ? ` on ${spec.appliesToInstanceId}` : ' as aura'}.`,
       data: { continuousEffectId: record.id, duration: spec.duration },
       relatedCardInstanceIds: [spec.appliesToInstanceId],
       visibility: 'public',

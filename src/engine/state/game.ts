@@ -11,7 +11,7 @@ import type { PlayerState } from './player';
 import type { GameLogEntry } from '../logs/logEntry';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { RngState } from '../rng/rng';
-import type { AbilityGate } from '../effects/effectIr';
+import type { AbilityGate, AbilityCost } from '../effects/effectIr';
 
 /**
  * 6-1-1. Battle (Section 7) is a Main Phase action, not a 6th phase — see
@@ -95,6 +95,14 @@ export interface ContinuousPowerCondition {
   turn?: 'your' | 'opponent';
   /** The card the modifier applies to must be rested / active (e.g. "If this Character is rested"). */
   rested?: boolean;
+  /** Current cost of the modified card must be at most this value. */
+  maxCost?: number;
+  /** Printed base cost of the modified card must be at most this value. */
+  maxBaseCost?: number;
+  /** Printed base cost of the modified card must be at least this value. */
+  minBaseCost?: number;
+  /** The modified card must include this color. */
+  color?: import('./card').Color;
   /** "If <board state>" gate(s), re-checked on every power read (e.g. "If you have 2 or less Life cards"). */
   gate?: AbilityGate[];
 }
@@ -112,6 +120,8 @@ export interface PowerAuraGroup {
   anyOfTypes?: string[];
   /** Restrict to cards whose printed name matches any of these (OR). Includes Leader when ownLeaderAndCharacters is set. */
   anyOfNames?: string[];
+  /** Restrict to cards carrying any of these attributes (OR). Leader/Character only. */
+  anyOfAttributes?: string[];
   /** Exclude the Leader (chars only) — for "all of your Characters" auras. */
   charactersOnly?: boolean;
   /** Target the OPPONENT's Characters instead of the controller's — for "give all of your opponent's Characters -N". */
@@ -251,21 +261,40 @@ export interface KoReplacementHandFilter {
   typeIncludes?: string;
   /** Current (live) power, not printed base power. */
   maxCurrentPower?: number;
+  minCurrentPower?: number;
 }
 
 export type KoReplacementAction =
   | { kind: 'trashFromHand'; count: number; filter?: KoReplacementHandFilter }
-  | { kind: 'trashSelf' };
+  /** Trash the character that would be K.O.'d (self replacement). */
+  | { kind: 'trashSelf' }
+  /** Trash the aura source character (ally replacement — "trash this Character instead"). */
+  | { kind: 'trashSource' }
+  /** Rest the aura source character instead of the K.O. */
+  | { kind: 'restSource' }
+  /** Rest one or more of your Characters instead of the K.O. */
+  | { kind: 'restCharacter'; count: number }
+  /** Pay structured ability costs (e.g. `{ kind: 'donMinus', count: 1 }`). */
+  | { kind: 'payAbilityCosts'; costs: AbilityCost[] }
+  /** Add a Life card to hand — same op shape as effect IR `chooseLifeToHand`. */
+  | { kind: 'chooseLifeToHand'; position: 'top' | 'topOrBottom' };
+
+/** Aura target group for K.O. replacement on ally Characters. */
+export type KoReplacementAuraGroup = PowerAuraGroup & { excludeSource?: true };
 
 /**
  * Optional K.O. replacement registered on a Character ("would be K.O.'d … instead").
- * Checked before every effect or battle K.O. attempt on `appliesToInstanceId`.
+ * Exactly one of `appliesToInstanceId` (self) or `appliesToGroup` (aura) is set.
  */
 export interface ContinuousKoReplacementModifier {
-  appliesToInstanceId: string;
+  appliesToInstanceId?: string;
+  appliesToGroup?: KoReplacementAuraGroup;
   scope: 'battle' | 'effect' | 'any';
   oncePerTurn?: boolean;
+  /** Condition on the character that would be K.O.'d. */
   condition?: ContinuousPowerCondition;
+  /** Condition on the aura source card (e.g. [Opponent's Turn]). */
+  sourceCondition?: SourceStateCondition;
   action: KoReplacementAction;
 }
 

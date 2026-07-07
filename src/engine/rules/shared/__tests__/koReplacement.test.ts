@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ContinuousEffectRecord, GameState } from '../../../state/game';
 import { findKoReplacementRecord, applyKoReplacementCost } from '../koAttempt';
-import { buildBaseRig, makeCharacterDef, makeEventDef, makeStageDef, putCharacterInPlay, putInHand } from './testRig';
+import { buildBaseRig, makeCharacterDef, makeEventDef, makeStageDef, putCharacterInPlay, putDon, putInHand, putLifeCards } from './testRig';
 
 describe('findKoReplacementRecord', () => {
   it('finds a trash-from-hand replacement when an eligible Event is in hand', () => {
@@ -76,8 +76,218 @@ describe('findKoReplacementRecord', () => {
       },
     };
     const state: GameState = { ...rig.state, continuousEffects: [record] };
-    const result = applyKoReplacementCost(state, instanceId, record, [hand.instanceId], null);
+    const result = applyKoReplacementCost(state, instanceId, record, [hand.instanceId], rig.defs, null);
     expect(result.state.cardsById[instanceId].currentZone).toBe('characterArea');
     expect(result.state.cardsById[hand.instanceId].currentZone).toBe('trash');
+  });
+
+  it('finds aura replacement when ally matches type and source is on field', () => {
+    const auraDef = makeCharacterDef({ cardNumber: 'OP13-008', name: 'Emporio.Ivankov', types: ['Revolutionary Army'] });
+    const allyDef = makeCharacterDef({ cardNumber: 'ALLY-1', name: 'Sabo', types: ['Revolutionary Army'] });
+    let rig = buildBaseRig();
+    const aura = putCharacterInPlay(rig, 'p1', auraDef);
+    rig = { ...aura.rig, defs: { ...aura.rig.defs, [auraDef.cardDefinitionId]: auraDef, [allyDef.cardDefinitionId]: allyDef } };
+    const ally = putCharacterInPlay(rig, 'p1', allyDef);
+    rig = ally.rig;
+
+    const record: ContinuousEffectRecord = {
+      id: 'kr-aura',
+      sourceInstanceId: aura.instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'aura replace',
+      koReplacementModifier: {
+        appliesToGroup: { ownLeaderAndCharacters: true, charactersOnly: true, anyOfTypes: ['Revolutionary Army'] },
+        scope: 'effect',
+        action: { kind: 'trashSource' },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    expect(findKoReplacementRecord(state, ally.instanceId, 'effect', rig.defs)).not.toBeNull();
+    expect(findKoReplacementRecord(state, ally.instanceId, 'battle', rig.defs)).toBeNull();
+  });
+
+  it('applyKoReplacementCost trashes source and leaves aura target in play', () => {
+    const auraDef = makeCharacterDef({ cardNumber: 'OP13-008' });
+    const allyDef = makeCharacterDef({ cardNumber: 'ALLY-1', types: ['Revolutionary Army'] });
+    let rig = buildBaseRig();
+    const aura = putCharacterInPlay(rig, 'p1', auraDef);
+    rig = { ...aura.rig, defs: { ...aura.rig.defs, [auraDef.cardDefinitionId]: auraDef, [allyDef.cardDefinitionId]: allyDef } };
+    const ally = putCharacterInPlay(rig, 'p1', allyDef);
+    rig = ally.rig;
+    const record: ContinuousEffectRecord = {
+      id: 'kr-aura',
+      sourceInstanceId: aura.instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'aura replace',
+      koReplacementModifier: {
+        appliesToGroup: { ownLeaderAndCharacters: true, charactersOnly: true, anyOfTypes: ['Revolutionary Army'] },
+        scope: 'effect',
+        action: { kind: 'trashSource' },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    const result = applyKoReplacementCost(state, ally.instanceId, record, [], rig.defs, null);
+    expect(result.state.cardsById[ally.instanceId].currentZone).toBe('characterArea');
+    expect(result.state.cardsById[aura.instanceId].currentZone).toBe('trash');
+  });
+
+  it('finds aura replacement with restSource when source is on field', () => {
+    const auraDef = makeCharacterDef({ cardNumber: 'OP12-027', attributes: ['Slash'] });
+    const allyDef = makeCharacterDef({ cardNumber: 'ALLY-1', attributes: ['Slash'], baseCost: 3 });
+    let rig = buildBaseRig();
+    const aura = putCharacterInPlay(rig, 'p1', auraDef);
+    rig = { ...aura.rig, defs: { ...aura.rig.defs, [auraDef.cardDefinitionId]: auraDef, [allyDef.cardDefinitionId]: allyDef } };
+    const ally = putCharacterInPlay(rig, 'p1', allyDef);
+    rig = ally.rig;
+    const record: ContinuousEffectRecord = {
+      id: 'kr-rest',
+      sourceInstanceId: aura.instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'rest source',
+      koReplacementModifier: {
+        appliesToGroup: { ownLeaderAndCharacters: true, charactersOnly: true, anyOfAttributes: ['Slash'], excludeSource: true },
+        scope: 'effect',
+        condition: { maxCost: 5 },
+        action: { kind: 'restSource' },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    expect(findKoReplacementRecord(state, ally.instanceId, 'effect', rig.defs)).not.toBeNull();
+  });
+
+  it('applyKoReplacementCost rests source and leaves ally in play', () => {
+    const auraDef = makeCharacterDef({ cardNumber: 'OP12-027' });
+    const allyDef = makeCharacterDef({ cardNumber: 'ALLY-1', attributes: ['Slash'] });
+    let rig = buildBaseRig();
+    const aura = putCharacterInPlay(rig, 'p1', auraDef);
+    rig = { ...aura.rig, defs: { ...aura.rig.defs, [auraDef.cardDefinitionId]: auraDef, [allyDef.cardDefinitionId]: allyDef } };
+    const ally = putCharacterInPlay(rig, 'p1', allyDef);
+    rig = ally.rig;
+    const record: ContinuousEffectRecord = {
+      id: 'kr-rest',
+      sourceInstanceId: aura.instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'rest source',
+      koReplacementModifier: {
+        appliesToGroup: { ownLeaderAndCharacters: true, charactersOnly: true, anyOfAttributes: ['Slash'] },
+        scope: 'effect',
+        action: { kind: 'restSource' },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    const result = applyKoReplacementCost(state, ally.instanceId, record, [], rig.defs, null);
+    expect(result.state.cardsById[ally.instanceId].currentZone).toBe('characterArea');
+    expect(result.state.cardsById[aura.instanceId].orientation).toBe('rested');
+  });
+
+  it('applyKoReplacementCost rests chosen character for restCharacter action', () => {
+    const luffyDef = makeCharacterDef({ cardNumber: 'OP14-034', types: ['Straw Hat Crew'] });
+    const allyDef = makeCharacterDef({ cardNumber: 'ALLY-1', types: ['Straw Hat Crew'] });
+    const payerDef = makeCharacterDef({ cardNumber: 'PAY-1' });
+    let rig = buildBaseRig();
+    const luffy = putCharacterInPlay(rig, 'p1', luffyDef);
+    rig = { ...luffy.rig, defs: { ...luffy.rig.defs, [luffyDef.cardDefinitionId]: luffyDef, [allyDef.cardDefinitionId]: allyDef, [payerDef.cardDefinitionId]: payerDef } };
+    const ally = putCharacterInPlay(rig, 'p1', allyDef);
+    rig = ally.rig;
+    const payer = putCharacterInPlay(rig, 'p1', payerDef);
+    rig = payer.rig;
+    const record: ContinuousEffectRecord = {
+      id: 'kr-rest-char',
+      sourceInstanceId: luffy.instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'rest character',
+      koReplacementModifier: {
+        appliesToGroup: { ownLeaderAndCharacters: true, charactersOnly: true, anyOfTypes: ['Straw Hat Crew'] },
+        scope: 'effect',
+        oncePerTurn: true,
+        action: { kind: 'restCharacter', count: 1 },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    const result = applyKoReplacementCost(state, ally.instanceId, record, [payer.instanceId], rig.defs, null);
+    expect(result.state.cardsById[ally.instanceId].currentZone).toBe('characterArea');
+    expect(result.state.cardsById[payer.instanceId].orientation).toBe('rested');
+  });
+
+  it('finds returnDon replacement when field DON is available', () => {
+    const charDef = makeCharacterDef({ cardNumber: 'EB04-030' });
+    let rig = buildBaseRig();
+    const { rig: withChar, instanceId } = putCharacterInPlay(rig, 'p1', charDef);
+    rig = { ...withChar, defs: { ...withChar.defs, [charDef.cardDefinitionId]: charDef } };
+    const don = putDon(rig, 'p1', 1);
+    rig = don.rig;
+    const record: ContinuousEffectRecord = {
+      id: 'kr-don',
+      sourceInstanceId: instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'return don',
+      koReplacementModifier: {
+        appliesToInstanceId: instanceId,
+        scope: 'any',
+        action: { kind: 'payAbilityCosts', costs: [{ kind: 'donMinus', count: 1 }] },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    expect(findKoReplacementRecord(state, instanceId, 'effect', rig.defs)).not.toBeNull();
+  });
+
+  it('applyKoReplacementCost returns DON and leaves Character in play', () => {
+    const charDef = makeCharacterDef({ cardNumber: 'EB04-030' });
+    let rig = buildBaseRig();
+    const { rig: withChar, instanceId } = putCharacterInPlay(rig, 'p1', charDef);
+    rig = { ...withChar, defs: { ...withChar.defs, [charDef.cardDefinitionId]: charDef } };
+    const don = putDon(rig, 'p1', 1);
+    rig = don.rig;
+    const record: ContinuousEffectRecord = {
+      id: 'kr-don',
+      sourceInstanceId: instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'return don',
+      koReplacementModifier: {
+        appliesToInstanceId: instanceId,
+        scope: 'any',
+        action: { kind: 'payAbilityCosts', costs: [{ kind: 'donMinus', count: 1 }] },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    const result = applyKoReplacementCost(state, instanceId, record, [don.donIds[0]], rig.defs, null);
+    expect(result.state.cardsById[instanceId].currentZone).toBe('characterArea');
+    expect(result.state.players.p1.costArea.cardIds).not.toContain(don.donIds[0]);
+    expect(result.state.players.p1.donDeck.cardIds).toContain(don.donIds[0]);
+  });
+
+  it('applyKoReplacementCost moves top Life to hand and leaves Character in play', () => {
+    const charDef = makeCharacterDef({ cardNumber: 'OP10-034' });
+    const lifeDef = makeEventDef({ cardNumber: 'LIFE-1' });
+    let rig = buildBaseRig();
+    const { rig: withChar, instanceId } = putCharacterInPlay(rig, 'p1', charDef);
+    rig = { ...withChar, defs: { ...withChar.defs, [charDef.cardDefinitionId]: charDef, [lifeDef.cardDefinitionId]: lifeDef } };
+    const life = putLifeCards(rig, 'p1', [lifeDef]);
+    rig = life.rig;
+    const record: ContinuousEffectRecord = {
+      id: 'kr-life',
+      sourceInstanceId: instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'life to hand',
+      koReplacementModifier: {
+        appliesToInstanceId: instanceId,
+        scope: 'battle',
+        oncePerTurn: true,
+        action: { kind: 'chooseLifeToHand', position: 'top' },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    const result = applyKoReplacementCost(state, instanceId, record, [], rig.defs, null);
+    expect(result.state.cardsById[instanceId].currentZone).toBe('characterArea');
+    expect(result.state.cardsById[life.lifeIds[0]].currentZone).toBe('hand');
+    expect(result.state.players.p1.lifeArea.cardIds).not.toContain(life.lifeIds[0]);
   });
 });

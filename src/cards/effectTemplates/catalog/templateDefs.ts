@@ -145,7 +145,7 @@ export type AbilityFunction =
   // no target choice ("All of your {FILM} type Characters gain +2000").
   | { fn: 'addPowerControllerCharactersAll'; amount: number; duration: IrDuration; filter?: { typeIncludes?: string; maxCost?: number } }
   // Dynamic aura over ALL the controller's Characters (chars only), optionally type-filtered + gated on source state ([DON!! xN]/[Your/Opponent's Turn]).
-  | { fn: 'addPowerAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
+  | { fn: 'addPowerAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; sourceCondition?: SourceStateCondition; targetCondition?: IrCondition; gate?: AbilityGate[] }
   // Dynamic aura over ALL the opponent's Characters ("give all of your opponent's Characters -N power").
   | { fn: 'addPowerAuraOpponentCharacters'; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // Continuous cost aura over ALL the controller's Characters (chars only), optionally type-filtered + gated on source state ("all of your {Navy} Characters gain +2 cost").
@@ -161,7 +161,9 @@ export type AbilityFunction =
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
   | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
   // Register optional K.O. replacement on this card ("would be K.O.'d … instead").
-  | { fn: 'registerKoReplacementSelf'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number } }; trashSelf?: true; duration: IrDuration }
+  | { fn: 'registerKoReplacementSelf'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number } }; trashSelf?: true; returnDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
+  // Register optional K.O. replacement aura on ally Characters ("If your {Type} Character would be K.O.'d … trash this Character instead").
+  | { fn: 'registerKoReplacementAura'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfAttributes?: string[]; charactersOnly?: boolean; excludeSource?: boolean; targetCondition?: IrCondition; sourceCondition?: SourceStateCondition; trashSource?: true; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; restSource?: true; restCharacter?: true; returnDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
   // Trash exactly `count` cards of a given type from your hand (used to pay a typed hand cost).
   | { fn: 'trashTypeFromHand'; count: number; filter: SearchFilter; optional?: boolean }
   // K.O. ALL Characters (both players) matching a cost/power filter, no target choice

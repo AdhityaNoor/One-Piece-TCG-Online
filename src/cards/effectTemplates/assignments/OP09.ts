@@ -61,9 +61,21 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-011 — [Activate: Main] rest this: If Leader {Red-Haired Pirates}, give up to 1 opp Character −2000.
   { cardNumber: 'OP09-011', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP09-012 (character) Monster —
-  //   If your Character [Bonk Punch] would be K.O.'d by an effect, you may trash this Character instead.
-  // NOTE: not yet implemented (needs template).
+  // OP09-012 — aura K.O. replacement: trash this Character to save ally [Bonk Punch] from effect K.O.
+  {
+    cardNumber: 'OP09-012',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        anyOfNames: ['Bonk Punch'],
+        trashSource: true,
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP09-013 (character) Yasopp —
   //   [On Play] Up to 1 of your Leader gains +1000 power until the end of your opponent's next turn.[DON!!

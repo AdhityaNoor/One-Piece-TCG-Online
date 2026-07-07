@@ -13,10 +13,12 @@
  * Touch: TODO — mouse-driven only for now.
  */
 
-import { useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import type { CardView } from '../../../board/projection';
-import { CardBackArt } from './CardBackArt';
+import { useCardAnimationStore } from '../../store/cardAnimationStore';
+import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
 import { CardImage } from '../CardImage';
+import { CardBackArt } from './CardBackArt';
 
 // ── Geometry ───────────────────────────────────────────────────────────────
 const BASE_W = 112;
@@ -36,6 +38,7 @@ function cardScale(idx: number, hoveredIdx: number | null): number {
 
 // ── Types ──────────────────────────────────────────────────────────────────
 export interface DockHandProps {
+  playerId: string;
   cards: CardView[];
   isOwn: boolean;
   position: 'bottom' | 'top';
@@ -109,8 +112,101 @@ function ArrowBtn({
   );
 }
 
+// ── Single dock card (hook-safe leaf) ───────────────────────────────────────
+function DockHandCard({
+  card,
+  index,
+  hoveredIdx,
+  isTop,
+  isSelected,
+  canSelect,
+  showFaces,
+  overlapPx,
+  onHoverStart,
+  onHoverEnd,
+  onTap,
+  onZoom,
+}: {
+  card: CardView;
+  index: number;
+  hoveredIdx: number | null;
+  isTop: boolean;
+  isSelected: boolean;
+  canSelect: boolean;
+  showFaces: boolean;
+  overlapPx: number;
+  onHoverStart: () => void;
+  onHoverEnd: () => void;
+  onTap: () => void;
+  onZoom: () => void;
+}) {
+  const hiddenDuringFlight = useCardFlightHidden(card.instanceId);
+  const scale = cardScale(index, hoveredIdx);
+  const isHoveredCard = hoveredIdx === index;
+
+  return (
+    <div
+      className={[
+        'group/dock-card relative flex-shrink-0',
+        hiddenDuringFlight ? 'invisible' : '',
+      ].join(' ')}
+      data-card-instance-id={card.instanceId}
+      style={{
+        width: `${BASE_W}px`,
+        height: `${BASE_H}px`,
+        marginLeft: index === 0 ? 0 : `-${overlapPx}px`,
+        transform: `scale(${scale})`,
+        transformOrigin: isTop ? 'top center' : 'bottom center',
+        transition: 'transform 0.18s ease-out',
+        zIndex: isHoveredCard ? 50 : index + 1,
+      }}
+      onMouseEnter={onHoverStart}
+      onMouseLeave={onHoverEnd}
+      onClick={() => { if (canSelect) onTap(); }}
+    >
+      <div
+        className={[
+          'h-full w-full overflow-hidden rounded-[4px] border shadow-[0_6px_18px_rgba(0,0,0,0.6)]',
+          isSelected
+            ? 'border-gold ring-2 ring-gold/70 ring-offset-1 ring-offset-navy-950'
+            : canSelect && isHoveredCard
+              ? 'border-gold cursor-pointer'
+              : canSelect
+                ? 'border-gold/45 cursor-pointer'
+                : 'border-white/20 cursor-default',
+        ].join(' ')}
+      >
+        {showFaces ? (
+          <CardImage src={card.imageUrl ?? null} alt={card.cardNumber ?? card.instanceId} />
+        ) : (
+          <CardBackArt tone="navy" />
+        )}
+      </div>
+
+      {isHoveredCard && showFaces && (
+        <button
+          type="button"
+          aria-label="View card detail"
+          className="absolute inset-x-0 bottom-0 bg-black/80 py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] text-white"
+          onClick={(e) => { e.stopPropagation(); onZoom(); }}
+        >
+          View
+        </button>
+      )}
+
+      {isSelected && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border border-navy-950 bg-gold shadow-[0_0_6px_rgba(217,164,65,0.7)]"
+        />
+      )}
+    </div>
+  );
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 export function DockHand({
+  playerId,
   cards,
   isOwn,
   position,
@@ -123,6 +219,22 @@ export function DockHand({
   const [dockHovered, setDockHovered] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [windowStart, setWindowStart] = useState(0);
+  const hiddenDuringFlight = useCardAnimationStore((s) => s.hiddenDuringFlight);
+
+  // Keep cards that are mid-flight in the visible window so animation can
+  // measure their dock slot (see CardMovementOverlay / boardAnchors.ts).
+  useLayoutEffect(() => {
+    if (cards.length <= MAX_VISIBLE) return;
+    setWindowStart((current) => {
+      let next = current;
+      for (let i = 0; i < cards.length; i++) {
+        if (!hiddenDuringFlight[cards[i].instanceId]) continue;
+        if (i < next) next = i;
+        if (i >= next + MAX_VISIBLE) next = Math.max(0, i - MAX_VISIBLE + 1);
+      }
+      return next;
+    });
+  }, [cards, hiddenDuringFlight]);
 
   const isTop = position === 'top';
   const isOpen = dockHovered && !boardFocused;
@@ -158,9 +270,11 @@ export function DockHand({
         aria-label={`${isOwn ? 'Your' : "Opponent's"} hand — ${cards.length} card${cards.length !== 1 ? 's' : ''}`}
         className="pointer-events-none absolute left-0 right-0 z-[100] flex justify-center"
         style={{ [isTop ? 'top' : 'bottom']: 0, height: `${BASE_H}px`, overflow: 'visible' }}
+        data-board-zone="hand"
+        data-board-player={playerId}
       >
         <div
-          className="pointer-events-auto flex items-end"
+          className="pointer-events-auto relative flex items-end"
           style={{
             transform: `translateY(${translateY}px)`,
             transition: isOpen
@@ -172,72 +286,33 @@ export function DockHand({
           onMouseEnter={() => setDockHovered(true)}
           onMouseLeave={() => { setDockHovered(false); setHoveredIdx(null); }}
         >
+          <div
+            aria-hidden="true"
+            data-board-card-anchor
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[4px]"
+            style={{ width: `${BASE_W}px`, height: `${BASE_H}px` }}
+          />
           {needsScroll && (
             <ArrowBtn dir="left" disabled={windowStart === 0} onClick={scrollLeft} />
           )}
 
-          {visibleCards.map((card, i) => {
-            const scale = cardScale(i, hoveredIdx);
-            const isSelected = selectedIds.has(card.instanceId);
-            const canSelect = selectable(card);
-            const isHoveredCard = hoveredIdx === i;
-
-            return (
-              <div
-                key={card.instanceId}
-                className="group/dock-card relative flex-shrink-0"
-                style={{
-                  width: `${BASE_W}px`,
-                  height: `${BASE_H}px`,
-                  marginLeft: i === 0 ? 0 : `-${BASE_W * OVERLAP}px`,
-                  transform: `scale(${scale})`,
-                  transformOrigin: isTop ? 'top center' : 'bottom center',
-                  transition: 'transform 0.18s ease-out',
-                  zIndex: isHoveredCard ? 50 : i + 1,
-                }}
-                onMouseEnter={() => setHoveredIdx(i)}
-                onMouseLeave={() => setHoveredIdx(null)}
-                onClick={() => { if (canSelect) onCardTap(card); }}
-              >
-                <div
-                  className={[
-                    'h-full w-full overflow-hidden rounded-[4px] border shadow-[0_6px_18px_rgba(0,0,0,0.6)]',
-                    isSelected
-                      ? 'border-gold ring-2 ring-gold/70 ring-offset-1 ring-offset-navy-950'
-                      : canSelect && isHoveredCard
-                        ? 'border-gold cursor-pointer'
-                        : canSelect
-                          ? 'border-gold/45 cursor-pointer'
-                          : 'border-white/20 cursor-default',
-                  ].join(' ')}
-                >
-                  {showFaces ? (
-                    <CardImage src={card.imageUrl ?? null} alt={card.cardNumber ?? card.instanceId} />
-                  ) : (
-                    <CardBackArt tone="navy" />
-                  )}
-                </div>
-
-                {isHoveredCard && showFaces && (
-                  <button
-                    type="button"
-                    aria-label="View card detail"
-                    className="absolute inset-x-0 bottom-0 bg-black/80 py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] text-white"
-                    onClick={(e) => { e.stopPropagation(); onCardZoom(card); }}
-                  >
-                    View
-                  </button>
-                )}
-
-                {isSelected && (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border border-navy-950 bg-gold shadow-[0_0_6px_rgba(217,164,65,0.7)]"
-                  />
-                )}
-              </div>
-            );
-          })}
+          {visibleCards.map((card, i) => (
+            <DockHandCard
+              key={card.instanceId}
+              card={card}
+              index={i}
+              hoveredIdx={hoveredIdx}
+              isTop={isTop}
+              isSelected={selectedIds.has(card.instanceId)}
+              canSelect={selectable(card)}
+              showFaces={showFaces}
+              overlapPx={BASE_W * OVERLAP}
+              onHoverStart={() => setHoveredIdx(i)}
+              onHoverEnd={() => setHoveredIdx(null)}
+              onTap={() => onCardTap(card)}
+              onZoom={() => onCardZoom(card)}
+            />
+          ))}
 
           {needsScroll && (
             <ArrowBtn dir="right" disabled={windowStart + MAX_VISIBLE >= cards.length} onClick={scrollRight} />

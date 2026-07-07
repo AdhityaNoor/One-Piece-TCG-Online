@@ -18,8 +18,9 @@ import type { ResolvePendingChoiceAction, ValidationResult } from '../action';
 import { createActionLogger } from '../../rules/shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { resumeChoice, fireLifeTrigger, type EffectTemplateRegistry } from '../../effects';
-import { resumeKoReplacementChoice } from '../../effects/resumeKoReplacement';
+import { resumeChoice, fireLifeTrigger, fireOnKO, type EffectTemplateRegistry } from '../../effects';
+import { finishBattleAfterKoDecision } from '../../rules/battle/damageStep';
+import { resolveKoReplacementStep, validateKoReplacementResponse } from '../../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../../rules/shared/definitions';
 
 function findChoice(state: GameState, action: ResolvePendingChoiceAction) {
@@ -48,10 +49,10 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
       }
     }
   } else if (choice.sourceEffectId === 'ir') {
-    // Interpreter-suspended card effect: validate the selection against the
-    // choice's own candidate set + min/max (no registry needed for validation).
     const sel = action.response;
-    if (choice.kind === 'SELECT_OPTION') {
+    if (choice.resumeState?.koReplacement) {
+      reasons.push(...validateKoReplacementResponse(choice, sel));
+    } else if (choice.kind === 'SELECT_OPTION') {
       const optionCount = choice.constraints.options?.length ?? 0;
       if (typeof sel !== 'number' || !Number.isInteger(sel) || sel < 0 || sel >= optionCount) {
         reasons.push(`A card-effect option choice expects an option index between 0 and ${Math.max(0, optionCount - 1)}.`);
@@ -75,23 +76,8 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
         }
       }
     }
-  } else if (choice.sourceEffectId === 'koReplacement') {
-    if (choice.kind === 'YES_NO') {
-      if (typeof action.response !== 'boolean') reasons.push('A K.O. replacement choice expects a boolean (yes/no).');
-    } else if (choice.kind === 'SELECT_CARDS') {
-      const sel = action.response;
-      if (!Array.isArray(sel)) reasons.push('A K.O. replacement pay-cost choice expects selected instance ids.');
-      else {
-        const { min, max, candidateInstanceIds } = choice.constraints;
-        if (sel.length < min || sel.length > max) reasons.push(`Select between ${min} and ${max} card(s) (got ${sel.length}).`);
-        const candidates = new Set(candidateInstanceIds ?? []);
-        for (const id of sel) {
-          if (typeof id !== 'string' || !candidates.has(id)) reasons.push(`'${String(id)}' is not eligible for this replacement cost.`);
-        }
-      }
-    } else {
-      reasons.push(`Unexpected choice kind '${choice.kind}' for K.O. replacement.`);
-    }
+  } else if (choice.sourceEffectId === 'rule:battleKoReplacement') {
+    reasons.push(...validateKoReplacementResponse(choice, action.response));
   } else if (choice.sourceEffectId === 'rule:lifeTrigger') {
     // [] = decline (keep in hand); [the Life card id] = activate the trigger.
     const sel = action.response;
@@ -118,11 +104,19 @@ export function executeResolvePendingChoice(
 
   // Interpreter-suspended card effect: resume the program with the selection.
   if (choice.sourceEffectId === 'ir') {
-    return resumeChoice(state, action.choiceId, action.response as string[] | number, registry, defs, action.actionId);
+    return resumeChoice(state, action.choiceId, action.response as string[] | number | boolean, registry, defs, action.actionId);
   }
 
-  if (choice.sourceEffectId === 'koReplacement') {
-    return resumeKoReplacementChoice(state, choice, action.response as string[] | number | boolean, defs, action.actionId, registry);
+  if (choice.sourceEffectId === 'rule:battleKoReplacement') {
+    const step = resolveKoReplacementStep(state, choice, action.response as string[] | number | boolean, defs, action.actionId);
+    if (step.pendingChoices.length > 0) {
+      return { state: { ...step.state, pendingChoices: [...step.state.pendingChoices, ...step.pendingChoices] }, log: step.log, pendingChoices: step.pendingChoices };
+    }
+    if (step.resumeKr?.battle) {
+      const battle = finishBattleAfterKoDecision(step.state, defs, step.resumeKr, registry, action.actionId);
+      return { state: battle.state, log: [...step.log, ...battle.log], pendingChoices: battle.pendingChoices };
+    }
+    return { state: step.state, log: step.log, pendingChoices: [] };
   }
 
   // Life [Trigger] (10-1-5-2): activate → fire the trigger + trash the card;

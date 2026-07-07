@@ -7,6 +7,7 @@
  */
 import { useLayoutEffect, useRef, useState } from 'react';
 import { CardImage } from '../CardImage';
+import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
 import { cqh } from './boardScale';
 import type { CardView } from '../../../board/projection';
 
@@ -268,6 +269,7 @@ export function BoardCardTile({
   // Card's rendered width, so the keyword row can scale down to fit it.
   const [rootRef, tileWidth] = useElementWidth<HTMLDivElement>();
   const attachedDonSelected = attachedDonSelectedCount > 0;
+  const hiddenDuringFlight = useCardFlightHidden(card.instanceId);
 
   return (
     <div
@@ -275,7 +277,11 @@ export function BoardCardTile({
       data-card-instance-id={card.instanceId}
       onPointerEnter={onHoverStart}
       onPointerLeave={onHoverEnd}
-      className={['group relative flex-shrink-0', isField ? 'aspect-square h-full max-h-full max-w-full' : ''].join(' ')}
+      className={[
+        'group relative flex-shrink-0',
+        isField ? 'aspect-square h-full max-h-full max-w-full' : '',
+        hiddenDuringFlight ? 'invisible' : '',
+      ].join(' ')}
       style={isField ? undefined : { width: dims.box, height: dims.box }}
     >
       <div

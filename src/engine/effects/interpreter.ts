@@ -12,11 +12,11 @@ import type { GameState } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
-import { buildKoReplacementConfirmChoice, findKoReplacementRecord } from '../rules/shared/koAttempt';
+import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoReplacementStep } from '../rules/shared/koAttempt';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates } from './gates';
 import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
-import { fireRestTransitions } from './fireTiming';
+import { fireOnKO, fireRestTransitions } from './fireTiming';
 import type { EffectTemplateRegistry } from './effectTemplate';
 import type { Ability, EffectOp, EffectProgram, IrCondition, IrTiming, NonSuspendingEffectOp, SearchFilter, SearchPickDestination, SearchRemainderDestination, Selector } from './effectIr';
 
@@ -448,10 +448,14 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     }
     case 'registerKoReplacement': {
       ctx.addContinuousKoReplacement({
-        appliesToInstanceId: op.appliesTo === 'self' ? ctx.sourceInstanceId : op.appliesToInstanceId,
+        ...(op.appliesTo === 'self'
+          ? { appliesToInstanceId: op.appliesToInstanceId ?? ctx.sourceInstanceId }
+          : { appliesToGroup: op.group }),
         modifier: {
           scope: op.scope,
           ...(op.oncePerTurn ? { oncePerTurn: true } : {}),
+          ...(op.condition ? { condition: op.condition } : {}),
+          ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}),
           action: op.action,
         },
         duration: op.duration,
@@ -875,17 +879,40 @@ export function resumeProgram(
   program: EffectProgram,
   state: GameState,
   choice: PendingChoice,
-  response: string[] | number,
+  response: string[] | number | boolean,
   defs: CardDefinitionLookup,
   actionId: string | null,
   registry: EffectTemplateRegistry = {},
 ): ActionExecuteResult {
   const rs = choice.resumeState;
   if (!rs || !choice.sourceInstanceId) return noop(state);
-  const ability = program.abilities[rs.abilityIndex];
-  if (!ability) return noop(state);
 
   const stateWithoutChoice: GameState = { ...state, pendingChoices: state.pendingChoices.filter((c) => c.id !== choice.id) };
+
+  if (rs.koReplacement) {
+    const step = resolveKoReplacementStep(state, choice, response, defs, actionId);
+    if (step.pendingChoices.length > 0) {
+      return { state: { ...step.state, pendingChoices: [...step.state.pendingChoices, ...step.pendingChoices] }, log: step.log, pendingChoices: step.pendingChoices };
+    }
+    let working = step.state;
+    let log = step.log;
+    if (step.declinedEffectKoTargetId) {
+      const fired = fireOnKO(working, step.declinedEffectKoTargetId, registry, defs, actionId);
+      working = fired.state;
+      log = [...log, ...fired.log];
+      if (fired.pendingChoices.length > 0) {
+        return { state: working, log, pendingChoices: fired.pendingChoices };
+      }
+    }
+    if (step.resumeKr) {
+      const continued = continueKoOpAfterReplacement(working, step.resumeKr, defs, actionId, registry);
+      return { state: continued.state, log: [...log, ...continued.log], pendingChoices: continued.pendingChoices };
+    }
+    return { state: working, log, pendingChoices: [] };
+  }
+
+  const ability = program.abilities[rs.abilityIndex];
+  if (!ability) return noop(state);
   if (rs.opIndex === -1) {
     if (!ability.cost?.length) return noop(stateWithoutChoice);
     const selection = Array.isArray(response) ? response : [];
@@ -1026,8 +1053,8 @@ export function resumeProgram(
   return continueAfterResolvedOp(program, ability, rs, bindings, ctx, defs, actionId, registry);
 }
 
-/** Continue an IR program after a K.O. replacement choice resolved mid-`ko` op. */
-export function resumeKoReplacementInInterpreter(
+/** Continue a suspended `ko` op after replacement (or declined K.O.) resolves. */
+function continueKoOpAfterReplacement(
   state: GameState,
   kr: NonNullable<PendingChoice['resumeState']>['koReplacement'],
   defs: CardDefinitionLookup,

@@ -17,6 +17,7 @@ export type DonStackDirection = 'vertical' | 'horizontal';
 
 export interface DonStackProps {
   label: string;
+  playerId: string;
   cards: CardView[];
   direction: DonStackDirection;
   selectable: (card: CardView) => boolean;
@@ -66,7 +67,7 @@ function PopupChip({
   );
 }
 
-export function DonStack({ label, cards, direction, selectable, selectedIds, onDonSelect, reverseRows = false }: DonStackProps) {
+export function DonStack({ label, playerId, cards, direction, selectable, selectedIds, onDonSelect, reverseRows = false }: DonStackProps) {
   const isVertical = direction === 'vertical';
   const stackedSpan = CHIP_BOX + Math.max(cards.length - 1, 0) * STEP_PX;
   const [expanded, setExpanded] = useState(false);
@@ -105,6 +106,8 @@ export function DonStack({ label, cards, direction, selectable, selectedIds, onD
       <div
         ref={wrapperRef}
         className="relative"
+        data-board-zone="costArea"
+        data-board-player={playerId}
         style={isVertical
           ? { width: cqh(CHIP_BOX), height: cqh(stackedSpan), overflow: 'visible' }
           : { width: cqh(stackedSpan), height: cqh(CHIP_BOX), overflow: 'visible' }}

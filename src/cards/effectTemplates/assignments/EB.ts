@@ -1321,19 +1321,25 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB04-033 — [On Play] DON!! −1: If 3+ {Foxy Pirates} Characters, K.O. up to 1 opp Character base power 6000 or less.
   { cardNumber: 'EB04-033', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Foxy Pirates', atLeast: 3 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }, optional: true }] } },
 
-  // EB04-030 (character) Kaido —
-  //   If this Character would be K.O.'d, you may return 1 DON!! card from your field to your DON!! deck
-  //   instead.[On Play] DON!! −2: If your Leader has the {Animal Kingdom Pirates} type, this Character
-  //   gains [Rush] during this turn. Then, rest up to 1 of your opponent's Characters with a cost of 7 or
-  //   less.
-  // NOTE: not yet implemented (needs template).
+  // EB04-030 — K.O. replacement (return 1 DON!!). PARTIAL: onPlay Rush + rest deferred.
+  {
+    cardNumber: 'EB04-030',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{ fn: 'registerKoReplacementSelf', returnDon: { count: 1 }, duration: 'permanent' }],
+    },
+  },
 
-  // EB04-031 (character) King —
-  //   If this Character would be K.O.'d, you may return 1 DON!! card from your field to your DON!! deck
-  //   instead.[Activate: Main] [Once Per Turn] If your Leader has the {Animal Kingdom Pirates} type and you
-  //   have no other [King] Characters, add up to 1 DON!! card from your DON!! deck and set it as active,
-  //   and add up to 1 additional DON!! card and rest it.
-  // NOTE: not yet implemented (needs template).
+  // EB04-031 — K.O. replacement (return 1 DON!!). PARTIAL: activate Main DON!! deferred.
+  {
+    cardNumber: 'EB04-031',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{ fn: 'registerKoReplacementSelf', returnDon: { count: 1 }, duration: 'permanent' }],
+    },
+  },
 
   // EB04-032 (character) Queen —
   //   [On Play] You may trash 1 {Animal Kingdom Pirates} type card from your hand: Draw 2 cards.[Activate:

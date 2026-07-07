@@ -25,7 +25,7 @@ import type { CardDefinition } from '../../engine/state/card';
 import { getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
 import { Button, CardDetailModal, Modal, ScaleToFit } from '../components';
-import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, DockHand, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, useBoardSelection } from '../components/match';
+import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, useBoardSelection } from '../components/match';
 import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -58,6 +58,7 @@ export function MatchScreen() {
   const [hoveredAttackTargetId, setHoveredAttackTargetId] = useState<string | null>(null);
   // True while the mouse is over the playmat — forces both dock hands shut.
   const [boardHovered, setBoardHovered] = useState(false);
+  const tableShellRef = useRef<HTMLDivElement | null>(null);
   const navyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
 
   const isMatchScreen = current.screen === 'match';
@@ -270,6 +271,7 @@ export function MatchScreen() {
           </aside>
 
           <div
+            ref={tableShellRef}
             className={[
               'op-match-table-shell relative min-h-0 overflow-hidden rounded-xl border border-gold/20 p-2 shadow-inner shadow-black/40',
               navyBackgroundEnabled ? 'bg-[linear-gradient(180deg,_rgba(5,9,20,0.9),_rgba(3,7,16,0.96))]' : 'bg-transparent',
@@ -355,6 +357,7 @@ export function MatchScreen() {
                 affected by cqh sizing; positioned absolute relative to
                 op-match-table-shell (position:relative; overflow:hidden). */}
             <DockHand
+              playerId={topPlayerId}
               cards={topPlayerBoard.hand}
               isOwn={isCasual ? false : actingPlayerId === topPlayerId}
               position="top"
@@ -365,6 +368,7 @@ export function MatchScreen() {
               boardFocused={boardHovered}
             />
             <DockHand
+              playerId={bottomPlayerId}
               cards={bottomPlayerBoard.hand}
               isOwn={actingPlayerId === bottomPlayerId}
               position="bottom"
@@ -379,6 +383,7 @@ export function MatchScreen() {
               targetInstanceId={attackArrow?.targetInstanceId ?? null}
               committed={attackArrow?.committed ?? false}
             />
+            <CardMovementOverlay shellRef={tableShellRef} />
             {/* Portal root for board-scoped overlays (DonStack popup, etc.).
                 Sits inside op-match-table-shell so overlays follow the board
                 when it animates, are clipped to board bounds by overflow:hidden,
@@ -387,7 +392,7 @@ export function MatchScreen() {
                 portal contents opt in with pointer-events:auto. */}
             <div
               id="board-overlay-root"
-              style={{ position: 'absolute', inset: 0, zIndex: 100, pointerEvents: 'none' }}
+              style={{ position: 'absolute', inset: 0, zIndex: 110, pointerEvents: 'none', overflow: 'visible' }}
             />
           </div>
 

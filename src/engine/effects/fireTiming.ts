@@ -351,7 +351,7 @@ export function fireRestTransitions(
 export function resumeChoice(
   state: GameState,
   choiceId: string,
-  response: string[] | number,
+  response: string[] | number | boolean,
   registry: EffectTemplateRegistry,
   defs: CardDefinitionLookup,
   actionId: string | null,

@@ -49,11 +49,21 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   trash this Character: Give up to 1 of your opponent's Characters −3000 power during this turn.
   // NOTE: not yet implemented (needs template).
 
-  // OP13-008 (character) Emporio.Ivankov —
-  //   If your {Revolutionary Army} type Character would be K.O.'d by your opponent's effect, you may trash
-  //   this Character instead.
-  // NOTE: not yet implemented (needs template).
-
+  // OP13-008 — aura K.O. replacement: trash this Character to save ally {Revolutionary Army} from opp effect K.O.
+  {
+    cardNumber: 'OP13-008',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        anyOfTypes: ['Revolutionary Army'],
+        trashSource: true,
+        duration: 'permanent',
+      }],
+    },
+  },
   // OP13-009 (character) Curly.Dadan —
   //   If you have a {Mountain Bandits} type Character other than this card, this Character gains [Double
   //   Attack].
@@ -218,10 +228,21 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   hand instead.
   // NOTE: not yet implemented (needs template).
 
-  // OP13-047 (character) Fossa —
-  //   If your Character with a type including "Whitebeard Pirates" would be K.O.'d by your opponent's
-  //   effect, you may trash this Character instead.
-  // NOTE: not yet implemented (needs template).
+  // OP13-047 — aura K.O. replacement: trash this Character to save ally Whitebeard Pirates from opp effect K.O.
+  {
+    cardNumber: 'OP13-047',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        anyOfTypes: ['Whitebeard Pirates'],
+        trashSource: true,
+        duration: 'permanent',
+      }],
+    },
+  },
 
   { cardNumber: 'OP13-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Boa Hancock' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Boa Hancock', maxCost: 3 } }] } },
 

@@ -175,7 +175,7 @@ function EmptySlot({ label }: { size: 'leader' | 'board'; label: string }) {
   );
 }
 
-function LifeStack({ count, donDeckCount, donDeckFirst = false }: { count: number; donDeckCount: number; donDeckFirst?: boolean }) {
+function LifeStack({ playerId, count, donDeckCount, donDeckFirst = false }: { playerId: string; count: number; donDeckCount: number; donDeckFirst?: boolean }) {
   const visibleCards = Math.max(0, Math.min(count, 5));
   const cards = Array.from({ length: visibleCards });
 
@@ -184,6 +184,8 @@ function LifeStack({ count, donDeckCount, donDeckFirst = false }: { count: numbe
       className="relative h-full flex-shrink-0"
       style={{ width: FIELD_CARD_WIDTH }}
       aria-label={`${count} Life cards`}
+      data-board-zone="life"
+      data-board-player={playerId}
     >
       {cards.map((_, index) => (
         <div
@@ -216,6 +218,8 @@ function LifeStack({ count, donDeckCount, donDeckFirst = false }: { count: numbe
         className={['absolute inset-x-0 mx-auto aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.45)]', donDeckFirst ? 'top-0' : 'bottom-0'].join(' ')}
         style={{ width: DON_DECK_CARD_WIDTH, zIndex: 10 }}
         aria-label={`${donDeckCount} DON!! Deck`}
+        data-board-zone="donDeck"
+        data-board-player={playerId}
       >
         <CardBackArt tone="teal" />
         <CountBadge count={donDeckCount} />
@@ -348,14 +352,19 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   // disconnected side.
   const deckCell = (
     <MatCell label="Deck" className="flex-shrink-0" labelClassName="sr-only" style={{ width: BOARD_ZONE_TRACK }} allowOverflow>
-      <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" reverseRows={reverseRows} boardFocused={boardFocused} />
-
+      <div data-board-zone="deck" data-board-player={board.playerId}>
+        <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" reverseRows={reverseRows} boardFocused={boardFocused} />
+      </div>
     </MatCell>
   );
 
   const characterZone = (
     <MatCell label="Character Area" className="h-full flex-1" labelClassName="sr-only" allowOverflow>
-      <div className="flex h-full w-full min-w-0 items-center justify-center gap-2 overflow-visible">
+      <div
+        className="flex h-full w-full min-w-0 items-center justify-center gap-2 overflow-visible"
+        data-board-zone="characterArea"
+        data-board-player={board.playerId}
+      >
         {board.characterArea.map((card) => (
           <BoardCardTile
             key={card.instanceId}
@@ -403,7 +412,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   const stageCell = <MatCell label="Stage Card" variant="invisible" labelClassName="sr-only">{stageSlot}</MatCell>;
   const trashCell = (
     <MatCell label="Trash" labelClassName="sr-only">
-      <TrashPile cards={board.trash} onClick={() => setTrashGalleryOpen(true)} />
+      <TrashPile cards={board.trash} playerId={board.playerId} onClick={() => setTrashGalleryOpen(true)} />
     </MatCell>
   );
   // Active and Rested DON!! both stack sideways now (see DonStack.tsx) and
@@ -414,6 +423,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
     <MatCell label="Active DON!!" variant="invisible" labelClassName="sr-only">
       <DonStack
         label="Active"
+        playerId={board.playerId}
         cards={activeDon}
         direction="horizontal"
         selectable={(card) => donSelectable(mode, isOwn, card)}
@@ -427,6 +437,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
     <MatCell label="Rested DON!!" variant="invisible" labelClassName="sr-only">
       <DonStack
         label="Rested"
+        playerId={board.playerId}
         cards={restedDon}
         direction="horizontal"
         selectable={(card) => donSelectable(mode, isOwn, card)}
@@ -528,14 +539,14 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
           <>
             {boardRow}
             <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only">
-              <LifeStack count={board.lifeAreaCount} donDeckCount={board.donDeckCount} donDeckFirst />
+              <LifeStack playerId={board.playerId} count={board.lifeAreaCount} donDeckCount={board.donDeckCount} donDeckFirst />
             </MatCell>
             <div className="min-h-0">{characterRow}</div>
           </>
         ) : (
           <>
             <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only">
-              <LifeStack count={board.lifeAreaCount} donDeckCount={board.donDeckCount} />
+              <LifeStack playerId={board.playerId} count={board.lifeAreaCount} donDeckCount={board.donDeckCount} />
             </MatCell>
             {/* relative z-10: characterRow must paint above boardRow (which comes later in DOM
                 and would otherwise cover the deck ghost layers that extend downward into row 1) */}
@@ -548,7 +559,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   );
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col" data-board-player={board.playerId}>
       {mat}
       <TrashGalleryModal
         open={trashGalleryOpen}

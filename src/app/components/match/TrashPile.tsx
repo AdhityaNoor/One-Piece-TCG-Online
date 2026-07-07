@@ -14,17 +14,20 @@
  * PlayerBoardPanel.tsx's stageTrashGroup/characterZone for why.
  */
 import { CardImage } from '../CardImage';
+import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
 import { cqh } from './boardScale';
 import { CountBadge } from './CountBadge';
 import type { CardView } from '../../../board/projection';
 
 export interface TrashPileProps {
   cards: CardView[];
+  playerId: string;
   onClick: () => void;
 }
 
-export function TrashPile({ cards, onClick }: TrashPileProps) {
+export function TrashPile({ cards, playerId, onClick }: TrashPileProps) {
   const topCard = cards[0] ?? null;
+  const topHidden = useCardFlightHidden(topCard?.instanceId ?? '');
 
   return (
     <button
@@ -32,6 +35,8 @@ export function TrashPile({ cards, onClick }: TrashPileProps) {
       onClick={onClick}
       disabled={cards.length === 0}
       style={{ width: cqh(150), height: cqh(210) }}
+      data-board-zone="trash"
+      data-board-player={playerId}
       className={[
         'relative flex flex-shrink-0 items-center justify-center overflow-hidden rounded-md shadow-[0_4px_10px_rgba(0,0,0,0.3)] transition-transform',
         // CardImage already draws its own border-gold/20 edge (same as every
@@ -44,11 +49,13 @@ export function TrashPile({ cards, onClick }: TrashPileProps) {
       ].join(' ')}
       aria-label={topCard ? `Trash, ${cards.length} cards, top card ${topCard.name} — open gallery` : 'Trash, empty'}
     >
-      {topCard ? (
+      {topCard && !topHidden ? (
         <>
           <CardImage src={topCard.imageUrl} alt={topCard.name} className="h-full w-full" />
           <CountBadge count={cards.length} />
         </>
+      ) : topCard && topHidden ? (
+        <CountBadge count={cards.length} />
       ) : (
         <span className="text-[9px] font-black uppercase tracking-wide text-white/25">Trash</span>
       )}

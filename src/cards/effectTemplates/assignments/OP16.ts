@@ -82,10 +82,21 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   to make it the new target of the attack.)
   // NOTE: not yet implemented (needs template).
 
-  // OP16-018 (character) Rockstar —
-  //   [Once Per Turn] If your {Red-Haired Pirates} type Character would be K.O.'d, you may trash 1
-  //   Character card with 6000 power or more from your hand instead.
-  // NOTE: not yet implemented (needs template).
+  // OP16-018 — aura K.O. replacement: trash Char ≥6000 from hand to save ally {Red-Haired Pirates}.
+  {
+    cardNumber: 'OP16-018',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        oncePerTurn: true,
+        anyOfTypes: ['Red-Haired Pirates'],
+        trashFromHand: { count: 1, filter: { category: 'character', minCurrentPower: 6000 } },
+        duration: 'permanent',
+      }],
+    },
+  },
 
   {
     cardNumber: 'OP16-019',

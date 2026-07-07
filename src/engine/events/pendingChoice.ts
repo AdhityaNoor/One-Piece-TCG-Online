@@ -66,12 +66,20 @@ export interface KoReplacementResumeState {
   };
 }
 
+export interface PendingChoice {
+  id: string;
+  playerId: string;
+  kind: ChoiceKind;
+  prompt: string;
+  constraints: ChoiceConstraints;
   /** The card or rule that generated this choice, for log/UI attribution. */
   sourceInstanceId: string | null;
   sourceEffectId: string | null;
   /**
    * Serializable resume point for an interpreter-suspended EffectProgram (set
-   * when sourceEffectId === 'ir') or K.O. replacement (sourceEffectId === 'koReplacement').
+   * when sourceEffectId === 'ir') or battle damage step (sourceEffectId ===
+   * 'rule:battleKoReplacement'). K.O. replacement mid-`ko` op stashes
+   * `koReplacement` here while still using the normal IR resume path.
    */
   resumeState?: {
     abilityIndex: number;

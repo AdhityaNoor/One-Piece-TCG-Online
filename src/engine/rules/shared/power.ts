@@ -32,7 +32,8 @@ function sourceOnField(sourceInstanceId: string, state: GameState): boolean {
   return source.currentZone === 'leaderArea' || source.currentZone === 'characterArea' || source.currentZone === 'stageArea';
 }
 
-function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
+/** True if `instanceId` is in the aura's dynamic target set (owner's Leader/Characters, optionally type-filtered). */
+export function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
   const target = state.cardsById[instanceId];
   if (!target) return false;
   if (group.controllerSameDefinitionInHand) {
@@ -57,11 +58,16 @@ function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffectRecord
     const def = getDefinition(defs, target);
     if (!group.anyOfNames.includes(def.name)) return false;
   }
+  if (group.anyOfAttributes !== undefined) {
+    const def = getDefinition(defs, target);
+    const attrs = def.attributes ?? [];
+    if (!group.anyOfAttributes.some((a) => attrs.some((have) => have.toLowerCase() === a.toLowerCase()))) return false;
+  }
   return true;
 }
 
 /** Gate evaluated against the modifier's SOURCE card, re-checked on every read. */
-function sourceConditionApplies(cond: SourceStateCondition | undefined, record: ContinuousEffectRecord, state: GameState): boolean {
+export function sourceConditionApplies(cond: SourceStateCondition | undefined, record: ContinuousEffectRecord, state: GameState): boolean {
   if (!cond) return true;
   const src = state.cardsById[record.sourceInstanceId];
   if (!src) return false;
@@ -75,9 +81,17 @@ function sourceConditionApplies(cond: SourceStateCondition | undefined, record: 
   return true;
 }
 
-function conditionApplies(cond: ContinuousPowerCondition | undefined, record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
+/** Gate evaluated against the card a continuous modifier applies to, re-checked on every read. */
+export function continuousTargetConditionApplies(
+  cond: ContinuousPowerCondition | undefined,
+  record: ContinuousEffectRecord,
+  state: GameState,
+  instanceId: string,
+  defs: CardDefinitionLookup,
+): boolean {
   if (!cond) return true;
   const instance = state.cardsById[instanceId];
+  if (!instance) return false;
   if (cond.donAttachedAtLeast !== undefined && instance.donAttached.length < cond.donAttachedAtLeast) return false;
   if (cond.turn !== undefined) {
     const isOwnersTurn = state.activePlayerId === instance.ownerId;
@@ -85,9 +99,17 @@ function conditionApplies(cond: ContinuousPowerCondition | undefined, record: Co
     if (cond.turn === 'opponent' && isOwnersTurn) return false;
   }
   if (cond.rested !== undefined && (instance.orientation === 'rested') !== cond.rested) return false;
-  // "If <board state>" gate, re-evaluated each read against the modifier's owner.
-  if (cond.gate && !evaluateGates(cond.gate, state, defs, record.ownerId)) return false;
+  const def = getDefinition(defs, instance);
+  if (cond.maxCost !== undefined && computeCurrentCost(defs, state, instanceId) > cond.maxCost) return false;
+  if (cond.maxBaseCost !== undefined && (def.baseCost ?? Infinity) > cond.maxBaseCost) return false;
+  if (cond.minBaseCost !== undefined && (def.baseCost ?? -Infinity) < cond.minBaseCost) return false;
+  if (cond.color !== undefined && !def.colors.includes(cond.color)) return false;
+  if (cond.gate && !evaluateGates(cond.gate, state, defs, record.ownerId, record.sourceInstanceId)) return false;
   return true;
+}
+
+function conditionApplies(cond: ContinuousPowerCondition | undefined, record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
+  return continuousTargetConditionApplies(cond, record, state, instanceId, defs);
 }
 
 function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {

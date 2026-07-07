@@ -9,6 +9,7 @@
  * that's how a DON!! used to pay a cost actually looks on a real table.
  */
 import { cqh } from './boardScale';
+import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
 
 const DON_TOKEN_SRC = '/ui/don-token.png';
 
@@ -30,9 +31,14 @@ const BOX = cqh(210);
 
 export function DonChip({ card, selectable, selected, onSelect }: DonChipProps) {
   const rested = card.donRested;
+  const hiddenDuringFlight = useCardFlightHidden(card.instanceId);
 
   return (
-    <div className="relative flex-shrink-0" style={{ width: BOX, height: BOX }}>
+    <div
+      className={['relative flex-shrink-0', hiddenDuringFlight ? 'invisible' : ''].join(' ')}
+      style={{ width: BOX, height: BOX }}
+      data-card-instance-id={card.instanceId}
+    >
       <div
         role={selectable ? 'button' : undefined}
         tabIndex={selectable ? 0 : undefined}

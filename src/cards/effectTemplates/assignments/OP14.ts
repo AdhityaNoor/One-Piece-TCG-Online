@@ -170,11 +170,40 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Character card with a cost of 5 or less from your hand.
   // NOTE: not yet implemented (needs template).
 
-  // OP14-034 (character) Monkey.D.Luffy —
-  //   [Your Turn] All of your green {Straw Hat Crew} type Characters with a base cost of 4 or more gain
-  //   +1000 power.[Once Per Turn] If your {Straw Hat Crew} type Character would be K.O.'d by your
-  //   opponent's effect, you may rest 1 of your Characters instead.
-  // NOTE: not yet implemented (needs template).
+  // OP14-034 — [Your Turn] green {Straw Hat Crew} base cost ≥4 +1000; [OPT] rest 1 Character to save ally from opp effect K.O.
+  {
+    cardNumber: 'OP14-034',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'addPowerAuraControllerCharacters',
+            amount: 1000,
+            duration: 'permanent',
+            anyOfTypes: ['Straw Hat Crew'],
+            sourceCondition: { turn: 'your' },
+            targetCondition: { minBaseCost: 4, color: 'green' },
+          }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementAura',
+            scope: 'effect',
+            oncePerTurn: true,
+            anyOfTypes: ['Straw Hat Crew'],
+            restCharacter: true,
+            duration: 'permanent',
+          }],
+        },
+      },
+    ],
+  },
 
   // OP14-035 (character) Yosaku —
   //   [Your Turn] When this Character becomes rested, up to 1 of your opponent's rested Characters with a

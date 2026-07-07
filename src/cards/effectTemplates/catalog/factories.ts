@@ -5,7 +5,30 @@
  * execute card text, and callers never pass raw card effect text.
  */
 import type { Ability, EffectOp, EffectProgram, NonSuspendingEffectOp, Selector } from '../../../engine/effects/effectIr';
+import type { KoReplacementAction } from '../../../engine/state/game';
 import type { MoveCardDestination, MoveCardSource, SequencedAbilityFunction, TargetSpec, TemplateId, TemplateParamMap } from './templateDefs';
+
+function koReplacementAction(f: {
+  trashSelf?: true;
+  trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } };
+  returnDon?: { count?: number };
+  lifeToHand?: { position?: 'top' | 'topOrBottom' };
+  trashSource?: true;
+  restSource?: true;
+  restCharacter?: true;
+}): KoReplacementAction {
+  if (f.returnDon) return { kind: 'payAbilityCosts', costs: [{ kind: 'donMinus', count: f.returnDon.count ?? 1 }] };
+  if (f.lifeToHand) return { kind: 'chooseLifeToHand', position: f.lifeToHand.position ?? 'top' };
+  if (f.restSource) return { kind: 'restSource' };
+  if (f.restCharacter) return { kind: 'restCharacter', count: 1 };
+  if (f.trashSource) return { kind: 'trashSource' };
+  if (f.trashSelf) return { kind: 'trashSelf' };
+  return {
+    kind: 'trashFromHand',
+    count: f.trashFromHand?.count ?? 1,
+    ...(f.trashFromHand?.filter ? { filter: f.trashFromHand.filter } : {}),
+  };
+}
 
 function program(cardNumber: string, abilities: Ability[]): EffectProgram {
   return { cardNumber, abilities };
@@ -504,7 +527,14 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
     case 'addPowerAuraOpponentCharacters':
       return [{ op: 'addPowerAura', group: { opponentCharacters: true }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addPowerAuraControllerCharacters':
-      return [{ op: 'addPowerAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
+      return [{
+        op: 'addPowerAura',
+        group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) },
+        amount: f.amount,
+        duration: f.duration,
+        ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+        ...(f.targetCondition || f.gate ? { condition: { ...(f.targetCondition ?? {}), ...(f.gate ? { gate: f.gate } : {}) } } : {}),
+      }];
     case 'addCostAuraControllerCharacters':
       return [{ op: 'addCostAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addCostAuraOpponentCharacters':
@@ -550,13 +580,28 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           appliesTo: 'self',
           scope: f.scope ?? 'any',
           ...(f.oncePerTurn ? { oncePerTurn: true } : {}),
-          action: f.trashSelf
-            ? ({ kind: 'trashSelf' } as const)
-            : ({
-                kind: 'trashFromHand',
-                count: f.trashFromHand?.count ?? 1,
-                ...(f.trashFromHand?.filter ? { filter: f.trashFromHand.filter } : {}),
-              } as const),
+          action: koReplacementAction(f),
+          duration: f.duration,
+        },
+      ];
+    case 'registerKoReplacementAura':
+      return [
+        {
+          op: 'registerKoReplacement',
+          appliesTo: 'aura',
+          group: {
+            ownLeaderAndCharacters: true,
+            charactersOnly: f.charactersOnly ?? true,
+            ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}),
+            ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}),
+            ...(f.anyOfAttributes ? { anyOfAttributes: f.anyOfAttributes } : {}),
+            ...(f.excludeSource ? { excludeSource: true } : {}),
+          },
+          scope: f.scope ?? 'any',
+          ...(f.oncePerTurn ? { oncePerTurn: true } : {}),
+          ...(f.targetCondition ? { condition: f.targetCondition } : {}),
+          ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+          action: koReplacementAction(f),
           duration: f.duration,
         },
       ];

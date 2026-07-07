@@ -10,7 +10,7 @@
  * EffectContext primitives. Grow the vocabulary (new ops) rather than adding
  * bespoke card logic.
  */
-import type { ContinuousEffectDuration, ContinuousKeyword, ContinuousPowerCondition, KoReplacementAction, PowerAuraGroup, PowerScale, SourceStateCondition } from '../state/game';
+import type { ContinuousEffectDuration, ContinuousKeyword, ContinuousPowerCondition, KoReplacementAction, KoReplacementAuraGroup, PowerAuraGroup, PowerScale, SourceStateCondition } from '../state/game';
 import type { CardCategory, Color } from '../state/card';
 
 /** Resolves to a set of CardInstance ids at run time. Pure data. */
@@ -116,7 +116,7 @@ export type EffectOp =
   // `attackerCategory` optionally restricts a battle immunity to a given attacker category ("by Leaders").
   | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character' } & EffectOpSequenceGate)
   // Register optional K.O. replacement on enter play ("would be K.O.'d … instead").
-  | ({ op: 'registerKoReplacement'; appliesTo: 'self'; scope: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; action: KoReplacementAction; duration: IrDuration } & EffectOpSequenceGate)
+  | ({ op: 'registerKoReplacement'; appliesTo: 'self' | 'aura'; appliesToInstanceId?: string; group?: KoReplacementAuraGroup; scope: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; action: KoReplacementAction; condition?: IrCondition; sourceCondition?: SourceStateCondition; duration: IrDuration } & EffectOpSequenceGate)
   | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
   // Prevent the target Leader/Character from declaring an attack (7-1-1-1) while active.
   | ({ op: 'preventAttack'; target: Selector; duration: IrDuration } & EffectOpSequenceGate)
