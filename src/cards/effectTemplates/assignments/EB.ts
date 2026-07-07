@@ -1123,15 +1123,13 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Egghead' }, { typeIncludes: 'Straw Hat Crew' }], excludeSelfName: true } }] },
   },
 
-  // EB04-003 (character) Smoker & Tashigi —
-  //   [Rush] (This card can attack on the turn in which it is played.)[Opponent's Turn] Your {Navy} type
-  //   Leader's base power becomes 7000.
-  // NOTE: not yet implemented (needs template).
+  // EB04-003 — [Rush] (keyword flag) [Opponent's Turn] Your {Navy} type Leader's base power becomes 7000.
+  // Note: [Rush] is an engine keyword flag. Only the continuous base-power set is templated. Registered
+  // on enter-play as a permanent continuous effect gated to opponent's turn + a {Navy} Leader.
+  { cardNumber: 'EB04-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'setBasePower', target: { group: 'leader', player: 'controller' }, value: 7000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'Navy' }] } }] } },
 
-  // EB04-004 (character) Zeff —
-  //   [When Attacking] Your Leader's base power becomes 7000 until the end of your opponent's next End
-  //   Phase.
-  // NOTE: not yet implemented (needs template).
+  // EB04-004 — [When Attacking] Your Leader's base power becomes 7000 until the end of your opponent's next End Phase.
+  { cardNumber: 'EB04-004', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'setBasePower', target: { group: 'leader', player: 'controller' }, value: 7000, duration: 'endOfOpponentsTurn' }] } },
 
   // EB04-005 (character) Trafalgar Law —
   //   This Character cannot attack unless your opponent has 2 or more Characters with a base power of 5000

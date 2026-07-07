@@ -5,12 +5,13 @@
  * effects expire in the ending player's own End Phase, below.
  *
  * "endOfOpponentsTurn" effects (e.g. "cannot attack until the end of your
- * opponent's next turn") are relative to the modifier's OWNER, not the
- * ending player: they expire in the End Phase of whichever player is the
- * modifier owner's opponent — i.e. exactly when `endingPlayerId !== effect.ownerId`.
- * Since turns strictly alternate between the two players, the very next
- * occurrence of "the owner's opponent's End Phase" after the effect is
- * created IS the owner's opponent's NEXT turn ending — no separate
+ * opponent's next turn") and "untilStartOfNextTurn" effects ("until the start
+ * of your next turn") are relative to the modifier's OWNER, not the ending
+ * player: they expire in the End Phase of whichever player is the modifier
+ * owner's opponent — i.e. exactly when `endingPlayerId !== effect.ownerId`.
+ * Since turns strictly alternate between the two players, "the end of the
+ * owner's opponent's next turn" and "the start of the owner's next turn" are
+ * the SAME boundary, so both durations share this expiry rule — no separate
  * "next" tracking is needed.
  *
  * Turn handoff: turnNumber increments, activePlayerId flips to the other
@@ -43,7 +44,12 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
     (effect) =>
       effect.duration !== 'endOfTurn' &&
       effect.duration !== 'duringThisTurn' &&
-      !(effect.duration === 'endOfOpponentsTurn' && effect.ownerId !== endingPlayerId),
+      // "endOfOpponentsTurn" ("until the end of your opponent's next turn") and
+      // "untilStartOfNextTurn" ("until the start of your next turn") both clear at the
+      // SAME boundary — the handoff from the modifier owner's opponent back to the owner,
+      // i.e. the End Phase in which the ending player is NOT the modifier owner. (Turns
+      // strictly alternate, so "end of the opponent's turn" == "start of the owner's next turn".)
+      !((effect.duration === 'endOfOpponentsTurn' || effect.duration === 'untilStartOfNextTurn') && effect.ownerId !== endingPlayerId),
   );
 
   logger.push({

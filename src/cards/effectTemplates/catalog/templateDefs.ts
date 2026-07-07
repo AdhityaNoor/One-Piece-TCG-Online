@@ -87,6 +87,12 @@ export type AbilityFunction =
   | { fn: 'preventAttack'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'addCost'; target: TargetSpec; amount: number; duration?: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'addPower'; target: TargetSpec; amount: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
+  // "This card's / your Leader's base power BECOMES N" (2-6): a SET (overwrite), not a +/− delta.
+  // Additive power modifiers still stack on top of the set value. Fixed value only — "becomes the
+  // same as X" (dynamic) is intentionally out of scope.
+  | { fn: 'setBasePower'; target: TargetSpec; value: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
+  // "This card's base cost BECOMES N" (2-7): a SET (overwrite). Additive cost deltas still stack.
+  | { fn: 'setBaseCost'; target: TargetSpec; value: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'addKeyword'; target: TargetSpec; keyword: ContinuousKeyword; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'preventBlockers'; duration: IrDuration; target?: 'self' | 'chosenControllerLeaderOrCharacter'; filter?: { typeIncludes?: string }; blockerPowerAtLeast?: number }
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }

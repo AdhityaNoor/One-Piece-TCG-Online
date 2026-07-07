@@ -96,6 +96,8 @@ export type EffectOp =
   // {Supernovas} Leaders and Characters gain +1000"), optionally gated on source state.
   | ({ op: 'addPowerAura'; group: PowerAuraGroup; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition } & EffectOpSequenceGate)
   | ({ op: 'addCost'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
+  | ({ op: 'setBasePower'; target: Selector; value: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate) // "base power BECOMES N" (2-6): overwrite base; additive modifiers still stack on top
+  | ({ op: 'setBaseCost'; target: Selector; value: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate) // "base cost BECOMES N" (2-7): overwrite base cost
   | ({ op: 'addKeyword'; target: Selector; keyword: ContinuousKeyword; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
   // Grant "cannot be K.O.'d" to the target. scope 'battle' = battle K.O. only (7-1-4-2); 'any' = any source.
   // `attackerCategory` optionally restricts a battle immunity to a given attacker category ("by Leaders").

@@ -255,6 +255,70 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  /** "base power becomes N" (2-6): register a SET modifier that overwrites the printed base power. */
+  setContinuousBasePower(spec: {
+    appliesToInstanceId: string;
+    value: number;
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? `base power becomes ${spec.value}`,
+      powerModifier: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        amount: 0,
+        setBase: spec.value,
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to ${spec.appliesToInstanceId}.`,
+      data: { continuousEffectId: record.id, setBasePower: spec.value, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  /** "base cost becomes N" (2-7): register a SET modifier that overwrites the printed base cost. */
+  setContinuousBaseCost(spec: {
+    appliesToInstanceId: string;
+    value: number;
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? `base cost becomes ${spec.value}`,
+      costModifier: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        amount: 0,
+        setBase: spec.value,
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to ${spec.appliesToInstanceId}.`,
+      data: { continuousEffectId: record.id, setBaseCost: spec.value, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
   addContinuousKeyword(spec: {
     appliesToInstanceId: string;
     keyword: ContinuousKeyword;

@@ -146,6 +146,14 @@ export interface ContinuousPowerModifier {
   appliesToGroup?: PowerAuraGroup;
   /** Signed power delta (can be negative, e.g. "−2000 power"; 1-3-6-1 allows negative power). */
   amount: number;
+  /**
+   * "This card's/your Leader's base power BECOMES N" (2-6): OVERWRITES the printed base power
+   * instead of adding to it. When present, `amount` is ignored for this record; additive
+   * `amount`/`scale`/DON!! bonuses from OTHER records still stack on top of the set value.
+   * If several applicable set records exist, the LAST-applied one wins (append order =
+   * recalculation order, 8-1-3-3-5). Fixed value only — "becomes the same as X" is not modeled.
+   */
+  setBase?: number;
   /** Gate evaluated against the buffed (modified) card. Omitted when unconditional. */
   condition?: ContinuousPowerCondition;
   /** Gate evaluated against the SOURCE card. Omitted when the modifier does not depend on source state. */
@@ -158,6 +166,12 @@ export interface ContinuousCostModifier {
   appliesToInstanceId: string;
   /** Signed cost delta; final computed cost is floored at 0. */
   amount: number;
+  /**
+   * "This card's base cost BECOMES N" (2-7): OVERWRITES the printed base cost instead of adding.
+   * When present, `amount` is ignored for this record; additive `amount` deltas from OTHER
+   * records still stack on top. Last-applied set wins. Final cost is still floored at 0.
+   */
+  setBase?: number;
   /** Omitted when the modifier is unconditional. */
   condition?: ContinuousPowerCondition;
 }

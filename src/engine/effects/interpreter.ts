@@ -319,6 +319,20 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       }
       return { selectedIds: ids, movedIds: [] };
     }
+    case 'setBasePower': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.setContinuousBasePower({ appliesToInstanceId: id, value: op.value, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
+    case 'setBaseCost': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.setContinuousBaseCost({ appliesToInstanceId: id, value: op.value, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
     case 'addKeyword': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {

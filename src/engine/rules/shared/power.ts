@@ -133,12 +133,20 @@ function scaleAmount(scale: PowerScale | undefined, ownerId: string, state: Game
 export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState, instanceId: string): number {
   const instance = state.cardsById[instanceId];
   const def = getDefinition(defs, instance);
-  const base = def.basePower ?? 0;
+  let base = def.basePower ?? 0;
   const donBonus = state.activePlayerId === instance.ownerId ? instance.donAttached.length * 1000 : 0; // 6-5-5-2
   const battleBonus = state.currentBattle?.battlePowerBonuses[instanceId] ?? 0; // 7-1-3-2-1
   let continuousBonus = 0; // 8-1-3-3 card-effect power modifiers
   for (const record of state.continuousEffects) {
-    if (powerModifierApplies(record, state, instanceId, defs)) continuousBonus += record.powerModifier!.amount + scaleAmount(record.powerModifier!.scale, record.ownerId, state, defs);
+    if (!powerModifierApplies(record, state, instanceId, defs)) continue;
+    const mod = record.powerModifier!;
+    if (mod.setBase !== undefined) {
+      // "base power becomes N" (2-6): overwrite the base. Last applicable set wins,
+      // since continuousEffects is in append (recalculation) order (8-1-3-3-5).
+      base = mod.setBase;
+    } else {
+      continuousBonus += mod.amount + scaleAmount(mod.scale, record.ownerId, state, defs);
+    }
   }
   return base + donBonus + battleBonus + continuousBonus;
 }
@@ -146,11 +154,16 @@ export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState
 export function computeCurrentCost(defs: CardDefinitionLookup, state: GameState, instanceId: string): number {
   const instance = state.cardsById[instanceId];
   const def = getDefinition(defs, instance);
+  let base = def.baseCost ?? 0;
   let continuousDelta = 0;
   for (const record of state.continuousEffects) {
-    if (costModifierApplies(record, state, instanceId, defs)) continuousDelta += record.costModifier!.amount;
+    if (!costModifierApplies(record, state, instanceId, defs)) continue;
+    const mod = record.costModifier!;
+    // "base cost becomes N" (2-7): overwrite the base; last applicable set wins.
+    if (mod.setBase !== undefined) base = mod.setBase;
+    else continuousDelta += mod.amount;
   }
-  return Math.max(0, (def.baseCost ?? 0) + continuousDelta);
+  return Math.max(0, base + continuousDelta);
 }
 
 export function hasContinuousKeyword(defs: CardDefinitionLookup, state: GameState, instanceId: string, keyword: ContinuousKeyword): boolean {

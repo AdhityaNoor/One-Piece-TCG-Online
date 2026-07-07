@@ -218,6 +218,18 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         (target) => ({ op: 'addPower', target, amount: f.amount, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }),
         { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
       );
+    case 'setBasePower':
+      return targetOps(
+        f.target,
+        (target) => ({ op: 'setBasePower', target, value: f.value, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }),
+        { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
+      );
+    case 'setBaseCost':
+      return targetOps(
+        f.target,
+        (target) => ({ op: 'setBaseCost', target, value: f.value, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }),
+        { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
+      );
     case 'addKeyword':
       return targetOps(
         f.target,

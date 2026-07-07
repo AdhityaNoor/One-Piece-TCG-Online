@@ -53,14 +53,17 @@ function expectCanAttackActive(state: ReturnType<typeof buildBaseRig>['state'], 
 describe('canAttackActive curated assignments', () => {
   it('OP01-112 grants Page One canAttackActive during this turn', () => {
     let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main' });
-    ({ rig } = putDon(rig, 'p1', 1));
+    let donIds: string[];
+    ({ rig, donIds } = putDon(rig, 'p1', 1));
     let attackerId: string;
     ({ rig, instanceId: attackerId } = putCharacterInPlay(rig, 'p1', PAGE_ONE));
     let foeId: string;
     ({ rig, instanceId: foeId } = putCharacterInPlay(rig, 'p2', ACTIVE_FOE, { orientation: 'active' }));
 
     expectCannotAttackActive(rig.state, rig.defs, attackerId, foeId);
-    const resolved = runTimings(registry['OP01-112'], ['activateMain'], rig.state, attackerId, rig.defs, null, registry);
+    // The DON!! −1 cost suspends on a "choose which DON!! to return" choice; resume it to pay.
+    const fired = runTimings(registry['OP01-112'], ['activateMain'], rig.state, attackerId, rig.defs, null, registry);
+    const resolved = resumeProgram(registry['OP01-112'], fired.state, fired.state.pendingChoices[0], [donIds[0]], rig.defs, null, registry);
     expectCanAttackActive(resolved.state, rig.defs, attackerId, foeId);
   });
 
@@ -137,7 +140,8 @@ describe('canAttackActive curated assignments', () => {
   });
 
   it('OP11-082 grants a chosen Navy Character canAttackActive', () => {
-    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main' });
+    // Aramaki gates on "If your Leader has the {Navy} type", so p1's Leader must be Navy.
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', leaderOverridesP1: { types: ['Navy'] } });
     let sourceId: string;
     ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', ARAMAKI));
     let attackerId: string;
