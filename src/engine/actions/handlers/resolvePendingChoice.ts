@@ -19,6 +19,7 @@ import { createActionLogger } from '../../rules/shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { resumeChoice, fireLifeTrigger, type EffectTemplateRegistry } from '../../effects';
+import { resumeKoReplacementChoice } from '../../effects/resumeKoReplacement';
 import type { CardDefinitionLookup } from '../../rules/shared/definitions';
 
 function findChoice(state: GameState, action: ResolvePendingChoiceAction) {
@@ -74,6 +75,23 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
         }
       }
     }
+  } else if (choice.sourceEffectId === 'koReplacement') {
+    if (choice.kind === 'YES_NO') {
+      if (typeof action.response !== 'boolean') reasons.push('A K.O. replacement choice expects a boolean (yes/no).');
+    } else if (choice.kind === 'SELECT_CARDS') {
+      const sel = action.response;
+      if (!Array.isArray(sel)) reasons.push('A K.O. replacement pay-cost choice expects selected instance ids.');
+      else {
+        const { min, max, candidateInstanceIds } = choice.constraints;
+        if (sel.length < min || sel.length > max) reasons.push(`Select between ${min} and ${max} card(s) (got ${sel.length}).`);
+        const candidates = new Set(candidateInstanceIds ?? []);
+        for (const id of sel) {
+          if (typeof id !== 'string' || !candidates.has(id)) reasons.push(`'${String(id)}' is not eligible for this replacement cost.`);
+        }
+      }
+    } else {
+      reasons.push(`Unexpected choice kind '${choice.kind}' for K.O. replacement.`);
+    }
   } else if (choice.sourceEffectId === 'rule:lifeTrigger') {
     // [] = decline (keep in hand); [the Life card id] = activate the trigger.
     const sel = action.response;
@@ -101,6 +119,10 @@ export function executeResolvePendingChoice(
   // Interpreter-suspended card effect: resume the program with the selection.
   if (choice.sourceEffectId === 'ir') {
     return resumeChoice(state, action.choiceId, action.response as string[] | number, registry, defs, action.actionId);
+  }
+
+  if (choice.sourceEffectId === 'koReplacement') {
+    return resumeKoReplacementChoice(state, choice, action.response as string[] | number | boolean, defs, action.actionId, registry);
   }
 
   // Life [Trigger] (10-1-5-2): activate → fire the trigger + trash the card;

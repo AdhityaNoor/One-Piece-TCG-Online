@@ -45,11 +45,21 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB01-007 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
   { cardNumber: 'EB01-007', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
-  // EB01-008 (character) LittleOars Jr. —
-  //   [Once Per Turn] If this Character would be K.O.'d by an effect, you may trash 1 Event or Stage card
-  //   from your hand instead.
-  // NOTE: not yet implemented (needs template).
-
+  // EB01-008 — [Once Per Turn] K.O. replacement: trash Event or Stage from hand (effect scope only).
+  {
+    cardNumber: 'EB01-008',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementSelf',
+        scope: 'effect',
+        oncePerTurn: true,
+        trashFromHand: { count: 1, filter: { categories: ['event', 'stage'] } },
+        duration: 'permanent',
+      }],
+    },
+  },
   // EB01-009 (event) Just Shut Up and Come with Us!!!! —
   //   [Counter] Look at 5 cards from the top of your deck and play up to 1 {Animal} type Character card
   //   with a cost of 3 or less. Then, place the rest at the bottom of your deck in any order.

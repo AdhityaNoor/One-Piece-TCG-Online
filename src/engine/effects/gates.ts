@@ -238,6 +238,33 @@ function evaluateGate(
       return computeCurrentPower(defs, state, leaderId) <= gate.power;
     }
 
+    case 'selfControlsNamedWithPowerAtLeast': {
+      const ids = [player.leaderInstanceId, ...player.characterArea.cardIds].filter((id): id is string => id != null);
+      return ids.some((id) => {
+        const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
+        if (!def || def.name !== gate.name) return false;
+        return computeCurrentPower(defs, state, id) >= gate.power;
+      });
+    }
+
+    case 'selfTypedCharacterPowerAtLeast': {
+      return player.characterArea.cardIds.some((id) => {
+        const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
+        if (!def || !typeMatches(def.types, gate.typeIncludes)) return false;
+        return computeCurrentPower(defs, state, id) >= gate.power;
+      });
+    }
+
+    case 'selfOtherNamedCharacterCount': {
+      const c = player.characterArea.cardIds.filter((id) => {
+        if (id === sourceInstanceId) return false;
+        return defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name;
+      }).length;
+      if (gate.atLeast !== undefined && c < gate.atLeast) return false;
+      if (gate.atMost !== undefined && c > gate.atMost) return false;
+      return true;
+    }
+
     case 'opponentHasCharacterBasePowerAtLeast': {
       const opponentId = getOpponentId(state, ownerId);
       const opp = state.players[opponentId];

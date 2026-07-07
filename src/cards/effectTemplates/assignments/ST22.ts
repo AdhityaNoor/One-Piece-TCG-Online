@@ -38,12 +38,36 @@ export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
   //   turn.
   // NOTE: not yet implemented (needs template).
 
-  // ST22-012 (character) Marco —
-  //   [Once Per Turn] If this Character would be K.O.'d by your opponent's effect, you may trash 1 card
-  //   from your hand instead.[When Attacking] Reveal 1 card from the top of your deck. If that card's type
-  //   includes "Whitebeard Pirates", this Character gains +1000 power until the end of your opponent's next
-  //   turn.
-  // NOTE: not yet implemented (needs template).
+  // ST22-012 — K.O. replacement (trash 1 from hand, opp effect, OPT) + [When Attacking] reveal top for +1000.
+  {
+    cardNumber: 'ST22-012',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementSelf',
+            scope: 'effect',
+            oncePerTurn: true,
+            trashFromHand: { count: 1 },
+            duration: 'permanent',
+          }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'whenAttacking',
+          functions: [{
+            fn: 'revealTopThen',
+            filter: { typeIncludes: 'Whitebeard Pirates' },
+            then: [{ fn: 'addPowerSelf', amount: 1000, duration: 'endOfOpponentsTurn' }],
+          }],
+        },
+      },
+    ],
+  },
 
   // ST22-015 (event) I Am Whitebeard!! —
   //   [Main] If your Leader's type includes "Whitebeard Pirates", play up to 1 [Edward.Newgate] from your

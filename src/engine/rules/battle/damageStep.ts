@@ -39,7 +39,9 @@ import { addToZoneTop, removeFromZone } from '../shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { computeCurrentPower, hasContinuousKeyword, isKoImmune } from '../shared/power';
 import { getOpponentId } from '../shared/players';
+import { buildKoReplacementConfirmChoice, findKoReplacementRecord } from '../shared/koAttempt';
 import { fireOnKO, fireOnBattle, type EffectTemplateRegistry } from '../../effects';
+import type { KoReplacementResumeState } from '../../events/pendingChoice';
 
 export interface DamageStepResult {
   state: GameState;
@@ -221,6 +223,36 @@ export function resolveDamageAndEndOfBattle(
         visibility: 'public',
       });
     } else {
+      const replacementRecord = findKoReplacementRecord(nextState, targetId, 'battle', defs);
+      if (replacementRecord) {
+        const replaceChoice = buildKoReplacementConfirmChoice(nextState, targetId, replacementRecord, `${targetId}__battle-ko-replace`, {
+          abilityIndex: 0,
+          opIndex: 0,
+          bindings: {},
+          koReplacement: {
+            phase: 'confirm',
+            targetInstanceId: targetId,
+            recordId: replacementRecord.id,
+            cause: 'battle',
+            actorPlayerId: attackerPlayerId,
+            battle: {
+              causedByActionId,
+              attackerId,
+              attackerPlayerId,
+              defendingPlayerId,
+              priorLogCount: state.log.length,
+              onBattleLogLen: onBattleLog.length,
+              triggerPending: [...triggerPending],
+              onBattlePending: [...onBattlePending],
+            },
+          },
+        });
+        return {
+          state: { ...nextState, pendingChoices: [...nextState.pendingChoices, replaceChoice], log: [...state.log, ...logger.log, ...onBattleLog] },
+          log: [...logger.log, ...onBattleLog],
+          pendingChoices: [replaceChoice, ...onBattlePending, ...triggerPending],
+        };
+      }
       // Character target: KO'd (7-1-4-2). Attacker is never affected.
       const owner = nextState.players[target.ownerId];
       const cardsById = { ...nextState.cardsById, [targetId]: { ...target, currentZone: 'trash' as const, donAttached: [] } };
@@ -280,4 +312,67 @@ export function resolveDamageAndEndOfBattle(
   };
 
   return { state: { ...nextState, pendingChoices: [...nextState.pendingChoices, ...triggerPending] }, log: [...logger.log, ...koLog, ...onBattleLog], pendingChoices: [...koPending, ...triggerPending, ...onBattlePending] };
+}
+
+/** Complete a battle after a K.O. replacement prompt resolved during the Damage Step. */
+export function finishBattleAfterKoDecision(
+  state: GameState,
+  defs: CardDefinitionLookup,
+  kr: KoReplacementResumeState,
+  registry: EffectTemplateRegistry,
+  actionId: string | null,
+): DamageStepResult {
+  const battle = state.currentBattle;
+  if (!battle) return { state, log: [], pendingChoices: [] };
+
+  let nextState = state;
+  let koLog: GameLogEntry[] = [];
+  let koPending: PendingChoice[] = [];
+  const targetId = kr.targetInstanceId;
+  const targetInTrash = nextState.cardsById[targetId]?.currentZone === 'trash';
+
+  if (targetInTrash) {
+    const koFired = fireOnKO(nextState, targetId, registry, defs, actionId ?? kr.battle?.causedByActionId ?? null);
+    nextState = koFired.state;
+    koLog = koFired.log;
+    koPending = koFired.pendingChoices;
+  } else {
+    const logger = createActionLogger(nextState, actionId);
+    logger.push({
+      actorPlayerId: kr.actorPlayerId,
+      type: 'EFFECT_RESOLVED',
+      message: `'${targetId}' survived battle — K.O. was replaced.`,
+      data: { targetInstanceId: targetId, koReplacement: true },
+      relatedCardInstanceIds: [targetId],
+      visibility: 'public',
+    });
+    koLog = logger.log;
+  }
+
+  if (!nextState.gameOver) {
+    const logger = createActionLogger(nextState, actionId);
+    logger.push({
+      actorPlayerId: kr.battle?.attackerPlayerId ?? kr.actorPlayerId,
+      type: 'PHASE_CHANGED',
+      message: 'End of Battle (7-1-5) — battle-only power bonuses expire, control returns to the Main Phase.',
+      data: { step: 'endOfBattle' },
+      relatedCardInstanceIds: [],
+      visibility: 'public',
+    });
+    koLog = [...koLog, ...logger.log];
+  }
+
+  nextState = {
+    ...nextState,
+    currentBattle: null,
+    continuousEffects: nextState.continuousEffects.filter((ce) => ce.duration !== 'duringThisBattle'),
+    log: [...nextState.log, ...koLog],
+    pendingChoices: [...nextState.pendingChoices, ...(kr.battle?.triggerPending ?? [])],
+  };
+
+  return {
+    state: nextState,
+    log: koLog,
+    pendingChoices: [...koPending, ...(kr.battle?.onBattlePending ?? []), ...(kr.battle?.triggerPending ?? [])],
+  };
 }

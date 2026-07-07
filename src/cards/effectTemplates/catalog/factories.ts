@@ -63,15 +63,6 @@ function targetOps(
   ];
 }
 
-function nonSuspendingBranchOps(functions: SequencedAbilityFunction[]): NonSuspendingEffectOp[] {
-  const ops = functions.flatMap(functionOps);
-  const suspending = ops.find((op) => op.op === 'chooseTargets' || op.op === 'searchTopDeck' || op.op === 'playFromDeck' || op.op === 'peekLifeThenPlace' || op.op === 'chooseLifeToHand' || op.op === 'chooseLifeToTrash' || op.op === 'chooseOption');
-  if (suspending) {
-    throw new Error(`chooseOne branch cannot contain suspending op '${suspending.op}' yet.`);
-  }
-  return ops as NonSuspendingEffectOp[];
-}
-
 function selectorFromMoveSource(from: MoveCardSource): Extract<EffectOp, { op: 'chooseTargets' }>['from'] {
   switch (from.zone) {
     case 'deck':
@@ -370,7 +361,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           op: 'chooseOption',
           chooser: f.chooser,
           prompt: f.prompt,
-          options: f.options.map((option) => ({ label: option.label, ops: nonSuspendingBranchOps(option.functions) })),
+          options: f.options.map((option) => ({ label: option.label, ops: option.functions.flatMap(functionOps) })),
         },
       ];
     case 'playFromHand': {
@@ -518,6 +509,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'addCostAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addCostAuraOpponentCharacters':
       return [{ op: 'addCostAura', group: { opponentCharacters: true }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
+    case 'addCostAuraSameCardInHand':
+      return [{ op: 'addCostAura', group: { controllerSameDefinitionInHand: true }, amount: f.amount, duration: f.duration, ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addPowerControllerCharactersAll':
       return [
         {
@@ -550,6 +543,23 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'koImmunityChosen':
       return [{ op: 'addKoImmunity', target: { sel: 'var', name: 't' }, scope: f.scope, duration: f.duration }];
+    case 'registerKoReplacementSelf':
+      return [
+        {
+          op: 'registerKoReplacement',
+          appliesTo: 'self',
+          scope: f.scope ?? 'any',
+          ...(f.oncePerTurn ? { oncePerTurn: true } : {}),
+          action: f.trashSelf
+            ? ({ kind: 'trashSelf' } as const)
+            : ({
+                kind: 'trashFromHand',
+                count: f.trashFromHand?.count ?? 1,
+                ...(f.trashFromHand?.filter ? { filter: f.trashFromHand.filter } : {}),
+              } as const),
+          duration: f.duration,
+        },
+      ];
     case 'koAllCharacters':
       return [
         {
@@ -559,6 +569,36 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'giveDonControllerLeader':
       return [{ op: 'giveDon', target: { sel: 'controllerLeader' }, count: f.count }];
+    case 'giveDonFromOpponentCostArea':
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'opponentCharacters' },
+          min: f.optional === false ? 1 : 0,
+          max: f.maxTargets ?? 1,
+          prompt: 'Give DON!! from opponent cost area to 1 of their Characters.',
+        },
+        { op: 'giveDonFromCostArea', target: { sel: 'var', name: 't' }, count: f.count, donOwner: 'opponent', ...(f.restedOnly === true ? { restedOnly: true } : {}) },
+      ];
+    case 'giveDonFromPreviousTargetOwnerCostArea':
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't2',
+          from: { sel: 'ownerLeaderOrCharactersOfVar', varName: 't' },
+          min: f.optional === false ? 1 : 0,
+          max: 1,
+          prompt: 'Give rested DON!! to Leader or 1 Character.',
+        },
+        {
+          op: 'giveDonFromCostArea',
+          target: { sel: 'var', name: 't2' },
+          count: f.count,
+          donOwner: { fromVar: 't' },
+          restedOnly: f.restedOnly !== false,
+        },
+      ];
     case 'revealTopThen': {
       // Reveal the top card, then run the branch only if it matched: every branch op
       // is gated on `previousRevealMatched` (the reveal op sets that binding and it

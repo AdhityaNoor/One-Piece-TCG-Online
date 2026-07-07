@@ -95,6 +95,29 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['give up to {N} rested DON!! card to your Leader', 'give ... to this Leader'],
     examples: [{ cardNumber: 'EB03-014', snippet: "{ fn: 'giveDonControllerLeader', count: 2 }" }],
   },
+  giveDonFromOpponentCostArea: {
+    id: 'giveDonFromOpponentCostArea',
+    summary: 'Give up to N DON!! from the opponent\'s cost area to 1 opponent Character.',
+    params: [
+      { name: 'count', type: 'number', required: true },
+      { name: 'restedOnly', type: 'boolean', required: false, note: 'true when text says "rested DON!!"' },
+      { name: 'optional', type: 'boolean', required: false, note: '"up to"' },
+      { name: 'maxTargets', type: 'number', required: false },
+    ],
+    covers: ['give up to {N} of your opponent\'s rested DON!! cards to 1 of your opponent\'s Characters', 'give up to {N} DON!! card from your opponent\'s cost area to 1 of your opponent\'s Characters'],
+    examples: [{ cardNumber: 'OP15-028', snippet: "{ fn: 'giveDonFromOpponentCostArea', count: 1, optional: true }" }],
+  },
+  giveDonFromPreviousTargetOwnerCostArea: {
+    id: 'giveDonFromPreviousTargetOwnerCostArea',
+    summary: 'After choosing an opponent Character (var t), give rested DON!! from that card owner\'s cost area to their Leader/Character.',
+    params: [
+      { name: 'count', type: 'number', required: true },
+      { name: 'restedOnly', type: 'boolean', required: false },
+      { name: 'optional', type: 'boolean', required: false },
+    ],
+    covers: ['Give up to {N} rested DON!! card to its owner\'s Leader or 1 of their Characters'],
+    examples: [{ cardNumber: 'OP15-017', snippet: "{ fn: 'giveDonFromPreviousTargetOwnerCostArea', count: 1, optional: true, ifPrevious: 'previousSelectedAny' }" }],
+  },
   ko: {
     id: 'ko',
     summary: 'K.O. targets (fires [On K.O.]). Use filters on the target for cost/power/type limits.',
@@ -552,6 +575,17 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['give all of your opponent\'s Characters −{C} cost', 'if <board state>, give all of your opponent\'s Characters −{C} cost'],
     examples: [{ cardNumber: 'EB04-017', snippet: "{ fn: 'addCostAuraOpponentCharacters', amount: -1, duration: 'permanent', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Minks', atLeast: 3 }], sourceCondition: { turn: 'your' } }" }],
   },
+  addCostAuraSameCardInHand: {
+    id: 'addCostAuraSameCardInHand',
+    summary: '"Give this card in your hand −N cost" while the source is on the field (same cardDefinitionId copies in hand).',
+    params: [
+      { name: 'amount', type: 'number', required: true, note: 'negative for "−N cost"' },
+      { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'gate', type: 'AbilityGate[]', required: false, note: 'board gate re-evaluated each read (e.g. Leader power, typed Character power)' },
+    ],
+    covers: ['give this card in your hand −{C} cost', 'if <board state>, give this card in your hand −{C} cost'],
+    examples: [{ cardNumber: 'OP15-013', snippet: "{ fn: 'addCostAuraSameCardInHand', amount: -2, duration: 'permanent', gate: [{ kind: 'selfLeaderPowerAtMost', power: 0 }] }" }],
+  },
   koImmunitySelf: {
     id: 'koImmunitySelf',
     summary: '"This card cannot be K.O.\'d" — scope battle/effect/any, optionally by an attacker category.',
@@ -585,6 +619,22 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     ],
     covers: ['<after choosing a target> ... that Character cannot be K.O.\'d'],
     examples: [{ cardNumber: 'OP02-004', snippet: "{ fn: 'koImmunityChosen', scope: 'any', duration: 'untilStartOfNextTurn' }" }],
+  },
+  registerKoReplacementSelf: {
+    id: 'registerKoReplacementSelf',
+    summary: 'Register optional K.O. replacement on this card ("would be K.O.\'d … instead").',
+    params: [
+      { name: 'scope', type: "'battle' | 'effect' | 'any'", required: false },
+      { name: 'oncePerTurn', type: 'boolean', required: false },
+      { name: 'trashFromHand', type: '{ count, filter? }', required: false },
+      { name: 'trashSelf', type: 'true', required: false },
+      { name: 'duration', type: 'IrDuration', required: true },
+    ],
+    covers: ['If this Character would be K.O.\'d, you may trash 1 card from your hand instead', 'If this Character would be K.O.\'d, you may trash 1 Event from your hand instead', 'If this Character would be K.O.\'d by an effect, you may trash 1 Event or Stage card from your hand instead', 'If this Character would be K.O.\'d, you may trash this Character instead'],
+    examples: [
+      { cardNumber: 'OP15-014', snippet: "{ fn: 'registerKoReplacementSelf', trashFromHand: { count: 1, filter: { category: 'event' } }, duration: 'permanent' }" },
+      { cardNumber: 'EB01-008', snippet: "{ fn: 'registerKoReplacementSelf', scope: 'effect', oncePerTurn: true, trashFromHand: { count: 1, filter: { categories: ['event', 'stage'] } }, duration: 'permanent' }" },
+    ],
   },
 };
 
@@ -620,6 +670,9 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   selfTypedCharacterCount: { id: 'selfTypedCharacterCount', summary: 'You have N or more/less {type} Characters (counts self if same type).', params: [{ name: 'typeIncludes', type: 'string', required: true }, { name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }, { name: 'rested', type: 'boolean', required: false }], covers: ['if you have {N} or more {type} Characters'], excludes: ['combined-OR of two types', '"other than [X]" self exclusion (approximate with atLeast+1)'], examples: [{ cardNumber: 'OP13-009', snippet: "{ kind: 'selfTypedCharacterCount', typeIncludes: 'Mountain Bandits', atLeast: 2 }" }] },
   selfAllCharactersTyped: { id: 'selfAllCharactersTyped', summary: 'The only Characters on your field are {type} type (vacuously true if you have none).', params: [{ name: 'typeIncludes', type: 'string', required: true }], covers: ['if the only Characters on your field are {type} type Characters'], examples: [{ cardNumber: 'OP15-001', snippet: "{ kind: 'selfAllCharactersTyped', typeIncludes: 'East Blue' }" }] },
   selfLeaderPowerAtMost: { id: 'selfLeaderPowerAtMost', summary: 'Your Leader has N power or less (current power, incl. modifiers).', params: [{ name: 'power', type: 'number', required: true }], covers: ['if your Leader has {N} power or less'], examples: [{ cardNumber: 'OP15-004', snippet: "{ kind: 'selfLeaderPowerAtMost', power: 0 }" }] },
+  selfControlsNamedWithPowerAtLeast: { id: 'selfControlsNamedWithPowerAtLeast', summary: 'You control [X] with N power or more (Leader or Character).', params: [{ name: 'name', type: 'string', required: true }, { name: 'power', type: 'number', required: true }], covers: ['If you have [{name}] with {N} power or more'], examples: [{ cardNumber: 'OP15-080', snippet: "{ kind: 'selfControlsNamedWithPowerAtLeast', name: 'Gecko Moria', power: 10000 }" }] },
+  selfTypedCharacterPowerAtLeast: { id: 'selfTypedCharacterPowerAtLeast', summary: 'You have a {type} Character with N current power or more.', params: [{ name: 'typeIncludes', type: 'string', required: true }, { name: 'power', type: 'number', required: true }], covers: ['If you have a {type} type Character with {N} power or more'], examples: [{ cardNumber: 'OP15-102', snippet: "{ kind: 'selfTypedCharacterPowerAtLeast', typeIncludes: 'Sky Island', power: 7000 }" }] },
+  selfOtherNamedCharacterCount: { id: 'selfOtherNamedCharacterCount', summary: 'You have N other [X] Characters (excludes the effect source).', params: [{ name: 'name', type: 'string', required: true }, { name: 'atMost', type: 'number', required: false }, { name: 'atLeast', type: 'number', required: false }], covers: ['there are no other [{name}] cards'], examples: [{ cardNumber: 'OP15-080', snippet: "{ kind: 'selfOtherNamedCharacterCount', name: 'Oars', atMost: 0 }" }] },
   selfTrashMatching: { id: 'selfTrashMatching', summary: 'N or more/less Events/{type} cards in your trash.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }, { name: 'category', type: 'CardCategory', required: false }, { name: 'typeIncludes', type: 'string', required: false }], covers: ['If you have {N} or more Events in your trash'], examples: [{ cardNumber: 'OP12-066', snippet: "{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }" }] },
   opponentRestedCharacterCount: { id: 'opponentRestedCharacterCount', summary: 'Opponent has N or more/less rested Characters.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If your opponent has {N} or more rested Characters'], examples: [{ cardNumber: 'OP01-032', snippet: "{ kind: 'opponentRestedCharacterCount', atLeast: 2 }" }] },
   selfGivenDonCount: { id: 'selfGivenDonCount', summary: 'You have N or more given DON!! (attached to your Leader/Characters).', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have a total of {N} or more given DON!! cards'], examples: [{ cardNumber: 'OP13-112', snippet: "{ kind: 'selfGivenDonCount', atLeast: 2 }" }] },

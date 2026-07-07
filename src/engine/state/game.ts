@@ -6,7 +6,7 @@
  * GameState must be fully JSON-serializable (project ground rule) — no
  * class instances, Map/Set, functions, or undefined values inside it.
  */
-import type { CardInstance } from './card';
+import type { CardCategory, CardInstance } from './card';
 import type { PlayerState } from './player';
 import type { GameLogEntry } from '../logs/logEntry';
 import type { PendingChoice } from '../events/pendingChoice';
@@ -116,6 +116,11 @@ export interface PowerAuraGroup {
   charactersOnly?: boolean;
   /** Target the OPPONENT's Characters instead of the controller's — for "give all of your opponent's Characters -N". */
   opponentCharacters?: boolean;
+  /**
+   * Copies of the SOURCE card in the modifier owner's hand ("give this card in your hand −N cost").
+   * Requires the source to still be on the field; resolved at read time.
+   */
+  controllerSameDefinitionInHand?: true;
 }
 
 /**
@@ -238,6 +243,32 @@ export interface ContinuousKoImmunityModifier {
   condition?: ContinuousPowerCondition;
 }
 
+/** Hand filter for a K.O. replacement that trashes from hand. */
+export interface KoReplacementHandFilter {
+  category?: Exclude<CardCategory, 'don' | 'leader'>;
+  /** Match if card category is any of these (e.g. Event or Stage). */
+  categories?: Exclude<CardCategory, 'don' | 'leader'>[];
+  typeIncludes?: string;
+  /** Current (live) power, not printed base power. */
+  maxCurrentPower?: number;
+}
+
+export type KoReplacementAction =
+  | { kind: 'trashFromHand'; count: number; filter?: KoReplacementHandFilter }
+  | { kind: 'trashSelf' };
+
+/**
+ * Optional K.O. replacement registered on a Character ("would be K.O.'d … instead").
+ * Checked before every effect or battle K.O. attempt on `appliesToInstanceId`.
+ */
+export interface ContinuousKoReplacementModifier {
+  appliesToInstanceId: string;
+  scope: 'battle' | 'effect' | 'any';
+  oncePerTurn?: boolean;
+  condition?: ContinuousPowerCondition;
+  action: KoReplacementAction;
+}
+
 export interface ContinuousEffectRecord {
   id: string;
   sourceInstanceId: string;
@@ -257,6 +288,8 @@ export interface ContinuousEffectRecord {
   keywordModifier?: ContinuousKeywordModifier;
   /** Structured "cannot be K.O.'d" grant. Omitted for unrelated continuous effects. */
   koImmunityModifier?: ContinuousKoImmunityModifier;
+  /** Structured optional K.O. replacement. Omitted for unrelated continuous effects. */
+  koReplacementModifier?: ContinuousKoReplacementModifier;
 }
 
 export interface GameState {

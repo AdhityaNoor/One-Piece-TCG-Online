@@ -69,6 +69,8 @@ export interface TargetFilter {
   excludeSelf?: boolean;
   /** Target must have at least N DON!! cards given (attached). */
   minDonAttached?: number;
+  /** When set, maxCost is resolved as the opponent's current Life count at selection time. */
+  maxCostFromOpponentLife?: boolean;
 }
 
 export type TargetSpec =
@@ -150,19 +152,27 @@ export type AbilityFunction =
   | { fn: 'addCostAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // Continuous cost aura over ALL the opponent's Characters ("give all of your opponent's Characters -N cost").
   | { fn: 'addCostAuraOpponentCharacters'; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
+  // "Give this card in your hand −N cost" while the source is on the field (same cardDefinitionId copies in hand).
+  | { fn: 'addCostAuraSameCardInHand'; amount: number; duration: IrDuration; gate?: AbilityGate[] }
   // "This card cannot be K.O.'d" — scope 'battle' (battle K.O. only) or 'any'.
   // `attackerCategory` optionally limits a battle immunity to a given attacker ("by Leaders").
   | { fn: 'koImmunitySelf'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character' }
   | { fn: 'koImmunityControllerCharactersAll'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition }
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
   | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
+  // Register optional K.O. replacement on this card ("would be K.O.'d … instead").
+  | { fn: 'registerKoReplacementSelf'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number } }; trashSelf?: true; duration: IrDuration }
   // Trash exactly `count` cards of a given type from your hand (used to pay a typed hand cost).
   | { fn: 'trashTypeFromHand'; count: number; filter: SearchFilter; optional?: boolean }
   // K.O. ALL Characters (both players) matching a cost/power filter, no target choice
   // ("K.O. all Characters with a cost of 1 or less").
   | { fn: 'koAllCharacters'; filter?: { maxCost?: number; maxPower?: number } }
   // Give up to `count` rested DON!! to the controller's Leader (no target choice) — "give ... to this Leader".
-  | { fn: 'giveDonControllerLeader'; count: number };
+  | { fn: 'giveDonControllerLeader'; count: number }
+  // Give up to `count` DON!! from the opponent's cost area to 1 opponent Character (`restedOnly` when text says "rested DON!!").
+  | { fn: 'giveDonFromOpponentCostArea'; count: number; restedOnly?: boolean; optional?: boolean; maxTargets?: number }
+  // After choosing an opponent Character (var `t`), give rested DON!! from that card's owner's cost area to their Leader/Character.
+  | { fn: 'giveDonFromPreviousTargetOwnerCostArea'; count: number; restedOnly?: boolean; optional?: boolean };
 
 export type SequencedAbilityFunction = AbilityFunction & {
   /** Gate this function on the prior function result, for "if you do" wording. */

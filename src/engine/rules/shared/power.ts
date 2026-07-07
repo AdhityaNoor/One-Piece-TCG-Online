@@ -26,9 +26,21 @@ function typeIncludes(types: string[], required: string): boolean {
 }
 
 /** True if `instanceId` is in the aura's dynamic target set (owner's Leader/Characters, optionally type-filtered). */
+function sourceOnField(sourceInstanceId: string, state: GameState): boolean {
+  const source = state.cardsById[sourceInstanceId];
+  if (!source) return false;
+  return source.currentZone === 'leaderArea' || source.currentZone === 'characterArea' || source.currentZone === 'stageArea';
+}
+
 function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
   const target = state.cardsById[instanceId];
   if (!target) return false;
+  if (group.controllerSameDefinitionInHand) {
+    if (target.currentZone !== 'hand' || target.controllerId !== record.ownerId) return false;
+    const source = state.cardsById[record.sourceInstanceId];
+    if (!source || !sourceOnField(record.sourceInstanceId, state)) return false;
+    return target.cardDefinitionId === source.cardDefinitionId;
+  }
   if (group.opponentCharacters) {
     if (target.currentZone !== 'characterArea') return false;
     if (target.controllerId === record.ownerId) return false;

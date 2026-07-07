@@ -387,6 +387,33 @@ describe('template factories - structural correctness', () => {
     });
   });
 
+  it('chooseOne branches may contain suspending ops like playFromHand', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'activateMain',
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Choose one:',
+        options: [
+          {
+            label: 'drawPlay',
+            functions: [
+              { fn: 'draw', amount: 2 },
+              { fn: 'trashFromHand', count: 1 },
+              { fn: 'playFromHand', filter: { category: 'character', maxCost: 4 } },
+            ],
+          },
+          { label: 'returnStage', functions: [{ fn: 'moveCards', from: { zone: 'stages', player: 'any' }, to: { zone: 'hand', player: 'owner' }, optional: true }] },
+        ],
+      }],
+    });
+    const chooseOp = p.abilities[0].ops[0];
+    expect(chooseOp).toMatchObject({ op: 'chooseOption', chooser: 'controller' });
+    if (chooseOp.op !== 'chooseOption') throw new Error('expected chooseOption');
+    expect(chooseOp.options[0].ops.some((op) => op.op === 'chooseTargets')).toBe(true);
+    expect(chooseOp.options[0].ops.some((op) => op.op === 'playFromHand')).toBe(true);
+  });
+
   it('addKeywordSelf produces a conditional keyword grant', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onEnterPlay',

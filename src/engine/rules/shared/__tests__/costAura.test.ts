@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ContinuousEffectRecord, ContinuousPowerCondition, GameState, PowerAuraGroup, SourceStateCondition } from '../../../state/game';
 import { computeCurrentCost } from '../power';
-import { buildBaseRig, makeCharacterDef, putCharacterInPlay } from './testRig';
+import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putInHand } from './testRig';
 
 /** A continuous cost aura over a dynamic group, owned by p1 (source = `sourceInstanceId`). */
 function costAura(
@@ -97,5 +97,50 @@ describe('continuous cost aura (addCostAura)', () => {
     const state: GameState = { ...opp.rig.state, continuousEffects: [costAura(group, -1, m1.instanceId, { turn: 'your' }, gate)] };
 
     expect(computeCurrentCost(opp.rig.defs, state, opp.instanceId)).toBe(4); // gate holds but not your turn -> unaffected
+  });
+
+  it('applies in-hand −cost to same-definition copies while the source is on the field', () => {
+    const sharedDef = makeCharacterDef({ baseCost: 5, cardNumber: 'OP15-013', name: 'Pincers' });
+    const base = buildBaseRig({ activePlayerId: 'p1' });
+    const field = putCharacterInPlay(base, 'p1', sharedDef);
+    const handCopy = putInHand(field.rig, 'p1', sharedDef);
+    const otherHand = putInHand(handCopy.rig, 'p1', makeCharacterDef({ baseCost: 4, cardNumber: 'OTHER' }));
+
+    const group: PowerAuraGroup = { controllerSameDefinitionInHand: true };
+    const gate: ContinuousPowerCondition = { gate: [{ kind: 'selfLeaderPowerAtMost', power: 0 }] };
+    const state: GameState = {
+      ...otherHand.rig.state,
+      continuousEffects: [costAura(group, -2, field.instanceId, undefined, gate)],
+      players: {
+        ...otherHand.rig.state.players,
+        p1: {
+          ...otherHand.rig.state.players.p1,
+          leaderInstanceId: otherHand.rig.state.players.p1.leaderInstanceId,
+        },
+      },
+    };
+    // Leader at 5000 base -> gate not met.
+    expect(computeCurrentCost(otherHand.rig.defs, state, handCopy.instanceId)).toBe(5);
+    expect(computeCurrentCost(otherHand.rig.defs, state, otherHand.instanceId)).toBe(4);
+
+    // Zero out Leader power via continuous effect on leader.
+    const leaderId = state.players.p1.leaderInstanceId!;
+    const debuffed: GameState = {
+      ...state,
+      continuousEffects: [
+        ...state.continuousEffects,
+        {
+          id: 'leader-zero',
+          sourceInstanceId: field.instanceId,
+          ownerId: 'p1',
+          duration: 'permanent',
+          description: 'leader 0',
+          powerModifier: { appliesToInstanceId: leaderId, amount: -5000 },
+        },
+      ],
+    };
+    expect(computeCurrentCost(otherHand.rig.defs, debuffed, handCopy.instanceId)).toBe(3); // 5 - 2
+    expect(computeCurrentCost(otherHand.rig.defs, debuffed, field.instanceId)).toBe(5); // field copy unaffected
+    expect(computeCurrentCost(otherHand.rig.defs, debuffed, otherHand.instanceId)).toBe(4); // different card unaffected
   });
 });

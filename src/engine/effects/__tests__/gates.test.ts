@@ -88,4 +88,29 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfLeaderPowerAtMost', power: 5000 }], rig.state, rig.defs, 'p1')).toBe(true);
     expect(evaluateGates([{ kind: 'selfLeaderPowerAtMost', power: 4999 }], rig.state, rig.defs, 'p1')).toBe(false);
   });
+
+  it('checks selfTypedCharacterPowerAtLeast against current Character power and type', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Sky Island'], basePower: 6000 })));
+    expect(evaluateGates([{ kind: 'selfTypedCharacterPowerAtLeast', typeIncludes: 'Sky Island', power: 7000 }], rig.state, rig.defs, 'p1')).toBe(false);
+
+    const charId = rig.state.players.p1.characterArea.cardIds[0];
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        continuousEffects: [
+          {
+            id: 'boost',
+            sourceInstanceId: charId,
+            ownerId: 'p1',
+            duration: 'permanent',
+            description: '+1000',
+            powerModifier: { appliesToInstanceId: charId, amount: 1000 },
+          },
+        ],
+      },
+    };
+    expect(evaluateGates([{ kind: 'selfTypedCharacterPowerAtLeast', typeIncludes: 'Sky Island', power: 7000 }], rig.state, rig.defs, 'p1')).toBe(true);
+  });
 });

@@ -37,24 +37,49 @@ export interface ChoiceConstraints {
   options?: { label: string }[];
 }
 
-/**
- * An outstanding decision the engine is blocked on. Resolved exclusively via
- * a RESOLVE_PENDING_CHOICE action (see actions/action.ts) carrying this id.
- */
-export interface PendingChoice {
-  id: string;
-  playerId: string; // whose decision this is — not necessarily the turn player (e.g. Block Step)
-  kind: ChoiceKind;
-  prompt: string;
-  constraints: ChoiceConstraints;
+export interface KoReplacementResumeState {
+  phase: 'confirm' | 'payCost';
+  targetInstanceId: string;
+  recordId: string;
+  cause: 'battle' | 'effect';
+  actorPlayerId: string;
+  /** Resume a suspended IR program after the K.O. (or replacement) resolves. */
+  ir?: {
+    sourceInstanceId: string;
+    abilityIndex: number;
+    opIndex: number;
+    bindings: Record<string, string[]>;
+    branchIndex?: number;
+    branchOpIndex?: number;
+    remainingKoTargetIds?: string[];
+  };
+  /** Battle damage step paused mid-resolution for a replacement prompt. */
+  battle?: {
+    causedByActionId: string | null;
+    attackerId: string;
+    attackerPlayerId: string;
+    defendingPlayerId: string;
+    priorLogCount: number;
+    onBattleLogLen: number;
+    triggerPending: PendingChoice[];
+    onBattlePending: PendingChoice[];
+  };
+}
+
   /** The card or rule that generated this choice, for log/UI attribution. */
   sourceInstanceId: string | null;
   sourceEffectId: string | null;
   /**
    * Serializable resume point for an interpreter-suspended EffectProgram (set
-   * when sourceEffectId === 'ir'). Lets RESOLVE_PENDING_CHOICE continue the
-   * program from where the chooseTargets op suspended it, with bindings intact.
-   * Omitted for rule-level choices (e.g. character-area overflow).
+   * when sourceEffectId === 'ir') or K.O. replacement (sourceEffectId === 'koReplacement').
    */
-  resumeState?: { abilityIndex: number; opIndex: number; bindings: Record<string, string[]> };
+  resumeState?: {
+    abilityIndex: number;
+    /** Parent chooseOption index when executing a modal branch; otherwise the suspending op index. */
+    opIndex: number;
+    bindings: Record<string, string[]>;
+    branchIndex?: number;
+    branchOpIndex?: number;
+    koReplacement?: KoReplacementResumeState;
+  };
 }

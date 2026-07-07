@@ -4,7 +4,7 @@
  * standard ActionExecuteResult via finish(). Each primitive mirrors the
  * canonical engine implementation so behavior can't drift.
  */
-import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousKeyword, ContinuousPowerCondition, GameState, PowerAuraGroup, SourceStateCondition } from '../state/game';
+import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousKeyword, ContinuousKoReplacementModifier, ContinuousPowerCondition, GameState, PowerAuraGroup, SourceStateCondition } from '../state/game';
 import type { CardDefinition, CardInstance } from '../state/card';
 import type { PendingChoice } from '../events/pendingChoice';
 import { mintRuntimeInstanceId } from '../rules/shared/mintInstance';
@@ -14,6 +14,7 @@ import type { GameLogEntry } from '../logs/logEntry';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 import { getOpponentId } from '../rules/shared/players';
 import { computeCurrentCost, computeCurrentPower, isKoImmune } from '../rules/shared/power';
+import { koReplacementDescription } from '../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { createSeededRng } from '../rng/seededRng';
 import type { EffectContext } from './effectTemplate';
@@ -493,6 +494,32 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  addContinuousKoReplacement(spec: {
+    appliesToInstanceId: string;
+    modifier: Omit<ContinuousKoReplacementModifier, 'appliesToInstanceId'>;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const mod: ContinuousKoReplacementModifier = { appliesToInstanceId: spec.appliesToInstanceId, ...spec.modifier };
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? koReplacementDescription(mod),
+      koReplacementModifier: mod,
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} registered on ${spec.appliesToInstanceId}.`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
   preventBlockers(spec: {
     appliesToAttackerInstanceId: string;
     duration: ContinuousEffectDuration;
@@ -546,31 +573,43 @@ export class EffectContextImpl implements EffectContext {
   }
 
   giveDon(targetInstanceId: string, count: number): void {
-    const controller = this.working.players[this.controllerId];
+    this.giveDonFromCostArea(targetInstanceId, count, this.controllerId, true);
+  }
+
+  /** Attach up to `count` un-attached DON!! from `donOwnerId`'s cost area onto `targetInstanceId`. */
+  giveDonFromCostArea(targetInstanceId: string, count: number, donOwnerId: string, restedOnly: boolean): void {
+    const player = this.working.players[donOwnerId];
+    if (!player) return;
     const attached = new Set<string>();
     for (const id of Object.keys(this.working.cardsById)) {
       for (const donId of this.working.cardsById[id].donAttached) attached.add(donId);
     }
-    const available = controller.costArea.cardIds.filter((id) => !attached.has(id) && this.working.cardsById[id]?.donRested === true);
+    const available = player.costArea.cardIds.filter((id) => {
+      if (attached.has(id)) return false;
+      const don = this.working.cardsById[id];
+      if (!don) return false;
+      return restedOnly ? don.donRested === true : true;
+    });
     const toGive = available.slice(0, Math.max(0, count));
     if (toGive.length === 0) return;
 
     const cardsById = { ...this.working.cardsById };
     const target = cardsById[targetInstanceId];
+    if (!target) return;
     cardsById[targetInstanceId] = { ...target, donAttached: [...target.donAttached, ...toGive] };
     this.working = { ...this.working, cardsById };
 
     this.logger.push({
       actorPlayerId: this.controllerId,
       type: 'DON_GIVEN',
-      message: `gave ${toGive.length} rested DON!! to ${targetInstanceId} (+${toGive.length * 1000} power, 6-5-5).`,
-      data: { count: toGive.length, targetInstanceId, donInstanceIds: toGive },
+      message: `gave ${toGive.length} DON!! from ${donOwnerId}'s cost area to ${targetInstanceId} (+${toGive.length * 1000} power, 6-5-5).`,
+      data: { count: toGive.length, targetInstanceId, donInstanceIds: toGive, donOwnerId, restedOnly },
       relatedCardInstanceIds: [targetInstanceId, ...toGive],
       visibility: 'public',
     });
   }
 
-  ko(targetInstanceId: string): void {
+  koApply(targetInstanceId: string): void {
     const inst = this.working.cardsById[targetInstanceId];
     if (!inst) return;
     // "Cannot be K.O.'d" (scope 'any', e.g. ST05-017 rider): an effect K.O. is prevented.
@@ -589,13 +628,13 @@ export class EffectContextImpl implements EffectContext {
     const newOwner = {
       ...owner,
       characterArea: removeFromZone(owner.characterArea, targetInstanceId),
+      stageArea: removeFromZone(owner.stageArea, targetInstanceId),
       trash: addToZoneTop(owner.trash, targetInstanceId),
     };
     this.working = {
       ...this.working,
       players: { ...this.working.players, [inst.ownerId]: newOwner },
       cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, currentZone: 'trash', donAttached: [] } },
-      // Leave-play cleanup: drop continuous effects this card was the source of (3-1-6).
       continuousEffects: this.working.continuousEffects.filter((ce) => ce.sourceInstanceId !== targetInstanceId),
     };
     this.logger.push({
@@ -606,7 +645,11 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [targetInstanceId],
       visibility: 'public',
     });
-    this.koed.push(targetInstanceId); // cascade [On K.O.] after this resolution finishes
+    this.koed.push(targetInstanceId);
+  }
+
+  ko(targetInstanceId: string): void {
+    this.koApply(targetInstanceId);
   }
 
   /** Drain and return the ids rested via rest() this resolution (for onRested cascade). */

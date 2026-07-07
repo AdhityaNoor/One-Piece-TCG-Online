@@ -12,6 +12,7 @@ import type { GameState } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
+import { buildKoReplacementConfirmChoice, findKoReplacementRecord } from '../rules/shared/koAttempt';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates } from './gates';
 import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
@@ -217,6 +218,11 @@ function applyDonAttachedFilter(ids: string[], minDonAttached: number | undefine
   return ids.filter((id) => (state.cardsById[id]?.donAttached.length ?? 0) >= minDonAttached);
 }
 
+function effectiveMaxCost(sel: { maxCost?: number; maxCostFromOpponentLife?: boolean }, ctx: EffectContextImpl): number | undefined {
+  if (sel.maxCostFromOpponentLife) return ctx.state().players[ctx.opponentId].lifeArea.cardIds.length;
+  return sel.maxCost;
+}
+
 function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record<string, string[]>): string[] {
   switch (sel.sel) {
     case 'self':
@@ -264,6 +270,21 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
       return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === false);
     }
+    case 'opponentRestedDon': {
+      const state = ctx.state();
+      const player = state.players[ctx.opponentId];
+      const attached = new Set<string>();
+      for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
+      return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === true);
+    }
+    case 'ownerLeaderOrCharactersOfVar': {
+      const refId = bindings[sel.varName]?.[0];
+      if (!refId) return [];
+      const ownerId = ctx.state().cardsById[refId]?.ownerId;
+      if (!ownerId) return [];
+      const p = ctx.state().players[ownerId];
+      return [p.leaderInstanceId, ...p.characterArea.cardIds].filter((id): id is string => id != null);
+    }
     case 'controllerLifeTop': {
       const life = ctx.state().players[ctx.controllerId].lifeArea.cardIds;
       return life.length > 0 ? [life[0]] : [];
@@ -296,7 +317,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     }
     case 'opponentCharacters': {
       let ids = ctx.opponentCharacterIds();
-      if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      const maxCost = effectiveMaxCost(sel, ctx);
+      if (maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= maxCost);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       ids = applyBaseFilters(ids, sel, ctx);
@@ -408,10 +430,33 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       for (const id of ids) ctx.giveDon(id, op.count);
       return { selectedIds: ids, movedIds: ids };
     }
+    case 'giveDonFromCostArea': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      let donOwnerId = ctx.controllerId;
+      if (op.donOwner === 'opponent') donOwnerId = ctx.opponentId;
+      else if (typeof op.donOwner === 'object') {
+        const refId = bindings[op.donOwner.fromVar]?.[0];
+        donOwnerId = refId ? (ctx.state().cardsById[refId]?.ownerId ?? ctx.controllerId) : ctx.controllerId;
+      }
+      for (const id of ids) ctx.giveDonFromCostArea(id, op.count, donOwnerId, op.restedOnly === true);
+      return { selectedIds: ids, movedIds: ids };
+    }
     case 'ko': {
       const ids = resolveSelector(op.target, ctx, bindings);
-      for (const id of ids) ctx.ko(id);
+      for (const id of ids) ctx.koApply(id);
       return { selectedIds: ids, movedIds: ids };
+    }
+    case 'registerKoReplacement': {
+      ctx.addContinuousKoReplacement({
+        appliesToInstanceId: op.appliesTo === 'self' ? ctx.sourceInstanceId : op.appliesToInstanceId,
+        modifier: {
+          scope: op.scope,
+          ...(op.oncePerTurn ? { oncePerTurn: true } : {}),
+          action: op.action,
+        },
+        duration: op.duration,
+      });
+      return { selectedIds: [], movedIds: [] };
     }
     case 'rest': {
       const ids = resolveSelector(op.target, ctx, bindings);
@@ -494,55 +539,80 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
   }
 }
 
-/** Runs ops from `startOp`. Returns true if it suspended on a chooseTargets op. */
-function runOps(
-  ability: Ability,
-  abilityIndex: number,
-  startOp: number,
+/** Coordinates for resuming a suspended op list (main ability ops or a chooseOption branch). */
+interface OpRunCoords {
+  abilityIndex: number;
+  /** chooseOption index in ability.ops when in a branch; otherwise unused for suspend coords. */
+  opIndex: number;
+  branchIndex?: number;
+}
+
+function resumeStateForSuspend(coords: OpRunCoords, branchOpIndex: number, bindings: Record<string, string[]>): PendingChoice['resumeState'] {
+  if (coords.branchIndex !== undefined) {
+    return { abilityIndex: coords.abilityIndex, opIndex: coords.opIndex, branchIndex: coords.branchIndex, branchOpIndex, bindings };
+  }
+  return { abilityIndex: coords.abilityIndex, opIndex: branchOpIndex, bindings };
+}
+
+function suspendedOpAt(ability: Ability, rs: NonNullable<PendingChoice['resumeState']>): EffectOp | undefined {
+  const parent = ability.ops[rs.opIndex];
+  if (rs.branchIndex !== undefined && parent?.op === 'chooseOption') {
+    return parent.options[rs.branchIndex]?.ops[rs.branchOpIndex ?? 0];
+  }
+  return ability.ops[rs.opIndex];
+}
+
+/** Runs an op list; returns whether it suspended and the latest bindings. */
+function runOpList(
+  ops: EffectOp[],
+  coords: OpRunCoords,
+  startOpIndex: number,
   bindings: Record<string, string[]>,
   ctx: EffectContextImpl,
   defs: CardDefinitionLookup,
-): boolean {
+): { suspended: boolean; bindings: Record<string, string[]> } {
   let workingBindings = bindings;
-  for (let i = startOp; i < ability.ops.length; i++) {
-    const op = ability.ops[i];
+  for (let i = startOpIndex; i < ops.length; i++) {
+    const op = ops[i];
     if (!conditionMet(op, workingBindings, ctx, defs)) continue;
     if (op.op === 'chooseTargets') {
       const candidates = resolveSelector(op.from, ctx, workingBindings);
       const chooserId = op.chooser === 'opponent' ? ctx.opponentId : ctx.controllerId;
-      const choice: PendingChoice = {
-        id: `${ctx.sourceInstanceId}__ir-${abilityIndex}-${i}`,
+      ctx.emitChoice({
+        id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
         playerId: chooserId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
         constraints: { min: op.min, max: op.max, candidateInstanceIds: candidates },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
-        resumeState: { abilityIndex, opIndex: i, bindings: workingBindings },
-      };
-      ctx.emitChoice(choice);
-      return true;
+        resumeState: resumeStateForSuspend(coords, i, workingBindings),
+      });
+      return { suspended: true, bindings: workingBindings };
     }
     if (op.op === 'searchTopDeck') {
       const looked = ctx.topOfDeck(ctx.controllerId, op.look);
-      if (looked.length === 0) continue; // empty deck — nothing to look at, skip
+      if (looked.length === 0) continue;
       const eligible = op.destination === 'deckTopOrBottom' ? looked : searchEligible(looked, op.filter, ctx);
       const remainder = op.remainder ?? 'bottom';
       const max = op.destination === 'deckTopOrBottom' ? looked.length : op.pick;
-      const choice: PendingChoice = {
-        id: `${ctx.sourceInstanceId}__ir-${abilityIndex}-${i}`,
+      ctx.emitChoice({
+        id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
         playerId: ctx.controllerId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
         constraints: { min: 0, max, candidateInstanceIds: eligible, visibleInstanceIds: looked },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
-        // Stash the full looked-at set on the resume point so resolveSearch can
-        // send the non-chosen remainder to the bottom of the deck.
-        resumeState: { abilityIndex, opIndex: i, bindings: { ...workingBindings, __looked: looked, __remainder: [remainder], __reveal: [op.reveal ? 'true' : 'false'], __destination: [op.destination] } },
-      };
-      ctx.emitChoice(choice);
-      return true;
+        resumeState: resumeStateForSuspend(coords, i, {
+          ...workingBindings,
+          __looked: looked,
+          __remainder: [remainder],
+          __reveal: [op.reveal ? 'true' : 'false'],
+          __destination: [op.destination],
+        }),
+      });
+      return { suspended: true, bindings: workingBindings };
     }
     if (op.op === 'playFromDeck') {
       const deckIds = ctx.controllerDeckIds();
@@ -553,18 +623,17 @@ function runOps(
         workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
         continue;
       }
-      const choice: PendingChoice = {
-        id: `${ctx.sourceInstanceId}__ir-${abilityIndex}-${i}`,
+      ctx.emitChoice({
+        id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
         playerId: ctx.controllerId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
         constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: deckIds },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
-        resumeState: { abilityIndex, opIndex: i, bindings: workingBindings },
-      };
-      ctx.emitChoice(choice);
-      return true;
+        resumeState: resumeStateForSuspend(coords, i, workingBindings),
+      });
+      return { suspended: true, bindings: workingBindings };
     }
     if (op.op === 'peekLifeThenPlace') {
       const candidates = resolveSelector(op.from, ctx, workingBindings);
@@ -572,18 +641,17 @@ function runOps(
         workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
         continue;
       }
-      const choice: PendingChoice = {
-        id: `${ctx.sourceInstanceId}__ir-${abilityIndex}-${i}`,
+      ctx.emitChoice({
+        id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
         playerId: ctx.controllerId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
         constraints: { min: 0, max: 1, candidateInstanceIds: candidates, visibleInstanceIds: candidates },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
-        resumeState: { abilityIndex, opIndex: i, bindings: workingBindings },
-      };
-      ctx.emitChoice(choice);
-      return true;
+        resumeState: resumeStateForSuspend(coords, i, workingBindings),
+      });
+      return { suspended: true, bindings: workingBindings };
     }
     if (op.op === 'chooseLifeToHand' || op.op === 'chooseLifeToTrash') {
       const options = lifePositionOptions(ctx, op.position, op.optional);
@@ -591,38 +659,33 @@ function runOps(
         workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
         continue;
       }
-      const choice: PendingChoice = {
-        id: `${ctx.sourceInstanceId}__ir-${abilityIndex}-${i}`,
+      ctx.emitChoice({
+        id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
         playerId: ctx.controllerId,
         kind: 'SELECT_OPTION',
         prompt: op.prompt,
         constraints: { min: 1, max: 1, options: options.map(({ label }) => ({ label })) },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
-        resumeState: { abilityIndex, opIndex: i, bindings: workingBindings },
-      };
-      ctx.emitChoice(choice);
-      return true;
+        resumeState: resumeStateForSuspend(coords, i, workingBindings),
+      });
+      return { suspended: true, bindings: workingBindings };
     }
     if (op.op === 'chooseOption') {
       const chooserId = op.chooser === 'opponent' ? ctx.opponentId : ctx.controllerId;
-      const choice: PendingChoice = {
-        id: `${ctx.sourceInstanceId}__ir-${abilityIndex}-${i}`,
+      ctx.emitChoice({
+        id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
         playerId: chooserId,
         kind: 'SELECT_OPTION',
         prompt: op.prompt,
         constraints: { min: 1, max: 1, options: op.options.map((option) => ({ label: option.label })) },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
-        resumeState: { abilityIndex, opIndex: i, bindings: workingBindings },
-      };
-      ctx.emitChoice(choice);
-      return true;
+        resumeState: resumeStateForSuspend(coords, i, workingBindings),
+      });
+      return { suspended: true, bindings: workingBindings };
     }
     if (op.op === 'revealTopDeck') {
-      // Reveal the top card (public), leave it in place, and record whether it
-      // matched the predicate so the branch ops (ifPrevious: 'previousRevealMatched')
-      // run only on a match. __lastRevealMatched persists across later ops/suspends.
       const [topId] = ctx.topOfDeck(ctx.controllerId, 1);
       let matched = false;
       if (topId) {
@@ -632,9 +695,92 @@ function runOps(
       workingBindings = { ...withResultBindings(workingBindings, EMPTY_RESULT), __lastRevealMatched: boolBinding(matched) };
       continue;
     }
+    if (op.op === 'ko') {
+      const ids = resolveSelector(op.target, ctx, workingBindings);
+      for (let ki = 0; ki < ids.length; ki++) {
+        const id = ids[ki];
+        const record = findKoReplacementRecord(ctx.state(), id, 'effect', defs);
+        if (record) {
+          const suspendOpIndex = coords.branchIndex !== undefined ? coords.opIndex : i;
+          const irResume = {
+            sourceInstanceId: ctx.sourceInstanceId,
+            abilityIndex: coords.abilityIndex,
+            opIndex: suspendOpIndex,
+            bindings: workingBindings,
+            ...(coords.branchIndex !== undefined ? { branchIndex: coords.branchIndex, branchOpIndex: i } : {}),
+            remainingKoTargetIds: ids.slice(ki + 1),
+          };
+          ctx.emitChoice(
+            buildKoReplacementConfirmChoice(ctx.state(), id, record, `${ctx.sourceInstanceId}__ko-${coords.abilityIndex}-${i}-${id}`, {
+              abilityIndex: coords.abilityIndex,
+              opIndex: suspendOpIndex,
+              bindings: workingBindings,
+              ...(coords.branchIndex !== undefined ? { branchIndex: coords.branchIndex, branchOpIndex: i } : {}),
+              koReplacement: {
+                phase: 'confirm',
+                targetInstanceId: id,
+                recordId: record.id,
+                cause: 'effect',
+                actorPlayerId: ctx.controllerId,
+                ir: irResume,
+              },
+            }),
+          );
+          return { suspended: true, bindings: workingBindings };
+        }
+        ctx.koApply(id);
+      }
+      workingBindings = withResultBindings(workingBindings, { selectedIds: ids, movedIds: ids });
+      continue;
+    }
     workingBindings = withResultBindings(workingBindings, applyOp(op, ctx, workingBindings));
   }
-  return false;
+  return { suspended: false, bindings: workingBindings };
+}
+
+function continueAfterResolvedOp(
+  program: EffectProgram,
+  ability: Ability,
+  rs: NonNullable<PendingChoice['resumeState']>,
+  nextBindings: Record<string, string[]>,
+  ctx: EffectContextImpl,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+  registry: EffectTemplateRegistry,
+): ActionExecuteResult {
+  if (rs.branchIndex !== undefined) {
+    const chooseOp = ability.ops[rs.opIndex];
+    if (chooseOp?.op !== 'chooseOption') return ctx.finish();
+    const branch = chooseOp.options[rs.branchIndex];
+    if (!branch) return ctx.finish();
+    const branchResult = runOpList(
+      branch.ops,
+      { abilityIndex: rs.abilityIndex, opIndex: rs.opIndex, branchIndex: rs.branchIndex },
+      (rs.branchOpIndex ?? 0) + 1,
+      nextBindings,
+      ctx,
+      defs,
+    );
+    if (branchResult.suspended) return finishWithCascade(ctx, defs, actionId, registry);
+    const mainSuspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, branchResult.bindings, ctx, defs);
+    if (!mainSuspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
+    return finishWithCascade(ctx, defs, actionId, registry);
+  }
+  const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, nextBindings, ctx, defs);
+  if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
+  return finishWithCascade(ctx, defs, actionId, registry);
+}
+
+/** Runs ops from `startOp`. Returns true if it suspended on a chooseTargets op. */
+function runOps(
+  ability: Ability,
+  abilityIndex: number,
+  startOp: number,
+  bindings: Record<string, string[]>,
+  ctx: EffectContextImpl,
+  defs: CardDefinitionLookup,
+): boolean {
+  return runOpList(ability.ops, { abilityIndex, opIndex: startOp }, startOp, bindings, ctx, defs).suspended;
 }
 
 function runFollowingAbilities(
@@ -762,8 +908,15 @@ export function resumeProgram(
   }
 
   const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
-  const op = ability.ops[rs.opIndex];
+  const op = suspendedOpAt(ability, rs);
   if (!op || (op.op !== 'chooseTargets' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption')) return noop(stateWithoutChoice);
+
+  const preserveBranch = (bindings: Record<string, string[]>): PendingChoice['resumeState'] => ({
+    abilityIndex: rs.abilityIndex,
+    opIndex: rs.opIndex,
+    ...(rs.branchIndex !== undefined ? { branchIndex: rs.branchIndex, branchOpIndex: rs.branchOpIndex } : {}),
+    bindings,
+  });
 
   if (op.op === 'searchTopDeck') {
     const selection = Array.isArray(response) ? response : [];
@@ -788,7 +941,7 @@ export function resumeProgram(
             constraints: { min: rest.length, max: rest.length, candidateInstanceIds: rest },
             sourceInstanceId: choice.sourceInstanceId,
             sourceEffectId: 'ir',
-            resumeState: { abilityIndex: rs.abilityIndex, opIndex: rs.opIndex, bindings: { ...rs.bindings, __searchTopOrder: selection } },
+            resumeState: preserveBranch({ ...rs.bindings, __searchTopOrder: selection }),
           };
           ctx.emitChoice(bottomOrderChoice);
           return ctx.finish();
@@ -798,9 +951,7 @@ export function resumeProgram(
         ctx.searchResolveTopOrBottom(ctx.controllerId, looked, topOrder, selection);
       }
       const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: topOrder, movedIds: looked });
-      const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterSearchBindings, ctx, defs);
-      if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
-      return finishWithCascade(ctx, defs, actionId, registry);
+      return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
     }
     if (remainder === 'bottom' && !rs.bindings.__searchChosen) {
       const chosenSet = new Set(selection);
@@ -814,7 +965,7 @@ export function resumeProgram(
           constraints: { min: rest.length, max: rest.length, candidateInstanceIds: rest },
           sourceInstanceId: choice.sourceInstanceId,
           sourceEffectId: 'ir',
-          resumeState: { abilityIndex: rs.abilityIndex, opIndex: rs.opIndex, bindings: { ...rs.bindings, __searchChosen: selection } },
+            resumeState: preserveBranch({ ...rs.bindings, __searchChosen: selection }),
         };
         ctx.emitChoice(bottomOrderChoice);
         return ctx.finish();
@@ -822,9 +973,7 @@ export function resumeProgram(
     }
     ctx.searchResolve(ctx.controllerId, looked, chosen, remainder, reveal, destination, rs.bindings.__searchChosen ? selection : undefined);
     const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: chosen, movedIds: chosen });
-    const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterSearchBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
-    return finishWithCascade(ctx, defs, actionId, registry);
+    return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
   }
 
   if (op.op === 'playFromDeck') {
@@ -832,55 +981,116 @@ export function resumeProgram(
     for (const id of selection) ctx.playCharacterFromDeck(id);
     ctx.shuffleDeck(ctx.controllerId);
     const afterPlayBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
-    const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterPlayBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
-    return finishWithCascade(ctx, defs, actionId, registry);
+    return continueAfterResolvedOp(program, ability, rs, afterPlayBindings, ctx, defs, actionId, registry);
   }
 
   if (op.op === 'peekLifeThenPlace') {
     const selection = Array.isArray(response) ? response : [];
     for (const id of selection) ctx.moveLifeToBottom(id);
     const afterPeekBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
-    const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterPeekBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
-    return finishWithCascade(ctx, defs, actionId, registry);
+    return continueAfterResolvedOp(program, ability, rs, afterPeekBindings, ctx, defs, actionId, registry);
   }
 
   if (op.op === 'chooseLifeToHand') {
     const selectedIndex = typeof response === 'number' ? response : -1;
     const afterLifeBindings = withResultBindings(rs.bindings, resolveLifePositionToHand(ctx, op.position, op.optional, selectedIndex));
-    const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterLifeBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
-    return finishWithCascade(ctx, defs, actionId, registry);
+    return continueAfterResolvedOp(program, ability, rs, afterLifeBindings, ctx, defs, actionId, registry);
   }
 
   if (op.op === 'chooseLifeToTrash') {
     const selectedIndex = typeof response === 'number' ? response : -1;
     const afterLifeBindings = withResultBindings(rs.bindings, resolveLifePositionToTrash(ctx, op.position, op.optional, selectedIndex));
-    const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, afterLifeBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
-    return finishWithCascade(ctx, defs, actionId, registry);
+    return continueAfterResolvedOp(program, ability, rs, afterLifeBindings, ctx, defs, actionId, registry);
   }
 
   if (op.op === 'chooseOption') {
     const selectedIndex = typeof response === 'number' ? response : -1;
     const branch = op.options[selectedIndex];
     if (!branch) return noop(stateWithoutChoice);
-    let branchBindings = rs.bindings;
-    let lastResult = EMPTY_RESULT;
-    for (const branchOp of branch.ops) {
-      if (!conditionMet(branchOp, branchBindings, ctx, defs)) continue;
-      lastResult = applyOp(branchOp, ctx, branchBindings);
-      branchBindings = withResultBindings(branchBindings, lastResult);
-    }
-    const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, branchBindings, ctx, defs);
-    if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
+    const branchResult = runOpList(
+      branch.ops,
+      { abilityIndex: rs.abilityIndex, opIndex: rs.opIndex, branchIndex: selectedIndex },
+      0,
+      rs.bindings,
+      ctx,
+      defs,
+    );
+    if (branchResult.suspended) return finishWithCascade(ctx, defs, actionId, registry);
+    const mainSuspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, branchResult.bindings, ctx, defs);
+    if (!mainSuspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     return finishWithCascade(ctx, defs, actionId, registry);
   }
 
   const selection = Array.isArray(response) ? response : [];
   const bindings: Record<string, string[]> = { ...rs.bindings, [op.var]: selection };
-  const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, bindings, ctx, defs);
-  if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
+  return continueAfterResolvedOp(program, ability, rs, bindings, ctx, defs, actionId, registry);
+}
+
+/** Continue an IR program after a K.O. replacement choice resolved mid-`ko` op. */
+export function resumeKoReplacementInInterpreter(
+  state: GameState,
+  kr: NonNullable<PendingChoice['resumeState']>['koReplacement'],
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+  registry: EffectTemplateRegistry,
+): ActionExecuteResult {
+  const ir = kr?.ir;
+  if (!ir) return { state, log: [], pendingChoices: [] };
+  const defId = state.cardsById[ir.sourceInstanceId]?.cardDefinitionId ?? '';
+  const program = registry[defId];
+  if (!program) return { state, log: [], pendingChoices: [] };
+
+  const ctx = new EffectContextImpl(state, ir.sourceInstanceId, defs, actionId);
+  const pendingKoIds = [...(ir.remainingKoTargetIds ?? [])];
+  for (let ki = 0; ki < pendingKoIds.length; ki++) {
+    const id = pendingKoIds[ki];
+    const record = findKoReplacementRecord(ctx.state(), id, 'effect', defs);
+    if (record) {
+      const suspendOpIndex = ir.branchIndex !== undefined ? ir.opIndex : ir.opIndex;
+      ctx.emitChoice(
+        buildKoReplacementConfirmChoice(ctx.state(), id, record, `${ir.sourceInstanceId}__ko-resume-${id}`, {
+          abilityIndex: ir.abilityIndex,
+          opIndex: suspendOpIndex,
+          bindings: ir.bindings,
+          ...(ir.branchIndex !== undefined ? { branchIndex: ir.branchIndex, branchOpIndex: ir.branchOpIndex } : {}),
+          koReplacement: {
+            phase: 'confirm',
+            targetInstanceId: id,
+            recordId: record.id,
+            cause: 'effect',
+            actorPlayerId: ctx.controllerId,
+            ir: { ...ir, remainingKoTargetIds: pendingKoIds.slice(ki + 1) },
+          },
+        }),
+      );
+      return finishWithCascade(ctx, defs, actionId, registry);
+    }
+    ctx.koApply(id);
+  }
+
+  const ability = program.abilities[ir.abilityIndex];
+  if (!ability) return ctx.finish();
+
+  if (ir.branchIndex !== undefined) {
+    const chooseOp = ability.ops[ir.opIndex];
+    if (chooseOp?.op !== 'chooseOption') return ctx.finish();
+    const branch = chooseOp.options[ir.branchIndex];
+    if (!branch) return ctx.finish();
+    const branchResult = runOpList(
+      branch.ops,
+      { abilityIndex: ir.abilityIndex, opIndex: ir.opIndex, branchIndex: ir.branchIndex },
+      (ir.branchOpIndex ?? 0) + 1,
+      ir.bindings,
+      ctx,
+      defs,
+    );
+    if (branchResult.suspended) return finishWithCascade(ctx, defs, actionId, registry);
+    const mainSuspended = runOps(ability, ir.abilityIndex, ir.opIndex + 1, branchResult.bindings, ctx, defs);
+    if (!mainSuspended) runFollowingAbilities(program, ability.timing, ir.abilityIndex + 1, ctx, defs, actionId, true, registry);
+    return finishWithCascade(ctx, defs, actionId, registry);
+  }
+
+  const suspended = runOps(ability, ir.abilityIndex, ir.opIndex + 1, ir.bindings, ctx, defs);
+  if (!suspended) runFollowingAbilities(program, ability.timing, ir.abilityIndex + 1, ctx, defs, actionId, true, registry);
   return finishWithCascade(ctx, defs, actionId, registry);
 }
