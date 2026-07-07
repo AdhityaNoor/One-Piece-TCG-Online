@@ -677,12 +677,24 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB02-038 — [On Play] Play up to 1 {Impel Down} Character cost<=2 from hand.
   { cardNumber: 'EB02-038', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Impel Down', maxCost: 2 } }] } },
 
-  // EB02-039 (event) GERMA 66 —
-  //   [Main] You may trash 1 {GERMA 66} type Character card with 4000 power or less from your hand: If the
-  //   number of DON!! cards on your field is equal to or less than the number on your opponent's field,
-  //   play up to 1 Character card with 5000 to 7000 power and the same card name as the trashed card from
-  //   your trash.
-  // NOTE: not yet implemented (needs template).
+  // EB02-039 — [Main] trash GERMA 66 Character ≤4000 base power: if DON!! ≤ opponent's, play same-name Character 5000–7000 power from trash.
+  // PARTIAL: "same card name as the trashed card" filter on playFromTrash is deferred.
+  {
+    cardNumber: 'EB02-039',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      functions: [
+        { fn: 'trashTypeFromHand', count: 1, filter: { category: 'character', typeIncludes: 'GERMA 66', maxBasePower: 4000 }, optional: true },
+        {
+          fn: 'playFromTrash',
+          filter: { category: 'character', minBasePower: 5000, maxBasePower: 7000 },
+          ifPrevious: 'previousMovedAny',
+          ifGate: [{ kind: 'selfDonAtMostOpponent' }],
+        },
+      ],
+    },
+  },
 
   // EB02-040 — (Event) same searcher.
   {
@@ -1094,10 +1106,21 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   total of 5 or less Life cards, play this card.
   // NOTE: not yet implemented (needs template).
 
-  // EB04-056 (character) Pacifista —
-  //   If you have [Jewelry Bonney] and you have 0 Life cards, this Character gains [Blocker].(After your
-  //   opponent declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
+  // EB04-056 — if [Jewelry Bonney] and 0 Life, this Character gains [Blocker].
+  {
+    cardNumber: 'EB04-056',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'addKeyword',
+        target: { ref: 'self' },
+        keyword: 'blocker',
+        duration: 'permanent',
+        condition: { gate: [{ kind: 'selfControlsNamed', name: 'Jewelry Bonney' }, { kind: 'selfLife', atMost: 0 }] },
+      }],
+    },
+  },
 
   // EB04-057 — [DON!! x1] this Character gains [Blocker].
   //   PARTIAL: the "if 2 or less Life, your yellow {Scientist} Characters cannot be removed by opponent's effects" is deferred (filtered KO/removal-immunity aura; koImmunityControllerCharactersAll has no type/color filter).
@@ -1109,25 +1132,67 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   to the top of your Life cards.
   // NOTE: not yet implemented (needs template).
 
-  // EB04-059 (event) Black Rope Dragon Twister —
-  //   [Main] You may turn 1 card from the top of your Life cards face-up: If you have less Characters than
-  //   your opponent, K.O. up to 1 of your opponent's Characters with a cost of 6 or less and up to 1 of
-  //   your opponent's Characters with a cost of 5 or less. [Trigger] Draw 2 cards and trash 1 card from
-  //   your hand.
-  // NOTE: not yet implemented (needs template).
+  // EB04-059 — PARTIAL: "fewer Characters than opponent" dual-K.O. Main deferred; mapped [Trigger] draw 2 trash 1.
+  {
+    cardNumber: 'EB04-059',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [
+            { fn: 'turnTopLifeFace', faceUp: true },
+            { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, ifPrevious: 'previousSelectedAny' },
+            { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true, ifPrevious: 'previousSelectedAny' },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+    ],
+  },
 
-  // EB04-060 (event) Gum-Gum Hawk Gatling —
-  //   [Main] You may add 1 card from the top or bottom of your Life cards to your hand: Add up to 1
-  //   {Egghead} type Character card from your hand to the top of your Life cards face-up. Then, give up to
-  //   1 of your opponent's Characters −1000 power during this turn. [Trigger] Draw 2 cards and trash 1 card
-  //   from your hand.
-  // NOTE: not yet implemented (needs template).
+  // EB04-060 — PARTIAL: Life top/bottom → hand + Egghead hand → Life face-up Main deferred; mapped Trigger + opp −1000 on simplified Main.
+  {
+    cardNumber: 'EB04-060',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+            { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+    ],
+  },
 
-  // EB04-061 (character) Monkey.D.Luffy —
-  //   If you have 1 or less Life cards, give this card in your hand −1 cost.[On Play] You may trash 1 card
-  //   from your hand: Your Leader gains +2000 power until the end of your opponent's next End Phase. Then,
-  //   this Character gains [Blocker] until the end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
+  // EB04-061 — if ≤1 Life, this card in hand −1 cost; [On Play] trash 1: Leader +2000 and self [Blocker] until end of opponent's next End Phase.
+  {
+    cardNumber: 'EB04-061',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{ fn: 'addCostAuraSameCardInHand', amount: -1, duration: 'permanent', gate: [{ kind: 'selfLife', atMost: 1 }] }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn', ifPrevious: 'previousMovedAny' },
+            { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'endOfOpponentsTurn', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // --- codegen batch ---
   { cardNumber: 'EB03-023', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
@@ -1184,22 +1249,44 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB03-032 — [Your Turn] [On Play] up to 1 [Charlotte Katakuri] +2000 this turn.
   { cardNumber: 'EB03-032', templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Charlotte Katakuri' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // EB03-033 (character) Charlotte Brulee —
-  //   [Opponent's Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck by
-  //   your effect, if your Leader has the {Big Mom Pirates} type, add up to 1 DON!! card from your DON!!
-  //   deck and rest it.
-  // NOTE: not yet implemented (needs template).
+  // EB03-033 — PARTIAL: [Opponent's Turn] on-DON-return trigger add-DON clause deferred (reactive timing not in catalog).
+  // EB03-034 — [On Play] draw 1, place 1 hand card on deck top, add 1 active DON!!; [On K.O.] DON!! −1: deck top → Life top.
+  // PARTIAL: hand → deck-top uses deck-bottom proxy until moveCards supports deck-top destination.
+  {
+    cardNumber: 'EB03-034',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'draw', amount: 1 },
+            { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1 },
+            { fn: 'addDonFromDeck', count: 1, rested: false },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onKO',
+          cost: [{ kind: 'donMinus', count: 1 }],
+          functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }],
+        },
+      },
+    ],
+  },
 
-  // EB03-034 (character) Charlotte Linlin —
-  //   [On Play] Draw 1 card and place 1 card from your hand at the top of your deck. Then, add up to 1
-  //   DON!! card from your DON!! deck and set it as active.[On K.O.] DON!! −1: Add up to 1 card from the
-  //   top of your deck to the top of your Life cards.
-  // NOTE: not yet implemented (needs template).
-
-  // EB03-035 (character) Charlotte Pudding —
-  //   [Blocker][On Play] If the number of DON!! cards on your field is equal to or less than the number on
-  //   your opponent's field, add up to 1 DON!! card from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
+  // EB03-035 — [On Play] if DON!! ≤ opponent's: add 1 rested DON!! from deck. [Blocker] is card data.
+  {
+    cardNumber: 'EB03-035',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'selfDonAtMostOpponent' }],
+      functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }],
+    },
+  },
 
   // EB03-036 — [On Play] DON!! −1: K.O. up to 2 opp Characters with base cost 3 or less.
   { cardNumber: 'EB03-036', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 3 } }, optional: true, maxTargets: 2 }] } },
@@ -1210,12 +1297,22 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB03-037 — [On Play] if 7+ DON!! on field: your {ODYSSEY} Leader and Characters gain +1000 power until end of opponent's next turn.
   { cardNumber: 'EB03-037', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 7 }], functions: [{ fn: 'addPowerAuraControllerTypes', amount: 1000, duration: 'endOfOpponentsTurn', anyOfTypes: ['ODYSSEY'] }] } },
 
-  // EB03-038 (event) Thanks for the Treat. ♡ —
-  //   [Main] You may rest 1 of your DON!! cards: If the number of DON!! cards on your field is equal to or
-  //   less than the number on your opponent's field and you only have Characters with a type including
-  //   "GERMA", add up to 2 DON!! cards from your DON!! deck and rest them.[Counter] Your Leader gains +3000
-  //   power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // EB03-038 — [Main] rest 1 DON!!: if DON!! ≤ opponent's and only GERMA Characters, add 2 rested DON!!; [Counter] Leader +3000 battle.
+  {
+    cardNumber: 'EB03-038',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          cost: [{ kind: 'restDon', count: 1 }],
+          gate: [{ kind: 'selfDonAtMostOpponent' }, { kind: 'selfAllCharactersTyped', typeIncludes: 'GERMA' }],
+          functions: [{ fn: 'addDonFromDeck', count: 2, rested: true }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   // EB03-039 — [On Play] if Leader {Animal Kingdom Pirates}: draw 1, trash 1, then play up to 1 vanilla Character ≤6000 power from trash.
   {
@@ -1231,10 +1328,36 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // EB03-041 (character) Kujyaku —
-  //   [Opponent's Turn] All of your {SWORD} type Characters with a cost of 6 or less gain +2000 power.[On
-  //   Play] You may trash 1 {Navy} type card from your hand: Draw 2 cards.
-  // NOTE: not yet implemented (needs template).
+  // EB03-041 — [Opponent's Turn] SWORD Characters cost ≤6 +2000; [On Play] trash 1 {Navy} from hand: draw 2.
+  {
+    cardNumber: 'EB03-041',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'addPowerAuraControllerCharacters',
+            amount: 2000,
+            duration: 'permanent',
+            anyOfTypes: ['SWORD'],
+            sourceCondition: { turn: 'opponent' },
+            targetCondition: { maxCost: 6 },
+          }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Navy' }, optional: true },
+            { fn: 'draw', amount: 2, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // EB03-042 — if Leader {Revolutionary Army}: this Character gains +4 cost (continuous, self).
   //   PARTIAL: the [Opponent's Turn] [On K.O.] "play a {Revolutionary Army}/[Nico Robin] from hand or trash" is deferred (multi-branch play-from-zone with name exclusion).
@@ -1251,16 +1374,39 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   bottom of your deck in any order and play up to 1 [Onigashima Island] from your hand.
   // NOTE: not yet implemented (needs template).
 
-  // EB03-045 (character) Perona —
-  //   [Blocker][On Play] Give up to 1 rested DON!! card to your Leader or 1 of your Characters. Then, if
-  //   you have 10 or more cards in your trash, play up to 1 {Thriller Bark Pirates} type Character card
-  //   with a cost of 2 or less from your trash rested.
-  // NOTE: not yet implemented (needs template).
+  // EB03-045 — [On Play] give 1 rested DON!!; if 10+ trash, play 1 {Thriller Bark Pirates} cost ≤2 from trash rested. [Blocker] is card data.
+  {
+    cardNumber: 'EB03-045',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'giveDon', count: 1 },
+        {
+          fn: 'playFromTrash',
+          filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 2 },
+          rested: true,
+          ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }],
+        },
+      ],
+    },
+  },
 
-  // EB03-046 (character) Miss Doublefinger(Zala) —
-  //   [On Play] If there is a Character with a cost of 0 or with a cost of 8 or more, draw 1 card.[On K.O.]
-  //   Trash 2 cards from the top of your deck.
-  // NOTE: not yet implemented (needs template).
+  // EB03-046 — [On Play] if cost-0 or cost-8+ Character exists: draw 1; [On K.O.] trash top 2 of deck.
+  {
+    cardNumber: 'EB03-046',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          gate: [{ kind: 'anyOf', gates: [{ kind: 'anyCharacterExactCost', exactCost: 0 }, { kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }],
+          functions: [{ fn: 'draw', amount: 1 }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'trashTopDeck', count: 2 }] } },
+    ],
+  },
 
   // EB03-047 - [On Play] Trash top 3 cards of deck. [On K.O.] Draw 1.
   {
@@ -1277,12 +1423,26 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   up to 1 {Dressrosa} type Stage card with a cost of 1 from your hand.
   // NOTE: not yet implemented (needs template).
 
-  // EB03-049 (event) I Knew You People Were Behind This. —
-  //   [Main] You may rest 7 of your DON!! cards: If your Leader is [Perona], play up to 1 {Thriller Bark
-  //   Pirates} type Character card with a cost of 6 or less and up to 1 {Thriller Bark Pirates} type
-  //   Character card with a cost of 4 or less from your hand or trash.[Counter] Your Leader gains +3000
-  //   power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // EB03-049 — [Main] rest 7 DON!!: if Leader [Perona], play 2 Thriller Bark from hand (cost ≤6 and ≤4).
+  // PARTIAL: "from your hand or trash" per card is deferred; mapped as hand-only.
+  {
+    cardNumber: 'EB03-049',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          cost: [{ kind: 'restDon', count: 7 }],
+          gate: [{ kind: 'leaderName', name: 'Perona' }],
+          functions: [
+            { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 6 }, maxTargets: 1 },
+            { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 4 }, maxTargets: 1 },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   // EB03-050 — [On Play] up to 1 {Sky Island} Character gains [Double Attack] this turn.
   { cardNumber: 'EB03-050', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Sky Island' } }, keyword: 'doubleAttack', duration: 'duringThisTurn', optional: true }] } },
@@ -1308,10 +1468,23 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   or less from your hand.
   // NOTE: not yet implemented (needs template).
 
-  // EB03-054 (character) Nico Robin —
-  //   [On Play] You may trash 1 card from the top of your Life cards: Add up to 1 card from the top of your
-  //   deck to the top of your Life cards. [Trigger] You may trash 1 card from your hand: Play this card.
-  // NOTE: not yet implemented (needs template).
+  // EB03-054 — [On Play] trash top Life optional → deck top to Life; [Trigger] trash 1 from hand: play this.
+  {
+    cardNumber: 'EB03-054',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true },
+            { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
   // EB03-055 (character) Nico Robin —
   //   [On Play] You may trash 1 card from the top of your Life cards: If your Leader has the {Straw Hat
@@ -1415,11 +1588,28 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB04-009 (event) It's My Student's Farewell. I Want It to Be Proper. —
-  //   [Main] You may give 1 active DON!! card to 1 of your [Silvers Rayleigh]: Give up to 1 of your
-  //   opponent's Characters −2000 power during this turn.[Counter] Up to 1 of your Characters or [Silvers
-  //   Rayleigh] gains +2000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // EB04-009 — PARTIAL: give active DON!! to [Silvers Rayleigh] deferred; mapped Counter +2000 to [Silvers Rayleigh] or Character.
+  {
+    cardNumber: 'EB04-009',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [
+            { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }],
+        },
+      },
+    ],
+  },
 
   // EB04-010 (stage) Lulucia Kingdom —
   //   [Opponent's Turn] All of your Characters with a base cost of 1 gain +5000 power.[On Play] Set the
@@ -1445,10 +1635,24 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB04-014 — [Blocker] [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to your Leader.
   { cardNumber: 'EB04-014', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDonControllerLeader', count: 1 }] } },
 
-  // EB04-015 (character) Jinbe —
-  //   [Blocker][On K.O.] You may rest 1 of your cards: If your Leader has the {Fish-Man} or {Merfolk} type,
-  //   play up to 1 green Character card with a cost of 6 or less from your hand.
-  // NOTE: not yet implemented (needs template).
+  // EB04-015 — [On K.O.] rest 1 of your cards: if Leader {Fish-Man}/{Merfolk}, play 1 green Character cost ≤6 from hand. [Blocker] is card data.
+  {
+    cardNumber: 'EB04-015',
+    templateId: 'ability',
+    params: {
+      timing: 'onKO',
+      functions: [
+        { fn: 'rest', target: { group: 'leaderOrCharacters', player: 'controller' }, optional: true, maxTargets: 1 },
+        {
+          fn: 'playFromHand',
+          filter: { category: 'character', color: 'green', maxCost: 6 },
+          maxTargets: 1,
+          ifPrevious: 'previousSelectedAny',
+          ifGate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }],
+        },
+      ],
+    },
+  },
 
   // EB04-016 (character) Bird Neptunian —
   //   [Activate: Main] Set up to 1 of your DON!! cards as active. Then, you cannot set DON!! cards as
@@ -1471,11 +1675,37 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB04-018 — [On Play] rest this: K.O. up to 1 opp rested Character with 8000 power or less.
   { cardNumber: 'EB04-018', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restThis' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxPower: 8000 } }, optional: true }] } },
 
-  // EB04-019 (event) Eleclaw —
-  //   [Main] You may rest 1 of your cards: If your Leader has the {Minks} type, give up to 1 of your
-  //   opponent's Characters −3 cost during this turn.[Counter] Up to 1 of your {Minks} type Leader or
-  //   Character cards gains +3000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // EB04-019 — [Main] rest 1 card: if Leader {Minks}, opp Character −3 cost; [Counter] Minks Leader/Character +3000 battle.
+  {
+    cardNumber: 'EB04-019',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [
+            { fn: 'rest', target: { group: 'leaderOrCharacters', player: 'controller' }, optional: true, maxTargets: 1 },
+            {
+              fn: 'addCost',
+              target: { group: 'characters', player: 'opponent' },
+              amount: -3,
+              duration: 'duringThisTurn',
+              optional: true,
+              ifPrevious: 'previousSelectedAny',
+              ifGate: [{ kind: 'leaderType', type: 'Minks' }],
+            },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Minks' } }, amount: 3000, duration: 'duringThisBattle', optional: true }],
+        },
+      },
+    ],
+  },
 
   // EB04-020 — (Event) [Counter] up to 1 {Fish-Man} Leader/Character +3000 battle; then set up to 1 {Fish-Man} Character active. [Trigger] rest opp Character cost<=4.
   {
@@ -1501,17 +1731,47 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB04-022 (character) Issho —
-  //   [On Play] You may trash 2 cards from your hand: If your opponent has 6 or more cards in their hand,
-  //   your opponent places 2 cards from their hand at the bottom of their deck in any order.[DON!! x1]
-  //   [When Attacking] You may trash 1 card from your hand: Give up to 1 of your opponent's Characters
-  //   −2000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // EB04-022 — [On Play] trash 2 from hand → opp places 2 hand cards on deck bottom (if 6+ hand); [DON!! x1] [When Attacking] trash 1: opp Character −2000.
+  // PARTIAL: opponent hand → deck-bottom uses trashFromOpponentHandChosenByOpponent (not bottom placement).
+  {
+    cardNumber: 'EB04-022',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 2 },
+            { fn: 'trashFromOpponentHandChosenByOpponent', count: 2, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'opponentHand', atLeast: 6 }] },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'whenAttacking',
+          condition: { donAttachedAtLeast: 1 },
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
-  // EB04-023 (character) Chaka & Pell —
-  //   [Double Attack] (This card deals 2 damage.)[On Play] You may give your active Leader −5000 power
-  //   during this turn: Draw 2 cards.
-  // NOTE: not yet implemented (needs template).
+  // EB04-023 — [On Play] Leader −5000 this turn: draw 2. [Double Attack] is card data.
+  {
+    cardNumber: 'EB04-023',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true },
+        { fn: 'draw', amount: 2, ifPrevious: 'previousSelectedAny' },
+      ],
+    },
+  },
 
   // EB04-024 — [Activate: Main] rest this + trash 1 from hand: up to 1 {Alabasta} Character gains [Unblockable] this turn.
   { cardNumber: 'EB04-024', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [
@@ -1599,33 +1859,81 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // EB04-032 (character) Queen —
-  //   [On Play] You may trash 1 {Animal Kingdom Pirates} type card from your hand: Draw 2 cards.[Activate:
-  //   Main] [Once Per Turn] You may rest 2 of your DON!! cards: If your Leader has the {Animal Kingdom
-  //   Pirates} type, add up to 1 DON!! card from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
+  // EB04-032 — [On Play] trash 1 {Animal Kingdom Pirates} from hand: draw 2; [Activate: Main] rest 2 DON!!: if Leader {Animal Kingdom Pirates}, add 1 rested DON!!.
+  {
+    cardNumber: 'EB04-032',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Animal Kingdom Pirates' }, optional: true },
+            { fn: 'draw', amount: 2, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          cost: [{ kind: 'restDon', count: 2 }],
+          gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }],
+          functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }],
+        },
+      },
+    ],
+  },
 
   // EB04-033 (character) Groggy Monsters —
   //   [On Play] DON!! −1: If you have 3 or more {Foxy Pirates} type Characters, K.O. up to 1 of your
   //   opponent's Characters with 6000 base power or less.
   // NOTE: not yet implemented (needs template).
 
-  // EB04-034 (character) Charlotte Pudding —
-  //   [Blocker][On Your Opponent's Attack] [Once Per Turn] You may trash 1 card from your hand: If you have
-  //   4 or more Events in your trash, up to 1 of your Leader or Character cards gains +2000 power during
-  //   this battle.
-  // NOTE: not yet implemented (needs template).
+  // EB04-034 — [On Your Opponent's Attack] trash 1 from hand: if 4+ Events in trash, Leader/Character +2000 battle. [Blocker] is card data.
+  {
+    cardNumber: 'EB04-034',
+    templateId: 'ability',
+    params: {
+      timing: 'onOpponentsAttack',
+      oncePerTurn: true,
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        {
+          fn: 'addPower',
+          target: { group: 'leaderOrCharacters', player: 'controller' },
+          amount: 2000,
+          duration: 'duringThisBattle',
+          optional: true,
+          ifPrevious: 'previousMovedAny',
+          ifGate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }],
+        },
+      ],
+    },
+  },
 
-  // EB04-035 (character) Hitokiri Kamazo —
-  //   [Blocker][Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck,
-  //   if your Leader has the {Kid Pirates} type, add up to 1 DON!! card from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
+  // EB04-035 — PARTIAL: on-DON-return trigger add-DON clause deferred (reactive timing not in catalog). [Blocker] is card data.
 
-  // EB04-036 (character) Foxy —
-  //   [On Play] DON!! −1: If your Leader has the {Foxy Pirates} type, draw 2 cards and trash 1 card from
-  //   your hand. Then, rest up to 1 of your opponent's Characters with a cost of 9 or less.[Activate: Main]
-  //   [Once Per Turn] Add up to 1 DON!! card from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
+  // EB04-036 — [On Play] DON!! −1: if Leader {Foxy Pirates}, draw 2 trash 1, rest opp Character cost ≤9; [Activate: Main] add 1 rested DON!!.
+  {
+    cardNumber: 'EB04-036',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          cost: [{ kind: 'donMinus', count: 1 }],
+          gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }],
+          functions: [
+            { fn: 'drawAndTrash', drawCount: 2, trashCount: 1 },
+            { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 9 } }, optional: true },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+    ],
+  },
 
   // EB04-037 - [On Play] If Leader has Foxy Pirates, look at 5; add Foxy Pirates.
   {
@@ -1649,17 +1957,55 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB04-040 (event) Flame Dragon Torch —
-  //   [Main] You may rest 6 of your DON!! cards: Up to 1 of your [Kaido] cards gains +3000 power during
-  //   this turn. Then, rest up to 1 of your opponent's Characters.[Counter] DON!! −1: Your Leader gains
-  //   +4000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // EB04-040 — [Main] rest 6 DON!!: [Kaido] +3000 this turn, rest 1 opp Character; [Counter] DON!! −1: Leader +4000 battle.
+  {
+    cardNumber: 'EB04-040',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          cost: [{ kind: 'restDon', count: 6 }],
+          functions: [
+            { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Kaido' } }, amount: 3000, duration: 'duringThisTurn', optional: true },
+            { fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          cost: [{ kind: 'donMinus', count: 1 }],
+          functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 4000, duration: 'duringThisBattle' }],
+        },
+      },
+    ],
+  },
 
-  // EB04-041 (event) Stealth Black —
-  //   [Main] If your Leader is [Sanji] and you have 4 or more DON!! cards on your field, play up to 1
-  //   [Sanji] with 6000 power or less from your hand or trash. [Trigger] Draw 2 cards and trash 1 card from
-  //   your hand.
-  // NOTE: not yet implemented (needs template).
+  // EB04-041 — [Main] if Leader [Sanji] and 4+ DON!! on field, play [Sanji] ≤6000 power from hand or trash; [Trigger] draw 2 trash 1.
+  {
+    cardNumber: 'EB04-041',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          gate: [{ kind: 'leaderName', name: 'Sanji' }, { kind: 'selfDonFieldCount', atLeast: 4 }],
+          functions: [{
+            fn: 'chooseOne',
+            chooser: 'controller',
+            prompt: 'Play Sanji from:',
+            options: [
+              { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { name: 'Sanji', maxPower: 6000 } }] },
+              { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { name: 'Sanji', maxPower: 6000 } }] },
+            ],
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+    ],
+  },
 
   // EB04-042 — [On Play] trash 3 from top of deck: give up to 1 opp Character −1 cost this turn.
   { cardNumber: 'EB04-042', templateId: 'ability', params: { timing: 'onPlay', functions: [
@@ -1679,25 +2025,60 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Character is K.O.'d, draw 1 card.
   // NOTE: not yet implemented (needs template).
 
-  // EB04-045 (character) Ginny —
-  //   [Activate: Main] You may rest this Character: If there are 2 or more Characters with a cost of 8 or
-  //   more, up to 1 of your {Revolutionary Army} type Leader or Character cards gains +1000 power during
-  //   this turn.
-  // NOTE: not yet implemented (needs template).
+  // EB04-045 — [Activate: Main] rest this: if 2+ Characters cost ≥8, Revolutionary Army Leader/Character +1000 this turn.
+  // PARTIAL: "2 or more Characters with cost 8+" count gate deferred; mapped with anyCharacterCostAtLeast: 8.
+  {
+    cardNumber: 'EB04-045',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'restThis' }],
+      functions: [{
+        fn: 'addPower',
+        target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Revolutionary Army' } },
+        amount: 1000,
+        duration: 'duringThisTurn',
+        optional: true,
+        ifGate: [{ kind: 'anyCharacterCostAtLeast', atLeast: 8 }],
+      }],
+    },
+  },
 
   // EB04-046 — [Opponent's Turn] all of your {Navy} Characters gain +2 cost (continuous cost aura).
   //   [Blocker] is an unconditional printed keyword flag (card metadata, not templated here).
   { cardNumber: 'EB04-046', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraControllerCharacters', amount: 2, duration: 'permanent', anyOfTypes: ['Navy'], sourceCondition: { turn: 'opponent' } }] } },
 
-  // EB04-047 (character) Helmeppo —
-  //   [Activate: Main] You may trash this Character: Play up to 1 {SWORD} type Character card with a cost
-  //   of 3 or less other than [Helmeppo] from your hand or trash.
-  // NOTE: not yet implemented (needs template).
+  // EB04-047 — [Activate: Main] trash this: play 1 {SWORD} Character cost ≤3 (other than [Helmeppo]) from hand or trash.
+  {
+    cardNumber: 'EB04-047',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'trashThis' }],
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Play SWORD Character from:',
+        options: [
+          { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'SWORD', maxCost: 3, excludeSelfName: true } }] },
+          { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'SWORD', maxCost: 3, excludeSelfName: true } }] },
+        ],
+      }],
+    },
+  },
 
-  // EB04-048 (character) Rob Lucci —
-  //   If your Leader's type includes "CP", this Character gains +1000 power and +2 cost for every 5 cards
-  //   in your trash.[On Play] You may trash 1 of your Characters: Draw 1 card.
-  // NOTE: not yet implemented (needs template).
+  // EB04-048 — PARTIAL: +1000/+2 cost per 5 trash (dynamic scaling) deferred; mapped [On Play] trash 1 Character: draw 1.
+  {
+    cardNumber: 'EB04-048',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+        { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // EB04-049 — (Event) [Main] trash 2 from top of deck: K.O. up to 1 opp Character base cost 5 or less. [Trigger] Activate [Main].
   {
