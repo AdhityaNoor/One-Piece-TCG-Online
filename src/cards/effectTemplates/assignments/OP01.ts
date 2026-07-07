@@ -56,10 +56,12 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // OP01-013 (character) Sanji —
-  //   [Activate: Main] [Once Per Turn] You may add 1 card from your Life area to your hand: This Character
-  //   gains +2000 power during this turn. Then, give this Character up to 2 rested DON!! cards.
-  // NOTE: not yet implemented (needs template).
+  // OP01-013 — [Activate: Main] [Once Per Turn] you may add 1 top Life card to hand: this Character gains +2000 power this turn.
+  //   PARTIAL: the "Then, give this Character up to 2 rested DON!!" rider is deferred (giveDon picks a target / fixed count, not a self-only "up to 2").
+  { cardNumber: 'OP01-013', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP01-014 — [DON!! x1] [On Block] Play up to 1 red Character cost<=2 from hand.
   { cardNumber: 'OP01-014', templateId: 'ability', params: { timing: 'onBlock', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'red', maxCost: 2 } }] } },

@@ -245,10 +245,12 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   //   of their deck. Then, rest this Character.
   // NOTE: not yet implemented (needs template).
 
-  // OP08-047 (character) Jozu —
-  //   [On Play] You may return 1 of your Characters other than this Character to the owner's hand: Return
-  //   up to 1 Character with a cost of 6 or less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
+  // OP08-047 — [On Play] you may return 1 of your Characters to hand: return up to 1 Character with a cost of 6 or less to hand.
+  //   NOTE: the cost's "other than this Character" self-exclusion is dropped (name-based exclusion would over-match; instance exclusion isn't modeled on move costs).
+  { cardNumber: 'OP08-047', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 6 } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP08-049 (character) Speed Jil —
   //   [On Play] Reveal 1 card from the top of your deck and place it at the top or bottom of your deck. If

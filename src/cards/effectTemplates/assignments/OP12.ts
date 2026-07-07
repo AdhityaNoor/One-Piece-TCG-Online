@@ -263,11 +263,9 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   //   opponent's Characters with a base cost of 4 or less cannot activate [Blocker] during this turn.
   // NOTE: not yet implemented (needs template).
 
-  // OP12-053 (character) Borsalino —
-  //   [Once Per Turn] If this Character would be removed from the field by your opponent's effect, you may
-  //   trash 1 card from your hand instead.[Opponent's Turn] If your Leader has the {Navy} type, this
-  //   Character gains [Blocker] and +1000 power.
-  // NOTE: not yet implemented (needs template).
+  // OP12-053 — [Opponent's Turn] if Leader {Navy}: this Character gains [Blocker] and +1000 power.
+  //   PARTIAL: the [Once Per Turn] "would be removed → trash 1 from hand instead" replacement is deferred.
+  { cardNumber: 'OP12-053', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'Navy' }] } }, { fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'Navy' }] } }] } },
 
   // OP12-054 — [On Play] If Leader {The Seven Warlords of the Sea}: return up to 1 Character cost ≤1 to hand (exclude-self dropped).
   { cardNumber: 'OP12-054', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'The Seven Warlords of the Sea' }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 1 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -312,16 +310,13 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-066 — if 4+ Events in trash, [Blocker]
   { cardNumber: 'OP12-066', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }] } },
 
-  // OP12-063 (character) Vinsmoke Reiju —
-  //   If you have 4 or more Events in your trash, this Character gains +2000 power and +5 cost.[Blocker]
-  //   (After your opponent declares an attack, you may rest this card to make it the new target of the
-  //   attack.)
-  // NOTE: not yet implemented (needs template).
+  // OP12-063 — if 4+ Events in trash: this Character gains +2000 power and +5 cost.
+  //   [Blocker] is an unconditional printed keyword (handled by card keyword metadata, not templated here).
+  { cardNumber: 'OP12-063', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }, { fn: 'addCost', target: { ref: 'self' }, amount: 5, duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }] } },
 
-  // OP12-065 (character) Emporio.Ivankov —
-  //   If you have 4 or more Events in your trash, this Character gains [Blocker].[On K.O.] Add up to 1
-  //   Event from your trash to your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP12-065 — if 4+ Events in trash, this Character gains [Blocker].
+  //   PARTIAL: the [On K.O.] "add up to 1 Event from trash to hand" is deferred.
+  { cardNumber: 'OP12-065', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }] } },
 
   // OP12-066 (character) Carne —
   //   If you have 4 or more Events in your trash, this Character gains [Blocker].(After your opponent

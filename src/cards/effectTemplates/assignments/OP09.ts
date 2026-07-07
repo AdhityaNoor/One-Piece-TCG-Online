@@ -142,10 +142,11 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // --- codegen batch ---
   { cardNumber: 'OP09-031', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'setActiveSelf' }] } },
 
-  // OP09-030 (character) Trafalgar Law —
-  //   [On Play] You may return 1 of your Characters to the owner's hand: Play up to 1 {ODYSSEY} type
-  //   Character card with a cost of 3 or less other than [Trafalgar Law] from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP09-030 — [On Play] you may return 1 of your Characters to hand: play up to 1 {ODYSSEY} Character (cost ≤3, not [Trafalgar Law]) from hand.
+  { cardNumber: 'OP09-030', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'ODYSSEY', maxCost: 3, excludeSelfName: true }, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP09-032 — [Blocker] [On Your Opponent's Attack] [Once Per Turn] Set this Character as active.
   { cardNumber: 'OP09-032', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [{ fn: 'setActiveSelf' }] } },

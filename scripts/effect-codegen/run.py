@@ -5,12 +5,12 @@ on ' Then, ', or a 'Choose one:' bullet list) against single-clause matchers.
 Emits only on FULL consumption, and only constructs that are expressible by the
 engine's AbilityFunction / AbilityGate / AbilityCost unions.
   python3 scripts/effect-codegen/run.py [--write]"""
-import csv, re, sys
+import csv, os, re, sys
 from collections import defaultdict
 
-ROOT = __file__.rsplit('/scripts/', 1)[0]
-CSV = ROOT + '/effect-coverage.csv'
-ASSIGN = ROOT + '/src/cards/effectTemplates/assignments/'
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+CSV = os.path.join(ROOT, 'effect-coverage.csv')
+ASSIGN = os.path.join(ROOT, 'src', 'cards', 'effectTemplates', 'assignments') + os.sep
 STATIC_KW = re.compile(r'\[(Blocker|Rush|Double Attack|Banish)\]', re.I)
 KWMAP = {'Rush':'rush','Blocker':'blocker','Double Attack':'doubleAttack','Banish':'banish'}
 TIMING = {'On Play':'onPlay','When Attacking':'whenAttacking','On K.O.':'onKO','On Block':'onBlock',

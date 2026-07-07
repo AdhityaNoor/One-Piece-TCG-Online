@@ -468,6 +468,10 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Character cards gains +3000 power during this turn.
   // NOTE: not yet implemented (needs template).
 
+  // OP04-108 — [DON!! x1] this Character gains [Banish].
+  //   PARTIAL: the [Trigger] "you may trash 1 from hand: play this" is deferred (trash-from-hand trigger cost).
+  { cardNumber: 'OP04-108', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+
   // OP04-110 — [Blocker] [On K.O.] Add up to 1 opp Character cost<=3 to the top or bottom of opponent's Life face-up.
   { cardNumber: 'OP04-110', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] } },
 

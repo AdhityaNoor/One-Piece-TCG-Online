@@ -20,11 +20,9 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] You may reveal 1 Character card with 8000 power from your hand: Draw 1 card.
   // NOTE: not yet implemented (needs template).
 
-  // OP16-003 (character) Edward.Newgate —
-  //   [Your Turn] Your Leader gains [Double Attack] and +2000 power.[On Play] You may reveal 2 Character
-  //   cards with 8000 power from your hand: Give up to 1 of your opponent's Characters −6000 power during
-  //   this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP16-003 — [Your Turn] your Leader gains [Double Attack] and +2000 power.
+  //   PARTIAL: the [On Play] "reveal 2 8000-power Chars → give opp Char −6000" is deferred (reveal-from-hand cost).
+  { cardNumber: 'OP16-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { group: 'leader', player: 'controller' }, keyword: 'doubleAttack', duration: 'permanent', condition: { turn: 'your' } }, { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'permanent', condition: { turn: 'your' } }] } },
 
   // OP16-005 (character) Thatch —
   //   If you have a Character with 8000 power or more and a type including "Whitebeard Pirates", give this

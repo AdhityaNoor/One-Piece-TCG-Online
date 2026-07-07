@@ -150,11 +150,9 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   trash 1 card from your hand.
   // NOTE: not yet implemented (needs template).
 
-  // OP07-032 (character) Fisher Tiger —
-  //   This Character can attack Characters on the turn in which it is played.[On Play] If your Leader has
-  //   the {Fish-Man} or {Merfolk} type, rest up to 1 of your opponent's Characters with a cost of 6 or
-  //   less.
-  // NOTE: not yet implemented (needs template).
+  // OP07-032 — [On Play] if Leader {Fish-Man}/{Merfolk}: rest up to 1 opp Character with a cost of 6 or less.
+  //   PARTIAL: the static "can attack Characters on the turn it is played" is deferred.
+  { cardNumber: 'OP07-032', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },
 
   // OP07-033 (character) Monkey.D.Luffy —
   //   If you have 3 or more Characters, your Characters with a cost of 3 or less other than
