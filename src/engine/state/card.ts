@@ -134,4 +134,11 @@ export interface CardInstance {
    * and clears the flag — so it only skips one Refresh. undefined/false = normal refresh.
    */
   skipNextRefresh?: boolean;
+  /**
+   * GameState.turnNumber at the moment this instance entered play (Character only — set by
+   * PLAY_CHARACTER and the playFromHand/playFromTrash/playFromDeck effect ops). Backs "if this
+   * Character was played on this turn" gates (e.g. ST19-003 Tashigi). undefined for cards that
+   * never entered play this way (Leader/Stage/Event/DON!!, or minted before this field existed).
+   */
+  enteredPlayTurn?: number;
 }

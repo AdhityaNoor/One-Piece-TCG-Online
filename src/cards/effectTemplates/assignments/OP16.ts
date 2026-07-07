@@ -226,7 +226,7 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-056 (character) Mr.3(Galdino) —
   //   [Activate: Main] You may trash this Character: Draw 2 cards, and up to 1 of your opponent's
   //   Characters with a cost of 9 or less cannot attack until the end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP16-056', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 9 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
   // OP16-057 — [Trigger] Draw 2, trash 1. PARTIAL: the [Prisoner]-count [Counter] buff is deferred.
   { cardNumber: 'OP16-057', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },

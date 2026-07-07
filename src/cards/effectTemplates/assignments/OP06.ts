@@ -131,7 +131,7 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] You may trash 1 card from your hand: Up to 1 of your opponent's rested Leader cannot attack
   //   until the end of your opponent's next turn. [Trigger] Rest up to 1 of your opponent's Characters with
   //   a cost of 4 or less.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs opponent-Leader-only preventAttack targeting with a rested-state filter).
 
   // OP06-024 — [On Play] If Leader {New Fish-Man Pirates}, play up to 1 {Fish-Man} cost<=4 from hand. Then add 1 top Life to hand.
   { cardNumber: 'OP06-024', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'New Fish-Man Pirates' }], functions: [
@@ -148,7 +148,7 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-026 (character) Koushirou —
   //   [On Play] Set up to 1 of your <Slash> attribute Characters with a cost of 4 or less as active. Then,
   //   you cannot attack a Leader during this turn.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs controller-side "cannot attack a Leader this turn" target-restricted attack prevention).
 
   // OP06-027 — [On K.O.] Rest up to 1 of your opponent's Characters with a cost of 3 or less.
   { cardNumber: 'OP06-027', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
@@ -469,7 +469,7 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-083 (character) Oars —
   //   This Character cannot attack.[Activate: Main] You may K.O. 1 of your {Thriller Bark Pirates} type
   //   Characters: This Character's effect is negated during this turn.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs static self cannot-attack support plus effect-negation templating).
 
   // OP06-084 — [On K.O.] Up to 1 of your Leader or Character cards gains +1000 power during this turn.
   { cardNumber: 'OP06-084', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },

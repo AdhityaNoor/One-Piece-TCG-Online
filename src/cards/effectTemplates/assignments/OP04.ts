@@ -288,7 +288,7 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] If your Leader's type includes "Baroque Works", up to 1 of your opponent's Characters with
   //   a cost of 5 or less cannot attack until the start of your next turn. [Trigger] DON!! −1 (You may
   //   return the specified number of DON!! cards from your field to your DON!! deck.): Play this card.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs template support for attack-restriction expiry at untilStartOfNextTurn).
 
   // OP04-066 (character) Miss.Valentine(Mikita) —
   //   [On Play] Look at 5 cards from the top of your deck; reveal up to 1 card with a type including
@@ -405,7 +405,7 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP04-100 (character) Capone"Gang"Bege —
   //   [Trigger] Up to 1 of your opponent's Leader or Character cards cannot attack during this turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP04-100', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'preventAttack', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true }] } },
 
   {
     cardNumber: 'OP04-101',

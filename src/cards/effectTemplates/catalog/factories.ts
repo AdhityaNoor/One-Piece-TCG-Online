@@ -204,6 +204,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return targetOps(f.target, (target) => ({ op: 'rest', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
     case 'preventRefresh':
       return targetOps(f.target, (target) => ({ op: 'preventRefresh', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
+    case 'preventAttack':
+      return targetOps(f.target, (target) => ({ op: 'preventAttack', target, duration: f.duration }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
     case 'addCost':
       return targetOps(
         f.target,

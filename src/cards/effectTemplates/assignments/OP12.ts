@@ -124,7 +124,7 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x3] [Activate: Main] [Once Per Turn] If this Leader battles your opponent's Character during
   //   this turn, set this Leader as active. Then, this Leader cannot attack your opponent's Characters with
   //   a base cost of 7 or less during this turn.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs leader attack restrictions that only bar attacks into filtered opponent Characters).
 
   // OP12-021 (character) Ipponmatsu —
   //   If your Leader has the <Slash> attribute and you have 6 or more rested DON!! cards, this Character
@@ -221,7 +221,22 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   //   If you have 5 or more cards in your hand, this Character gains +1 cost.[On Play] You may trash 1 card
   //   from your hand: Up to 1 of your opponent's Characters cannot attack until the end of your opponent's
   //   next End Phase.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP12-043',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCost', target: { ref: 'self' }, amount: 1, duration: 'permanent', condition: { gate: [{ kind: 'selfHand', atLeast: 5 }] } }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            { fn: 'preventAttack', target: { group: 'characters', player: 'opponent' }, duration: 'endOfOpponentsTurn', optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP12-044 — [On Play] If Leader {Navy}, draw 2. [Activate: Main][OPT] trash 1 → give 1 rested DON!! to Leader/1 Char.
   {

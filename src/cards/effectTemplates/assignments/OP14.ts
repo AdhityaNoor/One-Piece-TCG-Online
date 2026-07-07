@@ -231,7 +231,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   of your opponent's next End Phase. Then, if your opponent has a Character with a cost of 0 or with a
   //   cost of 8 or more, draw 1 card.[On K.O.] You may trash 1 card from your hand: Play this Character
   //   card from your trash.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (preventAttack exists now, but this card still needs the mixed opponent cost gate for the draw clause and exact "play this Character card from your trash" support).
 
   // --- codegen batch ---
   { cardNumber: 'OP14-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] }] } },
@@ -275,7 +275,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-056 (character) Wadatsumi —
   //   This Character cannot attack.When a card is trashed from your hand by an effect, this Character's
   //   effect is negated during this turn.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs static cannot-attack-unless support plus effect-negation templating).
 
   // OP14-057 — [Trigger] Draw 2. PARTIAL: the OR-typed mass buff [Main] is deferred.
   { cardNumber: 'OP14-057', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }] } },
@@ -543,7 +543,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play]/[On K.O.] Up to 1 of your opponent's Characters with a cost of 6 or less cannot attack
   //   until the end of your opponent's next End Phase. [Trigger] Play up to 1 {Thriller Bark Pirates} type
   //   Character card with a cost of 4 or less from your trash rested.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP14-111',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 4 }, rested: true }] } },
+    ],
+  },
 
   // OP14-112 — [On Play] If Leader {Warlords}, add top of deck to top of Life. PARTIAL: opp-Life-to-hand and trigger deferred.
   { cardNumber: 'OP14-112', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'The Seven Warlords of the Sea' }], functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },

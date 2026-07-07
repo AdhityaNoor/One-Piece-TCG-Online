@@ -96,6 +96,12 @@ export interface EffectContext {
     blockerPowerAtLeast?: number;
     description?: string;
   }): void;
+  /** Prevent the target Leader/Character from declaring an attack (7-1-1-1) for the given duration. */
+  preventAttack(spec: {
+    appliesToInstanceId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void;
   /** Give up to `count` un-attached DON!! from the controller's cost area to a Leader/Character (6-5-5). */
   giveDon(targetInstanceId: string, count: number): void;
   /** K.O. a Character: move it to its owner's trash, dropping attachments/continuous effects (7-1-4-1-2). */

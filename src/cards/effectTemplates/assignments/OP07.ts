@@ -261,7 +261,7 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] Up to 1 of your opponent's Characters other than [Monkey.D.Luffy] cannot attack until the
   //   end of your opponent's next turn. Then, place up to 1 Character with a cost of 1 or less at the
   //   bottom of the owner's deck.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs opponent Character target filters with negative-name exclusion, e.g. "other than [Monkey.D.Luffy]").
 
   // OP07-052 (character) Boa Marigold —
   //   [On Play] If you have 2 or more {Amazon Lily} or {Kuja Pirates} type Characters on your field, place
@@ -324,7 +324,7 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
   //   deck.): If your Leader has the {Foxy Pirates} type, up to 1 of your opponent's Characters with a cost
   //   of 6 or less cannot attack until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP07-063', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }], functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
   // OP07-064 (character) Sanji —
   //   If the number of DON!! cards on your field is at least 2 less than the number on your opponent's
@@ -487,7 +487,7 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This Leader cannot attack.[Activate: Main] [Once Per Turn] ① (You may rest the specified number of
   //   DON!! cards in your cost area.): Select up to 1 {Egghead} type card with a cost of 5 or less from
   //   your hand and play it or add it to the top of your Life cards face-up.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs static leader cannot-attack support).
 
   // OP07-098 — static: if fewer Life than opponent, cannot be K.O.'d in battle. [Trigger] If Leader [Vegapunk], play this.
   {

@@ -178,3 +178,12 @@ export function isKoImmune(defs: CardDefinitionLookup, state: GameState, instanc
     return conditionApplies(mod.condition, record, state, instanceId, defs);
   });
 }
+
+/**
+ * Whether `instanceId` currently cannot declare an attack (7-1-1-1) due to a card-effect
+ * restriction (e.g. "cannot attack until the end of your opponent's next turn"). Distinct
+ * from the innate summoning-sickness check (3-7-4), which declareAttack.ts checks separately.
+ */
+export function cannotAttack(state: GameState, instanceId: string): boolean {
+  return state.continuousEffects.some((record) => record.attackRestriction?.appliesToInstanceId === instanceId);
+}

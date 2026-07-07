@@ -37,9 +37,10 @@ export function evaluateGates(
   state: GameState,
   defs: CardDefinitionLookup,
   ownerId: string,
+  sourceInstanceId?: string,
 ): boolean {
   for (const gate of gates) {
-    if (!evaluateGate(gate, state, defs, ownerId)) return false;
+    if (!evaluateGate(gate, state, defs, ownerId, sourceInstanceId)) return false;
   }
   return true;
 }
@@ -49,6 +50,7 @@ function evaluateGate(
   state: GameState,
   defs: CardDefinitionLookup,
   ownerId: string,
+  sourceInstanceId?: string,
 ): boolean {
   const player = state.players[ownerId];
   if (!player) return false;
@@ -279,7 +281,7 @@ function evaluateGate(
     }
 
     case 'anyOf':
-      return gate.gates.some((g) => evaluateGate(g, state, defs, ownerId));
+      return gate.gates.some((g) => evaluateGate(g, state, defs, ownerId, sourceInstanceId));
 
     case 'opponentHand': {
       const opponentId = getOpponentId(state, ownerId);
@@ -287,6 +289,12 @@ function evaluateGate(
       if (gate.atLeast !== undefined && count < gate.atLeast) return false;
       if (gate.atMost !== undefined && count > gate.atMost) return false;
       return true;
+    }
+
+    case 'selfPlayedThisTurn': {
+      if (!sourceInstanceId) return false;
+      const inst = state.cardsById[sourceInstanceId];
+      return !!inst && inst.enteredPlayTurn === state.turnNumber;
     }
   }
 }

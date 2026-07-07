@@ -418,8 +418,15 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x1] If you have 8 or more cards in your trash, this Character gains [Rush].
   // NOTE: not yet implemented (needs template).
 
-  // OP10-086 — [Opponent's Turn] this Character +2000. PARTIAL: the "played this turn" activated K.O. is deferred.
-  { cardNumber: 'OP10-086', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'opponent' } }] } },
+  // OP10-086 — [Opponent's Turn] this Character +2000. [Activate: Main][OPT] If Leader {Blackbeard Pirates}
+  //   and this Character was played this turn, K.O. up to 1 opponent Character with base cost 3 or less.
+  {
+    cardNumber: 'OP10-086',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'opponent' } }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }, { kind: 'selfPlayedThisTurn' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 3 } }, optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   // OP10-088 — [Activate: Main] rest this + 1 {Dressrosa} Leader/Stage: draw 1, then trash 2 from top of deck.
   { cardNumber: 'OP10-088', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [

@@ -485,7 +485,7 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
   //   of the attack.) [On Block] Select up to 1 of your opponent's Characters with a cost of 6 or less. The
   //   selected Character cannot attack during this turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP02-110', templateId: 'ability', params: { timing: 'onBlock', functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, duration: 'duringThisTurn', optional: true }] } },
 
   // OP02-111 — [When Attacking] If you have [Jango], this Character +3000 battle.
   { cardNumber: 'OP02-111', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfControlsNamed', name: 'Jango' }], functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'duringThisBattle' }] } },

@@ -99,7 +99,7 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   to 1 of your opponent's Characters other than [Monkey.D.Luffy] cannot attack until the end of your
   //   opponent's next End Phase. [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 4 or
   //   less.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs filtered opponent leader-or-character union targeting: a rested Leader OR a Character other than [Monkey.D.Luffy]).
 
   // PRB02-018 (character) Portgas.D.Ace —
   //   [On Play] If you have a face-up Life card, play up to 1 [Sabo], [Portgas.D.Ace], or [Monkey.D.Luffy]

@@ -776,7 +776,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB03-013 (character) Carrot —
   //   [Activate: Main] [Once Per Turn] If this Character was played on this turn, K.O. up to 1 of your
   //   opponent's rested Characters with a cost of 5 or less. Then, play up to 1 [Zou] from your hand.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'EB03-013', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfPlayedThisTurn' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5, rested: true } }, optional: true, maxTargets: 1 }, { fn: 'playFromHand', filter: { category: 'character', name: 'Zou' }, maxTargets: 1 }] } },
 
   // EB03-014 (character) Kuina —
   //   [Activate: Main] You may rest this Character: Give up to 2 rested DON!! cards to your <Slash>
@@ -1084,7 +1084,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Character card with a [Trigger] from your hand to the top of your Life cards face-up. [Trigger] Up to
   //   1 of your opponent's Characters with a cost of 6 or less other than [Monkey.D.Luffy] cannot attack
   //   during this turn.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs opponent Character target filters with negative-name exclusion, e.g. "other than [Monkey.D.Luffy]").
 
   // EB03-060 — (Event) [Main] If Leader [Nami], look 4, reveal up to 1 cost 2-8, add to hand, rest to bottom. [Trigger] Activate [Main].
   {
@@ -1133,7 +1133,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB04-005 (character) Trafalgar Law —
   //   This Character cannot attack unless your opponent has 2 or more Characters with a base power of 5000
   //   or more.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs conditional static cannot-attack-unless support).
 
   // EB04-006 - [On Play] Look at 7; add up to 1 [Lulucia Kingdom].
   {
@@ -1176,7 +1176,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB04-012 (character) Kikunojo —
   //   [Activate: Main] [Once Per Turn] If this Character was played on this turn, set your {Land of Wano}
   //   type Leader as active.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (selfPlayedThisTurn is available now, but this still needs setActive targeting for the controller's Leader).
 
   // EB04-013 (character) Carrot —
   //   [On Play] If your Leader has the {Minks} type, set up to 2 of your {Minks} type Characters and your
@@ -1281,7 +1281,23 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Main] You may trash 1 card from your hand: If your Leader has the {Navy} type, up to 2 of your
   //   opponent's Characters with 10000 power or less cannot attack until the end of your opponent's next
   //   End Phase. [Trigger] Return up to 1 Character with a cost of 5 or less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB04-028',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          gate: [{ kind: 'leaderType', type: 'Navy' }],
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            { fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxPower: 10000 } }, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 2, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+    ],
+  },
 
   // EB04-029 — (Event) [Main] If Leader [Sanji], look 3, reveal up to 1 [Sanji] or Event, add to hand, trash rest. [Counter] trash 1 from hand: up to 1 [Sanji] +4000 battle.
   {
@@ -1431,7 +1447,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This Character cannot attack unless there is a Character with 12000 base power or more. [Trigger]
   //   Give all of your opponent's Characters −3000 power during this turn. Then, if you have 0 Life cards,
   //   play this card.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs conditional static cannot-attack-unless support).
 
   // EB04-052 (character) Sanji —
   //   [When Attacking] This Character's base power becomes the same as your opponent's Leader during this

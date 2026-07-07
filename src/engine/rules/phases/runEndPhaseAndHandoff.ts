@@ -2,12 +2,16 @@
  * End Phase (6-6) plus turn handoff. Fully automatic.
  *
  * 6-6-1-2 / 6-6-1-3: "during this turn" / "until end of turn" continuous
- * effects expire now. Nothing can populate ContinuousEffectRecord yet
- * (effects are fully stubbed this milestone), so this filter is currently
- * inert — kept here because it's cheap, obviously correct, and exactly
- * where the rule says expiry happens; NOT a deviation from "stub
- * everything", since no effect-template system exists to create these
- * records in the first place.
+ * effects expire in the ending player's own End Phase, below.
+ *
+ * "endOfOpponentsTurn" effects (e.g. "cannot attack until the end of your
+ * opponent's next turn") are relative to the modifier's OWNER, not the
+ * ending player: they expire in the End Phase of whichever player is the
+ * modifier owner's opponent — i.e. exactly when `endingPlayerId !== effect.ownerId`.
+ * Since turns strictly alternate between the two players, the very next
+ * occurrence of "the owner's opponent's End Phase" after the effect is
+ * created IS the owner's opponent's NEXT turn ending — no separate
+ * "next" tracking is needed.
  *
  * Turn handoff: turnNumber increments, activePlayerId flips to the other
  * player, isFirstTurnOfGame becomes false (it was only ever true for
@@ -36,7 +40,10 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
   const logger = createActionLogger(working, null);
 
   const continuousEffects = working.continuousEffects.filter(
-    (effect) => effect.duration !== 'endOfTurn' && effect.duration !== 'duringThisTurn',
+    (effect) =>
+      effect.duration !== 'endOfTurn' &&
+      effect.duration !== 'duringThisTurn' &&
+      !(effect.duration === 'endOfOpponentsTurn' && effect.ownerId !== endingPlayerId),
   );
 
   logger.push({

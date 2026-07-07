@@ -110,7 +110,7 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This Character cannot attack.If your Leader is [Buggy], all Characters with a cost of 3 or 4 cannot
   //   attack.[On Play] Play up to 1 {Cross Guild} type Character card with a cost of 6 or less from your
   //   hand.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs static self cannot-attack support plus a global cost-filtered attack-lock aura).
 
   // P-085 (character) Jewelry Bonney —
   //   [On Play] If your Leader has the {Supernovas} type and the number of your Life cards is equal to or

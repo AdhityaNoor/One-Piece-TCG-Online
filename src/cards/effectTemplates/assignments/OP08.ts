@@ -596,7 +596,7 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] Up to 1 of your opponent's Characters with a cost of 6 or less other than [Monkey.D.Luffy]
   //   cannot attack until the end of your opponent's next turn. [Trigger] Activate this card's [On Play]
   //   effect.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs opponent Character target filters with negative-name exclusion, e.g. "other than [Monkey.D.Luffy]").
 
   // OP08-113 — [Trigger] You may trash 1: if <=2 Life, play this and K.O. up to 1 opp Character cost<=3.
   { cardNumber: 'OP08-113', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [

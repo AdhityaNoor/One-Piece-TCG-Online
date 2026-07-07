@@ -217,7 +217,7 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x1] [Opponent's Turn] If this Character is rested, your opponent cannot attack any card other
   //   than the Character [Eustass"Captain"Kid]. [Activate: Main] [Once Per Turn] You may rest this
   //   Character: Play up to 1 Character card with a cost of 3 or less from your hand.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs taunt-style attack redirection: the opponent can only attack this specific Character).
 
   // OP01-052 — [When Attacking] [Once Per Turn] If you have 2 or more rested Characters, draw 1.
   { cardNumber: 'OP01-052', templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'draw', amount: 1 }] } },
@@ -372,7 +372,7 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] If your Leader has the {Baroque Works} type, select up to 1 of your opponent's Characters
   //   with a cost of 4 or less. The selected Character cannot attack until the end of your opponent's next
   //   turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP01-085', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
   {
     cardNumber: 'OP01-086',

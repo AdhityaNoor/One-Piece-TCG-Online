@@ -169,6 +169,11 @@ export interface ContinuousBlockerRestriction {
   blockerPowerAtLeast?: number;
 }
 
+/** Prevents the target Leader/Character from declaring an attack (7-1-1-1) while this record is active. */
+export interface ContinuousAttackRestriction {
+  appliesToInstanceId: string;
+}
+
 export type ContinuousKeyword = 'rush' | 'blocker' | 'doubleAttack' | 'banish' | 'unblockable';
 
 /** A structured keyword grant applied to one instance, with optional dynamic conditions. */
@@ -209,6 +214,8 @@ export interface ContinuousEffectRecord {
   costModifier?: ContinuousCostModifier;
   /** Structured blocker-activation restriction. Omitted for unrelated continuous effects. */
   blockerRestriction?: ContinuousBlockerRestriction;
+  /** Structured attack restriction ("cannot attack"). Omitted for unrelated continuous effects. */
+  attackRestriction?: ContinuousAttackRestriction;
   /** Structured keyword grant. Omitted for unrelated continuous effects. */
   keywordModifier?: ContinuousKeywordModifier;
   /** Structured "cannot be K.O.'d" grant. Omitted for unrelated continuous effects. */

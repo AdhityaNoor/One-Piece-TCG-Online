@@ -349,6 +349,26 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  preventAttack(spec: { appliesToInstanceId: string; duration: ContinuousEffectDuration; description?: string }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'cannot attack',
+      attackRestriction: { appliesToInstanceId: spec.appliesToInstanceId },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToInstanceId} cannot attack (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
   giveDon(targetInstanceId: string, count: number): void {
     const controller = this.working.players[this.controllerId];
     const attached = new Set<string>();
@@ -698,6 +718,7 @@ export class EffectContextImpl implements EffectContext {
       oncePerTurnUsed: [],
       summoningSick: !def.hasRush, // 3-7-4, 10-1-6
       revealedTo: 'all',
+      enteredPlayTurn: this.working.turnNumber,
     };
     const cardsById = { ...minted.state.cardsById, [newId]: newInstance };
     delete cardsById[handInstanceId]; // old hand instance retired
@@ -759,6 +780,7 @@ export class EffectContextImpl implements EffectContext {
       oncePerTurnUsed: [],
       summoningSick: !def.hasRush, // 3-7-4, 10-1-6
       revealedTo: 'all',
+      enteredPlayTurn: this.working.turnNumber,
     };
     const cardsById = { ...minted.state.cardsById, [newId]: newInstance };
     delete cardsById[trashInstanceId]; // old trash instance retired
@@ -818,6 +840,7 @@ export class EffectContextImpl implements EffectContext {
       oncePerTurnUsed: [],
       summoningSick: !def.hasRush,
       revealedTo: 'all',
+      enteredPlayTurn: this.working.turnNumber,
     };
     const cardsById = { ...minted.state.cardsById, [newId]: newInstance };
     delete cardsById[deckInstanceId];

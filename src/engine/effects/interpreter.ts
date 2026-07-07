@@ -33,7 +33,7 @@ function conditionMet(op: EffectOp, bindings: Record<string, string[]>, ctx: Eff
   if (op.ifPrevious === 'previousSelectedAny' && bindings.__lastSelected?.[0] !== 'true') return false;
   if (op.ifPrevious === 'previousMovedAny' && bindings.__lastMoved?.[0] !== 'true') return false;
   if (op.ifPrevious === 'previousRevealMatched' && bindings.__lastRevealMatched?.[0] !== 'true') return false;
-  if (op.ifGate?.length && !evaluateGates(op.ifGate, ctx.state(), defs, ctx.controllerId)) return false;
+  if (op.ifGate?.length && !evaluateGates(op.ifGate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId)) return false;
   return true;
 }
 
@@ -344,6 +344,11 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       }
       return { selectedIds: ids, movedIds: [] };
     }
+    case 'preventAttack': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.preventAttack({ appliesToInstanceId: id, duration: op.duration });
+      return { selectedIds: ids, movedIds: [] };
+    }
     case 'giveDon': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.giveDon(id, op.count);
@@ -591,7 +596,7 @@ function runFollowingAbilities(
     const ability = program.abilities[i];
     if (ability.timing !== timing) continue;
     if (!evalCondition(ability.condition, ctx)) continue;
-    if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId)) continue;
+    if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId)) continue;
     if (payCosts && suspendOrPayAbilityCost(ability, i, ctx, actionId)) return true;
     const suspended = runOps(ability, i, 0, {}, ctx, defs);
     if (suspended) return true;
@@ -650,7 +655,7 @@ export function runTimings(
   for (const { ability, index } of matching) {
     if (!evalCondition(ability.condition, ctx)) continue;
     // "If …" board-state gate: an unmet precondition means the ability does nothing.
-    if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId)) continue;
+    if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId)) continue;
     if (payCosts && suspendOrPayAbilityCost(ability, index, ctx, actionId)) break;
     const suspended = runOps(ability, index, 0, {}, ctx, defs);
     if (suspended) break; // wait for the choice before any further ability runs

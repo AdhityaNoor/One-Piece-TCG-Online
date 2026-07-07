@@ -83,6 +83,8 @@ export type AbilityFunction =
   | { fn: 'ko'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'rest'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'preventRefresh'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
+  // "This/these Character(s) cannot attack" for the given duration (e.g. "until the end of your opponent's next turn" -> duration: 'endOfOpponentsTurn').
+  | { fn: 'preventAttack'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'addCost'; target: TargetSpec; amount: number; duration?: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'addPower'; target: TargetSpec; amount: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'addKeyword'; target: TargetSpec; keyword: ContinuousKeyword; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }

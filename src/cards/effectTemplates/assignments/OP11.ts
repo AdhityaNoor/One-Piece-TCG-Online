@@ -119,7 +119,7 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This Leader cannot attack.[Activate: Main] [Once Per Turn] You may rest 1 of your DON!! cards and
   //   turn 1 card from the top of your Life cards face-up: Play up to 1 {Neptunian} type Character card or
   //   [Megalo] with a cost equal to or less than the number of DON!! cards on your field from your hand.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs static leader cannot-attack support).
 
   // OP11-023 — [Trigger] Rest up to 1 opp Character cost ≤4. PARTIAL: the static in-hand −cost clause is deferred.
   { cardNumber: 'OP11-023', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
@@ -282,7 +282,7 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-058 (character) Monkey.D.Luffy —
   //   If you have 5 or more cards in your hand, this Character cannot attack.[Blocker] (After your opponent
   //   declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs conditional static cannot-attack support).
 
   // OP11-059 (event) Gum-Gum King Cobra —
   //   [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if

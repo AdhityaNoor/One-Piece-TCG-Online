@@ -219,7 +219,7 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-042 (character) Issho —
   //   [On Play] Up to 1 of your opponent's Characters with a cost of 7 or less cannot attack until the
   //   start of your next turn.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs template support for attack-restriction expiry at untilStartOfNextTurn).
 
   // OP05-043 (character) Ulti —
   //   [On Play] If your Leader is multicolored, look at 3 cards from the top of your deck and add up to 1

@@ -437,7 +437,7 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Character was played on this turn, negate the effect of up to 1 of your opponent's Leader during this
   //   turn. Then, negate the effect of up to 1 of your opponent's Characters and that Character cannot
   //   attack until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (selfPlayedThisTurn is available now, but this still needs negate-effect templating before the bundled attack restriction is correct).
 
   // OP09-095 — [Activate: Main] rest 1 DON!! + rest this: Look 5, reveal up to 1 {Blackbeard Pirates} to hand, rest to bottom.
   { cardNumber: 'OP09-095', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Blackbeard Pirates' }, remainder: 'bottom' }] } },

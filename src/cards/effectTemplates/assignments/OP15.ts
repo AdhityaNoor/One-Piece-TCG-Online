@@ -55,7 +55,7 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Then, this Character gains [Rush] during this turn.[Activate: Main] [Once Per Turn] If this Character
   //   was played on this turn, give all of your opponent's Characters −1000 power during this turn for
   //   every DON!! card given to that Character.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (selfPlayedThisTurn is available now, but this still needs scaling from the DON!! previously given to a chosen opponent Character).
 
   // OP15-009 (character) Koby —
   //   If your Character with 7000 base power or less would be removed from the field by your opponent's
@@ -215,7 +215,7 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This Leader cannot attack.[Activate: Main] You may rest this Leader and return 1 of your {Dressrosa}
   //   type Characters to the owner's hand: Play up to 1 {Dressrosa} type Character card with a cost of 3
   //   from your hand.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs static leader cannot-attack support).
 
   // OP15-040 — [On Play] Look at 3; add up to 1 Dressrosa type.
   {
@@ -522,7 +522,13 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Main] If you have 10 or more cards in your trash, up to 1 of your opponent's Characters with a base
   //   cost of 5 or less cannot attack until the end of your opponent's next End Phase. [Trigger] Activate
   //   this card's [Main] effect.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP15-097',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfTrashCount', atLeast: 10 }], functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 5 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfTrashCount', atLeast: 10 }], functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 5 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
+    ],
+  },
 
   // OP15-098 (leader) Monkey.D.Luffy —
   //   If your {Sky Island} type Character with 6000 base power or more would be removed from the field by

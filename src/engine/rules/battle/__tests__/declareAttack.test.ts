@@ -64,6 +64,19 @@ describe('validateDeclareAttack', () => {
     expect(validateDeclareAttack(rig.state, declareAttack('p1', charId, opponentLeaderId), rig.defs).legal).toBe(false);
   });
 
+  it('rejects an attacker under a card-effect attack restriction (e.g. ST19-001 Smoker)', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const { rig, instanceId: charId } = putCharacterInPlay(base, 'p1', makeCharacterDef());
+    const opponentLeaderId = rig.state.players.p2.leaderInstanceId;
+    const state = {
+      ...rig.state,
+      continuousEffects: [
+        { id: 'ce-restrict', sourceInstanceId: 'src', ownerId: 'p2', duration: 'endOfOpponentsTurn' as const, description: 'cannot attack', attackRestriction: { appliesToInstanceId: charId } },
+      ],
+    };
+    expect(validateDeclareAttack(state, declareAttack('p1', charId, opponentLeaderId), rig.defs).legal).toBe(false);
+  });
+
   it('accepts a summoning-sick attacker with a conditional continuous Rush grant when the condition is met', () => {
     const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
     const { rig, instanceId: charId } = putCharacterInPlay(base, 'p1', makeCharacterDef(), { summoningSick: true, donAttached: ['don-a', 'don-b'] });

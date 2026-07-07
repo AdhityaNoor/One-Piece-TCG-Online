@@ -38,4 +38,17 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfDonFieldCount', atMost: 1 }], rig.state, rig.defs, 'p1')).toBe(false);
     expect(evaluateGates([{ kind: 'selfDonFieldCount', atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(true);
   });
+
+  it('checks selfPlayedThisTurn against the source instance, not just any of the owner\'s cards', () => {
+    let rig = buildBaseRig({ turnNumber: 5 });
+    let playedThisTurnId: string;
+    ({ rig, instanceId: playedThisTurnId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'TEST-NEW' }), { enteredPlayTurn: 5 }));
+    let playedEarlierId: string;
+    ({ rig, instanceId: playedEarlierId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'TEST-OLD' }), { enteredPlayTurn: 3 }));
+
+    expect(evaluateGates([{ kind: 'selfPlayedThisTurn' }], rig.state, rig.defs, 'p1', playedThisTurnId)).toBe(true);
+    expect(evaluateGates([{ kind: 'selfPlayedThisTurn' }], rig.state, rig.defs, 'p1', playedEarlierId)).toBe(false);
+    // No sourceInstanceId supplied -> cannot resolve "this Character", so the gate fails closed.
+    expect(evaluateGates([{ kind: 'selfPlayedThisTurn' }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
 });

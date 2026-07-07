@@ -31,6 +31,26 @@ describe('runEndPhaseAndHandoff', () => {
     expect(result.state.continuousEffects.map((e) => e.id)).toEqual(['e3', 'e4']);
   });
 
+  it('expires "endOfOpponentsTurn" effects only in the modifier owner\'s OPPONENT\'s End Phase', () => {
+    const { state } = buildBaseRig({ phase: 'end', activePlayerId: 'p1', turnNumber: 3 });
+    const stateWithEffects = {
+      ...state,
+      continuousEffects: [
+        // Cast by p1 (ownerId 'p1'), restricting one of p2's Characters — expires at the end of p2's turn.
+        { id: 'e-restrict', sourceInstanceId: 'x', ownerId: 'p1', duration: 'endOfOpponentsTurn' as const, description: 'cannot attack' },
+      ],
+    };
+
+    // p1's own End Phase: the modifier owner's opponent (p2) has not had their turn yet — stays.
+    const afterOwnEndPhase = runEndPhaseAndHandoff(stateWithEffects);
+    expect(afterOwnEndPhase.state.continuousEffects.map((e) => e.id)).toEqual(['e-restrict']);
+
+    // p2's End Phase (the owner's opponent) — now it expires.
+    const p2Ending = { ...afterOwnEndPhase.state, currentPhase: 'end' as const };
+    const afterOpponentEndPhase = runEndPhaseAndHandoff(p2Ending);
+    expect(afterOpponentEndPhase.state.continuousEffects).toEqual([]);
+  });
+
   it('logs PHASE_CHANGED then TURN_PASSED', () => {
     const { state } = buildBaseRig({ phase: 'end', activePlayerId: 'p1', turnNumber: 3 });
 

@@ -28,7 +28,7 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-004 (character) Curiel —
   //   This Character cannot attack a Leader on the turn in which it is played.[DON!! x1] This Character
   //   gains [Rush].(This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs attack restrictions that only bar attacks into Leaders, not Characters).
 
   // OP03-005 (character) Thatch —
   //   [Activate: Main] [Once Per Turn] This Character gains +2000 power during this turn. Then, trash this
@@ -325,7 +325,7 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This Leader cannot attack.[Activate: Main] DON!! −1 (You may return the specified number of DON!!
   //   cards from your field to your DON!! deck.) You may rest this Leader: Play up to 1 {Galley-La Company}
   //   type Character card with a cost of 5 or less from your hand.
-  // NOTE: not yet implemented (needs template).
+  // NOTE: not yet implemented (needs static leader cannot-attack support).
 
   // OP03-059 — [When Attacking] DON!! −1: this Character gains [Banish] during this battle.
   { cardNumber: 'OP03-059', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'duringThisBattle' }] } },

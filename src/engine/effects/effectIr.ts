@@ -101,6 +101,8 @@ export type EffectOp =
   // `attackerCategory` optionally restricts a battle immunity to a given attacker category ("by Leaders").
   | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character' } & EffectOpSequenceGate)
   | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
+  // Prevent the target Leader/Character from declaring an attack (7-1-1-1) while active.
+  | ({ op: 'preventAttack'; target: Selector; duration: IrDuration } & EffectOpSequenceGate)
   | ({ op: 'giveDon'; target: Selector; count: number } & EffectOpSequenceGate)
   | ({ op: 'ko'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'rest'; target: Selector } & EffectOpSequenceGate)
@@ -195,6 +197,8 @@ export type AbilityGate =
   | { kind: 'selfDoesNotControlNamed'; name: string } // "If you don't have [X]"
   | { kind: 'selfHandMatching'; atLeast: number; typeIncludes?: string; category?: Exclude<CardCategory, 'don'>; exactPower?: number; minPower?: number } // "reveal N {type}/Event/power cards from your hand"
   | { kind: 'opponentHand'; atLeast?: number; atMost?: number } // "If your opponent has N or more/less cards in their hand"
+  // "If this Character was played on this turn" (self-referential; needs the source instance id).
+  | { kind: 'selfPlayedThisTurn' }
   | { kind: 'selfTrashCount'; atLeast?: number; atMost?: number } // "N or more/less cards in your trash"
   | { kind: 'selfDeckCount'; atLeast?: number; atMost?: number } // "N or less cards in your deck"
   | { kind: 'selfTypedCharacterCount'; typeIncludes: string; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {type} Characters"

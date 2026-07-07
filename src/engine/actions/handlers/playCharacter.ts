@@ -116,6 +116,7 @@ export function executePlayCharacter(
     oncePerTurnUsed: [],
     summoningSick: hasCuratedConditionalRushGrant(registry, handInstance.cardDefinitionId) ? true : !def.hasRush, // 3-7-4, 10-1-6
     revealedTo: 'all', // 3-7-2, open zone
+    enteredPlayTurn: state.turnNumber,
   };
 
   cardsById = { ...cardsById, [newInstanceId]: newInstance };
