@@ -219,7 +219,7 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-042 (character) Issho —
   //   [On Play] Up to 1 of your opponent's Characters with a cost of 7 or less cannot attack until the
   //   start of your next turn.
-  // NOTE: not yet implemented (needs template support for attack-restriction expiry at untilStartOfNextTurn).
+  { cardNumber: 'OP05-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 7 } }, duration: 'untilStartOfNextTurn', optional: true }] } },
 
   // OP05-043 (character) Ulti —
   //   [On Play] If your Leader is multicolored, look at 3 cards from the top of your deck and add up to 1

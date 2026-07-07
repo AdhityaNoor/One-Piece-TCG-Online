@@ -487,7 +487,8 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This Leader cannot attack.[Activate: Main] [Once Per Turn] ① (You may rest the specified number of
   //   DON!! cards in your cost area.): Select up to 1 {Egghead} type card with a cost of 5 or less from
   //   your hand and play it or add it to the top of your Life cards face-up.
-  // NOTE: not yet implemented (needs static leader cannot-attack support).
+  //   PARTIAL: the static "cannot attack" lock is implemented below; the activated play-or-life ability remains deferred.
+  { cardNumber: 'OP07-097', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
 
   // OP07-098 — static: if fewer Life than opponent, cannot be K.O.'d in battle. [Trigger] If Leader [Vegapunk], play this.
   {

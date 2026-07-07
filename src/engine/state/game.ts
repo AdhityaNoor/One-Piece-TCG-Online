@@ -174,7 +174,13 @@ export interface ContinuousAttackRestriction {
   appliesToInstanceId: string;
 }
 
-export type ContinuousKeyword = 'rush' | 'blocker' | 'doubleAttack' | 'banish' | 'unblockable';
+/**
+ * `'canAttackActive'`: "This Leader/Character can also attack active Characters" —
+ * relaxes the normal 7-1-1-2 restriction (only the opponent's Leader or a RESTED
+ * Character may be attacked) for the granted instance's own attacks, checked in
+ * declareAttack.ts's target-legality validation.
+ */
+export type ContinuousKeyword = 'rush' | 'blocker' | 'doubleAttack' | 'banish' | 'unblockable' | 'canAttackActive';
 
 /** A structured keyword grant applied to one instance, with optional dynamic conditions. */
 export interface ContinuousKeywordModifier {

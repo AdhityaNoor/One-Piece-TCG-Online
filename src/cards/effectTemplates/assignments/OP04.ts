@@ -7,6 +7,10 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
 
+  // OP04-001 (leader) Nefeltari Vivi —
+  //   PARTIAL: the static "cannot attack" lock is implemented below; the activated power-and-play ability remains deferred.
+  { cardNumber: 'OP04-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+
   //   your hand. Then, place the rest at the bottom of your deck in any order.
   // NOTE: not yet implemented (needs template).
 
@@ -166,6 +170,10 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   in any order.
   // NOTE: not yet implemented (needs template).
 
+  // OP04-039 (leader) Rebecca —
+  //   PARTIAL: the static "cannot attack" lock is implemented below; the activated life-to-play ability remains deferred.
+  { cardNumber: 'OP04-039', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+
   // OP04-042 (character) Ipponmatsu —
   //   [On Play] Up to 1 of your <Slash> attribute Characters gains +3000 power during this turn. Then,
   //   trash 1 card from the top of your deck.
@@ -288,7 +296,7 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] If your Leader's type includes "Baroque Works", up to 1 of your opponent's Characters with
   //   a cost of 5 or less cannot attack until the start of your next turn. [Trigger] DON!! −1 (You may
   //   return the specified number of DON!! cards from your field to your DON!! deck.): Play this card.
-  // NOTE: not yet implemented (needs template support for attack-restriction expiry at untilStartOfNextTurn).
+  { cardNumber: 'OP04-065', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, duration: 'untilStartOfNextTurn', optional: true }] } },
 
   // OP04-066 (character) Miss.Valentine(Mikita) —
   //   [On Play] Look at 5 cards from the top of your deck; reveal up to 1 card with a type including
@@ -360,6 +368,14 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // OP04-080 (character) Gyats —
+  //   [On Play] Up to 1 of your {Dressrosa} type Characters can also attack active Characters during this turn.
+  { cardNumber: 'OP04-080', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Dressrosa' } }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }] } },
+
+  // OP04-081 (character) Cavendish —
+  //   PARTIAL: the [DON!! x1] active-Character attack grant is implemented below; the attack-triggered K.O. line remains deferred.
+  { cardNumber: 'OP04-081', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+
   // OP04-083 — [Blocker] [On Play] none of your Characters can be K.O.'d by effects until start of next turn; then draw 2 and trash 2.
   { cardNumber: 'OP04-083', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'koImmunityControllerCharactersAll', scope: 'effect', duration: 'untilStartOfNextTurn' }, { fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
 
@@ -373,6 +389,10 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
 
   //   opponent's Characters with a cost of 1 or less. Then, trash 2 cards from the top of your deck.
   // NOTE: not yet implemented (needs template).
+
+  // OP04-090 (character) Monkey.D.Luffy —
+  //   PARTIAL: the static active-Character attack grant is implemented below; the recycle-to-set-active line remains deferred.
+  { cardNumber: 'OP04-090', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent' }] } },
 
   // OP04-092 - [On Play] Look at 3; add Dressrosa other than this card's name, trash rest.
   {

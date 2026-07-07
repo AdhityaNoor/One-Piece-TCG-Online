@@ -215,7 +215,8 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This Leader cannot attack.[Activate: Main] You may rest this Leader and return 1 of your {Dressrosa}
   //   type Characters to the owner's hand: Play up to 1 {Dressrosa} type Character card with a cost of 3
   //   from your hand.
-  // NOTE: not yet implemented (needs static leader cannot-attack support).
+  //   PARTIAL: the static "cannot attack" lock is implemented below; the activated bounce-then-play ability remains deferred.
+  { cardNumber: 'OP15-039', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
 
   // OP15-040 — [On Play] Look at 3; add up to 1 Dressrosa type.
   {

@@ -56,7 +56,7 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP02-014 (character) Whitey Bay —
   //   [DON!! x1] This Character can also attack your opponent's active Characters.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP02-014', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
 
   // OP02-015 — [Activate: Main] rest this: up to 1 of your red Characters (cost 1) gains +3000 this turn.
   { cardNumber: 'OP02-015', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { color: 'red', exactCost: 1 } }, amount: 3000, duration: 'duringThisTurn', optional: true }] } },

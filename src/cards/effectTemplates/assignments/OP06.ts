@@ -469,7 +469,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-083 (character) Oars —
   //   This Character cannot attack.[Activate: Main] You may K.O. 1 of your {Thriller Bark Pirates} type
   //   Characters: This Character's effect is negated during this turn.
-  // NOTE: not yet implemented (needs static self cannot-attack support plus effect-negation templating).
+  //   PARTIAL: the static self attack lock is implemented below; the effect-negation activated ability remains deferred.
+  { cardNumber: 'OP06-083', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent' }] } },
 
   // OP06-084 — [On K.O.] Up to 1 of your Leader or Character cards gains +1000 power during this turn.
   { cardNumber: 'OP06-084', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
@@ -613,7 +614,13 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-110 (character) Nekomamushi —
   //   [DON!! x2] This Character can also attack your opponent's active Characters. [Trigger] If your
   //   opponent has 3 or less Life cards, play this card.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP06-110',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   // OP06-111 (character) Braham —
   //   [Activate: Main] [Once Per Turn] You may place 1 Stage with a cost of 1 at the bottom of the owner's

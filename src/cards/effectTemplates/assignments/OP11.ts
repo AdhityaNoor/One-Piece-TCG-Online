@@ -76,7 +76,7 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-014 (character) Borsalino —
   //   [Blocker][Activate: Main] You may rest this Character: Up to 1 of your {Navy} type Leader or
   //   Character cards can also attack active Characters during this turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP11-014', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addKeyword', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Navy' } }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }] } },
 
   // OP11-016 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
   { cardNumber: 'OP11-016', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
@@ -119,7 +119,8 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This Leader cannot attack.[Activate: Main] [Once Per Turn] You may rest 1 of your DON!! cards and
   //   turn 1 card from the top of your Life cards face-up: Play up to 1 {Neptunian} type Character card or
   //   [Megalo] with a cost equal to or less than the number of DON!! cards on your field from your hand.
-  // NOTE: not yet implemented (needs static leader cannot-attack support).
+  //   PARTIAL: the static "cannot attack" lock is implemented below; the activated play-from-hand ability remains deferred.
+  { cardNumber: 'OP11-022', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
 
   // OP11-023 — [Trigger] Rest up to 1 opp Character cost ≤4. PARTIAL: the static in-hand −cost clause is deferred.
   { cardNumber: 'OP11-023', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
@@ -282,7 +283,7 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-058 (character) Monkey.D.Luffy —
   //   If you have 5 or more cards in your hand, this Character cannot attack.[Blocker] (After your opponent
   //   declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs conditional static cannot-attack support).
+  // NOTE: not yet implemented (selfHand counts exist, but preventAttack has no reevaluated condition field for a dynamic "while hand >= 5" static lock).
 
   // OP11-059 (event) Gum-Gum King Cobra —
   //   [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if
@@ -398,7 +399,7 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] You may trash this Character: If your Leader has the {Navy} type, up to 1 of your
   //   {Navy} type Characters can also attack active Characters during this turn. Then, trash 2 cards from
   //   the top of your deck.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP11-082', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Navy' }], functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Navy' } }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 2 }] } },
 
   // OP11-083 — [Blocker][On Play] Trash 2 cards from your hand.
   { cardNumber: 'OP11-083', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromHand', count: 2 }] } },
@@ -406,7 +407,13 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-084 (character) Kuzan —
   //   [On Play] Trash 3 cards from the top of your deck.[When Attacking] Up to 1 of your {Navy} type Leader
   //   or Character cards can also attack active Characters during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP11-084',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 3 }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addKeyword', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Navy' } }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
 
   // OP11-085 — [On Play] Add up to 1 {SMILE} card with a cost of 5 or less from your trash to your hand.
   { cardNumber: 'OP11-085', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'SMILE', maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -573,5 +580,9 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' },
     { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' },
   ] } },
+
+  // OP11-119 (character) Koby —
+  //   PARTIAL: the on-play canAttackActive grant is implemented below; the attack-triggered power buff remains deferred.
+  { cardNumber: 'OP11-119', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller' }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }] } },
 
 ];

@@ -91,7 +91,7 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP01-021 (character) Franky —
   //   [DON!! x1] This Character can also attack your opponent's active Characters.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP01-021', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
 
   // OP01-022 - [DON!! x1] [When Attacking] Give up to 2 opponent Characters -2000 power.
   { cardNumber: 'OP01-022', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, maxTargets: 2 }] } },
@@ -485,7 +485,7 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] [Once Per Turn] DON!! −1 (You may return the specified number of DON!! cards from
   //   your field to your DON!! deck.): This Character can also attack your opponent's active Characters
   //   during this turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP01-112', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'duringThisTurn' }] } },
 
   { cardNumber: 'OP01-113', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 

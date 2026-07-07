@@ -732,11 +732,14 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   hand.
   // NOTE: not yet implemented (needs template).
 
-  // EB03-008 (character) Hibari —
-  //   [On Play]/[When Attacking] Up to 1 of your {SWORD} type Leader or Character cards can also attack
-  //   active Characters during this turn.[Activate: Main] [Once Per Turn] Give up to 1 of your opponent's
-  //   Characters −1000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB03-008',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'SWORD' } }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addKeyword', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'SWORD' } }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'SWORD' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
 
   // EB03-009 (character) Makino —
   //   [Activate: Main] You may rest this Character: Up to 1 of your Characters with no base effect gains
@@ -1438,10 +1441,13 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB04-050 (event) I'll Whip You Into Shape. ♡ —
-  //   [Main] Up to 1 of your {SWORD} type Leader or Character cards can also attack active Characters
-  //   during this turn.[Counter] Your Leader gains +3000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB04-050',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addKeyword', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'SWORD' } }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   // EB04-051 (character) Emet —
   //   This Character cannot attack unless there is a Character with 12000 base power or more. [Trigger]

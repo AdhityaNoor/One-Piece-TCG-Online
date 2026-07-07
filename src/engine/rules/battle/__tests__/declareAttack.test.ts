@@ -115,6 +115,22 @@ describe('validateDeclareAttack', () => {
     expect(validateDeclareAttack(rig.state, declareAttack('p1', leaderId, opposingCharId), rig.defs).legal).toBe(false);
   });
 
+  it('accepts targeting an ACTIVE opposing Character when the attacker has a "canAttackActive" keyword grant (e.g. OP01-021 Franky)', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const { rig: withAttacker, instanceId: attackerId } = putCharacterInPlay(base, 'p1', makeCharacterDef());
+    const { rig, instanceId: opposingCharId } = putCharacterInPlay(withAttacker, 'p2', makeCharacterDef(), { orientation: 'active' });
+    const state = {
+      ...rig.state,
+      continuousEffects: [
+        { id: 'ce-can-attack-active', sourceInstanceId: attackerId, ownerId: 'p1', duration: 'duringThisTurn' as const, description: 'can also attack active Characters', keywordModifier: { appliesToInstanceId: attackerId, keyword: 'canAttackActive' as const } },
+      ],
+    };
+    expect(validateDeclareAttack(state, declareAttack('p1', attackerId, opposingCharId), rig.defs).legal).toBe(true);
+    // The grant is scoped to the specific attacker instance — a different Character without it still can't.
+    const { rig: withSecondAttacker, instanceId: otherAttackerId } = putCharacterInPlay({ state, defs: rig.defs }, 'p1', makeCharacterDef());
+    expect(validateDeclareAttack(withSecondAttacker.state, declareAttack('p1', otherAttackerId, opposingCharId), withSecondAttacker.defs).legal).toBe(false);
+  });
+
   it('accepts attacking the opposing Leader', () => {
     const { state, defs } = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
     const leaderId = state.players.p1.leaderInstanceId;

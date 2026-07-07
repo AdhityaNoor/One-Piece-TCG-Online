@@ -59,8 +59,8 @@ export function validateDeclareAttack(state: GameState, action: DeclareAttackAct
     } else if (target.currentZone === 'leaderArea') {
       // always a legal target
     } else if (target.currentZone === 'characterArea') {
-      if (target.orientation !== 'rested') {
-        reasons.push(`'${action.targetInstanceId}' is active — only the opponent's Leader or a RESTED Character may be attacked (7-1-1-2).`);
+      if (target.orientation !== 'rested' && !hasContinuousKeyword(defs, state, action.attackerInstanceId, 'canAttackActive')) {
+        reasons.push(`'${action.targetInstanceId}' is active — only the opponent's Leader or a RESTED Character may be attacked (7-1-1-2), unless the attacker has a "can also attack active Characters" grant.`);
       }
     } else {
       reasons.push(`'${action.targetInstanceId}' is not a Leader or Character card.`);

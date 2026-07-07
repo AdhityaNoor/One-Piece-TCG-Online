@@ -213,11 +213,13 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP14-118 (event) You'll Frighten Me... ♡ —
-  //   [Counter] If you have 2 or less Life cards, up to 1 of your opponent's active Characters cannot
-  //   attack during this turn. [Trigger] Play up to 1 Character card with 6000 power or less and a
-  //   [Trigger] from your hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP14-118',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { rested: false } }, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', maxPower: 6000, hasTrigger: true } }] } },
+    ],
+  },
 
   // OP14-119 (character) Dracule Mihawk —
   //   [Your Turn] When this Character becomes rested, up to 1 of your opponent's Characters with a cost of
@@ -231,7 +233,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   of your opponent's next End Phase. Then, if your opponent has a Character with a cost of 0 or with a
   //   cost of 8 or more, draw 1 card.[On K.O.] You may trash 1 card from your hand: Play this Character
   //   card from your trash.
-  // NOTE: not yet implemented (preventAttack exists now, but this card still needs the mixed opponent cost gate for the draw clause and exact "play this Character card from your trash" support).
+  //   PARTIAL: the on-play cost-9-or-less preventAttack is implemented below; the mixed opponent-cost draw gate and exact self-revival line remain deferred.
+  { cardNumber: 'OP14-120', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 9 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
   // --- codegen batch ---
   { cardNumber: 'OP14-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] }] } },
@@ -275,7 +278,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-056 (character) Wadatsumi —
   //   This Character cannot attack.When a card is trashed from your hand by an effect, this Character's
   //   effect is negated during this turn.
-  // NOTE: not yet implemented (needs static cannot-attack-unless support plus effect-negation templating).
+  //   PARTIAL: the static self attack lock is implemented below; the effect-negation trigger remains deferred.
+  { cardNumber: 'OP14-056', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent' }] } },
 
   // OP14-057 — [Trigger] Draw 2. PARTIAL: the OR-typed mass buff [Main] is deferred.
   { cardNumber: 'OP14-057', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }] } },
