@@ -64,7 +64,7 @@ const CLUSTERS = [
     label: 'Look/search top deck, then place rest/top cards top or bottom',
     risk: 'medium',
     match: /top or bottom of (your )?deck|place (them|the rest|it) at the top or bottom/i,
-    note: 'Existing search supports bottom/trash and all-looked top-or-bottom; mixed pick-plus-top/bottom needs resolver expansion.',
+    note: 'Implemented: searchTopDeck remainder deckTopOrBottom after hand pick (OP02-057, OP05-043).',
   },
   {
     id: 'look-reorder-life',
@@ -78,7 +78,7 @@ const CLUSTERS = [
     label: 'Cannot add Life cards to hand by effects',
     risk: 'medium',
     match: /cannot add Life cards to (your|their) hand using your own effects/i,
-    note: 'A prevention modifier over Life-to-hand effects; useful for several blue/red clauses.',
+    note: 'A prevention modifier over Life-to-hand effects; implemented as preventControllerLifeToHand.',
   },
   {
     id: 'delayed-set-active-don',
@@ -134,7 +134,74 @@ const CLUSTERS = [
     label: 'Any number of this card in deck',
     risk: 'low',
     match: /any number of this card in your deck/i,
-    note: 'Deck construction rule metadata, probably not runtime effect logic.',
+    note: 'Deck construction rule metadata — curated in src/cards/decks/unlimitedCopyCards.ts (not runtime engine).',
+  },
+];
+
+/** Sub-clusters keyed on triage `reasons` + tighter effect-text patterns (custom-trigger, replacement-effect, …). */
+const REASON_CLUSTERS = [
+  {
+    id: 'custom-trigger/opponent-character-koed',
+    reason: 'custom-trigger',
+    risk: 'low',
+    match: /opponent's Character is K\.?O/i,
+    note: 'onCharacterKoed + koedCharacterController:opponent (implemented).',
+  },
+  {
+    id: 'custom-trigger/removed-from-field-by-effect',
+    reason: 'custom-trigger',
+    risk: 'high',
+    match: /removed from the field by (your opponent's effect|an effect|your effect)/i,
+    note: 'Implemented: onRemovedFromField + fireRemovedFromFieldReactions (OP07-038, OP08-046, OP08-056 PARTIAL, OP13-078). Battle K.O. excluded.',
+  },
+  {
+    id: 'custom-trigger/koed-by-opponent-effect',
+    reason: 'custom-trigger',
+    risk: 'medium',
+    match: /K\.?O\.?'d by (your opponent's effect|an effect)/i,
+    note: 'Needs onKO with effect-source attribution (distinct from battle K.O.).',
+  },
+  {
+    id: 'custom-trigger/opponent-plays-character',
+    reason: 'custom-trigger',
+    risk: 'medium',
+    match: /your opponent plays a Character|opponent plays a Character/i,
+    note: 'Needs onOpponentCharacterPlayedFromHand (distinct from onCharacterPlayedFromHand).',
+  },
+  {
+    id: 'custom-trigger/given-don',
+    reason: 'custom-trigger',
+    risk: 'medium',
+    match: /is given a DON!! card|given a DON!! card/i,
+    note: 'Implemented: onDonGiven + fireDonGivenReactions (OP02-002 Garp).',
+  },
+  {
+    id: 'custom-trigger/battle-koed-opponent',
+    reason: 'custom-trigger',
+    risk: 'medium',
+    match: /battles and K\.?O\.'s your opponent's Character/i,
+    note: 'Implemented: onBattle + requiresOpponentKoed + fireOnBattleKoedOpponent (OP02-094 Isuka).',
+  },
+  {
+    id: 'replacement-effect/would-be-removed',
+    reason: 'replacement-effect',
+    risk: 'high',
+    match: /would be removed from the field/i,
+    note: 'Removal replacement registry (K.O. replacement exists; field-removal is separate).',
+  },
+  {
+    id: 'replacement-effect/would-be-koed-in-battle',
+    reason: 'replacement-effect',
+    risk: 'medium',
+    match: /would be K\.?O\.?'d in battle/i,
+    note: 'registerKoReplacementSelf/Aura with scope:battle.',
+  },
+  {
+    id: 'replacement-effect/hand-pay-instead',
+    reason: 'replacement-effect',
+    risk: 'medium',
+    match: /you may trash \d+ card(?:s)? from your hand instead/i,
+    note: 'registerKoReplacement* trashFromHand payment (partially exists).',
   },
 ];
 
@@ -151,6 +218,11 @@ const clusters = CLUSTERS.map((cluster) => {
 }).filter((entry) => entry.cards.length > 0).sort((a, b) => b.score - a.score);
 
 const unmatched = allRows.filter((row) => !CLUSTERS.some((cluster) => cluster.match.test(row.effectText)));
+
+const reasonClusters = REASON_CLUSTERS.map((cluster) => {
+  const cards = allRows.filter((row) => row.reasons.includes(cluster.reason) && cluster.match.test(row.effectText));
+  return { cluster, cards, score: score(cluster, cards) };
+}).filter((entry) => entry.cards.length > 0).sort((a, b) => b.score - a.score);
 
 const md = [];
 md.push('# Effect Triage Clusters', '');
@@ -171,6 +243,25 @@ for (const entry of clusters) {
     md.push(`- \`${card.cardNumber}\` ${card.name} (${card.bucket}; caps ${caps}; reasons ${reasons})`);
   }
   if (entry.cards.length > 12) md.push(`- ...and ${entry.cards.length - 12} more`);
+  md.push('');
+}
+md.push('## Reason clusters (custom-trigger / replacement-effect)', '');
+md.push('_Grouped by triage `reasons` column plus tighter effect-text patterns._', '');
+md.push('| Cluster | Risk | Cards | needsPrimitive | defer | Score |', '| --- | --- | ---: | ---: | ---: | ---: |');
+for (const entry of reasonClusters) {
+  const needs = entry.cards.filter((c) => c.bucket === 'needsPrimitive').length;
+  const defer = entry.cards.filter((c) => c.bucket === 'defer').length;
+  md.push(`| \`${entry.cluster.id}\` | ${entry.cluster.risk} | ${entry.cards.length} | ${needs} | ${defer} | ${entry.score.toFixed(1)} |`);
+}
+md.push('', '### Reason cluster details', '');
+for (const entry of reasonClusters) {
+  md.push(`#### ${entry.cluster.id}`, '');
+  md.push(`Risk: **${entry.cluster.risk}**. ${entry.cluster.note}`, '');
+  for (const card of entry.cards.slice(0, 10)) {
+    const caps = card.capabilities.length ? card.capabilities.join('+') : '-';
+    md.push(`- \`${card.cardNumber}\` ${card.name} (${card.bucket}; caps ${caps})`);
+  }
+  if (entry.cards.length > 10) md.push(`- ...and ${entry.cards.length - 10} more`);
   md.push('');
 }
 md.push('## Unmatched', '');

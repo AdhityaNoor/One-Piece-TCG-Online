@@ -245,8 +245,16 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Your Turn] [Once Per Turn] When a Character is removed from the field by your effect, if your
   //   opponent has 5 or more cards in their hand, your opponent places 1 card from their hand at the bottom
   //   of their deck. Then, rest this Character.
-  // NOTE: not yet implemented (needs template).
-
+  { cardNumber: 'OP08-046', templateId: 'ability', params: {
+    timing: 'onRemovedFromField',
+    oncePerTurn: true,
+    condition: { turn: 'your' },
+    gate: [{ kind: 'removedFromFieldCategory', category: 'character' }, { kind: 'removedByEffectController', player: 'controller' }, { kind: 'opponentHand', atLeast: 5 }],
+    functions: [
+      { fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1, chooser: 'opponent' },
+      { fn: 'rest', target: { ref: 'self' } },
+    ],
+  } },
   // OP08-047 — [On Play] you may return 1 of your Characters to hand: return up to 1 Character with a cost of 6 or less to hand.
   //   NOTE: the cost's "other than this Character" self-exclusion is dropped (name-based exclusion would over-match; instance exclusion isn't modeled on move costs).
   { cardNumber: 'OP08-047', templateId: 'ability', params: { timing: 'onPlay', functions: [
@@ -288,8 +296,20 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Your Turn] [Once Per Turn] When your Character with a type including "Whitebeard Pirates" is removed
   //   from the field by an effect, draw 1 card. Then, place 1 card from your hand at the top or bottom of
   //   your deck. [Trigger] Play this card.
-  // NOTE: not yet implemented (needs template).
-
+  // PARTIAL: draw on removal implemented; hand→deck top/bottom choice deferred.
+  {
+    cardNumber: 'OP08-056',
+    templates: [
+      { templateId: 'ability', params: {
+        timing: 'onRemovedFromField',
+        oncePerTurn: true,
+        condition: { turn: 'your' },
+        gate: [{ kind: 'removedFromFieldCategory', category: 'character' }, { kind: 'removedFromFieldController', player: 'controller' }, { kind: 'removedFromFieldTypeIncludes', typeIncludes: 'Whitebeard Pirates' }],
+        functions: [{ fn: 'draw', amount: 1 }],
+      } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'stage', name: 'Moby Dick' }, maxTargets: 1 }] } },
+    ],
+  },
   // OP08-057 — [Activate: Main] [OPT] DON!! −2: choose one — draw 1 if hand<=5, or give up to 1 opp Character −2 cost this turn.
   { cardNumber: 'OP08-057', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 2 }], functions: [{
     fn: 'chooseOne',

@@ -187,7 +187,7 @@ export function executeAction(
       result = executeActivateCardEffect(state, action, defs, registry);
       break;
     case 'GIVE_DON':
-      result = executeGiveDon(state, action);
+      result = executeGiveDon(state, action, defs, registry);
       break;
     case 'RETURN_GIVEN_DON':
       result = executeReturnGivenDon(state, action);

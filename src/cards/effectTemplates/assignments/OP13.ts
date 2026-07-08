@@ -342,8 +342,17 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-078 (stage) Oro Jackson —
   //   [Once Per Turn] When your Character with a type including "Roger Pirates" is removed from the field
   //   by your opponent's effect, add up to 1 DON!! card from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
-
+  { cardNumber: 'OP13-078', templateId: 'ability', params: {
+    timing: 'onRemovedFromField',
+    oncePerTurn: true,
+    gate: [
+      { kind: 'removedFromFieldCategory', category: 'character' },
+      { kind: 'removedFromFieldController', player: 'controller' },
+      { kind: 'removedFromFieldTypeIncludes', typeIncludes: 'Roger Pirates' },
+      { kind: 'removedByEffectController', player: 'opponent' },
+    ],
+    functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }],
+  } },
   // OP13-079 (leader) Imu —
   //   Under the rules of this game, you cannot include Events with a cost of 2 or more in your deck and at
   //   the start of the game, play up to 1 {Mary Geoise} type Stage card from your deck.[Activate: Main]
@@ -564,7 +573,8 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // PARTIAL: trash ally for [Banish] deferred; mapped onPlay draw.
   { cardNumber: 'OP13-053', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
 
-  { cardNumber: 'OP13-079', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Roger Pirates' } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  // OP13-079 (leader) Imu — see stub above; [Main] cost is a choice (trash a {Celestial Dragons}
+  // Character OR a hand card), which no cost kind expresses yet. Deferred, not curated.
 
   { cardNumber: 'OP13-080', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Roger Pirates' }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Roger Pirates', maxCost: 3 }, rested: true }] } },
 

@@ -14,6 +14,7 @@ import type { GameLogEntry } from '../logs/logEntry';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 import { getOpponentId } from '../rules/shared/players';
 import { cannotBeRestedByEffect, computeCurrentCost, computeCurrentPower, isKoImmune } from '../rules/shared/power';
+import { isControllerLifeToHandPrevented } from '../rules/shared/lifeToHandRestriction';
 import { koReplacementDescription } from '../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { createSeededRng } from '../rng/seededRng';
@@ -34,6 +35,34 @@ export class EffectContextImpl implements EffectContext {
   private readonly rested: string[] = [];
   /** Instance ids this resolution moved to the trash via ko(); drained by the interpreter to cascade [On K.O.] (10-2-17). */
   private readonly koed: string[] = [];
+  /** DON!! given to Leader/Character targets this resolution; drained for onDonGiven cascade. */
+  private readonly donGiven: { targetInstanceId: string; count: number }[] = [];
+  /** Cards removed from the field by this resolution's effects; drained for onRemovedFromField cascade. */
+  private readonly fieldRemovals: {
+    targetInstanceId: string;
+    removedControllerId: string;
+    effectControllerId: string;
+  }[] = [];
+  /** Event instance ids queued for nested [Main] activation; drained after the main program finishes. */
+  private readonly pendingEventActivations: string[] = [];
+
+  private static readonly FIELD_ZONES = new Set(['leaderArea', 'characterArea', 'stageArea']);
+
+  private recordFieldRemoval(targetInstanceId: string, fromZone: CardInstance['currentZone']): void {
+    if (!EffectContextImpl.FIELD_ZONES.has(fromZone)) return;
+    const inst = this.working.cardsById[targetInstanceId];
+    if (!inst) return;
+    this.fieldRemovals.push({
+      targetInstanceId,
+      removedControllerId: inst.controllerId,
+      effectControllerId: this.controllerId,
+    });
+  }
+
+  private recordDonGiven(targetInstanceId: string, count: number): void {
+    if (count <= 0) return;
+    this.donGiven.push({ targetInstanceId, count });
+  }
 
   constructor(state: GameState, sourceInstanceId: string, defs: CardDefinitionLookup, actionId: string | null) {
     this.working = state;
@@ -845,6 +874,30 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  preventControllerLifeToHand(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'cannot add Life cards to hand using your own effects',
+      lifeToHandRestriction: { appliesToControllerId: spec.appliesToControllerId },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToControllerId} cannot add Life cards to hand using their own effects (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
   giveDon(targetInstanceId: string, count: number): void {
     this.giveDonFromCostArea(targetInstanceId, count, this.controllerId, { restedOnly: true });
   }
@@ -887,6 +940,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [targetInstanceId, ...toGive],
       visibility: 'public',
     });
+    this.recordDonGiven(targetInstanceId, toGive.length);
     return toGive.length;
   }
 
@@ -920,11 +974,13 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [targetInstanceId, hostId, donInstanceId],
       visibility: 'public',
     });
+    this.recordDonGiven(targetInstanceId, 1);
   }
 
   koApply(targetInstanceId: string): void {
     const inst = this.working.cardsById[targetInstanceId];
     if (!inst) return;
+    const fromZone = inst.currentZone;
     // "Cannot be K.O.'d" (scope 'any', e.g. ST05-017 rider): an effect K.O. is prevented.
     if (isKoImmune(this.defs, this.working, targetInstanceId, 'effect', { koSourceInstanceId: this.sourceInstanceId })) {
       this.logger.push({
@@ -958,6 +1014,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [targetInstanceId],
       visibility: 'public',
     });
+    this.recordFieldRemoval(targetInstanceId, fromZone);
     this.koed.push(targetInstanceId);
   }
 
@@ -979,9 +1036,29 @@ export class EffectContextImpl implements EffectContext {
     return drained;
   }
 
+  /** Drain DON!!-given events from this resolution (for onDonGiven cascade). */
+  takeDonGiven(): { targetInstanceId: string; count: number }[] {
+    const drained = [...this.donGiven];
+    this.donGiven.length = 0;
+    return drained;
+  }
+
+  takeFieldRemovals(): { targetInstanceId: string; removedControllerId: string; effectControllerId: string }[] {
+    const drained = [...this.fieldRemovals];
+    this.fieldRemovals.length = 0;
+    return drained;
+  }
+
+  takePendingEventActivations(): string[] {
+    const drained = [...this.pendingEventActivations];
+    this.pendingEventActivations.length = 0;
+    return drained;
+  }
+
   returnToHand(targetInstanceId: string): void {
     const inst = this.working.cardsById[targetInstanceId];
     if (!inst) return;
+    const fromZone = inst.currentZone;
     const owner = this.working.players[inst.ownerId];
     const newOwner = {
       ...owner,
@@ -1007,14 +1084,15 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [targetInstanceId],
       visibility: 'public',
     });
+    this.recordFieldRemoval(targetInstanceId, fromZone);
   }
 
   moveToBottomDeck(instanceId: string): void {
     const inst = this.working.cardsById[instanceId];
     if (!inst) return;
+    const fromZone = inst.currentZone;
     const owner = this.working.players[inst.ownerId];
     if (!owner) return;
-    const fromZone = inst.currentZone;
     const newOwner = {
       ...owner,
       hand: removeFromZone(owner.hand, instanceId),
@@ -1041,6 +1119,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: 'public',
     });
+    this.recordFieldRemoval(instanceId, fromZone);
   }
 
   moveToLifeTop(instanceId: string, faceUp = false): void {
@@ -1231,6 +1310,73 @@ export class EffectContextImpl implements EffectContext {
     if (def.category === 'stage') {
       this.playStageFromHand(this.sourceInstanceId);
     }
+  }
+
+  playFromHand(handInstanceId: string, rested = false): void {
+    const handInst = this.working.cardsById[handInstanceId];
+    const def = handInst ? this.defs[handInst.cardDefinitionId] : undefined;
+    if (!handInst || !def || handInst.currentZone !== 'hand') return;
+    if (def.category === 'stage') {
+      this.playStageFromHand(handInstanceId);
+      return;
+    }
+    if (def.category === 'character') {
+      this.playCharacterFromHand(handInstanceId, rested);
+    }
+  }
+
+  queueEventActivationFromHand(handInstanceId: string): void {
+    const handInst = this.working.cardsById[handInstanceId];
+    if (!handInst || handInst.currentZone !== 'hand') return;
+    const def = this.defs[handInst.cardDefinitionId];
+    if (!def || def.category !== 'event') return;
+    const controllerId = handInst.controllerId;
+    const player = this.working.players[controllerId];
+    if (!player) return;
+
+    const cardsById = {
+      ...this.working.cardsById,
+      [handInstanceId]: {
+        ...handInst,
+        currentZone: 'trash' as const,
+        orientation: null,
+        donAttached: [],
+        faceState: 'faceUp' as const,
+        revealedTo: 'all' as const,
+      },
+    };
+    const newHand = removeFromZone(player.hand, handInstanceId);
+    const newTrash = addToZoneTop(player.trash, handInstanceId);
+    this.working = {
+      ...this.working,
+      cardsById,
+      players: { ...this.working.players, [controllerId]: { ...player, hand: newHand, trash: newTrash } },
+    };
+    this.pendingEventActivations.push(handInstanceId);
+    this.logger.push({
+      actorPlayerId: controllerId,
+      type: 'EFFECT_ACTIVATED',
+      message: `${controllerId} activated [Main] Event ${def.name} from hand via an effect (no play cost).`,
+      data: { from: 'hand', to: 'trash', cost: 0, instanceId: handInstanceId },
+      relatedCardInstanceIds: [handInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  queueEventActivationFromTrash(trashInstanceId: string): void {
+    const inst = this.working.cardsById[trashInstanceId];
+    if (!inst || inst.currentZone !== 'trash') return;
+    const def = this.defs[inst.cardDefinitionId];
+    if (!def || def.category !== 'event') return;
+    this.pendingEventActivations.push(trashInstanceId);
+    this.logger.push({
+      actorPlayerId: inst.controllerId,
+      type: 'EFFECT_ACTIVATED',
+      message: `${inst.controllerId} activated [Main] Event ${def.name} from trash via an effect.`,
+      data: { from: 'trash', to: 'trash', cost: 0, instanceId: trashInstanceId },
+      relatedCardInstanceIds: [trashInstanceId],
+      visibility: 'public',
+    });
   }
 
   private playStageFromHand(handInstanceId: string): void {
@@ -1498,9 +1644,24 @@ export class EffectContextImpl implements EffectContext {
   moveToHand(instanceId: string): void {
     const inst = this.working.cardsById[instanceId];
     if (!inst) return;
+    const fromZone = inst.currentZone;
+    if (
+      fromZone === 'lifeArea' &&
+      inst.ownerId === this.controllerId &&
+      isControllerLifeToHandPrevented(this.working, inst.ownerId)
+    ) {
+      this.logger.push({
+        actorPlayerId: this.controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${inst.ownerId} cannot add Life cards to hand using their own effects — move prevented.`,
+        data: { instanceId, prevented: true },
+        relatedCardInstanceIds: [instanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     const owner = this.working.players[inst.ownerId];
     if (!owner) return;
-    const fromZone = inst.currentZone;
     const newOwner = {
       ...owner,
       deck: removeFromZone(owner.deck, instanceId),
@@ -1524,6 +1685,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: { visibleTo: [inst.ownerId] },
     });
+    this.recordFieldRemoval(instanceId, fromZone);
   }
 
   trashCard(instanceId: string): void {
@@ -1555,6 +1717,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: 'public',
     });
+    if (EffectContextImpl.FIELD_ZONES.has(fromZone)) this.recordFieldRemoval(instanceId, fromZone);
   }
 
   rest(targetInstanceId: string): void {
@@ -1951,6 +2114,59 @@ export class EffectContextImpl implements EffectContext {
       data: { lookedCount: lookedIds.length, topOrderIds: top, bottomOrderIds: bottom },
       relatedCardInstanceIds: lookedIds,
       visibility: { visibleTo: [playerId] },
+    });
+  }
+
+  searchResolveHandWithTopOrBottomRemainder(
+    playerId: string,
+    lookedIds: string[],
+    handIds: string[],
+    topOrderIds: string[],
+    bottomOrderIds: string[],
+    reveal: boolean,
+  ): void {
+    const player = this.working.players[playerId];
+    if (!player || lookedIds.length === 0) return;
+
+    const lookedSet = new Set(lookedIds);
+    const handChosen = handIds.filter((id) => lookedSet.has(id));
+    const handSet = new Set(handChosen);
+    const rest = lookedIds.filter((id) => !handSet.has(id));
+    const restSet = new Set(rest);
+    const top = topOrderIds.filter((id) => restSet.has(id));
+    const topSet = new Set(top);
+    const remaining = rest.filter((id) => !topSet.has(id));
+    const remainingSet = new Set(remaining);
+    const bottom =
+      bottomOrderIds.length === remaining.length && bottomOrderIds.every((id) => remainingSet.has(id))
+        ? bottomOrderIds
+        : remaining;
+
+    let deck = { ...player.deck, cardIds: player.deck.cardIds.slice(lookedIds.length) };
+    let hand = player.hand;
+    const cardsById = { ...this.working.cardsById };
+
+    for (const id of handChosen) {
+      hand = addToZoneBottom(hand, id);
+      cardsById[id] = { ...cardsById[id], currentZone: 'hand', revealedTo: reveal ? 'all' : [playerId] };
+    }
+    deck = { ...deck, cardIds: [...top, ...deck.cardIds, ...bottom] };
+    for (const id of rest) {
+      cardsById[id] = { ...cardsById[id], currentZone: 'deck', revealedTo: [] };
+    }
+
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [playerId]: { ...player, hand, deck } },
+      cardsById,
+    };
+    this.logger.push({
+      actorPlayerId: playerId,
+      type: 'EFFECT_RESOLVED',
+      message: `Searched the top ${lookedIds.length}: ${reveal ? 'revealed and ' : ''}added ${handChosen.length} to hand, reordered ${rest.length} to top/bottom.`,
+      data: { lookedCount: lookedIds.length, addedCount: handChosen.length, topOrderIds: top, bottomOrderIds: bottom, reveal },
+      relatedCardInstanceIds: handChosen,
+      visibility: reveal ? 'public' : { visibleTo: [playerId] },
     });
   }
 

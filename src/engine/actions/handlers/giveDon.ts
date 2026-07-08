@@ -14,6 +14,8 @@ import type { GameState } from '../../state/game';
 import type { GiveDonAction, ValidationResult } from '../action';
 import { createActionLogger } from '../../rules/shared/actionLogger';
 import type { ActionExecuteResult } from '../actionExecuteResult';
+import type { CardDefinitionLookup } from '../../rules/shared/definitions';
+import { fireDonGivenReactions, type EffectTemplateRegistry } from '../../effects';
 
 export function validateGiveDon(state: GameState, action: GiveDonAction): ValidationResult {
   const reasons: string[] = [];
@@ -39,7 +41,12 @@ export function validateGiveDon(state: GameState, action: GiveDonAction): Valida
   return { legal: reasons.length === 0, reasons };
 }
 
-export function executeGiveDon(state: GameState, action: GiveDonAction): ActionExecuteResult {
+export function executeGiveDon(
+  state: GameState,
+  action: GiveDonAction,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+): ActionExecuteResult {
   const logger = createActionLogger(state, action.actionId);
   const target = state.cardsById[action.targetInstanceId];
 
@@ -59,5 +66,10 @@ export function executeGiveDon(state: GameState, action: GiveDonAction): ActionE
   });
 
   const nextState: GameState = { ...state, cardsById, log: [...state.log, ...logger.log] };
-  return { state: nextState, log: logger.log, pendingChoices: [] };
+  const reacted = fireDonGivenReactions(nextState, action.playerId, action.targetInstanceId, 1, registry, defs, action.actionId);
+  return {
+    state: { ...reacted.state, log: [...nextState.log, ...reacted.log] },
+    log: [...logger.log, ...reacted.log],
+    pendingChoices: reacted.pendingChoices,
+  };
 }

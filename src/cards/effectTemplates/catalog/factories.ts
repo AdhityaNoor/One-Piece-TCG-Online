@@ -370,6 +370,12 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         duration: f.duration,
         ...(f.negatedTimings?.length ? { negatedTimings: f.negatedTimings } : {}),
       }];
+    case 'preventControllerLifeToHand':
+      return [{
+        op: 'preventControllerLifeToHand',
+        player: f.player ?? 'controller',
+        duration: f.duration,
+      }];
     case 'addCost':
       return targetOps(
         f.target,
@@ -572,6 +578,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'playFromHand': {
       const maxTargets = f.maxTargets ?? 1;
+      const category = f.filter.category;
+      const noun = category === 'stage' ? 'Stage' : category === 'event' ? 'Event' : 'Character';
       return [
         {
           op: 'chooseTargets',
@@ -579,9 +587,37 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           from: { sel: 'controllerHand', filter: f.filter },
           min: 0,
           max: maxTargets,
-          prompt: `Play up to ${maxTargets} matching Character card${maxTargets === 1 ? '' : 's'} from your hand.`,
+          prompt: `Play up to ${maxTargets} matching ${noun} card${maxTargets === 1 ? '' : 's'} from your hand.`,
         },
         { op: 'playFromHand', target: { sel: 'var', name: 't' }, ...(f.rested ? { rested: true } : {}) },
+      ];
+    }
+    case 'activateEventFromHand': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerHand', filter: f.filter },
+          min: 0,
+          max: maxTargets,
+          prompt: `Activate up to ${maxTargets} matching Event card${maxTargets === 1 ? '' : 's'} from your hand.`,
+        },
+        { op: 'activateEventFromHand', target: { sel: 'var', name: 't' } },
+      ];
+    }
+    case 'activateEventFromTrash': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerTrash', filter: f.filter },
+          min: 0,
+          max: maxTargets,
+          prompt: `Activate up to ${maxTargets} matching Event card${maxTargets === 1 ? '' : 's'} from your trash.`,
+        },
+        { op: 'activateEventFromTrash', target: { sel: 'var', name: 't' } },
       ];
     }
     case 'playFromDeck': {
@@ -628,7 +664,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
               ? `Look at the top ${f.look}: choose cards to return to the top of your deck in selected order; the rest go to the bottom.`
               : f.destination === 'play'
                 ? `Look at the top ${f.look}: play up to ${f.pick} matching card${f.pick === 1 ? '' : 's'}${f.rested ? ' rested' : ''}; the rest ${f.remainder === 'trash' ? 'go to your trash' : 'go to the bottom of your deck'}.`
-                : `Look at the top ${f.look}: add up to ${f.pick} matching card${f.pick === 1 ? '' : 's'} to ${f.destination === 'lifeTop' ? 'the top of your Life cards' : 'your hand'}; the rest ${f.remainder === 'trash' ? 'go to your trash' : 'go to the bottom of your deck'}.`,
+                : `Look at the top ${f.look}: add up to ${f.pick} matching card${f.pick === 1 ? '' : 's'} to ${f.destination === 'lifeTop' ? 'the top of your Life cards' : 'your hand'}; the rest ${f.remainder === 'trash' ? 'go to your trash' : f.remainder === 'deckTopOrBottom' ? 'are placed at the top or bottom of your deck in any order' : 'go to the bottom of your deck'}.`,
         },
       ];
     case 'addPowerSelf':
@@ -939,6 +975,7 @@ const FACTORY_MAP: {
         ...(p.cost && p.cost.length > 0 ? { cost: p.cost } : {}),
         ...(p.oncePerTurn ? { oncePerTurn: true } : {}),
         ...(p.battlingOpponentAttribute ? { battlingOpponentAttribute: p.battlingOpponentAttribute } : {}),
+        ...(p.requiresOpponentKoed ? { requiresOpponentKoed: true } : {}),
         ops: p.functions.flatMap(functionOps),
       },
     ]);

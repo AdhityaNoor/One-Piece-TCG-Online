@@ -1340,7 +1340,17 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB03-031 (character) Vinsmoke Reiju —
   //   [Your Turn] [On Play] DON!! −1: If your Leader is [Sanji], activate the [Main] effect of up to 1
   //   Event card with a cost of 7 or less in your trash.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB03-031',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      condition: { turn: 'your' },
+      cost: [{ kind: 'donMinus', count: 1 }],
+      gate: [{ kind: 'leaderName', name: 'Sanji' }],
+      functions: [{ fn: 'activateEventFromTrash', filter: { category: 'event', maxCost: 7 }, maxTargets: 1 }],
+    },
+  },
 
   // EB03-032 — [Your Turn] [On Play] up to 1 [Charlotte Katakuri] +2000 this turn.
   { cardNumber: 'EB03-032', templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Charlotte Katakuri' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
@@ -1518,7 +1528,17 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Blocker][On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Dressrosa} type Stage
   //   card and add it to your hand. Then, place the rest at the bottom of your deck in any order and play
   //   up to 1 {Dressrosa} type Stage card with a cost of 1 from your hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB03-048',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'stage', typeIncludes: 'Dressrosa' }, remainder: 'bottom' },
+        { fn: 'playFromHand', filter: { category: 'stage', typeIncludes: 'Dressrosa', maxCost: 1 }, maxTargets: 1 },
+      ],
+    },
+  },
 
   // EB03-049 — [Main] rest 7 DON!!: if Leader [Perona], play 2 Thriller Bark from hand (cost ≤6 and ≤4).
   // PARTIAL: "from your hand or trash" per card is deferred; mapped as hand-only.

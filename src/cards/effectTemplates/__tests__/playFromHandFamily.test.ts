@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { runTimings, resumeProgram } from '../../../engine/effects/interpreter';
-import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putInHand } from '../../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, makeStageDef, putCharacterInPlay, putInHand } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
 
 const SRC = makeCharacterDef({ cardDefinitionId: 'SYN-SRC', cardNumber: 'SYN-SRC', category: 'character', baseCost: 3, basePower: 4000 });
@@ -37,5 +37,26 @@ describe('family: playFromHand', () => {
       .map((id) => state.cardsById[id])
       .find((card) => card.cardDefinitionId === MATCH.cardDefinitionId);
     expect(played?.orientation).toBe('rested');
+  });
+
+  it('can play a matching Stage from hand', () => {
+    const STAGE = makeStageDef({ cardDefinitionId: 'SYN-STAGE', cardNumber: 'SYN-STAGE', baseCost: 1, types: ['Dressrosa'] });
+    const assignment: CardEffectAssignment = {
+      cardNumber: 'SYN-SRC',
+      templateId: 'ability',
+      params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'stage', typeIncludes: 'Dressrosa', maxCost: 1 }, maxTargets: 1 }] },
+    };
+    const registry = buildRegistryFromAssignments([assignment]);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC));
+    const stage = putInHand(rig, 'p1', STAGE);
+    rig = stage.rig;
+
+    const fired = runTimings(registry['SYN-SRC'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+    const choice = fired.state.pendingChoices[0];
+    const resolved = resumeProgram(registry['SYN-SRC'], fired.state, choice, [stage.instanceId], rig.defs, null, registry).state;
+    expect(resolved.players.p1.hand.cardIds).not.toContain(stage.instanceId);
+    expect(resolved.players.p1.stageArea.cardIds.some((id) => resolved.cardsById[id].cardDefinitionId === STAGE.cardDefinitionId)).toBe(true);
   });
 });

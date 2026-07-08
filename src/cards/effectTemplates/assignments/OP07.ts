@@ -197,8 +197,13 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-038 (leader) Boa Hancock —
   //   [Your Turn] [Once Per Turn] This effect can be activated when a Character is removed from the field
   //   by your effect. If you have 5 or less cards in your hand, draw 1 card.
-  // NOTE: not yet implemented (needs template).
-
+  { cardNumber: 'OP07-038', templateId: 'ability', params: {
+    timing: 'onRemovedFromField',
+    oncePerTurn: true,
+    condition: { turn: 'your' },
+    gate: [{ kind: 'removedFromFieldCategory', category: 'character' }, { kind: 'removedByEffectController', player: 'controller' }],
+    functions: [{ fn: 'draw', amount: 1, ifGate: [{ kind: 'selfHand', atMost: 5 }] }],
+  } },
   // OP07-039 — [DON!! x1] [When Attacking] Look at 3 and place them at the top or bottom of the deck in any order.
   { cardNumber: 'OP07-039', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'searchTopDeck', look: 3, pick: 0, reveal: false, destination: 'deckTopOrBottom' }] } },
 

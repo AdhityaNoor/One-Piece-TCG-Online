@@ -14,13 +14,39 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-002 (leader) Monkey.D.Garp —
   //   [Your Turn] When this Leader or any of your Characters is given a DON!! card, give up to 1 of your
   //   opponent's Characters with a cost of 7 or less −1 cost during this turn.
-  // NOTE: not yet implemented (needs template).
-
+  { cardNumber: 'OP02-002', templateId: 'ability', params: {
+    timing: 'onDonGiven',
+    condition: { turn: 'your' },
+    gate: [{ kind: 'donGivenTargetLeaderOrCharacter' }],
+    functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent', filter: { maxCost: 7 } }, amount: -1, duration: 'duringThisTurn', optional: true, maxTargets: 1 }],
+  } },
   // OP02-004 (character) Edward.Newgate —
   //   [On Play] Up to 1 of your Leader gains +2000 power until the start of your next turn. Then, you
   //   cannot add Life cards to your hand using your own effects during this turn. [DON!! x2] [When
   //   Attacking] K.O. up to 1 of your opponent's Characters with 3000 power or less.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP02-004',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true, maxTargets: 1 },
+            { fn: 'preventControllerLifeToHand', duration: 'duringThisTurn' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'whenAttacking',
+          condition: { donAttachedAtLeast: 2 },
+          functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }],
+        },
+      },
+    ],
+  },
 
   // OP02-011 — [On Play] K.O. up to 1 of your opponent's Characters with 3000 power or less.
   // OP02-005 - [On Play] Look at up to 5; add red cost-1 Character.
@@ -106,7 +132,26 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-023 (event) You May Be a Fool...but I Still Love You —
   //   [Main] If you have 3 or less Life cards, you cannot add Life cards to your hand using your own
   //   effects during this turn. [Trigger] Up to 1 of your Leader gains +1000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP02-023',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          gate: [{ kind: 'selfLife', atMost: 3 }],
+          functions: [{ fn: 'preventControllerLifeToHand', duration: 'duringThisTurn' }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'lifeTrigger',
+          functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }],
+        },
+      },
+    ],
+  },
 
   // OP02-024 — PARTIAL: [Edward.Newgate] + {Whitebeard Pirates} +2000 when ≤1 Life; [Trigger] play this Stage.
   {
@@ -265,8 +310,7 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] Look at 2 cards from the top of your deck; reveal up to 1 {The Seven Warlords of the Sea}
   //   type card and add it to your hand. Then, place the rest at the top or bottom of the deck in any
   //   order.
-  // NOTE: not yet implemented (needs template).
-
+  { cardNumber: 'OP02-057', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 2, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'The Seven Warlords of the Sea' }, remainder: 'deckTopOrBottom' }] } },
   // OP02-058 - [On Play] Look at 5; add blue Impel Down card other than this card's name.
   {
     cardNumber: 'OP02-058',
@@ -466,8 +510,13 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-094 (character) Isuka —
   //   [DON!! x1] [Once Per Turn] When this Character battles and K.O.'s your opponent's Character, set this
   //   Character as active.
-  // NOTE: not yet implemented (needs template).
-
+  { cardNumber: 'OP02-094', templateId: 'ability', params: {
+    timing: 'onBattle',
+    requiresOpponentKoed: true,
+    oncePerTurn: true,
+    condition: { donAttachedAtLeast: 1 },
+    functions: [{ fn: 'setActiveSelf' }],
+  } },
   // OP02-095 (character) Onigumo —
   //   If there is a Character with a cost of 0, this Character gains [Banish]. (When this card deals
   //   damage, the target card is trashed without activating its Trigger.)

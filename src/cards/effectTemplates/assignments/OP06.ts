@@ -109,8 +109,20 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] You may rest this Leader: Rest up to 1 of your opponent's DON!! cards or Characters
   //   with a cost of 3 or less. Then, you cannot add Life cards to your hand using your own effects during
   //   this turn.
-  //   PARTIAL: the "cannot add Life cards to your hand using your own effects" self-restriction is deferred.
-  { cardNumber: 'OP06-020', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'rest', target: { group: 'charactersOrDon', player: 'opponent', filter: { maxCost: 3 } }, optional: true, maxTargets: 1 }] } },
+  //   PARTIAL: the "cannot add Life cards to your hand using your own effects" clause is now curated
+  //   via preventControllerLifeToHand.
+  {
+    cardNumber: 'OP06-020',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'restThis' }],
+      functions: [
+        { fn: 'rest', target: { group: 'charactersOrDon', player: 'opponent', filter: { maxCost: 3 } }, optional: true, maxTargets: 1 },
+        { fn: 'preventControllerLifeToHand', duration: 'duringThisTurn' },
+      ],
+    },
+  },
 
   // OP06-021 — [Activate: Main] [Once Per Turn] choose one: rest opp Character cost<=4 or −1 cost.
   { cardNumber: 'OP06-021', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{

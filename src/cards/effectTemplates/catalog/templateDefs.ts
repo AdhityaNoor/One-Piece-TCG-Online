@@ -110,6 +110,8 @@ export type AbilityFunction =
   | { fn: 'preventRest'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string; effectSourceController?: 'opponent' | 'controller'; condition?: IrCondition }
   | { fn: 'negateEffect'; target: TargetSpec; duration: IrDuration; negatedTimings?: IrTiming[]; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[] }
+  // "You cannot add Life cards to your hand using your own effects" for the controller (or opponent).
+  | { fn: 'preventControllerLifeToHand'; duration: IrDuration; player?: 'controller' | 'opponent' }
   | { fn: 'addCost'; target: TargetSpec; amount: number; duration?: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'addPower'; target: TargetSpec; amount: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   // "This card's / your Leader's base power BECOMES N" (2-6): a SET (overwrite), not a +/− delta.
@@ -137,6 +139,8 @@ export type AbilityFunction =
   | { fn: 'peekLifeAndPlace'; from: 'controllerOrOpponentTop'; placement: 'topOrBottom' }
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
   | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number; optional?: boolean; rested?: boolean }
+  | { fn: 'activateEventFromHand'; filter: SearchFilter; maxTargets?: number }
+  | { fn: 'activateEventFromTrash'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number; rested?: boolean }
   | { fn: 'playFromTrash'; filter: SearchFilter; maxTargets?: number; rested?: boolean }
   | { fn: 'triggerPlaySelf' }
@@ -232,6 +236,8 @@ export interface AbilityTemplateParams {
   oncePerTurn?: boolean;
   /** onBattle only: the battled Character must carry this attribute (e.g. 'strike'). */
   battlingOpponentAttribute?: string;
+  /** onBattle only: fire after K.O.'ing an opponent Character in this battle (not at battle start). */
+  requiresOpponentKoed?: boolean;
 }
 
 export interface TemplateParamMap {

@@ -9,6 +9,7 @@ import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { runTimings, resumeProgram } from './interpreter';
 import { evaluateGates, type GateEvalContext } from './gates';
+import { autoSelectDonMinusIds, canPayAbilityCost, payAbilityCost } from './abilityCost';
 import type { Ability, IrTiming } from './effectIr';
 import type { EffectTemplateRegistry } from './effectTemplate';
 
@@ -16,6 +17,7 @@ import type { EffectTemplateRegistry } from './effectTemplate';
 const ON_BATTLE_OPT_KEY = 'onBattle';
 /** Per-instance once-per-turn key for [When DON!! is returned] abilities. Cleared in the Refresh Phase. */
 const ON_DON_RETURNED_OPT_KEY = 'onDonReturned';
+const ON_DON_GIVEN_OPT_KEY = 'onDonGiven';
 /** Per-instance once-per-turn keys for reactive timings. Cleared in the Refresh Phase. */
 const REACTIVE_ONCE_PER_TURN_KEYS: Partial<Record<IrTiming, string>> = {
   onOpponentEventActivated: 'onOpponentEventActivated',
@@ -25,6 +27,7 @@ const REACTIVE_ONCE_PER_TURN_KEYS: Partial<Record<IrTiming, string>> = {
   onDrawOutsideDrawPhase: 'onDrawOutsideDrawPhase',
   onLifeToHand: 'onLifeToHand',
   onCharacterKoed: 'onCharacterKoed',
+  onRemovedFromField: 'onRemovedFromField',
 };
 
 function mergeResults(a: ActionExecuteResult, b: ActionExecuteResult): ActionExecuteResult {
@@ -182,6 +185,58 @@ export function fireEventActivatedReactions(
   if (you.pendingChoices.length > 0) return { state: working, log, pendingChoices: you.pendingChoices };
   const opp = fireOpponentEventActivatedReactions(working, activatorPlayerId, registry, defs, actionId);
   return mergeResults({ state: working, log, pendingChoices: [] }, opp);
+}
+
+/**
+ * Resolve a nested "activate the [Main] effect of an Event" without paying its
+ * play cost. Used by effects like Sabo (hand) and Reiju (trash). Skips when the
+ * Event's own [Main] ability cost cannot be auto-paid.
+ */
+export function fireNestedEventActivation(
+  state: GameState,
+  eventInstanceId: string,
+  activatorPlayerId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const instance = state.cardsById[eventInstanceId];
+  if (!instance) return noop(state);
+  const def = defs[instance.cardDefinitionId];
+  if (!def || def.category !== 'event') return noop(state);
+  const program = registry[instance.cardDefinitionId];
+  const ability = program?.abilities.find((a) => a.timing === 'activateMain');
+  if (!ability) return noop(state);
+
+  const costs = ability.cost ?? [];
+  const selectedDonMinus = autoSelectDonMinusIds(state, activatorPlayerId, costs);
+  const reasons = canPayAbilityCost(state, eventInstanceId, activatorPlayerId, costs, selectedDonMinus);
+  if (reasons.length > 0) return noop(state);
+
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  if (costs.length > 0) {
+    const paid = payAbilityCost(working, eventInstanceId, activatorPlayerId, costs, actionId, selectedDonMinus);
+    working = paid.state;
+    log = [...paid.log];
+    if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
+      const cascaded = afterAbilityCostPaid(working, activatorPlayerId, paid, registry, defs, actionId);
+      working = cascaded.state;
+      log = [...log, ...cascaded.log];
+      if (cascaded.pendingChoices.length > 0) {
+        return { state: working, log, pendingChoices: cascaded.pendingChoices };
+      }
+    }
+  }
+
+  const fired = fireActivate(working, eventInstanceId, registry, defs, actionId);
+  working = fired.state;
+  log = [...log, ...fired.log];
+  if (fired.pendingChoices.length > 0) {
+    return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+  const reactive = fireEventActivatedReactions(working, activatorPlayerId, registry, defs, actionId);
+  return mergeResults({ state: working, log, pendingChoices: [] }, reactive);
 }
 
 function fieldInstanceIds(state: GameState, playerId: string): string[] {
@@ -387,7 +442,7 @@ export function fireOnBattle(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  const ability = program.abilities.find((a) => a.timing === 'onBattle');
+  const ability = program.abilities.find((a) => a.timing === 'onBattle' && !a.requiresOpponentKoed);
   if (!ability) return noop(state);
   // [When this Character battles <attribute> Characters]: the OTHER battler (attacker<->defender
   // relative to this source) must be a Character carrying the required attribute.
@@ -402,6 +457,37 @@ export function fireOnBattle(
     if (!isOpposingCharacter || !(oppDef?.attributes ?? []).some((a) => a.toLowerCase() === needle)) return noop(state);
   }
   // Gate + once-per-turn are checked here so the flag is only consumed on a real fire.
+  if (!triggeredAbilityWouldFire(ability, instance, state, defs)) return noop(state);
+  if (ability.oncePerTurn && instance.oncePerTurnUsed.includes(ON_BATTLE_OPT_KEY)) return noop(state);
+
+  const result = runTimings(program, ['onBattle'], state, instanceId, defs, actionId, registry);
+  if (!ability.oncePerTurn) return result;
+  const fired = result.state.cardsById[instanceId];
+  if (!fired) return result;
+  return {
+    ...result,
+    state: { ...result.state, cardsById: { ...result.state.cardsById, [instanceId]: { ...fired, oncePerTurnUsed: [...fired.oncePerTurnUsed, ON_BATTLE_OPT_KEY] } } },
+  };
+}
+
+/**
+ * Fires a card's deferred [When this Character battles and K.O.'s ...] ability
+ * (timing 'onBattle' + requiresOpponentKoed). Call from the Damage Step after an
+ * opponent Character is K.O.'d, with the battler who scored the K.O. as source.
+ */
+export function fireOnBattleKoedOpponent(
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const instance = state.cardsById[instanceId];
+  if (!instance || instance.currentZone !== 'characterArea') return noop(state);
+  const program = registry[instance.cardDefinitionId];
+  if (!program) return noop(state);
+  const ability = program.abilities.find((a) => a.timing === 'onBattle' && a.requiresOpponentKoed);
+  if (!ability) return noop(state);
   if (!triggeredAbilityWouldFire(ability, instance, state, defs)) return noop(state);
   if (ability.oncePerTurn && instance.oncePerTurnUsed.includes(ON_BATTLE_OPT_KEY)) return noop(state);
 
@@ -574,6 +660,86 @@ export function fireDonReturnedReactions(
         }
       }
     }
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
+/**
+ * Fires [When … is given a DON!! card] abilities (timing onDonGiven) for each
+ * in-play card controlled by `playerId` after DON!! is given to `targetInstanceId`.
+ */
+export function fireDonGivenReactions(
+  state: GameState,
+  playerId: string,
+  targetInstanceId: string,
+  donGivenCount: number,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  if (donGivenCount <= 0) return noop(state);
+  const eventContext: GateEvalContext = { donGivenTargetInstanceId: targetInstanceId, donGivenCount };
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const id of fieldInstanceIds(working, playerId)) {
+    const inst = working.cardsById[id];
+    if (!inst) continue;
+    const program = registry[inst.cardDefinitionId];
+    if (!program?.abilities.some((a) => a.timing === 'onDonGiven')) continue;
+    const abilities = program.abilities.filter((a) => a.timing === 'onDonGiven');
+    for (const ability of abilities) {
+      if (ability.oncePerTurn && inst.oncePerTurnUsed.includes(ON_DON_GIVEN_OPT_KEY)) continue;
+      if (!triggeredAbilityWouldFire(ability, inst, working, defs, eventContext)) continue;
+      const fired = runTimings(program, ['onDonGiven'], working, id, defs, actionId, registry, false, eventContext);
+      working = fired.state;
+      log = [...log, ...fired.log];
+      if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+      if (ability.oncePerTurn) {
+        const updated = working.cardsById[id];
+        if (updated) {
+          working = {
+            ...working,
+            cardsById: {
+              ...working.cardsById,
+              [id]: { ...updated, oncePerTurnUsed: [...updated.oncePerTurnUsed, ON_DON_GIVEN_OPT_KEY] },
+            },
+          };
+        }
+      }
+    }
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
+export interface FieldRemovalEvent {
+  targetInstanceId: string;
+  removedControllerId: string;
+  effectControllerId: string;
+}
+
+/**
+ * Fires [When a Character is removed from the field by an effect] abilities
+ * (timing onRemovedFromField) for every in-play card that can observe the event.
+ */
+export function fireRemovedFromFieldReactions(
+  state: GameState,
+  event: FieldRemovalEvent,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const eventContext: GateEvalContext = {
+    removedFromFieldInstanceId: event.targetInstanceId,
+    removedFromFieldControllerId: event.removedControllerId,
+    removedByEffectControllerId: event.effectControllerId,
+  };
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const observerId of Object.keys(working.players)) {
+    const res = fireReactiveAbilitiesForPlayer(working, observerId, 'onRemovedFromField', registry, defs, actionId, eventContext);
+    working = res.state;
+    log = [...log, ...res.log];
+    if (res.pendingChoices.length > 0) return { state: working, log, pendingChoices: res.pendingChoices };
   }
   return { state: working, log, pendingChoices: [] };
 }

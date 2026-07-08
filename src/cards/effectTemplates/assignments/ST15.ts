@@ -8,7 +8,15 @@ export const ST15_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST15-001 (character) Atmos —
   //   [When Attacking] If your Leader is [Edward.Newgate], you cannot add Life cards to your hand using
   //   your own effects during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'ST15-001',
+    templateId: 'ability',
+    params: {
+      timing: 'whenAttacking',
+      gate: [{ kind: 'leaderName', name: 'Edward.Newgate' }],
+      functions: [{ fn: 'preventControllerLifeToHand', duration: 'duringThisTurn' }],
+    },
+  },
 
   // ST15-002 — [On Play] give up to 1 rested DON!! to Leader/1 Char. [Activate: Main] rest this: K.O. up to 1 opp Character 5000 power or less.
   {

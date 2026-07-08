@@ -113,7 +113,7 @@ export interface CharacterMoveFilter {
   excludeSelfName?: boolean;
 }
 
-export type SearchRemainderDestination = 'bottom' | 'trash';
+export type SearchRemainderDestination = 'bottom' | 'trash' | 'deckTopOrBottom';
 export type SearchPickDestination = 'hand' | 'lifeTop' | 'deckTopOrBottom' | 'play';
 export type SequenceCondition = 'previousSelectedAny' | 'previousMovedAny' | 'previousRevealMatched';
 
@@ -173,6 +173,8 @@ export type EffectOp =
   | ({ op: 'negateEffect'; target: Selector; duration: IrDuration; negatedTimings?: IrTiming[] } & EffectOpSequenceGate)
   // Negate abilities on all cards controlled by a player (e.g. "your [On Play] effects are negated").
   | ({ op: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[] } & EffectOpSequenceGate)
+  // "You cannot add Life cards to your hand using your own effects" for the controller.
+  | ({ op: 'preventControllerLifeToHand'; player: 'controller' | 'opponent'; duration: IrDuration } & EffectOpSequenceGate)
   | ({ op: 'giveDon'; target: Selector; count: number } & EffectOpSequenceGate)
   // Reassign up to N DON!! cards already given on the controller's field onto a chosen Character.
   | ({ op: 'giveGivenDon'; donTarget: Selector; characterTarget: Selector } & EffectOpSequenceGate)
@@ -196,7 +198,9 @@ export type EffectOp =
   | ({ op: 'chooseLifeToHand'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then add it to hand
   | ({ op: 'chooseLifeToTrash'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then trash it
   | ({ op: 'playSelf' } & EffectOpSequenceGate) // play the source Character itself, e.g. "[Trigger] Play this card"
-  | ({ op: 'playFromHand'; target: Selector; rested?: boolean } & EffectOpSequenceGate) // put a chosen Character from hand into play (no cost); `rested` plays it rested
+  | ({ op: 'playFromHand'; target: Selector; rested?: boolean } & EffectOpSequenceGate) // put a chosen card from hand into play (no cost); Character or Stage
+  | ({ op: 'activateEventFromHand'; target: Selector } & EffectOpSequenceGate) // activate [Main] of a chosen Event from hand (no play cost)
+  | ({ op: 'activateEventFromTrash'; target: Selector } & EffectOpSequenceGate) // activate [Main] of a chosen Event in trash
   | ({ op: 'playFromTrash'; target: Selector; rested?: boolean } & EffectOpSequenceGate) // put a chosen Character from trash into play (no cost); `rested` plays it rested
   | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string; rested?: boolean } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
@@ -260,6 +264,8 @@ export type IrTiming =
   | 'onCharacterKoed'
   | 'onRested'
   | 'onDonReturned'
+  | 'onDonGiven'
+  | 'onRemovedFromField'
   | 'onOpponentEventActivated'
   | 'onYouEventActivated'
   | 'onOpponentBlockerActivated'
@@ -340,10 +346,17 @@ export type AbilityGate =
   | { kind: 'anyCharacterBasePowerAtLeast'; power: number } // "if there is a Character with a base power of N or more"
   | { kind: 'opponentHasCharacterExactCost'; exactCost: number } // "if your opponent has a Character with a cost of N"
   | { kind: 'selfDonReturnedThisAction'; atLeast?: number; atMost?: number } // "When N or more DON!! cards on your field are returned …"
+  | { kind: 'donGivenTargetLeaderOrCharacter' } // onDonGiven: the card that received DON is your Leader or a Character
+  | { kind: 'donGivenTargetIsSelf' } // onDonGiven: this card/Leader was the DON recipient
+  | { kind: 'selfDonGivenThisAction'; atLeast?: number; atMost?: number } // onDonGiven: N+ DON!! were given to this card this event
   | { kind: 'playedCharacterNoBaseEffect' } // onCharacterPlayedFromHand: the just-played Character has no base effect
   // onCharacterKoed only: filter the reactive window by whose Character was K.O.'d.
   // 'opponent' = "When your opponent's Character is K.O.'d"; 'controller' = "When your Character is K.O.'d".
   | { kind: 'koedCharacterController'; player: 'opponent' | 'controller' }
+  | { kind: 'removedFromFieldController'; player: 'opponent' | 'controller' } // onRemovedFromField: whose card left the field
+  | { kind: 'removedByEffectController'; player: 'opponent' | 'controller' } // onRemovedFromField: whose effect caused the removal
+  | { kind: 'removedFromFieldCategory'; category: Exclude<CardCategory, 'don'> } // onRemovedFromField: removed card category
+  | { kind: 'removedFromFieldTypeIncludes'; typeIncludes: string } // onRemovedFromField: removed card carries this type
   | { kind: 'anyOf'; gates: AbilityGate[] }; // OR: satisfied if any sub-gate holds ("if Leader is X or Y")
 
 export interface Ability {
@@ -362,6 +375,11 @@ export interface Ability {
    * include this value, e.g. ST05-010 Zephyr ("battles ＜Strike＞ Characters"). Checked in fireOnBattle.
    */
   battlingOpponentAttribute?: string;
+  /**
+   * onBattle only: defer firing until the Damage Step after this card K.O.'s an
+   * opponent Character in battle (OP02-094 Isuka). Checked in fireOnBattleKoedOpponent.
+   */
+  requiresOpponentKoed?: boolean;
   ops: EffectOp[];
 }
 

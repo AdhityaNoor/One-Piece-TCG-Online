@@ -18,7 +18,7 @@ import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoRepl
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates, countSelfTypedCharacters } from './gates';
 import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
-import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions } from './fireTiming';
+import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation } from './fireTiming';
 import { isAbilityNegated } from './effectNegation';
 import type { GateEvalContext } from './gates';
 import type { EffectTemplateRegistry } from './effectTemplate';
@@ -100,6 +100,40 @@ function finishWithCascade(
     working = subRes.state;
     log = [...log, ...subRes.log];
     if (subRes.pendingChoices.length > 0) return { state: working, log, pendingChoices: subRes.pendingChoices };
+  }
+
+  const donGivenQueue = ctx.takeDonGiven();
+  guard = 0;
+  while (donGivenQueue.length > 0 && guard++ < 200) {
+    const event = donGivenQueue.shift()!;
+    const target = working.cardsById[event.targetInstanceId];
+    if (!target) continue;
+    const fired = fireDonGivenReactions(working, target.controllerId, event.targetInstanceId, event.count, registry, defs, actionId);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+
+  const removalQueue = ctx.takeFieldRemovals();
+  guard = 0;
+  while (removalQueue.length > 0 && guard++ < 200) {
+    const event = removalQueue.shift()!;
+    const removed = fireRemovedFromFieldReactions(working, event, registry, defs, actionId);
+    working = removed.state;
+    log = [...log, ...removed.log];
+    if (removed.pendingChoices.length > 0) return { state: working, log, pendingChoices: removed.pendingChoices };
+  }
+
+  const eventQueue = ctx.takePendingEventActivations();
+  guard = 0;
+  while (eventQueue.length > 0 && guard++ < 200) {
+    const eventId = eventQueue.shift()!;
+    const inst = working.cardsById[eventId];
+    if (!inst) continue;
+    const fired = fireNestedEventActivation(working, eventId, inst.controllerId, registry, defs, actionId);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
   }
 
   return { state: working, log, pendingChoices: [] };
@@ -620,6 +654,11 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       });
       return EMPTY_RESULT;
     }
+    case 'preventControllerLifeToHand': {
+      const targetPlayerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      ctx.preventControllerLifeToHand({ appliesToControllerId: targetPlayerId, duration: op.duration });
+      return EMPTY_RESULT;
+    }
     case 'giveDon': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.giveDon(id, op.count);
@@ -749,7 +788,17 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return { selectedIds: [ctx.sourceInstanceId], movedIds: [ctx.sourceInstanceId] };
     case 'playFromHand': {
       const ids = resolveSelector(op.target, ctx, bindings);
-      for (const id of ids) ctx.playCharacterFromHand(id, op.rested === true);
+      for (const id of ids) ctx.playFromHand(id, op.rested === true);
+      return { selectedIds: ids, movedIds: ids };
+    }
+    case 'activateEventFromHand': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.queueEventActivationFromHand(id);
+      return { selectedIds: ids, movedIds: ids };
+    }
+    case 'activateEventFromTrash': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.queueEventActivationFromTrash(id);
       return { selectedIds: ids, movedIds: ids };
     }
     case 'playFromTrash': {
@@ -1336,6 +1385,54 @@ export function resumeProgram(
         ctx.searchResolveTopOrBottom(ctx.controllerId, looked, topOrder, selection);
       }
       const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: topOrder, movedIds: looked });
+      return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
+    }
+    if (remainder === 'deckTopOrBottom' && destination === 'hand') {
+      const looked = rs.bindings.__looked ?? [];
+      const handChosen = rs.bindings.__searchHandChosen ?? selection;
+      const restAfterHand = looked.filter((id) => !new Set(handChosen).has(id));
+      if (!rs.bindings.__searchHandChosen) {
+        if (restAfterHand.length === 0) {
+          ctx.searchResolveHandWithTopOrBottomRemainder(ctx.controllerId, looked, handChosen, [], [], reveal);
+          const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: handChosen, movedIds: handChosen });
+          return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
+        }
+        const topOrderChoice: PendingChoice = {
+          id: `${choice.sourceInstanceId}__ir-${rs.abilityIndex}-${rs.opIndex}-top-order`,
+          playerId: ctx.controllerId,
+          kind: 'SELECT_CARDS',
+          prompt: 'Choose cards to return to the top of your deck in selected order; unselected cards will go to the bottom.',
+          constraints: { min: 0, max: restAfterHand.length, candidateInstanceIds: restAfterHand },
+          sourceInstanceId: choice.sourceInstanceId,
+          sourceEffectId: 'ir',
+          resumeState: preserveBranch({ ...rs.bindings, __searchHandChosen: handChosen }),
+        };
+        ctx.emitChoice(topOrderChoice);
+        return ctx.finish();
+      }
+      const topOrder = rs.bindings.__searchTopOrder ?? selection;
+      if (!rs.bindings.__searchTopOrder) {
+        const topSet = new Set(topOrder);
+        const bottomRest = restAfterHand.filter((id) => !topSet.has(id));
+        if (bottomRest.length > 1) {
+          const bottomOrderChoice: PendingChoice = {
+            id: `${choice.sourceInstanceId}__ir-${rs.abilityIndex}-${rs.opIndex}-bottom-order`,
+            playerId: ctx.controllerId,
+            kind: 'SELECT_CARDS',
+            prompt: 'Choose the order to place the remaining looked cards at the bottom of your deck. First selected is placed first; last selected becomes the bottom card.',
+            constraints: { min: bottomRest.length, max: bottomRest.length, candidateInstanceIds: bottomRest },
+            sourceInstanceId: choice.sourceInstanceId,
+            sourceEffectId: 'ir',
+            resumeState: preserveBranch({ ...rs.bindings, __searchTopOrder: topOrder }),
+          };
+          ctx.emitChoice(bottomOrderChoice);
+          return ctx.finish();
+        }
+        ctx.searchResolveHandWithTopOrBottomRemainder(ctx.controllerId, looked, handChosen, topOrder, bottomRest, reveal);
+      } else {
+        ctx.searchResolveHandWithTopOrBottomRemainder(ctx.controllerId, looked, handChosen, rs.bindings.__searchTopOrder, selection, reveal);
+      }
+      const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: handChosen, movedIds: handChosen });
       return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
     }
     if (remainder === 'bottom' && !rs.bindings.__searchChosen) {

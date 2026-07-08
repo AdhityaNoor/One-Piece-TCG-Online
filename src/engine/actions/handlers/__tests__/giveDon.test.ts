@@ -71,7 +71,7 @@ describe('executeGiveDon', () => {
     const { rig, instanceId: charId } = putCharacterInPlay(base, 'p1', makeCharacterDef());
     const { rig: withDon, donIds } = putDon(rig, 'p1', 1);
 
-    const result = executeGiveDon(withDon.state, giveDonAction('p1', donIds[0], charId));
+    const result = executeGiveDon(withDon.state, giveDonAction('p1', donIds[0], charId), withDon.defs);
 
     const donInstance = result.state.cardsById[donIds[0]];
     expect(donInstance.donRested).toBe(true);

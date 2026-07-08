@@ -306,7 +306,15 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-046 (character) Sabo —
   //   [Blocker][On Play] If your Leader has the {Dressrosa} type, activate up to 1 {Dressrosa} type Event
   //   from your hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP15-046',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'leaderType', type: 'Dressrosa' }],
+      functions: [{ fn: 'activateEventFromHand', filter: { category: 'event', typeIncludes: 'Dressrosa' }, maxTargets: 1 }],
+    },
+  },
 
 
 

@@ -40,7 +40,7 @@ import { getDefinition, type CardDefinitionLookup } from '../shared/definitions'
 import { computeCurrentPower, hasContinuousKeyword, isKoImmune } from '../shared/power';
 import { getOpponentId } from '../shared/players';
 import { buildKoReplacementConfirmChoice, findKoReplacementRecord } from '../shared/koAttempt';
-import { fireOnKO, fireOnBattle, fireLifeDamageDealtReactions, fireLifeToHandReactions, type EffectTemplateRegistry } from '../../effects';
+import { fireOnKO, fireOnBattle, fireOnBattleKoedOpponent, fireLifeDamageDealtReactions, fireLifeToHandReactions, type EffectTemplateRegistry } from '../../effects';
 import type { KoReplacementResumeState } from '../../events/pendingChoice';
 
 export interface DamageStepResult {
@@ -313,6 +313,11 @@ export function resolveDamageAndEndOfBattle(
       nextState = koFired.state;
       koLog = [...koLog, ...koFired.log];
       koPending = [...koPending, ...koFired.pendingChoices];
+
+      const koedBattle = fireOnBattleKoedOpponent(nextState, attackerId, registry, defs, causedByActionId);
+      nextState = koedBattle.state;
+      onBattleLog = [...onBattleLog, ...koedBattle.log];
+      onBattlePending = [...onBattlePending, ...koedBattle.pendingChoices];
     }
   } else {
     logger.push({
@@ -372,6 +377,14 @@ export function finishBattleAfterKoDecision(
     nextState = koFired.state;
     koLog = koFired.log;
     koPending = koFired.pendingChoices;
+
+    const attackerId = kr.battle?.attackerId;
+    if (attackerId) {
+      const koedBattle = fireOnBattleKoedOpponent(nextState, attackerId, registry, defs, actionId ?? kr.battle?.causedByActionId ?? null);
+      nextState = koedBattle.state;
+      koLog = [...koLog, ...koedBattle.log];
+      koPending = [...koPending, ...koedBattle.pendingChoices];
+    }
   } else {
     const logger = createActionLogger(nextState, actionId);
     logger.push({

@@ -372,6 +372,11 @@ export interface ContinuousKoReplacementModifier {
   action: KoReplacementAction;
 }
 
+/** "You cannot add Life cards to your hand using your own effects" (self-sourced Life→hand only). */
+export interface ContinuousLifeToHandRestriction {
+  appliesToControllerId: string;
+}
+
 /** "Negate the effect(s)" on one instance or all cards controlled by a player. */
 export interface ContinuousEffectNegation {
   /** Negate abilities on this Leader/Character/Stage instance. */
@@ -409,6 +414,8 @@ export interface ContinuousEffectRecord {
   koReplacementModifier?: ContinuousKoReplacementModifier;
   /** Structured effect negation. Omitted for unrelated continuous effects. */
   effectNegation?: ContinuousEffectNegation;
+  /** Blocks controller-sourced Life→hand moves. Omitted for unrelated continuous effects. */
+  lifeToHandRestriction?: ContinuousLifeToHandRestriction;
   /**
    * One-shot counter for cost discounts that expire after N matching plays from hand.
    * Omitted = unlimited until duration expiry.

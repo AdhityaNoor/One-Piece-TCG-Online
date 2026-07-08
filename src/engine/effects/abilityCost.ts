@@ -36,6 +36,13 @@ export function requiredDonMinusCount(costs: AbilityCost[] = []): number {
     .reduce((sum, cost) => sum + cost.count, 0);
 }
 
+/** Auto-pick field DON!! for nested/free activations that cannot prompt for DON!! −N selection. */
+export function autoSelectDonMinusIds(state: GameState, playerId: string, costs: AbilityCost[] = []): string[] {
+  const needed = requiredDonMinusCount(costs);
+  if (needed <= 0) return [];
+  return fieldDonIds(state, playerId).slice(0, needed);
+}
+
 export function canPayAbilityCost(
   state: GameState,
   sourceInstanceId: string,
@@ -78,8 +85,12 @@ export function canPayAbilityCost(
       }
       case 'trashThis': {
         const source = state.cardsById[sourceInstanceId];
-        if (!source || source.currentZone !== 'characterArea') {
-          reasons.push('Cost requires trashing the source Character, but it is not in play.');
+        if (!source) {
+          reasons.push('Cost requires trashing the source card, but it is not in play.');
+        } else if (source.currentZone === 'trash') {
+          // already trashed (e.g. Event moved to trash before paying [Main] ability cost)
+        } else if (source.currentZone !== 'characterArea') {
+          reasons.push('Cost requires trashing the source card, but it is not in play.');
         }
         break;
       }
@@ -137,6 +148,8 @@ export function payAbilityCost(
       }
       case 'trashThis': {
         const source = working.cardsById[sourceInstanceId];
+        if (!source) break;
+        if (source.currentZone === 'trash') break;
         const owner = working.players[source.ownerId];
         const fromZone = source.currentZone;
         working = {

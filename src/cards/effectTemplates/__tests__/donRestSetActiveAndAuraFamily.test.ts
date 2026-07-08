@@ -2,13 +2,14 @@
  * Engine-capability tests for reusable DON!! denial, set-active, and aura families:
  *   - restOpponentDon            (DON!! denial: rest an opponent's active DON!!)
  *   - onBattle timing            (+ [Once Per Turn] enforcement in fireOnBattle)
+ *   - onBattle requiresOpponentKoed (deferred post-K.O. set-active, OP02-094)
  *   - endOfTurn timing           (fired for the ending player's cards)
  *   - addPowerAura               (dynamic anthem over a filtered group, gated on source state)
  *
  * Synthetic cards + generic assignments — the capability, not any single card number.
  */
 import { describe, expect, it } from 'vitest';
-import { runTimings, resumeProgram, fireOnBattle, fireEndOfTurn } from '../../../engine/effects';
+import { runTimings, resumeProgram, fireOnBattle, fireOnBattleKoedOpponent, fireEndOfTurn } from '../../../engine/effects';
 import { computeCurrentPower } from '../../../engine/rules/shared';
 import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putDon } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
@@ -106,6 +107,39 @@ describe('family: onBattle timing with [Once Per Turn]', () => {
     const res = fireOnBattle(rig.state, attackerId, registry, rig.defs, null);
     expect(res.state.cardsById[attackerId].orientation).toBe('rested');
     expect(res.state.cardsById[attackerId].oncePerTurnUsed).not.toContain('onBattle');
+  });
+});
+
+describe('family: onBattle requiresOpponentKoed (post-K.O.)', () => {
+  const assignment: CardEffectAssignment = {
+    cardNumber: 'SYN-SRC',
+    templateId: 'ability',
+    params: { timing: 'onBattle', requiresOpponentKoed: true, oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'setActiveSelf' }] },
+  };
+
+  it('does not fire at battle start via fireOnBattle', () => {
+    const registry = reg(assignment);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let attackerId: string;
+    ({ rig, instanceId: attackerId } = putCharacterInPlay(rig, 'p1', SRC, { orientation: 'rested', donAttached: ['d1'] }));
+    const res = fireOnBattle(rig.state, attackerId, registry, rig.defs, null);
+    expect(res.state.cardsById[attackerId].orientation).toBe('rested');
+    expect(res.state.cardsById[attackerId].oncePerTurnUsed).not.toContain('onBattle');
+  });
+
+  it('sets active after K.O. via fireOnBattleKoedOpponent, then once-per-turn blocks', () => {
+    const registry = reg(assignment);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let attackerId: string;
+    ({ rig, instanceId: attackerId } = putCharacterInPlay(rig, 'p1', SRC, { orientation: 'rested', donAttached: ['d1'] }));
+
+    const first = fireOnBattleKoedOpponent(rig.state, attackerId, registry, rig.defs, null);
+    expect(first.state.cardsById[attackerId].orientation).toBe('active');
+    expect(first.state.cardsById[attackerId].oncePerTurnUsed).toContain('onBattle');
+
+    const reRested = { ...first.state, cardsById: { ...first.state.cardsById, [attackerId]: { ...first.state.cardsById[attackerId], orientation: 'rested' as const } } };
+    const second = fireOnBattleKoedOpponent(reRested, attackerId, registry, rig.defs, null);
+    expect(second.state.cardsById[attackerId].orientation).toBe('rested');
   });
 });
 

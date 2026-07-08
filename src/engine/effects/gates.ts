@@ -55,6 +55,16 @@ function currentCostForGate(state: GameState, defs: CardDefinitionLookup, instan
 export interface GateEvalContext {
   /** DON!! returned to the DON!! deck during the current cost-payment batch. */
   donReturnedCount?: number;
+  /** Leader/Character that received DON!! (onDonGiven reactive window). */
+  donGivenTargetInstanceId?: string;
+  /** How many DON!! cards were given to donGivenTargetInstanceId this event. */
+  donGivenCount?: number;
+  /** Card removed from the field by an effect (onRemovedFromField reactive window). */
+  removedFromFieldInstanceId?: string;
+  /** Controller of the card that was removed from the field. */
+  removedFromFieldControllerId?: string;
+  /** Player who controlled the effect that removed the card. */
+  removedByEffectControllerId?: string;
   /** Character just played from hand (onCharacterPlayedFromHand reactive window). */
   playedCharacterInstanceId?: string;
   /** Controller (pre-K.O.) of the Character that was K.O.'d (onCharacterKoed reactive window). */
@@ -441,6 +451,27 @@ function evaluateGate(
       return true;
     }
 
+    case 'donGivenTargetLeaderOrCharacter': {
+      const targetId = eventContext?.donGivenTargetInstanceId;
+      if (!targetId) return false;
+      const inst = state.cardsById[targetId];
+      if (!inst) return false;
+      return inst.currentZone === 'leaderArea' || inst.currentZone === 'characterArea';
+    }
+
+    case 'donGivenTargetIsSelf': {
+      if (!sourceInstanceId) return false;
+      return eventContext?.donGivenTargetInstanceId === sourceInstanceId;
+    }
+
+    case 'selfDonGivenThisAction': {
+      if (!sourceInstanceId || eventContext?.donGivenTargetInstanceId !== sourceInstanceId) return false;
+      const count = eventContext?.donGivenCount ?? 0;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
     case 'opponentHand': {
       const opponentId = getOpponentId(state, ownerId);
       const count = state.players[opponentId].hand.cardIds.length;
@@ -462,6 +493,35 @@ function evaluateGate(
       if (!koedControllerId) return false;
       const isController = koedControllerId === ownerId;
       return gate.player === 'controller' ? isController : !isController;
+    }
+
+    case 'removedFromFieldController': {
+      const removedControllerId = eventContext?.removedFromFieldControllerId;
+      if (!removedControllerId) return false;
+      const isController = removedControllerId === ownerId;
+      return gate.player === 'controller' ? isController : !isController;
+    }
+
+    case 'removedByEffectController': {
+      const effectControllerId = eventContext?.removedByEffectControllerId;
+      if (!effectControllerId) return false;
+      const isController = effectControllerId === ownerId;
+      return gate.player === 'controller' ? isController : !isController;
+    }
+
+    case 'removedFromFieldCategory': {
+      const removedId = eventContext?.removedFromFieldInstanceId;
+      if (!removedId) return false;
+      const def = defs[state.cardsById[removedId]?.cardDefinitionId ?? ''];
+      return !!def && def.category === gate.category;
+    }
+
+    case 'removedFromFieldTypeIncludes': {
+      const removedId = eventContext?.removedFromFieldInstanceId;
+      if (!removedId) return false;
+      const def = defs[state.cardsById[removedId]?.cardDefinitionId ?? ''];
+      if (!def) return false;
+      return typeMatches(def.types, gate.typeIncludes);
     }
 
     case 'selfPlayedThisTurn': {

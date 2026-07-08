@@ -229,8 +229,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   //   start of your next turn.
   { cardNumber: 'OP05-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 7 } }, duration: 'untilStartOfNextTurn', optional: true }] } },
 
-  // OP05-043 — needs primitive: after adding up to 1 looked card to hand, place the remainder at top or bottom in any order.
-
+  // OP05-043 — [On Play] If Leader multicolored: look 3, add up to 1 to hand, rest top/bottom any order.
+  { cardNumber: 'OP05-043', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderMulticolor' }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: false, destination: 'hand', remainder: 'deckTopOrBottom' }] } },
   // OP05-045 — [Activate: Main] rest this + trash 1 hand: place up to 1 Character cost ≤2 at bottom of deck.
   { cardNumber: 'OP05-045', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 

@@ -152,6 +152,12 @@ export interface EffectContext {
     negatedTimings?: import('./effectIr').IrTiming[];
     description?: string;
   }): void;
+  /** Register "cannot add Life cards to hand using your own effects" for a player. */
+  preventControllerLifeToHand(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void;
   /** Give up to `count` un-attached DON!! from the controller's cost area to a Leader/Character (6-5-5). */
   giveDon(targetInstanceId: string, count: number): void;
   /** Reassign one DON!! already given on the field onto another in-play card. */
@@ -211,6 +217,15 @@ export interface EffectContext {
   searchPlayResolve(playerId: string, lookedIds: string[], chosenIds: string[], remainder: SearchRemainderDestination, rested?: boolean, bottomOrderIds?: string[]): void;
   /** Resolve a top-deck search/look whose placement returns cards to top and bottom in selected order. */
   searchResolveTopOrBottom(playerId: string, lookedIds: string[], topOrderIds: string[], bottomOrderIds: string[]): void;
+  /** Pick subset to hand, then place the rest of the looked cards at top/bottom in selected order. */
+  searchResolveHandWithTopOrBottomRemainder(
+    playerId: string,
+    lookedIds: string[],
+    handIds: string[],
+    topOrderIds: string[],
+    bottomOrderIds: string[],
+    reveal: boolean,
+  ): void;
   /** Emit a fully-built PendingChoice (the interpreter uses this to suspend; carries its resume point). */
   emitChoice(choice: PendingChoice): void;
 }
