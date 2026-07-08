@@ -58,7 +58,29 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   to 1 of your opponent's Characters other than [Monkey.D.Luffy] cannot attack until the end of your
   //   opponent's next End Phase. [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 4 or
   //   less.
-  // NOTE: not yet implemented (needs filtered opponent leader-or-character union targeting: a rested Leader OR a Character other than [Monkey.D.Luffy]).
+  {
+    cardNumber: 'PRB02-017',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
+            {
+              fn: 'preventAttack',
+              target: { group: 'leaderOrCharacters', player: 'opponent', filter: { restedLeader: true, excludeName: 'Monkey.D.Luffy' } },
+              duration: 'endOfOpponentsTurn',
+              optional: true,
+              maxTargets: 1,
+              ifPrevious: 'previousMovedAny',
+            },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   // PRB02-018 (character) Portgas.D.Ace —
   //   [On Play] If you have a face-up Life card, play up to 1 [Sabo], [Portgas.D.Ace], or [Monkey.D.Luffy]

@@ -78,6 +78,8 @@ export interface TargetFilter {
   noBaseEffect?: boolean;
   /** Exclude cards with this exact printed name ("other than [X]"). */
   excludeName?: string;
+  /** For leaderOrCharacters union: include opponent Leader only when rested/active matches. */
+  restedLeader?: boolean;
 }
 
 export type TargetSpec =
@@ -124,6 +126,7 @@ export type AbilityFunction =
   | { fn: 'preventBlockers'; duration: IrDuration; target?: 'self' | 'chosenControllerLeaderOrCharacter'; filter?: { typeIncludes?: string; name?: string; minPower?: number }; blockerPowerAtLeast?: number; powerBonus?: number }
   | { fn: 'suppressBlockerOnTarget'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number }
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
+  | { fn: 'drawAndTrashByTypedCharacterCount'; typeIncludes: string }
   | { fn: 'trashFromHand'; count: number }
   | { fn: 'optionalTrashFromHand'; count: number }
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }

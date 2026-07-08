@@ -70,6 +70,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['draw {N} card and trash {M} card from your hand'],
     examples: [{ cardNumber: 'EB04-032', snippet: "{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }" }],
   },
+  drawAndTrashByTypedCharacterCount: {
+    id: 'drawAndTrashByTypedCharacterCount',
+    summary: 'Draw N then trash N from hand, where N = count of your in-play Characters with a matching type.',
+    params: [{ name: 'typeIncludes', type: 'string', required: true }],
+    covers: ['draw 1 card for each of your {type} type Characters', 'then trash the same number of cards from your hand'],
+    examples: [{ cardNumber: 'EB04-011', snippet: "{ fn: 'drawAndTrashByTypedCharacterCount', typeIncludes: 'Neptunian' }" }],
+  },
   addDonFromDeck: {
     id: 'addDonFromDeck',
     summary: 'Add N DON!! from the DON!! deck, active or rested.',

@@ -66,7 +66,14 @@ function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTa
 
   if (target.group === 'leader') return null;
   if (target.group === 'leaderOrCharacters' && target.player === 'controller') return { sel: 'controllerLeaderOrCharacters', ...target.filter };
-  if (target.group === 'leaderOrCharacters' && target.player === 'opponent') return { sel: 'opponentLeaderOrCharacters' };
+  if (target.group === 'leaderOrCharacters' && target.player === 'opponent') {
+    const { restedLeader, ...charFilter } = target.filter ?? {};
+    return {
+      sel: 'opponentLeaderOrCharacters',
+      ...(restedLeader !== undefined ? { restedLeader } : {}),
+      ...charFilter,
+    };
+  }
   if (target.group === 'characters' && target.player === 'controller') return { sel: 'controllerCharacters', ...target.filter };
   if (target.group === 'characters' && target.player === 'opponent') return { sel: 'opponentCharacters', ...target.filter };
   if (target.group === 'charactersOrDon' && target.player === 'opponent') return { sel: 'opponentCharactersOrDon' };
@@ -455,6 +462,15 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           prompt: `Trash ${f.trashCount} card${f.trashCount === 1 ? '' : 's'} from your hand.`,
         },
         { op: 'trashCards', target: { sel: 'var', name: 't' } },
+      ];
+    case 'drawAndTrashByTypedCharacterCount':
+      return [
+        { op: 'drawByTypedCharacterCount', typeIncludes: f.typeIncludes },
+        {
+          op: 'trashFromHandByCountVar',
+          countVar: '__lastDrawCount',
+          prompt: 'Trash the same number of cards from your hand.',
+        },
       ];
     case 'trashFromHand':
       return [

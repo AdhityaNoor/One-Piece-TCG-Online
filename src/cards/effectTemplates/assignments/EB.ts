@@ -581,8 +581,26 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
   // EB02-019 — [On Play] if Leader {Straw Hat Crew}: rest up to 1 opp Character with a cost of 4 or less.
-  //   PARTIAL: the static "if opponent has 2+ Characters, this Character can attack Characters when played" is deferred (conditional attack-restriction lift).
-  { cardNumber: 'EB02-019', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+  //   Static: if opponent has 2+ Characters, this Character can attack Characters on the turn it is played.
+  {
+    cardNumber: 'EB02-019',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'addKeyword',
+            target: { ref: 'self' },
+            keyword: 'canAttackActive',
+            duration: 'permanent',
+            condition: { gate: [{ kind: 'opponentCharacterCount', atLeast: 2 }, { kind: 'selfPlayedThisTurn' }] },
+          }],
+        },
+      },
+    ],
+  },
 
   // EB02-020 — (Event) [Main] look 4, reveal up to 1 cost 4+, add, rest to bottom. [Trigger] Activate [Main].
   {
@@ -1691,8 +1709,13 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // EB04-011 (character) Scaled Neptunian —
   //   [Rush: Character] [On Play] Draw per {Neptunian}, trash same number from hand.
-  //   PARTIAL: [Rush: Character] mapped as canAttackActive; on-play draw/trash scaling deferred.
-  { cardNumber: 'EB04-011', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent' }] } },
+  {
+    cardNumber: 'EB04-011',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrashByTypedCharacterCount', typeIncludes: 'Neptunian' }] } },
+    ],
+  },
 
   // EB04-012 (character) Kikunojo —
   //   [Activate: Main] [Once Per Turn] If this Character was played on this turn, set your {Land of Wano}

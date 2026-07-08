@@ -21,7 +21,7 @@ export type Selector =
   | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; name?: string; excludeSelf?: boolean; minPower?: number }
   | { sel: 'opponentLeader'; rested?: boolean }
   | { sel: 'controllerLeaderOrStage'; typeIncludes?: string } // controller's Leader + Stage cards (for 'rest 1 of your {X} Leader or Stage' costs)
-  | { sel: 'opponentLeaderOrCharacters' }
+  | { sel: 'opponentLeaderOrCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; excludeName?: string; restedLeader?: boolean }
   | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
   | { sel: 'opponentFieldDon' } // opponent's DON!! on field (cost area + attached), for opponent-chosen returns
   | { sel: 'opponentActiveDon' } // the opponent's active, un-attached DON!! in the cost area (rest targets)
@@ -212,7 +212,11 @@ export type EffectOp =
   // Trash the top `count` Life cards of a player (e.g. "Trash up to 1 of your opponent's Life cards").
   | ({ op: 'trashLife'; player: 'opponent' | 'controller'; count?: number; untilLife?: number } & EffectOpSequenceGate)
   // Add `count` DON!! from the DON!! deck to the cost area, active or rested (DON!! ramp).
-  | ({ op: 'addDonFromDeck'; count: number; rested: boolean } & EffectOpSequenceGate);
+  | ({ op: 'addDonFromDeck'; count: number; rested: boolean } & EffectOpSequenceGate)
+  // Draw N where N = count of controller's in-play Characters with a matching type.
+  | ({ op: 'drawByTypedCharacterCount'; typeIncludes: string } & EffectOpSequenceGate)
+  // Suspending: trash N from hand where N is read from bindings[countVar] (set by drawByTypedCharacterCount).
+  | ({ op: 'trashFromHandByCountVar'; countVar: string; prompt?: string } & EffectOpSequenceGate);
 
 export type NonSuspendingEffectOp = Exclude<
   EffectOp,
@@ -224,6 +228,7 @@ export type NonSuspendingEffectOp = Exclude<
   | { op: 'chooseLifeToHand' }
   | { op: 'chooseLifeToTrash' }
   | { op: 'chooseOption' }
+  | { op: 'trashFromHandByCountVar' }
 >;
 
 /**

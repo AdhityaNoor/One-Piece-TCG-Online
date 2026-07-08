@@ -22,6 +22,19 @@ function typeMatches(defTypes: string[], required: string): boolean {
   return defTypes.some((type) => type.toLowerCase().includes(normalized));
 }
 
+/** Count the controller's in-play Characters whose types include `typeIncludes`. */
+export function countSelfTypedCharacters(
+  state: GameState,
+  defs: CardDefinitionLookup,
+  controllerId: string,
+  typeIncludes: string,
+): number {
+  const player = state.players[controllerId];
+  return player.characterArea.cardIds.filter((id) =>
+    typeMatches(defs[state.cardsById[id]?.cardDefinitionId ?? '']?.types ?? [], typeIncludes),
+  ).length;
+}
+
 function currentCostForGate(state: GameState, defs: CardDefinitionLookup, instanceId: string): number {
   const inst = state.cardsById[instanceId];
   const base = inst ? defs[inst.cardDefinitionId]?.baseCost ?? 0 : 0;

@@ -16,7 +16,7 @@ import { cardHasNoBaseEffect } from './cardHasNoBaseEffect';
 import { computeCurrentPower } from '../rules/shared/power';
 import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoReplacementStep } from '../rules/shared/koAttempt';
 import { EffectContextImpl } from './effectContext';
-import { evaluateGates } from './gates';
+import { evaluateGates, countSelfTypedCharacters } from './gates';
 import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
 import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions } from './fireTiming';
 import { isAbilityNegated } from './effectNegation';
@@ -270,8 +270,27 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
       return ids;
     }
-    case 'opponentLeaderOrCharacters':
-      return [ctx.state().players[ctx.opponentId].leaderInstanceId, ...ctx.opponentCharacterIds()];
+    case 'opponentLeaderOrCharacters': {
+      const state = ctx.state();
+      const opponentId = ctx.opponentId;
+      let ids: string[] = [];
+      const leaderId = state.players[opponentId].leaderInstanceId;
+      const leader = state.cardsById[leaderId];
+      let includeLeader = true;
+      if (sel.restedLeader !== undefined) {
+        includeLeader = (leader?.orientation === 'rested') === sel.restedLeader;
+      }
+      if (includeLeader) ids.push(leaderId);
+      let charIds = ctx.opponentCharacterIds();
+      if (sel.minCost !== undefined) charIds = charIds.filter((id) => ctx.costOf(id) >= sel.minCost!);
+      const maxCost = effectiveMaxCost(sel, ctx);
+      if (maxCost !== undefined) charIds = charIds.filter((id) => ctx.costOf(id) <= maxCost);
+      if (sel.exactCost !== undefined) charIds = charIds.filter((id) => ctx.costOf(id) === sel.exactCost);
+      if (sel.maxPower !== undefined) charIds = charIds.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
+      charIds = applyBaseFilters(charIds, sel, ctx);
+      if (sel.excludeName !== undefined) charIds = charIds.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
+      return [...ids, ...charIds];
+    }
     case 'opponentLeader': {
       const leaderId = ctx.state().players[ctx.opponentId].leaderInstanceId;
       const leader = ctx.state().cardsById[leaderId];
@@ -714,6 +733,14 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       // Handled specially in runOps (it must set the __lastRevealMatched binding);
       // this branch keeps the switch exhaustive and is never reached at runtime.
       return { selectedIds: [], movedIds: [] };
+    case 'revealOpponentDeckTop':
+      // Handled specially in runOps (it records the cost-match binding);
+      // this branch keeps the switch exhaustive and is never reached at runtime.
+      return { selectedIds: [], movedIds: [] };
+    case 'drawByTypedCharacterCount':
+      // Handled specially in runOps (it must set the __lastDrawCount binding and
+      // fire draw reactions); this branch keeps the switch exhaustive.
+      return { selectedIds: [], movedIds: [] };
   }
 }
 
@@ -755,6 +782,23 @@ function runOpList(
   for (let i = startOpIndex; i < ops.length; i++) {
     const op = ops[i];
     if (!conditionMet(op, workingBindings, ctx, defs)) continue;
+    if (op.op === 'trashFromHandByCountVar') {
+      const count = Number(workingBindings[op.countVar]?.[0] ?? '0');
+      if (count <= 0) continue;
+      const candidates = resolveSelector({ sel: 'controllerHand' }, ctx, workingBindings);
+      const prompt = op.prompt ?? `Trash ${count} card${count === 1 ? '' : 's'} from your hand.`;
+      ctx.emitChoice({
+        id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
+        playerId: ctx.controllerId,
+        kind: 'SELECT_CARDS',
+        prompt,
+        constraints: { min: count, max: count, candidateInstanceIds: candidates },
+        sourceInstanceId: ctx.sourceInstanceId,
+        sourceEffectId: 'ir',
+        resumeState: resumeStateForSuspend(coords, i, workingBindings),
+      });
+      return { suspended: true, bindings: workingBindings };
+    }
     if (op.op === 'chooseTargets') {
       const candidates = resolveSelector(op.from, ctx, workingBindings);
       const chooserId = op.chooser === 'opponent' ? ctx.opponentId : ctx.controllerId;
@@ -941,6 +985,23 @@ function runOpList(
         ctx.koApply(id);
       }
       workingBindings = withResultBindings(workingBindings, { selectedIds: ids, movedIds: ids });
+      continue;
+    }
+    if (op.op === 'drawByTypedCharacterCount') {
+      const count = countSelfTypedCharacters(ctx.state(), defs, ctx.controllerId, op.typeIncludes);
+      ctx.draw(ctx.controllerId, count);
+      if (count > 0 && ctx.state().currentPhase !== 'draw') {
+        const reactive = fireDrawOutsideDrawPhaseReactions(ctx.state(), ctx.controllerId, registry, defs, actionId);
+        if (reactive.pendingChoices.length > 0) {
+          ctx.absorbActionResult(reactive);
+          return { suspended: true, bindings: workingBindings };
+        }
+        ctx.replaceState(reactive.state, reactive.log);
+      }
+      workingBindings = {
+        ...withResultBindings(workingBindings, { selectedIds: [], movedIds: count > 0 ? ['__draw'] : [] }),
+        __lastDrawCount: [String(count)],
+      };
       continue;
     }
     if (op.op === 'draw') {
@@ -1163,7 +1224,7 @@ export function resumeProgram(
 
   const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
   const op = suspendedOpAt(ability, rs);
-  if (!op || (op.op !== 'chooseTargets' && op.op !== 'chooseCost' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption')) return noop(stateWithoutChoice);
+  if (!op || (op.op !== 'chooseTargets' && op.op !== 'chooseCost' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption' && op.op !== 'trashFromHandByCountVar')) return noop(stateWithoutChoice);
 
   const preserveBranch = (bindings: Record<string, string[]>): PendingChoice['resumeState'] => ({
     abilityIndex: rs.abilityIndex,
@@ -1285,6 +1346,13 @@ export function resumeProgram(
     const cost = typeof response === 'number' ? response : -1;
     const bindings: Record<string, string[]> = { ...rs.bindings, __chosenCost: [String(cost)] };
     return continueAfterResolvedOp(program, ability, rs, bindings, ctx, defs, actionId, registry);
+  }
+
+  if (op.op === 'trashFromHandByCountVar') {
+    const selection = Array.isArray(response) ? response : [];
+    for (const id of selection) ctx.trashCard(id);
+    const afterTrashBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
+    return continueAfterResolvedOp(program, ability, rs, afterTrashBindings, ctx, defs, actionId, registry);
   }
 
   const selection = Array.isArray(response) ? response : [];

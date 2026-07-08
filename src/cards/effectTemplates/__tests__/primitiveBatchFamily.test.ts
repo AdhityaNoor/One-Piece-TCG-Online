@@ -4,10 +4,11 @@ import { validateResolvePendingChoice } from '../../../engine/actions/handlers/r
 import { runTimings } from '../../../engine/effects/interpreter';
 import { resumeChoice } from '../../../engine/effects/fireTiming';
 import { validateDeclareAttack } from '../../../engine/rules/battle/declareAttack';
-import { buildBaseRig, makeCharacterDef, makeLeaderDef, putCharacterInPlay, putDon } from '../../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, makeLeaderDef, putCharacterInPlay, putDeckCards, putDon } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments } from '../assembler';
 import { EB_ASSIGNMENTS } from '../assignments/EB';
 import { OP01_ASSIGNMENTS } from '../assignments/OP01';
+import { PRB_ASSIGNMENTS } from '../assignments/PRB';
 import { OP06_ASSIGNMENTS } from '../assignments/OP06';
 import { OP05_ASSIGNMENTS } from '../assignments/OP05';
 import { OP10_ASSIGNMENTS } from '../assignments/OP10';
@@ -22,6 +23,7 @@ const registry = buildRegistryFromAssignments([
   ...OP12_ASSIGNMENTS,
   ...EB_ASSIGNMENTS,
   ...OP01_ASSIGNMENTS,
+  ...PRB_ASSIGNMENTS,
 ]);
 
 function declareAttack(playerId: string, attackerInstanceId: string, targetInstanceId: string): DeclareAttackAction {
@@ -247,5 +249,56 @@ describe('filtered attack targets (OP12-020)', () => {
     expect(registry['EB04-012'].abilities[0].ops).toEqual([{ op: 'setActive', target: { sel: 'controllerLeader' } }]);
     const onPlay = registry['EB04-013'].abilities[0];
     expect(onPlay.ops.at(-1)).toEqual({ op: 'setActive', target: { sel: 'controllerLeader' } });
+  });
+});
+
+describe('draw/trash scaling and union attack-restriction targets', () => {
+  it('EB04-011 draws and trashes per Neptunian Character count', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    const neptunian = makeCharacterDef({ cardDefinitionId: 'nep', cardNumber: 'NEP', name: 'Neptunian', baseCost: 3, basePower: 4000, types: ['Neptunian'] });
+    const scaledDef = makeCharacterDef({ cardDefinitionId: 'EB04-011', cardNumber: 'EB04-011', name: 'Scaled', baseCost: 4, basePower: 5000 });
+    ({ rig } = putCharacterInPlay(rig, 'p1', neptunian, { summoningSick: false }));
+    ({ rig } = putCharacterInPlay(rig, 'p1', { ...neptunian, cardDefinitionId: 'nep2', cardNumber: 'NEP2' }, { summoningSick: false }));
+    let scaledId: string;
+    ({ rig, instanceId: scaledId } = putCharacterInPlay(rig, 'p1', scaledDef, { summoningSick: false }));
+    const deckFiller = makeCharacterDef({ cardDefinitionId: 'filler', cardNumber: 'FILL', name: 'Filler', baseCost: 1, basePower: 1000 });
+    ({ rig } = putDeckCards(rig, 'p1', deckFiller, 5));
+    const handBefore = rig.state.players.p1.hand.cardIds.length;
+    const deckBefore = rig.state.players.p1.deck.cardIds.length;
+
+    const fired = runTimings(registry['EB04-011'], ['onPlay'], rig.state, scaledId, rig.defs, null, registry);
+    expect(fired.state.players.p1.hand.cardIds.length).toBe(handBefore + 2);
+    expect(fired.state.players.p1.deck.cardIds.length).toBe(deckBefore - 2);
+    expect(fired.pendingChoices).toHaveLength(1);
+    expect(fired.pendingChoices[0].constraints).toMatchObject({ min: 2, max: 2 });
+  });
+
+  it('PRB02-017 compiles rested-leader-or-non-Luffy preventAttack selector', () => {
+    const onPlay = registry['PRB02-017'].abilities.find((a) => a.timing === 'onPlay');
+    const prevent = onPlay?.ops.find((op) => op.op === 'chooseTargets' && op.from.sel === 'opponentLeaderOrCharacters');
+    expect(prevent?.from).toMatchObject({ sel: 'opponentLeaderOrCharacters', restedLeader: true, excludeName: 'Monkey.D.Luffy' });
+  });
+
+  it('EB02-019 grants canAttackActive only when opponent has 2+ Characters on its play turn', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 5 });
+    const cardDef = makeCharacterDef({ cardDefinitionId: 'EB02-019', cardNumber: 'EB02-019', name: 'Test', baseCost: 4, basePower: 5000 });
+    const foe = makeCharacterDef({ cardDefinitionId: 'foe', cardNumber: 'FOE', name: 'Foe', baseCost: 3, basePower: 3000 });
+    ({ rig } = putCharacterInPlay(rig, 'p2', foe, { summoningSick: false, orientation: 'active' }));
+    ({ rig } = putCharacterInPlay(rig, 'p2', { ...foe, cardDefinitionId: 'foe2', cardNumber: 'FOE2' }, { summoningSick: false, orientation: 'active' }));
+    let selfId: string;
+    ({ rig, instanceId: selfId } = putCharacterInPlay(rig, 'p1', cardDef, { summoningSick: false, enteredPlayTurn: 5 }));
+    const applied = runTimings(registry['EB02-019'], ['onEnterPlay'], rig.state, selfId, rig.defs, null, registry);
+    const activeTarget = applied.state.players.p2.characterArea.cardIds[0];
+    expect(validateDeclareAttack(applied.state, declareAttack('p1', selfId, activeTarget), rig.defs).legal).toBe(true);
+
+    const nextTurn = {
+      ...applied.state,
+      turnNumber: 6,
+      cardsById: {
+        ...applied.state.cardsById,
+        [selfId]: { ...applied.state.cardsById[selfId], enteredPlayTurn: 5 },
+      },
+    };
+    expect(validateDeclareAttack(nextTurn, declareAttack('p1', selfId, activeTarget), rig.defs).legal).toBe(false);
   });
 });

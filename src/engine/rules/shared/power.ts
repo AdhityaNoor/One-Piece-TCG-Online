@@ -359,7 +359,7 @@ export function getForcedAttackTargetId(state: GameState, attackerInstanceId: st
 function attackRestrictionAppliesToAttacker(
   restriction: NonNullable<import('../../state/game').ContinuousEffectRecord['attackRestriction']>,
   attackerId: string,
-  attacker: import('../../state/game').CardInstance | undefined,
+  attacker: import('../../state/card').CardInstance | undefined,
 ): boolean {
   if (restriction.appliesToControllerId !== undefined) {
     return attacker?.controllerId === restriction.appliesToControllerId;
