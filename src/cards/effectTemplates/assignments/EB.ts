@@ -1690,21 +1690,22 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // NOTE: not yet implemented (needs template).
 
   // EB04-011 (character) Scaled Neptunian —
-  //   [Rush: Character] (This card can attack Characters on the turn in which it is played.)[On Play] Draw
-  //   a card for each of your {Neptunian} type Characters. Then, trash the same number of cards from your
-  //   hand.
-  // NOTE: not yet implemented (needs template).
+  //   [Rush: Character] [On Play] Draw per {Neptunian}, trash same number from hand.
+  //   PARTIAL: [Rush: Character] mapped as canAttackActive; on-play draw/trash scaling deferred.
+  { cardNumber: 'EB04-011', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent' }] } },
 
   // EB04-012 (character) Kikunojo —
   //   [Activate: Main] [Once Per Turn] If this Character was played on this turn, set your {Land of Wano}
   //   type Leader as active.
-  // NOTE: not yet implemented (selfPlayedThisTurn is available now, but this still needs setActive targeting for the controller's Leader).
+  { cardNumber: 'EB04-012', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfPlayedThisTurn' }], functions: [{ fn: 'setActiveControllerLeader' }] } },
 
   // EB04-013 (character) Carrot —
   //   [On Play] If your Leader has the {Minks} type, set up to 2 of your {Minks} type Characters and your
   //   Leader as active.
-  // NOTE: not yet implemented (needs template).
-
+  { cardNumber: 'EB04-013', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Minks' }], functions: [
+    { fn: 'setActiveControllerCharacter', filter: { typeIncludes: 'Minks' }, maxTargets: 2, optional: true },
+    { fn: 'setActiveControllerLeader' },
+  ] } },
   // EB04-014 — [Blocker] [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to your Leader.
   { cardNumber: 'EB04-014', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDonControllerLeader', count: 1 }] } },
 

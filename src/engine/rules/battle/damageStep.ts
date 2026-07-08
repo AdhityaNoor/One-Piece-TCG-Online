@@ -78,6 +78,16 @@ export function resolveDamageAndEndOfBattle(
   let onBattleLog: GameLogEntry[] = [];
   let onBattlePending: PendingChoice[] = [];
   if (targetWasCharacter && !nextState.gameOver) {
+    const attackerInst = nextState.cardsById[attackerId];
+    if (attackerInst) {
+      nextState = {
+        ...nextState,
+        cardsById: {
+          ...nextState.cardsById,
+          [attackerId]: { ...attackerInst, battledOpponentCharacterTurn: nextState.turnNumber },
+        },
+      };
+    }
     const obA = fireOnBattle(nextState, attackerId, registry, defs, causedByActionId);
     nextState = obA.state;
     onBattleLog = [...onBattleLog, ...obA.log];

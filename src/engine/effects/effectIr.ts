@@ -157,11 +157,13 @@ export type EffectOp =
   | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
   | ({ op: 'suppressBlockerActivation'; target: Selector; duration: IrDuration } & EffectOpSequenceGate)
   // Prevent the target Leader/Character from declaring an attack (7-1-1-1) while active.
-  | ({ op: 'preventAttack'; target: Selector; duration: IrDuration; forbiddenTarget?: 'leader'; whileSummoningSick?: boolean; attackUnlessGate?: AbilityGate[]; condition?: IrCondition } & EffectOpSequenceGate)
+  | ({ op: 'preventAttack'; target: Selector; duration: IrDuration; forbiddenTarget?: 'leader'; forbiddenTargetFilter?: import('../state/game').ForbiddenAttackTargetFilter; whileSummoningSick?: boolean; attackUnlessGate?: AbilityGate[]; condition?: IrCondition } & EffectOpSequenceGate)
+  // Prevent all of a player's Leaders/Characters from attacking (optionally only barring Leader targets).
+  | ({ op: 'preventAttackController'; player: 'controller' | 'opponent'; duration: IrDuration; forbiddenTarget?: 'leader' } & EffectOpSequenceGate)
   // While active, the opponent may only attack this Character (taunt).
   | ({ op: 'setForcedAttackTarget'; target: Selector; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
   // Prevent effect-driven rest on the target Leader/Character for the duration.
-  | ({ op: 'preventRest'; target: Selector; duration: IrDuration; effectSourceController?: 'opponent' | 'controller' } & EffectOpSequenceGate)
+  | ({ op: 'preventRest'; target: Selector; duration: IrDuration; effectSourceController?: 'opponent' | 'controller'; condition?: IrCondition } & EffectOpSequenceGate)
   // Negate all (or selected timings of) abilities on the target Leader/Character/Stage.
   | ({ op: 'negateEffect'; target: Selector; duration: IrDuration; negatedTimings?: IrTiming[] } & EffectOpSequenceGate)
   // Negate abilities on all cards controlled by a player (e.g. "your [On Play] effects are negated").
@@ -295,6 +297,10 @@ export type AbilityGate =
   | { kind: 'opponentHand'; atLeast?: number; atMost?: number } // "If your opponent has N or more/less cards in their hand"
   // "If this Character was played on this turn" (self-referential; needs the source instance id).
   | { kind: 'selfPlayedThisTurn' }
+  // "If this Leader/Character battled your opponent's Character during this turn."
+  | { kind: 'selfBattledOpponentCharacterThisTurn' }
+  // "If your Leader has the <X> attribute."
+  | { kind: 'leaderAttribute'; attribute: string }
   | { kind: 'selfTrashCount'; atLeast?: number; atMost?: number } // "N or more/less cards in your trash"
   | { kind: 'selfDeckCount'; atLeast?: number; atMost?: number } // "N or less cards in your deck"
   | { kind: 'selfTypedCharacterCount'; typeIncludes: string; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {type} Characters"

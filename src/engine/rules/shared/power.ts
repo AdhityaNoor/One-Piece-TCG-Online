@@ -10,7 +10,7 @@
  * every read, so a conditional buff turns on/off as DON!! attaches or the turn
  * flips, with no extra bookkeeping. Cost modifiers use the same record model.
  */
-import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousPowerCondition, ContinuousRestRestriction, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
+import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousPowerCondition, ContinuousRestRestriction, ForbiddenAttackTargetFilter, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
 
@@ -323,7 +323,9 @@ function attackRestrictionBlocks(
   defs: CardDefinitionLookup,
 ): boolean {
   const r = record.attackRestriction;
-  if (!r || r.appliesToInstanceId !== instanceId || r.forbiddenTarget !== undefined) return false;
+  if (!r || r.forbiddenTarget !== undefined || r.forbiddenTargetFilter !== undefined) return false;
+  const attacker = state.cardsById[instanceId];
+  if (!attackRestrictionAppliesToAttacker(r, instanceId, attacker)) return false;
   if (r.attackUnlessGate?.length) {
     return !evaluateGates(r.attackUnlessGate, state, defs, record.ownerId, record.sourceInstanceId);
   }
@@ -354,13 +356,53 @@ export function getForcedAttackTargetId(state: GameState, attackerInstanceId: st
   return null;
 }
 
+function attackRestrictionAppliesToAttacker(
+  restriction: NonNullable<import('../../state/game').ContinuousEffectRecord['attackRestriction']>,
+  attackerId: string,
+  attacker: import('../../state/game').CardInstance | undefined,
+): boolean {
+  if (restriction.appliesToControllerId !== undefined) {
+    return attacker?.controllerId === restriction.appliesToControllerId;
+  }
+  return restriction.appliesToInstanceId === attackerId;
+}
+
+function attackTargetMatchesForbiddenFilter(
+  filter: ForbiddenAttackTargetFilter,
+  target: import('../../state/card').CardInstance | undefined,
+  def: import('../../state/card').CardDefinition | undefined,
+): boolean {
+  if (!target) return false;
+  if (filter.zone === 'leader' && target.currentZone !== 'leaderArea') return false;
+  if (filter.zone === 'character' && target.currentZone !== 'characterArea') return false;
+  const baseCost = def?.baseCost;
+  if (filter.maxBaseCost !== undefined && (baseCost ?? Infinity) > filter.maxBaseCost) return false;
+  if (filter.minBaseCost !== undefined && (baseCost ?? 0) < filter.minBaseCost) return false;
+  const currentCost = target.currentCost ?? baseCost;
+  if (filter.maxCost !== undefined && (currentCost ?? Infinity) > filter.maxCost) return false;
+  if (filter.minCost !== undefined && (currentCost ?? 0) < filter.minCost) return false;
+  if (filter.excludeName !== undefined && def?.name === filter.excludeName) return false;
+  return true;
+}
+
 /** Whether `attackerId` is forbidden from attacking `targetId` due to a partial attack restriction. */
-export function isAttackTargetForbidden(state: GameState, attackerId: string, targetId: string): boolean {
+export function isAttackTargetForbidden(
+  state: GameState,
+  attackerId: string,
+  targetId: string,
+  defs: CardDefinitionLookup = {},
+): boolean {
   const target = state.cardsById[targetId];
   const attacker = state.cardsById[attackerId];
+  const targetDef = target ? defs[target.cardDefinitionId] : undefined;
   return state.continuousEffects.some((record) => {
     const r = record.attackRestriction;
-    if (!r || r.appliesToInstanceId !== attackerId || r.forbiddenTarget === undefined) return false;
+    if (!r) return false;
+    if (!attackRestrictionAppliesToAttacker(r, attackerId, attacker)) return false;
+    if (r.forbiddenTargetFilter) {
+      return attackTargetMatchesForbiddenFilter(r.forbiddenTargetFilter, target, targetDef);
+    }
+    if (r.forbiddenTarget === undefined) return false;
     if (r.forbiddenTarget === 'leader' && target?.currentZone === 'leaderArea') {
       return !r.whileSummoningSick || attacker?.summoningSick === true;
     }
@@ -379,10 +421,13 @@ function restSourceMatches(mod: ContinuousRestRestriction, state: GameState, pro
 }
 
 /** Whether `instanceId` currently cannot be rested by the resolving card effect. */
-export function cannotBeRestedByEffect(state: GameState, instanceId: string, restSourceInstanceId?: string): boolean {
+export function cannotBeRestedByEffect(state: GameState, instanceId: string, restSourceInstanceId?: string, defs: CardDefinitionLookup = {}): boolean {
   return state.continuousEffects.some((record) => {
     const r = record.restRestriction;
-    return r?.appliesToInstanceId === instanceId && restSourceMatches(r, state, instanceId, restSourceInstanceId);
+    if (!r || r.appliesToInstanceId !== instanceId) return false;
+    if (!restSourceMatches(r, state, instanceId, restSourceInstanceId)) return false;
+    if (r.condition && !continuousTargetConditionApplies(r.condition, record, state, instanceId, defs)) return false;
+    return true;
   });
 }
 

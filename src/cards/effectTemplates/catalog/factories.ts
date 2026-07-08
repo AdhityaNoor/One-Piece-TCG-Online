@@ -308,10 +308,18 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           target,
           duration: f.duration,
           ...(f.attackUnlessGate?.length ? { attackUnlessGate: f.attackUnlessGate } : {}),
+          ...(f.forbiddenTargetFilter ? { forbiddenTargetFilter: f.forbiddenTargetFilter } : {}),
           ...(f.condition ? { condition: f.condition } : {}),
         }),
         { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
       );
+    case 'preventAttackAll':
+      return [{
+        op: 'preventAttackController',
+        player: 'controller',
+        duration: f.duration,
+        ...(f.forbiddenTarget ? { forbiddenTarget: f.forbiddenTarget } : {}),
+      }];
     case 'setForcedAttackTarget':
       return [{
         op: 'setForcedAttackTarget',
@@ -323,7 +331,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
     case 'preventRest':
       return targetOps(
         f.target,
-        (target) => ({ op: 'preventRest', target, duration: f.duration, ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}) }),
+        (target) => ({ op: 'preventRest', target, duration: f.duration, ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}), ...(f.condition ? { condition: f.condition } : {}) }),
         { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
       );
     case 'negateEffect':
@@ -599,6 +607,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'setActiveSelf':
       return [{ op: 'setActive', target: { sel: 'self' } }];
+    case 'setActiveControllerLeader':
+      return [{ op: 'setActive', target: { sel: 'controllerLeader' } }];
     case 'setActiveControllerCharacter': {
       const maxTargets = f.maxTargets ?? 1;
       return [

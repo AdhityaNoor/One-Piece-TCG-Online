@@ -101,9 +101,11 @@ export type AbilityFunction =
   | { fn: 'rest'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'preventRefresh'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   // "This/these Character(s) cannot attack" for the given duration (e.g. "until the end of your opponent's next turn" -> duration: 'endOfOpponentsTurn').
-  | { fn: 'preventAttack'; target: TargetSpec; duration: IrDuration; attackUnlessGate?: AbilityGate[]; condition?: IrCondition; optional?: boolean; maxTargets?: number; prompt?: string }
+  | { fn: 'preventAttack'; target: TargetSpec; duration: IrDuration; forbiddenTarget?: 'leader'; forbiddenTargetFilter?: { zone?: 'leader' | 'character'; maxBaseCost?: number; minBaseCost?: number; maxCost?: number; minCost?: number; excludeName?: string }; attackUnlessGate?: AbilityGate[]; condition?: IrCondition; optional?: boolean; maxTargets?: number; prompt?: string }
+  // Player-wide attack restriction without a target choice (e.g. "you cannot attack a Leader during this turn").
+  | { fn: 'preventAttackAll'; duration: IrDuration; forbiddenTarget?: 'leader' }
   | { fn: 'setForcedAttackTarget'; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition }
-  | { fn: 'preventRest'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string; effectSourceController?: 'opponent' | 'controller' }
+  | { fn: 'preventRest'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string; effectSourceController?: 'opponent' | 'controller'; condition?: IrCondition }
   | { fn: 'negateEffect'; target: TargetSpec; duration: IrDuration; negatedTimings?: IrTiming[]; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[] }
   | { fn: 'addCost'; target: TargetSpec; amount: number; duration?: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
@@ -154,6 +156,7 @@ export type AbilityFunction =
   | { fn: 'turnTopLifeFace'; faceUp: boolean }
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }
+  | { fn: 'setActiveControllerLeader' }
   | { fn: 'setActiveControllerCharacter'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string }; maxTargets?: number; optional?: boolean }
   | { fn: 'setActiveControllerDon'; maxTargets: number }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).

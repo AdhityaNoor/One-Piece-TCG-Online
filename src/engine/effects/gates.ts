@@ -83,6 +83,15 @@ function evaluateGate(
       return typeMatches(def.types, gate.type);
     }
 
+    case 'leaderAttribute': {
+      const leaderInst = state.cardsById[player.leaderInstanceId];
+      if (!leaderInst) return false;
+      const def = defs[leaderInst.cardDefinitionId];
+      if (!def?.attributes?.length) return false;
+      const want = gate.attribute.toLowerCase();
+      return def.attributes.some((a) => a.toLowerCase() === want);
+    }
+
     case 'leaderMulticolor': {
       const leaderInst = state.cardsById[player.leaderInstanceId];
       if (!leaderInst) return false;
@@ -418,6 +427,12 @@ function evaluateGate(
       if (!sourceInstanceId) return false;
       const inst = state.cardsById[sourceInstanceId];
       return !!inst && inst.enteredPlayTurn === state.turnNumber;
+    }
+
+    case 'selfBattledOpponentCharacterThisTurn': {
+      if (!sourceInstanceId) return false;
+      const inst = state.cardsById[sourceInstanceId];
+      return !!inst && inst.battledOpponentCharacterTurn === state.turnNumber;
     }
   }
 }

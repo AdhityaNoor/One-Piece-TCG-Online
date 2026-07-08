@@ -518,12 +518,22 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
           appliesToInstanceId: id,
           duration: op.duration,
           ...(op.forbiddenTarget ? { forbiddenTarget: op.forbiddenTarget } : {}),
+          ...(op.forbiddenTargetFilter ? { forbiddenTargetFilter: op.forbiddenTargetFilter } : {}),
           ...(op.whileSummoningSick ? { whileSummoningSick: true } : {}),
           ...(op.attackUnlessGate?.length ? { attackUnlessGate: op.attackUnlessGate } : {}),
           ...(op.condition ? { condition: op.condition } : {}),
         });
       }
       return { selectedIds: ids, movedIds: [] };
+    }
+    case 'preventAttackController': {
+      const targetPlayerId = op.player === 'controller' ? ctx.controllerId : ctx.opponentId;
+      ctx.preventAttackController({
+        appliesToControllerId: targetPlayerId,
+        duration: op.duration,
+        ...(op.forbiddenTarget ? { forbiddenTarget: op.forbiddenTarget } : {}),
+      });
+      return EMPTY_RESULT;
     }
     case 'setForcedAttackTarget': {
       const ids = resolveSelector(op.target, ctx, bindings);
@@ -544,6 +554,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
           appliesToInstanceId: id,
           duration: op.duration,
           ...(op.effectSourceController ? { effectSourceController: op.effectSourceController } : {}),
+          ...(op.condition ? { condition: op.condition } : {}),
         });
       }
       return { selectedIds: ids, movedIds: [] };

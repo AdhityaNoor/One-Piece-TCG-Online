@@ -632,6 +632,7 @@ export class EffectContextImpl implements EffectContext {
     appliesToInstanceId: string;
     duration: ContinuousEffectDuration;
     forbiddenTarget?: 'leader';
+    forbiddenTargetFilter?: import('../state/game').ForbiddenAttackTargetFilter;
     whileSummoningSick?: boolean;
     attackUnlessGate?: import('./effectIr').AbilityGate[];
     condition?: import('../state/game').ContinuousPowerCondition;
@@ -644,14 +645,17 @@ export class EffectContextImpl implements EffectContext {
       duration: spec.duration,
       description:
         spec.description ??
-        (spec.forbiddenTarget === 'leader'
-          ? 'cannot attack the opponent\'s Leader'
-          : spec.attackUnlessGate?.length
-            ? 'cannot attack unless gate passes'
-            : 'cannot attack'),
+        (spec.forbiddenTargetFilter
+          ? 'cannot attack matching targets'
+          : spec.forbiddenTarget === 'leader'
+            ? 'cannot attack the opponent\'s Leader'
+            : spec.attackUnlessGate?.length
+              ? 'cannot attack unless gate passes'
+              : 'cannot attack'),
       attackRestriction: {
         appliesToInstanceId: spec.appliesToInstanceId,
         ...(spec.forbiddenTarget ? { forbiddenTarget: spec.forbiddenTarget } : {}),
+        ...(spec.forbiddenTargetFilter ? { forbiddenTargetFilter: spec.forbiddenTargetFilter } : {}),
         ...(spec.whileSummoningSick ? { whileSummoningSick: true } : {}),
         ...(spec.attackUnlessGate?.length ? { attackUnlessGate: spec.attackUnlessGate } : {}),
         ...(spec.condition ? { condition: spec.condition } : {}),
@@ -664,6 +668,34 @@ export class EffectContextImpl implements EffectContext {
       message: `${spec.appliesToInstanceId} cannot attack (${record.description}).`,
       data: { continuousEffectId: record.id, duration: spec.duration },
       relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  preventAttackController(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    forbiddenTarget?: 'leader';
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? (spec.forbiddenTarget === 'leader' ? 'cannot attack the opponent\'s Leader' : 'cannot attack'),
+      attackRestriction: {
+        appliesToControllerId: spec.appliesToControllerId,
+        ...(spec.forbiddenTarget ? { forbiddenTarget: spec.forbiddenTarget } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToControllerId} cannot attack (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [this.sourceInstanceId],
       visibility: 'public',
     });
   }
@@ -702,6 +734,7 @@ export class EffectContextImpl implements EffectContext {
     appliesToInstanceId: string;
     duration: ContinuousEffectDuration;
     effectSourceController?: 'opponent' | 'controller';
+    condition?: import('../state/game').ContinuousPowerCondition;
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -713,6 +746,7 @@ export class EffectContextImpl implements EffectContext {
       restRestriction: {
         appliesToInstanceId: spec.appliesToInstanceId,
         ...(spec.effectSourceController ? { effectSourceController: spec.effectSourceController } : {}),
+        ...(spec.condition ? { condition: spec.condition } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -1440,7 +1474,7 @@ export class EffectContextImpl implements EffectContext {
     const inst = this.working.cardsById[targetInstanceId];
     if (!inst) return;
     const isDon = inst.orientation === null; // DON!! track state via donRested, not orientation
-    if (!isDon && cannotBeRestedByEffect(this.working, targetInstanceId, this.sourceInstanceId)) {
+    if (!isDon && cannotBeRestedByEffect(this.working, targetInstanceId, this.sourceInstanceId, this.defs)) {
       this.logger.push({
         actorPlayerId: this.controllerId,
         type: 'EFFECT_RESOLVED',

@@ -52,6 +52,29 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfPlayedThisTurn' }], rig.state, rig.defs, 'p1')).toBe(false);
   });
 
+  it('checks selfBattledOpponentCharacterThisTurn on the source instance', () => {
+    let rig = buildBaseRig({ turnNumber: 4 });
+    const leaderId = rig.state.players.p1.leaderInstanceId;
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        cardsById: {
+          ...rig.state.cardsById,
+          [leaderId]: { ...rig.state.cardsById[leaderId], battledOpponentCharacterTurn: 4 },
+        },
+      },
+    };
+    expect(evaluateGates([{ kind: 'selfBattledOpponentCharacterThisTurn' }], rig.state, rig.defs, 'p1', leaderId)).toBe(true);
+    expect(evaluateGates([{ kind: 'selfBattledOpponentCharacterThisTurn' }], { ...rig.state, turnNumber: 5 }, rig.defs, 'p1', leaderId)).toBe(false);
+  });
+
+  it('checks leaderAttribute against the controller Leader definition', () => {
+    let rig = buildBaseRig({ leaderOverridesP1: { attributes: ['slash'] } });
+    expect(evaluateGates([{ kind: 'leaderAttribute', attribute: 'slash' }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'leaderAttribute', attribute: 'strike' }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
   it('checks selfHasCharacterBasePowerAtLeast against printed base power on your Characters', () => {
     const base = buildBaseRig();
     const mid = putCharacterInPlay(base, 'p1', makeCharacterDef({ basePower: 6000 }));

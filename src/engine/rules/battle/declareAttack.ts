@@ -47,7 +47,7 @@ export function validateDeclareAttack(state: GameState, action: DeclareAttackAct
     const forcedTarget = getForcedAttackTargetId(state, action.attackerInstanceId, defs);
     if (forcedTarget && action.targetInstanceId !== forcedTarget) {
       reasons.push(`'${action.attackerInstanceId}' must attack '${forcedTarget}' — a card effect is restricting attack targets.`);
-    } else if (isAttackTargetForbidden(state, action.attackerInstanceId, action.targetInstanceId)) {
+    } else if (isAttackTargetForbidden(state, action.attackerInstanceId, action.targetInstanceId, defs)) {
       reasons.push(`'${action.attackerInstanceId}' cannot attack '${action.targetInstanceId}' — a card effect is restricting that target.`);
     }
   }

@@ -224,9 +224,14 @@ export interface ContinuousBlockerRestriction {
 
 /** Prevents the target Leader/Character from declaring an attack (7-1-1-1) while this record is active. */
 export interface ContinuousAttackRestriction {
-  appliesToInstanceId: string;
+  /** Single fixed attacker. Omitted when `appliesToControllerId` is set. */
+  appliesToInstanceId?: string;
+  /** All Leaders/Characters controlled by this player. Omitted when `appliesToInstanceId` is set. */
+  appliesToControllerId?: string;
   /** Omitted = cannot declare any attack. 'leader' = may attack Characters but not the opponent Leader. */
   forbiddenTarget?: 'leader';
+  /** Partial target ban: forbid attacks into matching opponent Leaders/Characters only. */
+  forbiddenTargetFilter?: ForbiddenAttackTargetFilter;
   /** With `forbiddenTarget`, only while the attacker still has summoning sickness. */
   whileSummoningSick?: boolean;
   /** Re-evaluated gate: when it fails, the card cannot attack ("cannot attack unless …"). */
@@ -242,11 +247,23 @@ export interface ContinuousForcedAttackTargetModifier {
   condition?: ContinuousPowerCondition;
 }
 
+/** Partial attack-target filter for "cannot attack … Characters with …" restrictions. */
+export interface ForbiddenAttackTargetFilter {
+  zone?: 'leader' | 'character';
+  maxBaseCost?: number;
+  minBaseCost?: number;
+  maxCost?: number;
+  minCost?: number;
+  excludeName?: string;
+}
+
 /** Prevents a Leader/Character from being rested by card effects while this record is active. */
 export interface ContinuousRestRestriction {
   appliesToInstanceId: string;
   /** Omitted = any effect source. Otherwise relative to the protected card's owner. */
   effectSourceController?: 'opponent' | 'controller';
+  /** Re-evaluated condition on the protected card (e.g. rested-DON count + leader attribute). */
+  condition?: ContinuousPowerCondition;
 }
 
 /**

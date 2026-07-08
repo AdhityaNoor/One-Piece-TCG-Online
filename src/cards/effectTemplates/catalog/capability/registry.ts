@@ -210,14 +210,27 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     params: [
       { name: 'target', type: 'TargetSpec', required: true },
       { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'forbiddenTargetFilter', type: 'ForbiddenAttackTargetFilter', required: false },
       { name: 'attackUnlessGate', type: 'AbilityGate[]', required: false },
       { name: 'condition', type: 'IrCondition', required: false },
     ],
-    covers: ['this Character cannot attack', '... cannot attack unless …', 'If you have {N}+ cards in your hand, this Character cannot attack'],
+    covers: ['this Character cannot attack', '... cannot attack unless …', 'If you have {N}+ cards in your hand, this Character cannot attack', 'cannot attack your opponent\'s Characters with a base cost of {N} or less'],
     examples: [
       { cardNumber: 'OP04-065', snippet: "{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'endOfOpponentsTurn' }" },
       { cardNumber: 'EB04-005', snippet: "{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent', attackUnlessGate: [{ kind: 'opponentCharacterBasePowerCount', power: 5000, atLeast: 2 }] }" },
+      { cardNumber: 'OP12-020', snippet: "{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'duringThisTurn', forbiddenTargetFilter: { zone: 'character', maxBaseCost: 7 } }" },
     ],
+  },
+  preventAttackAll: {
+    id: 'preventAttackAll',
+    summary: 'All of the controller\'s Leaders/Characters gain an attack restriction for the duration without a target choice.',
+    params: [
+      { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'forbiddenTarget', type: "'leader'", required: false, note: 'Omit for full cannot-attack; set to leader for "cannot attack a Leader".' },
+    ],
+    covers: ['you cannot attack a Leader during this turn', 'you cannot attack during this turn'],
+    excludes: ['Up to 1 chosen Character cannot attack — use preventAttack with a target choice instead'],
+    examples: [{ cardNumber: 'OP06-026', snippet: "{ fn: 'preventAttackAll', duration: 'duringThisTurn', forbiddenTarget: 'leader' }" }],
   },
   setForcedAttackTarget: {
     id: 'setForcedAttackTarget',
@@ -239,9 +252,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'optional', type: 'boolean', required: false },
       { name: 'maxTargets', type: 'number', required: false },
       { name: 'effectSourceController', type: "'opponent' | 'controller'", required: false, note: 'for "by your opponent\'s effects" / "by your effects"' },
+      { name: 'condition', type: 'IrCondition', required: false },
     ],
     covers: ['up to {N} Characters cannot be rested until the end of your opponent\'s next End Phase', 'this Character cannot be rested by your opponent\'s effects'],
-    examples: [{ cardNumber: 'OP13-032', snippet: "{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 8 } }, duration: 'endOfOpponentsTurn', optional: true }" }],
+    examples: [
+      { cardNumber: 'OP13-032', snippet: "{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 8 } }, duration: 'endOfOpponentsTurn', optional: true }" },
+      { cardNumber: 'OP12-021', snippet: "{ fn: 'preventRest', target: { ref: 'self' }, duration: 'permanent', effectSourceController: 'opponent', condition: { gate: [{ kind: 'leaderAttribute', attribute: 'slash' }, { kind: 'selfRestedDonCount', atLeast: 6 }] } }" },
+    ],
   },
   negateEffect: {
     id: 'negateEffect',
@@ -616,6 +633,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['set this Character as active'],
     examples: [{ cardNumber: 'OP05-032', snippet: "{ fn: 'setActiveSelf' }" }],
   },
+  setActiveControllerLeader: {
+    id: 'setActiveControllerLeader',
+    summary: 'Set the controller\'s Leader as active without a target choice.',
+    params: [],
+    covers: ['set your Leader as active', 'set this Leader as active'],
+    examples: [{ cardNumber: 'EB04-012', snippet: "{ fn: 'setActiveControllerLeader' }" }],
+  },
   setActiveControllerCharacter: {
     id: 'setActiveControllerCharacter',
     summary: 'Set up to N of the controller\'s characters active, matching an optional filter.',
@@ -859,6 +883,7 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
 export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   leaderName: { id: 'leaderName', summary: 'If your Leader is [X].', params: [{ name: 'name', type: 'string', required: true }], covers: ['If your Leader is [{name}]'], examples: [{ cardNumber: 'OP12-059', snippet: "{ kind: 'leaderName', name: 'Sanji' }" }] },
   leaderType: { id: 'leaderType', summary: 'If your Leader has the {T} type.', params: [{ name: 'type', type: 'string', required: true }], covers: ['If your Leader has the {{type}} type', 'If your Leader\'s type includes "{type}"'], examples: [{ cardNumber: 'OP06-010', snippet: "{ kind: 'leaderType', type: 'FILM' }" }] },
+  leaderAttribute: { id: 'leaderAttribute', summary: 'If your Leader has the <X> attribute.', params: [{ name: 'attribute', type: 'string', required: true }], covers: ['If your Leader has the <{attribute}> attribute'], examples: [{ cardNumber: 'OP12-021', snippet: "{ kind: 'leaderAttribute', attribute: 'slash' }" }] },
   leaderMulticolor: { id: 'leaderMulticolor', summary: 'If your Leader is multicolored.', params: [], covers: ['If your Leader is multicolored'], examples: [{ cardNumber: 'EB03-004', snippet: "{ kind: 'leaderMulticolor' }" }] },
   selfCharacterCount: { id: 'selfCharacterCount', summary: 'You have N or more/less Characters.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have {N} or more Characters'], examples: [{ cardNumber: 'OP07-033', snippet: "{ kind: 'selfCharacterCount', atLeast: 3 }" }] },
   selfRestedCharacterCount: { id: 'selfRestedCharacterCount', summary: 'You have N or more/less rested Characters.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have {N} or more rested Characters'], examples: [{ cardNumber: 'OP09-036', snippet: "{ kind: 'selfRestedCharacterCount', atLeast: 2 }" }] },
@@ -881,6 +906,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   selfHandMatching: { id: 'selfHandMatching', summary: 'You can reveal N cards in hand matching a type/category/power ("reveal ... from your hand").', params: [{ name: 'atLeast', type: 'number', required: true }, { name: 'typeIncludes', type: 'string', required: false }, { name: 'category', type: 'CardCategory', required: false }, { name: 'exactPower/minPower', type: 'number', required: false }], covers: ['reveal {N} {type}/Event/{power}-power cards from your hand'], examples: [{ cardNumber: 'OP16-002', snippet: "{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }" }] },
   opponentHand: { id: 'opponentHand', summary: 'Opponent has N or more/less cards in hand.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If your opponent has {N} or more cards in their hand'], examples: [{ cardNumber: 'OP05-082', snippet: "{ kind: 'opponentHand', atLeast: 6 }" }] },
   selfPlayedThisTurn: { id: 'selfPlayedThisTurn', summary: 'This card was played this turn.', params: [], covers: ['If this Character was played on this turn'], examples: [{ cardNumber: 'EB03-013', snippet: "{ kind: 'selfPlayedThisTurn' }" }] },
+  selfBattledOpponentCharacterThisTurn: { id: 'selfBattledOpponentCharacterThisTurn', summary: 'This card battled an opponent Character this turn.', params: [], covers: ['If this Leader battles your opponent\'s Character during this turn'], examples: [{ cardNumber: 'OP12-020', snippet: "{ kind: 'selfBattledOpponentCharacterThisTurn' }" }] },
   selfTrashCount: { id: 'selfTrashCount', summary: 'N or more/less cards in your trash.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['{N} or more cards in your trash'], examples: [{ cardNumber: 'OP08-096', snippet: "{ kind: 'selfTrashCount', atLeast: 1 }" }] },
   selfDeckCount: { id: 'selfDeckCount', summary: 'N or less cards in your deck.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['{N} or less cards in your deck'], examples: [{ cardNumber: 'OP15-022', snippet: "{ kind: 'selfDeckCount', atMost: 0 }" }] },
   selfTypedCharacterCount: { id: 'selfTypedCharacterCount', summary: 'You have N or more/less {type} Characters (counts self if same type).', params: [{ name: 'typeIncludes', type: 'string', required: true }, { name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }, { name: 'rested', type: 'boolean', required: false }], covers: ['if you have {N} or more {type} Characters'], excludes: ['combined-OR of two types', '"other than [X]" self exclusion (approximate with atLeast+1)'], examples: [{ cardNumber: 'OP13-009', snippet: "{ kind: 'selfTypedCharacterCount', typeIncludes: 'Mountain Bandits', atLeast: 2 }" }] },

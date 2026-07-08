@@ -117,16 +117,39 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x3] [Activate: Main] [Once Per Turn] If this Leader battles your opponent's Character during
   //   this turn, set this Leader as active. Then, this Leader cannot attack your opponent's Characters with
   //   a base cost of 7 or less during this turn.
-  // NOTE: not yet implemented (needs leader attack restrictions that only bar attacks into filtered opponent Characters).
+  {
+    cardNumber: 'OP12-020',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      condition: { donAttachedAtLeast: 3 },
+      gate: [{ kind: 'selfBattledOpponentCharacterThisTurn' }],
+      functions: [
+        { fn: 'setActiveSelf' },
+        { fn: 'preventAttack', target: { ref: 'self' }, duration: 'duringThisTurn', forbiddenTargetFilter: { zone: 'character', maxBaseCost: 7 } },
+      ],
+    },
+  },
 
   // OP12-021 (character) Ipponmatsu —
   //   If your Leader has the <Slash> attribute and you have 6 or more rested DON!! cards, this Character
   //   cannot be rested by your opponent's effects.[Blocker]
-  // NOTE: not yet implemented (needs template).
-
-
-
-
+  //   PARTIAL: [Blocker] is card data.
+  {
+    cardNumber: 'OP12-021',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'preventRest',
+        target: { ref: 'self' },
+        duration: 'permanent',
+        effectSourceController: 'opponent',
+        condition: { gate: [{ kind: 'leaderAttribute', attribute: 'slash' }, { kind: 'selfRestedDonCount', atLeast: 6 }] },
+      }],
+    },
+  },
   // OP12-027 — aura K.O. replacement: rest this Character to save ally <Slash> cost ≤5. PARTIAL: [Blocker] is printed.
   {
     cardNumber: 'OP12-027',

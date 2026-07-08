@@ -36,10 +36,8 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   <Special> attribute.
   // NOTE: not yet implemented (needs template).
 
-  // OP11-006 (character) Zephyr —
-  //   [DON!! x1] [When Attacking] Give up to 1 of your opponent's <Special> attribute Characters −5000
-  //   power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP11-006 — [DON!! x1] [When Attacking] Give up to 1 opp <Special> Characters −5000 this turn.
+  //   PARTIAL: <Special> attribute filter dropped (see curated entry below).
 
   // ── Triage batch (OP11 expressible). "Choose a cost + reveal opp deck" and "turn Life face-down" families are deferred. ──
   // OP11-007 — [Activate: Main] rest this: If Leader {Navy}, up to 1 {Navy} Character +2000 this turn.
@@ -297,8 +295,15 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-069 — [On Play] If Leader {Big Mom Pirates}: add 1 top Life to hand → add 1 DON!! (active).
   { cardNumber: 'OP11-069', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Big Mom Pirates' }], functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addDonFromDeck', count: 1, rested: false, ifPrevious: 'previousMovedAny' }] } },
 
-  // OP11-070 — [On Play] Look 5, reveal up to 1 {Big Mom Pirates} cost ≥2 to hand, rest to bottom. PARTIAL: the peek-opp-deck activate is deferred.
-  { cardNumber: 'OP11-070', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Big Mom Pirates', minCost: 2 }, remainder: 'bottom' }] } },
+  // OP11-070 — [On Play] Look 5, reveal up to 1 {Big Mom Pirates} cost ≥2 to hand, rest to bottom.
+  //   [Activate: Main] DON!! −1, rest this: look at opp deck top.
+  {
+    cardNumber: 'OP11-070',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Big Mom Pirates', minCost: 2 }, remainder: 'bottom' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }, { kind: 'restThis' }], functions: [{ fn: 'revealOpponentDeckTop' }] } },
+    ],
+  },
 
   // OP11-071 — [Activate: Main] [Once Per Turn] trash 1 from hand: choose cost, reveal opp deck top; if cost matches, draw 1 and add 1 active DON!!.
   { cardNumber: 'OP11-071', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [

@@ -141,4 +141,10 @@ export interface CardInstance {
    * never entered play this way (Leader/Stage/Event/DON!!, or minted before this field existed).
    */
   enteredPlayTurn?: number;
+  /**
+   * GameState.turnNumber when this instance last battled an opponent Character in
+   * the Damage Step (used by "If this Leader/Character battles your opponent's
+   * Character during this turn" gates). undefined until the first such battle.
+   */
+  battledOpponentCharacterTurn?: number;
 }

@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { DeclareAttackAction } from '../../../engine/actions/action';
 import { validateResolvePendingChoice } from '../../../engine/actions/handlers/resolvePendingChoice';
 import { runTimings } from '../../../engine/effects/interpreter';
+import { resumeChoice } from '../../../engine/effects/fireTiming';
 import { validateDeclareAttack } from '../../../engine/rules/battle/declareAttack';
-import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putDon } from '../../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, makeLeaderDef, putCharacterInPlay, putDon } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments } from '../assembler';
 import { EB_ASSIGNMENTS } from '../assignments/EB';
 import { OP01_ASSIGNMENTS } from '../assignments/OP01';
+import { OP06_ASSIGNMENTS } from '../assignments/OP06';
 import { OP05_ASSIGNMENTS } from '../assignments/OP05';
 import { OP10_ASSIGNMENTS } from '../assignments/OP10';
 import { OP11_ASSIGNMENTS } from '../assignments/OP11';
@@ -14,6 +16,7 @@ import { OP12_ASSIGNMENTS } from '../assignments/OP12';
 
 const registry = buildRegistryFromAssignments([
   ...OP05_ASSIGNMENTS,
+  ...OP06_ASSIGNMENTS,
   ...OP10_ASSIGNMENTS,
   ...OP11_ASSIGNMENTS,
   ...OP12_ASSIGNMENTS,
@@ -23,6 +26,15 @@ const registry = buildRegistryFromAssignments([
 
 function declareAttack(playerId: string, attackerInstanceId: string, targetInstanceId: string): DeclareAttackAction {
   return { type: 'DECLARE_ATTACK', actionId: 'test-attack', playerId, attackerInstanceId, targetInstanceId };
+}
+
+function finishTiming(cardNumber: string, timing: Parameters<typeof runTimings>[1][number], state: ReturnType<typeof buildBaseRig>['state'], sourceId: string, defs: ReturnType<typeof buildBaseRig>['defs']) {
+  let result = runTimings(registry[cardNumber], [timing], state, sourceId, defs, null, registry);
+  while (result.pendingChoices.length > 0) {
+    const choice = result.pendingChoices[0];
+    result = resumeChoice(result.state, choice.id, [], registry, defs, null);
+  }
+  return result;
 }
 
 describe('combined-power K.O. (OP05-007)', () => {
@@ -120,6 +132,34 @@ describe('attack-restriction extensions', () => {
     expect(validateDeclareAttack(rig.state, declareAttack('p2', p2LeaderId, kidId), rig.defs).legal).toBe(true);
     expect(validateDeclareAttack(rig.state, declareAttack('p2', p2LeaderId, p2CharId), rig.defs).legal).toBe(false);
   });
+
+  it('OP06-026 bars controller Leader attacks but allows Character attacks', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    const koushirouDef = makeCharacterDef({ cardDefinitionId: 'OP06-026', cardNumber: 'OP06-026', name: 'Koushirou', baseCost: 1, basePower: 1000 });
+    let koushirouId: string;
+    ({ rig, instanceId: koushirouId } = putCharacterInPlay(rig, 'p1', koushirouDef, { summoningSick: false }));
+    const foeCharDef = makeCharacterDef({ cardDefinitionId: 'foe-char', cardNumber: 'FOE', name: 'Foe', baseCost: 2, basePower: 2000, types: ['Slash'] });
+    let foeCharId: string;
+    ({ rig, instanceId: foeCharId } = putCharacterInPlay(rig, 'p2', foeCharDef, { summoningSick: false, orientation: 'rested' }));
+    const applied = finishTiming('OP06-026', 'onPlay', rig.state, koushirouId, rig.defs);
+    const p1LeaderId = applied.state.players.p1.leaderInstanceId;
+    const p2LeaderId = applied.state.players.p2.leaderInstanceId;
+    expect(validateDeclareAttack(applied.state, declareAttack('p1', p1LeaderId, p2LeaderId), rig.defs).legal).toBe(false);
+    expect(validateDeclareAttack(applied.state, declareAttack('p1', koushirouId, foeCharId), rig.defs).legal).toBe(true);
+  });
+
+  it('OP06-026 player-wide leader attack ban applies to Characters played afterward', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    const koushirouDef = makeCharacterDef({ cardDefinitionId: 'OP06-026', cardNumber: 'OP06-026', name: 'Koushirou', baseCost: 1, basePower: 1000 });
+    let koushirouId: string;
+    ({ rig, instanceId: koushirouId } = putCharacterInPlay(rig, 'p1', koushirouDef, { summoningSick: false }));
+    const applied = finishTiming('OP06-026', 'onPlay', rig.state, koushirouId, rig.defs);
+    const lateDef = makeCharacterDef({ cardDefinitionId: 'late', cardNumber: 'LATE', name: 'Late', baseCost: 2, basePower: 2000 });
+    let lateId: string;
+    ({ rig, instanceId: lateId } = putCharacterInPlay({ ...rig, state: applied.state }, 'p1', lateDef, { summoningSick: false }));
+    const p2LeaderId = rig.state.players.p2.leaderInstanceId;
+    expect(validateDeclareAttack(rig.state, declareAttack('p1', lateId, p2LeaderId), rig.defs).legal).toBe(false);
+  });
 });
 
 describe('mixed rest targets', () => {
@@ -139,6 +179,14 @@ describe('opp-deck reveal reuse', () => {
       expect(ability.cost).toEqual([{ kind: 'donMinus', count: 1 }]);
       expect(ability.ops.map((op) => op.op)).toEqual(['revealOpponentDeckTop', 'addPower']);
     }
+  });
+
+  it('OP11-070 activate compiles donMinus + restThis + revealOpponentDeckTop', () => {
+    const program = registry['OP11-070'];
+    expect(program.abilities).toHaveLength(2);
+    const activate = program.abilities.find((a) => a.timing === 'activateMain');
+    expect(activate?.cost).toEqual([{ kind: 'donMinus', count: 1 }, { kind: 'restThis' }]);
+    expect(activate?.ops.map((op) => op.op)).toEqual(['revealOpponentDeckTop']);
   });
 
   it('EB04-051 allows attack when any Character has base power ≥12000', () => {
@@ -161,5 +209,43 @@ describe('OP10-022 composed ability', () => {
     expect(main.gate).toEqual([{ kind: 'selfCharactersTotalCostAtLeast', atLeast: 5 }]);
     expect(main.condition).toEqual({ donAttachedAtLeast: 1 });
     expect(main.ops.some((op) => op.op === 'playFromHand')).toBe(true);
+  });
+});
+
+describe('filtered attack targets (OP12-020)', () => {
+  it('bars attacks into opponent Characters with base cost ≤7 after activate', () => {
+    const zoroDef = makeLeaderDef({ cardDefinitionId: 'OP12-020', cardNumber: 'OP12-020', name: 'Zoro', basePower: 6000, attributes: ['slash'] });
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3, leaderOverridesP1: zoroDef });
+    const leaderId = rig.state.players.p1.leaderInstanceId;
+    rig.defs[zoroDef.cardDefinitionId] = zoroDef;
+    const don = putDon(rig, 'p1', 3);
+    rig = don.rig;
+    rig.state = {
+      ...rig.state,
+      cardsById: {
+        ...rig.state.cardsById,
+        [leaderId]: { ...rig.state.cardsById[leaderId], donAttached: don.donIds, battledOpponentCharacterTurn: 3 },
+      },
+    };
+    const cheap = makeCharacterDef({ cardDefinitionId: 'cheap', cardNumber: 'CH', name: 'Cheap', baseCost: 5, basePower: 5000 });
+    const pricey = makeCharacterDef({ cardDefinitionId: 'pricey', cardNumber: 'PX', name: 'Pricey', baseCost: 8, basePower: 8000 });
+    let cheapId: string;
+    let priceyId: string;
+    ({ rig, instanceId: cheapId } = putCharacterInPlay(rig, 'p2', cheap, { summoningSick: false, orientation: 'rested' }));
+    ({ rig, instanceId: priceyId } = putCharacterInPlay(rig, 'p2', pricey, { summoningSick: false, orientation: 'rested' }));
+    rig.defs[cheap.cardDefinitionId] = cheap;
+    rig.defs[pricey.cardDefinitionId] = pricey;
+
+    const applied = runTimings(registry['OP12-020'], ['activateMain'], rig.state, leaderId, rig.defs, null, registry);
+    const p2LeaderId = applied.state.players.p2.leaderInstanceId;
+    expect(validateDeclareAttack(applied.state, declareAttack('p1', leaderId, cheapId), rig.defs).legal).toBe(false);
+    expect(validateDeclareAttack(applied.state, declareAttack('p1', leaderId, priceyId), rig.defs).legal).toBe(true);
+    expect(validateDeclareAttack(applied.state, declareAttack('p1', leaderId, p2LeaderId), rig.defs).legal).toBe(true);
+  });
+
+  it('EB04-012/013 compile setActiveControllerLeader', () => {
+    expect(registry['EB04-012'].abilities[0].ops).toEqual([{ op: 'setActive', target: { sel: 'controllerLeader' } }]);
+    const onPlay = registry['EB04-013'].abilities[0];
+    expect(onPlay.ops.at(-1)).toEqual({ op: 'setActive', target: { sel: 'controllerLeader' } });
   });
 });
