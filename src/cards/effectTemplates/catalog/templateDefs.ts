@@ -162,6 +162,8 @@ export type AbilityFunction =
   | { fn: 'addCostAuraOpponentCharacters'; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // "Give this card in your hand −N cost" while the source is on the field (same cardDefinitionId copies in hand).
   | { fn: 'addCostAuraSameCardInHand'; amount: number; duration: IrDuration; gate?: AbilityGate[] }
+  // One-shot "next time you play a matching Character from your hand this turn, cost −N".
+  | { fn: 'addNextPlayFromHandCostDiscount'; amount: number; filter?: { typeIncludes?: string; minBaseCost?: number } }
   // "This card cannot be K.O.'d" — scope 'battle' (battle K.O. only) or 'any'.
   // `attackerCategory` optionally limits a battle immunity to a given attacker ("by Leaders").
   | { fn: 'koImmunitySelf'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character' }

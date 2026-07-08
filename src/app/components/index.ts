@@ -11,6 +11,8 @@ export * from './CardTile';
 export * from './CardDetailModal';
 export * from './DeckListSummary';
 export * from './DeckFormatBadge';
+export * from './SetLibrarySelect';
+export * from './OpSelect';
 export * from './ScreenShell';
 export * from './ScaleToFit';
 export * from './GameCanvasScreen';

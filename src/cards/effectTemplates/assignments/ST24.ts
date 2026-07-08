@@ -5,11 +5,8 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST24_ASSIGNMENTS: CardEffectAssignment[] = [
-  // ST24-001 (character) Capone"Gang"Bege —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On Play] If you have 6 or more rested cards, draw 1 card and trash 1 card from your
-  //   hand.
-  // NOTE: not yet implemented (needs template).
+  // ST24-001 — PARTIAL: "6+ rested cards" → selfRestedCharacterCount; [On Play] draw 1 trash 1 mapped.
+  { cardNumber: 'ST24-001', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 6 }], functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
 
   // ST24-002 — [On Play] Look 5, reveal up to 1 {Supernovas} to hand, rest to bottom. PARTIAL: opp-attack trash-self ramp deferred.
   { cardNumber: 'ST24-002', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Supernovas' }, remainder: 'bottom' }] } },
@@ -17,11 +14,12 @@ export const ST24_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST24-003 — [End of Your Turn] Set up to 1 DON!! active.
   { cardNumber: 'ST24-003', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
 
-  // ST24-004 (character) Law & Bepo —
-  //   [On Play] Rest up to 1 of your opponent's Characters and that Character will not become active in
-  //   your opponent's next Refresh Phase. Then, if your opponent has 2 or more rested Characters, your
-  //   Leader gains +2000 power until the end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
+  // ST24-004 — [On Play] rest opp Character + preventRefresh; Leader +2000 if opp 2+ rested Characters.
+  { cardNumber: 'ST24-004', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true },
+    { fn: 'preventRefresh', target: { ref: 'previous' }, ifPrevious: 'previousSelectedAny' },
+    { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn', ifGate: [{ kind: 'opponentRestedCharacterCount', atLeast: 2 }] },
+  ] } },
 
   // ST24-005 (character) X.Drake —
   //   [On Play] If your Leader has the {Supernovas} type, rest up to 1 of your opponent's Characters with a

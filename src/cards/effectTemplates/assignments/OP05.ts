@@ -251,10 +251,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP05-051', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 4 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
-  // OP05-053 (character) Mozambia —
-  //   [Your Turn] [Once Per Turn] When you draw a card outside of your Draw Phase, this Character gains
-  //   +2000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP05-053 — [Your Turn] [Once Per Turn] When you draw outside Draw Phase, +2000 this turn.
+  { cardNumber: 'OP05-053', templateId: 'ability', params: { timing: 'onDrawOutsideDrawPhase', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
 
   // OP05-054 — [On Play] Draw 2, then place 2 cards from hand at bottom of deck.
   { cardNumber: 'OP05-054', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 2 }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 2 }] } },
@@ -374,16 +372,18 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-079 — [On Play] opponent places 3 cards from their trash at the bottom of their deck.
   { cardNumber: 'OP05-079', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 3 }] } },
 
-  // OP05-080 (character) Elizabello II —
-  //   [When Attacking] [Once Per Turn] You may return 20 cards from your trash to your deck and shuffle it:
-  //   This Character gains [Double Attack] and +10000 power during this battle.(This card deals 2 damage.)
-  // NOTE: not yet implemented (needs template).
+  // OP05-080 — PARTIAL: shuffle step omitted; trash→deck return mapped as moveCards.
+  { cardNumber: 'OP05-080', templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, functions: [
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 20 },
+    { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+    { fn: 'addPowerSelf', amount: 10000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+  ] } },
 
-  // OP05-082 (character) Shirahoshi —
-  //   [Activate: Main] You may rest this Character and place 2 cards from your trash at the bottom of your
-  //   deck in any order: If your opponent has 6 or more cards in their hand, your opponent trashes 1 card
-  //   from their hand.
-  // NOTE: not yet implemented (needs template).
+  // OP05-082 — rest this + 2 trash→deck bottom: if opp hand ≥6, opp trashes 1 from hand.
+  { cardNumber: 'OP05-082', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 2 },
+    { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'opponentHand', atLeast: 6 }] },
+  ] } },
 
   // OP05-084 — [Your Turn] if only {Celestial Dragons} on field, all opp Characters −4 cost.
   { cardNumber: 'OP05-084', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -4, duration: 'permanent', gate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'Celestial Dragons' }], sourceCondition: { turn: 'your' } }] } },
@@ -479,11 +479,11 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   //   of your deck to the top of your Life cards. Then, trash 1 card from your hand.
   // NOTE: not yet implemented (needs template).
 
-  // OP05-099 (character) Amazon —
-  //   [On Your Opponent's Attack] You may rest this Character: Your opponent may trash 1 card from the top
-  //   of their Life cards. If they do not, give up to 1 of your opponent's Leader or Character cards −2000
-  //   power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP05-099 — PARTIAL: optional opp life-trash vs −2000 branch not modeled; rest + optional life trash + −2000 mapped.
+  { cardNumber: 'OP05-099', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restThis' }], functions: [
+    { fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true },
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true },
+  ] } },
 
   // OP05-100 (character) Enel —
   //   [Rush][Once Per Turn] If this Character would leave the field, you may trash 1 card from the top of
@@ -524,10 +524,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP05-107 (character) Lieutenant Spacey —
-  //   [Your Turn] [Once Per Turn] When a card is added to your hand from your Life, this Character gains
-  //   +2000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP05-107 — [Your Turn] [Once Per Turn] When Life→hand, +2000 this turn.
+  { cardNumber: 'OP05-107', templateId: 'ability', params: { timing: 'onLifeToHand', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
 
   // OP05-109 (character) Pagaya —
   //   [Once Per Turn] When a [Trigger] activates, draw 2 cards and trash 2 cards from your hand.

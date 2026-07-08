@@ -145,11 +145,8 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the [Activate: Main] "your {Fish-Man}/{Merfolk} Character can attack Characters when played" grant is deferred.
   { cardNumber: 'OP11-031', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
 
-  // OP11-034 (character) Hatchan —
-  //   [Activate: Main] You may rest this Character: If your Leader has the {Fish-Man} or {Merfolk} type, up
-  //   to 1 of your opponent's Characters with a cost of 3 or less cannot be rested until the end of your
-  //   opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  // OP11-034 — PARTIAL: cannot-be-rested uses preventRefresh proxy; active-character rest-lock deferred.
+  { cardNumber: 'OP11-034', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }], functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true, maxTargets: 1 }] } },
 
   // OP11-035 — [On Play] Rest up to 1 opp Character. PARTIAL: the K.O.-triggered play-from-hand is deferred.
   { cardNumber: 'OP11-035', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },

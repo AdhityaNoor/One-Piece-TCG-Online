@@ -417,12 +417,14 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-098 — [Counter] If Leader [Imu], up to 1 Leader/Char +4000 this battle. PARTIAL: the [Main] Stage K.O. is deferred.
   { cardNumber: 'OP13-098', templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderName', name: 'Imu' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
 
-  // OP13-099 (stage) The Empty Throne —
-  //   [Your Turn] If you have 19 or more cards in your trash, your Leader gains +1000 power.[Activate:
-  //   Main] You may rest this card and 3 of your DON!! cards: Play up to 1 black {Five Elders} type
-  //   Character card with a cost equal to or less than the number of DON!! cards on your field from your
-  //   hand.
-  // NOTE: not yet implemented (needs template).
+  // OP13-099 — PARTIAL: play cost should scale with DON!! on field; mapped maxCost 10 proxy.
+  {
+    cardNumber: 'OP13-099',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'permanent', condition: { turn: 'your', gate: [{ kind: 'selfTrashCount', atLeast: 19 }] } }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }, { kind: 'restDon', count: 3 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'black', typeIncludes: 'Five Elders', maxCost: 10 }, optional: true }] } },
+    ],
+  },
 
   // OP13-100 (leader) Jewelry Bonney —
   //   [Your Turn] [Once Per Turn] This effect can be activated when you play a Character with a [Trigger].
@@ -572,6 +574,10 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-084', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
 
-  { cardNumber: 'OP13-099', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
+  // OP13-120 — [Activate: Main] [OPT] Character +2 cost until end of opp next turn, then give 1 rested DON!!.
+  { cardNumber: 'OP13-120', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'addCost', target: { group: 'characters', player: 'controller' }, amount: 2, duration: 'endOfOpponentsTurn', optional: true },
+    { fn: 'giveDon', count: 1, ifPrevious: 'previousSelectedAny' },
+  ] } },
 
 ];

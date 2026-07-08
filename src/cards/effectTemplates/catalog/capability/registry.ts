@@ -626,6 +626,16 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['give this card in your hand −{C} cost', 'if <board state>, give this card in your hand −{C} cost'],
     examples: [{ cardNumber: 'OP15-013', snippet: "{ fn: 'addCostAuraSameCardInHand', amount: -2, duration: 'permanent', gate: [{ kind: 'selfLeaderPowerAtMost', power: 0 }] }" }],
   },
+  addNextPlayFromHandCostDiscount: {
+    id: 'addNextPlayFromHandCostDiscount',
+    summary: 'One-shot in-hand play discount: the next matching Character played from hand this turn costs −N.',
+    params: [
+      { name: 'amount', type: 'number', required: true, note: 'negative for "cost will be reduced by N"' },
+      { name: 'filter', type: '{ typeIncludes?: string; minBaseCost?: number }', required: false, note: 'typed / min printed cost gate on the played card' },
+    ],
+    covers: ['the next time you play a {Type} Character with a cost of {N} or more from your hand during this turn, the cost will be reduced by {C}'],
+    examples: [{ cardNumber: 'OP02-025', snippet: "{ fn: 'addNextPlayFromHandCostDiscount', amount: -1, filter: { typeIncludes: 'Land of Wano', minBaseCost: 3 } }" }],
+  },
   koImmunitySelf: {
     id: 'koImmunitySelf',
     summary: '"This card cannot be K.O.\'d" — scope battle/effect/any, optionally by an attacker category.',
@@ -770,6 +780,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   anyCharacterCostAtLeast: { id: 'anyCharacterCostAtLeast', summary: 'There is a Character with a cost of N or more (either player).', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['if there is a Character with a cost of {N} or more'], examples: [{ cardNumber: 'OP11-095', snippet: "{ kind: 'anyCharacterCostAtLeast', atLeast: 9 }" }] },
   opponentHasCharacterExactCost: { id: 'opponentHasCharacterExactCost', summary: 'Opponent has a Character with a cost of exactly N.', params: [{ name: 'exactCost', type: 'number', required: true }], covers: ['if your opponent has a Character with a cost of {N}'], examples: [{ cardNumber: 'OP07-087', snippet: "{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }" }] },
   selfDonReturnedThisAction: { id: 'selfDonReturnedThisAction', summary: 'N or more DON!! were returned to the DON!! deck during this cost payment (onDonReturned only).', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['When {N} or more DON!! cards on your field are returned to your DON!! deck', 'When a DON!! card on your field is returned to your DON!! deck'], examples: [{ cardNumber: 'OP09-061', snippet: "{ kind: 'selfDonReturnedThisAction', atLeast: 2 }" }] },
+  playedCharacterNoBaseEffect: { id: 'playedCharacterNoBaseEffect', summary: 'The Character just played from hand has no base effect (onCharacterPlayedFromHand only).', params: [], covers: ['Character with no base effect from your hand'], examples: [{ cardNumber: 'OP02-026', snippet: "{ kind: 'playedCharacterNoBaseEffect' }" }] },
   anyOf: { id: 'anyOf', summary: 'OR: satisfied if any sub-gate holds ("if Leader is X or has {Y} type").', params: [{ name: 'gates', type: 'AbilityGate[]', required: true }], covers: ['if your Leader has the {A} or {B} type'], examples: [{ cardNumber: 'OP11-031', snippet: "{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }" }] },
 };
 
@@ -800,6 +811,13 @@ export const TIMINGS: Record<IrTiming, string> = {
   onCharacterKoed: 'When one of your Characters is K.O.\'d (event trigger).',
   onRested: '[When this Character becomes rested] — fires when the card transitions active→rested (attack, cost, or effect).',
   onDonReturned: '[When DON!! on your field is returned to your DON!! deck] — fires after effect-sourced DON!! −N costs (not Refresh Phase returns).',
+  onOpponentEventActivated: '[When your opponent activates an Event] — reactive window after opponent Event resolution.',
+  onYouEventActivated: '[When you activate an Event] — reactive window after your Event resolution.',
+  onOpponentBlockerActivated: '[When your opponent activates a Blocker] — reactive window for the attacking player.',
+  onLifeDamageDealt: '[When you deal damage to opponent Life] — fires after each Life hit in battle.',
+  onDrawOutsideDrawPhase: '[When you draw outside your Draw Phase] — fires after each effect-sourced draw.',
+  onLifeToHand: '[When a card is added to your hand from your Life] — fires after Life→hand in battle.',
+  onCharacterPlayedFromHand: '[When you play a Character from your hand] — fires on your other in-play cards.',
   counter: '[Counter] — during the opponent\'s attack, from hand.',
   lifeTrigger: '[Trigger] — when this card is revealed from Life.',
   endOfTurn: '[End of Your Turn].',

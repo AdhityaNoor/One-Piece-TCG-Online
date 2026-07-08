@@ -22,10 +22,8 @@ export const ST21_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST21-010 — [DON!! x2][When Attacking] K.O. up to 1 opp Character 4000 power or less.
   { cardNumber: 'ST21-010', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, optional: true }] } },
 
-  // ST21-011 (character) Franky —
-  //   [DON!! x2] [Opponent's Turn] All of your {Straw Hat Crew} type Characters with 4000 base power or
-  //   less gain +1000 power.
-  // NOTE: not yet implemented (needs template).
+  // ST21-011 — [DON!! x2][Opponent's Turn] {Straw Hat Crew} with ≤4000 base power +1000.
+  { cardNumber: 'ST21-011', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 1000, duration: 'permanent', anyOfTypes: ['Straw Hat Crew'], targetCondition: { maxBasePower: 4000 }, sourceCondition: { donAttachedAtLeast: 2, turn: 'opponent' } }] } },
 
   // ST21-012 — [When Attacking] give up to 2 rested DON!! to Leader/1 Char.
   { cardNumber: 'ST21-012', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'giveDon', count: 2 }] } },

@@ -15,12 +15,11 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x1] [Your Turn] All of your Characters gain +1000 power.
   // NOTE: not yet implemented (needs template).
 
-  // OP01-002 (leader) Trafalgar Law —
-  //   [Activate: Main] [Once Per Turn] ➁ (You may rest the specified number of DON!! cards in your cost
-  //   area.): If you have 5 Characters, return 1 of your Characters to the owner's hand. Then, play up to 1
-  //   Character with a cost of 5 or less from your hand that is a different color than the returned
-  //   Character.
-  // NOTE: not yet implemented (needs template).
+  // OP01-002 — PARTIAL: "different color than returned Character" play filter deferred.
+  { cardNumber: 'OP01-002', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restDon', count: 2 }], gate: [{ kind: 'selfCharacterCount', atLeast: 5 }], functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'playFromHand', filter: { category: 'character', maxCost: 5 }, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP01-003 (leader) Monkey.D.Luffy —
   //   [Activate: Main] [Once Per Turn] ➃ (You may rest the specified number of DON!! cards in your cost
@@ -28,9 +27,8 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   //   less as active. It gains +1000 power during this turn.
   // NOTE: not yet implemented (needs template).
 
-  // OP01-004 (character) Usopp —
-  //   [DON!! x1] [Your Turn] [Once Per Turn] Draw 1 card when your opponent activates an Event.
-  // NOTE: not yet implemented (needs template).
+  // OP01-004 — [DON!! x1] [Your Turn] [Once Per Turn] Draw 1 when opponent activates an Event.
+  { cardNumber: 'OP01-004', templateId: 'ability', params: { timing: 'onOpponentEventActivated', oncePerTurn: true, condition: { donAttachedAtLeast: 1, turn: 'your' }, functions: [{ fn: 'draw', amount: 1 }] } },
 
   // OP01-005 — [On Play] Add up to 1 red Character (other than [Uta], cost<=3) from trash to hand.
   { cardNumber: 'OP01-005', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', color: 'red', maxCost: 3, excludeSelfName: true } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -226,9 +224,11 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP01-054', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 4 } }, optional: true }] } },
 
-  // OP01-055 (event) You Can Be My Samurai!! —
-  //   [Main] You may rest 2 of your Characters: Draw 2 cards.
-  // NOTE: not yet implemented (needs template).
+  // OP01-055 — [Main] rest 2 Characters: draw 2.
+  { cardNumber: 'OP01-055', templateId: 'ability', params: { timing: 'activateMain', functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'controller' }, optional: true, maxTargets: 2 },
+    { fn: 'draw', amount: 2, ifPrevious: 'previousSelectedAny' },
+  ] } },
 
   { cardNumber: 'OP01-056', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 5 } }, optional: true, maxTargets: 2 }] } },
 
@@ -270,10 +270,8 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   //   card from your DON!! deck and set it as active.
   // NOTE: not yet implemented (needs template).
 
-  // OP01-062 (leader) Crocodile —
-  //   [DON!! x1] When you activate an Event, you may draw 1 card if you have 4 or less cards in your hand
-  //   and haven't drawn a card using this Leader's effect during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP01-062 — [DON!! x1] When you activate an Event, draw 1 if ≤4 cards in hand (once per turn).
+  { cardNumber: 'OP01-062', templateId: 'ability', params: { timing: 'onYouEventActivated', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfHand', atMost: 4 }], functions: [{ fn: 'draw', amount: 1, optional: true }] } },
 
   // OP01-063 (character) Arlong —
   //   [DON!! x1] [Activate: Main] You may rest this Character: Choose 1 card from your opponent's hand;
@@ -393,11 +391,17 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP01-088 (event) Desert Spada —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, look
-  //   at 3 cards from the top of your deck and place them at the top or bottom of the deck in any order.
-  //   [Trigger] Draw 2 cards and trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP01-088 — [Counter] +2000 battle, look 3 and reorder. [Trigger] draw 2 and trash 1.
+  {
+    cardNumber: 'OP01-088',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true },
+        { fn: 'searchTopDeck', look: 3, pick: 0, reveal: false, destination: 'deckTopOrBottom' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+    ],
+  },
 
   // OP01-089 - [Counter] If Leader has Seven Warlords type, return cost 5 or less Character to hand.
   { cardNumber: 'OP01-089', templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderType', type: 'The Seven Warlords of the Sea' }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -416,11 +420,8 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-093 — [On Play] rest 1 DON!!: add 1 DON!! from deck rested.
   { cardNumber: 'OP01-093', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
-  // OP01-094 (character) Kaido —
-  //   [On Play] DON!! −6 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): If your Leader has the {Animal Kingdom Pirates} type, K.O. all Characters other than this
-  //   Character.
-  // NOTE: not yet implemented (needs template).
+  // OP01-094 — PARTIAL: koAllCharacters hits both players and cannot exclude this Character.
+  { cardNumber: 'OP01-094', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 6 }], gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }], functions: [{ fn: 'koAllCharacters' }] } },
 
   { cardNumber: 'OP01-095', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'draw', amount: 1 }] } },
 

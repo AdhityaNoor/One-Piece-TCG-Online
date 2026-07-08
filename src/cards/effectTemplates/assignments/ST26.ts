@@ -6,10 +6,17 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const ST26_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // ST26-001 (character) Soba Mask —
-  //   If you have a [San-Gorou] or [Sanji] Character with 7000 base power or more, give this card in your
-  //   hand −5 cost.[On Play] Return all of your [San-Gorou] and [Sanji] Characters to the owner's hand.
-  // NOTE: not yet implemented (needs template).
+  // ST26-001 — PARTIAL: hand −5 cost gate approximated; [On Play] return all [San-Gorou]/[Sanji] mapped.
+  {
+    cardNumber: 'ST26-001',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -5, duration: 'permanent', gate: [{ kind: 'anyOf', gates: [{ kind: 'selfControlsNamedWithPowerAtLeast', name: 'San-Gorou', power: 7000 }, { kind: 'selfControlsNamedWithPowerAtLeast', name: 'Sanji', power: 7000 }] }] }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { name: 'San-Gorou' } }, to: { zone: 'hand', player: 'owner' } },
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { name: 'Sanji' } }, to: { zone: 'hand', player: 'owner' } },
+      ] } },
+    ],
+  },
 
   // ST26-002 — [Blocker][On Play] DON!! −2: Rest up to 1 opp Character cost ≤1 (the "or DON!!" option is dropped).
   { cardNumber: 'ST26-002', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },

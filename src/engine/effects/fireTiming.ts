@@ -9,13 +9,179 @@ import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { runTimings, resumeProgram } from './interpreter';
 import { evaluateGates, type GateEvalContext } from './gates';
-import type { Ability } from './effectIr';
+import type { Ability, IrTiming } from './effectIr';
 import type { EffectTemplateRegistry } from './effectTemplate';
 
 /** Per-instance once-per-turn key for a triggered [On Battle] ability. Cleared in the Refresh Phase. */
 const ON_BATTLE_OPT_KEY = 'onBattle';
 /** Per-instance once-per-turn key for [When DON!! is returned] abilities. Cleared in the Refresh Phase. */
 const ON_DON_RETURNED_OPT_KEY = 'onDonReturned';
+/** Per-instance once-per-turn keys for reactive timings. Cleared in the Refresh Phase. */
+const REACTIVE_ONCE_PER_TURN_KEYS: Partial<Record<IrTiming, string>> = {
+  onOpponentEventActivated: 'onOpponentEventActivated',
+  onYouEventActivated: 'onYouEventActivated',
+  onOpponentBlockerActivated: 'onOpponentBlockerActivated',
+  onLifeDamageDealt: 'onLifeDamageDealt',
+  onDrawOutsideDrawPhase: 'onDrawOutsideDrawPhase',
+  onLifeToHand: 'onLifeToHand',
+};
+
+function mergeResults(a: ActionExecuteResult, b: ActionExecuteResult): ActionExecuteResult {
+  return { state: b.state, log: [...a.log, ...b.log], pendingChoices: [...a.pendingChoices, ...b.pendingChoices] };
+}
+
+function fireReactiveAbilitiesForPlayer(
+  state: GameState,
+  observerPlayerId: string,
+  timing: IrTiming,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+  eventContext?: GateEvalContext,
+  opts?: { onlyInstanceId?: string },
+): ActionExecuteResult {
+  const optKey = REACTIVE_ONCE_PER_TURN_KEYS[timing];
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const id of fieldInstanceIds(working, observerPlayerId)) {
+    if (opts?.onlyInstanceId && id !== opts.onlyInstanceId) continue;
+    const inst = working.cardsById[id];
+    if (!inst) continue;
+    const program = registry[inst.cardDefinitionId];
+    if (!program?.abilities.some((a) => a.timing === timing)) continue;
+    for (const ability of program.abilities.filter((a) => a.timing === timing)) {
+      if (optKey && ability.oncePerTurn && inst.oncePerTurnUsed.includes(optKey)) continue;
+      if (!triggeredAbilityWouldFire(ability, inst, working, defs, eventContext)) continue;
+      const fired = runTimings(program, [timing], working, id, defs, actionId, registry, false, eventContext);
+      working = fired.state;
+      log = [...log, ...fired.log];
+      if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+      if (optKey && ability.oncePerTurn) {
+        const updated = working.cardsById[id];
+        if (updated) {
+          working = {
+            ...working,
+            cardsById: { ...working.cardsById, [id]: { ...updated, oncePerTurnUsed: [...updated.oncePerTurnUsed, optKey] } },
+          };
+        }
+      }
+    }
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
+/** Fires [When your opponent activates an Event] for all in-play cards controlled by the opponent of `activatorPlayerId`. */
+export function fireOpponentEventActivatedReactions(
+  state: GameState,
+  activatorPlayerId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const observerId = Object.keys(state.players).find((id) => id !== activatorPlayerId);
+  if (!observerId) return noop(state);
+  return fireReactiveAbilitiesForPlayer(state, observerId, 'onOpponentEventActivated', registry, defs, actionId);
+}
+
+/** Fires [When you activate an Event] for all in-play cards controlled by `activatorPlayerId`. */
+export function fireYouEventActivatedReactions(
+  state: GameState,
+  activatorPlayerId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  return fireReactiveAbilitiesForPlayer(state, activatorPlayerId, 'onYouEventActivated', registry, defs, actionId);
+}
+
+/** Fires [When your opponent activates a Blocker] for the attacking player's in-play cards. */
+export function fireOpponentBlockerActivatedReactions(
+  state: GameState,
+  attackerPlayerId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  return fireReactiveAbilitiesForPlayer(state, attackerPlayerId, 'onOpponentBlockerActivated', registry, defs, actionId);
+}
+
+/** Fires [When you deal damage to opponent's Life] for dealer's in-play cards. */
+export function fireLifeDamageDealtReactions(
+  state: GameState,
+  dealerPlayerId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  return fireReactiveAbilitiesForPlayer(state, dealerPlayerId, 'onLifeDamageDealt', registry, defs, actionId);
+}
+
+/** Fires [When a card is added to your hand from your Life] for `playerId`'s in-play cards. */
+export function fireLifeToHandReactions(
+  state: GameState,
+  playerId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  return fireReactiveAbilitiesForPlayer(state, playerId, 'onLifeToHand', registry, defs, actionId);
+}
+
+/** Fires [When you draw outside your Draw Phase] for `drawerPlayerId`'s in-play cards. */
+export function fireDrawOutsideDrawPhaseReactions(
+  state: GameState,
+  drawerPlayerId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  if (state.currentPhase === 'draw') return noop(state);
+  return fireReactiveAbilitiesForPlayer(state, drawerPlayerId, 'onDrawOutsideDrawPhase', registry, defs, actionId);
+}
+
+/** Fires leader/field reactions when a Character is played from hand. */
+export function fireCharacterPlayedFromHandReactions(
+  state: GameState,
+  playerId: string,
+  playedInstanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const eventContext: GateEvalContext = { playedCharacterInstanceId: playedInstanceId };
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const id of fieldInstanceIds(working, playerId)) {
+    if (id === playedInstanceId) continue;
+    const inst = working.cardsById[id];
+    if (!inst) continue;
+    const program = registry[inst.cardDefinitionId];
+    if (!program?.abilities.some((a) => a.timing === 'onCharacterPlayedFromHand')) continue;
+    const fired = runTimings(program, ['onCharacterPlayedFromHand'], working, id, defs, actionId, registry, false, eventContext);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
+/** After an Event resolves, fire both observer and activator reactive windows. */
+export function fireEventActivatedReactions(
+  state: GameState,
+  activatorPlayerId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  const you = fireYouEventActivatedReactions(working, activatorPlayerId, registry, defs, actionId);
+  working = you.state;
+  log = [...log, ...you.log];
+  if (you.pendingChoices.length > 0) return { state: working, log, pendingChoices: you.pendingChoices };
+  const opp = fireOpponentEventActivatedReactions(working, activatorPlayerId, registry, defs, actionId);
+  return mergeResults({ state: working, log, pendingChoices: [] }, opp);
+}
 
 function fieldInstanceIds(state: GameState, playerId: string): string[] {
   const player = state.players[playerId];

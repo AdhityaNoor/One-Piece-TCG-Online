@@ -60,13 +60,23 @@ export const ST11_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST11-003 (event) Backlight — [Main] If your Leader is [Uta], choose one:
   //   • Rest up to 1 of your opponent's Characters with a cost of 5 or less.
   //   • K.O. up to 1 of your opponent's rested Characters with a cost of 5 or less.
-  // NOTE: This effect requires chooseOne with suspending operations (rest/ko),
-  // which is not yet supported by the engine. Skipped pending engine enhancement.
-  // {
-  //   cardNumber: 'ST11-003',
-  //   templateId: 'ability',
-  //   params: { ... }
-  // },
+  {
+    cardNumber: 'ST11-003',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      gate: [{ kind: 'leaderName', name: 'Uta' }],
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Choose one:',
+        options: [
+          { label: 'rest', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] },
+          { label: 'ko', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 5 } }, optional: true }] },
+        ],
+      }],
+    },
+  },
 
   // ST11-004 (event) New Genesis — [Main] If your Leader is [Uta], look at 3 cards from the top of your deck;
   //   reveal up to 1 {FILM} type card other than [New Genesis] and add it to your hand. Then, place the rest

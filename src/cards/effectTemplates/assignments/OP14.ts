@@ -202,11 +202,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   cost of 4 or less will not become active in your opponent's next Refresh Phase.
   { cardNumber: 'OP14-035', templateId: 'ability', params: { timing: 'onRested', condition: { turn: 'your' }, functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 4 } }, optional: true, maxTargets: 1 }] } },
 
-  // OP14-036 (event) Strive to Surpass me, Roronoa Zoro!!! —
-  //   [Counter] You may rest 1 of your cards: Up to 1 of your Leader or Character cards gains +4000 power
-  //   during this battle. [Trigger] You may rest 1 of your cards: Rest up to 1 of your opponent's
-  //   Characters with 7000 base power or less.
-  // NOTE: not yet implemented (needs template).
+  // OP14-036 — PARTIAL: "rest 1 of your cards" cost deferred on both timings.
+  {
+    cardNumber: 'OP14-036',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 7000 } }, optional: true }] } },
+    ],
+  },
 
   // OP14-037/038 — [Counter] Leader +3000. PARTIAL: "rest N of your cards" [Main] payoffs deferred.
   { cardNumber: 'OP14-037', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },

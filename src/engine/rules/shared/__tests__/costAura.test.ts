@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ContinuousEffectRecord, ContinuousPowerCondition, GameState, PowerAuraGroup, SourceStateCondition } from '../../../state/game';
-import { computeCurrentCost } from '../power';
+import { computeCurrentCost, consumablePlayFromHandCostDiscountIds, withConsumedPlayFromHandCostDiscounts } from '../power';
 import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putInHand } from './testRig';
 
 /** A continuous cost aura over a dynamic group, owned by p1 (source = `sourceInstanceId`). */
@@ -142,5 +142,56 @@ describe('continuous cost aura (addCostAura)', () => {
     expect(computeCurrentCost(otherHand.rig.defs, debuffed, handCopy.instanceId)).toBe(3); // 5 - 2
     expect(computeCurrentCost(otherHand.rig.defs, debuffed, field.instanceId)).toBe(5); // field copy unaffected
     expect(computeCurrentCost(otherHand.rig.defs, debuffed, otherHand.instanceId)).toBe(4); // different card unaffected
+  });
+
+  it('applies a one-shot in-hand play discount to matching typed Characters with min base cost', () => {
+    const wanoChar = makeCharacterDef({ baseCost: 4, types: ['Land of Wano'], cardNumber: 'WAN-001' });
+    const otherChar = makeCharacterDef({ baseCost: 4, types: ['Straw Hat Crew'], cardNumber: 'OTHER-001' });
+    const cheapWano = makeCharacterDef({ baseCost: 2, types: ['Land of Wano'], cardNumber: 'WAN-002' });
+    const base = buildBaseRig({ activePlayerId: 'p1' });
+    const wanoHand = putInHand(base, 'p1', wanoChar);
+    const withOther = putInHand(wanoHand.rig, 'p1', otherChar);
+    const withCheap = putInHand(withOther.rig, 'p1', cheapWano);
+    const group: PowerAuraGroup = { controllerCharactersInHand: true, anyOfTypes: ['Land of Wano'] };
+    const state: GameState = {
+      ...withCheap.rig.state,
+      continuousEffects: [{
+        id: 'next-play-discount',
+        sourceInstanceId: withCheap.rig.state.players.p1.leaderInstanceId!,
+        ownerId: 'p1',
+        duration: 'duringThisTurn',
+        usesRemaining: 1,
+        description: 'next play -1',
+        costModifier: { appliesToGroup: group, amount: -1, condition: { minBaseCost: 3 } },
+      }],
+    };
+    expect(computeCurrentCost(withCheap.rig.defs, state, wanoHand.instanceId)).toBe(3);
+    expect(computeCurrentCost(withCheap.rig.defs, state, withOther.instanceId)).toBe(4);
+    expect(computeCurrentCost(withCheap.rig.defs, state, withCheap.instanceId)).toBe(2);
+  });
+
+  it('consumes a one-shot in-hand play discount after PLAY_CHARACTER', () => {
+    const wanoChar = makeCharacterDef({ baseCost: 4, types: ['Land of Wano'], cardNumber: 'WAN-003' });
+    const base = buildBaseRig({ activePlayerId: 'p1' });
+    const withHand = putInHand(base, 'p1', wanoChar);
+    const discountId = 'next-play-discount';
+    const state: GameState = {
+      ...withHand.rig.state,
+      continuousEffects: [{
+        id: discountId,
+        sourceInstanceId: withHand.rig.state.players.p1.leaderInstanceId!,
+        ownerId: 'p1',
+        duration: 'duringThisTurn',
+        usesRemaining: 1,
+        description: 'next play -1',
+        costModifier: {
+          appliesToGroup: { controllerCharactersInHand: true, anyOfTypes: ['Land of Wano'] },
+          amount: -1,
+          condition: { minBaseCost: 3 },
+        },
+      }],
+    };
+    const consumed = withConsumedPlayFromHandCostDiscounts(state, [discountId]);
+    expect(consumed.continuousEffects.some((ce) => ce.id === discountId)).toBe(false);
   });
 });

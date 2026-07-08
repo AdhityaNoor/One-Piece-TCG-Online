@@ -17,11 +17,11 @@ const SEARCH_BROTHERS = {
 } as const;
 
 export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
-  // ST13-001 (leader) Sabo —
-  //   [DON!! x1] [Activate: Main] [Once Per Turn] You may add 1 of your Characters with a cost of 3 or more
-  //   and 7000 power or more to the top of your Life cards face-up: Up to 1 of your Characters gains +2000
-  //   power until the start of your next turn.
-  // NOTE: not yet implemented (needs template).
+  // ST13-001 — PARTIAL: 7000 power filter on Life-add deferred; mapped char→Life face-up + +2000.
+  { cardNumber: 'ST13-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { minCost: 3 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true },
+    { fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // ST13-002 (leader) Portgas.D.Ace —
   //   [DON!! x2] [Activate: Main] [Once Per Turn] Look at 5 cards from the top of your deck and add up to 1
@@ -42,11 +42,18 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   order.
   // NOTE: not yet implemented (needs template).
 
-  // ST13-005 (character) Emporio.Ivankov —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On Play] You may trash 1 card from the top or bottom of your Life cards: Reveal up to
-  //   1 Character card with a cost of 5 from your hand and add it to the top of your Life cards face-down.
-  // NOTE: not yet implemented (needs template).
+  // ST13-005 — PARTIAL: reveal-from-hand semantics approximated via filtered hand→Life face-down move.
+  {
+    cardNumber: 'ST13-005',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'trash', player: 'owner' }, optional: true },
+        { fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // ST13-006 — [Blocker][On Play] play up to 1 each of [Sabo], [Portgas.D.Ace], [Monkey.D.Luffy] with cost 2 from hand.
   { cardNumber: 'ST13-006', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Sabo', exactCost: 2 } }, { fn: 'playFromHand', filter: { category: 'character', name: 'Portgas.D.Ace', exactCost: 2 } }, { fn: 'playFromHand', filter: { category: 'character', name: 'Monkey.D.Luffy', exactCost: 2 } }] } },
@@ -64,10 +71,18 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
     params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'trash', player: 'owner' }, optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, ifPrevious: 'previousMovedAny', optional: true }] },
   },
 
-  // ST13-009 (character) Shanks —
-  //   [On Play] You may turn 1 of your face-up Life cards face-down: If your opponent has 7 or more cards
-  //   in their hand, trash up to 1 card from the top of your opponent's Life cards.
-  // NOTE: not yet implemented (needs template).
+  // ST13-009 — PARTIAL: "face-up Life" gate not modeled; turn-top-face-down + opp-hand gate mapped.
+  {
+    cardNumber: 'ST13-009',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'turnTopLifeFace', faceUp: false },
+        { fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'trash', player: 'owner' }, optional: true, ifPrevious: 'previousSelectedAny', ifGate: [{ kind: 'opponentHand', atLeast: 7 }] },
+      ],
+    },
+  },
 
   // ST13-010 (character) Portgas.D.Ace —
   //   [Activate: Main] You may trash this Character: Reveal 1 card from the top of your Life cards. If that

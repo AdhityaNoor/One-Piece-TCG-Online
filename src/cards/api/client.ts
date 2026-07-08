@@ -7,6 +7,7 @@
  * a file is incomplete.
  */
 import type { CardPrintingDto, DonCardDto, SetSummaryDto } from './types';
+import { resolveSetDisplayName } from '../catalog/setDisplayNames';
 import { cardCatalogPaths } from './endpoints';
 
 export type FetchLike = (url: string) => Promise<{
@@ -131,7 +132,7 @@ function localCardCommonFields(card: LocalCatalogCard) {
     inventory_price: null,
     market_price: null,
     card_name: card.en.name,
-    set_name: card.setName,
+    set_name: resolveSetDisplayName(card.setCode, card.setName),
     card_text: card.en.effectText,
     set_id: card.setCode,
     card_set_id: card.cardNumber,
@@ -205,7 +206,7 @@ export async function fetchAllSets(fetchImpl: FetchLike, url = cardCatalogPaths.
     const sets = rows
       .map((row): SetSummaryDto | null => {
         if (isSetSummaryDtoShape(row)) return row;
-        if (isLocalCatalogSetShape(row)) return { set_id: row.code, set_name: row.name };
+        if (isLocalCatalogSetShape(row)) return { set_id: row.code, set_name: resolveSetDisplayName(row.code, row.name) };
         return null;
       })
       .filter((row): row is SetSummaryDto => row !== null);

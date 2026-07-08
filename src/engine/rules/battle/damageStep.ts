@@ -40,7 +40,7 @@ import { getDefinition, type CardDefinitionLookup } from '../shared/definitions'
 import { computeCurrentPower, hasContinuousKeyword, isKoImmune } from '../shared/power';
 import { getOpponentId } from '../shared/players';
 import { buildKoReplacementConfirmChoice, findKoReplacementRecord } from '../shared/koAttempt';
-import { fireOnKO, fireOnBattle, type EffectTemplateRegistry } from '../../effects';
+import { fireOnKO, fireOnBattle, fireLifeDamageDealtReactions, fireLifeToHandReactions, type EffectTemplateRegistry } from '../../effects';
 import type { KoReplacementResumeState } from '../../events/pendingChoice';
 
 export interface DamageStepResult {
@@ -206,6 +206,32 @@ export function resolveDamageAndEndOfBattle(
           relatedCardInstanceIds: [lifeCardId],
           visibility: banished ? 'public' : { visibleTo: [defendingPlayerId] },
         });
+
+        if (!banished && !lethal) {
+          const lifeToHand = fireLifeToHandReactions(
+            { ...nextState, players: { ...nextState.players, [defendingPlayerId]: player }, cardsById },
+            defendingPlayerId,
+            registry,
+            defs,
+            causedByActionId,
+          );
+          nextState = lifeToHand.state;
+          onBattleLog = [...onBattleLog, ...lifeToHand.log];
+          onBattlePending = [...onBattlePending, ...lifeToHand.pendingChoices];
+          if (lifeToHand.pendingChoices.length > 0) break;
+        }
+
+        const lifeDamage = fireLifeDamageDealtReactions(
+          { ...nextState, players: { ...nextState.players, [defendingPlayerId]: player }, cardsById },
+          attackerPlayerId,
+          registry,
+          defs,
+          causedByActionId,
+        );
+        nextState = lifeDamage.state;
+        onBattleLog = [...onBattleLog, ...lifeDamage.log];
+        onBattlePending = [...onBattlePending, ...lifeDamage.pendingChoices];
+        if (lifeDamage.pendingChoices.length > 0) break;
       }
 
       if (!lethal) {

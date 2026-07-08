@@ -109,11 +109,12 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-020 — [Activate: Main] rest 2 DON!! + rest this Stage: if Leader [Portgas.D.Ace], look 5 add Event.
   { cardNumber: 'OP03-020', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 2 }, { kind: 'restThis' }], gate: [{ kind: 'leaderName', name: 'Portgas.D.Ace' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'event' }, remainder: 'bottom' }] } },
 
-  // OP03-021 (leader) Kuro —
-  //   [Activate: Main] ③ (You may rest the specified number of DON!! cards in your cost area.) You may rest
-  //   2 of your {East Blue} type Characters: Set this Leader as active, and rest up to 1 of your opponent's
-  //   Characters with a cost of 5 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP03-021 — [Activate: Main] DON!!−3: rest 2 {East Blue} → set Leader active + rest opp cost≤5.
+  { cardNumber: 'OP03-021', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 3 }], functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'East Blue' } }, optional: true, maxTargets: 2 },
+    { fn: 'setActiveSelf', ifPrevious: 'previousSelectedAny' },
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true, ifPrevious: 'previousSelectedAny' },
+  ] } },
 
   // OP03-022 — (Leader) [DON!! x2] [When Attacking] rest 1 DON!!: play up to 1 Character cost<=4 with a [Trigger] from hand.
   { cardNumber: 'OP03-022', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 4, hasTrigger: true } }] } },
@@ -235,18 +236,24 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   //   your deck.
   // NOTE: not yet implemented (needs template).
 
-  // OP03-041 (character) Usopp —
-  //   [Rush] (This card can attack on the turn in which it is played.)[DON!! x1] When this Character's
-  //   attack deals damage to your opponent's Life, you may trash 7 cards from the top of your deck.
-  // NOTE: not yet implemented (needs template).
+  // OP03-041 — [DON!! x1] When this Character's attack deals Life damage, trash 7 from deck top.
+  { cardNumber: 'OP03-041', templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'trashTopDeck', count: 7, optional: true }] } },
 
   // OP03-042 — [On Play] Add up to 1 blue [Usopp] from trash to hand.
   { cardNumber: 'OP03-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { color: 'blue', name: 'Usopp' } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
-  // OP03-043 (character) Gaimon —
-  //   When you deal damage to your opponent's Life, you may trash 3 cards from the top of your deck. If you
-  //   do, trash this Character.
-  // NOTE: not yet implemented (needs template).
+  // OP03-043 — PARTIAL: trash-self requires player to select this Character (no self-only trash fn).
+  {
+    cardNumber: 'OP03-043',
+    templateId: 'ability',
+    params: {
+      timing: 'onLifeDamageDealt',
+      functions: [
+        { fn: 'trashTopDeck', count: 3, optional: true },
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // OP03-044 - [On Play] Draw 2 cards, then trash 2 cards from hand.
   { cardNumber: 'OP03-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
@@ -254,11 +261,15 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-045 — [Blocker] [Opponent's Turn] If 20 or less cards in deck, this Character +3000.
   { cardNumber: 'OP03-045', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'selfDeckCount', atMost: 20 }] } }] } },
 
-  // OP03-047 (character) Zeff —
-  //   [DON!! x1] When this Character's attack deals damage to your opponent's Life, you may trash 7 cards
-  //   from the top of your deck. [On Play] You may return up to 1 Character with a cost of 3 or less to the
-  //   owner's hand, and you may trash 2 cards from the top of your deck.
-  // NOTE: not yet implemented (needs template).
+  // OP03-047 — PARTIAL: life-damage mill deferred; [On Play] return cost≤3 + trash 2 from deck mapped.
+  {
+    cardNumber: 'OP03-047',
+    templateId: 'ability',
+    params: { timing: 'onPlay', functions: [
+      { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
+      { fn: 'trashTopDeck', count: 2 },
+    ] },
+  },
 
   // OP03-048 - [On Play] If Leader is Nami, return opponent Character cost 5 or less.
   { cardNumber: 'OP03-048', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Nami' }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -268,6 +279,9 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP03-050 — [Blocker] [On K.O.] trash 1 from top of deck.
   { cardNumber: 'OP03-050', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'trashTopDeck', count: 1 }] } },
+
+  // OP03-051 — PARTIAL: life-damage mill deferred; [On K.O.] trash 3 from deck top mapped.
+  { cardNumber: 'OP03-051', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'trashTopDeck', count: 3 }] } },
 
   // OP03-053 — [DON!! x1] if 20 or less cards in deck, +2000
   { cardNumber: 'OP03-053', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfDeckCount', atMost: 20 }] } }] } },
@@ -409,11 +423,15 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   //   K.O.'d, set this Leader as active.
   // NOTE: not yet implemented (needs template).
 
-  // OP03-077 (leader) Charlotte Linlin —
-  //   [DON!! x2] [When Attacking] ② (You may rest the specified number of DON!! cards in your cost area.)
-  //   You may trash 1 card from your hand: If you have 1 or less Life cards, add up to 1 card from the top
-  //   of your deck to the top of your Life cards.
-  // NOTE: not yet implemented (needs template).
+  // OP03-077 — PARTIAL: life→deck top deferred; mapped DON!!−2 + trash 1 hand → deck top to Life at ≤1 Life.
+  {
+    cardNumber: 'OP03-077',
+    templateId: 'ability',
+    params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, cost: [{ kind: 'restDon', count: 2 }], functions: [
+      { fn: 'optionalTrashFromHand', count: 1 },
+      { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfLife', atMost: 1 }] },
+    ] },
+  },
 
   // OP03-078 (character) Issho —
   //   PARTIAL: [On Play] opponent-hand-trash deferred; mapped [DON!! x1] [Your Turn] −3 cost aura.

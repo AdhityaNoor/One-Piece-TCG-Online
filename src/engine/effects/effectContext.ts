@@ -281,6 +281,7 @@ export class EffectContextImpl implements EffectContext {
     sourceCondition?: SourceStateCondition;
     condition?: ContinuousPowerCondition;
     description?: string;
+    usesRemaining?: number;
   }): void {
     const record: ContinuousEffectRecord = {
       id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
@@ -288,6 +289,7 @@ export class EffectContextImpl implements EffectContext {
       ownerId: this.controllerId,
       duration: spec.duration,
       description: spec.description ?? `aura cost ${spec.amount >= 0 ? '+' : ''}${spec.amount}`,
+      ...(spec.usesRemaining !== undefined ? { usesRemaining: spec.usesRemaining } : {}),
       costModifier: {
         appliesToGroup: spec.group,
         amount: spec.amount,

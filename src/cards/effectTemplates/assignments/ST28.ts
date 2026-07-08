@@ -31,12 +31,14 @@ export const ST28_ASSIGNMENTS: CardEffectAssignment[] = [
   //   this card.
   // NOTE: not yet implemented (needs template).
 
-  // ST28-004 (character) Kouzuki Momonosuke —
-  //   [Your Turn] If you have 2 or less Life cards, your Leader gains +1000 power.[Activate: Main] [Once
-  //   Per Turn] You may return 2 total of your currently given DON!! cards to your cost area rested: This
-  //   Character gains [Rush] and +1000 power during this turn.(This card can attack on the turn in which it
-  //   is played.)
-  // NOTE: not yet implemented (needs template).
+  // ST28-004 — PARTIAL: DON!! return-to-cost rested modeled as donMinus; Leader +1000 if ≤2 Life mapped.
+  {
+    cardNumber: 'ST28-004',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'permanent', condition: { turn: 'your', gate: [{ kind: 'selfLife', atMost: 2 }] } }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }, { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' }] } },
+    ],
+  },
 
   // ST28-005 — [DON!! x2][Your Turn] this Character +3000. [On Play] Look 5, reveal up to 1 {Land of Wano} cost ≥2 to hand, rest to bottom.
   {

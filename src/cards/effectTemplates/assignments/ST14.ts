@@ -21,10 +21,14 @@ import type { CardEffectAssignment } from '../assembler';
 const BIG_COST_8 = { kind: 'selfHasCharacterCostAtLeast', atLeast: 8 } as const;
 
 export const ST14_ASSIGNMENTS: CardEffectAssignment[] = [
-  // ST14-001 (leader) Monkey.D.Luffy —
-  //   [DON!! x1] All of your Characters gain +1 cost. If you have a Character with a cost of 8 or more,
-  //   this Leader gains +1000 power.
-  // NOTE: not yet implemented (needs template).
+  // ST14-001 — [DON!! x1] all Characters +1 cost; +1000 Leader if cost-8+ Character on field.
+  {
+    cardNumber: 'ST14-001',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraControllerCharacters', amount: 1, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1 } }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }] } }] } },
+    ],
+  },
 
   // ST14-002 Usopp — [DON!! x1] [When Attacking] If you have a cost-8+ Character, K.O. up to 1 opponent Character cost <=4.
   {

@@ -70,11 +70,15 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-019 — [DON!! x1] [Your Turn] All of your {Whitebeard Pirates} Characters gain +1000 power.
   { cardNumber: 'OP02-019', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 1000, duration: 'permanent', anyOfTypes: ['Whitebeard Pirates'], sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
 
-  // OP02-018 (character) Marco —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.) [On K.O.] You may trash 1 card with a type including "Whitebeard Pirates" from your
-  //   hand: If you have 2 or less Life cards, play this Character card from your trash rested.
-  // NOTE: not yet implemented (needs template).
+  // OP02-018 — [On K.O.] trash 1 {Whitebeard Pirates} from hand: if ≤2 Life, play this from trash rested.
+  {
+    cardNumber: 'OP02-018',
+    templateId: 'ability',
+    params: { timing: 'onKO', functions: [
+      { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Whitebeard Pirates' }, optional: true },
+      { fn: 'playFromTrash', filter: { name: 'Marco' }, rested: true, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfLife', atMost: 2 }] },
+    ] },
+  },
 
   // OP02-019 (character) Rakuyo —
   //   [DON!! x1] [Your Turn] All of your Characters with a type including "Whitebeard Pirates" gain +1000
@@ -104,21 +108,26 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   //   effects during this turn. [Trigger] Up to 1 of your Leader gains +1000 power during this turn.
   // NOTE: not yet implemented (needs template).
 
-  // OP02-024 (stage) Moby Dick —
-  //   [Your Turn] If you have 1 or less Life cards, your [Edward.Newgate] and all your Characters with a
-  //   type including "Whitebeard Pirates" gain +2000 power. [Trigger] Play this card.
-  // NOTE: not yet implemented (needs template).
+  // OP02-024 — PARTIAL: [Edward.Newgate] + {Whitebeard Pirates} +2000 when ≤1 Life; [Trigger] play this Stage.
+  {
+    cardNumber: 'OP02-024',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', gate: [{ kind: 'selfLife', atMost: 1 }], functions: [
+        { fn: 'addPowerAuraControllerCharacters', amount: 2000, duration: 'permanent', anyOfNames: ['Edward.Newgate'], sourceCondition: { turn: 'your' } },
+        { fn: 'addPowerAuraControllerCharacters', amount: 2000, duration: 'permanent', anyOfTypes: ['Whitebeard Pirates'], sourceCondition: { turn: 'your' } },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   // OP02-025 (leader) Kin'emon —
   //   [Activate: Main] [Once Per Turn] If you have 1 or less Characters, the next time you play a {Land of
   //   Wano} type Character card with a cost of 3 or more from your hand during this turn, the cost will be
   //   reduced by 1.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP02-025', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfCharacterCount', atMost: 1 }], functions: [{ fn: 'addNextPlayFromHandCostDiscount', amount: -1, filter: { typeIncludes: 'Land of Wano', minBaseCost: 3 } }] } },
 
-  // OP02-026 (leader) Sanji —
-  //   [Once Per Turn] When you play a Character with no base effect from your hand, if you have 3 or less
-  //   Characters, set up to 2 of your DON!! cards as active.
-  // NOTE: not yet implemented (needs template).
+  // OP02-026 — [Once Per Turn] When you play a vanilla Character from hand, if ≤3 Characters, set up to 2 DON!! active.
+  { cardNumber: 'OP02-026', templateId: 'ability', params: { timing: 'onCharacterPlayedFromHand', oncePerTurn: true, gate: [{ kind: 'playedCharacterNoBaseEffect' }, { kind: 'selfCharacterCount', atMost: 3 }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
 
   // OP02-027 (character) Inuarashi —
   //   If all of your DON!! cards are rested, this Character cannot be removed from the field by your
@@ -151,10 +160,11 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-034 - [DON!! x1] [When Attacking] Rest opponent Character with cost 2 or less.
   { cardNumber: 'OP02-034', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
 
-  // OP02-035 (character) Trafalgar Law —
-  //   [Activate: Main] ➀ (You may rest the specified number of DON!! cards in your cost area.) You may
-  //   return this Character to the owner's hand: Play up to 1 Character with a cost of 3 from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP02-035 — PARTIAL: self-return not instance-locked.
+  { cardNumber: 'OP02-035', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }], functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'playFromHand', filter: { category: 'character', maxCost: 3 }, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP02-036 — [On Play]/[When Attacking] rest 1 DON!!: look 3, reveal up to 1 {FILM} (other than [Nami]), add to hand, rest to bottom.
   {
@@ -180,16 +190,26 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-044 — [On Play] Play up to 1 {Minks} Character (other than [Wanda], cost<=3) from hand.
   { cardNumber: 'OP02-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Minks', maxCost: 3, excludeSelfName: true } }] } },
 
-  // OP02-045 (event) Three Sword Style Oni Giri —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +6000 power during this battle. Then, play
-  //   up to 1 Character card with a cost of 3 or less and no base effect from your hand. [Trigger] Rest up
-  //   to 1 of your opponent's Leader or Character cards with a cost of 5 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP02-045 — [Counter] +6000 battle then play vanilla cost≤3; [Trigger] rest opp Leader/Character cost≤5.
+  {
+    cardNumber: 'OP02-045',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 6000, duration: 'duringThisBattle', optional: true },
+        { fn: 'playFromHand', filter: { category: 'character', maxCost: 3, noBaseEffect: true } },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
+    ],
+  },
 
-  // OP02-046 (event) Diable Jambe Venaison Shoot —
-  //   [Main] K.O. up to 1 of your opponent's rested Characters with a cost of 4 or less. [Trigger] Play up
-  //   to 1 Character card with a cost of 4 or less and no base effect from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP02-046 — [Main] K.O. rested opp cost≤4; [Trigger] play vanilla cost≤4.
+  {
+    cardNumber: 'OP02-046',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 4 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 4, noBaseEffect: true } }] } },
+    ],
+  },
 
   // OP02-047 - [Main] Rest cost <=4. [Trigger] K.O. rested cost <=3.
   {
@@ -217,10 +237,11 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   //   opponent declares an attack, you may rest this card to make it the new target of the attack.)
   // NOTE: not yet implemented (needs template).
 
-  // OP02-051 (character) Emporio.Ivankov —
-  //   [On Play] Draw card(s) so that you have 3 cards in your hand and then play up to 1 blue {Impel Down}
-  //   type Character card with a cost of 6 or less from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP02-051 — PARTIAL: "draw to 3 hand" approximated as draw 1; blue {Impel Down} cost≤6 play mapped.
+  { cardNumber: 'OP02-051', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'draw', amount: 1 },
+    { fn: 'playFromHand', filter: { category: 'character', color: 'blue', typeIncludes: 'Impel Down', maxCost: 6 } },
+  ] } },
 
   // OP02-052 — [On Play] If you have [Mohji], draw 2 and trash 1 from hand.
   { cardNumber: 'OP02-052', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfControlsNamed', name: 'Mohji' }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
@@ -542,5 +563,14 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP02-120 — [On Play] DON!! −2: your Leader and all Characters gain +1000 until the start of your next turn.
   { cardNumber: 'OP02-120', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'addPowerAuraControllerTypes', amount: 1000, duration: 'untilStartOfNextTurn' }] } },
+
+  // OP02-121 — [Your Turn] all opp Characters −5 cost; [On Play] K.O. up to 1 opp cost 0.
+  {
+    cardNumber: 'OP02-121',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -5, duration: 'permanent', sourceCondition: { turn: 'your' } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 0 } }, optional: true }] } },
+    ],
+  },
 
 ];

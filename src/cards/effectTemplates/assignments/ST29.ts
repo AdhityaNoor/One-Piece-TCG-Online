@@ -56,10 +56,8 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // ST29-013 (character) Rob Lucci —
-  //   [Trigger] K.O. up to 1 of your opponent's Characters with a cost equal to or less than the total of
-  //   your and your opponent's Life cards.
-  // NOTE: not yet implemented (needs template).
+  // ST29-013 — [Trigger] K.O. up to 1 opp Character cost ≤ combined Life (both players).
+  { cardNumber: 'ST29-013', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromCombinedLife: true } }, optional: true }] } },
 
   // ST29-014 (character) Roronoa Zoro —
   //   [Rush: Character] (This card can attack Characters on the turn in which it is played.)[Activate:

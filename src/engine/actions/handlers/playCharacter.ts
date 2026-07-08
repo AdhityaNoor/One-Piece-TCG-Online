@@ -17,10 +17,10 @@ import type { PlayCharacterAction, ValidationResult } from '../action';
 import { createActionLogger } from '../../rules/shared/actionLogger';
 import { addToZoneBottom, removeFromZone } from '../../rules/shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/definitions';
-import { computeCurrentCost } from '../../rules/shared/power';
+import { computeCurrentCost, consumablePlayFromHandCostDiscountIds, withConsumedPlayFromHandCostDiscounts } from '../../rules/shared/power';
 import { mintRuntimeInstanceId } from '../../rules/shared/mintInstance';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { fireOnPlay, type EffectTemplateRegistry } from '../../effects';
+import { fireOnPlay, fireCharacterPlayedFromHandReactions, type EffectTemplateRegistry } from '../../effects';
 
 function hasCuratedConditionalRushGrant(registry: EffectTemplateRegistry, cardDefinitionId: string): boolean {
   return !!registry[cardDefinitionId]?.abilities.some((ability) =>
@@ -92,6 +92,7 @@ export function executePlayCharacter(
   const handInstance = state.cardsById[action.handCardInstanceId];
   const def = getDefinition(defs, handInstance);
   const logger = createActionLogger(state, action.actionId);
+  const consumedDiscountIds = consumablePlayFromHandCostDiscountIds(state, action.playerId, action.handCardInstanceId, defs);
 
   let cardsById = { ...state.cardsById };
 
@@ -170,9 +171,17 @@ export function executePlayCharacter(
   // [On Play] (8-1-3-1) fires now that the Character has resolved into play.
   // No-op when the card has no authored template — see effects/fireTiming.ts.
   const fired = fireOnPlay(nextState, newInstanceId, registry, defs, action.actionId);
+  if (fired.pendingChoices.length > 0) {
+    return {
+      state: withConsumedPlayFromHandCostDiscounts(fired.state, consumedDiscountIds),
+      log: [...logger.log, ...fired.log],
+      pendingChoices: [...pendingChoices, ...fired.pendingChoices],
+    };
+  }
+  const reactive = fireCharacterPlayedFromHandReactions(fired.state, action.playerId, newInstanceId, registry, defs, action.actionId);
   return {
-    state: fired.state,
-    log: [...logger.log, ...fired.log],
-    pendingChoices: [...pendingChoices, ...fired.pendingChoices],
+    state: withConsumedPlayFromHandCostDiscounts(reactive.state, consumedDiscountIds),
+    log: [...logger.log, ...fired.log, ...reactive.log],
+    pendingChoices: [...pendingChoices, ...reactive.pendingChoices],
   };
 }

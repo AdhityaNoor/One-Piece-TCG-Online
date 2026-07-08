@@ -28,10 +28,8 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
     params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 3 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }, { fn: 'playFromHand', filter: { maxCost: 4 } }] },
   },
 
-  // ST10-002 (leader) Monkey.D.Luffy —
-  //   [Activate: Main] [Once Per Turn] If you have 0 DON!! cards on your field or 8 or more DON!! cards on
-  //   your field, add up to 1 DON!! card from your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
+  // ST10-002 — [Activate: Main] [OPT] if 0 or 8+ DON!! on field, add 1 DON!! active.
+  { cardNumber: 'ST10-002', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addDonFromDeck', count: 1, rested: false, ifGate: [{ kind: 'anyOf', gates: [{ kind: 'selfDonFieldCount', atMost: 0 }, { kind: 'selfDonFieldCount', atLeast: 8 }] }] }] } },
 
   // ST10-003 (leader) Kid — [Your Turn] If you have 4 or more Life, −1000 self.
   //   [When Attacking] DON!! −1: +2000 self during this turn.
@@ -54,10 +52,8 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST10-005 Jinbe — [DON!! x1] [When Attacking] Give up to 1 opponent Character −2000 power this turn.
   { cardNumber: 'ST10-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // ST10-006 (character) Monkey.D.Luffy —
-  //   [Rush] (This card can attack on the turn in which it is played.)[Once Per Turn] When your opponent
-  //   activates a [Blocker], K.O. up to 1 of your opponent's Characters with 8000 power or less.
-  // NOTE: not yet implemented (needs template).
+  // ST10-006 — [Once Per Turn] When opponent activates Blocker, K.O. up to 1 opp Character ≤8000 power.
+  { cardNumber: 'ST10-006', templateId: 'ability', params: { timing: 'onOpponentBlockerActivated', oncePerTurn: true, functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 8000 } }, optional: true }] } },
 
   { cardNumber: 'ST10-007', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 3 } }, optional: true }] } },
 

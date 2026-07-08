@@ -17,7 +17,7 @@ import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoRepl
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates } from './gates';
 import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
-import { afterAbilityCostPaid, fireOnKO, fireRestTransitions } from './fireTiming';
+import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions } from './fireTiming';
 import { isAbilityNegated } from './effectNegation';
 import type { GateEvalContext } from './gates';
 import type { EffectTemplateRegistry } from './effectTemplate';
@@ -80,7 +80,7 @@ function finishWithCascade(
     const idx = program.abilities.findIndex((a) => a.timing === 'onKO');
     if (idx < 0) continue;
     const sub = new EffectContextImpl(working, id, defs, actionId);
-    const suspended = runOps(program.abilities[idx], idx, 0, {}, sub, defs);
+    const suspended = runOps(program.abilities[idx], idx, 0, {}, sub, defs, registry, actionId);
     const subRes = sub.finish();
     working = subRes.state;
     log = [...log, ...subRes.log];
@@ -407,7 +407,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return { selectedIds: [], movedIds: [] };
     }
     case 'addCostAura': {
-      ctx.addContinuousCostAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}) });
+      ctx.addContinuousCostAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}), ...(op.usesRemaining !== undefined ? { usesRemaining: op.usesRemaining } : {}) });
       return { selectedIds: [], movedIds: [] };
     }
     case 'addCost': {
@@ -642,6 +642,8 @@ function runOpList(
   bindings: Record<string, string[]>,
   ctx: EffectContextImpl,
   defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+  actionId: string | null = null,
 ): { suspended: boolean; bindings: Record<string, string[]> } {
   let workingBindings = bindings;
   for (let i = startOpIndex; i < ops.length; i++) {
@@ -805,6 +807,19 @@ function runOpList(
       workingBindings = withResultBindings(workingBindings, { selectedIds: ids, movedIds: ids });
       continue;
     }
+    if (op.op === 'draw') {
+      ctx.draw(ctx.controllerId, op.amount);
+      if (op.amount > 0 && ctx.state().currentPhase !== 'draw') {
+        const reactive = fireDrawOutsideDrawPhaseReactions(ctx.state(), ctx.controllerId, registry, defs, actionId);
+        if (reactive.pendingChoices.length > 0) {
+          ctx.absorbActionResult(reactive);
+          return { suspended: true, bindings: workingBindings };
+        }
+        ctx.replaceState(reactive.state, reactive.log);
+      }
+      workingBindings = withResultBindings(workingBindings, { selectedIds: [], movedIds: op.amount > 0 ? ['__draw'] : [] });
+      continue;
+    }
     workingBindings = withResultBindings(workingBindings, applyOp(op, ctx, workingBindings));
   }
   return { suspended: false, bindings: workingBindings };
@@ -832,13 +847,15 @@ function continueAfterResolvedOp(
       nextBindings,
       ctx,
       defs,
+      registry,
+      actionId,
     );
     if (branchResult.suspended) return finishWithCascade(ctx, defs, actionId, registry);
-    const mainSuspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, branchResult.bindings, ctx, defs);
+    const mainSuspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, branchResult.bindings, ctx, defs, registry, actionId);
     if (!mainSuspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     return finishWithCascade(ctx, defs, actionId, registry);
   }
-  const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, nextBindings, ctx, defs);
+  const suspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, nextBindings, ctx, defs, registry, actionId);
   if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
   return finishWithCascade(ctx, defs, actionId, registry);
 }
@@ -851,8 +868,10 @@ function runOps(
   bindings: Record<string, string[]>,
   ctx: EffectContextImpl,
   defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+  actionId: string | null = null,
 ): boolean {
-  return runOpList(ability.ops, { abilityIndex, opIndex: startOp }, startOp, bindings, ctx, defs).suspended;
+  return runOpList(ability.ops, { abilityIndex, opIndex: startOp }, startOp, bindings, ctx, defs, registry, actionId).suspended;
 }
 
 function runFollowingAbilities(
@@ -873,7 +892,7 @@ function runFollowingAbilities(
     if (!evalCondition(ability.condition, ctx)) continue;
     if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId, eventContext)) continue;
     if (payCosts && suspendOrPayAbilityCost(ability, i, ctx, actionId, defs, registry)) return true;
-    const suspended = runOps(ability, i, 0, {}, ctx, defs);
+    const suspended = runOps(ability, i, 0, {}, ctx, defs, registry, actionId);
     if (suspended) return true;
   }
   return false;
@@ -940,7 +959,7 @@ export function runTimings(
     // "If …" board-state gate: an unmet precondition means the ability does nothing.
     if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId, eventContext)) continue;
     if (payCosts && suspendOrPayAbilityCost(ability, index, ctx, actionId, defs, registry)) break;
-    const suspended = runOps(ability, index, 0, {}, ctx, defs);
+    const suspended = runOps(ability, index, 0, {}, ctx, defs, registry, actionId);
     if (suspended) break; // wait for the choice before any further ability runs
   }
   return finishWithCascade(ctx, defs, actionId, registry);
@@ -1000,7 +1019,7 @@ export function resumeProgram(
         return { state: finished.state, log: [...paid.log, ...cascaded.log, ...finished.log], pendingChoices: finished.pendingChoices };
       }
     }
-    const suspended = runOps(ability, rs.abilityIndex, 0, rs.bindings, ctx, defs);
+    const suspended = runOps(ability, rs.abilityIndex, 0, rs.bindings, ctx, defs, registry, actionId);
     if (!suspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     const finished = finishWithCascade(ctx, defs, actionId, registry);
     return { state: finished.state, log: [...paid.log, ...finished.log], pendingChoices: finished.pendingChoices };
@@ -1113,9 +1132,11 @@ export function resumeProgram(
       rs.bindings,
       ctx,
       defs,
+      registry,
+      actionId,
     );
     if (branchResult.suspended) return finishWithCascade(ctx, defs, actionId, registry);
-    const mainSuspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, branchResult.bindings, ctx, defs);
+    const mainSuspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, branchResult.bindings, ctx, defs, registry, actionId);
     if (!mainSuspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     return finishWithCascade(ctx, defs, actionId, registry);
   }
@@ -1182,14 +1203,16 @@ function continueKoOpAfterReplacement(
       ir.bindings,
       ctx,
       defs,
+      registry,
+      actionId,
     );
     if (branchResult.suspended) return finishWithCascade(ctx, defs, actionId, registry);
-    const mainSuspended = runOps(ability, ir.abilityIndex, ir.opIndex + 1, branchResult.bindings, ctx, defs);
+    const mainSuspended = runOps(ability, ir.abilityIndex, ir.opIndex + 1, branchResult.bindings, ctx, defs, registry, actionId);
     if (!mainSuspended) runFollowingAbilities(program, ability.timing, ir.abilityIndex + 1, ctx, defs, actionId, true, registry);
     return finishWithCascade(ctx, defs, actionId, registry);
   }
 
-  const suspended = runOps(ability, ir.abilityIndex, ir.opIndex + 1, ir.bindings, ctx, defs);
+  const suspended = runOps(ability, ir.abilityIndex, ir.opIndex + 1, ir.bindings, ctx, defs, registry, actionId);
   if (!suspended) runFollowingAbilities(program, ability.timing, ir.abilityIndex + 1, ctx, defs, actionId, true, registry);
   return finishWithCascade(ctx, defs, actionId, registry);
 }

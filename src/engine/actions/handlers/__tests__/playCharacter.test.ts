@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { GameState } from '../../../state/game';
 import { validatePlayCharacter, executePlayCharacter } from '../playCharacter';
+import { computeCurrentCost } from '../../../rules/shared/power';
 import type { PlayCharacterAction } from '../../action';
 import {
   buildBaseRig,
@@ -139,5 +141,34 @@ describe('executePlayCharacter', () => {
     expect(result.pendingChoices[0].playerId).toBe('p1');
     expect(result.state.pendingChoices).toHaveLength(1);
     expect(result.log.some((e) => e.type === 'CHOICE_REQUESTED')).toBe(true);
+  });
+
+  it('accepts reduced DON!! payment when a one-shot in-hand play discount applies', () => {
+    const def = makeCharacterDef({ baseCost: 4, types: ['Land of Wano'], cardNumber: 'WAN-PLAY' });
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const { rig, instanceId: handInstanceId } = putInHand(base, 'p1', def);
+    const { rig: withDon, donIds } = putDon(rig, 'p1', 4);
+    const state: GameState = {
+      ...withDon.state,
+      continuousEffects: [{
+        id: 'discount',
+        sourceInstanceId: withDon.state.players.p1.leaderInstanceId!,
+        ownerId: 'p1',
+        duration: 'duringThisTurn',
+        usesRemaining: 1,
+        description: 'next play -1',
+        costModifier: {
+          appliesToGroup: { controllerCharactersInHand: true, anyOfTypes: ['Land of Wano'] },
+          amount: -1,
+          condition: { minBaseCost: 3 },
+        },
+      }],
+    };
+    expect(computeCurrentCost(withDon.defs, state, handInstanceId)).toBe(3);
+    const validation = validatePlayCharacter(state, playCharacterAction('p1', handInstanceId, donIds.slice(0, 3)), withDon.defs);
+    expect(validation.legal).toBe(true);
+    const result = executePlayCharacter(state, playCharacterAction('p1', handInstanceId, donIds.slice(0, 3)), withDon.defs);
+    expect(result.state.continuousEffects.some((ce) => ce.id === 'discount')).toBe(false);
+    expect(result.state.players.p1.characterArea.cardIds).toHaveLength(1);
   });
 });

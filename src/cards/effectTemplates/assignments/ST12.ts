@@ -100,13 +100,23 @@ export const ST12_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST12-006 (character) Yosaku & Johnny — [DON!! x1] [When Attacking] Choose one:
   //   • Rest up to 1 of your opponent's Characters with a cost of 2 or less.
   //   • K.O. up to 1 of your opponent's rested Characters with a cost of 2 or less.
-  // NOTE: This effect requires chooseOne with suspending operations (rest/ko),
-  // which is not yet supported by the engine. Skipped pending engine enhancement.
-  // {
-  //   cardNumber: 'ST12-006',
-  //   templateId: 'ability',
-  //   params: { ... }
-  // },
+  {
+    cardNumber: 'ST12-006',
+    templateId: 'ability',
+    params: {
+      timing: 'whenAttacking',
+      condition: { donAttachedAtLeast: 1 },
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Choose one:',
+        options: [
+          { label: 'rest', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] },
+          { label: 'ko', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 2 } }, optional: true }] },
+        ],
+      }],
+    },
+  },
 
   // ST12-007 (character) Rika — [On Play] ➁ (You may rest the specified number of DON!! cards in your cost area.):
   //   If your opponent has 3 or more Life cards, set up to 1 of your <Slash> attribute Characters with a cost of 4 or less as active.

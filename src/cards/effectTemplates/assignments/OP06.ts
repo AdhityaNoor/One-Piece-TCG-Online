@@ -56,7 +56,11 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-014 — PARTIAL: [On Your Opponent's Attack] variable FILM trash → scaling battle buff deferred.
+  // OP06-014 — PARTIAL: variable FILM trash count → single trash +1000 battle buff.
+  { cardNumber: 'OP06-014', templateId: 'ability', params: { timing: 'onOpponentsAttack', functions: [
+    { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'FILM' }, optional: true },
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
   // OP06-015 — [Activate: Main] [Once Per Turn] trash 1 Character power>=6000: play {FILM} cost 2–5 from trash rested.
   // PARTIAL: "6000 power or more" uses minBasePower proxy on the trash target filter.
   { cardNumber: 'OP06-015', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
@@ -293,10 +297,14 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   //   your opponent draws 5 cards.
   // NOTE: not yet implemented (needs template).
 
-  // OP06-048 (character) Zeff —
-  //   [Your Turn] When your opponent activates [Blocker] or an Event, if your Leader has the {East Blue}
-  //   type, you may trash 4 cards from the top of your deck.
-  // NOTE: not yet implemented (needs template).
+  // OP06-048 — [Your Turn] When opponent activates Blocker or Event, if Leader {East Blue}, trash 4 from deck.
+  {
+    cardNumber: 'OP06-048',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onOpponentEventActivated', condition: { turn: 'your' }, gate: [{ kind: 'leaderType', type: 'East Blue' }], functions: [{ fn: 'trashTopDeck', count: 4, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentBlockerActivated', condition: { turn: 'your' }, gate: [{ kind: 'leaderType', type: 'East Blue' }], functions: [{ fn: 'trashTopDeck', count: 4, optional: true }] } },
+    ],
+  },
 
   // OP06-050 — [On Play] Look at 5; add up to 1 Navy (excl. same name).
   {

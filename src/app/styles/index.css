@@ -292,3 +292,213 @@
   background: linear-gradient(180deg, #ffd34a, #b91d22);
   border: 2px solid rgba(2, 7, 17, 0.9);
 }
+
+/* Ability chips — mirrored from OPTCG Custom Card Shop (AbilityEditor / cardToBuilder). */
+.op-chip {
+  line-height: 1.4;
+}
+
+.blue-ability,
+.pink-ability,
+.orange-ability,
+.red-ability,
+.black-ability,
+.white-ability {
+  box-sizing: border-box;
+  display: inline-block;
+  position: relative;
+  vertical-align: text-top;
+  text-shadow: 0 0;
+  white-space: nowrap;
+}
+
+.blue-ability {
+  color: #fff !important;
+  background: #006db6;
+  border-radius: 0.3em;
+  height: 1.15em;
+  margin-top: 0.1em;
+  padding: 0 0.3em 0.02em 0.35em;
+  font-size: 0.827em;
+  font-weight: 400;
+  line-height: 1.1em;
+  letter-spacing: 0.02em;
+}
+
+.pink-ability {
+  color: #fff !important;
+  background: #dd3c61;
+  border-radius: 1em;
+  height: 1.25em;
+  margin-top: 0.13em;
+  padding: 0 0.25em;
+  font-size: 0.827em;
+  font-weight: 400;
+  line-height: 1.2em;
+  letter-spacing: 0.04em;
+}
+
+.orange-ability {
+  color: #fff !important;
+  background: #de7403;
+  clip-path: polygon(0.6em 0, 0 50%, 0.6em 100%, calc(100% - 0.6em) 100%, 100% 50%, calc(100% - 0.6em) 0, calc(100% - 0.6em) -200%, 0.6em -200%);
+  height: 1.165em;
+  margin-top: 0.08em;
+  padding: 0 0.65em;
+  font-size: 0.867em;
+  font-weight: 300;
+  line-height: 1.15em;
+  letter-spacing: 0.02em;
+}
+
+.red-ability {
+  color: #fff !important;
+  background: #e20210;
+  border-radius: 0.3em;
+  height: 1.15em;
+  margin-top: 0.1em;
+  padding: 0 0.3em 0 0.94375em;
+  font-size: 0.85em;
+  font-weight: 300;
+  line-height: 1.1em;
+  letter-spacing: 0.02em;
+}
+
+.red-ability::before {
+  content: '';
+  position: absolute;
+  top: 0.1em;
+  left: 0.17em;
+  width: 0.64375em;
+  height: 0.925em;
+  background: url('https://optcgcustom.app/frames/common/CounterYellow.png') center/cover no-repeat;
+}
+
+.black-ability {
+  color: #fff !important;
+  background: #000;
+  clip-path: none;
+  border-radius: 999px;
+  height: 1.15em;
+  margin-top: 0;
+  padding: 0 0.52em;
+  font-size: 0.867em;
+  font-weight: 400;
+  line-height: 1.15em;
+  letter-spacing: 0.04em;
+}
+
+.white-ability {
+  color: #1c1917 !important;
+  background: #fff;
+  border: 0.08em solid currentColor;
+  border-radius: 10em;
+  min-width: 1.3em;
+  height: 1.25em;
+  padding: 0 0.29em;
+  font-size: 0.727em;
+  font-weight: 600;
+  line-height: 1.15em;
+  text-align: center;
+}
+
+.ability-content,
+.ability-content :where(p, div) {
+  margin: 0;
+  padding: 0;
+  line-height: inherit;
+}
+
+.ability-text {
+  font-weight: 400;
+}
+
+.ability-text :is(b, strong) {
+  font-weight: 700;
+}
+
+/* Type trait references in {curly braces} (rules 2-4-3). */
+:is(.ability-text, .trigger-row-copy) .effect-type-identifier {
+  color: #16b98d;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Quoted card names in [square brackets], e.g. [Cavendish]. */
+:is(.ability-text, .trigger-row-copy) .effect-card-name {
+  color: #3aa6dd;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.orange-ability-container,
+.black-ability-container,
+.trigger-ability-container {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  line-height: 0;
+}
+
+.orange-ability-shadow,
+.black-ability-shadow,
+.trigger-ability-shadow {
+  display: none;
+}
+
+:is(.ability-text, .trigger-row-copy) .trigger-ability {
+  display: block;
+  position: relative;
+  vertical-align: baseline;
+  overflow: hidden;
+  width: auto;
+  height: 1.12em;
+  margin: 0 0.3em 0 0;
+  padding: 0 1.05em 0 0.32em;
+  clip-path: polygon(0 0, 100% 0, 72% 100%, 0 100%);
+  border-radius: 0.35em 0 0 0.35em;
+  background: #fff600;
+  color: #1c1917 !important;
+  font-size: 0.91em;
+  font-weight: 300;
+  line-height: 1.12em;
+  letter-spacing: -0.01em;
+  text-shadow: 0 0;
+}
+
+.trigger-row-label {
+  display: inline-flex;
+  align-items: center;
+  float: left;
+  height: 1.72em;
+  padding: 0 1.15em 0 0.32em;
+  clip-path: polygon(0 0, 100% 0, 72% 100%, 0 100%);
+  background: #fff600;
+  color: #1c1917;
+  font-size: 0.92em;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-shadow: none;
+}
+
+.trigger-row-copy {
+  display: inline;
+  padding: 0 0.35em;
+  color: #fff;
+  font-weight: 400;
+  line-height: 1.72em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-shadow: none;
+}
+
+:is(.ability-text, .trigger-row-copy) :is(.blue-ability, .pink-ability, .orange-ability, .red-ability, .black-ability, .white-ability) {
+  margin-top: 0;
+  vertical-align: middle;
+}
+
+:is(.ability-text, .trigger-row-copy) :is(.orange-ability-container, .black-ability-container) > :is(.orange-ability, .black-ability) {
+  display: block;
+  vertical-align: baseline;
+}

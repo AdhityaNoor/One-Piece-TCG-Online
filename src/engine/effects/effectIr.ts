@@ -137,7 +137,7 @@ export type EffectOp =
   | ({ op: 'addCost'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
   // Register a continuous cost "aura" over a dynamic target group (e.g. "all of your {Navy}
   // Characters gain +2 cost", "give all of your opponent's Characters −1 cost").
-  | ({ op: 'addCostAura'; group: PowerAuraGroup; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
+  | ({ op: 'addCostAura'; group: PowerAuraGroup; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition; usesRemaining?: number } & EffectOpSequenceGate)
   | ({ op: 'setBasePower'; target: Selector; value: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate) // "base power BECOMES N" (2-6): overwrite base; additive modifiers still stack on top
   | ({ op: 'setBaseCost'; target: Selector; value: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate) // "base cost BECOMES N" (2-7): overwrite base cost
   | ({ op: 'addKeyword'; target: Selector; keyword: ContinuousKeyword; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
@@ -215,7 +215,28 @@ export type NonSuspendingEffectOp = Exclude<
  *                 attacker and the battle's target is an opponent Character.
  *   endOfTurn   — [End of Your Turn]: fires during the source controller's End Phase.
  */
-export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'onBlock' | 'onOpponentsAttack' | 'onBattle' | 'activateMain' | 'onKO' | 'onCharacterKoed' | 'onRested' | 'onDonReturned' | 'counter' | 'lifeTrigger' | 'endOfTurn';
+export type IrTiming =
+  | 'onEnterPlay'
+  | 'onPlay'
+  | 'whenAttacking'
+  | 'onBlock'
+  | 'onOpponentsAttack'
+  | 'onBattle'
+  | 'activateMain'
+  | 'onKO'
+  | 'onCharacterKoed'
+  | 'onRested'
+  | 'onDonReturned'
+  | 'onOpponentEventActivated'
+  | 'onYouEventActivated'
+  | 'onOpponentBlockerActivated'
+  | 'onLifeDamageDealt'
+  | 'onDrawOutsideDrawPhase'
+  | 'onLifeToHand'
+  | 'onCharacterPlayedFromHand'
+  | 'counter'
+  | 'lifeTrigger'
+  | 'endOfTurn';
 
 /**
  * An activation cost that must be PAID before an activated ability resolves
@@ -273,7 +294,8 @@ export type AbilityGate =
   | { kind: 'opponentHasCharacterBasePowerAtLeast'; power: number } // "opponent has a Leader or Character with base power N or more"
   | { kind: 'anyCharacterCostAtLeast'; atLeast: number } // "if there is a Character with a cost of N or more"
   | { kind: 'opponentHasCharacterExactCost'; exactCost: number } // "if your opponent has a Character with a cost of N"
-  | { kind: 'selfDonReturnedThisAction'; atLeast?: number; atMost?: number } // "When N or more DON!! on your field are returned …"
+  | { kind: 'selfDonReturnedThisAction'; atLeast?: number; atMost?: number } // "When N or more DON!! cards on your field are returned …"
+  | { kind: 'playedCharacterNoBaseEffect' } // onCharacterPlayedFromHand: the just-played Character has no base effect
   | { kind: 'anyOf'; gates: AbilityGate[] }; // OR: satisfied if any sub-gate holds ("if Leader is X or Y")
 
 export interface Ability {

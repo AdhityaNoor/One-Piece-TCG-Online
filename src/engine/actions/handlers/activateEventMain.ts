@@ -16,7 +16,7 @@ import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/definitions';
 import { computeCurrentCost } from '../../rules/shared/power';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { evaluateGates, fireActivate, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, type EffectTemplateRegistry } from '../../effects';
+import { evaluateGates, fireActivate, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, type EffectTemplateRegistry } from '../../effects';
 
 export function validateActivateEventMain(
   state: GameState,
@@ -144,5 +144,16 @@ export function executeActivateEventMain(
 
   const fired = fireActivate(working, action.handCardInstanceId, registry, defs, action.actionId);
 
-  return { state: fired.state, log: [...logger.log, ...paidLog, ...fired.log], pendingChoices: fired.pendingChoices };
+  let resultState = fired.state;
+  let resultLog = [...logger.log, ...paidLog, ...fired.log];
+  if (fired.pendingChoices.length === 0) {
+    const reactive = fireEventActivatedReactions(resultState, action.playerId, registry, defs, action.actionId);
+    resultState = reactive.state;
+    resultLog = [...resultLog, ...reactive.log];
+    if (reactive.pendingChoices.length > 0) {
+      return { state: resultState, log: resultLog, pendingChoices: reactive.pendingChoices };
+    }
+  }
+
+  return { state: resultState, log: resultLog, pendingChoices: fired.pendingChoices };
 }

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import type { CardLibraryEntry } from '../../../cards/library';
 import { COST_FILTER_MIN, COST_FILTER_MAX, POWER_FILTER_MIN, POWER_FILTER_MAX, POWER_FILTER_STEP } from '../../../cards/library';
 import type { CardCategory, Color } from '../../../engine/state/card';
-import { Button } from '../../components';
+import { Button, OpSelect, SetLibrarySelect } from '../../components';
 import { ALL_CARD_COLORS } from '../../lib/cardColors';
 import { formatCardApiError } from '../../lib/formatCardApiError';
 import { useCardLibraryStore, useFilteredCardLibraryCount, useKnownCardLibraryTypes, useVisibleCardLibraryEntries } from '../../store/cardLibraryStore';
@@ -39,6 +39,19 @@ export function CardSetBrowser({ renderEntry, categories = DEFAULT_CATEGORIES }:
     </div>
   );
 }
+
+const TRIGGER_FILTER_OPTIONS = [
+  { value: 'any', label: 'All' },
+  { value: 'lifeTrigger', label: 'Yes' },
+  { value: 'no-lifeTrigger', label: 'No' },
+] as const;
+
+const FORMAT_LEGALITY_FILTER_OPTIONS = [
+  { value: 'any', label: 'All cards' },
+  { value: 'legal', label: 'Legal' },
+  { value: 'extraLegal', label: 'Extra Legal' },
+  { value: 'banned', label: 'Banned' },
+] as const;
 
 export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, lockedColors, lockedColorReason, lockedCategories, lockedCategoryReason, lockSetSelection }: CardSetBrowserControlsProps) {
   const sets = useCardLibraryStore((state) => state.sets);
@@ -121,19 +134,13 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
           </div>
         )}
         {sets.length > 0 && (
-          <select
-            className="op-input mt-1.5 w-full px-3 py-2 font-heading text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+          <SetLibrarySelect
+            sets={sets}
             value={selectedSetId}
             disabled={lockSetSelection}
             title={lockSetSelection ? lockedCategoryReason : undefined}
-            onChange={(event) => selectSet(event.target.value)}
-          >
-            {sets.map((s) => (
-              <option key={s.set_id} value={s.set_id}>
-                {s.set_name}
-              </option>
-            ))}
-          </select>
+            onChange={selectSet}
+          />
         )}
       </div>
 
@@ -150,52 +157,36 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
 
       <div>
         <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Type / Crew</label>
-        <select
+        <OpSelect
           value={filter.type ?? ''}
-          onChange={(event) => setFilter({ ...filter, type: event.target.value || undefined, typeQuery: undefined })}
-          className="op-input mt-1.5 w-full px-3 py-2 text-sm placeholder:text-slate-300/35"
-        >
-          <option value="">All types</option>
-          {knownTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
+          options={[{ value: '', label: 'All types' }, ...knownTypes.map((type) => ({ value: type, label: type }))]}
+          onChange={(nextValue) => setFilter({ ...filter, type: nextValue || undefined, typeQuery: undefined })}
+        />
         {knownTypes.length === 0 && <p className="mt-1.5 text-xs leading-5 text-slate-200/50">Load a set to populate known types.</p>}
       </div>
 
       <div>
-        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Timing</label>
-        <select
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Has Trigger</label>
+        <OpSelect
           value={filter.timing ?? 'any'}
-          onChange={(event) => {
-            const value = event.target.value as 'any' | 'lifeTrigger' | 'no-lifeTrigger';
+          options={[...TRIGGER_FILTER_OPTIONS]}
+          onChange={(nextValue) => {
+            const value = nextValue as (typeof TRIGGER_FILTER_OPTIONS)[number]['value'];
             setFilter({ ...filter, timing: value === 'any' ? undefined : value });
           }}
-          className="op-input mt-1.5 w-full px-3 py-2 text-sm"
-        >
-          <option value="any">All cards</option>
-          <option value="lifeTrigger">Has [Trigger]</option>
-          <option value="no-lifeTrigger">No [Trigger]</option>
-        </select>
+        />
       </div>
 
       <div>
         <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Format Legality</label>
-        <select
+        <OpSelect
           value={filter.formatLegality ?? 'any'}
-          onChange={(event) => {
-            const value = event.target.value as 'any' | 'legal' | 'extraLegal' | 'banned';
+          options={[...FORMAT_LEGALITY_FILTER_OPTIONS]}
+          onChange={(nextValue) => {
+            const value = nextValue as (typeof FORMAT_LEGALITY_FILTER_OPTIONS)[number]['value'];
             setFilter({ ...filter, formatLegality: value === 'any' ? undefined : value });
           }}
-          className="op-input mt-1.5 w-full px-3 py-2 text-sm"
-        >
-          <option value="any">All cards</option>
-          <option value="legal">Legal</option>
-          <option value="extraLegal">Extra Legal</option>
-          <option value="banned">Banned</option>
-        </select>
+        />
       </div>
 
       <div>

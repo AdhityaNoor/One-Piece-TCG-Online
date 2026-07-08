@@ -14,10 +14,11 @@ export const ST25_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST25-003 — [On Play] Draw 2, trash 1, then play up to 1 {Cross Guild} cost ≤4 from hand. PARTIAL: removal-replacement deferred.
   { cardNumber: 'ST25-003', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Cross Guild', maxCost: 4 } }] } },
 
-  // ST25-004 (character) Buggy —
-  //   [Activate: Main] You may trash 1 card from your hand and trash this Character: If your Leader is
-  //   [Buggy], play up to 1 {Cross Guild} type Character card with a cost of 6 or less from your hand.
-  // NOTE: not yet implemented (needs template).
+  // ST25-004 — [Activate: Main] trash 1 + trash this: if Leader [Buggy], play {Cross Guild} cost≤6.
+  { cardNumber: 'ST25-004', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [
+    { fn: 'optionalTrashFromHand', count: 1 },
+    { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Cross Guild', maxCost: 6 }, ifGate: [{ kind: 'leaderName', name: 'Buggy' }], ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // ST25-005 — [On K.O.] If Leader [Buggy] and ≤3 hand, draw 1. PARTIAL: static typed-count [Blocker]/+1 cost deferred.
   { cardNumber: 'ST25-005', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderName', name: 'Buggy' }, { kind: 'selfHand', atMost: 3 }], functions: [{ fn: 'draw', amount: 1 }] } },

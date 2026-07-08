@@ -6,8 +6,10 @@ import { useState } from 'react';
 import type { CardDefinition } from '../../engine/state/card';
 import { resolveAssetUrl } from '../lib/assetUrl';
 import { CARD_COLOR_TOKENS } from '../lib/cardColors';
+import { cardAbilityDisplayText } from '../lib/cardEffectTextHtml';
 import { Modal } from './Modal';
 import { Pill } from './Pill';
+import { StyledCardEffectText, StyledTriggerEffect } from './StyledCardEffectText';
 
 export interface CardDetailModalProps {
   open: boolean;
@@ -51,6 +53,10 @@ function PreviewCardImage({ src, alt }: { src: string | null; alt: string }) {
 
 export function CardDetailModal({ open, onClose, definition, imageUrl, setName }: CardDetailModalProps) {
   const stats = definition ? collectStats(definition) : [];
+  const abilityText = definition
+    ? cardAbilityDisplayText(definition.text, definition.hasTrigger, definition.triggerText)
+    : '';
+  const triggerText = definition?.hasTrigger ? (definition.triggerText ?? definition.text) : '';
 
   return (
     <Modal
@@ -108,13 +114,12 @@ export function CardDetailModal({ open, onClose, definition, imageUrl, setName }
 
             <div className="min-h-0 flex-1 overflow-y-auto border-2 border-cyan-200/15 bg-black/45 p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
               <p className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-gold">Effect Text</p>
-              <p className="whitespace-pre-wrap text-base leading-7 text-slate-50">{definition.text || 'No card text.'}</p>
+              <StyledCardEffectText text={abilityText} />
             </div>
 
             {definition.hasTrigger && (
-              <div className="border border-gold/45 bg-gold/10 px-3 py-2 shadow-[0_5px_0_rgba(68,39,0,0.5)]">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-gold">Trigger</p>
-                <p className="text-sm leading-6 text-slate-50">{definition.triggerText ?? definition.text}</p>
+              <div className="border border-gold/45 bg-black/55 p-3 shadow-[0_5px_0_rgba(68,39,0,0.5)]">
+                <StyledTriggerEffect text={triggerText} />
               </div>
             )}
           </div>

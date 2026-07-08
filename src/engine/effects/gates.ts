@@ -15,6 +15,7 @@ import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { getOpponentId } from '../rules/shared/players';
 import { fieldDonIds } from './abilityCost';
 import { computeCurrentPower } from '../rules/shared/power';
+import { cardHasNoBaseEffect } from './cardHasNoBaseEffect';
 
 function typeMatches(defTypes: string[], required: string): boolean {
   const normalized = required.toLowerCase();
@@ -36,6 +37,8 @@ function currentCostForGate(state: GameState, defs: CardDefinitionLookup, instan
 export interface GateEvalContext {
   /** DON!! returned to the DON!! deck during the current cost-payment batch. */
   donReturnedCount?: number;
+  /** Character just played from hand (onCharacterPlayedFromHand reactive window). */
+  playedCharacterInstanceId?: string;
 }
 
 export function evaluateGates(
@@ -354,6 +357,14 @@ function evaluateGate(
       if (gate.atLeast !== undefined && count < gate.atLeast) return false;
       if (gate.atMost !== undefined && count > gate.atMost) return false;
       return true;
+    }
+
+    case 'playedCharacterNoBaseEffect': {
+      const playedId = eventContext?.playedCharacterInstanceId;
+      if (!playedId) return false;
+      const inst = state.cardsById[playedId];
+      const def = inst ? defs[inst.cardDefinitionId] : undefined;
+      return !!def && cardHasNoBaseEffect(def);
     }
 
     case 'selfPlayedThisTurn': {

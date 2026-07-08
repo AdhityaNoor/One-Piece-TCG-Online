@@ -4,17 +4,17 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST23_ASSIGNMENTS: CardEffectAssignment[] = [
-  // ST23-001 (character) Uta —
-  //   If you have a Character with 10000 power or more, give this card in your hand −4 cost.[Blocker]
-  //   (After your opponent declares an attack, you may rest this card to make it the new target of the
-  //   attack.)
-  // NOTE: not yet implemented (needs template).
+  // ST23-001 — PARTIAL: 10000 current power gate → selfCharacterCurrentPowerCount; hand −4 cost mapped.
+  { cardNumber: 'ST23-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -4, duration: 'permanent', gate: [{ kind: 'selfCharacterCurrentPowerCount', power: 10000, atLeast: 1 }] }] } },
 
-  // ST23-002 (character) Shanks —
-  //   If your opponent has a Character with 8000 base power or more, give this card in your hand −3
-  //   cost.[On Play] If your Leader has the {Red-Haired Pirates} type or is [Uta], your Leader gains +2000
-  //   power until the end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
+  // ST23-002 — PARTIAL: 8000 base power hand discount deferred; [On Play] Leader +2000 mapped.
+  {
+    cardNumber: 'ST23-002',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 8000 }] }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }, { kind: 'leaderName', name: 'Uta' }] }], functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn' }] } },
+    ],
+  },
 
   // ── Triage batch (ST23 expressible). ──
   // ST23-003 — [On Play] trash 1 → if Leader {Red-Haired Pirates}, K.O. up to 1 opp Character base power ≤4000.

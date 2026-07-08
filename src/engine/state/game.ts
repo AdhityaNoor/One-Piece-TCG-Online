@@ -131,6 +131,11 @@ export interface PowerAuraGroup {
    * Requires the source to still be on the field; resolved at read time.
    */
   controllerSameDefinitionInHand?: true;
+  /**
+   * Character cards in the modifier owner's hand ("the next time you play a {Type} Character from your hand").
+   * Optionally filtered by `anyOfTypes`. Does not require the source to remain on field once registered.
+   */
+  controllerCharactersInHand?: true;
 }
 
 /**
@@ -331,6 +336,11 @@ export interface ContinuousEffectRecord {
   koReplacementModifier?: ContinuousKoReplacementModifier;
   /** Structured effect negation. Omitted for unrelated continuous effects. */
   effectNegation?: ContinuousEffectNegation;
+  /**
+   * One-shot counter for cost discounts that expire after N matching plays from hand.
+   * Omitted = unlimited until duration expiry.
+   */
+  usesRemaining?: number;
 }
 
 export interface GameState {

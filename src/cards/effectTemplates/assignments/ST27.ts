@@ -5,10 +5,17 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST27_ASSIGNMENTS: CardEffectAssignment[] = [
-  // ST27-001 (character) Avalo Pizarro —
-  //   [Activate: Main] [Once Per Turn] You may rest 1 of your [Fullalead] cards: If your Leader has the
-  //   {Blackbeard Pirates} type, this Character gains +4000 power during this turn.[On K.O.] Draw 1 card.
-  // NOTE: not yet implemented (needs template).
+  // ST27-001 — [Activate: Main] [OPT] rest [Fullalead] → +4000 if {Blackbeard Pirates} Leader; [On K.O.] draw 1.
+  {
+    cardNumber: 'ST27-001',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+        { fn: 'rest', target: { group: 'characters', player: 'controller', filter: { name: 'Fullalead' } }, optional: true },
+        { fn: 'addPowerSelf', amount: 4000, duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny', ifGate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }] },
+      ] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
 
   // ST27-002 — [On K.O.] Draw 1. PARTIAL: the trash-self −cost activate is deferred.
   { cardNumber: 'ST27-002', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
@@ -16,11 +23,23 @@ export const ST27_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST27-003 — [Blocker][On K.O.] Play up to 1 {Blackbeard Pirates} cost ≤5 from trash rested.
   { cardNumber: 'ST27-003', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Blackbeard Pirates', maxCost: 5 }, rested: true }] } },
 
-  // ST27-004 (character) Sanjuan.Wolf —
-  //   If your Leader has the {Blackbeard Pirates} type, this Character gains [Blocker] and +1 cost for
-  //   every 4 cards in your trash.(After your opponent declares an attack, you may rest this card to make
-  //   it the new target of the attack.)[On Play] Trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
+  // ST27-004 — PARTIAL: +1 cost per 4 trash → flat +1 at 4+ trash; [On Play] trash 1 from hand mapped.
+  {
+    cardNumber: 'ST27-004',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [
+            { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }] } },
+            { fn: 'addCost', target: { ref: 'self' }, amount: 1, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }, { kind: 'selfTrashCount', atLeast: 4 }] } },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromHand', count: 1 }] } },
+    ],
+  },
 
   // ST27-005 — [Activate: Main] rest this: K.O. up to 1 Character cost ≤3. [On K.O.] add up to 1 black card from trash to hand.
   {

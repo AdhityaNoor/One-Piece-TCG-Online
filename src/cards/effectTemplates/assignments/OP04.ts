@@ -11,13 +11,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the static "cannot attack" lock is implemented below; the activated power-and-play ability remains deferred.
   { cardNumber: 'OP04-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
 
-  //   your hand. Then, place the rest at the bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
-
   // OP04 coverage batch: base-power targeting, trigger-play, and simple activated draw.
   { cardNumber: 'OP04-003', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 5000 } }, optional: true }] } },
-
-  // NOTE: not yet implemented (needs template).
 
   // OP04-005 — PARTIAL: "other than this Character" uses selfControlsNamed (counts self when alone).
   { cardNumber: 'OP04-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Kung Fu Jugon' }] } }] } },
@@ -29,8 +24,13 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   ] } },
 
   // ── Triage batch (OP04 expressible): Alabasta/Dressrosa/Wano lines. ────────
-  // OP04-008 Chaka — [DON!! x1][When Attacking] If Leader [Nefeltari Vivi]: −3000 to 1 opp, then K.O. one at 0 power or less.
   { cardNumber: 'OP04-008', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'leaderName', name: 'Nefeltari Vivi' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 0 } }, optional: true }] } },
+
+  // OP04-009 — PARTIAL: EOT return deferred; mapped optional Leader −5000 then immediate self-return.
+  { cardNumber: 'OP04-009', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+    { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
+  ] } },
 
   { cardNumber: 'OP04-010', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { typeIncludes: 'Animal', maxPower: 3000 } }] } },
 

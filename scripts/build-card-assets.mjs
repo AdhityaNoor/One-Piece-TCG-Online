@@ -18,6 +18,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const SET_DISPLAY_NAMES = JSON.parse(
+  await readFile(resolve(ROOT, 'src/cards/catalog/setDisplayNames.json'), 'utf8'),
+);
 const SCRAPE_CARDS = resolve(ROOT, 'scrape', 'limitless', 'cards');
 const SCRAPE_IMAGES = resolve(ROOT, 'scrape', 'limitless', 'images');
 const OUT_DATA = resolve(ROOT, 'public', 'cards');
@@ -69,6 +72,10 @@ async function placePrints(scraped) {
   return prints;
 }
 
+function resolveSetDisplayName(setCode, fallbackName) {
+  return SET_DISPLAY_NAMES[setCode.toUpperCase()] ?? fallbackName ?? setCode;
+}
+
 function toLocalCard(scraped, prints) {
   const effectText = scraped.en?.effectText ?? '';
   const definition = scraped.definition
@@ -80,7 +87,7 @@ function toLocalCard(scraped, prints) {
   return {
     cardNumber: scraped.cardNumber,
     setCode: scraped.setCode,
-    setName: scraped.setCode, // Limitless cards don't carry a set display-name; code is used.
+    setName: resolveSetDisplayName(scraped.setCode, scraped.setCode),
     category: scraped.category,
     colors: scraped.colors ?? [],
     cost: scraped.cost,
@@ -136,7 +143,7 @@ async function main() {
     cards.sort((a, b) => a.cardNumber.localeCompare(b.cardNumber));
     const setCode = cards[0]?.setCode ?? dir.name;
     await writeFile(join(OUT_SETS, `${setCode}.json`), JSON.stringify(cards), 'utf8');
-    index.sets.push({ code: setCode, name: setCode, count: cards.length });
+    index.sets.push({ code: setCode, name: resolveSetDisplayName(setCode, setCode), count: cards.length });
     index.total += cards.length;
     console.log(`[build:assets] ${setCode}: ${cards.length} cards${altArtImages ? `, ${altArtImages} alt-art image(s)` : ''}`);
   }

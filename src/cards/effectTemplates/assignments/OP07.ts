@@ -32,10 +32,11 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // --- codegen batch ---
   { cardNumber: 'OP07-008', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP07-006 (character) Sterry —
-  //   [On Play] You may give your 1 active Leader −5000 power during this turn: Draw 1 card and trash 1
-  //   card from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP07-006 — PARTIAL: "active Leader" requirement not gated.
+  { cardNumber: 'OP07-006', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true },
+    { fn: 'drawAndTrash', drawCount: 1, trashCount: 1, ifPrevious: 'previousSelectedAny' },
+  ] } },
 
   // OP07-009 — [On Play] Up to 1 of your red Characters with a cost of 1 gains [Double Attack] during this turn.
   { cardNumber: 'OP07-009', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { color: 'red', exactCost: 1 } }, keyword: 'doubleAttack', duration: 'duringThisTurn', optional: true }] } },
@@ -123,9 +124,8 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-030 — if you have [Camie], [Blocker]
   { cardNumber: 'OP07-030', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Camie' }] } }] } },
 
-  // OP07-025 (character) Coribou —
-  //   [On Play] Play up to 1 [Caribou] with a cost of 4 or less from your hand rested.
-  // NOTE: not yet implemented (needs template).
+  // OP07-025 — PARTIAL: played Character should enter rested (playFromHand has no rested flag).
+  { cardNumber: 'OP07-025', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Caribou', maxCost: 4 } }] } },
 
   // OP07-026 (character) Jewelry Bonney —
   //   [On Play] Up to 1 of your opponent's rested Character or DON!! cards will not become active in your
@@ -144,11 +144,8 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   attack, you may rest this card to make it the new target of the attack.)
   // NOTE: not yet implemented (needs template).
 
-  // OP07-031 (character) Bartolomeo —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[Your Turn] [Once Per Turn] If a Character is rested by your effect, draw 1 card and
-  //   trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP07-031 — PARTIAL: fires on any Character rest during your turn, not only rests caused by your effects.
+  { cardNumber: 'OP07-031', templateId: 'ability', params: { timing: 'onRested', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
 
   // OP07-032 — [On Play] if Leader {Fish-Man}/{Merfolk}: rest up to 1 opp Character with a cost of 6 or less.
   //   PARTIAL: the static "can attack Characters on the turn it is played" is deferred.
@@ -234,10 +231,11 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-053 — [Blocker] [On Play] Draw 2 and place 2 from hand at the bottom of your deck.
   { cardNumber: 'OP07-053', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 2 }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 2 }] } },
 
-  // OP07-047 (character) Trafalgar Law —
-  //   [Activate: Main] You may return this Character to the owner's hand: If your opponent has 6 or more
-  //   cards in their hand, your opponent places 1 card from their hand at the bottom of their deck.
-  // NOTE: not yet implemented (needs template).
+  // OP07-047 — PARTIAL: self-return not instance-locked; opponent hand discard approximates bottom-deck placement.
+  { cardNumber: 'OP07-047', templateId: 'ability', params: { timing: 'activateMain', functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'opponentHand', atLeast: 6 }] },
+  ] } },
 
   // OP07-048 (character) Donquixote Doflamingo —
   //   [Activate: Main] [Once Per Turn] ➁ (You may rest the specified number of DON!! cards in your cost
@@ -246,14 +244,11 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   the bottom of your deck.
   // NOTE: not yet implemented (needs template).
 
-  // OP07-049 (character) Buckin —
-  //   [On Play] Play up to 1 [Edward Weevil] with a cost of 4 or less from your hand rested.
-  // NOTE: not yet implemented (needs template).
+  // OP07-049 — PARTIAL: played Character should enter rested (playFromHand has no rested flag).
+  { cardNumber: 'OP07-049', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Edward Weevil', maxCost: 4 } }] } },
 
-  // OP07-050 (character) Boa Sandersonia —
-  //   [On Play] If you have 2 or more {Amazon Lily} or {Kuja Pirates} type Characters on your field, return
-  //   up to 1 of your opponent's Characters with a cost of 3 or less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
+  // OP07-050 — PARTIAL: {Kuja Pirates} half of the OR gate not modeled (Amazon Lily typed count only).
+  { cardNumber: 'OP07-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Amazon Lily', atLeast: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
   // OP07-051 (character) Boa Hancock —
   //   [On Play] Up to 1 of your opponent's Characters other than [Monkey.D.Luffy] cannot attack until the
@@ -285,11 +280,20 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP07-056 (event) Slave Arrow —
-  //   [Counter] You may return 1 of your Characters with a cost of 2 or more to the owner's hand: Up to 1
-  //   of your Leader or Character cards gains +4000 power during this battle. [Trigger] Draw 2 cards and
-  //   place 2 cards from your hand at the bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP07-056 — [Counter] return cost-2+ Character → +4000 battle. [Trigger] draw 2, place 2 hand cards at bottom.
+  {
+    cardNumber: 'OP07-056',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { minCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'draw', amount: 2 },
+        { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 2 },
+      ] } },
+    ],
+  },
 
   // OP07-057 (event) Perfume Femur —
   //   [Main] Select up to 1 of your {The Seven Warlords of the Sea} type Leader or Character cards and that
@@ -307,10 +311,8 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Refresh Phase.
   // NOTE: not yet implemented (needs template).
 
-  // OP07-060 (character) Itomimizu —
-  //   [Activate: Main] [Once Per Turn] If your Leader has the {Foxy Pirates} type and you have no other
-  //   [Itomimizu], add up to 1 DON!! card from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
+  // OP07-060 — PARTIAL: "no other [Itomimizu]" gate not modeled.
+  { cardNumber: 'OP07-060', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
   // OP07-061 — [On Play] DON!! −1: If Leader {The Vinsmoke Family}, draw 1.
   { cardNumber: 'OP07-061', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'The Vinsmoke Family' }], functions: [{ fn: 'draw', amount: 1 }] } },
@@ -324,11 +326,8 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   of 6 or less cannot attack until the end of your opponent's next turn.
   { cardNumber: 'OP07-063', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }], functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
-  // OP07-064 (character) Sanji —
-  //   If the number of DON!! cards on your field is at least 2 less than the number on your opponent's
-  //   field, give this card in your hand −3 cost.[Blocker] (After your opponent declares an attack, you may
-  //   rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
+  // OP07-064 — PARTIAL: "at least 2 less DON!!" approximated as selfDonAtMostOpponent (not deficit-of-2).
+  { cardNumber: 'OP07-064', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'selfDonAtMostOpponent' }] }] } },
 
   // OP07-065 — [On Play] If Leader {Foxy Pirates} and DON!! ≤ opponent's, add 1 DON!! from deck and set it active.
   { cardNumber: 'OP07-065', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }, { kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
@@ -367,10 +366,10 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-074 — [Activate: Main] Trash this: if Leader {Foxy Pirates}, add 1 DON!! from deck and rest it.
   { cardNumber: 'OP07-074', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
-  // OP07-075 (event) Slow-Slow Beam —
-  //   [Counter] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): Give up to 1 each of your opponent's Leader and Character cards −2000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP07-075 — PARTIAL: "up to 1 each of Leader and Character" approximated as up to 2 leaderOrCharacters picks.
+  { cardNumber: 'OP07-075', templateId: 'ability', params: { timing: 'counter', cost: [{ kind: 'donMinus', count: 1 }], functions: [
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, maxTargets: 2 },
+  ] } },
 
   // OP07-076 — [Counter] DON!! −1: +2000 battle, then rest up to 1 opp Character. [Trigger] add 1 DON!! (active).
   {
@@ -418,9 +417,11 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   card deals damage, the target card is trashed without activating its Trigger.)
   // NOTE: not yet implemented (needs template).
 
-  // OP07-085 (character) Stussy —
-  //   [On Play] You may trash 1 of your Characters: K.O. up to 1 of your opponent's Characters.
-  // NOTE: not yet implemented (needs template).
+  // OP07-085 — [On Play] trash 1 of your Characters: K.O. up to 1 opponent Character.
+  { cardNumber: 'OP07-085', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'ko', target: { group: 'characters', player: 'opponent' }, optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP07-086 — [On Play] Trash 2 from the top of your deck and give up to 1 opponent Character −2 cost during this turn.
   { cardNumber: 'OP07-086', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, optional: true }] } },
@@ -443,23 +444,24 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   draws 1 card.
   // NOTE: not yet implemented (needs template).
 
-  // OP07-091 (character) Monkey.D.Luffy —
-  //   [When Attacking] Trash up to 1 of your opponent's Characters with a cost of 2 or less. Then, place
-  //   any number of Character cards with a cost of 4 or more from your trash at the bottom of your deck in
-  //   any order. This Character gains +1000 power during this turn for every 3 cards placed at the bottom
-  //   of your deck.
-  // NOTE: not yet implemented (needs template).
+  // OP07-091 — PARTIAL: +1000 per 3 cards placed (dynamic scaling) deferred; mapped flat +1000 after trash reorder.
+  { cardNumber: 'OP07-091', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true },
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', minCost: 4 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 9 },
+    { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP07-092 (character) Joseph —
   //   [On Play] You may place 2 cards with a type including "CP" from your trash at the bottom of your deck
   //   in any order: K.O. up to 1 of your opponent's Characters with a cost of 1 or less.
   // NOTE: not yet implemented (needs template).
 
-  // OP07-093 (character) Rob Lucci —
-  //   [On Play] You may place 3 cards from your trash at the bottom of your deck in any order: Your
-  //   opponent trashes 1 card from their hand. Then, you may place up to 1 card from your opponent's trash
-  //   at the bottom of their deck.
-  // NOTE: not yet implemented (needs template).
+  // OP07-093 — [On Play] reorder 3 trash → deck bottom: opp trashes 1 hand, then optional opp trash → deck bottom.
+  { cardNumber: 'OP07-093', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 3 },
+    { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifPrevious: 'previousMovedAny' },
+    { fn: 'moveCards', from: { zone: 'trash', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+  ] } },
 
   // OP07-094 — [Counter] up to 1 Leader/Char +2000 this battle. [Trigger] Return up to 1 of your Characters to hand.
   //   PARTIAL: the "if 10+ trash, return your CP-type Character" rider needs a trash-count gate (deferred).
@@ -471,11 +473,17 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP07-095 (event) Iron Body —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, if
-  //   you have 10 or more cards in your trash, that card gains an additional +2000 power during this
-  //   battle. [Trigger] Up to 1 of your Leader or Character cards gains +1000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP07-095 — [Counter] +4000 battle (+2000 more if 10+ trash). [Trigger] +1000 this turn.
+  {
+    cardNumber: 'OP07-095',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true },
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }], ifPrevious: 'previousSelectedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
 
   // OP07-096 — [Main] Draw 1. [Trigger] K.O. up to 1 opp Character cost ≤3.
   //   PARTIAL: the "if 10+ trash, give opp −3 cost" rider needs a trash-count gate (deferred).
@@ -503,10 +511,8 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP07-099 (character) Usopp —
-  //   [Trigger] Up to 1 of your {Egghead} type Leader or Character cards gains +2000 power until the end of
-  //   your next turn.
-  // NOTE: not yet implemented (needs template).
+  // OP07-099 — [Trigger] up to 1 {Egghead} Leader/Character +2000 until start of your next turn.
+  { cardNumber: 'OP07-099', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Egghead' } }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true }] } },
 
   // OP07-100 — [On Play] If 2 or less Life, draw 2 & trash 2. [Trigger] If Leader is [Vegapunk], play this card.
   {

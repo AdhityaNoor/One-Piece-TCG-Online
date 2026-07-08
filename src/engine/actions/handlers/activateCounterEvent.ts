@@ -20,7 +20,7 @@ import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/def
 import { computeCurrentCost } from '../../rules/shared/power';
 import { getOpponentId } from '../../rules/shared/players';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { fireCounter, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, type EffectTemplateRegistry } from '../../effects';
+import { fireCounter, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, type EffectTemplateRegistry } from '../../effects';
 
 export function validateActivateCounterEvent(
   state: GameState,
@@ -157,9 +157,21 @@ export function executeActivateCounterEvent(
 
   // Fire the [Counter] ability (timing 'counter'); may emit a target choice.
   const fired = fireCounter(working, action.handCardInstanceId, registry, defs, action.actionId);
+
+  let resultState = fired.state;
+  let resultLog = [...logger.log, ...paidLog, ...fired.log];
+  if (fired.pendingChoices.length === 0) {
+    const reactive = fireEventActivatedReactions(resultState, action.playerId, registry, defs, action.actionId);
+    resultState = reactive.state;
+    resultLog = [...resultLog, ...reactive.log];
+    if (reactive.pendingChoices.length > 0) {
+      return { state: resultState, log: resultLog, pendingChoices: reactive.pendingChoices };
+    }
+  }
+
   return {
-    state: fired.state,
-    log: [...logger.log, ...paidLog, ...fired.log],
+    state: resultState,
+    log: resultLog,
     pendingChoices: fired.pendingChoices,
   };
 }

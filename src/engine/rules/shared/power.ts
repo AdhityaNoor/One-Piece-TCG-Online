@@ -42,6 +42,15 @@ export function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffec
     if (!source || !sourceOnField(record.sourceInstanceId, state)) return false;
     return target.cardDefinitionId === source.cardDefinitionId;
   }
+  if (group.controllerCharactersInHand) {
+    if (target.currentZone !== 'hand' || target.controllerId !== record.ownerId) return false;
+    const def = getDefinition(defs, target);
+    if (def.category !== 'character') return false;
+    if (group.anyOfTypes !== undefined) {
+      if (!group.anyOfTypes.some((t) => typeIncludes(def.types, t))) return false;
+    }
+    return true;
+  }
   if (group.opponentCharacters) {
     if (target.currentZone !== 'characterArea') return false;
     if (target.controllerId === record.ownerId) return false;
@@ -130,6 +139,7 @@ function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, 
 function costModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
   const mod = record.costModifier;
   if (!mod) return false;
+  if (record.usesRemaining !== undefined && record.usesRemaining <= 0) return false;
   // Target selection: a single fixed instance, or a dynamic aura group (mirrors powerModifierApplies).
   if (mod.appliesToInstanceId !== undefined) {
     if (mod.appliesToInstanceId !== instanceId) return false;
@@ -253,4 +263,40 @@ export function isKoImmune(defs: CardDefinitionLookup, state: GameState, instanc
  */
 export function cannotAttack(state: GameState, instanceId: string): boolean {
   return state.continuousEffects.some((record) => record.attackRestriction?.appliesToInstanceId === instanceId);
+}
+
+/** IDs of one-shot in-hand play discounts that apply to `handInstanceId` right now. */
+export function consumablePlayFromHandCostDiscountIds(
+  state: GameState,
+  playerId: string,
+  handInstanceId: string,
+  defs: CardDefinitionLookup,
+): string[] {
+  return state.continuousEffects
+    .filter(
+      (record) =>
+        record.usesRemaining !== undefined &&
+        record.usesRemaining > 0 &&
+        record.ownerId === playerId &&
+        record.costModifier !== undefined &&
+        costModifierApplies(record, state, handInstanceId, defs),
+    )
+    .map((record) => record.id);
+}
+
+/** Remove or decrement one-shot play-from-hand cost discounts consumed by playing `handInstanceId`. */
+export function withConsumedPlayFromHandCostDiscounts(
+  state: GameState,
+  consumedIds: string[],
+): GameState {
+  if (consumedIds.length === 0) return state;
+  const consumed = new Set(consumedIds);
+  return {
+    ...state,
+    continuousEffects: state.continuousEffects.flatMap((record) => {
+      if (!consumed.has(record.id)) return [record];
+      const next = (record.usesRemaining ?? 1) - 1;
+      return next <= 0 ? [] : [{ ...record, usesRemaining: next }];
+    }),
+  };
 }

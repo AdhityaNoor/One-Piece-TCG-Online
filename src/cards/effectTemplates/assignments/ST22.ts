@@ -8,10 +8,8 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // ST22-001 (leader) Ace & Newgate —
-  //   [Activate: Main] [Once Per Turn] You may reveal 1 card with a type including "Whitebeard Pirates"
-  //   from your hand: Draw 1 card and place the revealed card at the top of your deck.
-  // NOTE: not yet implemented (needs template).
+  // ST22-001 — PARTIAL: reveal-from-hand cost deferred; mapped draw 1 on activateMain oncePerTurn.
+  { cardNumber: 'ST22-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 1 }], functions: [{ fn: 'draw', amount: 1 }] } },
 
   // ST22-002 — [On Play] Look 5, reveal up to 1 {Whitebeard Pirates} to hand, rest to bottom (exclude-[Izo] dropped). PARTIAL: opp-attack trash-self deferred.
   { cardNumber: 'ST22-002', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Whitebeard Pirates' }, remainder: 'bottom' }] } },
