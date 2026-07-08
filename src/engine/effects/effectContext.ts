@@ -93,6 +93,10 @@ export class EffectContextImpl implements EffectContext {
     const bottom = ids[ids.length - 1];
     return top === bottom ? [top] : [top, bottom];
   }
+  opponentLifeTopIds(): string[] {
+    const top = this.working.players[this.opponentId].lifeArea.cardIds[0];
+    return top ? [top] : [];
+  }
   controllerOrOpponentLifeTopIds(): string[] {
     const controllerTop = this.working.players[this.controllerId].lifeArea.cardIds[0];
     const opponentTop = this.working.players[this.opponentId].lifeArea.cardIds[0];
@@ -101,6 +105,9 @@ export class EffectContextImpl implements EffectContext {
   controllerDeckTopIds(): string[] {
     const top = this.working.players[this.controllerId].deck.cardIds[0];
     return top ? [top] : [];
+  }
+  lifeIds(playerId: string): string[] {
+    return [...(this.working.players[playerId]?.lifeArea.cardIds ?? [])];
   }
   powerOf(instanceId: string): number {
     return computeCurrentPower(this.defs, this.working, instanceId);
@@ -133,6 +140,22 @@ export class EffectContextImpl implements EffectContext {
       message: `${this.controllerId} revealed ${def?.name ?? instanceId} from the top of their deck.`,
       data: { revealedInstanceId: instanceId, cardDefinitionId: inst.cardDefinitionId },
       relatedCardInstanceIds: [instanceId],
+      visibility: 'public',
+    });
+  }
+
+  revealCards(instanceIds: string[]): void {
+    const ids = instanceIds.filter((id) => this.working.cardsById[id]);
+    if (ids.length === 0) return;
+    const cardsById = { ...this.working.cardsById };
+    for (const id of ids) cardsById[id] = { ...cardsById[id], revealedTo: 'all' };
+    this.working = { ...this.working, cardsById };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${this.controllerId} revealed ${ids.length} card${ids.length === 1 ? '' : 's'}.`,
+      data: { revealedInstanceIds: ids, cardDefinitionIds: ids.map((id) => cardsById[id].cardDefinitionId) },
+      relatedCardInstanceIds: ids,
       visibility: 'public',
     });
   }
@@ -1139,6 +1162,64 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  reorderLife(playerId: string, lifeOrderIds: string[], deckTopId?: string): void {
+    const player = this.working.players[playerId];
+    if (!player) return;
+    const current = player.lifeArea.cardIds;
+    const currentSet = new Set(current);
+    const orderedLife = lifeOrderIds.filter((id) => currentSet.has(id) && id !== deckTopId);
+    const missing = current.filter((id) => id !== deckTopId && !orderedLife.includes(id));
+    const nextLifeIds = [...orderedLife, ...missing];
+
+    let cardsById = { ...this.working.cardsById };
+    if (deckTopId && currentSet.has(deckTopId)) {
+      cardsById[deckTopId] = { ...cardsById[deckTopId], currentZone: 'deck', faceState: 'faceDown' };
+    }
+    for (const id of nextLifeIds) {
+      cardsById[id] = { ...cardsById[id], currentZone: 'lifeArea' };
+    }
+
+    this.working = {
+      ...this.working,
+      cardsById,
+      players: {
+        ...this.working.players,
+        [playerId]: {
+          ...player,
+          lifeArea: { ...player.lifeArea, cardIds: nextLifeIds },
+          deck: deckTopId && currentSet.has(deckTopId) ? addToZoneTop(player.deck, deckTopId) : player.deck,
+        },
+      },
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${this.controllerId} reordered ${playerId}'s Life cards.`,
+      data: { playerId, deckTopId },
+      relatedCardInstanceIds: deckTopId ? [deckTopId, ...nextLifeIds] : nextLifeIds,
+      visibility: { visibleTo: [this.controllerId] },
+    });
+  }
+
+  turnAllLifeFace(playerId: string, faceUp: boolean): void {
+    const ids = this.working.players[playerId]?.lifeArea.cardIds ?? [];
+    let cardsById = this.working.cardsById;
+    for (const id of ids) {
+      const card = cardsById[id];
+      if (!card) continue;
+      cardsById = { ...cardsById, [id]: { ...card, faceState: faceUp ? 'faceUp' : 'faceDown' } };
+    }
+    this.working = { ...this.working, cardsById };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${this.controllerId} turned ${ids.length} Life card${ids.length === 1 ? '' : 's'} face-${faceUp ? 'up' : 'down'}.`,
+      data: { playerId, faceUp, count: ids.length },
+      relatedCardInstanceIds: ids,
+      visibility: 'public',
+    });
+  }
+
   playSelf(): void {
     const inst = this.working.cardsById[this.sourceInstanceId];
     const def = inst ? this.defs[inst.cardDefinitionId] : undefined;
@@ -1550,6 +1631,21 @@ export class EffectContextImpl implements EffectContext {
       message: `${targetInstanceId} was set as active by an effect (2-4-3).`,
       data: { targetInstanceId },
       relatedCardInstanceIds: [targetInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  scheduleDelayedEffect(effect: import('../state/game').DelayedEffectRecord): void {
+    this.working = {
+      ...this.working,
+      delayedEffects: [...(this.working.delayedEffects ?? []), effect],
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${effect.sourceInstanceId} scheduled a delayed effect.`,
+      data: { delayedEffectId: effect.id, delayedEffectKind: effect.kind },
+      relatedCardInstanceIds: [effect.sourceInstanceId],
       visibility: 'public',
     });
   }

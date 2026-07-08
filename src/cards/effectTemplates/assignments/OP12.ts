@@ -403,11 +403,13 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-079 — [Main] If Leader [Sanji]: Look 3, add up to 1 card to hand, rest to bottom.
   { cardNumber: 'OP12-079', templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderName', name: 'Sanji' }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: false, destination: 'hand', remainder: 'bottom' }] } },
 
-  // OP12-080 (stage) Baratie —
-  //   [Activate: Main] You may place this Stage at the bottom of the owner's deck: If your Leader is
-  //   [Sanji], look at 3 cards from the top of your deck; reveal up to 1 Event and add it to your hand.
-  //   Then, place the rest at the bottom of your deck in any order. [Trigger] Play this card.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP12-080',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderName', name: 'Sanji' }], functions: [{ fn: 'moveCards', from: { zone: 'stages', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 }, { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { category: 'event' }, remainder: 'bottom', ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   // OP12-081 (leader) Koala —
   //   When this Leader attacks your opponent's Leader, if you have 2 or more Characters with a cost of 8 or

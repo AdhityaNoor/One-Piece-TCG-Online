@@ -93,7 +93,7 @@ export type TargetSpec =
   | { group: 'leaderOrCharacters'; player: 'controller' | 'opponent'; filter?: TargetFilter };
 
 export type AbilityFunction =
-  | { fn: 'draw'; amount: number; optional?: boolean }
+  | { fn: 'draw'; amount: number; optional?: boolean; player?: 'controller' | 'opponent' }
   | { fn: 'addDonFromDeck'; count: number; rested: boolean }
   | { fn: 'giveDon'; count: number; optional?: boolean; targetTypeIncludes?: string; charactersOnly?: boolean; targetName?: string; activeDonOnly?: boolean }
   | { fn: 'preventBlockersOnPreviousTarget'; duration: IrDuration }
@@ -130,6 +130,7 @@ export type AbilityFunction =
   | { fn: 'trashFromHand'; count: number }
   | { fn: 'optionalTrashFromHand'; count: number }
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
+  | { fn: 'revealOpponentHand'; count?: number }
   | { fn: 'trashTopDeck'; count: number; optional?: boolean }
   | { fn: 'moveCards'; from: MoveCardSource; to: MoveCardDestination; optional?: boolean; maxTargets?: number; prompt?: string; chooser?: 'controller' | 'opponent' }
   | { fn: 'moveAllCharactersToBottomDeck'; filter?: { maxCost?: number; maxPower?: number; maxBaseCost?: number; maxBasePower?: number } }
@@ -157,11 +158,15 @@ export type AbilityFunction =
   | { fn: 'restControllerLeaderOrStage'; typeIncludes?: string }
   // 'You may turn 1 card from the top of your Life cards face-up/down:' cost. Optional flip of the top Life card; binds var 't'.
   | { fn: 'turnTopLifeFace'; faceUp: boolean }
+  | { fn: 'turnAllLifeFace'; player?: 'controller' | 'opponent'; faceUp: boolean }
+  | { fn: 'lookLifeAndReorder'; player?: 'controller' | 'opponent'; moveOneToDeckTop?: boolean }
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }
   | { fn: 'setActiveControllerLeader' }
   | { fn: 'setActiveControllerCharacter'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string }; maxTargets?: number; optional?: boolean }
   | { fn: 'setActiveControllerDon'; maxTargets: number }
+  | { fn: 'setActiveControllerDonAtEndOfTurn'; maxTargets: number }
+  | { fn: 'restOpponentDonAtStartOfNextMain'; maxTargets?: number }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
   | { fn: 'restOpponentDon'; maxTargets?: number; optional?: boolean }
   // Opponent chooses N DON!! cards from their field and returns them to their DON!! deck.

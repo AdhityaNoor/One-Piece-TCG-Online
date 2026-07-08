@@ -13,6 +13,45 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'opponentLife', atLeast: 1 }], rig.state, rig.defs, 'p1')).toBe(true);
   });
 
+  it('checks whether the controller has a face-up Life card', () => {
+    let rig = buildBaseRig();
+    const lifeCard = makeCharacterDef({ cardDefinitionId: 'TEST-LIFE', cardNumber: 'TEST-LIFE' });
+    ({ rig } = putLifeCards(rig, 'p1', [lifeCard, lifeCard]));
+    expect(evaluateGates([{ kind: 'selfHasFaceUpLife' }], rig.state, rig.defs, 'p1')).toBe(false);
+
+    const [lifeId] = rig.state.players.p1.lifeArea.cardIds;
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        cardsById: {
+          ...rig.state.cardsById,
+          [lifeId]: { ...rig.state.cardsById[lifeId], faceState: 'faceUp' },
+        },
+      },
+    };
+    expect(evaluateGates([{ kind: 'selfHasFaceUpLife' }], rig.state, rig.defs, 'p1')).toBe(true);
+  });
+
+  it('checks face-up Life from the ability controller perspective', () => {
+    let rig = buildBaseRig();
+    const lifeCard = makeCharacterDef({ cardDefinitionId: 'TEST-LIFE', cardNumber: 'TEST-LIFE' });
+    ({ rig } = putLifeCards(rig, 'p2', [lifeCard]));
+    const [opponentLifeId] = rig.state.players.p2.lifeArea.cardIds;
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        cardsById: {
+          ...rig.state.cardsById,
+          [opponentLifeId]: { ...rig.state.cardsById[opponentLifeId], faceState: 'faceUp' },
+        },
+      },
+    };
+    expect(evaluateGates([{ kind: 'selfHasFaceUpLife' }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'selfHasFaceUpLife' }], rig.state, rig.defs, 'p2')).toBe(true);
+  });
+
   it('checks DON!! field count including attached DON!!', () => {
     let rig = buildBaseRig();
     const withDon = putDon(rig, 'p1', 2);
@@ -135,6 +174,25 @@ describe('evaluateGates', () => {
       },
     };
     expect(evaluateGates([{ kind: 'selfTypedCharacterPowerAtLeast', typeIncludes: 'Sky Island', power: 7000 }], rig.state, rig.defs, 'p1')).toBe(true);
+  });
+
+  it('checks selfAnyTypedCharacterCount across alternative Character types', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Amazon Lily'] })));
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Kuja Pirates'] })));
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Navy'] })));
+
+    expect(evaluateGates([{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks selfAnyTypedCharacterCount rested filtering', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Amazon Lily'] }), { orientation: 'rested' }));
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Kuja Pirates'] })));
+
+    expect(evaluateGates([{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], rested: true, atLeast: 1 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], rested: true, atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(false);
   });
 
   it('checks combinedLifeTotal as the sum of both players Life counts', () => {

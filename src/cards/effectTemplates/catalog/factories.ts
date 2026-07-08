@@ -136,6 +136,9 @@ function selectorFromMoveSource(from: MoveCardSource): Extract<EffectOp, { op: '
       if (from.player === 'any') return { sel: 'allCharacters', ...from.filter };
       break;
     case 'life':
+      if (from.player === 'controller' && from.position === 'top') return { sel: 'controllerLifeTop' };
+      if (from.player === 'opponent' && from.position === 'top') return { sel: 'opponentLifeTop' };
+      if (from.player === 'controller' && from.position === 'topOrBottom') return { sel: 'controllerLifeTopBottom' };
       break;
   }
   throw new Error(`Unsupported move source ${JSON.stringify(from)}`);
@@ -237,7 +240,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
   const ops = ((): EffectOp[] => {
   switch (f.fn) {
     case 'draw':
-      return [{ op: 'draw', amount: f.amount }];
+      return [{ op: 'draw', amount: f.amount, ...(f.player ? { player: f.player } : {}) }];
     case 'addDonFromDeck':
       return [{ op: 'addDonFromDeck', count: f.count, rested: f.rested }];
     case 'giveDon': {
@@ -529,6 +532,21 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
         { op: 'trashCards', target: { sel: 'var', name: 't' } },
       ];
+    case 'revealOpponentHand': {
+      const count = f.count ?? 0;
+      if (count <= 0) return [{ op: 'revealCards', target: { sel: 'opponentHand' } }];
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'opponentHand' },
+          min: count,
+          max: count,
+          prompt: `Choose ${count} card${count === 1 ? '' : 's'} from your opponent's hand to reveal.`,
+        },
+        { op: 'revealCards', target: { sel: 'var', name: 't' } },
+      ];
+    }
     case 'trashTopDeck':
       return [{ op: 'trashTopDeck', count: f.count }];
     case 'moveCards':
@@ -624,6 +642,17 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'chooseTargets', var: 't', from: { sel: 'controllerLifeTop' }, min: 0, max: 1, prompt: `You may turn the top card of your Life face-${f.faceUp ? 'up' : 'down'}.` },
         { op: 'turnLifeFace', target: { sel: 'var', name: 't' }, faceUp: f.faceUp },
       ];
+    case 'turnAllLifeFace':
+      return [{ op: 'turnAllLifeFace', player: f.player ?? 'controller', faceUp: f.faceUp }];
+    case 'lookLifeAndReorder':
+      return [{
+        op: 'lookLifeAndReorder',
+        player: f.player ?? 'controller',
+        ...(f.moveOneToDeckTop ? { moveOneToDeckTop: true } : {}),
+        prompt: f.moveOneToDeckTop
+          ? 'Look at all Life cards. Choose the card to place on top of your deck first, then order the rest back into Life.'
+          : 'Look at all Life cards and choose their order from top to bottom.',
+      }];
     case 'restControllerLeaderOrStage':
       return [
         { op: 'chooseTargets', var: 't', from: { sel: 'controllerLeaderOrStage', ...(f.typeIncludes ? { typeIncludes: f.typeIncludes } : {}) }, min: 0, max: 1, prompt: f.typeIncludes ? `You may rest 1 of your {${f.typeIncludes}} Leader or Stage cards.` : 'You may rest 1 of your Leader or Stage cards.' },
@@ -659,6 +688,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
         { op: 'setActive', target: { sel: 'var', name: 't' } },
       ];
+    case 'setActiveControllerDonAtEndOfTurn':
+      return [{ op: 'scheduleSetActiveControllerDonAtEndOfTurn', maxTargets: f.maxTargets }];
     case 'restOpponentDon': {
       const maxTargets = f.maxTargets ?? 1;
       return [
@@ -673,6 +704,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'rest', target: { sel: 'var', name: 't' } },
       ];
     }
+    case 'restOpponentDonAtStartOfNextMain':
+      return [{ op: 'scheduleRestOpponentDonAtStartOfNextMain', maxTargets: f.maxTargets ?? 1 }];
     case 'returnOpponentDon':
       return [
         {

@@ -35,6 +35,11 @@ export function countSelfTypedCharacters(
   ).length;
 }
 
+function characterMatchesAnyType(state: GameState, defs: CardDefinitionLookup, instanceId: string, anyOfTypes: string[]): boolean {
+  const types = defs[state.cardsById[instanceId]?.cardDefinitionId ?? '']?.types ?? [];
+  return anyOfTypes.some((required) => typeMatches(types, required));
+}
+
 function currentCostForGate(state: GameState, defs: CardDefinitionLookup, instanceId: string): number {
   const inst = state.cardsById[instanceId];
   const base = inst ? defs[inst.cardDefinitionId]?.baseCost ?? 0 : 0;
@@ -165,6 +170,10 @@ function evaluateGate(
       return true;
     }
 
+    case 'selfHasFaceUpLife': {
+      return player.lifeArea.cardIds.some((id) => state.cardsById[id]?.faceState === 'faceUp');
+    }
+
     case 'opponentLife': {
       const opponentId = getOpponentId(state, ownerId);
       const opponent = state.players[opponentId];
@@ -277,6 +286,16 @@ function evaluateGate(
       const c = player.characterArea.cardIds.filter((id) => {
         if (gate.rested !== undefined && (state.cardsById[id]?.orientation === 'rested') !== gate.rested) return false;
         return typeMatches(defs[state.cardsById[id]?.cardDefinitionId ?? '']?.types ?? [], gate.typeIncludes);
+      }).length;
+      if (gate.atLeast !== undefined && c < gate.atLeast) return false;
+      if (gate.atMost !== undefined && c > gate.atMost) return false;
+      return true;
+    }
+
+    case 'selfAnyTypedCharacterCount': {
+      const c = player.characterArea.cardIds.filter((id) => {
+        if (gate.rested !== undefined && (state.cardsById[id]?.orientation === 'rested') !== gate.rested) return false;
+        return characterMatchesAnyType(state, defs, id, gate.anyOfTypes);
       }).length;
       if (gate.atLeast !== undefined && c < gate.atLeast) return false;
       if (gate.atMost !== undefined && c > gate.atMost) return false;

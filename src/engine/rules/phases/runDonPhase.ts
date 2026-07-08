@@ -15,6 +15,7 @@ import type { GameState } from '../../state/game';
 import { createActionLogger } from '../shared/actionLogger';
 import { addToZoneTop } from '../shared/zoneOps';
 import type { PhaseStepResult } from './phaseStepResult';
+import { consumeStartOfMainDelayedEffects } from './delayedEffects';
 
 export function runDonPhase(state: GameState): PhaseStepResult {
   const player = state.players[state.activePlayerId];
@@ -49,7 +50,7 @@ export function runDonPhase(state: GameState): PhaseStepResult {
     visibility: 'public',
   });
 
-  const nextState: GameState = {
+  const beforeMain: GameState = {
     ...state,
     players: { ...state.players, [player.playerId]: newPlayer },
     cardsById,
@@ -57,5 +58,6 @@ export function runDonPhase(state: GameState): PhaseStepResult {
     log: [...state.log, ...logger.log],
   };
 
-  return { state: nextState, log: logger.log };
+  const delayed = consumeStartOfMainDelayedEffects(beforeMain);
+  return { state: delayed.state, log: [...logger.log, ...delayed.log] };
 }

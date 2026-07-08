@@ -11,6 +11,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { runTimings, resumeProgram } from '../../../engine/effects/interpreter';
+import { runDonPhase, runEndPhaseAndHandoff } from '../../../engine/rules/phases';
 import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putDon } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
 
@@ -76,5 +77,41 @@ describe('semantic family: setActive (inverse of rest)', () => {
     const resolved = resumeProgram(registry['SYN-SRC'], fired.state, choice, [donIds[0]], rig.defs, null, registry);
     expect(resolved.state.cardsById[donIds[0]].donRested).toBe(false); // set active
     expect(resolved.state.cardsById[donIds[1]].donRested).toBe(true); // untouched
+  });
+
+  it('setActiveControllerDonAtEndOfTurn schedules automatic DON!! activation', () => {
+    const assignment: CardEffectAssignment = { cardNumber: 'SYN-SRC', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDonAtEndOfTurn', maxTargets: 2 }] } };
+    const registry = programFor(assignment);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC));
+    const withDon = putDon(rig, 'p1', 3, { rested: true });
+    rig = withDon.rig;
+
+    const scheduled = runTimings(registry['SYN-SRC'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+    expect(scheduled.state.delayedEffects).toHaveLength(1);
+
+    const ended = runEndPhaseAndHandoff({ ...scheduled.state, currentPhase: 'end' }, rig.defs, registry).state;
+    expect(ended.cardsById[withDon.donIds[0]].donRested).toBe(false);
+    expect(ended.cardsById[withDon.donIds[1]].donRested).toBe(false);
+    expect(ended.cardsById[withDon.donIds[2]].donRested).toBe(true);
+    expect(ended.delayedEffects ?? []).toHaveLength(0);
+  });
+
+  it('restOpponentDonAtStartOfNextMain schedules automatic opponent DON!! rest', () => {
+    const assignment: CardEffectAssignment = { cardNumber: 'SYN-SRC', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'restOpponentDonAtStartOfNextMain' }] } };
+    const registry = programFor(assignment);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC));
+    const withDon = putDon(rig, 'p2', 2, { rested: false });
+    rig = withDon.rig;
+
+    const scheduled = runTimings(registry['SYN-SRC'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry).state;
+    const main = runDonPhase({ ...scheduled, activePlayerId: 'p2', currentPhase: 'don', turnNumber: 4 }).state;
+
+    expect(main.cardsById[withDon.donIds[0]].donRested).toBe(true);
+    expect(main.cardsById[withDon.donIds[1]].donRested).toBe(false);
+    expect(main.delayedEffects ?? []).toHaveLength(0);
   });
 });

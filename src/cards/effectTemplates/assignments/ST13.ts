@@ -40,7 +40,10 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] Add 1 card from the top of your deck to the top of your Life cards. Then, look at all your
   //   Life cards; place 1 card at the top of your deck and place the rest back in your Life area in any
   //   order.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'ST13-004', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' } },
+    { fn: 'lookLifeAndReorder', moveOneToDeckTop: true },
+  ] } },
 
   // ST13-005 — PARTIAL: reveal-from-hand semantics approximated via filtered hand→Life face-down move.
   {
@@ -100,7 +103,10 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST13-012 (character) Makino —
   //   [On Play] You may add 1 card from the top or bottom of your Life cards to your hand: Look at all of
   //   your Life cards and place them back in your Life area in any order.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'ST13-012', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'lookLifeAndReorder', ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // ST13-013 — [On Play] Look at 5; add [Sabo]/[Ace]/[Luffy] with cost 5 or less to hand.
   { cardNumber: 'ST13-013', templateId: 'ability', params: { timing: 'onPlay', functions: [SEARCH_BROTHERS] } },
@@ -118,7 +124,13 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST13-016 (character) Yamato —
   //   [Rush] (This card can attack on the turn in which it is played.)[On Play] Look at all your Life
   //   cards; place 1 at the top of your deck and place the rest back in your Life area in any order.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'ST13-016',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'lookLifeAndReorder', moveOneToDeckTop: true }] } },
+    ],
+  },
 
   // ST13-017 (event) Flame Dragon King — [Counter] Up to 1 of your Leader/Character +4000 this battle. (Life reorder + Trigger deferred.)
   {

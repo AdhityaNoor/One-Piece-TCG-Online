@@ -373,6 +373,11 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // NOTE: not yet implemented (needs template).
 
   // EB01-053 — [On Play] Place up to 1 opp Character cost<=3 at the top or bottom of opponent's Life face-up. [Trigger] give up to 1 opp Leader/Character −3000 this turn.
+  { cardNumber: 'EB01-052', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'chooseOne', chooser: 'controller', prompt: 'Choose one:', options: [
+    { label: 'reorderOpponentLife', functions: [{ fn: 'lookLifeAndReorder', player: 'opponent' }] },
+    { label: 'turnYourLifeFaceDown', functions: [{ fn: 'turnAllLifeFace', faceUp: false }] },
+  ] }] } },
+
   {
     cardNumber: 'EB01-053',
     templates: [
@@ -1545,7 +1550,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB03-051 (character) Charlotte Smoothie —
   //   [On Play] If you have a face-up Life card, K.O. up to 1 of your opponent's Characters with a cost of
   //   2 or less. Then, turn all of your Life cards face-down.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'EB03-051', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHasFaceUpLife' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }, { fn: 'turnAllLifeFace', faceUp: false }] } },
 
   // EB03-052 — [Activate: Main] trash this: if Leader [Shirahoshi], add 1 top-deck card to top of Life; then all {Neptunian} Characters +1000 this turn.
   { cardNumber: 'EB03-052', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderName', name: 'Shirahoshi' }], functions: [
@@ -1558,7 +1563,13 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   cards, add up to 1 card from the top of your opponent's Life cards to the owner's hand.[On K.O.] You
   //   may turn 1 card from the top of your Life cards face-up: Play up to 1 Character card with 6000 power
   //   or less from your hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB03-053',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDonControllerLeader', count: 1 }, { fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true, ifGate: [{ kind: 'opponentLife', atLeast: 3 }] }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'turnTopLifeFace', faceUp: true }, { fn: 'playFromHand', filter: { category: 'character', maxPower: 6000 }, ifPrevious: 'previousSelectedAny' }] } },
+    ],
+  },
 
   // EB03-054 — [On Play] trash top Life optional → deck top to Life; [Trigger] trash 1 from hand: play this.
   {

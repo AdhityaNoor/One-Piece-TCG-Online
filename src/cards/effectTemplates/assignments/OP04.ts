@@ -99,7 +99,10 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP04-025', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
   //   or less. Then, set up to 1 of your DON!! cards as active at the end of this turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP04-026', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'restDon', count: 1 }], gate: [{ kind: 'leaderType', type: 'Donquixote Pirates' }], functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true },
+    { fn: 'setActiveControllerDonAtEndOfTurn', maxTargets: 1 },
+  ] } },
 
   // OP04-027 Daddy Masterson — [DON!! x1][End of Your Turn] Set this Character active.
   { cardNumber: 'OP04-027', templateId: 'ability', params: { timing: 'endOfTurn', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'setActiveSelf' }] } },
@@ -143,7 +146,10 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
 
   //   Characters with a cost of 5 or less. Then, set up to 1 of your DON!! cards as active at the end of
   //   this turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP04-033', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Donquixote Pirates' }], functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true },
+    { fn: 'setActiveControllerDonAtEndOfTurn', maxTargets: 1 },
+  ] } },
 
   // OP04-034 — PARTIAL: "active DON!!" uses total field DON count proxy.
   { cardNumber: 'OP04-034', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfDonFieldCount', atLeast: 3 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 3 } }, optional: true }] } },
@@ -247,11 +253,14 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   at the bottom of your deck.
   // NOTE: not yet implemented (needs template).
 
-  // OP04-055 (event) Plague Rounds —
-  //   [Main] You may trash 1 [Ice Oni] from your hand and place 1 Character with a cost of 4 or less at the
-  //   bottom of the owner's deck: Play 1 [Ice Oni] from your trash. [Trigger] Activate this card's [Main]
-  //   effect.
-  // NOTE: not yet implemented (needs template).
+  // OP04-055 — PARTIAL: compound "trash Ice Oni + bottom-deck Character" activation cost is sequenced as mappable steps.
+  {
+    cardNumber: 'OP04-055',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { name: 'Ice Oni' }, optional: true }, { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 4 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, ifPrevious: 'previousMovedAny' }, { fn: 'playFromTrash', filter: { name: 'Ice Oni' }, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { name: 'Ice Oni' }, optional: true }, { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 4 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, ifPrevious: 'previousMovedAny' }, { fn: 'playFromTrash', filter: { name: 'Ice Oni' }, ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
   // OP04-056 Gum-Gum Red Roc — [Main] Place up to 1 Character at bottom of owner's deck. [Trigger] cost ≤4.
   {

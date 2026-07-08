@@ -32,8 +32,10 @@ export interface EffectContext {
   controllerTrashIds(): string[];
   controllerDeckIds(): string[];
   controllerLifeTopBottomIds(): string[];
+  opponentLifeTopIds(): string[];
   controllerOrOpponentLifeTopIds(): string[];
   controllerDeckTopIds(): string[];
+  lifeIds(playerId: string): string[];
   opponentCharacterIds(): string[];
   opponentHandIds(): string[];
   opponentTrashIds(): string[];
@@ -49,6 +51,7 @@ export interface EffectContext {
   // --- instruction set (one per IR op) ---
   /** Draw `n` cards for `playerId` (6-3; empty-deck draw loses, 9-2-1). */
   draw(playerId: string, n: number): void;
+  revealCards(instanceIds: string[]): void;
   /** Register a continuous power modifier (8-1-3-3); condition re-checked on every read. */
   addContinuousPower(spec: {
     appliesToInstanceId: string;
@@ -163,6 +166,10 @@ export interface EffectContext {
   moveToLifeTop(instanceId: string, faceUp?: boolean): void;
   /** Move a Life card to the bottom of its owner's Life cards. */
   moveLifeToBottom(instanceId: string): void;
+  /** Rewrite Life order after a look/reorder effect; optionally move one Life card to the controller's deck top. */
+  reorderLife(playerId: string, lifeOrderIds: string[], deckTopId?: string): void;
+  /** Turn all Life cards for a player face-up/down in place. */
+  turnAllLifeFace(playerId: string, faceUp: boolean): void;
   /** Play the source Character itself from hand into the Character Area for free. */
   playSelf(): void;
   /** Play a Character from the controller's hand into the Character Area for free (3-7), summoning-sick; `rested` plays it rested. Raises the 3-7-6-1 overflow choice if it makes a 6th. */
@@ -183,6 +190,8 @@ export interface EffectContext {
   preventNextRefresh(targetInstanceId: string): void;
   /** Set a card as active — inverse of rest (2-4-3). Handles Leader/Character (orientation) and DON!! (donRested). */
   setActive(targetInstanceId: string): void;
+  /** Schedule a non-blocking delayed effect at an automatic phase boundary. */
+  scheduleDelayedEffect(effect: import('../state/game').DelayedEffectRecord): void;
   /** Return a DON!! card on the field to its owner's DON!! deck. */
   returnDonToDonDeck(donInstanceId: string): void;
   /** Trash the top `n` cards of a player's own deck (self-mill); fewer if the deck is short. */

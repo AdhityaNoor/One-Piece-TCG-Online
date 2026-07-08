@@ -484,9 +484,7 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP01-104', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP01-105 (character) Bao Huang —
-  //   [On Play] Choose 2 cards from your opponent's hand; your opponent reveals those cards.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP01-105', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealOpponentHand', count: 2 }] } },
 
   {
     cardNumber: 'OP01-106',

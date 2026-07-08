@@ -25,6 +25,7 @@ import { createActionLogger } from '../shared/actionLogger';
 import type { CardDefinitionLookup } from '../shared/definitions';
 import { fireEndOfTurn, type EffectTemplateRegistry } from '../../effects';
 import type { PhaseStepResult } from './phaseStepResult';
+import { consumeEndOfTurnDelayedEffects } from './delayedEffects';
 
 export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLookup = {}, registry: EffectTemplateRegistry = {}): PhaseStepResult {
   const endingPlayerId = state.activePlayerId;
@@ -36,7 +37,8 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
   // [End of Your Turn] triggers (10-2-x) fire before "until end of turn" effects
   // expire and before the turn passes, with each of the ending player's cards as source.
   const eot = fireEndOfTurn(state, endingPlayerId, registry, defs, null);
-  const working = eot.state;
+  const delayed = consumeEndOfTurnDelayedEffects(eot.state, endingPlayerId);
+  const working = delayed.state;
 
   const logger = createActionLogger(working, null);
 
@@ -80,5 +82,5 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
     log: [...working.log, ...logger.log],
   };
 
-  return { state: nextState, log: [...eot.log, ...logger.log] };
+  return { state: nextState, log: [...eot.log, ...delayed.log, ...logger.log] };
 }

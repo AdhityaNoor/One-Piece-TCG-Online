@@ -416,6 +416,25 @@ export interface ContinuousEffectRecord {
   usesRemaining?: number;
 }
 
+export type DelayedEffectRecord =
+  | {
+      id: string;
+      kind: 'setActiveControllerDonAtEndOfTurn';
+      sourceInstanceId: string;
+      ownerId: string;
+      triggerPlayerId: string;
+      maxTargets: number;
+    }
+  | {
+      id: string;
+      kind: 'restOpponentDonAtStartOfMain';
+      sourceInstanceId: string;
+      ownerId: string;
+      triggerPlayerId: string;
+      maxTargets: number;
+      triggerTurnNumber: number;
+    };
+
 export interface GameState {
   /** 0 during the 'setup' phase (Section 5 hasn't reached 5-2-1-8 yet); 1 from the moment the first turn begins. */
   turnNumber: number;
@@ -435,6 +454,7 @@ export interface GameState {
   cardsById: Record<string, CardInstance>;
   rng: RngState;
   continuousEffects: ContinuousEffectRecord[];
+  delayedEffects?: DelayedEffectRecord[];
   /** Keyed by `${cardInstanceId}:${effectId}`; cleared on that instance's owner's Refresh Phase. */
   oncePerTurnUsage: Record<string, true>;
   pendingChoices: PendingChoice[];

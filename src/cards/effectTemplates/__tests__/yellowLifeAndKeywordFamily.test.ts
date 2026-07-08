@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { executeAction } from '../../../engine/actions';
+import { runTimings, resumeProgram } from '../../../engine/effects/interpreter';
 import { computeCurrentPower, hasContinuousKeyword } from '../../../engine/rules/shared';
 import { buildBaseRig, makeCharacterDef, makeStageDef, putCharacterInPlay, putDeckCards, putDon, putInHand, putLifeCards, putStageInPlay, nextTestId } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
@@ -69,6 +70,49 @@ describe('semantic family: optional Life payment into battle modifiers', () => {
     expect(paid.state.players.p1.hand.cardIds).toContain(lifeId);
     expect(computeCurrentPower(rig.defs, paid.state, sourceId)).toBe(8000);
     expect(hasContinuousKeyword(rig.defs, paid.state, sourceId, 'banish')).toBe(true);
+  });
+});
+
+describe('semantic family: look Life and reorder', () => {
+  it('reorders all controller Life cards from top to bottom', () => {
+    const source = makeCharacterDef({ cardDefinitionId: 'SYN-LIFE-ORDER', cardNumber: 'SYN-LIFE-ORDER', category: 'character' });
+    const a = makeCharacterDef({ cardDefinitionId: 'SYN-LIFE-A', cardNumber: 'SYN-LIFE-A', name: 'A' });
+    const b = makeCharacterDef({ cardDefinitionId: 'SYN-LIFE-B', cardNumber: 'SYN-LIFE-B', name: 'B' });
+    const c = makeCharacterDef({ cardDefinitionId: 'SYN-LIFE-C', cardNumber: 'SYN-LIFE-C', name: 'C' });
+    const assignment: CardEffectAssignment = { cardNumber: 'SYN-LIFE-ORDER', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'lookLifeAndReorder' }] } };
+    const registry = buildRegistryFromAssignments([assignment]);
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', source));
+    const life = putLifeCards(rig, 'p1', [a, b, c]);
+    rig = life.rig;
+
+    const fired = runTimings(registry['SYN-LIFE-ORDER'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+    const resolved = resumeProgram(registry['SYN-LIFE-ORDER'], fired.state, fired.state.pendingChoices[0], [life.lifeIds[2], life.lifeIds[0], life.lifeIds[1]], rig.defs, null, registry);
+
+    expect(resolved.state.players.p1.lifeArea.cardIds).toEqual([life.lifeIds[2], life.lifeIds[0], life.lifeIds[1]]);
+  });
+
+  it('moves the first selected Life card to deck top and reorders the rest', () => {
+    const source = makeCharacterDef({ cardDefinitionId: 'SYN-LIFE-DECK', cardNumber: 'SYN-LIFE-DECK', category: 'character' });
+    const a = makeCharacterDef({ cardDefinitionId: 'SYN-LIFE-D-A', cardNumber: 'SYN-LIFE-D-A', name: 'A' });
+    const b = makeCharacterDef({ cardDefinitionId: 'SYN-LIFE-D-B', cardNumber: 'SYN-LIFE-D-B', name: 'B' });
+    const c = makeCharacterDef({ cardDefinitionId: 'SYN-LIFE-D-C', cardNumber: 'SYN-LIFE-D-C', name: 'C' });
+    const assignment: CardEffectAssignment = { cardNumber: 'SYN-LIFE-DECK', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'lookLifeAndReorder', moveOneToDeckTop: true }] } };
+    const registry = buildRegistryFromAssignments([assignment]);
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', source));
+    const life = putLifeCards(rig, 'p1', [a, b, c]);
+    rig = life.rig;
+
+    const fired = runTimings(registry['SYN-LIFE-DECK'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+    const resolved = resumeProgram(registry['SYN-LIFE-DECK'], fired.state, fired.state.pendingChoices[0], [life.lifeIds[1], life.lifeIds[2], life.lifeIds[0]], rig.defs, null, registry);
+
+    expect(resolved.state.players.p1.deck.cardIds[0]).toBe(life.lifeIds[1]);
+    expect(resolved.state.players.p1.lifeArea.cardIds).toEqual([life.lifeIds[2], life.lifeIds[0]]);
   });
 });
 

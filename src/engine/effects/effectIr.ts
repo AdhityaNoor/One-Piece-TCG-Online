@@ -30,6 +30,7 @@ export type Selector =
   | { sel: 'ownerLeaderOrCharactersOfVar'; varName: string } // Leader + Characters of the owner of the first id in `varName`
   | { sel: 'battleOpponent' } // the opponent Character the source is currently battling (in currentBattle), if still in play
   | { sel: 'controllerLifeTop' } // the top card of the controller's own Life (for "add 1 from the top of your Life")
+  | { sel: 'opponentLifeTop' } // the top card of the opponent's Life
   | { sel: 'controllerLifeTopBottom' } // top and bottom Life cards, de-duplicated for 1-card Life
   | { sel: 'controllerOrOpponentLifeTop' } // top Life card from either player, de-duplicated only by absent zones
   | { sel: 'controllerDeckTop' }
@@ -134,7 +135,7 @@ export interface EffectOpSequenceGate {
  * resolves its own deck movement on resume.
  */
 export type EffectOp =
-  | ({ op: 'draw'; amount: number } & EffectOpSequenceGate)
+  | ({ op: 'draw'; amount: number; player?: 'controller' | 'opponent' } & EffectOpSequenceGate)
   | ({ op: 'addPower'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition; scale?: PowerScale } & EffectOpSequenceGate)
   // Register an "aura"/anthem power modifier over a dynamic target group (e.g. "your
   // {Supernovas} Leaders and Characters gain +1000"), optionally gated on source state.
@@ -180,6 +181,8 @@ export type EffectOp =
   | ({ op: 'ko'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'rest'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'setActive'; target: Selector } & EffectOpSequenceGate) // set a card as active — the inverse of `rest` (2-4-3 active/rested). Works on Leader/Character (orientation) and DON!! (donRested).
+  | ({ op: 'scheduleSetActiveControllerDonAtEndOfTurn'; maxTargets: number } & EffectOpSequenceGate)
+  | ({ op: 'scheduleRestOpponentDonAtStartOfNextMain'; maxTargets: number } & EffectOpSequenceGate)
   | ({ op: 'returnDonToDonDeck'; target: Selector } & EffectOpSequenceGate) // return DON!! on field to its owner's DON!! deck
   | ({ op: 'preventRefresh'; target: Selector } & EffectOpSequenceGate) // "will not become active in its controller's next Refresh Phase"
   | ({ op: 'returnToHand'; target: Selector } & EffectOpSequenceGate) // bounce a Character to its owner's hand
@@ -187,6 +190,8 @@ export type EffectOp =
   | ({ op: 'moveToLifeTop'; target: Selector; faceUp?: boolean } & EffectOpSequenceGate) // move chosen cards to the top of their owner's Life
   | ({ op: 'moveToLifeBottom'; target: Selector; faceUp?: boolean } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's Life
   | ({ op: 'turnLifeFace'; target: Selector; faceUp: boolean } & EffectOpSequenceGate) // flip chosen Life cards face-up/face-down in place
+  | ({ op: 'turnAllLifeFace'; player: 'controller' | 'opponent'; faceUp: boolean } & EffectOpSequenceGate)
+  | ({ op: 'lookLifeAndReorder'; player: 'controller' | 'opponent'; moveOneToDeckTop?: boolean; prompt: string } & EffectOpSequenceGate)
   | ({ op: 'peekLifeThenPlace'; from: Extract<Selector, { sel: 'controllerOrOpponentLifeTop' }>; prompt: string } & EffectOpSequenceGate) // privately look at a top Life card, then optionally place it at bottom
   | ({ op: 'chooseLifeToHand'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then add it to hand
   | ({ op: 'chooseLifeToTrash'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then trash it
@@ -211,6 +216,7 @@ export type EffectOp =
   | ({ op: 'revealTopDeck'; filter?: SearchFilter } & EffectOpSequenceGate)
   // Reveal the top card of the opponent's deck and record cost-match against __chosenCost.
   | ({ op: 'revealOpponentDeckTop' } & EffectOpSequenceGate)
+  | ({ op: 'revealCards'; target: Selector } & EffectOpSequenceGate)
   // Trash the top `count` cards of the controller's own deck (self-mill).
   | ({ op: 'trashTopDeck'; count: number } & EffectOpSequenceGate)
   // Trash the top `count` Life cards of a player (e.g. "Trash up to 1 of your opponent's Life cards").
@@ -228,6 +234,7 @@ export type NonSuspendingEffectOp = Exclude<
   | { op: 'chooseCost' }
   | { op: 'searchTopDeck' }
   | { op: 'playFromDeck' }
+  | { op: 'lookLifeAndReorder' }
   | { op: 'peekLifeThenPlace' }
   | { op: 'chooseLifeToHand' }
   | { op: 'chooseLifeToTrash' }
@@ -290,6 +297,7 @@ export type AbilityGate =
   | { kind: 'selfDonFieldCount'; atLeast?: number; atMost?: number } // "If you have N or less DON!! cards on your field"
   | { kind: 'selfRestedDonCount'; atLeast?: number; atMost?: number } // "rested DON!! cards" available in cost area and not already attached
   | { kind: 'selfLife'; atLeast?: number; atMost?: number } // "If you have N or less Life cards"
+  | { kind: 'selfHasFaceUpLife' } // "If you have a face-up Life card"
   | { kind: 'opponentLife'; atLeast?: number; atMost?: number } // "If your opponent has N or less Life cards"
   | { kind: 'combinedLifeTotal'; atLeast?: number; atMost?: number } // "you and your opponent have a total of N or less Life cards"
   | { kind: 'selfLifeLessThanOpponent' } // "If you have less Life cards than your opponent"
@@ -313,6 +321,7 @@ export type AbilityGate =
   | { kind: 'selfTrashCount'; atLeast?: number; atMost?: number } // "N or more/less cards in your trash"
   | { kind: 'selfDeckCount'; atLeast?: number; atMost?: number } // "N or less cards in your deck"
   | { kind: 'selfTypedCharacterCount'; typeIncludes: string; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {type} Characters"
+  | { kind: 'selfAnyTypedCharacterCount'; anyOfTypes: string[]; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {A} or {B} type Characters"
   | { kind: 'selfAllCharactersTyped'; typeIncludes: string } // "if the only Characters on your field are {type} type Characters"
   | { kind: 'selfControlsNamedWithPowerAtLeast'; name: string; power: number } // "If you have [X] with N power or more"
   | { kind: 'selfTypedCharacterPowerAtLeast'; typeIncludes: string; power: number } // "If you have a {type} Character with N power or more"

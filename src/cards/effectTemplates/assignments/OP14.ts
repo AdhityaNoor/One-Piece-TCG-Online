@@ -143,7 +143,10 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-031 (character) Nami —
   //   [Blocker][On Play] Rest up to 2 of your opponent's Characters with a cost of 8 or less. Then, set up
   //   to 5 of your DON!! cards as active at the end of this turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP14-031', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 8 } }, optional: true, maxTargets: 2 },
+    { fn: 'setActiveControllerDonAtEndOfTurn', maxTargets: 5 },
+  ] } },
 
   // OP14-032 (character) Humandrill —
   //   [Your Turn] When this Character becomes rested, rest up to 1 of your opponent's Characters with a

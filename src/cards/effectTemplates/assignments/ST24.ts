@@ -24,5 +24,8 @@ export const ST24_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST24-005 (character) X.Drake —
   //   [On Play] If your Leader has the {Supernovas} type, rest up to 1 of your opponent's Characters with a
   //   cost of 5 or less. Then, set up to 1 of your DON!! cards as active at the end of this turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'ST24-005', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Supernovas' }], functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true },
+    { fn: 'setActiveControllerDonAtEndOfTurn', maxTargets: 1 },
+  ] } },
 ];

@@ -348,6 +348,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const life = ctx.state().players[ctx.controllerId].lifeArea.cardIds;
       return life.length > 0 ? [life[0]] : [];
     }
+    case 'opponentLifeTop':
+      return ctx.opponentLifeTopIds();
     case 'battleOpponent': {
       const battle = ctx.state().currentBattle;
       if (!battle) return [];
@@ -442,8 +444,13 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
 function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Record<string, string[]>): OpResult {
   switch (op.op) {
     case 'draw':
-      ctx.draw(ctx.controllerId, op.amount);
+      ctx.draw(op.player === 'opponent' ? ctx.opponentId : ctx.controllerId, op.amount);
       return { selectedIds: [], movedIds: op.amount > 0 ? ['__draw'] : [] };
+    case 'revealCards': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      ctx.revealCards(ids);
+      return { selectedIds: ids, movedIds: ids.length > 0 ? ['__reveal'] : [] };
+    }
     case 'addPower': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
@@ -673,6 +680,35 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       for (const id of ids) ctx.setActive(id);
       return { selectedIds: ids, movedIds: ids };
     }
+    case 'turnAllLifeFace': {
+      const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      const ids = ctx.lifeIds(playerId);
+      ctx.turnAllLifeFace(playerId, op.faceUp);
+      return { selectedIds: ids, movedIds: ids };
+    }
+    case 'scheduleSetActiveControllerDonAtEndOfTurn': {
+      ctx.scheduleDelayedEffect({
+        id: `${ctx.sourceInstanceId}:set-active-don:eot:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
+        kind: 'setActiveControllerDonAtEndOfTurn',
+        sourceInstanceId: ctx.sourceInstanceId,
+        ownerId: ctx.controllerId,
+        triggerPlayerId: ctx.controllerId,
+        maxTargets: op.maxTargets,
+      });
+      return EMPTY_RESULT;
+    }
+    case 'scheduleRestOpponentDonAtStartOfNextMain': {
+      ctx.scheduleDelayedEffect({
+        id: `${ctx.sourceInstanceId}:rest-opponent-don:next-main:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
+        kind: 'restOpponentDonAtStartOfMain',
+        sourceInstanceId: ctx.sourceInstanceId,
+        ownerId: ctx.controllerId,
+        triggerPlayerId: ctx.opponentId,
+        maxTargets: op.maxTargets,
+        triggerTurnNumber: ctx.state().turnNumber + 1,
+      });
+      return EMPTY_RESULT;
+    }
     case 'returnDonToDonDeck': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.returnDonToDonDeck(id);
@@ -886,6 +922,25 @@ function runOpList(
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
         constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: deckIds },
+        sourceInstanceId: ctx.sourceInstanceId,
+        sourceEffectId: 'ir',
+        resumeState: resumeStateForSuspend(coords, i, workingBindings),
+      });
+      return { suspended: true, bindings: workingBindings };
+    }
+    if (op.op === 'lookLifeAndReorder') {
+      const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      const ids = ctx.lifeIds(playerId);
+      if (ids.length === 0 || (op.moveOneToDeckTop === true && ids.length < 1)) {
+        workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
+        continue;
+      }
+      ctx.emitChoice({
+        id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
+        playerId: ctx.controllerId,
+        kind: 'SELECT_CARDS',
+        prompt: op.prompt,
+        constraints: { min: ids.length, max: ids.length, candidateInstanceIds: ids, visibleInstanceIds: ids },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
         resumeState: resumeStateForSuspend(coords, i, workingBindings),
@@ -1239,7 +1294,7 @@ export function resumeProgram(
 
   const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
   const op = suspendedOpAt(ability, rs);
-  if (!op || (op.op !== 'chooseTargets' && op.op !== 'chooseCost' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption' && op.op !== 'trashFromHandByCountVar')) return noop(stateWithoutChoice);
+  if (!op || (op.op !== 'chooseTargets' && op.op !== 'chooseCost' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'lookLifeAndReorder' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption' && op.op !== 'trashFromHandByCountVar')) return noop(stateWithoutChoice);
 
   const preserveBranch = (bindings: Record<string, string[]>): PendingChoice['resumeState'] => ({
     abilityIndex: rs.abilityIndex,
@@ -1316,6 +1371,16 @@ export function resumeProgram(
     ctx.shuffleDeck(ctx.controllerId);
     const afterPlayBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
     return continueAfterResolvedOp(program, ability, rs, afterPlayBindings, ctx, defs, actionId, registry);
+  }
+
+  if (op.op === 'lookLifeAndReorder') {
+    const selection = Array.isArray(response) ? response : [];
+    const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+    const deckTopId = op.moveOneToDeckTop === true ? selection[0] : undefined;
+    const lifeOrder = op.moveOneToDeckTop === true ? selection.slice(1) : selection;
+    ctx.reorderLife(playerId, lifeOrder, deckTopId);
+    const afterLifeBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
+    return continueAfterResolvedOp(program, ability, rs, afterLifeBindings, ctx, defs, actionId, registry);
   }
 
   if (op.op === 'peekLifeThenPlace') {

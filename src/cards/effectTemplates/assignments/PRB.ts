@@ -25,7 +25,7 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   // PRB02-005 (character) Monkey.D.Luffy —
   //   [Your Turn] [On Play] If your Leader is multicolored and your opponent has 7 or less DON!! cards on
   //   their field, your opponent rests 1 of their active DON!! cards at the start of their next Main Phase.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'PRB02-005', templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, gate: [{ kind: 'leaderMulticolor' }, { kind: 'opponentDonFieldCount', atMost: 7 }], functions: [{ fn: 'restOpponentDonAtStartOfNextMain' }] } },
 
   // PRB02-006 (character) Roronoa Zoro —
   //   [Opponent's Turn] If this Character would be rested by your opponent's Character's effect, you may

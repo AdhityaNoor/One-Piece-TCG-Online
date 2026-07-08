@@ -95,7 +95,13 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-018 (event) KEEP OUT —
   //   [Counter] Up to 1 of your {Revolutionary Army} type Characters gains +2000 power until the end of
   //   your next turn. [Trigger] Activate this card's [Counter] effect.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP07-018',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Revolutionary Army' } }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Revolutionary Army' } }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true }] } },
+    ],
+  },
 
   // OP07-019 — (Leader) [On Your Opponent's Attack] [Once Per Turn] rest 1 DON!!: rest up to 1 opp Leader/Character.
   { cardNumber: 'OP07-019', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent' }, optional: true }] } },
@@ -254,8 +260,7 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-049 — PARTIAL: played Character should enter rested (playFromHand has no rested flag).
   { cardNumber: 'OP07-049', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Edward Weevil', maxCost: 4 } }] } },
 
-  // OP07-050 — PARTIAL: {Kuja Pirates} half of the OR gate not modeled (Amazon Lily typed count only).
-  { cardNumber: 'OP07-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Amazon Lily', atLeast: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  { cardNumber: 'OP07-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], atLeast: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
   // OP07-051 — PARTIAL: place cost≤1 Character at bottom of deck deferred; preventAttack on opp char other than Luffy mapped.
   {
@@ -267,10 +272,7 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP07-052 (character) Boa Marigold —
-  //   [On Play] If you have 2 or more {Amazon Lily} or {Kuja Pirates} type Characters on your field, place
-  //   up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP07-052', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], atLeast: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
   // OP07-053 (character) Portgas.D.Ace —
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
@@ -411,7 +413,13 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   from the top of your deck; reveal up to 1 {Animal Kingdom Pirates} or {Big Mom Pirates} type card and
   //   add it to your hand. Then, place the rest at the bottom of your deck in any order. [Trigger] Activate
   //   this card's [Main] effect.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP07-077',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }, { kind: 'leaderType', type: 'Big Mom Pirates' }] }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Animal Kingdom Pirates' }, { typeIncludes: 'Big Mom Pirates' }] }, remainder: 'bottom' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }, { kind: 'leaderType', type: 'Big Mom Pirates' }] }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Animal Kingdom Pirates' }, { typeIncludes: 'Big Mom Pirates' }] }, remainder: 'bottom' }] } },
+    ],
+  },
 
   // OP07-078 (event) Megaton Nine-Tails Rush —
   //   [Main] If the number of DON!! cards on your field is equal to or less than the number on your
@@ -465,10 +473,7 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-092 — [On Play] place 2 CP from trash at bottom: K.O. up to 1 opp Character cost<=1.
   { cardNumber: 'OP07-092', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'CP' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 2 }, { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
 
-  // OP07-090 (character) Morgans —
-  //   [On Play] Your opponent trashes 1 card from their hand and reveals their hand. Then, your opponent
-  //   draws 1 card.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP07-090', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromOpponentHandChosenByOpponent', count: 1 }, { fn: 'revealOpponentHand' }, { fn: 'draw', amount: 1, player: 'opponent' }] } },
 
   // OP07-091 — PARTIAL: +1000 per 3 cards placed (dynamic scaling) deferred; mapped flat +1000 after trash reorder.
   { cardNumber: 'OP07-091', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
