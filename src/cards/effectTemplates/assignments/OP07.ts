@@ -248,11 +248,15 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-050 — PARTIAL: {Kuja Pirates} half of the OR gate not modeled (Amazon Lily typed count only).
   { cardNumber: 'OP07-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Amazon Lily', atLeast: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
-  // OP07-051 (character) Boa Hancock —
-  //   [On Play] Up to 1 of your opponent's Characters other than [Monkey.D.Luffy] cannot attack until the
-  //   end of your opponent's next turn. Then, place up to 1 Character with a cost of 1 or less at the
-  //   bottom of the owner's deck.
-  // NOTE: not yet implemented (needs opponent Character target filters with negative-name exclusion, e.g. "other than [Monkey.D.Luffy]").
+  // OP07-051 — PARTIAL: place cost≤1 Character at bottom of deck deferred; preventAttack on opp char other than Luffy mapped.
+  {
+    cardNumber: 'OP07-051',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { excludeName: 'Monkey.D.Luffy' } }, duration: 'endOfOpponentsTurn', optional: true }],
+    },
+  },
 
   // OP07-052 (character) Boa Marigold —
   //   [On Play] If you have 2 or more {Amazon Lily} or {Kuja Pirates} type Characters on your field, place

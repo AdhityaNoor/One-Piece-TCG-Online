@@ -19,6 +19,7 @@ export type Selector =
   | { sel: 'controllerLeader' }
   | ({ sel: 'controllerCharacters' } & CharacterMoveFilter)
   | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; name?: string; excludeSelf?: boolean; minPower?: number }
+  | { sel: 'opponentLeader'; rested?: boolean }
   | { sel: 'controllerLeaderOrStage'; typeIncludes?: string } // controller's Leader + Stage cards (for 'rest 1 of your {X} Leader or Stage' costs)
   | { sel: 'opponentLeaderOrCharacters' }
   | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
@@ -153,7 +154,7 @@ export type EffectOp =
   | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
   | ({ op: 'suppressBlockerActivation'; target: Selector; duration: IrDuration } & EffectOpSequenceGate)
   // Prevent the target Leader/Character from declaring an attack (7-1-1-1) while active.
-  | ({ op: 'preventAttack'; target: Selector; duration: IrDuration } & EffectOpSequenceGate)
+  | ({ op: 'preventAttack'; target: Selector; duration: IrDuration; forbiddenTarget?: 'leader'; whileSummoningSick?: boolean } & EffectOpSequenceGate)
   // Negate all (or selected timings of) abilities on the target Leader/Character/Stage.
   | ({ op: 'negateEffect'; target: Selector; duration: IrDuration; negatedTimings?: IrTiming[] } & EffectOpSequenceGate)
   // Negate abilities on all cards controlled by a player (e.g. "your [On Play] effects are negated").
@@ -162,7 +163,7 @@ export type EffectOp =
   // Reassign up to N DON!! cards already given on the controller's field onto a chosen Character.
   | ({ op: 'giveGivenDon'; donTarget: Selector; characterTarget: Selector } & EffectOpSequenceGate)
   // Attach DON!! from a player's cost area (controller, opponent, or owner of a prior chosen card).
-  | ({ op: 'giveDonFromCostArea'; target: Selector; count: number; donOwner: 'controller' | 'opponent' | { fromVar: string }; restedOnly?: boolean } & EffectOpSequenceGate)
+  | ({ op: 'giveDonFromCostArea'; target: Selector; count: number; donOwner: 'controller' | 'opponent' | { fromVar: string }; restedOnly?: boolean; activeOnly?: boolean } & EffectOpSequenceGate)
   | ({ op: 'ko'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'rest'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'setActive'; target: Selector } & EffectOpSequenceGate) // set a card as active — the inverse of `rest` (2-4-3 active/rested). Works on Leader/Character (orientation) and DON!! (donRested).

@@ -19,10 +19,18 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Whitebeard Pirates', excludeSelfName: true } }] },
   },
 
-  // OP03-004 (character) Curiel —
-  //   This Character cannot attack a Leader on the turn in which it is played.[DON!! x1] This Character
-  //   gains [Rush].(This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs attack restrictions that only bar attacks into Leaders, not Characters).
+  // OP03-004 — Cannot attack Leader on play turn; [DON!! x1] gains [Rush].
+  {
+    cardNumber: 'OP03-004',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [
+        { fn: 'preventAttackLeaderWhileSummoningSick', duration: 'permanent' },
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 1 } },
+      ],
+    },
+  },
 
   // OP03-005 — [Activate: Main] [Once Per Turn] this +2000 this turn. PARTIAL: end-of-turn trash deferred.
   { cardNumber: 'OP03-005', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },

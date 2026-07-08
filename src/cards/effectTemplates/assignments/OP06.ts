@@ -125,11 +125,23 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-022 — (Leader) [Activate: Main] [Once Per Turn] If opponent has 3 or less Life, give up to 2 rested DON!! to 1 of your Characters.
   { cardNumber: 'OP06-022', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'giveDon', count: 2 }] } },
 
-  // OP06-023 (character) Arlong —
-  //   [On Play] You may trash 1 card from your hand: Up to 1 of your opponent's rested Leader cannot attack
-  //   until the end of your opponent's next turn. [Trigger] Rest up to 1 of your opponent's Characters with
-  //   a cost of 4 or less.
-  // NOTE: not yet implemented (needs opponent-Leader-only preventAttack targeting with a rested-state filter).
+  // OP06-023 — [On Play] optional trash 1: rested opp Leader cannot attack until end of opp next turn. [Trigger] rest opp cost≤4.
+  {
+    cardNumber: 'OP06-023',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            { fn: 'preventAttack', target: { group: 'leader', player: 'opponent', filter: { rested: true } }, duration: 'endOfOpponentsTurn', optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+    ],
+  },
 
   // OP06-024 — [On Play] If Leader {New Fish-Man Pirates}, play up to 1 {Fish-Man} cost<=4 from hand. Then add 1 top Life to hand.
   { cardNumber: 'OP06-024', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'New Fish-Man Pirates' }], functions: [

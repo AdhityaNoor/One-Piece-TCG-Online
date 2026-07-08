@@ -16,7 +16,7 @@ import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
-import { hasContinuousKeyword, cannotAttack } from '../shared/power';
+import { hasContinuousKeyword, cannotAttack, isAttackTargetForbidden } from '../shared/power';
 import { fireWhenAttacking, fireRestTransitions, type EffectTemplateRegistry } from '../../effects';
 
 export function validateDeclareAttack(state: GameState, action: DeclareAttackAction, defs: CardDefinitionLookup): ValidationResult {
@@ -43,6 +43,8 @@ export function validateDeclareAttack(state: GameState, action: DeclareAttackAct
     reasons.push(`'${action.attackerInstanceId}' cannot attack the turn it was played (3-7-4) — it has no [Rush].`);
   } else if (cannotAttack(state, action.attackerInstanceId)) {
     reasons.push(`'${action.attackerInstanceId}' cannot attack — a card effect is preventing it from attacking.`);
+  } else if (isAttackTargetForbidden(state, action.attackerInstanceId, action.targetInstanceId)) {
+    reasons.push(`'${action.attackerInstanceId}' cannot attack '${action.targetInstanceId}' — a card effect is restricting that target.`);
   }
 
   let opponentId: string | null = null;

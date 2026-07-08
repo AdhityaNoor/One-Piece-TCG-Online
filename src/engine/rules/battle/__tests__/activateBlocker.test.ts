@@ -118,6 +118,31 @@ describe('validateActivateBlocker', () => {
     expect(validateActivateBlocker(battling, activateBlocker('p2', smallBlockerId), rig.defs).legal).toBe(true);
     expect(validateActivateBlocker(battling, activateBlocker('p2', largeBlockerId), rig.defs).legal).toBe(false);
   });
+
+  it('rejects [Blocker] activation on a Character with a direct suppression record', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    let rig = base;
+    let blockerId: string;
+    ({ rig, instanceId: blockerId } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ hasBlocker: true, basePower: 3000 })));
+    const battling = {
+      ...rig.state,
+      currentBattle: battleAt('block'),
+      continuousEffects: [
+        {
+          id: 'ce-suppress-blocker',
+          sourceInstanceId: 'source-x',
+          ownerId: 'p1',
+          duration: 'duringThisTurn' as const,
+          description: 'cannot activate Blocker',
+          blockerRestriction: { appliesToBlockerInstanceId: blockerId },
+        },
+      ],
+    };
+
+    const result = validateActivateBlocker(battling, activateBlocker('p2', blockerId), rig.defs);
+    expect(result.legal).toBe(false);
+    expect(result.reasons.join(' ')).toContain('blocker restriction');
+  });
 });
 
 describe('executeActivateBlocker', () => {

@@ -221,6 +221,10 @@ export interface ContinuousBlockerRestriction {
 /** Prevents the target Leader/Character from declaring an attack (7-1-1-1) while this record is active. */
 export interface ContinuousAttackRestriction {
   appliesToInstanceId: string;
+  /** Omitted = cannot declare any attack. 'leader' = may attack Characters but not the opponent Leader. */
+  forbiddenTarget?: 'leader';
+  /** With `forbiddenTarget`, only while the attacker still has summoning sickness. */
+  whileSummoningSick?: boolean;
 }
 
 /**

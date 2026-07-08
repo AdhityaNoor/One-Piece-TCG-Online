@@ -628,14 +628,28 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
-  preventAttack(spec: { appliesToInstanceId: string; duration: ContinuousEffectDuration; description?: string }): void {
+  preventAttack(spec: {
+    appliesToInstanceId: string;
+    duration: ContinuousEffectDuration;
+    forbiddenTarget?: 'leader';
+    whileSummoningSick?: boolean;
+    description?: string;
+  }): void {
     const record: ContinuousEffectRecord = {
       id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
       sourceInstanceId: this.sourceInstanceId,
       ownerId: this.controllerId,
       duration: spec.duration,
-      description: spec.description ?? 'cannot attack',
-      attackRestriction: { appliesToInstanceId: spec.appliesToInstanceId },
+      description:
+        spec.description ??
+        (spec.forbiddenTarget === 'leader'
+          ? 'cannot attack the opponent\'s Leader'
+          : 'cannot attack'),
+      attackRestriction: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        ...(spec.forbiddenTarget ? { forbiddenTarget: spec.forbiddenTarget } : {}),
+        ...(spec.whileSummoningSick ? { whileSummoningSick: true } : {}),
+      },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
     this.logger.push({
@@ -705,12 +719,18 @@ export class EffectContextImpl implements EffectContext {
   }
 
   giveDon(targetInstanceId: string, count: number): void {
-    this.giveDonFromCostArea(targetInstanceId, count, this.controllerId, true);
+    this.giveDonFromCostArea(targetInstanceId, count, this.controllerId, { restedOnly: true });
   }
 
-  giveDonFromCostArea(targetInstanceId: string, count: number, donOwnerId: string, restedOnly: boolean): void {
+  /** Returns how many DON!! cards were attached (0 when none available). */
+  giveDonFromCostArea(
+    targetInstanceId: string,
+    count: number,
+    donOwnerId: string,
+    filter: { restedOnly?: boolean; activeOnly?: boolean } = { restedOnly: true },
+  ): number {
     const player = this.working.players[donOwnerId];
-    if (!player) return;
+    if (!player) return 0;
     const attached = new Set<string>();
     for (const id of Object.keys(this.working.cardsById)) {
       for (const donId of this.working.cardsById[id].donAttached) attached.add(donId);
@@ -719,14 +739,16 @@ export class EffectContextImpl implements EffectContext {
       if (attached.has(id)) return false;
       const don = this.working.cardsById[id];
       if (!don) return false;
-      return restedOnly ? don.donRested === true : true;
+      if (filter.activeOnly) return don.donRested === false;
+      if (filter.restedOnly) return don.donRested === true;
+      return true;
     });
     const toGive = available.slice(0, Math.max(0, count));
-    if (toGive.length === 0) return;
+    if (toGive.length === 0) return 0;
 
     const cardsById = { ...this.working.cardsById };
     const target = cardsById[targetInstanceId];
-    if (!target) return;
+    if (!target) return 0;
     cardsById[targetInstanceId] = { ...target, donAttached: [...target.donAttached, ...toGive] };
     this.working = { ...this.working, cardsById };
 
@@ -734,10 +756,11 @@ export class EffectContextImpl implements EffectContext {
       actorPlayerId: this.controllerId,
       type: 'DON_GIVEN',
       message: `gave ${toGive.length} DON!! from ${donOwnerId}'s cost area to ${targetInstanceId} (+${toGive.length * 1000} power, 6-5-5).`,
-      data: { count: toGive.length, targetInstanceId, donInstanceIds: toGive, donOwnerId, restedOnly },
+      data: { count: toGive.length, targetInstanceId, donInstanceIds: toGive, donOwnerId, ...filter },
       relatedCardInstanceIds: [targetInstanceId, ...toGive],
       visibility: 'public',
     });
+    return toGive.length;
   }
 
   /** Reassign one DON!! already given on the field onto another Leader/Character/Stage. */

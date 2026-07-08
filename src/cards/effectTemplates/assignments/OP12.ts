@@ -46,24 +46,72 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
 
-  // OP12-016 (event) To Never Doubt--That Is Power! —
-  //   [Main] You may give 2 active DON!! cards to 1 of your [Silvers Rayleigh]: Your opponent cannot
-  //   activate [Blocker] when the card given these DON!! cards attacks during this turn.[Counter] Up to 1
-  //   of your Characters or [Silvers Rayleigh] gains +2000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // OP12-016 — [Main] optional give 2 active DON to [Rayleigh] → opp can't block when it attacks. [Counter] +2000 battle.
+  {
+    cardNumber: 'OP12-016',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [
+            { fn: 'giveDon', count: 2, targetName: 'Silvers Rayleigh', activeDonOnly: true, optional: true },
+            { fn: 'preventBlockersOnPreviousTarget', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [
+            { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Silvers Rayleigh' } }, amount: 2000, duration: 'duringThisBattle', optional: true },
+            { fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { excludeSelf: true } }, amount: 2000, duration: 'duringThisBattle', optional: true },
+          ],
+        },
+      },
+    ],
+  },
 
-  // OP12-017 (event) Color of Observation Haki —
-  //   [Main] You may give 1 active DON!! card to 1 of your [Silvers Rayleigh]: Look at 4 cards from the top
-  //   of your deck; reveal up to 1 red Event or up to 1 Character card with a cost of 3 or more and add it
-  //   to your hand. Then, place the rest at the bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP12-017 — PARTIAL: deck search after active-DON give mapped; remainder ordering deferred.
+  {
+    cardNumber: 'OP12-017',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      functions: [
+        { fn: 'giveDon', count: 1, targetName: 'Silvers Rayleigh', activeDonOnly: true, optional: true },
+        { fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ category: 'event', color: 'red' }, { category: 'character', minCost: 3 }] }, remainder: 'bottom', ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
-
-  // OP12-019 (event) Color of Arms Haki —
-  //   [Main] You may give 1 active DON!! card to 1 of your [Silvers Rayleigh]: Up to 1 of your Leader or
-  //   Character cards gains +1000 power during this turn.[Counter] Up to 1 of your Characters or [Silvers
-  //   Rayleigh] gains +2000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // OP12-019 — [Main] optional give 1 active DON to [Rayleigh] → +1000 this turn. [Counter] +2000 battle.
+  {
+    cardNumber: 'OP12-019',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [
+            { fn: 'giveDon', count: 1, targetName: 'Silvers Rayleigh', activeDonOnly: true, optional: true },
+            { fn: 'addPower', target: { ref: 'previous' }, amount: 1000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [
+            { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Silvers Rayleigh' } }, amount: 2000, duration: 'duringThisBattle', optional: true },
+            { fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { excludeSelf: true } }, amount: 2000, duration: 'duringThisBattle', optional: true },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP12-020 (leader) Roronoa Zoro —
   //   [DON!! x3] [Activate: Main] [Once Per Turn] If this Leader battles your opponent's Character during

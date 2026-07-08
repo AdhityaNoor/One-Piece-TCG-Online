@@ -271,6 +271,12 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     }
     case 'opponentLeaderOrCharacters':
       return [ctx.state().players[ctx.opponentId].leaderInstanceId, ...ctx.opponentCharacterIds()];
+    case 'opponentLeader': {
+      const leaderId = ctx.state().players[ctx.opponentId].leaderInstanceId;
+      const leader = ctx.state().cardsById[leaderId];
+      if (sel.rested !== undefined && (leader?.orientation === 'rested') !== sel.rested) return [];
+      return [leaderId];
+    }
     case 'controllerLeaderOrStage': {
       const p = ctx.state().players[ctx.controllerId];
       let ids = [p.leaderInstanceId, ...p.stageArea.cardIds];
@@ -494,7 +500,14 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     }
     case 'preventAttack': {
       const ids = resolveSelector(op.target, ctx, bindings);
-      for (const id of ids) ctx.preventAttack({ appliesToInstanceId: id, duration: op.duration });
+      for (const id of ids) {
+        ctx.preventAttack({
+          appliesToInstanceId: id,
+          duration: op.duration,
+          ...(op.forbiddenTarget ? { forbiddenTarget: op.forbiddenTarget } : {}),
+          ...(op.whileSummoningSick ? { whileSummoningSick: true } : {}),
+        });
+      }
       return { selectedIds: ids, movedIds: [] };
     }
     case 'negateEffect': {
@@ -536,8 +549,15 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
         const refId = bindings[op.donOwner.fromVar]?.[0];
         donOwnerId = refId ? (ctx.state().cardsById[refId]?.ownerId ?? ctx.controllerId) : ctx.controllerId;
       }
-      for (const id of ids) ctx.giveDonFromCostArea(id, op.count, donOwnerId, op.restedOnly === true);
-      return { selectedIds: ids, movedIds: ids };
+      const moved: string[] = [];
+      for (const id of ids) {
+        const attached = ctx.giveDonFromCostArea(id, op.count, donOwnerId, {
+          ...(op.restedOnly === true ? { restedOnly: true } : {}),
+          ...(op.activeOnly === true ? { activeOnly: true } : {}),
+        });
+        if (attached > 0) moved.push(id);
+      }
+      return { selectedIds: ids, movedIds: moved };
     }
     case 'ko': {
       const ids = resolveSelector(op.target, ctx, bindings);

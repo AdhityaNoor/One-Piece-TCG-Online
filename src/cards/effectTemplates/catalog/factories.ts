@@ -44,6 +44,12 @@ function selectorFromTarget(target: TargetSpec): Selector {
   }
 
   if (target.group === 'leader' && target.player === 'controller') return { sel: 'controllerLeader' };
+  if (target.group === 'leader' && target.player === 'opponent') {
+    return {
+      sel: 'opponentLeader',
+      ...(target.filter?.rested !== undefined ? { rested: target.filter.rested } : {}),
+    };
+  }
   if (target.group === 'leaderOrCharacters' && target.player === 'controller') return { sel: 'var', name: 't' };
   if (target.group === 'leaderOrCharacters' && target.player === 'opponent') return { sel: 'var', name: 't' };
   if (target.group === 'characters') return { sel: 'var', name: 't' };
@@ -216,6 +222,25 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'addDonFromDeck', count: f.count, rested: f.rested }];
     case 'giveDon': {
       const optional = f.optional ?? false;
+      if (f.targetName !== undefined) {
+        return [
+          {
+            op: 'chooseTargets',
+            var: 't',
+            from: { sel: 'controllerLeaderOrCharacters', name: f.targetName },
+            min: optional ? 0 : 1,
+            max: 1,
+            prompt: `Give DON!! to your [${f.targetName}].`,
+          },
+          {
+            op: 'giveDonFromCostArea',
+            target: { sel: 'var', name: 't' },
+            count: f.count,
+            donOwner: 'controller',
+            ...(f.activeDonOnly ? { activeOnly: true } : { restedOnly: true }),
+          },
+        ];
+      }
       const from = f.charactersOnly
         ? ({ sel: 'controllerCharacters' as const, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}) })
         : ({ sel: 'controllerLeaderOrCharacters' as const, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}) });
@@ -231,6 +256,10 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'giveDon', target: { sel: 'var', name: 't' }, count: f.count },
       ];
     }
+    case 'preventBlockersOnPreviousTarget':
+      return [{ op: 'preventBlockers', target: { sel: 'var', name: 't' }, duration: f.duration, ifPrevious: 'previousMovedAny' }];
+    case 'preventAttackLeaderWhileSummoningSick':
+      return [{ op: 'preventAttack', target: { sel: 'self' }, duration: f.duration, forbiddenTarget: 'leader', whileSummoningSick: true }];
     case 'giveGivenDon': {
       const optional = f.optional ?? true;
       const count = f.count ?? 1;

@@ -116,6 +116,12 @@ export interface EffectContext {
     blockerPowerAtLeast?: number;
     description?: string;
   }): void;
+  /** Prevent the target Character from activating [Blocker] for the record duration. */
+  suppressBlockerActivation(spec: {
+    appliesToBlockerInstanceId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void;
   /** Prevent the target Leader/Character from declaring an attack (7-1-1-1) for the given duration. */
   preventAttack(spec: {
     appliesToInstanceId: string;

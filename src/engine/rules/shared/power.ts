@@ -315,7 +315,24 @@ export function isKoImmune(
  * from the innate summoning-sickness check (3-7-4), which declareAttack.ts checks separately.
  */
 export function cannotAttack(state: GameState, instanceId: string): boolean {
-  return state.continuousEffects.some((record) => record.attackRestriction?.appliesToInstanceId === instanceId);
+  return state.continuousEffects.some((record) => {
+    const r = record.attackRestriction;
+    return r?.appliesToInstanceId === instanceId && r.forbiddenTarget === undefined;
+  });
+}
+
+/** Whether `attackerId` is forbidden from attacking `targetId` due to a partial attack restriction. */
+export function isAttackTargetForbidden(state: GameState, attackerId: string, targetId: string): boolean {
+  const target = state.cardsById[targetId];
+  const attacker = state.cardsById[attackerId];
+  return state.continuousEffects.some((record) => {
+    const r = record.attackRestriction;
+    if (!r || r.appliesToInstanceId !== attackerId || r.forbiddenTarget === undefined) return false;
+    if (r.forbiddenTarget === 'leader' && target?.currentZone === 'leaderArea') {
+      return !r.whileSummoningSick || attacker?.summoningSick === true;
+    }
+    return false;
+  });
 }
 
 /** IDs of one-shot in-hand play discounts that apply to `handInstanceId` right now. */

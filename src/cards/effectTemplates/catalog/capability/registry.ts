@@ -233,14 +233,28 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   preventBlockers: {
     id: 'preventBlockers',
-    summary: 'Opponent cannot activate [Blocker] (optionally only blockers of >= a given power) for the duration.',
+    summary: 'Opponent cannot activate [Blocker] while a chosen attacker attacks (or during this battle for self).',
     params: [
       { name: 'duration', type: 'IrDuration', required: true },
       { name: 'target', type: "'self' | 'chosenControllerLeaderOrCharacter'", required: false },
+      { name: 'filter', type: '{ typeIncludes?: string; name?: string; minPower?: number }', required: false },
       { name: 'blockerPowerAtLeast', type: 'number', required: false },
+      { name: 'powerBonus', type: 'number', required: false, note: 'with chosen target: grant +N power for the same duration before registering blocker suppression' },
     ],
-    covers: ['your opponent cannot activate [Blocker] during this battle'],
-    examples: [{ cardNumber: 'OP05-016', snippet: "{ fn: 'preventBlockers', duration: 'duringThisBattle', target: 'self' }" }],
+    covers: ['your opponent cannot activate [Blocker] during this battle', 'if the selected card attacks during this turn, your opponent cannot activate [Blocker]'],
+    examples: [{ cardNumber: 'OP07-057', snippet: "{ fn: 'preventBlockers', duration: 'duringThisTurn', target: 'chosenControllerLeaderOrCharacter', filter: { typeIncludes: 'The Seven Warlords of the Sea' }, powerBonus: 2000 }" }],
+  },
+  suppressBlockerOnTarget: {
+    id: 'suppressBlockerOnTarget',
+    summary: 'Chosen Character cannot activate [Blocker] for the duration (not tied to a specific attacker).',
+    params: [
+      { name: 'target', type: 'TargetSpec', required: true },
+      { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'optional', type: 'boolean', required: false },
+      { name: 'maxTargets', type: 'number', required: false },
+    ],
+    covers: ['Up to 1 of your opponent\'s Characters with a base cost of {N} or less cannot activate [Blocker] during this turn'],
+    examples: [{ cardNumber: 'OP12-051', snippet: "{ fn: 'suppressBlockerOnTarget', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 4 } }, duration: 'duringThisTurn', optional: true }" }],
   },
   addPower: {
     id: 'addPower',
