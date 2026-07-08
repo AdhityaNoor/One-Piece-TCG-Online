@@ -116,10 +116,8 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   // P-085 — [On Play] if Leader {Supernovas} and self Life <= opp Life, add up to 1 opp Character cost<=4 to top/bottom of owner's Life face-up.
   { cardNumber: 'P-085', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Supernovas' }, { kind: 'selfLifeLessThanOpponent' }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] } },
 
-  // P-088 (character) Trafalgar Law —
-  //   [Trigger] If your Leader has the {Supernovas} type and you and your opponent have a total of 5 or
-  //   less Life cards, play this card.
-  // NOTE: not yet implemented (needs combined-Life gate).
+  // P-088 — [Trigger] if Leader {Supernovas} and combined Life ≤5, play this card.
+  { cardNumber: 'P-088', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Supernovas' }, { kind: 'combinedLifeTotal', atMost: 5 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
   // P-105 — [On Play] add 1 top/bottom Life to hand → give up to 1 rested DON!! to Leader/1 Char. PARTIAL: static [Blocker]/+4 cost deferred.
   { cardNumber: 'P-105', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' }] } },

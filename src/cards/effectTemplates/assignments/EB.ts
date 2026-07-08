@@ -1072,11 +1072,22 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   opponent's next End Phase.
   // NOTE: not yet implemented (needs template).
 
-  // EB03-018 (character) Tashigi —
-  //   [Opponent's Turn] This Character cannot be K.O.'d by your opponent's effects and gains [Blocker].[End
-  //   of Your Turn] You may rest 1 of your DON!! cards and trash 1 card from your hand: Set this Character
-  //   as active.
-  // NOTE: not yet implemented (needs template).
+  // EB03-018 — [Opponent's Turn] K.O. immune to opp effects + [Blocker]. PARTIAL: optional rest DON + trash hand to set active on end of turn deferred.
+  {
+    cardNumber: 'EB03-018',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [
+            { fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { turn: 'opponent' } },
+            { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { turn: 'opponent' } },
+          ],
+        },
+      },
+    ],
+  },
 
   // EB03-020 (event) There You Are, Sore Loser! —
   //   [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if
@@ -1100,11 +1111,14 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   hand.
   // NOTE: not yet implemented (needs template).
 
-  // EB04-055 (character) Bartholomew Kuma —
-  //   [On K.O.] Play up to 1 {Revolutionary Army} type Character card with a cost of 4 or less from your
-  //   hand. [Trigger] If your Leader has the {Revolutionary Army} type and you and your opponent have a
-  //   total of 5 or less Life cards, play this card.
-  // NOTE: not yet implemented (needs template).
+  // EB04-055 — [On K.O.] play Rev Army cost≤4 from hand. [Trigger] if Leader {Revolutionary Army} and combined Life ≤5, play this card.
+  {
+    cardNumber: 'EB04-055',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Revolutionary Army', maxCost: 4 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }, { kind: 'combinedLifeTotal', atMost: 5 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   // EB04-056 — if [Jewelry Bonney] and 0 Life, this Character gains [Blocker].
   {
@@ -1516,12 +1530,20 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB03-059 (character) S-Snake —
-  //   [On Play] If your Leader has the {Egghead} type and you have 2 or more Life cards, add up to 1
-  //   Character card with a [Trigger] from your hand to the top of your Life cards face-up. [Trigger] Up to
-  //   1 of your opponent's Characters with a cost of 6 or less other than [Monkey.D.Luffy] cannot attack
-  //   during this turn.
-  // NOTE: not yet implemented (needs opponent Character target filters with negative-name exclusion, e.g. "other than [Monkey.D.Luffy]").
+  // EB03-059 — PARTIAL: on-play add Character with [Trigger] from hand to Life deferred; trigger preventAttack mapped.
+  {
+    cardNumber: 'EB03-059',
+    templateId: 'ability',
+    params: {
+      timing: 'lifeTrigger',
+      functions: [{
+        fn: 'preventAttack',
+        target: { group: 'characters', player: 'opponent', filter: { maxCost: 6, excludeName: 'Monkey.D.Luffy' } },
+        duration: 'duringThisTurn',
+        optional: true,
+      }],
+    },
+  },
 
   // EB03-060 — (Event) [Main] If Leader [Nami], look 4, reveal up to 1 cost 2-8, add to hand, rest to bottom. [Trigger] Activate [Main].
   {

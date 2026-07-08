@@ -208,10 +208,13 @@ export interface ContinuousCostModifier {
   sourceCondition?: SourceStateCondition;
 }
 
-/** Prevents some or all [Blocker] activations while a specific attacker is attacking. */
+/** Prevents some or all [Blocker] activations — either while a specific attacker attacks, or on one Character globally. */
 export interface ContinuousBlockerRestriction {
-  appliesToAttackerInstanceId: string;
-  /** Omitted for "cannot activate [Blocker]" with no blocker filter. */
+  /** While this Leader/Character is attacking, restrict opponent [Blocker] activations. */
+  appliesToAttackerInstanceId?: string;
+  /** This Character cannot activate [Blocker] for the record duration (any battle). */
+  appliesToBlockerInstanceId?: string;
+  /** Omitted for "cannot activate [Blocker]" with no blocker filter (attacker-scoped only). */
   blockerPowerAtLeast?: number;
 }
 
@@ -246,8 +249,13 @@ export interface ContinuousKeywordModifier {
  * attempt). `scope` distinguishes "cannot be K.O.'d in battle" (7-1-4-2 only) from
  * "cannot be K.O.'d" by any source (battle or card effect).
  */
+export type KoImmunityAuraGroup = PowerAuraGroup & { excludeSource?: true };
+
 export interface ContinuousKoImmunityModifier {
-  appliesToInstanceId: string;
+  /** Single fixed target. Exactly one of appliesToInstanceId / appliesToGroup is set. */
+  appliesToInstanceId?: string;
+  /** Dynamic aura target set, resolved at read time (e.g. "your {Type} Characters with cost ≤N"). */
+  appliesToGroup?: KoImmunityAuraGroup;
   scope: 'battle' | 'effect' | 'any';
   /**
    * Restrict a battle immunity to K.O.s dealt by an attacker of this category
@@ -256,6 +264,17 @@ export interface ContinuousKoImmunityModifier {
   attackerCategory?: 'leader' | 'character';
   /** Omitted when the immunity is unconditional. */
   condition?: ContinuousPowerCondition;
+  /** Gate evaluated against the SOURCE card (e.g. "If this Character is active/rested"). */
+  sourceCondition?: SourceStateCondition;
+  /**
+   * Effect K.O. only: restrict to K.O.s caused by a card controlled by this player
+   * relative to the modifier owner ("by your opponent's effects" → 'opponent').
+   */
+  effectSourceController?: 'opponent' | 'controller';
+  /** Effect K.O. only: the K.O.-ing card must have printed base power at most this value. */
+  effectSourceMaxBasePower?: number;
+  /** Effect K.O. only: the K.O.-ing card must be of this category. */
+  effectSourceCategory?: 'leader' | 'character';
 }
 
 /** Hand filter for a K.O. replacement that trashes from hand. */

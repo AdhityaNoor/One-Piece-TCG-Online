@@ -199,10 +199,19 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   //   opponent's effect, you may rest this Character and trash 1 card from your hand instead.
   // NOTE: not yet implemented (needs template).
 
-  // OP12-051 (character) Hina —
-  //   [Activate: Main] You may rest this Character and trash 1 card from your hand: Up to 1 of your
-  //   opponent's Characters with a base cost of 4 or less cannot activate [Blocker] during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP12-051 — [Activate: Main] rest this + trash 1 from hand: up to 1 opp Character base cost≤4 cannot activate [Blocker] this turn.
+  {
+    cardNumber: 'OP12-051',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'restThis' }],
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'suppressBlockerOnTarget', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 4 } }, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // OP12-053 — [Opponent's Turn] if Leader {Navy}: this Character gains [Blocker] and +1000 power.
   //   PARTIAL: the [Once Per Turn] "would be removed → trash 1 from hand instead" replacement is deferred.
@@ -297,11 +306,14 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP12-077 (event) The "Extinguishes All Sound Created by Your Influence" Technique —
-  //   [Main] Select up to 1 of your [Trafalgar Law] cards and that card gains +2000 power during this turn.
-  //   Then, if the selected card attacks during this turn, your opponent cannot activate [Blocker].
-  //   [Trigger] Draw 1 card.
-  // NOTE: not yet implemented (needs template).
+  // OP12-077 — [Main] select [Law] +2000; if it attacks, opp cannot activate [Blocker]. [Trigger] draw 1.
+  {
+    cardNumber: 'OP12-077',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', target: 'chosenControllerLeaderOrCharacter', filter: { name: 'Trafalgar Law' }, powerBonus: 2000 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
 
   // OP12-078 — [Main] If your DON!! ≤ opponent's, draw 1, then give up to 1 opp Character −3000 this turn.
   { cardNumber: 'OP12-078', templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },

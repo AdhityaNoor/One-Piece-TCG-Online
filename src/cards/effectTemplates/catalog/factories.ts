@@ -335,15 +335,24 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'preventBlockers': {
       if (f.target === 'chosenControllerLeaderOrCharacter') {
+        const chooseFrom = {
+          sel: 'controllerLeaderOrCharacters' as const,
+          ...(f.filter?.typeIncludes ? { typeIncludes: f.filter.typeIncludes } : {}),
+          ...(f.filter?.name ? { name: f.filter.name } : {}),
+          ...(f.filter?.minPower !== undefined ? { minPower: f.filter.minPower } : {}),
+        };
         return [
           {
             op: 'chooseTargets',
             var: 't',
-            from: { sel: 'controllerLeaderOrCharacters', ...f.filter },
+            from: chooseFrom,
             min: 0,
             max: 1,
             prompt: 'Choose up to 1 of your Leader or Character cards.',
           },
+          ...(f.powerBonus !== undefined
+            ? [{ op: 'addPower' as const, target: { sel: 'var' as const, name: 't' }, amount: f.powerBonus, duration: f.duration }]
+            : []),
           {
             op: 'preventBlockers',
             target: { sel: 'var', name: 't' },
@@ -361,6 +370,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
       ];
     }
+    case 'suppressBlockerOnTarget':
+      return targetOps(f.target, (target) => ({ op: 'suppressBlockerActivation', target }), { optional: f.optional, maxTargets: f.maxTargets });
     case 'drawAndTrash':
       return [
         { op: 'draw', amount: f.drawCount },
@@ -630,6 +641,9 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           duration: f.duration,
           ...(f.condition ? { condition: f.condition } : {}),
           ...(f.attackerCategory ? { attackerCategory: f.attackerCategory } : {}),
+          ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}),
+          ...(f.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: f.effectSourceMaxBasePower } : {}),
+          ...(f.effectSourceCategory ? { effectSourceCategory: f.effectSourceCategory } : {}),
         },
       ];
     case 'koImmunityControllerCharactersAll':
@@ -640,6 +654,23 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           scope: f.scope,
           duration: f.duration,
           ...(f.condition ? { condition: f.condition } : {}),
+        },
+      ];
+    case 'koImmunityAuraControllerCharacters':
+      return [
+        {
+          op: 'addKoImmunityAura',
+          group: {
+            ownLeaderAndCharacters: true,
+            charactersOnly: true,
+            ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}),
+            ...(f.excludeSource ? { excludeSource: true } : {}),
+          },
+          scope: f.scope,
+          duration: f.duration,
+          ...(f.targetCondition ? { condition: f.targetCondition } : {}),
+          ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+          ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}),
         },
       ];
     case 'koImmunityChosen':

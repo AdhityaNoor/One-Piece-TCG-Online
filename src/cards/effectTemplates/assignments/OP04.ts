@@ -115,11 +115,21 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-118 — PARTIAL: red/cost≥3/other-than-self filters not on keyword aura.
   { cardNumber: 'OP04-118', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'rush', duration: 'permanent' }] } },
 
-  // OP04-119 (character) Donquixote Rosinante —
-  //   [Opponent's Turn] If this Character is rested, your active Characters with a base cost of 5 cannot be
-  //   K.O.'d by effects.[On Play] You may rest this Character: Play up to 1 green Character card with a
-  //   cost of 5 from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP04-119 — PARTIAL: [On Play] rest-this play-green-cost-5-from-hand deferred; static K.O. immunity mapped.
+  {
+    cardNumber: 'OP04-119',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'koImmunityAuraControllerCharacters',
+        scope: 'effect',
+        duration: 'permanent',
+        targetCondition: { minBaseCost: 5, maxBaseCost: 5, rested: false },
+        sourceCondition: { rested: true, turn: 'opponent' },
+      }],
+    },
+  },
 
   // --- codegen batch ---
   { cardNumber: 'OP04-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRefresh', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 3 }] } },

@@ -113,4 +113,35 @@ describe('evaluateGates', () => {
     };
     expect(evaluateGates([{ kind: 'selfTypedCharacterPowerAtLeast', typeIncludes: 'Sky Island', power: 7000 }], rig.state, rig.defs, 'p1')).toBe(true);
   });
+
+  it('checks combinedLifeTotal as the sum of both players Life counts', () => {
+    let rig = buildBaseRig();
+    const lifeCard = makeCharacterDef({ cardDefinitionId: 'LIFE', cardNumber: 'LIFE' });
+    ({ rig } = putLifeCards(rig, 'p1', [lifeCard, lifeCard, lifeCard]));
+    ({ rig } = putLifeCards(rig, 'p2', [lifeCard, lifeCard]));
+    expect(evaluateGates([{ kind: 'combinedLifeTotal', atMost: 5 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'combinedLifeTotal', atMost: 4 }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks selfInstancePowerAtLeast against the source card current power', () => {
+    let rig = buildBaseRig();
+    let charId: string;
+    ({ rig, instanceId: charId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ basePower: 6000 })));
+    expect(evaluateGates([{ kind: 'selfInstancePowerAtLeast', power: 7000 }], rig.state, rig.defs, 'p1', charId)).toBe(false);
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        continuousEffects: [{
+          id: 'boost',
+          sourceInstanceId: charId,
+          ownerId: 'p1',
+          duration: 'permanent',
+          description: '+1000',
+          powerModifier: { appliesToInstanceId: charId, amount: 1000 },
+        }],
+      },
+    };
+    expect(evaluateGates([{ kind: 'selfInstancePowerAtLeast', power: 7000 }], rig.state, rig.defs, 'p1', charId)).toBe(true);
+  });
 });

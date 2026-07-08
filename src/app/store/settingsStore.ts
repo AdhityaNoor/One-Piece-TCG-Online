@@ -9,6 +9,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { browserStorage } from '../lib/runtime';
+import { useCardAnimationStore } from './cardAnimationStore';
 
 /** Max length for a display username. Purely a UI/presentation cap. */
 export const USERNAME_MAX_LENGTH = 20;
@@ -91,14 +92,20 @@ export const useSettingsStore = create<SettingsState>()(
       ...DEFAULTS,
       setUsername: (value) => set({ username: sanitizeUsername(value) }),
       setDebugShowBothHands: (value) => set({ debugShowBothHands: value }),
-      setAnimationsEnabled: (value) => set({ animationsEnabled: value }),
+      setAnimationsEnabled: (value) => {
+        set({ animationsEnabled: value });
+        if (!value) useCardAnimationStore.getState().clear();
+      },
       setThreeDEnabled: (value) => set({ threeDEnabled: value }),
       setBacksoundEnabled: (value) => set({ backsoundEnabled: value }),
       setBacksoundVolume: (value) => set({ backsoundVolume: Math.max(0, Math.min(1, value)) }),
       setSfxEnabled: (value) => set({ sfxEnabled: value }),
       setSfxVolume: (value) => set({ sfxVolume: Math.max(0, Math.min(1, value)) }),
       setMatchNavyBackgroundEnabled: (value) => set({ matchNavyBackgroundEnabled: value }),
-      resetToDefaults: () => set(DEFAULTS),
+      resetToDefaults: () => {
+        useCardAnimationStore.getState().clear();
+        set(DEFAULTS);
+      },
     }),
     {
       name: 'optcg.settings',

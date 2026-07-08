@@ -512,11 +512,8 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-099 (stage) — [Activate: Main] rest this + trash 1: Look 3, reveal up to 1 {Blackbeard Pirates} to hand, rest to bottom.
   { cardNumber: 'OP09-099', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Blackbeard Pirates' }, remainder: 'bottom', ifPrevious: 'previousMovedAny' }] } },
 
-  // OP09-100 (character) Karasu —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.) [Trigger] If your Leader has the {Revolutionary Army} type and you and your opponent
-  //   have a total of 5 or less Life cards, play this card.
-  // NOTE: not yet implemented (needs template).
+  // OP09-100 — PARTIAL: [Blocker] is a printed keyword; only the [Trigger] clause is templated.
+  { cardNumber: 'OP09-100', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }, { kind: 'combinedLifeTotal', atMost: 5 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
 
   // OP09-102 — [On Play] If Leader [Nico Robin], look 3, reveal up to 1 card with a [Trigger], add to hand, rest to bottom. [Trigger] Activate this effect.
@@ -563,10 +560,8 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP09-109', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Nico Robin' }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP09-108 (character) Bartholomew Kuma —
-  //   [Trigger] If your Leader has the {Revolutionary Army} type and you and your opponent have a total of
-  //   5 or less Life cards, play this card.
-  // NOTE: not yet implemented (needs template).
+  // OP09-108 — [Trigger] if Leader {Revolutionary Army} and combined Life ≤5, play this card.
+  { cardNumber: 'OP09-108', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }, { kind: 'combinedLifeTotal', atMost: 5 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
   // OP09-110 — [On Play] Draw 2 & trash 2. [Trigger] Play this card.
   {
@@ -584,11 +579,14 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-112 — [On Play] If ≤2 Life, draw 1. PARTIAL: the [Trigger] needs a combined-Life gate (deferred).
   { cardNumber: 'OP09-112', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'draw', amount: 1 }] } },
 
-  // OP09-114 (character) Lindbergh —
-  //   [On Play] If you and your opponent have a total of 5 or less Life cards, K.O. up to 1 of your
-  //   opponent's Characters with 2000 power or less. [Trigger] If you and your opponent have a total of 5
-  //   or less Life cards, play this card.
-  // NOTE: not yet implemented (needs template).
+  // OP09-114 — [On Play]/[Trigger] if combined Life ≤5: K.O. opp char ≤2000 power / play this card.
+  {
+    cardNumber: 'OP09-114',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'combinedLifeTotal', atMost: 5 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 2000 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'combinedLifeTotal', atMost: 5 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
 
   // OP09-116 — [Counter] up to 1 Leader/Char +2000 this battle. [Trigger] Play up to 1 {Revolutionary Army} cost ≤4 from hand.

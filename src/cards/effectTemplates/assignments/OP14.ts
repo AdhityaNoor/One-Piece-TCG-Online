@@ -12,20 +12,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Swap the base power of the selected Characters with each other during this turn.
   // NOTE: not yet implemented (needs template).
 
-  // OP14-002 (character) Urouge —
-  //   [When Attacking] If this Character has 5000 power or more, draw 1 card and K.O. up to 1 of your
-  //   opponent's Characters with 3000 base power or less.
-  // NOTE: not yet implemented (needs template).
+  // OP14-002 — [When Attacking] If 5000+ power: draw 1 and K.O. up to 1 opp Character with 3000 base power or less.
+  { cardNumber: 'OP14-002', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfInstancePowerAtLeast', power: 5000 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 3000 } }, optional: true }] } },
 
-  // OP14-003 (character) Capone"Gang"Bege —
-  //   This Character cannot be K.O.'d by effects of your opponent's Characters with 5000 base power or
-  //   less.
-  // NOTE: not yet implemented (needs template).
+  // OP14-003 — Cannot be K.O.'d by effects of opponent Characters with 5000 base power or less.
+  { cardNumber: 'OP14-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', effectSourceController: 'opponent', effectSourceMaxBasePower: 5000, effectSourceCategory: 'character' }] } },
 
-  // OP14-004 (character) Cavendish —
-  //   If this Character has 5000 power or more, this Character gains [Rush].(This card can attack on the
-  //   turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
+  // OP14-004 — If 5000+ power, gains [Rush].
+  { cardNumber: 'OP14-004', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfInstancePowerAtLeast', power: 5000 }] } }] } },
 
   // OP14-015 — [Rush] [When Attacking] Give up to 1 of your opponent's Characters −1000 power.
   // Note: [Rush] is an engine keyword flag. Only the when-attacking effect is templated.
@@ -35,10 +29,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-011 — [DON!! x2] [Blocker]
   { cardNumber: 'OP14-011', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
 
-  // OP14-006 (character) Shachi & Penguin —
-  //   [When Attacking] If this Character has 5000 power or more, give up to 1 of your opponent's Characters
-  //   −2000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP14-006 — [When Attacking] If 5000+ power: give up to 1 opp Character −2000 this turn.
+  { cardNumber: 'OP14-006', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfInstancePowerAtLeast', power: 5000 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
   // OP14-009 (character) Trafalgar Law —
   //   [Rush][On Your Opponent's Attack] [Once Per Turn] You may trash 2 cards from your hand: Select your
@@ -52,10 +44,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // NOTE: not yet implemented (needs template).
 
 
-  // OP14-012 (character) Bepo —
-  //   [When Attacking] If this Character has 5000 power or more, give up to 2 rested DON!! cards to your
-  //   Leader or 1 of your Characters.
-  // NOTE: not yet implemented (needs template).
+  // OP14-012 — [When Attacking] If 5000+ power: give up to 2 rested DON!! to Leader or 1 Character.
+  { cardNumber: 'OP14-012', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfInstancePowerAtLeast', power: 5000 }], functions: [{ fn: 'giveDon', count: 2 }] } },
 
   // OP14-013 - [On Play] Search Supernovas other than self. [When Attacking] Give opponent Character -1000 power.
   {

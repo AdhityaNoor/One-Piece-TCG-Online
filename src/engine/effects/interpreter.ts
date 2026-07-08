@@ -13,6 +13,7 @@ import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { cardHasNoBaseEffect } from './cardHasNoBaseEffect';
+import { computeCurrentPower } from '../rules/shared/power';
 import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoReplacementStep } from '../rules/shared/koAttempt';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates } from './gates';
@@ -264,6 +265,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       let ids = [ctx.controllerLeaderId(), ...ctx.controllerCharacterIds()];
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
       if (sel.name !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name === sel.name);
+      if (sel.minPower !== undefined) ids = ids.filter((id) => computeCurrentPower(ctx.defs, ctx.state(), id) >= sel.minPower!);
       if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
       return ids;
     }
@@ -354,6 +356,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.hasBlocker !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasBlocker === true) === sel.hasBlocker);
       if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
+      if (sel.excludeName !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
       return ids;
     }
@@ -445,9 +448,31 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     case 'addKoImmunity': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
-        ctx.addContinuousKoImmunity({ appliesToInstanceId: id, scope: op.scope, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}), ...(op.attackerCategory ? { attackerCategory: op.attackerCategory } : {}) });
+        ctx.addContinuousKoImmunity({
+          appliesToInstanceId: id,
+          scope: op.scope,
+          duration: op.duration,
+          ...(op.condition ? { condition: op.condition } : {}),
+          ...(op.attackerCategory ? { attackerCategory: op.attackerCategory } : {}),
+          ...(op.effectSourceController ? { effectSourceController: op.effectSourceController } : {}),
+          ...(op.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: op.effectSourceMaxBasePower } : {}),
+          ...(op.effectSourceCategory ? { effectSourceCategory: op.effectSourceCategory } : {}),
+        });
       }
       return { selectedIds: ids, movedIds: [] };
+    }
+    case 'addKoImmunityAura': {
+      ctx.addContinuousKoImmunityAura({
+        group: op.group,
+        scope: op.scope,
+        duration: op.duration,
+        ...(op.condition ? { condition: op.condition } : {}),
+        ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}),
+        ...(op.effectSourceController ? { effectSourceController: op.effectSourceController } : {}),
+        ...(op.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: op.effectSourceMaxBasePower } : {}),
+        ...(op.effectSourceCategory ? { effectSourceCategory: op.effectSourceCategory } : {}),
+      });
+      return { selectedIds: [], movedIds: [] };
     }
     case 'preventBlockers': {
       const ids = resolveSelector(op.target, ctx, bindings);
@@ -457,6 +482,13 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
           duration: op.duration,
           ...(op.blockerPowerAtLeast !== undefined ? { blockerPowerAtLeast: op.blockerPowerAtLeast } : {}),
         });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
+    case 'suppressBlockerActivation': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.suppressBlockerActivation({ appliesToBlockerInstanceId: id, duration: op.duration });
       }
       return { selectedIds: ids, movedIds: [] };
     }

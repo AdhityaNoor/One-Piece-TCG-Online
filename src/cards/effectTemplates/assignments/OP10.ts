@@ -445,12 +445,14 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP10-100 (character) Inazuma —
-  //   [DON!! x1] [When Attacking] Rest up to 1 of your opponent's Characters with a cost equal to or less
-  //   than the total of your and your opponent's Life cards. [Trigger] If your Leader has the
-  //   {Revolutionary Army} type and you and your opponent have a total of 5 or less Life cards, play this
-  //   card.
-  // NOTE: not yet implemented (needs template).
+  // OP10-100 — PARTIAL: [Blocker] is a printed keyword; [DON!! x1][When Attacking] rest + [Trigger] mapped.
+  {
+    cardNumber: 'OP10-100',
+    templates: [
+      { templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCostFromCombinedLife: true } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }, { kind: 'combinedLifeTotal', atMost: 5 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   // OP10-102 — [Activate: Main] [OPT] Up to 3 {Revolutionary Army} Characters +1000, then add top Life card to hand.
   { cardNumber: 'OP10-102', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [

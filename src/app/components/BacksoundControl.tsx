@@ -46,14 +46,26 @@ function SettingSwitch({ checked, label, onToggle }: { checked: boolean; label: 
       className="flex w-full items-center justify-between gap-3 border border-white/10 bg-white/[0.04] px-3 py-2 text-left transition-all hover:border-white/20 hover:bg-white/10"
     >
       <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/68">{label}</span>
-      <span className={['relative h-5 w-9 flex-shrink-0 rounded-full border border-white/15 transition-colors', checked ? 'bg-gold/85' : 'bg-white/12'].join(' ')}>
-        <span className={['absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform', checked ? 'translate-x-4' : 'translate-x-0.5'].join(' ')} />
+      <span
+        className={[
+          'inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full border border-white/15 p-0.5 transition-colors',
+          checked ? 'bg-gold/85' : 'bg-white/12',
+        ].join(' ')}
+      >
+        <span
+          aria-hidden="true"
+          className={[
+            'block h-4 w-4 flex-shrink-0 rounded-full bg-white shadow transition-transform duration-200 ease-out',
+            checked ? 'translate-x-4' : 'translate-x-0',
+          ].join(' ')}
+        />
       </span>
     </button>
   );
 }
 
 export function BacksoundControl() {
+  const rootRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const sfxRef = useRef<HTMLAudioElement>(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -65,11 +77,26 @@ export function BacksoundControl() {
   const sfxEnabled = useSettingsStore((state) => state.sfxEnabled);
   const sfxVolume = useSettingsStore((state) => state.sfxVolume);
   const matchNavyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
+  const animationsEnabled = useSettingsStore((state) => state.animationsEnabled);
   const setBacksoundEnabled = useSettingsStore((state) => state.setBacksoundEnabled);
   const setBacksoundVolume = useSettingsStore((state) => state.setBacksoundVolume);
   const setSfxEnabled = useSettingsStore((state) => state.setSfxEnabled);
   const setSfxVolume = useSettingsStore((state) => state.setSfxVolume);
   const setMatchNavyBackgroundEnabled = useSettingsStore((state) => state.setMatchNavyBackgroundEnabled);
+  const setAnimationsEnabled = useSettingsStore((state) => state.setAnimationsEnabled);
+
+  useEffect(() => {
+    if (!panelOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const root = rootRef.current;
+      if (!root || !(event.target instanceof Node)) return;
+      if (!root.contains(event.target)) setPanelOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [panelOpen]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -179,7 +206,7 @@ export function BacksoundControl() {
   }, [sfxEnabled, sfxVolume]);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 font-body text-white">
+    <div ref={rootRef} className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 font-body text-white">
       <audio
         ref={audioRef}
         src={BACKSOUND_SRC}
@@ -250,11 +277,18 @@ export function BacksoundControl() {
           </div>
           <div className="mt-4 border-t border-white/10 pt-3">
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/72">Visuals</p>
-            <SettingSwitch
-              label="Navy BG"
-              checked={matchNavyBackgroundEnabled}
-              onToggle={() => setMatchNavyBackgroundEnabled(!matchNavyBackgroundEnabled)}
-            />
+            <div className="flex flex-col gap-2">
+              <SettingSwitch
+                label="Animations"
+                checked={animationsEnabled}
+                onToggle={() => setAnimationsEnabled(!animationsEnabled)}
+              />
+              <SettingSwitch
+                label="Navy BG"
+                checked={matchNavyBackgroundEnabled}
+                onToggle={() => setMatchNavyBackgroundEnabled(!matchNavyBackgroundEnabled)}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -263,8 +297,8 @@ export function BacksoundControl() {
         type="button"
         onClick={() => setPanelOpen((open) => !open)}
         className="flex h-12 w-12 items-center justify-center border border-transparent bg-transparent text-white/70 shadow-none transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 hover:text-white active:translate-y-0"
-        aria-label="Audio settings"
-        title="Audio settings"
+        aria-label="Settings"
+        title="Settings"
       >
         <GearIcon />
       </button>

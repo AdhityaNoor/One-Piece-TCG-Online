@@ -4,7 +4,7 @@
  * standard ActionExecuteResult via finish(). Each primitive mirrors the
  * canonical engine implementation so behavior can't drift.
  */
-import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousKeyword, ContinuousKoReplacementModifier, ContinuousPowerCondition, GameState, KoReplacementAuraGroup, PowerAuraGroup, SourceStateCondition } from '../state/game';
+import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousKoReplacementModifier, ContinuousPowerCondition, GameState, KoImmunityAuraGroup, KoReplacementAuraGroup, PowerAuraGroup, SourceStateCondition } from '../state/game';
 import type { CardDefinition, CardInstance } from '../state/card';
 import type { PendingChoice } from '../events/pendingChoice';
 import { mintRuntimeInstanceId } from '../rules/shared/mintInstance';
@@ -470,6 +470,9 @@ export class EffectContextImpl implements EffectContext {
     duration: ContinuousEffectDuration;
     condition?: ContinuousPowerCondition;
     attackerCategory?: 'leader' | 'character';
+    effectSourceController?: 'opponent' | 'controller';
+    effectSourceMaxBasePower?: number;
+    effectSourceCategory?: 'leader' | 'character';
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -483,6 +486,9 @@ export class EffectContextImpl implements EffectContext {
         scope: spec.scope,
         ...(spec.attackerCategory ? { attackerCategory: spec.attackerCategory } : {}),
         ...(spec.condition ? { condition: spec.condition } : {}),
+        ...(spec.effectSourceController ? { effectSourceController: spec.effectSourceController } : {}),
+        ...(spec.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: spec.effectSourceMaxBasePower } : {}),
+        ...(spec.effectSourceCategory ? { effectSourceCategory: spec.effectSourceCategory } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -492,6 +498,45 @@ export class EffectContextImpl implements EffectContext {
       message: `${record.description} applied to ${spec.appliesToInstanceId}.`,
       data: { continuousEffectId: record.id, scope: spec.scope, duration: spec.duration },
       relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  addContinuousKoImmunityAura(spec: {
+    group: KoImmunityAuraGroup;
+    scope: 'battle' | 'effect' | 'any';
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    sourceCondition?: SourceStateCondition;
+    effectSourceController?: 'opponent' | 'controller';
+    effectSourceMaxBasePower?: number;
+    effectSourceCategory?: 'leader' | 'character';
+    description?: string;
+  }): void {
+    const mod: ContinuousKoImmunityModifier = {
+      appliesToGroup: spec.group,
+      scope: spec.scope,
+      ...(spec.condition ? { condition: spec.condition } : {}),
+      ...(spec.sourceCondition ? { sourceCondition: spec.sourceCondition } : {}),
+      ...(spec.effectSourceController ? { effectSourceController: spec.effectSourceController } : {}),
+      ...(spec.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: spec.effectSourceMaxBasePower } : {}),
+      ...(spec.effectSourceCategory ? { effectSourceCategory: spec.effectSourceCategory } : {}),
+    };
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? (spec.scope === 'battle' ? 'allies cannot be K.O.’d in battle' : 'allies cannot be K.O.’d'),
+      koImmunityModifier: mod,
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to a group.`,
+      data: { continuousEffectId: record.id, scope: spec.scope, duration: spec.duration },
+      relatedCardInstanceIds: [],
       visibility: 'public',
     });
   }
@@ -555,6 +600,30 @@ export class EffectContextImpl implements EffectContext {
       message: `${record.description} while ${spec.appliesToAttackerInstanceId} attacks.`,
       data: { continuousEffectId: record.id, duration: spec.duration, blockerPowerAtLeast: spec.blockerPowerAtLeast },
       relatedCardInstanceIds: [spec.appliesToAttackerInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  suppressBlockerActivation(spec: {
+    appliesToBlockerInstanceId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'cannot activate Blocker',
+      blockerRestriction: { appliesToBlockerInstanceId: spec.appliesToBlockerInstanceId },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToBlockerInstanceId} cannot activate [Blocker] (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToBlockerInstanceId],
       visibility: 'public',
     });
   }
@@ -707,7 +776,7 @@ export class EffectContextImpl implements EffectContext {
     const inst = this.working.cardsById[targetInstanceId];
     if (!inst) return;
     // "Cannot be K.O.'d" (scope 'any', e.g. ST05-017 rider): an effect K.O. is prevented.
-    if (isKoImmune(this.defs, this.working, targetInstanceId, 'effect')) {
+    if (isKoImmune(this.defs, this.working, targetInstanceId, 'effect', { koSourceInstanceId: this.sourceInstanceId })) {
       this.logger.push({
         actorPlayerId: this.controllerId,
         type: 'EFFECT_RESOLVED',

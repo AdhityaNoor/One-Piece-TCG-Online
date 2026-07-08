@@ -10,7 +10,7 @@
  * every read, so a conditional buff turns on/off as DON!! attaches or the turn
  * flips, with no extra bookkeeping. Cost modifiers use the same record model.
  */
-import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousPowerCondition, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
+import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousPowerCondition, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
 
@@ -234,26 +234,79 @@ export function hasContinuousKeyword(defs: CardDefinitionLookup, state: GameStat
   return state.continuousEffects.some((record) => keywordModifierApplies(record, state, instanceId, keyword, defs));
 }
 
+export interface KoImmunityCheckContext {
+  /** Effect K.O. only: the card whose effect is attempting the K.O. */
+  koSourceInstanceId?: string;
+}
+
+function effectSourceMatches(
+  mod: ContinuousKoImmunityModifier,
+  record: ContinuousEffectRecord,
+  state: GameState,
+  defs: CardDefinitionLookup,
+  koSourceInstanceId: string | undefined,
+): boolean {
+  if (
+    mod.effectSourceController === undefined &&
+    mod.effectSourceMaxBasePower === undefined &&
+    mod.effectSourceCategory === undefined
+  ) {
+    return true;
+  }
+  if (!koSourceInstanceId) return false;
+  const source = state.cardsById[koSourceInstanceId];
+  if (!source) return false;
+  const sourceDef = getDefinition(defs, source);
+  if (mod.effectSourceController === 'opponent' && source.ownerId === record.ownerId) return false;
+  if (mod.effectSourceController === 'controller' && source.ownerId !== record.ownerId) return false;
+  if (mod.effectSourceCategory !== undefined && sourceDef.category !== mod.effectSourceCategory) return false;
+  if (mod.effectSourceMaxBasePower !== undefined && (sourceDef.basePower ?? Infinity) > mod.effectSourceMaxBasePower) return false;
+  return true;
+}
+
+function koImmunityModifierApplies(
+  record: ContinuousEffectRecord,
+  state: GameState,
+  instanceId: string,
+  cause: 'battle' | 'effect',
+  defs: CardDefinitionLookup,
+  ctx?: KoImmunityCheckContext,
+): boolean {
+  const mod = record.koImmunityModifier;
+  if (!mod) return false;
+  if (mod.appliesToInstanceId !== undefined) {
+    if (mod.appliesToInstanceId !== instanceId) return false;
+  } else if (mod.appliesToGroup !== undefined) {
+    if (mod.appliesToGroup.excludeSource && instanceId === record.sourceInstanceId) return false;
+    if (!targetInAuraGroup(mod.appliesToGroup, record, state, instanceId, defs)) return false;
+  } else {
+    return false;
+  }
+  if (mod.scope === 'battle' && cause !== 'battle') return false;
+  if (mod.scope === 'effect' && cause !== 'effect') return false;
+  if (mod.attackerCategory !== undefined) {
+    const attackerId = state.currentBattle?.attackerInstanceId;
+    const attackerDef = attackerId ? defs[state.cardsById[attackerId]?.cardDefinitionId ?? ''] : undefined;
+    if (attackerDef?.category !== mod.attackerCategory) return false;
+  }
+  if (!effectSourceMatches(mod, record, state, defs, ctx?.koSourceInstanceId)) return false;
+  return conditionApplies(mod.condition, record, state, instanceId, defs) && sourceConditionApplies(mod.sourceCondition, record, state);
+}
+
 /**
  * Whether `instanceId` currently cannot be K.O.'d for the given `cause`
  * (re-evaluated per K.O. attempt). A 'battle'-scope immunity only blocks battle
  * K.O.s (7-1-4-2); an 'any'-scope immunity blocks any K.O. source. Each modifier's
  * optional condition ([DON!! xN] / turn / board gate) must also hold.
  */
-export function isKoImmune(defs: CardDefinitionLookup, state: GameState, instanceId: string, cause: 'battle' | 'effect'): boolean {
-  return state.continuousEffects.some((record) => {
-    const mod = record.koImmunityModifier;
-    if (!mod || mod.appliesToInstanceId !== instanceId) return false;
-    if (mod.scope === 'battle' && cause !== 'battle') return false;
-    if (mod.scope === 'effect' && cause !== 'effect') return false;
-    // "by Leaders/Characters": the current battle's attacker must be of that category.
-    if (mod.attackerCategory !== undefined) {
-      const attackerId = state.currentBattle?.attackerInstanceId;
-      const attackerDef = attackerId ? defs[state.cardsById[attackerId]?.cardDefinitionId ?? ''] : undefined;
-      if (attackerDef?.category !== mod.attackerCategory) return false;
-    }
-    return conditionApplies(mod.condition, record, state, instanceId, defs);
-  });
+export function isKoImmune(
+  defs: CardDefinitionLookup,
+  state: GameState,
+  instanceId: string,
+  cause: 'battle' | 'effect',
+  ctx?: KoImmunityCheckContext,
+): boolean {
+  return state.continuousEffects.some((record) => koImmunityModifierApplies(record, state, instanceId, cause, defs, ctx));
 }
 
 /**

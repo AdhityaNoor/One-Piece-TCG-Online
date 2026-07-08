@@ -17,7 +17,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'addDonFromDeck', count: 1, rested: true, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // OP06-002 — PARTIAL: "if this Character has 7000+ current power, [Banish]" needs a self-current-power gate (deferred).
+  // OP06-002 — [Opponent's Turn] If this Character has 7000+ power, gains [Banish].
+  { cardNumber: 'OP06-002', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'selfInstancePowerAtLeast', power: 7000 }] } }] } },
   // OP06-003 — [On Play] Look at 3; play up to 1 {Revolutionary Army} Character power<=5000; rest to bottom.
   { cardNumber: 'OP06-003', templateId: 'ability', params: { timing: 'onPlay', functions: [
     { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'Revolutionary Army', maxPower: 5000 }, remainder: 'bottom' },

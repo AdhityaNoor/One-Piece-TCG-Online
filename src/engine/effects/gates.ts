@@ -151,6 +151,21 @@ function evaluateGate(
       return true;
     }
 
+    case 'combinedLifeTotal': {
+      const opponentId = getOpponentId(state, ownerId);
+      const opponent = state.players[opponentId];
+      if (!opponent) return false;
+      const count = player.lifeArea.cardIds.length + opponent.lifeArea.cardIds.length;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
+    case 'selfInstancePowerAtLeast': {
+      if (!sourceInstanceId) return false;
+      return computeCurrentPower(defs, state, sourceInstanceId) >= gate.power;
+    }
+
     case 'selfLifeLessThanOpponent': {
       const opponentId = getOpponentId(state, ownerId);
       const opponent = state.players[opponentId];

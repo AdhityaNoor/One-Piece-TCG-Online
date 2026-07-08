@@ -151,10 +151,8 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the static "can attack Characters on the turn it is played" is deferred.
   { cardNumber: 'OP07-032', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },
 
-  // OP07-033 (character) Monkey.D.Luffy —
-  //   If you have 3 or more Characters, your Characters with a cost of 3 or less other than
-  //   [Monkey.D.Luffy] cannot be K.O.'d by your opponent's effects.
-  // NOTE: not yet implemented (needs template).
+  // OP07-033 — If 3+ Characters, your cost≤3 Characters other than [Luffy] cannot be K.O.'d by opponent effects.
+  { cardNumber: 'OP07-033', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunityAuraControllerCharacters', scope: 'effect', duration: 'permanent', excludeSource: true, targetCondition: { maxCost: 3, gate: [{ kind: 'selfCharacterCount', atLeast: 3 }] }, effectSourceController: 'opponent' }] } },
 
   // OP07-034 — [When Attacking] If you have 3 or more Characters, this Character gains +2000 power during this turn.
   { cardNumber: 'OP07-034', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfCharacterCount', atLeast: 3 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
@@ -295,11 +293,14 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP07-057 (event) Perfume Femur —
-  //   [Main] Select up to 1 of your {The Seven Warlords of the Sea} type Leader or Character cards and that
-  //   card gains +2000 power during this turn. Then, if the selected card attacks during this turn, your
-  //   opponent cannot activate [Blocker]. [Trigger] Draw 1 card.
-  // NOTE: not yet implemented (needs template).
+  // OP07-057 — [Main] select Warlords Leader/Char +2000; if it attacks, opp cannot activate [Blocker]. [Trigger] draw 1.
+  {
+    cardNumber: 'OP07-057',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', target: 'chosenControllerLeaderOrCharacter', filter: { typeIncludes: 'The Seven Warlords of the Sea' }, powerBonus: 2000 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
 
   // OP07-058 (stage) — [Activate: Main] rest this Stage + trash 1: If Leader {Kuja Pirates}, return up to 1 {Amazon Lily}/{Kuja Pirates} Character to hand.
   { cardNumber: 'OP07-058', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { anyOfTypes: ['Amazon Lily', 'Kuja Pirates'] } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
@@ -338,11 +339,23 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-068 — [DON!! x1] [When Attacking] If your DON!! ≤ opponent's, add 1 DON!! from deck and rest it.
   { cardNumber: 'OP07-068', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
-  // OP07-069 (character) Pickles —
-  //   If the number of DON!! cards on your field is equal to or less than the number on your opponent's
-  //   field, your {Foxy Pirates} type Characters other than [Pickles] cannot be K.O.'d by your opponent's
-  //   effects.
-  // NOTE: not yet implemented (needs template).
+  // OP07-069 — If your DON!! ≤ opponent's, your {Foxy Pirates} Characters other than [Pickles] cannot be K.O.'d by opponent effects.
+  {
+    cardNumber: 'OP07-069',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'koImmunityAuraControllerCharacters',
+        scope: 'effect',
+        duration: 'permanent',
+        anyOfTypes: ['Foxy Pirates'],
+        excludeSource: true,
+        effectSourceController: 'opponent',
+        targetCondition: { gate: [{ kind: 'selfDonAtMostOpponent' }] },
+      }],
+    },
+  },
 
   // OP07-070 — [On Play] If your DON!! ≤ opponent's, play up to 1 {Foxy Pirates} card with a cost of 4 or less from hand.
   { cardNumber: 'OP07-070', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'playFromHand', filter: { typeIncludes: 'Foxy Pirates', maxCost: 4 } }] } },

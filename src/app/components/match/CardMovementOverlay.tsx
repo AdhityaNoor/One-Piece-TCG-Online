@@ -3,7 +3,7 @@
  * each successful dispatch. Anchors are measured from data-board-* attributes
  * on the playmat and dock hands (see boardAnchors.ts).
  */
-import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { anchorCenterInShell, cardScaleFromAnchorRect, resolveAnchorRect } from '../../../animations/cardMovement/boardAnchors';
 import type { CardMovementSpec } from '../../../animations/cardMovement/types';
@@ -168,6 +168,10 @@ export function CardMovementOverlay({ shellRef }: CardMovementOverlayProps) {
   const endFlight = useCardAnimationStore((s) => s.endFlight);
   const [active, setActive] = useState<ActiveFlight[]>([]);
   const flightKey = useRef(0);
+
+  useEffect(() => {
+    if (!animationsEnabled) setActive([]);
+  }, [animationsEnabled]);
 
   useLayoutEffect(() => {
     if (!animationsEnabled || batchSeq === 0) return;

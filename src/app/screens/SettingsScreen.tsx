@@ -5,7 +5,7 @@
  * (project priority #12, after gameplay), so flipping it would currently do
  * nothing.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CanvasMenuButton, GameCanvasScreen, Toggle } from '../components';
 import { useNavigationStore } from '../store/navigationStore';
 import { DEFAULT_USERNAME, USERNAME_MAX_LENGTH, sanitizeUsername, useSettingsStore } from '../store/settingsStore';
@@ -16,6 +16,10 @@ export function SettingsScreen() {
   // Local draft so the field can be emptied mid-edit; the store only ever
   // holds a sanitized (non-empty) name, committed on blur.
   const [usernameDraft, setUsernameDraft] = useState(settings.username);
+
+  useEffect(() => {
+    setUsernameDraft(settings.username);
+  }, [settings.username]);
 
   return (
     <GameCanvasScreen kicker="Options" status="Display only" title="Settings" onBack={goBack}>
@@ -46,12 +50,6 @@ export function SettingsScreen() {
               description="Local hotseat debug aid - reveals both players' hands instead of hiding the off-turn player's. Affects display only, never what GameState marks as known/hidden."
               checked={settings.debugShowBothHands}
               onChange={settings.setDebugShowBothHands}
-            />
-            <Toggle
-              label="Animations"
-              description="The game stays fully playable with this off - animation state is tracked separately from game state."
-              checked={settings.animationsEnabled}
-              onChange={settings.setAnimationsEnabled}
             />
             <Toggle
               label="3D rendering"

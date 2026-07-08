@@ -480,10 +480,14 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Blocker] of any Character with a cost of 5 or less during this battle.
   // NOTE: not yet implemented (needs template).
 
-  // OP02-102 (character) Smoker —
-  //   This Character cannot be K.O.'d by effects. [When Attacking] If there is a Character with a cost of
-  //   0, this Character gains +2000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // OP02-102 — K.O. immune to effects. [When Attacking] if a cost-0 Character exists, +2000 this battle.
+  {
+    cardNumber: 'OP02-102',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'anyCharacterExactCost', exactCost: 0 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   // OP02-103 - [DON!! x1] [When Attacking] Give opponent Character -2 cost.
   { cardNumber: 'OP02-103', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, optional: true }] } },

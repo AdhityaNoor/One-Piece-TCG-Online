@@ -134,10 +134,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-028 — [On Play] If opponent has 7+ rested cards, this Character gains [Rush] this turn.
   { cardNumber: 'OP08-028', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentRestedCharacterCount', atLeast: 7 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
-  // OP08-029 (character) Pekoms —
-  //   If this Character is active, your {Minks} type Characters with a cost of 3 or less other than
-  //   [Pekoms] cannot be K.O.'d by effects.
-  // NOTE: not yet implemented (needs template).
+  // OP08-029 — If this Character is active, your {Minks} cost≤3 Characters other than [Pekoms] cannot be K.O.'d by effects.
+  { cardNumber: 'OP08-029', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunityAuraControllerCharacters', scope: 'effect', duration: 'permanent', anyOfTypes: ['Minks'], excludeSource: true, targetCondition: { maxCost: 3 }, sourceCondition: { rested: false } }] } },
 
   // OP08-030 — [On K.O.] choose one: rest 1 opp DON!! or K.O. 1 rested opp Character cost<=6.
   {

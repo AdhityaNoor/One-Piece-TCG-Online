@@ -15,10 +15,14 @@ import { fireOnBlock, fireRestTransitions, fireOpponentBlockerActivatedReactions
 
 function isBlockedByRestriction(state: GameState, blockerInstanceId: string, defs: CardDefinitionLookup): boolean {
   const battle = state.currentBattle;
-  if (!battle) return false;
   for (const record of state.continuousEffects) {
     const restriction = record.blockerRestriction;
-    if (!restriction || restriction.appliesToAttackerInstanceId !== battle.attackerInstanceId) continue;
+    if (!restriction) continue;
+    if (restriction.appliesToBlockerInstanceId !== undefined) {
+      if (restriction.appliesToBlockerInstanceId === blockerInstanceId) return true;
+      continue;
+    }
+    if (!battle || restriction.appliesToAttackerInstanceId !== battle.attackerInstanceId) continue;
     if (restriction.blockerPowerAtLeast === undefined) return true;
     if (computeCurrentPower(defs, state, blockerInstanceId) >= restriction.blockerPowerAtLeast) return true;
   }

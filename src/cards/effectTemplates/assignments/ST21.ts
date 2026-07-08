@@ -11,10 +11,8 @@ export const ST21_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST21-002 — [DON!! x2][Opponent's Turn] this Character +2000.
   { cardNumber: 'ST21-002', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 2, turn: 'opponent' } }] } },
 
-  // ST21-003 (character) Sanji —
-  //   [On Play] Select up to 1 of your {Straw Hat Crew} type Characters with 6000 power or more. If the
-  //   selected Character attacks during this turn, your opponent cannot activate [Blocker].
-  // NOTE: not yet implemented (needs template).
+  // ST21-003 — [On Play] select Straw Hat Crew 6000+ power; if it attacks this turn, opp cannot activate [Blocker].
+  { cardNumber: 'ST21-003', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', target: 'chosenControllerLeaderOrCharacter', filter: { typeIncludes: 'Straw Hat Crew', minPower: 6000 } }] } },
 
   // ST21-009 — [Activate: Main][OPT] give up to 2 rested DON!! to 1 {Straw Hat Crew} Leader/Char (type filter approximated).
   { cardNumber: 'ST21-009', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 2 }] } },
