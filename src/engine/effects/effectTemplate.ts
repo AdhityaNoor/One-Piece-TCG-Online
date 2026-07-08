@@ -128,6 +128,13 @@ export interface EffectContext {
     duration: ContinuousEffectDuration;
     description?: string;
   }): void;
+  /** Prevent the target Leader/Character from being rested by card effects for the given duration. */
+  preventRest(spec: {
+    appliesToInstanceId: string;
+    duration: ContinuousEffectDuration;
+    effectSourceController?: 'opponent' | 'controller';
+    description?: string;
+  }): void;
   /** Negate abilities on the target instance for the given duration. */
   negateEffect(spec: {
     appliesToInstanceId: string;
@@ -158,10 +165,10 @@ export interface EffectContext {
   moveLifeToBottom(instanceId: string): void;
   /** Play the source Character itself from hand into the Character Area for free. */
   playSelf(): void;
-  /** Play a Character from the controller's hand into the Character Area for free (3-7), summoning-sick; raises the 3-7-6-1 overflow choice if it makes a 6th. */
-  playCharacterFromHand(handInstanceId: string): void;
-  /** Play a Character from the controller's deck into the Character Area for free (3-7), then the caller should shuffle the deck if card text instructs it. */
-  playCharacterFromDeck(deckInstanceId: string): void;
+  /** Play a Character from the controller's hand into the Character Area for free (3-7), summoning-sick; `rested` plays it rested. Raises the 3-7-6-1 overflow choice if it makes a 6th. */
+  playCharacterFromHand(handInstanceId: string, rested?: boolean): void;
+  /** Play a Character from the controller's deck into the Character Area for free (3-7); `rested` plays it rested. Then the caller should shuffle the deck if card text instructs it. */
+  playCharacterFromDeck(deckInstanceId: string, rested?: boolean): void;
   /** Play a Character from the controller's trash into the Character Area for free (3-7); `rested` plays it rested. Raises the 3-7-6-1 overflow choice if it makes a 6th. */
   playCharacterFromTrash(trashInstanceId: string, rested?: boolean): void;
   /** Shuffle a player's deck using the serialized seedable RNG state. */
@@ -176,6 +183,8 @@ export interface EffectContext {
   preventNextRefresh(targetInstanceId: string): void;
   /** Set a card as active — inverse of rest (2-4-3). Handles Leader/Character (orientation) and DON!! (donRested). */
   setActive(targetInstanceId: string): void;
+  /** Return a DON!! card on the field to its owner's DON!! deck. */
+  returnDonToDonDeck(donInstanceId: string): void;
   /** Trash the top `n` cards of a player's own deck (self-mill); fewer if the deck is short. */
   trashTopOfDeck(playerId: string, n: number): void;
   /** Trash the top `n` Life cards of a player (e.g. opponent Life removal); fewer if Life is short. */
@@ -189,6 +198,8 @@ export interface EffectContext {
    * may use a player-selected order when supplied.
    */
   searchResolve(playerId: string, lookedIds: string[], chosenIds: string[], remainder: SearchRemainderDestination, reveal: boolean, destination: SearchPickDestination, bottomOrderIds?: string[]): void;
+  /** Resolve a "look at top N, play one, bottom/trash the rest" search-play effect. */
+  searchPlayResolve(playerId: string, lookedIds: string[], chosenIds: string[], remainder: SearchRemainderDestination, rested?: boolean, bottomOrderIds?: string[]): void;
   /** Resolve a top-deck search/look whose placement returns cards to top and bottom in selected order. */
   searchResolveTopOrBottom(playerId: string, lookedIds: string[], topOrderIds: string[], bottomOrderIds: string[]): void;
   /** Emit a fully-built PendingChoice (the interpreter uses this to suspend; carries its resume point). */

@@ -101,6 +101,7 @@ function selectorFromMoveSource(from: MoveCardSource): Extract<EffectOp, { op: '
       break;
     case 'hand':
       if (from.player === 'controller') return { sel: 'controllerHand', ...(from.filter ? { filter: from.filter } : {}) };
+      if (from.player === 'opponent') return { sel: 'opponentHand' };
       break;
     case 'trash':
       if (from.player === 'controller') return { sel: 'controllerTrash', ...(from.filter ? { filter: from.filter } : {}) };
@@ -199,6 +200,7 @@ function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>)
       min: optional ? 0 : Math.min(1, count),
       max: count,
       prompt: f.prompt ?? `${optional ? 'Choose up to' : 'Choose'} ${count} card${count === 1 ? '' : 's'} to move.`,
+      ...(f.chooser ? { chooser: f.chooser } : {}),
     },
     moveOp,
   ];
@@ -292,6 +294,12 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return targetOps(f.target, (target) => ({ op: 'preventRefresh', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
     case 'preventAttack':
       return targetOps(f.target, (target) => ({ op: 'preventAttack', target, duration: f.duration }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
+    case 'preventRest':
+      return targetOps(
+        f.target,
+        (target) => ({ op: 'preventRest', target, duration: f.duration, ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}) }),
+        { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
+      );
     case 'negateEffect':
       return targetOps(
         f.target,
@@ -467,6 +475,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'trashTopDeck', count: f.count }];
     case 'moveCards':
       return moveCardsOps(f);
+    case 'moveAllCharactersToBottomDeck':
+      return [{ op: 'moveToBottomDeck', target: { sel: 'allCharacters', ...(f.filter ?? {}) } }];
     case 'peekLifeAndPlace':
       return [
         {
@@ -495,7 +505,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           max: maxTargets,
           prompt: `Play up to ${maxTargets} matching Character card${maxTargets === 1 ? '' : 's'} from your hand.`,
         },
-        { op: 'playFromHand', target: { sel: 'var', name: 't' } },
+        { op: 'playFromHand', target: { sel: 'var', name: 't' }, ...(f.rested ? { rested: true } : {}) },
       ];
     }
     case 'playFromDeck': {
@@ -505,6 +515,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           op: 'playFromDeck',
           pick: maxTargets,
           filter: f.filter,
+          ...(f.rested ? { rested: true } : {}),
           prompt: `Play up to ${maxTargets} matching Character card${maxTargets === 1 ? '' : 's'} from your deck, then shuffle your deck.`,
         },
       ];
@@ -535,10 +546,13 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           destination: f.destination,
           ...(f.filter ? { filter: f.filter } : {}),
           ...(f.remainder ? { remainder: f.remainder } : {}),
+          ...(f.rested ? { rested: true } : {}),
           prompt:
             f.destination === 'deckTopOrBottom'
               ? `Look at the top ${f.look}: choose cards to return to the top of your deck in selected order; the rest go to the bottom.`
-              : `Look at the top ${f.look}: add up to ${f.pick} matching card${f.pick === 1 ? '' : 's'} to ${f.destination === 'lifeTop' ? 'the top of your Life cards' : 'your hand'}; the rest ${f.remainder === 'trash' ? 'go to your trash' : 'go to the bottom of your deck'}.`,
+              : f.destination === 'play'
+                ? `Look at the top ${f.look}: play up to ${f.pick} matching card${f.pick === 1 ? '' : 's'}${f.rested ? ' rested' : ''}; the rest ${f.remainder === 'trash' ? 'go to your trash' : 'go to the bottom of your deck'}.`
+                : `Look at the top ${f.look}: add up to ${f.pick} matching card${f.pick === 1 ? '' : 's'} to ${f.destination === 'lifeTop' ? 'the top of your Life cards' : 'your hand'}; the rest ${f.remainder === 'trash' ? 'go to your trash' : 'go to the bottom of your deck'}.`,
         },
       ];
     case 'addPowerSelf':
@@ -599,6 +613,19 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'rest', target: { sel: 'var', name: 't' } },
       ];
     }
+    case 'returnOpponentDon':
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'opponentFieldDon' },
+          min: f.count,
+          max: f.count,
+          chooser: 'opponent',
+          prompt: `Choose ${f.count} DON!! card${f.count === 1 ? '' : 's'} from your field to return to your DON!! deck.`,
+        },
+        { op: 'returnDonToDonDeck', target: { sel: 'var', name: 't' } },
+      ];
     case 'addPowerAuraControllerTypes':
       return [
         {

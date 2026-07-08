@@ -23,6 +23,7 @@ export type Selector =
   | { sel: 'controllerLeaderOrStage'; typeIncludes?: string } // controller's Leader + Stage cards (for 'rest 1 of your {X} Leader or Stage' costs)
   | { sel: 'opponentLeaderOrCharacters' }
   | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
+  | { sel: 'opponentFieldDon' } // opponent's DON!! on field (cost area + attached), for opponent-chosen returns
   | { sel: 'opponentActiveDon' } // the opponent's active, un-attached DON!! in the cost area (rest targets)
   | { sel: 'opponentRestedDon' } // the opponent's rested, un-attached DON!! in the cost area
   | { sel: 'ownerLeaderOrCharactersOfVar'; varName: string } // Leader + Characters of the owner of the first id in `varName`
@@ -107,7 +108,7 @@ export interface CharacterMoveFilter {
 }
 
 export type SearchRemainderDestination = 'bottom' | 'trash';
-export type SearchPickDestination = 'hand' | 'lifeTop' | 'deckTopOrBottom';
+export type SearchPickDestination = 'hand' | 'lifeTop' | 'deckTopOrBottom' | 'play';
 export type SequenceCondition = 'previousSelectedAny' | 'previousMovedAny' | 'previousRevealMatched';
 
 export interface EffectOpSequenceGate {
@@ -156,6 +157,8 @@ export type EffectOp =
   | ({ op: 'suppressBlockerActivation'; target: Selector; duration: IrDuration } & EffectOpSequenceGate)
   // Prevent the target Leader/Character from declaring an attack (7-1-1-1) while active.
   | ({ op: 'preventAttack'; target: Selector; duration: IrDuration; forbiddenTarget?: 'leader'; whileSummoningSick?: boolean } & EffectOpSequenceGate)
+  // Prevent effect-driven rest on the target Leader/Character for the duration.
+  | ({ op: 'preventRest'; target: Selector; duration: IrDuration; effectSourceController?: 'opponent' | 'controller' } & EffectOpSequenceGate)
   // Negate all (or selected timings of) abilities on the target Leader/Character/Stage.
   | ({ op: 'negateEffect'; target: Selector; duration: IrDuration; negatedTimings?: IrTiming[] } & EffectOpSequenceGate)
   // Negate abilities on all cards controlled by a player (e.g. "your [On Play] effects are negated").
@@ -168,6 +171,7 @@ export type EffectOp =
   | ({ op: 'ko'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'rest'; target: Selector } & EffectOpSequenceGate)
   | ({ op: 'setActive'; target: Selector } & EffectOpSequenceGate) // set a card as active — the inverse of `rest` (2-4-3 active/rested). Works on Leader/Character (orientation) and DON!! (donRested).
+  | ({ op: 'returnDonToDonDeck'; target: Selector } & EffectOpSequenceGate) // return DON!! on field to its owner's DON!! deck
   | ({ op: 'preventRefresh'; target: Selector } & EffectOpSequenceGate) // "will not become active in its controller's next Refresh Phase"
   | ({ op: 'returnToHand'; target: Selector } & EffectOpSequenceGate) // bounce a Character to its owner's hand
   | ({ op: 'moveToBottomDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's deck
@@ -178,9 +182,9 @@ export type EffectOp =
   | ({ op: 'chooseLifeToHand'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then add it to hand
   | ({ op: 'chooseLifeToTrash'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then trash it
   | ({ op: 'playSelf' } & EffectOpSequenceGate) // play the source Character itself, e.g. "[Trigger] Play this card"
-  | ({ op: 'playFromHand'; target: Selector } & EffectOpSequenceGate) // put a chosen Character from hand into play (no cost)
+  | ({ op: 'playFromHand'; target: Selector; rested?: boolean } & EffectOpSequenceGate) // put a chosen Character from hand into play (no cost); `rested` plays it rested
   | ({ op: 'playFromTrash'; target: Selector; rested?: boolean } & EffectOpSequenceGate) // put a chosen Character from trash into play (no cost); `rested` plays it rested
-  | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
+  | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string; rested?: boolean } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
   | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
   | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string; chooser?: 'controller' | 'opponent' } & EffectOpSequenceGate)
@@ -189,7 +193,7 @@ export type EffectOp =
   // `destination`; `reveal` means the added card identity is public ("reveal up to N").
   // Without that text, the added card remains secret to the controller.
   // The rest go to the configured destination (bottom by default).
-  | ({ op: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination; prompt: string } & EffectOpSequenceGate)
+  | ({ op: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination; prompt: string; rested?: boolean } & EffectOpSequenceGate)
   // Reveal the top card of the controller's own deck (public), test it against an
   // optional predicate, and record whether it matched via the __lastRevealMatched
   // binding. Non-suspending: the card stays on top; the conditional "then" branch
@@ -276,6 +280,7 @@ export type AbilityGate =
   | { kind: 'selfHasCharacterCostAtLeast'; atLeast: number } // "If you have a Character with a cost of N or more"
   | { kind: 'selfHasCharacterBasePowerAtLeast'; power: number } // "If you have a Character with a base power of N or more"
   | { kind: 'opponentDonMoreThanSelf' } // "If your opponent has more DON!! cards on their field than you"
+  | { kind: 'opponentDonFieldCount'; atLeast?: number; atMost?: number } // "If your opponent has N or more/less DON!! cards on their field"
   | { kind: 'selfDonAtMostOpponent' } // "If the number of DON!! on your field is equal to or less than your opponent's"
   | { kind: 'selfControlsNamed'; name: string } // "If you have [X]" — you control a Character named X
   | { kind: 'selfDoesNotControlNamed'; name: string } // "If you don't have [X]"

@@ -407,20 +407,33 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   //   deck.): Give up to a total of 2 of your opponent's Leader or Character cards −3000 power during this
   //   turn. [Trigger] If your opponent has 6 or more DON!! cards on their field, your opponent returns 1
   //   DON!! card from their field to their DON!! deck.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: counter needs combined-total targeting.
+  { cardNumber: 'OP02-089', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'opponentDonFieldCount', atLeast: 6 }], functions: [{ fn: 'returnOpponentDon', count: 1 }] } },
 
   // OP02-090 (event) Hydra —
   //   [Main] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
   //   deck.): Give up to 1 of your opponent's Characters −3000 power during this turn. [Trigger] If your
   //   opponent has 6 or more DON!! cards on their field, your opponent returns 1 DON!! card from their
   //   field to their DON!! deck.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP02-090',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'opponentDonFieldCount', atLeast: 6 }], functions: [{ fn: 'returnOpponentDon', count: 1 }] } },
+    ],
+  },
 
   // OP02-091 (event) Venom Road —
   //   [Main] Add up to 1 DON!! card from your DON!! deck and set it as active. [Trigger] If your opponent
   //   has 6 or more DON!! cards on their field, your opponent returns 1 DON!! card from their field to
   //   their DON!! deck.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP02-091',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'opponentDonFieldCount', atLeast: 6 }], functions: [{ fn: 'returnOpponentDon', count: 1 }] } },
+    ],
+  },
 
   // OP02-092 — (Stage) [Activate: Main] trash 1 from hand + rest this Stage: look 3, reveal up to 1 {Impel Down}, add to hand, rest to bottom.
   { cardNumber: 'OP02-092', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [

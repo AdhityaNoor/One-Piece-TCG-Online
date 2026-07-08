@@ -24,7 +24,7 @@ interface EndPhaseWarning {
 }
 
 const INSTRUCTIONS: Record<string, string> = {
-  payingCost: 'Tap active DON!! cards in your Cost Area to pay the cost, then Confirm.',
+  confirmPlayCost: 'Confirm the play cost. The game will rest active DON!! automatically.',
   selectAttacker: 'Tap your own active Leader or Character to attack with.',
   selectAttackTarget: "Tap the opponent's Leader, or a RESTED Character, to attack.",
   selectBlocker: 'Tap your own active [Blocker] Character.',
@@ -118,9 +118,9 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
         {errorBanner}
         <p className="text-xs text-white/60">{INSTRUCTIONS[mode.kind]}</p>
         <div className="flex flex-wrap gap-2">
-          {mode.kind === 'payingCost' && (
-            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmPlayCard}>
-              Confirm ({mode.selectedDonIds.length}/{mode.cost} DON!!)
+          {mode.kind === 'confirmPlayCost' && (
+            <Button variant="primary" size="sm" disabled={mode.donInstanceIds.length !== mode.cost} onClick={confirmPlayCard}>
+              Rest {mode.cost} DON!! to play {mode.cardName}?
             </Button>
           )}
           {mode.kind === 'payingCounterEventCost' && (

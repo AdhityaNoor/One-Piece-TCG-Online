@@ -263,7 +263,16 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x2] [When Attacking] ➀ (You may rest the specified number of DON!! cards in your cost area.):
   //   Reveal 1 card from the top of your deck. If that card is a {The Seven Warlords of the Sea} type
   //   Character card with a cost of 4 or less, you may play that card rested.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP01-060',
+    templateId: 'ability',
+    params: {
+      timing: 'whenAttacking',
+      condition: { donAttachedAtLeast: 2 },
+      cost: [{ kind: 'restDon', count: 1 }],
+      functions: [{ fn: 'searchTopDeck', look: 1, pick: 1, reveal: true, destination: 'play', filter: { category: 'character', typeIncludes: 'The Seven Warlords of the Sea', maxCost: 4 }, remainder: 'bottom', rested: true }],
+    },
+  },
 
   // OP01-061 (leader) Kaido —
   //   [DON!! x1] [Your Turn] [Once Per Turn] When your opponent's Character is K.O.'d, add up to 1 DON!!
@@ -508,7 +517,13 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Main] Look at 5 cards from the top of your deck; play up to 1 {SMILE} type Character card with a
   //   cost of 3 or less. Then, place the rest at the bottom of your deck in any order. [Trigger] Activate
   //   this card's [Main] effect.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP01-116',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: false, destination: 'play', filter: { category: 'character', typeIncludes: 'SMILE', maxCost: 3 }, remainder: 'bottom' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: false, destination: 'play', filter: { category: 'character', typeIncludes: 'SMILE', maxCost: 3 }, remainder: 'bottom' }] } },
+    ],
+  },
 
   // OP01-117 - [Main] DON!! -1: Rest opponent Character with cost 6 or less.
   { cardNumber: 'OP01-117', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },

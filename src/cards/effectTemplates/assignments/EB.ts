@@ -88,7 +88,11 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB01-009 (event) Just Shut Up and Come with Us!!!! —
   //   [Counter] Look at 5 cards from the top of your deck and play up to 1 {Animal} type Character card
   //   with a cost of 3 or less. Then, place the rest at the bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB01-009',
+    templateId: 'ability',
+    params: { timing: 'counter', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: false, destination: 'play', filter: { category: 'character', typeIncludes: 'Animal', maxCost: 3 }, remainder: 'bottom' }] },
+  },
 
   // EB01-010 — (Event) [Counter] K.O. up to 1 opp Character 6000 base power or less. [Trigger] 5000 base power or less.
   {
@@ -114,7 +118,13 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB01-012 (character) Cavendish —
   //   [On Play]/[When Attacking] If your Leader has the {Supernovas} type and you have no other [Cavendish]
   //   Characters, set up to 2 of your DON!! cards as active.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB01-012',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Supernovas' }, { kind: 'selfOtherNamedCharacterCount', name: 'Cavendish', atMost: 0 }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'leaderType', type: 'Supernovas' }, { kind: 'selfOtherNamedCharacterCount', name: 'Cavendish', atMost: 0 }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
+    ],
+  },
 
   // EB01-013 — [Activate: Main] trash this: play up to 1 {Land of Wano} cost<=5 (other than [Kouzuki Hiyori]) from hand; then draw 1.
   { cardNumber: 'EB01-013', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [
@@ -515,7 +525,20 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] [Once Per Turn] DON!! −2: If the only Characters on your field are {Straw Hat Crew}
   //   type Characters, set up to 2 of your DON!! cards as active. Then, this Leader gains +1000 power until
   //   the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB02-010',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      cost: [{ kind: 'donMinus', count: 2 }],
+      gate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'Straw Hat Crew' }],
+      functions: [
+        { fn: 'setActiveControllerDon', maxTargets: 2 },
+        { fn: 'addPowerSelf', amount: 1000, duration: 'endOfOpponentsTurn' },
+      ],
+    },
+  },
 
   // EB02-011 — [On Play] if Leader {Fish-Man}/{East Blue}: give up to 1 rested DON!! to your Leader.
   //   PARTIAL: the "up to 1 opp Character cost 5 or less cannot be rested" rider is deferred (rest-immunity is not modeled).
@@ -610,7 +633,16 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] You may rest 1 of your DON!! cards and this Character: If your Leader is [Donquixote
   //   Rosinante], look at 5 cards from the top of your deck; play up to 1 Character card with a cost of 2
   //   or less rested. Then, place the rest at the bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB02-025',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }],
+      gate: [{ kind: 'leaderName', name: 'Donquixote Rosinante' }],
+      functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: false, destination: 'play', filter: { category: 'character', maxCost: 2 }, remainder: 'bottom', rested: true }],
+    },
+  },
 
   // EB02-026 - [On Play] If Leader is multicolored and hand has 5 or less cards, draw 2.
   {
@@ -626,7 +658,18 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   deck; reveal up to 1 Character card with a cost of 2 and add it to your hand. Then, place the rest at
   //   the bottom of your deck in any order and play up to 1 Character card with a cost of 2 from your hand
   //   rested.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB02-028',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }],
+      functions: [
+        { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', exactCost: 2 }, remainder: 'bottom' },
+        { fn: 'playFromHand', filter: { category: 'character', exactCost: 2 }, rested: true },
+      ],
+    },
+  },
 
   // EB02-030 (event) And That's When Somebody Makes Fun of Their Friend's Dream!!!! —
   //   [Counter] If any of your Characters would be K.O.'d in battle during this turn, you may trash 1 card
@@ -1070,7 +1113,8 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] If your Leader has the {Supernovas} type, set up to 1 of your DON!! cards as active. Then,
   //   up to 1 of your opponent's Characters with a cost of 8 or less cannot be rested until the end of your
   //   opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: "cannot be rested" is not modeled yet; mapped the DON!! set-active effect.
+  { cardNumber: 'EB03-017', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Supernovas' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
 
   // EB03-018 — [Opponent's Turn] K.O. immune to opp effects + [Blocker]. PARTIAL: optional rest DON + trash hand to set active on end of turn deferred.
   {
@@ -1226,7 +1270,16 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] If your opponent has 5 or more cards in their hand, your opponent places 1 card from their
   //   hand at the bottom of their deck.[Activate: Main] [Once Per Turn] You may place 1 of your Characters
   //   at the bottom of the owner's deck: Give your Leader and 1 Character up to 1 rested DON!! card each.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: "Give your Leader and 1 Character ... each" needs multi-target DON distribution.
+  {
+    cardNumber: 'EB03-026',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'opponentHand', atLeast: 5 }],
+      functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1, chooser: 'opponent' }],
+    },
+  },
 
   // EB03-027 — [On Play] Return up to 1 Character with 7000 base power to hand.
   { cardNumber: 'EB03-027', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { exactBasePower: 7000 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -1681,7 +1734,14 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] Set up to 1 of your DON!! cards as active. Then, you cannot set DON!! cards as
   //   active using Character effects during this turn.[When Attacking] If you have 3 or more {Neptunian}
   //   type Characters, rest up to 1 of your opponent's Characters with a cost of 8 or less.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: the temporary lockout on Character effects setting DON!! active is not modeled yet.
+  {
+    cardNumber: 'EB04-016',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Neptunian', atLeast: 3 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 8 } }, optional: true }] } },
+    ],
+  },
 
   // EB04-017 — [On Play] if Leader {Minks}: play up to 1 {Minks} Character with a cost of 5 or less from hand.
   //   [Your Turn] if you have 3+ {Minks} Characters, give all of your opponent's Characters −1 cost.
@@ -1805,7 +1865,17 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB04-025 (character) Nefeltari Vivi —
   //   [On Play] Play up to 1 {Alabasta} type Character card with a cost of 8 or less other than [Nefeltari
   //   Vivi] from your hand. Then, your opponent places 1 card from their hand at the bottom of their deck.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB04-025',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Alabasta', maxCost: 8, excludeSelfName: true } },
+        { fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1, chooser: 'opponent' },
+      ],
+    },
+  },
 
   // EB04-026 — [On Play] Place up to 1 opp Character cost<=1 at bottom of deck. [When Attacking] Draw 1 and trash 1 from hand.
   {

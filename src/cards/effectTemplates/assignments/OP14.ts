@@ -41,7 +41,11 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On K.O.] Look at 5 cards from the top of your deck; play up to 1 {Supernovas} type Character card
   //   with 2000 power or less other than [Basil Hawkins]. Then, place the rest at the bottom of your deck
   //   in any order.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP14-010',
+    templateId: 'ability',
+    params: { timing: 'onKO', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: false, destination: 'play', filter: { category: 'character', typeIncludes: 'Supernovas', maxPower: 2000, excludeSelfName: true }, remainder: 'bottom' }] },
+  },
 
 
   // OP14-012 — [When Attacking] If 5000+ power: give up to 2 rested DON!! to Leader or 1 Character.
@@ -150,7 +154,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] Up to 2 of your opponent's Characters with a cost of 5 or less cannot be rested until the
   //   end of your opponent's next End Phase.[On K.O.] You may rest 1 of your cards: Play up to 1 green
   //   Character card with a cost of 5 or less from your hand.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: On K.O. "rest 1 of your cards" cost into play-from-hand is not modeled yet.
+  { cardNumber: 'OP14-033', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 2 }] } },
 
   // OP14-034 — [Your Turn] green {Straw Hat Crew} base cost ≥4 +1000; [OPT] rest 1 Character to save ally from opp effect K.O.
   {
@@ -384,7 +389,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP14-065 (character) Senor Pink —
   //   [On K.O.] Your opponent returns 1 DON!! card from their field to their DON!! deck.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP14-065', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'returnOpponentDon', count: 1 }] } },
 
   { cardNumber: 'OP14-067', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }, { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Donquixote Pirates' }, remainder: 'bottom' }] } },
 

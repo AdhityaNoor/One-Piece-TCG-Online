@@ -827,7 +827,7 @@ function handSelectable(mode: MatchSelectionMode, isOwn: boolean, card: CardView
 }
 
 function selectedHandIds(mode: MatchSelectionMode): Set<string> {
-  if (mode.kind === 'payingCost') return new Set([mode.handCardInstanceId]);
+  if (mode.kind === 'confirmPlayCost') return new Set([mode.handCardInstanceId]);
   if (mode.kind === 'payingCounterEventCost') return new Set([mode.handCardInstanceId]);
   if (mode.kind === 'selectCounterBoostTarget') return new Set([mode.handCardInstanceId]);
   return new Set();

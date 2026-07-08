@@ -139,7 +139,13 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-032 (character) Boa Hancock —
   //   [Unblockable] (This card cannot be blocked.)[On Play] Up to 1 of your opponent's Characters other
   //   than [Monkey.D.Luffy] cannot be rested until the end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP16-032',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'unblockable', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { excludeName: 'Monkey.D.Luffy' } }, duration: 'endOfOpponentsTurn', optional: true }] } },
+    ],
+  },
 
   // OP16-033 (character) Morley —
   //   If this Character would be K.O.'d, you may rest 2 of your cards instead.[Unblockable] (This card
@@ -393,7 +399,13 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] If your Leader has the {Impel Down} type, your opponent returns 1 DON!! card from their
   //   field to their DON!! deck.[On K.O.] Your opponent returns 4 DON!! cards from their field to their
   //   DON!! deck.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP16-074',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'returnOpponentDon', count: 1 }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'returnOpponentDon', count: 4 }] } },
+    ],
+  },
 
 
   // OP16-076 — [Main] rest 3 DON!!: up to 3 {Admiral} Characters +2000 this turn. PARTIAL: [Counter] typed-present buff deferred.

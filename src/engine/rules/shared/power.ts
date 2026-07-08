@@ -10,7 +10,7 @@
  * every read, so a conditional buff turns on/off as DON!! attaches or the turn
  * flips, with no extra bookkeeping. Cost modifiers use the same record model.
  */
-import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousPowerCondition, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
+import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousPowerCondition, ContinuousRestRestriction, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
 
@@ -334,6 +334,24 @@ export function isAttackTargetForbidden(state: GameState, attackerId: string, ta
       return !r.whileSummoningSick || attacker?.summoningSick === true;
     }
     return false;
+  });
+}
+
+function restSourceMatches(mod: ContinuousRestRestriction, state: GameState, protectedInstanceId: string, restSourceInstanceId: string | undefined): boolean {
+  if (mod.effectSourceController === undefined) return true;
+  if (!restSourceInstanceId) return false;
+  const protectedInst = state.cardsById[protectedInstanceId];
+  const source = state.cardsById[restSourceInstanceId];
+  if (!protectedInst || !source) return false;
+  if (mod.effectSourceController === 'opponent') return source.controllerId !== protectedInst.ownerId;
+  return source.controllerId === protectedInst.ownerId;
+}
+
+/** Whether `instanceId` currently cannot be rested by the resolving card effect. */
+export function cannotBeRestedByEffect(state: GameState, instanceId: string, restSourceInstanceId?: string): boolean {
+  return state.continuousEffects.some((record) => {
+    const r = record.restRestriction;
+    return r?.appliesToInstanceId === instanceId && restSourceMatches(r, state, instanceId, restSourceInstanceId);
   });
 }
 

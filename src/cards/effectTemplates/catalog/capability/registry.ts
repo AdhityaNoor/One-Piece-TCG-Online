@@ -179,6 +179,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['rest up to {N} of your opponent\'s DON!! cards'],
     examples: [{ cardNumber: 'OP06-062', snippet: "{ fn: 'restOpponentDon', maxTargets: 1 }" }],
   },
+  returnOpponentDon: {
+    id: 'returnOpponentDon',
+    summary: 'Opponent chooses N DON!! from their field and returns them to their DON!! deck.',
+    params: [{ name: 'count', type: 'number', required: true }],
+    covers: ['your opponent returns {N} DON!! card from their field to their DON!! deck'],
+    examples: [{ cardNumber: 'OP14-065', snippet: "{ fn: 'returnOpponentDon', count: 1 }" }],
+  },
   restControllerLeaderOrStage: {
     id: 'restControllerLeaderOrStage',
     summary: 'Rest 1 chosen controller Leader/Stage (optionally type-filtered) — a "rest your {X} Leader/Stage:" cost. Binds var t.',
@@ -206,6 +213,19 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     ],
     covers: ['this Character cannot attack', '... cannot attack until the end of your opponent\'s next turn'],
     examples: [{ cardNumber: 'OP04-065', snippet: "{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'endOfOpponentsTurn' }" }],
+  },
+  preventRest: {
+    id: 'preventRest',
+    summary: 'Target Leader/Character cannot be rested by card effects for the duration.',
+    params: [
+      { name: 'target', type: 'TargetSpec', required: true },
+      { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'optional', type: 'boolean', required: false },
+      { name: 'maxTargets', type: 'number', required: false },
+      { name: 'effectSourceController', type: "'opponent' | 'controller'", required: false, note: 'for "by your opponent\'s effects" / "by your effects"' },
+    ],
+    covers: ['up to {N} Characters cannot be rested until the end of your opponent\'s next End Phase', 'this Character cannot be rested by your opponent\'s effects'],
+    examples: [{ cardNumber: 'OP13-032', snippet: "{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 8 } }, duration: 'endOfOpponentsTurn', optional: true }" }],
   },
   negateEffect: {
     id: 'negateEffect',
@@ -448,10 +468,20 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'to', type: 'MoveCardDestination', required: true },
       { name: 'optional', type: 'boolean', required: false },
       { name: 'maxTargets', type: 'number', required: false },
+      { name: 'chooser', type: "'controller' | 'opponent'", required: false },
     ],
-    covers: ['return up to 1 Character to the owner\'s hand', 'place ... at the bottom of the owner\'s deck', 'add 1 card from the top of your Life to your hand'],
+    covers: ['return up to 1 Character to the owner\'s hand', 'place ... at the bottom of the owner\'s deck', 'add 1 card from the top of your Life to your hand', 'your opponent places 1 card from their hand at the bottom of their deck'],
     excludes: ['character source filter by CURRENT minCost (only minBaseCost exists)', 'return to hand OR bottom of deck (player choice of destination)'],
     examples: [{ cardNumber: 'OP01-047', snippet: "{ fn: 'moveCards', from: { zone: 'characters', player: 'any' }, to: { zone: 'hand', player: 'owner' }, optional: true }" }],
+  },
+  moveAllCharactersToBottomDeck: {
+    id: 'moveAllCharactersToBottomDeck',
+    summary: 'Move all matching Characters to the bottom of their owners\' decks, no target choice.',
+    params: [
+      { name: 'filter', type: '{ maxCost?; maxPower?; maxBaseCost?; maxBasePower? }', required: false },
+    ],
+    covers: ['Place all Characters with a cost of {N} or less at the bottom of the owner\'s deck'],
+    examples: [{ cardNumber: 'OP05-058', snippet: "{ fn: 'moveAllCharactersToBottomDeck', filter: { maxCost: 3 } }" }],
   },
   peekLifeAndPlace: {
     id: 'peekLifeAndPlace',
@@ -480,10 +510,10 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     params: [
       { name: 'filter', type: 'SearchFilter', required: true },
       { name: 'maxTargets', type: 'number', required: false },
+      { name: 'rested', type: 'boolean', required: false },
     ],
-    covers: ['play up to 1 {type} Character card with a cost of {C} or less from your hand'],
-    excludes: ['play ... from your hand RESTED (no rested flag on playFromHand)'],
-    examples: [{ cardNumber: 'OP09-030', snippet: "{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'ODYSSEY', maxCost: 3, excludeSelfName: true } }" }],
+    covers: ['play up to 1 {type} Character card with a cost of {C} or less from your hand', 'play ... from your hand rested'],
+    examples: [{ cardNumber: 'EB02-028', snippet: "{ fn: 'playFromHand', filter: { category: 'character', exactCost: 2 }, rested: true }" }],
   },
   playFromDeck: {
     id: 'playFromDeck',
@@ -810,6 +840,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   selfHasCharacterCostAtLeast: { id: 'selfHasCharacterCostAtLeast', summary: 'You have a Character with a cost of N or more.', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['If you have a Character with a cost of {N} or more'], examples: [{ cardNumber: 'OP08-085', snippet: "{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }" }] },
   selfHasCharacterBasePowerAtLeast: { id: 'selfHasCharacterBasePowerAtLeast', summary: 'You have a Character with a base power of N or more.', params: [{ name: 'power', type: 'number', required: true }], covers: ['If you have a Character with a base power of {N} or more'], examples: [{ cardNumber: 'ST30-001', snippet: "{ kind: 'selfHasCharacterBasePowerAtLeast', power: 7000 }" }] },
   opponentDonMoreThanSelf: { id: 'opponentDonMoreThanSelf', summary: 'Opponent has more DON!! on their field than you.', params: [], covers: ['If your opponent has more DON!! cards on their field than you'], examples: [{ cardNumber: 'EB04-034', snippet: "{ kind: 'opponentDonMoreThanSelf' }" }] },
+  opponentDonFieldCount: { id: 'opponentDonFieldCount', summary: 'Opponent has N or more/less DON!! on their field.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If your opponent has {N} or more DON!! cards on their field'], examples: [{ cardNumber: 'OP02-090', snippet: "{ kind: 'opponentDonFieldCount', atLeast: 6 }" }] },
   selfDonAtMostOpponent: { id: 'selfDonAtMostOpponent', summary: 'Your DON!! on field <= opponent\'s.', params: [], covers: ['If the number of DON!! on your field is equal to or less than your opponent\'s'], examples: [{ cardNumber: 'OP12-062', snippet: "{ kind: 'selfDonAtMostOpponent' }" }] },
   selfControlsNamed: { id: 'selfControlsNamed', summary: 'You control a Character named X (counts self if same name).', params: [{ name: 'name', type: 'string', required: true }], covers: ['If you have [{name}]', 'If you have a [{name}] Character'], excludes: ['"other than THIS Character" self-instance exclusion'], examples: [{ cardNumber: 'OP07-030', snippet: "{ kind: 'selfControlsNamed', name: 'Camie' }" }] },
   selfDoesNotControlNamed: { id: 'selfDoesNotControlNamed', summary: 'You do not control a Character named X.', params: [{ name: 'name', type: 'string', required: true }], covers: ['If you don\'t have [{name}]', 'you have no other [{name}] Characters'], examples: [{ cardNumber: 'EB01-012', snippet: "{ kind: 'selfDoesNotControlNamed', name: 'Cavendish' }" }] },

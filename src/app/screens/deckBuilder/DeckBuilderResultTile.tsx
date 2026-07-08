@@ -9,6 +9,13 @@ export interface DeckBuilderResultTileProps {
   entry: CardLibraryEntry;
 }
 
+export const DECK_BUILDER_CARD_DRAG_MIME = 'application/x-optcg-deck-builder-card';
+
+export interface DeckBuilderCardDragPayload {
+  cardNumber: string;
+  printingImageId: string;
+}
+
 export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
   const [zoomOpen, setZoomOpen] = useState(false);
   const [selectedPrintingImageId, setSelectedPrintingImageId] = useState(entry.printings[0]?.printingImageId ?? entry.cardNumber);
@@ -32,6 +39,7 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
   // 5-1-2-3: normally 4, but Infinity for "any number of this card" cards (e.g. Pacifista).
   const copyLimit = copyLimitForCard(entry.definition);
   const atCopyLimit = totalQuantityForCardNumber >= copyLimit;
+  const canDrag = isLeaderCard ? !(isCurrentLeader && leaderSelection?.chosenPrintingImageId === selectedPrintingImageId) : hasLeader && !atCopyLimit;
 
   function handleSelect() {
     if (isLeaderCard) {
@@ -49,8 +57,22 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
             event.preventDefault();
             setZoomOpen(true);
           }}
-          className={['group relative block w-full text-left', !isLeaderCard && (!hasLeader || atCopyLimit) ? 'opacity-55' : ''].join(' ')}
-          title={isLeaderCard ? (isCurrentLeader ? 'Current leader' : 'Set leader') : hasLeader ? 'Add to deck' : 'Pick a leader first'}
+          draggable={canDrag}
+          onDragStart={(event) => {
+            if (!canDrag) {
+              event.preventDefault();
+              return;
+            }
+            const payload: DeckBuilderCardDragPayload = {
+              cardNumber: entry.cardNumber,
+              printingImageId: selectedPrintingImageId,
+            };
+            event.dataTransfer.effectAllowed = 'copy';
+            event.dataTransfer.setData(DECK_BUILDER_CARD_DRAG_MIME, JSON.stringify(payload));
+            event.dataTransfer.setData('text/plain', `${entry.cardNumber} ${entry.definition.name}`);
+          }}
+          className={['group relative block w-full text-left', canDrag ? 'cursor-grab active:cursor-grabbing' : '', !isLeaderCard && (!hasLeader || atCopyLimit) ? 'opacity-55' : ''].join(' ')}
+          title={isLeaderCard ? (isCurrentLeader ? 'Current leader' : 'Drag or click to set leader') : hasLeader ? 'Drag or click to add to deck' : 'Pick a leader first'}
         >
           <CardImage src={imageUrl} alt={entry.definition.name} className="rounded-none" />
           {totalQuantityForCardNumber > 0 && (

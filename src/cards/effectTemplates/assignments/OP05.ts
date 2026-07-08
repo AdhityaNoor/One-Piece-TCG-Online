@@ -277,7 +277,14 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Main] Place all Characters with a cost of 3 or less at the bottom of the owner's deck. Then, you and
   //   your opponent trash cards from your hands until you each have 5 cards in your hands. [Trigger] Place
   //   all Characters with a cost of 2 or less at the bottom of the owner's deck.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: hand-size equalization after the [Main] board clear is not modeled yet.
+  {
+    cardNumber: 'OP05-058',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveAllCharactersToBottomDeck', filter: { maxCost: 3 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveAllCharactersToBottomDeck', filter: { maxCost: 2 } }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP05-059',

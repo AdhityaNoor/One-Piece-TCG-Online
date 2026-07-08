@@ -231,6 +231,13 @@ export interface ContinuousAttackRestriction {
   whileSummoningSick?: boolean;
 }
 
+/** Prevents a Leader/Character from being rested by card effects while this record is active. */
+export interface ContinuousRestRestriction {
+  appliesToInstanceId: string;
+  /** Omitted = any effect source. Otherwise relative to the protected card's owner. */
+  effectSourceController?: 'opponent' | 'controller';
+}
+
 /**
  * `'canAttackActive'`: "This Leader/Character can also attack active Characters" —
  * relaxes the normal 7-1-1-2 restriction (only the opponent's Leader or a RESTED
@@ -355,6 +362,8 @@ export interface ContinuousEffectRecord {
   blockerRestriction?: ContinuousBlockerRestriction;
   /** Structured attack restriction ("cannot attack"). Omitted for unrelated continuous effects. */
   attackRestriction?: ContinuousAttackRestriction;
+  /** Structured rest restriction ("cannot be rested by effects"). Omitted for unrelated continuous effects. */
+  restRestriction?: ContinuousRestRestriction;
   /** Structured keyword grant. Omitted for unrelated continuous effects. */
   keywordModifier?: ContinuousKeywordModifier;
   /** Structured "cannot be K.O.'d" grant. Omitted for unrelated continuous effects. */

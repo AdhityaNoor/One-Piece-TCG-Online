@@ -147,6 +147,41 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'trashCards', target: { sel: 'var', name: 't' } });
   });
 
+  it('moveCards can let the opponent choose a card from their hand for deck-bottom placement', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1, chooser: 'opponent' }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentHand' }, min: 1, max: 1, chooser: 'opponent' });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'moveToBottomDeck', target: { sel: 'var', name: 't' } });
+  });
+
+  it('moveAllCharactersToBottomDeck moves every matching Character without a target choice', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'activateMain',
+      functions: [{ fn: 'moveAllCharactersToBottomDeck', filter: { maxCost: 3 } }],
+    });
+    expect(p.abilities[0].ops).toEqual([{ op: 'moveToBottomDeck', target: { sel: 'allCharacters', maxCost: 3 } }]);
+  });
+
+  it('preventRest chooses matching Characters and registers rest prevention', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 2 }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters', maxCost: 5 }, min: 0, max: 2 });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'preventRest', target: { sel: 'var', name: 't' }, duration: 'endOfOpponentsTurn' });
+  });
+
+  it('returnOpponentDon lets the opponent choose DON!! to return', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onKO',
+      functions: [{ fn: 'returnOpponentDon', count: 1 }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentFieldDon' }, min: 1, max: 1, chooser: 'opponent' });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'returnDonToDonDeck', target: { sel: 'var', name: 't' } });
+  });
+
   it('moveCards keeps top-or-bottom Life choices hidden when moving to trash', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onPlay',

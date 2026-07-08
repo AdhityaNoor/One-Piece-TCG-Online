@@ -13,7 +13,7 @@ import { createActionLogger, type ActionLogger } from '../rules/shared/actionLog
 import type { GameLogEntry } from '../logs/logEntry';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 import { getOpponentId } from '../rules/shared/players';
-import { computeCurrentCost, computeCurrentPower, isKoImmune } from '../rules/shared/power';
+import { cannotBeRestedByEffect, computeCurrentCost, computeCurrentPower, isKoImmune } from '../rules/shared/power';
 import { koReplacementDescription } from '../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { createSeededRng } from '../rng/seededRng';
@@ -662,6 +662,34 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  preventRest(spec: {
+    appliesToInstanceId: string;
+    duration: ContinuousEffectDuration;
+    effectSourceController?: 'opponent' | 'controller';
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'cannot be rested by effects',
+      restRestriction: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        ...(spec.effectSourceController ? { effectSourceController: spec.effectSourceController } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToInstanceId} cannot be rested by effects (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
   negateEffect(spec: {
     appliesToInstanceId: string;
     duration: ContinuousEffectDuration;
@@ -1105,7 +1133,7 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
-  playCharacterFromHand(handInstanceId: string): void {
+  playCharacterFromHand(handInstanceId: string, rested = false): void {
     const handInst = this.working.cardsById[handInstanceId];
     if (!handInst || handInst.currentZone !== 'hand') return;
     const def = this.defs[handInst.cardDefinitionId];
@@ -1122,7 +1150,7 @@ export class EffectContextImpl implements EffectContext {
       ownerId: handInst.ownerId,
       controllerId,
       currentZone: 'characterArea',
-      orientation: 'active',
+      orientation: rested ? 'rested' : 'active',
       faceState: 'faceUp',
       donAttached: [],
       currentPower: def.basePower ?? 0,
@@ -1145,7 +1173,7 @@ export class EffectContextImpl implements EffectContext {
     this.logger.push({
       actorPlayerId: controllerId,
       type: 'CARD_PLAYED',
-      message: `${controllerId} played ${def.name} from hand via an effect (no cost).`,
+      message: `${controllerId} played ${def.name} from hand via an effect (no cost, ${rested ? 'rested' : 'active'}).`,
       data: { from: 'hand', to: 'characterArea', cost: 0, oldInstanceId: handInstanceId },
       relatedCardInstanceIds: [newId],
       visibility: 'public',
@@ -1227,7 +1255,7 @@ export class EffectContextImpl implements EffectContext {
     }
   }
 
-  playCharacterFromDeck(deckInstanceId: string): void {
+  playCharacterFromDeck(deckInstanceId: string, rested = false): void {
     const deckInst = this.working.cardsById[deckInstanceId];
     if (!deckInst || deckInst.currentZone !== 'deck') return;
     const def = this.defs[deckInst.cardDefinitionId];
@@ -1244,7 +1272,7 @@ export class EffectContextImpl implements EffectContext {
       ownerId: deckInst.ownerId,
       controllerId,
       currentZone: 'characterArea',
-      orientation: 'active',
+      orientation: rested ? 'rested' : 'active',
       faceState: 'faceUp',
       donAttached: [],
       currentPower: def.basePower ?? 0,
@@ -1267,7 +1295,7 @@ export class EffectContextImpl implements EffectContext {
     this.logger.push({
       actorPlayerId: controllerId,
       type: 'CARD_PLAYED',
-      message: `${controllerId} played ${def.name} from deck via an effect (no cost).`,
+      message: `${controllerId} played ${def.name} from deck via an effect (no cost, ${rested ? 'rested' : 'active'}).`,
       data: { from: 'deck', to: 'characterArea', cost: 0, oldInstanceId: deckInstanceId },
       relatedCardInstanceIds: [newId],
       visibility: 'public',
@@ -1376,6 +1404,17 @@ export class EffectContextImpl implements EffectContext {
     const inst = this.working.cardsById[targetInstanceId];
     if (!inst) return;
     const isDon = inst.orientation === null; // DON!! track state via donRested, not orientation
+    if (!isDon && cannotBeRestedByEffect(this.working, targetInstanceId, this.sourceInstanceId)) {
+      this.logger.push({
+        actorPlayerId: this.controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${targetInstanceId} could not be rested by this effect.`,
+        data: { targetInstanceId, sourceInstanceId: this.sourceInstanceId },
+        relatedCardInstanceIds: [targetInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     if (isDon) {
       if (inst.donRested === true) return;
       this.working = { ...this.working, cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, donRested: true } } };
@@ -1435,6 +1474,40 @@ export class EffectContextImpl implements EffectContext {
       message: `${targetInstanceId} was set as active by an effect (2-4-3).`,
       data: { targetInstanceId },
       relatedCardInstanceIds: [targetInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  returnDonToDonDeck(donInstanceId: string): void {
+    const inst = this.working.cardsById[donInstanceId];
+    if (!inst || inst.currentZone !== 'costArea') return;
+    const owner = this.working.players[inst.ownerId];
+    if (!owner) return;
+    let cardsById = { ...this.working.cardsById };
+    for (const [id, card] of Object.entries(cardsById)) {
+      if (card.donAttached.includes(donInstanceId)) {
+        cardsById = { ...cardsById, [id]: { ...card, donAttached: card.donAttached.filter((donId) => donId !== donInstanceId) } };
+      }
+    }
+    cardsById[donInstanceId] = { ...inst, currentZone: 'donDeck', donRested: false };
+    this.working = {
+      ...this.working,
+      cardsById,
+      players: {
+        ...this.working.players,
+        [inst.ownerId]: {
+          ...owner,
+          costArea: removeFromZone(owner.costArea, donInstanceId),
+          donDeck: addToZoneTop(owner.donDeck, donInstanceId),
+        },
+      },
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'DON_RETURNED',
+      message: `${inst.ownerId} returned 1 DON!! to their DON!! deck by an effect.`,
+      data: { donInstanceIds: [donInstanceId] },
+      relatedCardInstanceIds: [donInstanceId],
       visibility: 'public',
     });
   }
@@ -1580,6 +1653,95 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: chosen,
       visibility: reveal ? 'public' : { visibleTo: [playerId] },
     });
+  }
+
+  searchPlayResolve(playerId: string, lookedIds: string[], chosenIds: string[], remainder: SearchRemainderDestination, rested = false, bottomOrderIds?: string[]): void {
+    const player = this.working.players[playerId];
+    if (!player || lookedIds.length === 0) return;
+
+    const lookedSet = new Set(lookedIds);
+    const chosenSet = new Set(chosenIds.filter((id) => lookedSet.has(id)));
+    const chosen = lookedIds.filter((id) => chosenSet.has(id));
+    const rest = lookedIds.filter((id) => !chosenSet.has(id));
+    const restSet = new Set(rest);
+    const orderedRest =
+      remainder === 'bottom' && bottomOrderIds && bottomOrderIds.length === rest.length && bottomOrderIds.every((id) => restSet.has(id))
+        ? bottomOrderIds
+        : rest;
+
+    let deck = { ...player.deck, cardIds: player.deck.cardIds.slice(lookedIds.length) };
+    let characterArea = player.characterArea;
+    let trash = player.trash;
+    let nextState = this.working;
+    let cardsById = { ...nextState.cardsById };
+    const playedIds: string[] = [];
+
+    for (const oldId of chosen) {
+      const deckInst = cardsById[oldId];
+      const def = this.defs[deckInst?.cardDefinitionId ?? ''];
+      if (!deckInst || !def || def.category !== 'character') continue;
+      const minted = mintRuntimeInstanceId({ ...nextState, cardsById });
+      nextState = minted.state;
+      cardsById = { ...minted.state.cardsById };
+      const newId = minted.id;
+      cardsById[newId] = {
+        instanceId: newId,
+        cardDefinitionId: deckInst.cardDefinitionId,
+        ownerId: deckInst.ownerId,
+        controllerId: deckInst.controllerId,
+        currentZone: 'characterArea',
+        orientation: rested ? 'rested' : 'active',
+        faceState: 'faceUp',
+        donAttached: [],
+        currentPower: def.basePower ?? 0,
+        appliedContinuousEffectIds: [],
+        oncePerTurnUsed: [],
+        summoningSick: !def.hasRush,
+        revealedTo: 'all',
+        enteredPlayTurn: nextState.turnNumber,
+      };
+      delete cardsById[oldId];
+      characterArea = addToZoneBottom(characterArea, newId);
+      playedIds.push(newId);
+    }
+
+    for (const id of orderedRest) {
+      if (remainder === 'trash') {
+        trash = addToZoneTop(trash, id);
+        cardsById[id] = { ...cardsById[id], currentZone: 'trash', revealedTo: 'all' };
+      } else {
+        deck = addToZoneBottom(deck, id);
+        cardsById[id] = { ...cardsById[id], currentZone: 'deck', revealedTo: [] };
+      }
+    }
+
+    this.working = {
+      ...nextState,
+      players: { ...nextState.players, [playerId]: { ...player, deck, characterArea, trash } },
+      cardsById,
+    };
+
+    this.logger.push({
+      actorPlayerId: playerId,
+      type: 'CARD_PLAYED',
+      message: `${playerId} searched the top ${lookedIds.length} and played ${playedIds.length} Character card${playedIds.length === 1 ? '' : 's'} (${rested ? 'rested' : 'active'}).`,
+      data: { lookedCount: lookedIds.length, playedCount: playedIds.length, playedInstanceIds: playedIds, remainder, remainderCount: orderedRest.length, remainderInstanceIds: orderedRest, rested },
+      relatedCardInstanceIds: playedIds,
+      visibility: 'public',
+    });
+
+    const limit = characterArea.maxSize ?? Infinity;
+    if (characterArea.cardIds.length > limit) {
+      this.emitChoice({
+        id: `${playerId}__character-overflow-${playedIds[playedIds.length - 1] ?? 'search-play'}`,
+        playerId,
+        kind: 'SELECT_CARDS',
+        prompt: `Choose 1 Character to trash - more than ${limit} in your Character Area (3-7-6-1).`,
+        constraints: { min: 1, max: 1, zoneId: 'characterArea', filterDescription: 'Any Character currently in your Character Area.' },
+        sourceInstanceId: null,
+        sourceEffectId: 'rule:characterAreaOverflow',
+      });
+    }
   }
 
   searchResolveTopOrBottom(playerId: string, lookedIds: string[], topOrderIds: string[], bottomOrderIds: string[]): void {

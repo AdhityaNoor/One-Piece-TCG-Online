@@ -30,7 +30,7 @@ export type BoardZoneKind = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea
 
 export type BoardSelectionMode =
   | { kind: 'idle' }
-  | { kind: 'payingCost'; handCardInstanceId: string; cardCategory: 'character' | 'stage' | 'event'; cost: number; selectedDonIds: string[] }
+  | { kind: 'confirmPlayCost'; handCardInstanceId: string; cardCategory: 'character' | 'stage' | 'event'; cardName: string; cost: number; donInstanceIds: string[] }
   | { kind: 'selectAttacker' }
   | { kind: 'selectAttackTarget'; attackerInstanceId: string }
   | { kind: 'selectBlocker' }
@@ -179,6 +179,16 @@ export function useBoardSelection(actingPlayerId: string | null) {
     return computeCurrentCost(defs, state, card.instanceId);
   };
 
+  const activeCostAreaDonIds = (playerId: string): string[] => {
+    if (!state) return [];
+    const player = state.players[playerId];
+    if (!player) return [];
+    return player.costArea.cardIds.filter((id) => {
+      const instance = state.cardsById[id];
+      return instance?.ownerId === playerId && instance.currentZone === 'costArea' && instance.donRested === false;
+    });
+  };
+
   function runDispatch(action: GameAction): void {
     const result = dispatch(action);
     if (!result.ok) {
@@ -201,15 +211,15 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const beginActivateMain = (): void => { setMode({ kind: 'selectActivateSource' }); setLastError(null); };
   const cancel = (): void => { reset(); setLastError(null); };
 
-  // --- Confirm step for the one flow with a true multi-select sub-step ---
+  // --- Confirm steps for flows that collect a cost before dispatching ---
   function confirmPlayCard(): void {
-    if (mode.kind !== 'payingCost' || mode.selectedDonIds.length !== mode.cost) return;
+    if (mode.kind !== 'confirmPlayCost' || mode.donInstanceIds.length !== mode.cost) return;
     withActingPlayer((playerId) => ({
       type: PLAY_ACTION_BY_CATEGORY[mode.cardCategory],
       actionId: createActionId(),
       playerId,
       handCardInstanceId: mode.handCardInstanceId,
-      donInstanceIds: mode.selectedDonIds,
+      donInstanceIds: mode.donInstanceIds,
     }) as GameAction);
   }
 
@@ -361,19 +371,17 @@ export function useBoardSelection(actingPlayerId: string | null) {
           }) as GameAction);
           return;
         }
-        setMode({ kind: 'payingCost', handCardInstanceId: card.instanceId, cardCategory: card.category, cost, selectedDonIds: [] });
+        const donInstanceIds = activeCostAreaDonIds(actingPlayerId).slice(0, cost);
+        if (donInstanceIds.length < cost) {
+          setLastError([`${card.name} costs ${cost} DON!!, but only ${donInstanceIds.length} active DON!! are available.`]);
+          return;
+        }
+        setMode({ kind: 'confirmPlayCost', handCardInstanceId: card.instanceId, cardCategory: card.category, cardName: card.name, cost, donInstanceIds });
         setLastError(null);
         return;
       }
 
-      case 'payingCost': {
-        if (!isOwnCard || zone !== 'costArea' || card.donRested) return;
-        const already = mode.selectedDonIds.includes(card.instanceId);
-        if (already) {
-          setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => id !== card.instanceId) });
-        } else if (mode.selectedDonIds.length < mode.cost) {
-          setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, card.instanceId] });
-        }
+      case 'confirmPlayCost': {
         return;
       }
 

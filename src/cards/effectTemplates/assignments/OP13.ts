@@ -11,7 +11,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x1] [On Your Opponent's Attack] If you have 5 or less active DON!! cards, you may rest any
   //   number of your DON!! cards. For every DON!! card rested this way, this Leader or up to 1 of your
   //   {Straw Hat Crew} type Characters gains +2000 power during this battle.
-  // NOTE: not yet implemented (needs template).
 
   // OP13-002 (leader) Portgas.D.Ace —
   //   [On Your Opponent's Attack] [Once Per Turn] You may trash 1 card from your hand: Give up to 1 of your
@@ -150,7 +149,7 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-032 (character) Nico Robin —
   //   [On Play] Up to 1 of your opponent's Characters with a cost of 8 or less cannot be rested until the
   //   end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP13-032', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 8 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
   // OP13-033 — [On K.O.] Rest up to 2 opp Characters (the "or DON!!" option is dropped).
   { cardNumber: 'OP13-033', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 2 }] } },

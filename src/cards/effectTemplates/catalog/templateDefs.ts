@@ -32,7 +32,7 @@ export type TemplateId = (typeof TEMPLATE_IDS)[keyof typeof TEMPLATE_IDS];
 export type MoveCardSource =
   | { zone: 'life'; player: 'controller' | 'opponent'; position: 'top' | 'bottom' | 'topOrBottom'; hiddenChoice?: boolean; count?: number; untilLife?: number }
   | { zone: 'deck'; player: 'controller'; position: 'top'; count?: number }
-  | { zone: 'hand'; player: 'controller'; filter?: SearchFilter }
+  | { zone: 'hand'; player: 'controller' | 'opponent'; filter?: SearchFilter }
   | { zone: 'trash'; player: 'controller' | 'opponent'; filter?: SearchFilter }
   | { zone: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: CharacterMoveFilter }
   | { zone: 'stages'; player: 'controller' | 'opponent' | 'any'; filter?: { maxCost?: number } };
@@ -101,6 +101,7 @@ export type AbilityFunction =
   | { fn: 'preventRefresh'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   // "This/these Character(s) cannot attack" for the given duration (e.g. "until the end of your opponent's next turn" -> duration: 'endOfOpponentsTurn').
   | { fn: 'preventAttack'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string }
+  | { fn: 'preventRest'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string; effectSourceController?: 'opponent' | 'controller' }
   | { fn: 'negateEffect'; target: TargetSpec; duration: IrDuration; negatedTimings?: IrTiming[]; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[] }
   | { fn: 'addCost'; target: TargetSpec; amount: number; duration?: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
@@ -123,14 +124,15 @@ export type AbilityFunction =
   | { fn: 'optionalTrashFromHand'; count: number }
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
   | { fn: 'trashTopDeck'; count: number; optional?: boolean }
-  | { fn: 'moveCards'; from: MoveCardSource; to: MoveCardDestination; optional?: boolean; maxTargets?: number; prompt?: string }
+  | { fn: 'moveCards'; from: MoveCardSource; to: MoveCardDestination; optional?: boolean; maxTargets?: number; prompt?: string; chooser?: 'controller' | 'opponent' }
+  | { fn: 'moveAllCharactersToBottomDeck'; filter?: { maxCost?: number; maxPower?: number; maxBaseCost?: number; maxBasePower?: number } }
   | { fn: 'peekLifeAndPlace'; from: 'controllerOrOpponentTop'; placement: 'topOrBottom' }
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
-  | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number; optional?: boolean }
-  | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number }
+  | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number; optional?: boolean; rested?: boolean }
+  | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number; rested?: boolean }
   | { fn: 'playFromTrash'; filter: SearchFilter; maxTargets?: number; rested?: boolean }
   | { fn: 'triggerPlaySelf' }
-  | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination }
+  | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination; rested?: boolean }
   // "Reveal 1 card from the top of your deck. If <filter>, <then>." Reveals the top card
   // (public), leaves it on top, and runs `then` only when the card matches `filter`
   // (omit filter for an unconditional reveal). `then` branch functions must not use
@@ -150,6 +152,8 @@ export type AbilityFunction =
   | { fn: 'setActiveControllerDon'; maxTargets: number }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
   | { fn: 'restOpponentDon'; maxTargets?: number; optional?: boolean }
+  // Opponent chooses N DON!! cards from their field and returns them to their DON!! deck.
+  | { fn: 'returnOpponentDon'; count: number }
   // Aura: give the controller's own Leader + Characters (optionally type-filtered)
   // a flat power delta, optionally gated on the source card's own state.
   | { fn: 'addPowerAuraControllerTypes'; amount: number; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }

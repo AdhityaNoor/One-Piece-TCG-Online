@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from 'react';
 import { Button, CanvasMenuButton, CardDetailModal, CardImage } from '../../components';
-import { useCardLibraryStore } from '../../store/cardLibraryStore';
+import { useCardLibraryStore, useVisibleCardLibraryEntries } from '../../store/cardLibraryStore';
 import { useDeckBuilderLegality, useDeckBuilderStore } from '../../store/deckBuilderStore';
 import { useCurrentScreen, useNavigationStore } from '../../store/navigationStore';
 import { useSavedDecksStore } from '../../store/savedDecksStore';
 import { CardSetBrowserControls, CardSetBrowserResults } from '../shared';
 import { ClipboardImportTab } from './ClipboardImportTab';
-import { DeckBuilderResultTile } from './DeckBuilderResultTile';
+import { DECK_BUILDER_CARD_DRAG_MIME, DeckBuilderResultTile, type DeckBuilderCardDragPayload } from './DeckBuilderResultTile';
 import { PrintingVariantPicker } from './PrintingVariantPicker';
+import { copyLimitForCard } from '../../../cards/decks';
 
 type DeckBuilderTab = 'browse' | 'clipboard';
 
@@ -37,14 +38,17 @@ export function DeckBuilderScreen() {
   const save = useDeckBuilderStore((state) => state.save);
   const removeLeader = useDeckBuilderStore((state) => state.removeLeader);
   const setLeader = useDeckBuilderStore((state) => state.setLeader);
+  const addMainDeckCard = useDeckBuilderStore((state) => state.addMainDeckCard);
   const setMainDeckQuantity = useDeckBuilderStore((state) => state.setMainDeckQuantity);
   const changeMainDeckPrinting = useDeckBuilderStore((state) => state.changeMainDeckPrinting);
   const cardLibraryFilter = useCardLibraryStore((state) => state.filter);
   const setCardLibraryFilter = useCardLibraryStore((state) => state.setFilter);
+  const visibleEntries = useVisibleCardLibraryEntries();
 
   const legality = useDeckBuilderLegality();
   const [tab, setTab] = useState<DeckBuilderTab>('browse');
   const [previewPrintingId, setPreviewPrintingId] = useState<string | null>(null);
+  const [deckDropActive, setDeckDropActive] = useState(false);
 
   useEffect(() => {
     if (deckIdToEdit) {
@@ -94,6 +98,55 @@ export function DeckBuilderScreen() {
     if (nextName === null) return;
     setName(nextName);
     save();
+  }
+
+  function hasDeckBuilderDragData(event: DragEvent<HTMLElement>) {
+    return Array.from(event.dataTransfer.types).includes(DECK_BUILDER_CARD_DRAG_MIME);
+  }
+
+  function addDraggedCardToDeck(payload: DeckBuilderCardDragPayload) {
+    const entry = visibleEntries.find((candidate) => candidate.cardNumber === payload.cardNumber);
+    if (!entry) return;
+
+    const printing = entry.printings.find((candidate) => candidate.printingImageId === payload.printingImageId) ?? entry.printings[0];
+    if (!printing) return;
+
+    if (entry.definition.category === 'leader') {
+      setLeader(entry, printing.printingImageId);
+      return;
+    }
+
+    if (!leaderSelection) return;
+
+    const copyLimit = copyLimitForCard(entry.definition);
+    const currentQuantity = mainDeckSelections
+      .filter((selection) => selection.libraryEntry.cardNumber === entry.cardNumber)
+      .reduce((sum, selection) => sum + selection.quantity, 0);
+    if (currentQuantity >= copyLimit) return;
+
+    addMainDeckCard(entry, printing.printingImageId, 1);
+  }
+
+  function handleDeckListDragOver(event: DragEvent<HTMLElement>) {
+    if (!hasDeckBuilderDragData(event)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    setDeckDropActive(true);
+  }
+
+  function handleDeckListDrop(event: DragEvent<HTMLElement>) {
+    if (!hasDeckBuilderDragData(event)) return;
+    event.preventDefault();
+    setDeckDropActive(false);
+
+    const rawPayload = event.dataTransfer.getData(DECK_BUILDER_CARD_DRAG_MIME);
+    if (!rawPayload) return;
+
+    try {
+      addDraggedCardToDeck(JSON.parse(rawPayload) as DeckBuilderCardDragPayload);
+    } catch {
+      // Ignore stale or malformed drag data from outside this deck builder.
+    }
   }
 
   return (
@@ -181,14 +234,25 @@ export function DeckBuilderScreen() {
                 )}
               </div>
 
-              <div className="op-card-well min-h-0 overflow-hidden p-1.5">
+              <div
+                className={[
+                  'op-card-well min-h-0 overflow-hidden p-1.5 transition',
+                  deckDropActive ? 'border-gold bg-gold/10 shadow-[0_0_0_2px_rgba(255,211,74,0.22)]' : '',
+                ].join(' ')}
+                onDragEnter={(event) => {
+                  if (hasDeckBuilderDragData(event)) setDeckDropActive(true);
+                }}
+                onDragOver={handleDeckListDragOver}
+                onDragLeave={() => setDeckDropActive(false)}
+                onDrop={handleDeckListDrop}
+              >
                 <div className="flex items-center justify-between">
                   <p className="font-heading text-[11px] font-bold uppercase tracking-[0.18em] text-gold">Selected Cards</p>
                   <p className="text-xs text-slate-200/55">{mainDeckCount} selected</p>
                 </div>
                 <div className="mt-1.5 h-[calc(100%-1.25rem)] min-h-0 overflow-y-auto overflow-x-hidden">
                   {selectedCards.length === 0 ? (
-                    <p className="border border-gold/15 bg-black/30 p-2 text-sm text-slate-200/60">No cards selected yet.</p>
+                    <p className="border border-gold/15 bg-black/30 p-2 text-sm text-slate-200/60">No cards selected yet. Drag a result here to add it.</p>
                   ) : (
                     <div className="grid grid-cols-[repeat(auto-fill,8.5rem)] content-start gap-x-3 gap-y-5">
                       {selectedCards.map((selection) => {

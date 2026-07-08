@@ -219,7 +219,7 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-029 (character) Bartholomew Kuma —
   //   [On Play] Up to 1 of your opponent's Characters with a cost of 5 or less cannot be rested until the
   //   end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP15-029', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
   // OP15-031 (character) Purinpurin —
   //   [On Play] Select up to 1 of your opponent's rested Characters. If the chosen Character has a cost

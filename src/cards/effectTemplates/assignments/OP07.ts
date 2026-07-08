@@ -240,7 +240,16 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   area.): Reveal 1 card from the top of your deck. If that card is a {The Seven Warlords of the Sea}
   //   type Character card with a cost of 4 or less, you may play that card rested. Then, place the rest at
   //   the bottom of your deck.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP07-048',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      cost: [{ kind: 'restDon', count: 2 }],
+      functions: [{ fn: 'searchTopDeck', look: 1, pick: 1, reveal: true, destination: 'play', filter: { category: 'character', typeIncludes: 'The Seven Warlords of the Sea', maxCost: 4 }, remainder: 'bottom', rested: true }],
+    },
+  },
 
   // OP07-049 — PARTIAL: played Character should enter rested (playFromHand has no rested flag).
   { cardNumber: 'OP07-049', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Edward Weevil', maxCost: 4 } }] } },

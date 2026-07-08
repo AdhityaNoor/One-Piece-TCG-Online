@@ -291,6 +291,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
       return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === true);
     }
+    case 'opponentFieldDon':
+      return fieldDonIds(ctx.state(), ctx.opponentId);
     case 'opponentActiveDon': {
       const state = ctx.state();
       const player = state.players[ctx.opponentId];
@@ -513,6 +515,17 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       }
       return { selectedIds: ids, movedIds: [] };
     }
+    case 'preventRest': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.preventRest({
+          appliesToInstanceId: id,
+          duration: op.duration,
+          ...(op.effectSourceController ? { effectSourceController: op.effectSourceController } : {}),
+        });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
     case 'negateEffect': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
@@ -593,6 +606,11 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       for (const id of ids) ctx.setActive(id);
       return { selectedIds: ids, movedIds: ids };
     }
+    case 'returnDonToDonDeck': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.returnDonToDonDeck(id);
+      return { selectedIds: ids, movedIds: ids };
+    }
     case 'preventRefresh': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.preventNextRefresh(id);
@@ -628,7 +646,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return { selectedIds: [ctx.sourceInstanceId], movedIds: [ctx.sourceInstanceId] };
     case 'playFromHand': {
       const ids = resolveSelector(op.target, ctx, bindings);
-      for (const id of ids) ctx.playCharacterFromHand(id);
+      for (const id of ids) ctx.playCharacterFromHand(id, op.rested === true);
       return { selectedIds: ids, movedIds: ids };
     }
     case 'playFromTrash': {
@@ -1144,14 +1162,18 @@ export function resumeProgram(
         return ctx.finish();
       }
     }
-    ctx.searchResolve(ctx.controllerId, looked, chosen, remainder, reveal, destination, rs.bindings.__searchChosen ? selection : undefined);
+    if (destination === 'play') {
+      ctx.searchPlayResolve(ctx.controllerId, looked, chosen, remainder, op.rested === true, rs.bindings.__searchChosen ? selection : undefined);
+    } else {
+      ctx.searchResolve(ctx.controllerId, looked, chosen, remainder, reveal, destination, rs.bindings.__searchChosen ? selection : undefined);
+    }
     const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: chosen, movedIds: chosen });
     return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
   }
 
   if (op.op === 'playFromDeck') {
     const selection = Array.isArray(response) ? response : [];
-    for (const id of selection) ctx.playCharacterFromDeck(id);
+    for (const id of selection) ctx.playCharacterFromDeck(id, op.rested === true);
     ctx.shuffleDeck(ctx.controllerId);
     const afterPlayBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
     return continueAfterResolvedOp(program, ability, rs, afterPlayBindings, ctx, defs, actionId, registry);

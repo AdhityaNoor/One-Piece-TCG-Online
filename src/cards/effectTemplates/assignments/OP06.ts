@@ -294,13 +294,16 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-044 (character) Gion —
   //   [Your Turn] [Once Per Turn] When your opponent activates an Event, your opponent must place 1 card
   //   from their hand at the bottom of their deck.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP06-044', templateId: 'ability', params: { timing: 'onOpponentEventActivated', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1, chooser: 'opponent' }] } },
 
   // OP06-045 — [On Play] Draw 2 cards and place 2 cards from your hand at the bottom of your deck.
   { cardNumber: 'OP06-045', templateId: 'ability', params: { timing: 'onPlay', functions: [
     { fn: 'draw', amount: 2 },
     { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 2 },
   ] } },
+
+  // OP06-119 — [On Play] Reveal top deck; play up to 1 Character cost <=9 other than [Sanji], bottom the rest.
+  { cardNumber: 'OP06-119', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 1, pick: 1, reveal: true, destination: 'play', filter: { category: 'character', maxCost: 9, excludeSelfName: true }, remainder: 'bottom' }] } },
 
   // OP06-046 — [On Play] Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.
   { cardNumber: 'OP06-046', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },

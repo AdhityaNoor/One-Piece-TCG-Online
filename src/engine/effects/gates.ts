@@ -199,6 +199,14 @@ function evaluateGate(
       return fieldDonIds(state, opponentId).length > fieldDonIds(state, ownerId).length;
     }
 
+    case 'opponentDonFieldCount': {
+      const opponentId = getOpponentId(state, ownerId);
+      const count = fieldDonIds(state, opponentId).length;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
     case 'selfDonAtMostOpponent': {
       const opponentId = getOpponentId(state, ownerId);
       return fieldDonIds(state, ownerId).length <= fieldDonIds(state, opponentId).length;
