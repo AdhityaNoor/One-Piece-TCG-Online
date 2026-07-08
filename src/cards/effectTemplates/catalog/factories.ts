@@ -400,7 +400,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     }
     case 'suppressBlockerOnTarget':
-      return targetOps(f.target, (target) => ({ op: 'suppressBlockerActivation', target }), { optional: f.optional, maxTargets: f.maxTargets });
+      return targetOps(f.target, (target) => ({ op: 'suppressBlockerActivation', target, duration: f.duration }), { optional: f.optional, maxTargets: f.maxTargets });
     case 'drawAndTrash':
       return [
         { op: 'draw', amount: f.drawCount },

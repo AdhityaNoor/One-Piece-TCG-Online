@@ -31,8 +31,8 @@ export type Selector =
   | { sel: 'controllerLifeTopBottom' } // top and bottom Life cards, de-duplicated for 1-card Life
   | { sel: 'controllerOrOpponentLifeTop' } // top Life card from either player, de-duplicated only by absent zones
   | { sel: 'controllerDeckTop' }
-  | { sel: 'allCharacters'; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number } // any player's Characters
-  | { sel: 'opponentCharacters'; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; minDonAttached?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; noBaseEffect?: boolean; excludeName?: string } // optional cost/power (current) + base cost/power + rested/blocker/given-DON!! filters
+  | { sel: 'allCharacters'; minCost?: number; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number } // any player's Characters
+  | { sel: 'opponentCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; minDonAttached?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; noBaseEffect?: boolean; excludeName?: string } // optional cost/power (current) + base cost/power + rested/blocker/given-DON!! filters
   | { sel: 'controllerAttachedDon' } // DON!! instance ids currently given to the controller's Leader/Characters/Stages
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
   | { sel: 'opponentHand' } // opponent's hand cards, for effects where the opponent chooses/trashes
@@ -83,6 +83,7 @@ export interface SearchFilter {
 
 /** Filters for moveCards when the source zone is the character field. */
 export interface CharacterMoveFilter {
+  minCost?: number;
   maxCost?: number;
   exactCost?: number;
   maxPower?: number;

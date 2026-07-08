@@ -45,13 +45,13 @@ function shouldAnimateMove(from: BoardZoneId | null, to: BoardZoneId | null): bo
 
 function pushSpec(
   specs: CardMovementSpec[],
-  base: Omit<CardMovementSpec, 'id' | 'delayMs' | 'revealFaceOnLand'>,
+  base: Omit<CardMovementSpec, 'id' | 'delayMs' | 'revealFaceOnLand'> & Partial<Pick<CardMovementSpec, 'revealFaceOnLand'>>,
   logId: string,
   index: number,
 ): void {
   specs.push({
-    ...base,
     revealFaceOnLand: false,
+    ...base,
     id: `${logId}-${index}`,
     delayMs: index * STAGGER_MS,
   });

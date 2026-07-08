@@ -101,6 +101,10 @@ export interface ContinuousPowerCondition {
   maxBaseCost?: number;
   /** Printed base cost of the modified card must be at least this value. */
   minBaseCost?: number;
+  /** Printed base power of the modified card must be at most this value. */
+  maxBasePower?: number;
+  /** Printed base power of the modified card must exactly equal this value. */
+  exactBasePower?: number;
   /** The modified card must include this color. */
   color?: import('./card').Color;
   /** "If <board state>" gate(s), re-checked on every power read (e.g. "If you have 2 or less Life cards"). */

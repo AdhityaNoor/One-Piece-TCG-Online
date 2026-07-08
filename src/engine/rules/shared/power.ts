@@ -112,6 +112,8 @@ export function continuousTargetConditionApplies(
   if (cond.maxCost !== undefined && computeCurrentCost(defs, state, instanceId) > cond.maxCost) return false;
   if (cond.maxBaseCost !== undefined && (def.baseCost ?? Infinity) > cond.maxBaseCost) return false;
   if (cond.minBaseCost !== undefined && (def.baseCost ?? -Infinity) < cond.minBaseCost) return false;
+  if (cond.maxBasePower !== undefined && (def.basePower ?? Infinity) > cond.maxBasePower) return false;
+  if (cond.exactBasePower !== undefined && (def.basePower ?? -1) !== cond.exactBasePower) return false;
   if (cond.color !== undefined && !def.colors.includes(cond.color)) return false;
   if (cond.gate && !evaluateGates(cond.gate, state, defs, record.ownerId, record.sourceInstanceId)) return false;
   return true;

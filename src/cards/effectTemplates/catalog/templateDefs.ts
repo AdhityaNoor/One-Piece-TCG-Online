@@ -85,11 +85,12 @@ export type TargetSpec =
   | { ref: 'previous' }
   | { ref: 'battleOpponent' }
   | { group: 'leader'; player: 'controller' }
+  | { group: 'leader'; player: 'opponent'; filter?: { rested?: boolean } }
   | { group: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: TargetFilter }
   | { group: 'leaderOrCharacters'; player: 'controller' | 'opponent'; filter?: TargetFilter };
 
 export type AbilityFunction =
-  | { fn: 'draw'; amount: number }
+  | { fn: 'draw'; amount: number; optional?: boolean }
   | { fn: 'addDonFromDeck'; count: number; rested: boolean }
   | { fn: 'giveDon'; count: number; optional?: boolean; targetTypeIncludes?: string; charactersOnly?: boolean; targetName?: string; activeDonOnly?: boolean }
   | { fn: 'preventBlockersOnPreviousTarget'; duration: IrDuration }
@@ -121,11 +122,11 @@ export type AbilityFunction =
   | { fn: 'trashFromHand'; count: number }
   | { fn: 'optionalTrashFromHand'; count: number }
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
-  | { fn: 'trashTopDeck'; count: number }
+  | { fn: 'trashTopDeck'; count: number; optional?: boolean }
   | { fn: 'moveCards'; from: MoveCardSource; to: MoveCardDestination; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'peekLifeAndPlace'; from: 'controllerOrOpponentTop'; placement: 'topOrBottom' }
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
-  | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number }
+  | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number; optional?: boolean }
   | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'playFromTrash'; filter: SearchFilter; maxTargets?: number; rested?: boolean }
   | { fn: 'triggerPlaySelf' }
@@ -145,7 +146,7 @@ export type AbilityFunction =
   | { fn: 'turnTopLifeFace'; faceUp: boolean }
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }
-  | { fn: 'setActiveControllerCharacter'; filter?: { maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[] }; maxTargets?: number }
+  | { fn: 'setActiveControllerCharacter'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string }; maxTargets?: number; optional?: boolean }
   | { fn: 'setActiveControllerDon'; maxTargets: number }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
   | { fn: 'restOpponentDon'; maxTargets?: number; optional?: boolean }

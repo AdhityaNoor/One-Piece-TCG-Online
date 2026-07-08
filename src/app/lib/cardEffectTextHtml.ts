@@ -35,6 +35,10 @@ const CHIP_CLASS_BY_TAG: Record<string, string> = {
 
 const TRIGGER_TAG_RE = /\[trigger\]\s*/i;
 
+function replaceEvery(text: string, search: string, replacement: string): string {
+  return text.split(search).join(replacement);
+}
+
 function chipInner(text: string, className: string): string {
   if (className === 'trigger-ability') {
     return `<span class="trigger-ability-container"><span class="trigger-ability-shadow"></span><span class="op-chip trigger-ability">${text}</span></span>`;
@@ -53,11 +57,11 @@ function chip(text: string, className: string): string {
 }
 
 function escapeHtml(text: string): string {
-  return text
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
+  return replaceEvery(
+    replaceEvery(replaceEvery(replaceEvery(text, '&', '&amp;'), '<', '&lt;'), '>', '&gt;'),
+    '"',
+    '&quot;',
+  );
 }
 
 function chipifyTags(escapedText: string): string {
@@ -69,7 +73,7 @@ function chipifyTags(escapedText: string): string {
     const className = CHIP_CLASS_BY_TAG[key];
     return className ? chip(inner.trim(), className) : whole;
   });
-  return replaced.replaceAll('&nbsp; ', '&nbsp;');
+  return replaceEvery(replaced, '&nbsp; ', '&nbsp;');
 }
 
 /** `{Type}` trait references (Comprehensive Rules 2-4-3). Display-only. */
@@ -84,7 +88,7 @@ function highlightCardNames(escapedText: string): string {
 
 /** Raw card_text -> rich HTML with ability chips for display. */
 export function cardEffectTextToHtml(text: string): string {
-  return highlightTypeIdentifiers(highlightCardNames(chipifyTags(escapeHtml(text)))).replaceAll('\n', '<br>');
+  return replaceEvery(highlightTypeIdentifiers(highlightCardNames(chipifyTags(escapeHtml(text)))), '\n', '<br>');
 }
 
 export function splitTriggerText(text: string): { ability: string; trigger: string } {

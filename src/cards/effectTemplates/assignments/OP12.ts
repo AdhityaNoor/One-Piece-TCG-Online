@@ -641,8 +641,6 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP12-119', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' }, { fn: 'addCost', target: { ref: 'self' }, amount: 2, duration: 'endOfOpponentsTurn', ifPrevious: 'previousMovedAny' }] } }, { templateId: 'ability', params: { timing: 'onKO', condition: { turn: 'opponent' }, functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } }] },
 
-  { cardNumber: 'OP12-019', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Silvers Rayleigh' }], functions: [{ fn: 'giveDon', count: 1 }] } },
-
   { cardNumber: 'OP12-036', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
   { cardNumber: 'OP12-072', templateId: 'ability', params: { timing: 'onDonReturned', gate: [{ kind: 'leaderName', name: 'Sanji' }, { kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },

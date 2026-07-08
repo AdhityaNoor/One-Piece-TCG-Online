@@ -243,6 +243,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return [ctx.controllerLeaderId()];
     case 'controllerCharacters': {
       let ids = ctx.controllerCharacterIds();
+      if (sel.minCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) >= sel.minCost!);
       const maxCost = effectiveMaxCost(sel, ctx);
       if (maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= maxCost);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
@@ -265,7 +266,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       let ids = [ctx.controllerLeaderId(), ...ctx.controllerCharacterIds()];
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
       if (sel.name !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name === sel.name);
-      if (sel.minPower !== undefined) ids = ids.filter((id) => computeCurrentPower(ctx.defs, ctx.state(), id) >= sel.minPower!);
+      if (sel.minPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) >= sel.minPower!);
       if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
       return ids;
     }
@@ -347,6 +348,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return ctx.controllerDeckTopIds();
     case 'allCharacters': {
       let ids = [...ctx.controllerCharacterIds(), ...ctx.opponentCharacterIds()];
+      if (sel.minCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) >= sel.minCost!);
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       ids = applyBaseFilters(ids, sel, ctx);
@@ -354,6 +356,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     }
     case 'opponentCharacters': {
       let ids = ctx.opponentCharacterIds();
+      if (sel.minCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) >= sel.minCost!);
       const maxCost = effectiveMaxCost(sel, ctx);
       if (maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= maxCost);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);

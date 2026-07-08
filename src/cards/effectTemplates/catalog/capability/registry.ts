@@ -244,6 +244,22 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['your opponent cannot activate [Blocker] during this battle', 'if the selected card attacks during this turn, your opponent cannot activate [Blocker]'],
     examples: [{ cardNumber: 'OP07-057', snippet: "{ fn: 'preventBlockers', duration: 'duringThisTurn', target: 'chosenControllerLeaderOrCharacter', filter: { typeIncludes: 'The Seven Warlords of the Sea' }, powerBonus: 2000 }" }],
   },
+  preventBlockersOnPreviousTarget: {
+    id: 'preventBlockersOnPreviousTarget',
+    summary: 'After a prior function selected/gave DON!! to a card, that previous target becomes unblockable for the duration.',
+    params: [{ name: 'duration', type: 'IrDuration', required: true }],
+    covers: ['If you do, when that card attacks this turn, your opponent cannot activate [Blocker]'],
+    excludes: ['Suppressing a specific blocker card; use suppressBlockerOnTarget for that'],
+    examples: [{ cardNumber: 'OP12-016', snippet: "{ fn: 'preventBlockersOnPreviousTarget', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' }" }],
+  },
+  preventAttackLeaderWhileSummoningSick: {
+    id: 'preventAttackLeaderWhileSummoningSick',
+    summary: 'The source cannot attack Leaders while it still has summoning sickness.',
+    params: [{ name: 'duration', type: 'IrDuration', required: true }],
+    covers: ['This Character cannot attack your opponent\'s Leader on the turn in which it is played'],
+    excludes: ['General cannot-attack clauses without the played-this-turn/summoning-sick limit'],
+    examples: [{ cardNumber: 'OP03-001', snippet: "{ fn: 'preventAttackLeaderWhileSummoningSick', duration: 'permanent' }" }],
+  },
   suppressBlockerOnTarget: {
     id: 'suppressBlockerOnTarget',
     summary: 'Chosen Character cannot activate [Blocker] for the duration (not tied to a specific attacker).',

@@ -25,12 +25,16 @@ function minimalState(cardsById: GameState['cardsById']): GameState {
     activePlayerId: 'p1',
     turnNumber: 1,
     currentPhase: 'main',
+    currentBattle: null,
+    setupState: null,
     log: [],
     pendingChoices: [],
     continuousEffects: [],
+    oncePerTurnUsage: {},
     isFirstTurnOfGame: false,
-    rngState: { seed: 's', cursor: 0 },
+    rng: { seed: 's', cursor: 0 },
     gameOver: null,
+    nextInstanceSeq: 0,
   };
 }
 
@@ -41,6 +45,7 @@ describe('parseMovementSpecs', () => {
         instanceId: 'c1',
         cardDefinitionId: 'OP01-001',
         ownerId: 'p1',
+        controllerId: 'p1',
         currentZone: 'deck',
         faceState: 'faceDown',
         orientation: 'active',
@@ -78,6 +83,7 @@ describe('parseMovementSpecs', () => {
         instanceId: 'life1',
         cardDefinitionId: 'OP01-002',
         ownerId: 'p2',
+        controllerId: 'p2',
         currentZone: 'lifeArea',
         faceState: 'faceDown',
         orientation: 'active',
