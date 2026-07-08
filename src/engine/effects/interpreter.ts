@@ -390,13 +390,25 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
       return ids;
     }
-    case 'opponentCharactersOrDon': {
+    case 'opponentUnattachedDon': {
       const state = ctx.state();
       const player = state.players[ctx.opponentId];
       const attached = new Set<string>();
       for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
-      const donIds = player.costArea.cardIds.filter((id) => !attached.has(id));
-      return [...ctx.opponentCharacterIds(), ...donIds];
+      return player.costArea.cardIds.filter((id) => !attached.has(id));
+    }
+    case 'union': {
+      const seen = new Set<string>();
+      const out: string[] = [];
+      for (const member of sel.members) {
+        for (const id of resolveSelector(member, ctx, bindings)) {
+          if (!seen.has(id)) {
+            seen.add(id);
+            out.push(id);
+          }
+        }
+      }
+      return out;
     }
     case 'allStages': {
       const state = ctx.state();

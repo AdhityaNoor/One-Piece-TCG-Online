@@ -76,7 +76,15 @@ function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTa
   }
   if (target.group === 'characters' && target.player === 'controller') return { sel: 'controllerCharacters', ...target.filter };
   if (target.group === 'characters' && target.player === 'opponent') return { sel: 'opponentCharacters', ...target.filter };
-  if (target.group === 'charactersOrDon' && target.player === 'opponent') return { sel: 'opponentCharactersOrDon' };
+  if (target.group === 'charactersOrDon' && target.player === 'opponent') {
+    return {
+      sel: 'union',
+      members: [
+        { sel: 'opponentCharacters', ...(target.filter?.maxCost !== undefined ? { maxCost: target.filter.maxCost } : {}) },
+        { sel: 'opponentUnattachedDon' },
+      ],
+    };
+  }
   if (target.group === 'characters' && target.player === 'any') return { sel: 'allCharacters', ...target.filter };
 
   throw new Error(`Unsupported target choice source ${JSON.stringify(target)}`);

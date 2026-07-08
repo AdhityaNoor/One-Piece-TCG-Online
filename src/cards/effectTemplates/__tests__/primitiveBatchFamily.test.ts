@@ -165,11 +165,36 @@ describe('attack-restriction extensions', () => {
 });
 
 describe('mixed rest targets', () => {
-  it('OP12-037 program includes opponentCharactersOrDon rest selection', () => {
+  it('OP12-037 program unions opponent Characters + unattached DON!! for rest selection', () => {
     const program = registry['OP12-037'];
     expect(program).toBeDefined();
     const main = program.abilities.find((a) => a.timing === 'activateMain');
-    expect(main?.ops.some((op) => op.op === 'chooseTargets' && op.from.sel === 'opponentCharactersOrDon')).toBe(true);
+    const choose = main?.ops.find((op) => op.op === 'chooseTargets');
+    expect(choose?.from).toMatchObject({
+      sel: 'union',
+      members: [{ sel: 'opponentCharacters' }, { sel: 'opponentUnattachedDon' }],
+    });
+  });
+
+  it('OP06-020 carries the cost filter into the Characters member of the union', () => {
+    const main = registry['OP06-020'].abilities.find((a) => a.timing === 'activateMain');
+    const choose = main?.ops.find((op) => op.op === 'chooseTargets');
+    expect(choose?.from).toMatchObject({
+      sel: 'union',
+      members: [{ sel: 'opponentCharacters', maxCost: 3 }, { sel: 'opponentUnattachedDon' }],
+    });
+  });
+
+  it('EB03-061 compiles the FILM set-active end-of-turn ability and the cost-filtered union rest', () => {
+    const program = registry['EB03-061'];
+    const main = program.abilities.find((a) => a.timing === 'activateMain');
+    const restOp = main?.ops.find((op) => op.op === 'chooseTargets' && op.from.sel === 'union');
+    expect(restOp?.from).toMatchObject({
+      sel: 'union',
+      members: [{ sel: 'opponentCharacters', maxCost: 4 }, { sel: 'opponentUnattachedDon' }],
+    });
+    const eot = program.abilities.find((a) => a.timing === 'endOfTurn');
+    expect(eot?.cost).toEqual([{ kind: 'restDon', count: 1 }]);
   });
 });
 

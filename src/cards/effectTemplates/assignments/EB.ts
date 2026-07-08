@@ -1629,7 +1629,18 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] [Once Per Turn] Set up to 1 of your DON!! cards as active. Then, rest up to 1 of
   //   your opponent's DON!! cards or Characters with a cost of 4 or less.[End of Your Turn] You may rest 1
   //   of your DON!! cards: Set up to 1 of your {FILM} type Characters as active.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB03-061',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+        { fn: 'setActiveControllerDon', maxTargets: 1 },
+        { fn: 'rest', target: { group: 'charactersOrDon', player: 'opponent', filter: { maxCost: 4 } }, optional: true, maxTargets: 1 },
+      ] } },
+      { templateId: 'ability', params: { timing: 'endOfTurn', cost: [{ kind: 'restDon', count: 1 }], functions: [
+        { fn: 'setActiveControllerCharacter', filter: { typeIncludes: 'FILM' }, maxTargets: 1, optional: true },
+      ] } },
+    ],
+  },
 
   // EB03-062 — [Rush] [Activate: Main] trash 1 from hand + trash this: add 1 top of deck to top of Life; then play up to 1 [Trafalgar Law] cost<=7 from hand.
   { cardNumber: 'EB03-062', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [

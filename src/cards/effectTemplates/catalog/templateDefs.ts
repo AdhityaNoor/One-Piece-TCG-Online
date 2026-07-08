@@ -89,7 +89,7 @@ export type TargetSpec =
   | { group: 'leader'; player: 'controller' }
   | { group: 'leader'; player: 'opponent'; filter?: { rested?: boolean } }
   | { group: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: TargetFilter }
-  | { group: 'charactersOrDon'; player: 'opponent' }
+  | { group: 'charactersOrDon'; player: 'opponent'; filter?: { maxCost?: number } }
   | { group: 'leaderOrCharacters'; player: 'controller' | 'opponent'; filter?: TargetFilter };
 
 export type AbilityFunction =

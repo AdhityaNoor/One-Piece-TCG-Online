@@ -26,6 +26,7 @@ export type Selector =
   | { sel: 'opponentFieldDon' } // opponent's DON!! on field (cost area + attached), for opponent-chosen returns
   | { sel: 'opponentActiveDon' } // the opponent's active, un-attached DON!! in the cost area (rest targets)
   | { sel: 'opponentRestedDon' } // the opponent's rested, un-attached DON!! in the cost area
+  | { sel: 'opponentUnattachedDon' } // the opponent's un-attached DON!! in the cost area, any orientation
   | { sel: 'ownerLeaderOrCharactersOfVar'; varName: string } // Leader + Characters of the owner of the first id in `varName`
   | { sel: 'battleOpponent' } // the opponent Character the source is currently battling (in currentBattle), if still in play
   | { sel: 'controllerLifeTop' } // the top card of the controller's own Life (for "add 1 from the top of your Life")
@@ -34,7 +35,6 @@ export type Selector =
   | { sel: 'controllerDeckTop' }
   | { sel: 'allCharacters'; minCost?: number; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number } // any player's Characters
   | { sel: 'opponentCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; minDonAttached?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; noBaseEffect?: boolean; excludeName?: string } // optional cost/power (current) + base cost/power + rested/blocker/given-DON!! filters
-  | { sel: 'opponentCharactersOrDon' } // opponent Characters + unattached DON!! in cost area (rest targets)
   | { sel: 'controllerAttachedDon' } // DON!! instance ids currently given to the controller's Leader/Characters/Stages
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
   | { sel: 'opponentHand' } // opponent's hand cards, for effects where the opponent chooses/trashes
@@ -44,7 +44,11 @@ export type Selector =
   | { sel: 'allStages' } // any player's Stage in the stage area
   | { sel: 'controllerStages'; maxCost?: number } // controller's Stage in the stage area
   | { sel: 'opponentStages'; maxCost?: number } // opponent's Stage in the stage area
-  | { sel: 'var'; name: string }; // ids bound by a prior chooseTargets op
+  | { sel: 'var'; name: string } // ids bound by a prior chooseTargets op
+  // Order-preserving union of member selectors, de-duplicated. Lets "X or Y" targets
+  // (e.g. "opponent's DON!! or Characters cost ≤3") compose already-filtered primitives
+  // instead of introducing a bespoke combined selector per pairing.
+  | { sel: 'union'; members: Selector[] };
 
 export type IrCondition = ContinuousPowerCondition; // { donAttachedAtLeast?, turn? }
 export type IrDuration = ContinuousEffectDuration;
