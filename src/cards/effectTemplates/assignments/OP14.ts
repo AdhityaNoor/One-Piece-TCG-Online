@@ -51,10 +51,6 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   in any order.
   // NOTE: not yet implemented (needs template).
 
-  // OP14-011 (character) Bartolomeo —
-  //   [DON!! x2] This Character gains [Blocker].(After your opponent declares an attack, you may rest this
-  //   card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
 
   // OP14-012 (character) Bepo —
   //   [When Attacking] If this Character has 5000 power or more, give up to 2 rested DON!! cards to your
@@ -109,10 +105,6 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   in your opponent's next Refresh Phase.
   // NOTE: not yet implemented (needs template).
 
-  // OP14-022 (character) Usopp —
-  //   [End of Your Turn] If your Leader has the {FILM} or {Straw Hat Crew} type, set up to 2 of your DON!!
-  //   cards as active.
-  // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP14-023', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveSelf' }] } },
 
@@ -271,6 +263,51 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the on-play cost-9-or-less preventAttack is implemented below; the mixed opponent-cost draw gate and exact self-revival line remain deferred.
   { cardNumber: 'OP14-120', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 9 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
+
+  // PARTIAL: trash-all-hand cost deferred; mapped return opp Character.
+  { cardNumber: 'OP14-048', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent' }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+
+
+  { cardNumber: 'OP14-062', templateId: 'ability', params: { timing: 'onKO', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'chooseOne', chooser: 'controller', prompt: 'Choose one:', options: [{ label: 'ko', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }, optional: true }] }, { label: 'rest', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }, optional: true }] }] }] } },
+
+
+  { cardNumber: 'OP14-082', templates: [{ templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addCostAuraControllerCharacters', amount: 4, duration: 'endOfOpponentsTurn', anyOfTypes: ['Thriller Bark Pirates'] }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 2 }, rested: true }] } }] },
+
+
+  { cardNumber: 'OP14-086', templateId: 'ability', params: { timing: 'onEnterPlay', gate: [{ kind: 'selfTrashCount', atLeast: 7 }], functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent' }, { fn: 'addCostAuraControllerCharacters', amount: 2, duration: 'permanent', anyOfTypes: ['Baroque Works'] }] } },
+
+
+  { cardNumber: 'OP14-093', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'anyCharacterExactCost', exactCost: 0 }, { kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'trashFromHand', count: 1 }] } },
+
+
+  { cardNumber: 'OP14-068', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
+
+
+  { cardNumber: 'OP14-069', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 4 } }] } },
+
+
+  { cardNumber: 'OP14-077', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+
+
+  { cardNumber: 'OP14-078', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+
+
+  { cardNumber: 'OP14-080', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
+
+
+  // PARTIAL: play from hand OR trash deferred; mapped hand only.
+  { cardNumber: 'OP14-091', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 3 } }] } },
+
+
+  { cardNumber: 'OP14-094', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
+
+
+  // PARTIAL: combined-Life reorder deferred; mapped draw on lifeTrigger.
+  { cardNumber: 'OP14-103', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+
+
+  { cardNumber: 'OP14-105', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+
   // --- codegen batch ---
   { cardNumber: 'OP14-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] }] } },
 
@@ -280,17 +317,9 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-046 — [Activate: Main] trash this: up to 1 {Fish-Man}/{Merfolk} Leader/Character +2000 this turn.
   { cardNumber: 'OP14-046', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { anyOfTypes: ['Fish-Man', 'Merfolk'] } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP14-046 (character) Koala —
-  //   [Activate: Main] You may trash this Character: Up to 1 of your {Fish-Man} or {Merfolk} type Leader or
-  //   Character cards gains +2000 power during this turn.
-  // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP14-047', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { category: 'character', anyOf: [{ typeIncludes: 'Fish-Man' }, { typeIncludes: 'Merfolk' }], maxCost: 3 } }] } },
 
-  // OP14-048 (character) Shiryu —
-  //   [On Play] Return up to 1 of your opponent's Characters to the owner's hand. Then, trash all cards
-  //   from your hand.
-  // NOTE: not yet implemented (needs template).
 
   // OP14-049 — [On Play] rest 2 DON!!: Draw 2, return up to 1 Character cost ≤7 to hand. PARTIAL: static [Rush] trigger deferred.
   { cardNumber: 'OP14-049', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 7 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -344,10 +373,6 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-061 — [When Attacking] DON!! −1: give up to 1 opp Character −2000. PARTIAL: removal-replacement deferred.
   { cardNumber: 'OP14-061', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP14-062 (character) Gladius —
-  //   [On K.O.] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): K.O. or rest up to 1 of your opponent's Characters with a base power of 6000 or less.
-  // NOTE: not yet implemented (needs template).
 
   // OP14-063 — [On Play] Add 1 DON!! (active). PARTIAL: opp-DON-gated [On K.O.] play is deferred.
   { cardNumber: 'OP14-063', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
@@ -441,26 +466,13 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-083 — [Activate: Main] trash this: give up to 1 opp 0-cost Character −3000 this turn.
   { cardNumber: 'OP14-083', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent', filter: { exactCost: 0 } }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP14-082 (character) Oinkchuck —
-  //   [On K.O.] All of your {Thriller Bark Pirates} type Characters gain +4 cost until the end of your
-  //   opponent's next End Phase. [Trigger] Play up to 1 {Thriller Bark Pirates} type Character card with a
-  //   cost of 2 or less from your trash rested.
-  // NOTE: not yet implemented (needs template).
 
-  // OP14-083 (character) Ms. Wednesday —
-  //   [Activate: Main] You may trash this Character: Give up to 1 of your opponent's 0 cost Characters
-  //   −3000 power during this turn.
-  // NOTE: not yet implemented (needs template).
 
   // OP14-084 — [On Play] If Leader "Baroque Works": play 1 {Baroque Works} cost ≤4 and 1 cost 1 from trash.
   { cardNumber: 'OP14-084', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 4 } }, { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Baroque Works', exactCost: 1 } }] } },
 
   { cardNumber: 'OP14-085', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
 
-  // OP14-086 (character) Miss Doublefinger(Zala) —
-  //   If you have 7 or more cards in your trash, this Character gains +1000 power, and all of your
-  //   Characters with a type including "Baroque Works" gain +2 cost.
-  // NOTE: not yet implemented (needs template).
 
   // OP14-087 - [On Play] If Leader type includes Baroque Works, look at 4; add Baroque Works other than self, trash rest.
   {
@@ -492,10 +504,6 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   trash at the bottom of your deck in any order instead.
   // NOTE: not yet implemented (needs template).
 
-  // OP14-093 (character) Mr.4(Babe) —
-  //   [Blocker][On K.O.] Add up to 1 Character card with a type including "Baroque Works" and a cost of 8
-  //   or less from your trash to your hand.
-  // NOTE: not yet implemented (needs template).
 
   // OP14-094 (character) Mr.5(Gem) —
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target

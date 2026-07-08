@@ -64,10 +64,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
       }],
     },
   },
-  // OP13-009 (character) Curly.Dadan —
-  //   If you have a {Mountain Bandits} type Character other than this card, this Character gains [Double
-  //   Attack].
-  // NOTE: not yet implemented (needs template).
 
   // OP13-012 - [On Play] Look at 4; add Alabasta or Straw Hat Crew with cost 2+.
   {
@@ -84,14 +80,7 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-015 — [Activate: Main] rest this: up to 1 [Monkey.D.Luffy] +2000 this turn.
   { cardNumber: 'OP13-015', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP13-014 (character) Portgas.D.Rouge —
-  //   [Trigger] Up to 1 of your [Portgas.D.Ace] cards gains +3000 power during this turn.
-  // NOTE: not yet implemented (needs template).
 
-  // OP13-015 (character) Makino —
-  //   [Activate: Main] You may rest this Character: Up to 1 of your [Monkey.D.Luffy] cards gains +2000
-  //   power during this turn.
-  // NOTE: not yet implemented (needs template).
 
   // OP13-016 (character) Monkey.D.Garp —
   //   [On Play] If your Leader is [Sabo], [Portgas.D.Ace] or [Monkey.D.Luffy], look at 4 cards from the top
@@ -140,16 +129,7 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   cards as active at the end of this turn.
   // NOTE: not yet implemented (needs template).
 
-  // OP13-025 (character) Koby —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On Play] If your Leader has the {FILM} type or the <Strike> attribute, set up to 1 of
-  //   your DON!! cards as active.
-  // NOTE: not yet implemented (needs template).
 
-  // OP13-026 (character) Sunny-Kun —
-  //   [Activate: Main] [Once Per Turn] You may rest 1 of your DON!! cards: This Character gains +2000 power
-  //   until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
 
   // OP13-027 — [On Play] Set up to 2 DON!! active. PARTIAL: OR-type [End of Your Turn] ramp deferred.
   { cardNumber: 'OP13-027', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
@@ -178,21 +158,12 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-034 — [On Play] If Leader {FILM} or {Straw Hat Crew}, set up to 1 DON!! active.
   { cardNumber: 'OP13-034', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'FILM' }, { kind: 'leaderType', type: 'Straw Hat Crew' }] }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
 
-  // OP13-034 (character) Brook —
-  //   [On Play] If your Leader has the {FILM} or {Straw Hat Crew} type, set up to 1 of your DON!! cards as
-  //   active.
-  // NOTE: not yet implemented (needs template).
 
   // OP13-035/037 — [End of Your Turn] Set this Character active (the "or 1 DON!!" alternative is dropped).
   { cardNumber: 'OP13-035', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveSelf' }] } },
 
   { cardNumber: 'OP13-037', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveSelf' }] } },
 
-  // OP13-038 (event) Gum-Gum Elephant Gun —
-  //   [Main] Rest up to 1 of your opponent's Characters with a cost of 5 or less. Then, set up to 2 of your
-  //   DON!! cards as active at the end of this turn. [Trigger] Rest up to 1 of your opponent's Characters
-  //   with a cost of 5 or less.
-  // NOTE: not yet implemented (needs template).
 
   {
     cardNumber: 'OP13-039',
@@ -258,9 +229,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-051 — [On K.O.] If Leader [Boa Hancock] or multicolored, draw 2.
   { cardNumber: 'OP13-051', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderName', name: 'Boa Hancock' }, { kind: 'leaderMulticolor' }] }], functions: [{ fn: 'draw', amount: 2 }] } },
 
-  // OP13-051 (character) Boa Hancock —
-  //   [On K.O.] If your Leader is [Boa Hancock] or multicolored, draw 2 cards.
-  // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP13-052', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Boa Hancock' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Boa Hancock', maxCost: 6 } }] } },
 
@@ -314,10 +282,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
       }],
     },
   },
-  // OP13-061 (character) Inuarashi —
-  //   [On Play] If you have any DON!! cards given, add up to 1 DON!! card from your DON!! deck and rest it.
-  //   Then, K.O. up to 1 of your opponent's Characters with a cost of 1 or less.
-  // NOTE: not yet implemented (needs template).
 
   // OP13-062 — [When Attacking] Return up to 1 opp Character base power ≤3000 to hand. PARTIAL: any-DON-given [On Play] ramp deferred.
   { cardNumber: 'OP13-062', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxBasePower: 3000 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -325,11 +289,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-063 — [Blocker] [On Play] If you have any given DON!!, add up to 1 DON!! from deck rested.
   { cardNumber: 'OP13-063', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfGivenDonCount', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
-  // OP13-063 (character) Kouzuki Oden —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On Play] If you have any DON!! cards given, add up to 1 DON!! card from your DON!!
-  //   deck and rest it.
-  // NOTE: not yet implemented (needs template).
 
   // OP13-064 (character) Gol.D.Roger —
   //   Your Leader and all of your Characters that do not have a type including "Roger Pirates" have their
@@ -344,11 +303,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Roger Pirates', excludeSelfName: true } }] },
   },
 
-  // OP13-066 (character) Silvers Rayleigh —
-  //   [Rush][On Play] If you have any DON!! cards given, rest up to 1 of your opponent's Characters with a
-  //   cost of 5 or less. Then, add up to 1 DON!! card from your DON!! deck and set it as active at the end
-  //   of this turn.
-  // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP13-067', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Roger Pirates' }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }, { fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
@@ -367,10 +321,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-072 — [On Play] If Leader {Roger Pirates} and you have any given DON!!, add up to 1 DON!! from deck rested.
   { cardNumber: 'OP13-072', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Roger Pirates' }, { kind: 'selfGivenDonCount', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
-  // OP13-072 (character) Buggy —
-  //   [On Play] If your Leader's type includes "Roger Pirates" and you have any DON!! cards given, add up
-  //   to 1 DON!! card from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP13-074', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Homies', maxPower: 3000 } }] } },
 
@@ -438,10 +388,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-091 — [On Play] trash 1 → K.O. up to 1 opp Character base cost ≤5. PARTIAL: static trash-count immunity/[Blocker] deferred.
   { cardNumber: 'OP13-091', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 5 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 
-  // OP13-092 (character) Saint Mjosgard —
-  //   [On Play] If you have 3 or less Life cards, play up to 1 {Mary Geoise} type Stage card with a cost of
-  //   1 from your trash.
-  // NOTE: not yet implemented (needs template).
 
   // OP13-093 - [Blocker] [On Play] Draw 2 cards, then trash 2 cards from hand.
   // Note: [Blocker] is an engine keyword flag. Only the on-play draw/trash is templated.
@@ -449,10 +395,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-094', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Celestial Dragons' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP13-095 (character) Saint Rosward —
-  //   [On Play] You may trash 1 card from your hand: If you only have {Celestial Dragons} type Characters,
-  //   K.O. up to 2 of your opponent's Characters with a base cost of 3 or less.
-  // NOTE: not yet implemented (needs template).
 
   {
     cardNumber: 'OP13-096',
@@ -512,10 +454,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-112 — If you have 2 or more given DON!!, this Character gains [Blocker].
   { cardNumber: 'OP13-112', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfGivenDonCount', atLeast: 2 }] } }] } },
 
-  // OP13-112 (character) Vegapunk —
-  //   If you have a total of 2 or more given DON!! cards, this Character gains [Blocker].(After your
-  //   opponent declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
 
   // OP13-113 — [On Play] look 4, reveal up to 1 card with a [Trigger] (other than [Lilith]), add to hand, rest to bottom. [Trigger] Activate this effect.
   {
@@ -560,5 +498,73 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 1 }, { fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
     ],
   },
+
+  { cardNumber: 'OP13-025', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'FILM' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
+
+  // OP13-026 (character) Sunny-Kun —
+  //   [Activate: Main] [Once Per Turn] You may rest 1 of your DON!! cards: This Character gains +2000 power
+  //   until the end of your opponent's next turn.
+  // NOTE: not yet implemented (needs template).
+
+  // OP13-038 (event) Gum-Gum Elephant Gun —
+  //   [Main] Rest up to 1 of your opponent's Characters with a cost of 5 or less. Then, set up to 2 of your
+  //   DON!! cards as active at the end of this turn. [Trigger] Rest up to 1 of your opponent's Characters
+  //   with a cost of 5 or less.
+  // NOTE: not yet implemented (needs template).
+
+  // OP13-061 (character) Inuarashi —
+  //   [On Play] If you have any DON!! cards given, add up to 1 DON!! card from your DON!! deck and rest it.
+  //   Then, K.O. up to 1 of your opponent's Characters with a cost of 1 or less.
+  // NOTE: not yet implemented (needs template).
+
+  // OP13-066 (character) Silvers Rayleigh —
+  //   [Rush][On Play] If you have any DON!! cards given, rest up to 1 of your opponent's Characters with a
+  //   cost of 5 or less. Then, add up to 1 DON!! card from your DON!! deck and set it as active at the end
+  //   of this turn.
+  // NOTE: not yet implemented (needs template).
+
+  // OP13-092 (character) Saint Mjosgard —
+  //   [On Play] If you have 3 or less Life cards, play up to 1 {Mary Geoise} type Stage card with a cost of
+  //   1 from your trash.
+  // NOTE: not yet implemented (needs template).
+
+  // OP13-095 (character) Saint Rosward —
+  //   [On Play] You may trash 1 card from your hand: If you only have {Celestial Dragons} type Characters,
+  //   K.O. up to 2 of your opponent's Characters with a base cost of 3 or less.
+  // NOTE: not yet implemented (needs template).
+
+  { cardNumber: 'OP13-026', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn' }] } },
+
+  { cardNumber: 'OP13-038', templates: [{ templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } }, { templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } }] },
+
+  { cardNumber: 'OP13-061', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfGivenDonCount', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
+
+  { cardNumber: 'OP13-066', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfGivenDonCount', atLeast: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }, { fn: 'addDonFromDeck', count: 1, rested: false }] } },
+
+  { cardNumber: 'OP13-092', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfLife', atMost: 3 }], functions: [{ fn: 'playFromTrash', filter: { category: 'stage', typeIncludes: 'Mary Geoise', exactCost: 1 } }] } },
+
+  { cardNumber: 'OP13-095', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 3 } }, optional: true, maxTargets: 2, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'Celestial Dragons' }] }] } },
+
+  // PARTIAL: onOpponentsAttack −2000 only; damage/KO draw trigger deferred.
+  { cardNumber: 'OP13-002', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' }] } },
+
+  { cardNumber: 'OP13-007', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn', ifGate: [{ kind: 'selfGivenDonCount', atLeast: 2 }] }] } },
+
+  { cardNumber: 'OP13-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
+
+  // PARTIAL: trash ally for [Banish] deferred; mapped onPlay draw.
+  { cardNumber: 'OP13-053', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
+
+  { cardNumber: 'OP13-079', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Roger Pirates' } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+
+  { cardNumber: 'OP13-080', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Roger Pirates' }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Roger Pirates', maxCost: 3 }, rested: true }] } },
+
+  { cardNumber: 'OP13-081', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'draw', amount: 1, ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] }] } },
+
+  { cardNumber: 'OP13-082', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+
+  { cardNumber: 'OP13-084', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
+
+  { cardNumber: 'OP13-099', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
 
 ];

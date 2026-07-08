@@ -76,24 +76,11 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
   { cardNumber: 'OP15-004', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfLeaderPowerAtMost', power: 0 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
-  // OP15-005 (character) Cabaji —
-  //   [When Attacking] If your opponent has any DON!! cards given, this Character gains +2000 power during
-  //   this turn.
-  // NOTE: not yet implemented (needs template).
 
-  // OP15-006 (character) Cavendish —
-  //   If you have 4 or more Events in your trash, this Character gains +2000 power.
-  // NOTE: not yet implemented (needs template).
 
   // ── Triage batch (OP15 expressible). Opponent-DON manipulation, name-target buffs, turn-Life-face costs, and trash-count gates are deferred. ──
   { cardNumber: 'OP15-007', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'East Blue' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 5 } }] } },
 
-  // OP15-008 (character) Krieg —
-  //   [On Play] Give up to 3 of your opponent's rested DON!! cards to 1 of your opponent's Characters.
-  //   Then, this Character gains [Rush] during this turn.[Activate: Main] [Once Per Turn] If this Character
-  //   was played on this turn, give all of your opponent's Characters −1000 power during this turn for
-  //   every DON!! card given to that Character.
-  // NOTE: not yet implemented (selfPlayedThisTurn is available now, but this still needs scaling from the DON!! previously given to a chosen opponent Character).
 
   // OP15-009 (character) Koby —
   //   If your Character with 7000 base power or less would be removed from the field by your opponent's
@@ -202,12 +189,6 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   of your deck. Then, if your deck has 0 cards, set up to 1 of your Characters as active.
   // NOTE: not yet implemented (needs template).
 
-  // OP15-023 (character) Arlong —
-  //   [On K.O.] Up to 2 of your opponent's rested cards will not become active in your opponent's next
-  //   Refresh Phase.[Activate: Main] [Once Per Turn] You may give 1 of your opponent's rested DON!! cards
-  //   to 1 of your opponent's Characters: Give up to 1 DON!! card from its owner's cost area to its owner's
-  //   Leader or 1 of their Characters.
-  // NOTE: not yet implemented (needs template).
 
   // OP15-013 — curated above.
   // OP15-024 — [Opponent's Turn] [Blocker] + [On K.O.] rest opp Leader/Char cost ≤7. PARTIAL: rest-immunity deferred.
@@ -218,11 +199,6 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 7 } }, optional: true }] } },
     ],
   },
-  // OP15-025 (character) Kuro —
-  //   [Blocker][On Play] Give up to 2 DON!! cards from your opponent's cost area to 1 of your opponent's
-  //   Characters. Then, at the end of this turn, up to 1 rested Character with 3 or more DON!! cards given
-  //   will not become active in your opponent's next Refresh Phase.
-  // NOTE: not yet implemented (needs template).
 
   // OP15-026 — [On Play] Look 3, reveal up to 1 {East Blue} to hand, rest to bottom. PARTIAL: trash-self opp-DON activate deferred.
   { cardNumber: 'OP15-026', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'East Blue' }, remainder: 'bottom' }] } },
@@ -261,9 +237,6 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   to your hand.
   // NOTE: not yet implemented (needs template).
 
-  // OP15-034 (character) Yorki —
-  //   [Your Turn] [On Play] Up to 1 of your [Brook] cards gains +2000 power during this turn.
-  // NOTE: not yet implemented (needs template).
 
   // OP15-035 (character) Laboon —
   //   If your Character with 7000 base power or less would be removed from the field by your opponent's
@@ -286,11 +259,6 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-038 (event) It's an Order! Do Not Defy Me!!! —
-  //   [Main] Up to 1 of your opponent's rested Characters with a cost of 8 or less that has 2 or more DON!!
-  //   cards given will not become active in your opponent's next Refresh Phase.[Counter] Up to 1 of your
-  //   [Krieg] cards gains +4000 power during this battle.
-  // NOTE: not yet implemented (needs template).
 
   // OP15-039 (leader) Rebecca —
   //   This Leader cannot attack.[Activate: Main] You may rest this Leader and return 1 of your {Dressrosa}
@@ -340,20 +308,8 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   from your hand.
   // NOTE: not yet implemented (needs template).
 
-  // OP15-047 (character) Sanji —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On Play] Up to 1 of your Characters gains [Unblockable] during this turn.(This card
-  //   cannot be blocked.)
-  // NOTE: not yet implemented (needs template).
 
-  // OP15-048 (character) Chinjao —
-  //   [On Play] You may trash 1 Event from your hand: Draw 2 cards.[Opponent's Turn] [On K.O.] Your
-  //   opponent places 1 card from their hand at the bottom of their deck.
-  // NOTE: not yet implemented (needs template).
 
-  // OP15-050 (character) Bobby Funk —
-  //   If you have [Kelly Funk], this Character gains +3000 power.
-  // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP15-051', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'Dressrosa' }] } }] } },
 
@@ -473,6 +429,43 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   gains +1000 power during this turn per 1 cost on the revealed card.
   // NOTE: not yet implemented (needs template).
 
+
+  // PARTIAL: [Activate: Main] DON-scaling debuff deferred; mapped onPlay give 3 opp rested DON + Rush.
+  { cardNumber: 'OP15-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDonFromOpponentCostArea', count: 3, restedOnly: true, optional: true }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
+
+
+  { cardNumber: 'OP15-023', templates: [{ templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'preventRefresh', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 2 }] } }, { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDonFromOpponentCostArea', count: 1, restedOnly: true, optional: true }, { fn: 'giveDonFromPreviousTargetOwnerCostArea', count: 1, restedOnly: true, optional: true, ifPrevious: 'previousSelectedAny' }] } }] },
+
+
+  // PARTIAL: end-of-turn preventRefresh rider deferred.
+  { cardNumber: 'OP15-025', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDonFromOpponentCostArea', count: 2, optional: true }] } },
+
+
+  { cardNumber: 'OP15-038', templates: [{ templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 8, minDonAttached: 2 } }, optional: true }] } }, { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Krieg' } }, amount: 4000, duration: 'duringThisBattle', optional: true }] } }] },
+
+
+  // PARTIAL: [On K.O.] opp hand→deck-bottom deferred.
+  { cardNumber: 'OP15-048', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { category: 'event' }, optional: true }, { fn: 'draw', amount: 2, ifPrevious: 'previousSelectedAny' }] } },
+
+
+  // PARTIAL: "7000 base power or less" target filter dropped (no maxBasePower on targetCondition).
+  { cardNumber: 'OP15-069', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', returnDon: { count: 1 }, duration: 'permanent' }] } },
+
+
+  { cardNumber: 'OP15-079', templates: [{ templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates' } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates' } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } }] },
+
+
+  // PARTIAL: "7000 base power or less" target filter dropped.
+  { cardNumber: 'OP15-090', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', trashFromHand: { count: 1 }, duration: 'permanent' }] } },
+
+
+  // PARTIAL: "7000 base power or less" target filter dropped.
+  { cardNumber: 'OP15-098', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', anyOfTypes: ['Sky Island'], lifeToHand: { position: 'top' }, duration: 'permanent' }] } },
+
+
+  // PARTIAL: "7000 base power or less" target filter dropped.
+  { cardNumber: 'OP15-105', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', lifeToHand: { position: 'top' }, duration: 'permanent' }] } },
+
   // --- codegen batch ---
   { cardNumber: 'OP15-065', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { maxCost: 2 }, then: [{ fn: 'addDonFromDeck', count: 1, rested: true }] }] } },
 
@@ -495,15 +488,7 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-068 — if 6 or less DON!! on field, [Blocker]
   { cardNumber: 'OP15-068', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfDonFieldCount', atMost: 6 }] } }] } },
 
-  // OP15-068 (character) Heavenly Warriors —
-  //   If you have 6 or less DON!! cards on your field, this Character gains [Blocker].(After your opponent
-  //   declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
 
-  // OP15-069 (character) Nola —
-  //   If your Character with 7000 base power or less would be removed from the field by your opponent's
-  //   effect, you may return 1 DON!! card from your field to your DON!! deck instead.
-  // NOTE: not yet implemented (needs template).
 
   // OP15-070 — [On Play] [Shura] cards + self gain [Unblockable]; [Opponent's Turn] [Shura] + self base power become 6000.
   {
@@ -567,10 +552,6 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-079 (character) Absalom —
-  //   [On K.O.] Add up to 1 {Thriller Bark Pirates} type card from your trash to your hand. [Trigger]
-  //   Activate this card's [On K.O.] effect.
-  // NOTE: not yet implemented (needs template).
 
   // OP15-080 — static +7000 if [Gecko Moria] ≥10000 power and no other [Oars]. PARTIAL: onKO recur deferred.
   {
@@ -621,10 +602,6 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-090 (character) Perona —
-  //   If your Character with 7000 base power or less would be removed from the field by your opponent's
-  //   effect, you may trash 1 card from your hand instead.
-  // NOTE: not yet implemented (needs template).
 
   // OP15-091 — [On Play] Place up to 1 card from opponent's trash at the bottom of the owner's deck.
   { cardNumber: 'OP15-091', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 }] } },
@@ -696,10 +673,6 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-098 (leader) Monkey.D.Luffy —
-  //   If your {Sky Island} type Character with 6000 base power or more would be removed from the field by
-  //   your opponent, you may add 1 card from the top of your Life cards to your hand instead.
-  // NOTE: not yet implemented (needs template).
 
   // OP15-099 — [On Play] may trash 1 {Supernovas} from hand → [Rush]. PARTIAL: activate Main Life-face + giveDon deferred.
   {
@@ -758,10 +731,6 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-105 (character) Jewelry Bonney —
-  //   If your Character with 7000 base power or less would be removed from the field by your opponent's
-  //   effect, you may add 1 card from the top of your Life cards to your hand instead.
-  // NOTE: not yet implemented (needs template).
 
   // OP15-106 — [Trigger] Draw 1, then play up to 1 yellow Character cost ≤2 from hand (Stage option dropped).
   { cardNumber: 'OP15-106', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { category: 'character', color: 'yellow', maxCost: 2 } }] } },
@@ -781,15 +750,7 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-111 — [DON!! x1] [When Attacking] up to 1 [Kalgara] gains [Rush] this turn.
   { cardNumber: 'OP15-111', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { name: 'Kalgara' } }, keyword: 'rush', duration: 'duringThisTurn', optional: true }] } },
 
-  // OP15-110 (character) Braham —
-  //   [On K.O.] If your Leader has the {Shandian Warrior} type, add up to 1 card from the top of your deck
-  //   to the top of your Life cards.
-  // NOTE: not yet implemented (needs template).
 
-  // OP15-111 (character) Mont Blanc Noland —
-  //   [DON!! x1] [When Attacking] Up to 1 of your [Kalgara] cards gains [Rush] during this turn.(This card
-  //   can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP15-112', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Shandian Warrior', maxCost: 3 } }] } },
 
