@@ -316,11 +316,42 @@ export function isKoImmune(
  * restriction (e.g. "cannot attack until the end of your opponent's next turn"). Distinct
  * from the innate summoning-sickness check (3-7-4), which declareAttack.ts checks separately.
  */
-export function cannotAttack(state: GameState, instanceId: string): boolean {
-  return state.continuousEffects.some((record) => {
-    const r = record.attackRestriction;
-    return r?.appliesToInstanceId === instanceId && r.forbiddenTarget === undefined;
-  });
+function attackRestrictionBlocks(
+  record: ContinuousEffectRecord,
+  state: GameState,
+  instanceId: string,
+  defs: CardDefinitionLookup,
+): boolean {
+  const r = record.attackRestriction;
+  if (!r || r.appliesToInstanceId !== instanceId || r.forbiddenTarget !== undefined) return false;
+  if (r.attackUnlessGate?.length) {
+    return !evaluateGates(r.attackUnlessGate, state, defs, record.ownerId, record.sourceInstanceId);
+  }
+  if (r.condition) {
+    return continuousTargetConditionApplies(r.condition, record, state, instanceId, defs);
+  }
+  return true;
+}
+
+export function cannotAttack(state: GameState, instanceId: string, defs: CardDefinitionLookup = {}): boolean {
+  return state.continuousEffects.some((record) => attackRestrictionBlocks(record, state, instanceId, defs));
+}
+
+/** While active, the opponent must attack this Character (and only this Character). */
+export function getForcedAttackTargetId(state: GameState, attackerInstanceId: string, defs: CardDefinitionLookup): string | null {
+  const attacker = state.cardsById[attackerInstanceId];
+  if (!attacker) return null;
+  for (const record of state.continuousEffects) {
+    const f = record.forcedAttackTarget;
+    if (!f) continue;
+    const target = state.cardsById[f.appliesToInstanceId];
+    if (!target || target.currentZone !== 'characterArea') continue;
+    if (attacker.ownerId === target.ownerId) continue;
+    if (!sourceConditionApplies(f.sourceCondition, record, state)) continue;
+    if (!continuousTargetConditionApplies(f.condition, record, state, f.appliesToInstanceId, defs)) continue;
+    return f.appliesToInstanceId;
+  }
+  return null;
 }
 
 /** Whether `attackerId` is forbidden from attacking `targetId` due to a partial attack restriction. */

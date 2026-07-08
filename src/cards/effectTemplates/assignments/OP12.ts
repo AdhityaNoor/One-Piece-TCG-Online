@@ -178,11 +178,14 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Character cannot be K.O.'d in battle by <Slash> attribute cards and gains +1000 power.
   // NOTE: not yet implemented (needs template).
 
-  // OP12-037 (event) Demon Aura Nine Sword Style Asura Blades Drawn Dead Man's Game —
-  //   [Main] You may rest 3 of your DON!! cards: Rest up to a total of 2 of your opponent's Characters or
-  //   DON!! cards.[Counter] Your Leader gains +3000 power during this battle.
-  // NOTE: not yet implemented (needs template).
-
+  // OP12-037 — [Main] rest 3 DON!!: rest up to 2 opp Characters or DON!!. [Counter] Leader +3000 this battle.
+  {
+    cardNumber: 'OP12-037',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 3 }], functions: [{ fn: 'rest', target: { group: 'charactersOrDon', player: 'opponent' }, optional: true, maxTargets: 2 }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
   // OP12-038 — [Main] rest 2 DON!!: K.O. up to 2 opp rested Characters base cost ≤4. [Counter] your Leader +3000 this battle.
   {
     cardNumber: 'OP12-038',

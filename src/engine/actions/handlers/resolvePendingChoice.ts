@@ -22,12 +22,13 @@ import { resumeChoice, fireLifeTrigger, fireOnKO, type EffectTemplateRegistry } 
 import { finishBattleAfterKoDecision } from '../../rules/battle/damageStep';
 import { resolveKoReplacementStep, validateKoReplacementResponse } from '../../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../../rules/shared/definitions';
+import { computeCurrentPower } from '../../rules/shared/power';
 
 function findChoice(state: GameState, action: ResolvePendingChoiceAction) {
   return state.pendingChoices.find((c) => c.id === action.choiceId);
 }
 
-export function validateResolvePendingChoice(state: GameState, action: ResolvePendingChoiceAction): ValidationResult {
+export function validateResolvePendingChoice(state: GameState, action: ResolvePendingChoiceAction, defs: CardDefinitionLookup = {}): ValidationResult {
   const reasons: string[] = [];
   const choice = findChoice(state, action);
   if (!choice) {
@@ -57,10 +58,17 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
       if (typeof sel !== 'number' || !Number.isInteger(sel) || sel < 0 || sel >= optionCount) {
         reasons.push(`A card-effect option choice expects an option index between 0 and ${Math.max(0, optionCount - 1)}.`);
       }
+    } else if (choice.kind === 'SELECT_NUMBER') {
+      const sel = action.response;
+      const min = choice.constraints.numberMin ?? 0;
+      const max = choice.constraints.numberMax ?? 10;
+      if (typeof sel !== 'number' || !Number.isInteger(sel) || sel < min || sel > max) {
+        reasons.push(`Select an integer cost between ${min} and ${max} (got ${String(sel)}).`);
+      }
     } else if (!Array.isArray(sel)) {
       reasons.push('A card-effect choice expects an array of selected instance ids.');
     } else {
-      const { min, max, candidateInstanceIds } = choice.constraints;
+      const { min, max, candidateInstanceIds, maxCombinedPower } = choice.constraints;
       if (sel.length < min || sel.length > max) {
         reasons.push(`Select between ${min} and ${max} target(s) (got ${sel.length}) (8-4-4-1).`);
       }
@@ -73,6 +81,12 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
           reasons.push(`'${id}' was selected more than once.`);
         } else {
           seen.add(id);
+        }
+      }
+      if (maxCombinedPower !== undefined && sel.length > 0) {
+        const combined = sel.reduce((sum, id) => sum + computeCurrentPower(defs, state, id), 0);
+        if (combined > maxCombinedPower) {
+          reasons.push(`Selected cards' combined power is ${combined}, which exceeds ${maxCombinedPower}.`);
         }
       }
     }

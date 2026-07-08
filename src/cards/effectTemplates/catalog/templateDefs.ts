@@ -87,6 +87,7 @@ export type TargetSpec =
   | { group: 'leader'; player: 'controller' }
   | { group: 'leader'; player: 'opponent'; filter?: { rested?: boolean } }
   | { group: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: TargetFilter }
+  | { group: 'charactersOrDon'; player: 'opponent' }
   | { group: 'leaderOrCharacters'; player: 'controller' | 'opponent'; filter?: TargetFilter };
 
 export type AbilityFunction =
@@ -96,11 +97,12 @@ export type AbilityFunction =
   | { fn: 'preventBlockersOnPreviousTarget'; duration: IrDuration }
   | { fn: 'preventAttackLeaderWhileSummoningSick'; duration: IrDuration }
   | { fn: 'giveGivenDon'; count?: number; optional?: boolean; targetTypeIncludes?: string }
-  | { fn: 'ko'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
+  | { fn: 'ko'; target: TargetSpec; optional?: boolean; maxTargets?: number; maxCombinedPower?: number; prompt?: string }
   | { fn: 'rest'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'preventRefresh'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   // "This/these Character(s) cannot attack" for the given duration (e.g. "until the end of your opponent's next turn" -> duration: 'endOfOpponentsTurn').
-  | { fn: 'preventAttack'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string }
+  | { fn: 'preventAttack'; target: TargetSpec; duration: IrDuration; attackUnlessGate?: AbilityGate[]; condition?: IrCondition; optional?: boolean; maxTargets?: number; prompt?: string }
+  | { fn: 'setForcedAttackTarget'; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition }
   | { fn: 'preventRest'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string; effectSourceController?: 'opponent' | 'controller' }
   | { fn: 'negateEffect'; target: TargetSpec; duration: IrDuration; negatedTimings?: IrTiming[]; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[] }
@@ -138,6 +140,10 @@ export type AbilityFunction =
   // (omit filter for an unconditional reveal). `then` branch functions must not use
   // their own ifPrevious — the compiler gates every branch op on the reveal result.
   | { fn: 'revealTopThen'; filter?: SearchFilter; then: SequencedAbilityFunction[] }
+  // Choose a cost, reveal opponent deck top; if printed cost matches, run `then`.
+  | { fn: 'revealOpponentTopIfChosenCostMatches'; costMin?: number; costMax?: number; then: SequencedAbilityFunction[] }
+  // Reveal (look at) the top card of the opponent's deck; optional unconditional `then` branch.
+  | { fn: 'revealOpponentDeckTop' }
   | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition }
   // Continuous self-buff that scales: +amountPer power for every `step` of `per` (e.g. cards in hand, Events in trash).
   | { fn: 'addPowerSelfScaling'; per: PowerScaleSource; step: number; amountPer: number; duration: IrDuration; condition?: IrCondition }

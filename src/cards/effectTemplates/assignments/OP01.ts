@@ -213,12 +213,13 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-050 — [Blocker] [On Play] If you don't have [Shachi], play up to 1 [Shachi] from hand.
   { cardNumber: 'OP01-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDoesNotControlNamed', name: 'Shachi' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Shachi' } }] } },
 
-  // OP01-051 (character) Eustass"Captain"Kid —
-  //   [DON!! x1] [Opponent's Turn] If this Character is rested, your opponent cannot attack any card other
-  //   than the Character [Eustass"Captain"Kid]. [Activate: Main] [Once Per Turn] You may rest this
-  //   Character: Play up to 1 Character card with a cost of 3 or less from your hand.
-  // NOTE: not yet implemented (needs taunt-style attack redirection: the opponent can only attack this specific Character).
-
+  // OP01-051 — [DON!! x1][Opponent's Turn] if rested, opponent must attack this Character. PARTIAL: [Activate: Main] play-from-hand deferred.
+  {
+    cardNumber: 'OP01-051',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'setForcedAttackTarget', duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'opponent' }, condition: { rested: true } }] } },
+    ],
+  },
   // OP01-052 — [When Attacking] [Once Per Turn] If you have 2 or more rested Characters, draw 1.
   { cardNumber: 'OP01-052', templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'draw', amount: 1 }] } },
 

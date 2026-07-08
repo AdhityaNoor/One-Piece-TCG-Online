@@ -229,6 +229,17 @@ export interface ContinuousAttackRestriction {
   forbiddenTarget?: 'leader';
   /** With `forbiddenTarget`, only while the attacker still has summoning sickness. */
   whileSummoningSick?: boolean;
+  /** Re-evaluated gate: when it fails, the card cannot attack ("cannot attack unless …"). */
+  attackUnlessGate?: AbilityGate[];
+  /** Re-evaluated condition on the restricted card (e.g. "if you have 5+ cards in hand, cannot attack"). */
+  condition?: ContinuousPowerCondition;
+}
+
+/** While active, the opponent may only attack this specific Character as their target. */
+export interface ContinuousForcedAttackTargetModifier {
+  appliesToInstanceId: string;
+  sourceCondition?: SourceStateCondition;
+  condition?: ContinuousPowerCondition;
 }
 
 /** Prevents a Leader/Character from being rested by card effects while this record is active. */
@@ -362,6 +373,8 @@ export interface ContinuousEffectRecord {
   blockerRestriction?: ContinuousBlockerRestriction;
   /** Structured attack restriction ("cannot attack"). Omitted for unrelated continuous effects. */
   attackRestriction?: ContinuousAttackRestriction;
+  /** Opponent must attack this Character when the modifier is active. Omitted otherwise. */
+  forcedAttackTarget?: ContinuousForcedAttackTargetModifier;
   /** Structured rest restriction ("cannot be rested by effects"). Omitted for unrelated continuous effects. */
   restRestriction?: ContinuousRestRestriction;
   /** Structured keyword grant. Omitted for unrelated continuous effects. */

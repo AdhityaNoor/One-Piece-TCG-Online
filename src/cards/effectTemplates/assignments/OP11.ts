@@ -237,11 +237,8 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP11-057', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfHand', atMost: 4 }] } }] } },
 
 
-  // OP11-058 (character) Monkey.D.Luffy —
-  //   If you have 5 or more cards in your hand, this Character cannot attack.[Blocker] (After your opponent
-  //   declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (selfHand counts exist, but preventAttack has no reevaluated condition field for a dynamic "while hand >= 5" static lock).
-
+  // OP11-058 — If 5+ cards in hand, cannot attack. PARTIAL: [Blocker] is card data.
+  { cardNumber: 'OP11-058', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent', condition: { gate: [{ kind: 'selfHand', atLeast: 5 }] } }] } },
 
   // OP11-060 — [Main] If Leader multicolored, search {Straw Hat Crew} (excl. self). [Trigger] same.
   {
@@ -261,21 +258,39 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP11-062 (leader) Charlotte Katakuri —
-  //   [When Attacking]/[On Your Opponent's Attack] [Once Per Turn] DON!! −1: Look at 1 card from the top of
-  //   your opponent's deck. Then, this Leader gains +1000 power during this battle.
-  // NOTE: not yet implemented (needs template).
-
+  // OP11-062 — [When Attacking]/[On Your Opponent's Attack] [Once Per Turn] DON!! −1: look at opp deck top, +1000 this battle.
+  {
+    cardNumber: 'OP11-062',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'whenAttacking',
+          oncePerTurn: true,
+          cost: [{ kind: 'donMinus', count: 1 }],
+          functions: [{ fn: 'revealOpponentDeckTop' }, { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle' }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentsAttack',
+          oncePerTurn: true,
+          cost: [{ kind: 'donMinus', count: 1 }],
+          functions: [{ fn: 'revealOpponentDeckTop' }, { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle' }],
+        },
+      },
+    ],
+  },
   // OP11-063 — [On Play] DON!! −1: If Leader {Impel Down}, rest up to 1 opp Character cost ≤3.
   { cardNumber: 'OP11-063', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
 
 
-  // OP11-066 (character) Charlotte Oven —
-  //   [Activate: Main] You may rest this Character: Choose a cost and reveal 1 card from the top of your
-  //   opponent's deck. If the revealed card has the chosen cost, K.O. up to 1 of your opponent's Characters
-  //   with a base cost of 3 or less. Then, add up to 1 DON!! card from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
-
+  // OP11-066 — [Activate: Main] rest this: choose cost, reveal opp deck top; if cost matches, K.O. up to 1 opp Character base cost ≤3, then add 1 rested DON!!.
+  { cardNumber: 'OP11-066', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'revealOpponentTopIfChosenCostMatches', then: [
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 3 } }, optional: true },
+    { fn: 'addDonFromDeck', count: 1, rested: true },
+  ] }] } },
   // OP11-067 — [Blocker][End of Your Turn] Set up to 2 {Big Mom Pirates} Characters active (cost ≥3 filter dropped), then add 1 DON!! (rested).
   { cardNumber: 'OP11-067', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerCharacter', maxTargets: 2, filter: { typeIncludes: 'Big Mom Pirates' } }, { fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
@@ -285,26 +300,45 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-070 — [On Play] Look 5, reveal up to 1 {Big Mom Pirates} cost ≥2 to hand, rest to bottom. PARTIAL: the peek-opp-deck activate is deferred.
   { cardNumber: 'OP11-070', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Big Mom Pirates', minCost: 2 }, remainder: 'bottom' }] } },
 
-  // OP11-071 (character) Charlotte Perospero —
-  //   [Activate: Main] [Once Per Turn] You may trash 1 card from your hand: Choose a cost and reveal 1 card
-  //   from the top of your opponent's deck. If the revealed card has the chosen cost, draw 1 card and add
-  //   up to 1 DON!! card from your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
+  // OP11-071 — [Activate: Main] [Once Per Turn] trash 1 from hand: choose cost, reveal opp deck top; if cost matches, draw 1 and add 1 active DON!!.
+  { cardNumber: 'OP11-071', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'optionalTrashFromHand', count: 1 },
+    { fn: 'revealOpponentTopIfChosenCostMatches', then: [
+      { fn: 'draw', amount: 1 },
+      { fn: 'addDonFromDeck', count: 1, rested: false },
+    ], ifPrevious: 'previousMovedAny' },
+  ] } },
 
-
-  // OP11-073 (character) Charlotte Linlin —
-  //   If your Leader has the {Big Mom Pirates} type, this Character gains [Rush].[On Your Opponent's
-  //   Attack] [Once Per Turn] DON!! −5: Choose a cost and reveal 1 card from the top of your opponent's
-  //   deck. If the revealed card has the chosen cost, up to 1 of your Leader gains +2000 power during this
-  //   turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-074 (character) Streusen —
-  //   [Activate: Main] [Once Per Turn] DON!! −1, You may rest this Character: Choose a cost and reveal 1
-  //   card from the top of your opponent's deck. If the revealed card has the chosen cost, rest up to 1 of
-  //   your opponent's Characters with a cost of 4 or less.
-  // NOTE: not yet implemented (needs template).
-
+  // OP11-073 — [On Enter Play] if Leader {Big Mom Pirates}, [Rush]. [On Opponent's Attack] DON!! −5: choose cost, reveal opp deck top; if cost matches, Leader +2000 this turn.
+  {
+    cardNumber: 'OP11-073',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          gate: [{ kind: 'leaderType', type: 'Big Mom Pirates' }],
+          functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentsAttack',
+          oncePerTurn: true,
+          cost: [{ kind: 'donMinus', count: 5 }],
+          functions: [{
+            fn: 'revealOpponentTopIfChosenCostMatches',
+            then: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'duringThisTurn' }],
+          }],
+        },
+      },
+    ],
+  },
+  // OP11-074 — [Activate: Main] [Once Per Turn] DON!! −1, rest this: choose cost, reveal opp deck top; if cost matches, rest up to 1 opp Character cost ≤4.
+  { cardNumber: 'OP11-074', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }, { kind: 'restThis' }], functions: [{ fn: 'revealOpponentTopIfChosenCostMatches', then: [
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true },
+  ] }] } },
   // OP11-075 — [On Play] If Leader is [Nico Robin] and 7+ DON!! on field, draw 2. [Trigger] same.
   {
     cardNumber: 'OP11-075',
@@ -321,21 +355,43 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, up to 1
   //   of your {Big Mom Pirates} type Characters gains +2 cost until the end of your opponent's next turn.
 
-  // OP11-079 (event) When Two Men Are Fighting the Last Thing I Need Is Some Half-Hearted Assistance!!!! —
-  //   [Counter] Choose a cost and reveal 1 card from the top of your opponent's deck. If the revealed card
-  //   has the chosen cost, up to 1 of your Leader or Character cards gains +5000 power during this battle.
-  //   [Trigger] Draw 1 card.
-  // NOTE: not yet implemented (needs template).
-
+  // OP11-079 — [Counter] choose cost, reveal opp deck top; if cost matches, Leader/Character +5000 this battle. [Trigger] draw 1.
+  {
+    cardNumber: 'OP11-079',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [{
+            fn: 'revealOpponentTopIfChosenCostMatches',
+            then: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 5000, duration: 'duringThisBattle', optional: true }],
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
   // OP11-080 — [Counter] your Leader +3000 this battle. PARTIAL: the [Main] "rest 2 DON!!: if blue leader, ramp" needs a leader-color gate (deferred).
   { cardNumber: 'OP11-080', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
 
-  // OP11-081 (event) Cognac Mama-Mash —
-  //   [Main] Choose a cost and reveal 1 card from the top of your opponent's deck. If the revealed card has
-  //   the chosen cost, K.O. up to 1 of your opponent's Characters with a base cost of 8 or less. [Trigger]
-  //   Add up to 1 DON!! card from your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
-
+  // OP11-081 — [Main] choose cost, reveal opp deck top; if cost matches, K.O. up to 1 opp Character base cost ≤8. [Trigger] add 1 active DON!!.
+  {
+    cardNumber: 'OP11-081',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [{
+            fn: 'revealOpponentTopIfChosenCostMatches',
+            then: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 8 } }, optional: true }],
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+    ],
+  },
   // OP11-082 (character) Aramaki —
   //   [Activate: Main] You may trash this Character: If your Leader has the {Navy} type, up to 1 of your
   //   {Navy} type Characters can also attack active Characters during this turn. Then, trash 2 cards from

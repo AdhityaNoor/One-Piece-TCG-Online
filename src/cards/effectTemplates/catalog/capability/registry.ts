@@ -136,15 +136,15 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   ko: {
     id: 'ko',
-    summary: 'K.O. targets (fires [On K.O.]). Use filters on the target for cost/power/type limits.',
+    summary: 'K.O. targets (fires [On K.O.]). Use filters on the target for cost/power/type limits; maxCombinedPower caps total current power across a multi-select.',
     params: [
       { name: 'target', type: 'TargetSpec', required: true },
       { name: 'optional', type: 'boolean', required: false, note: '"up to"' },
       { name: 'maxTargets', type: 'number', required: false },
+      { name: 'maxCombinedPower', type: 'number', required: false },
     ],
-    covers: ['K.O. up to {N} of your opponent\'s Characters with a cost of {C} or less'],
-    excludes: ['K.O. up to N with a TOTAL power/cost of X (combined constraint across targets)'],
-    examples: [{ cardNumber: 'OP01-007', snippet: "{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, optional: true }" }],
+    covers: ['K.O. up to {N} of your opponent\'s Characters with a cost of {C} or less', 'K.O. up to {N} ... with a total power of {P} or less'],
+    examples: [{ cardNumber: 'OP05-007', snippet: "{ fn: 'ko', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 2, maxCombinedPower: 4000 }" }],
   },
   koAllCharacters: {
     id: 'koAllCharacters',
@@ -206,13 +206,29 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   preventAttack: {
     id: 'preventAttack',
-    summary: 'Target Leader/Character cannot declare an attack for the duration.',
+    summary: 'Target Leader/Character cannot declare an attack for the duration. Optional attackUnlessGate inverts to "cannot attack unless …"; optional condition blocks only while it holds.',
     params: [
       { name: 'target', type: 'TargetSpec', required: true },
       { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'attackUnlessGate', type: 'AbilityGate[]', required: false },
+      { name: 'condition', type: 'IrCondition', required: false },
     ],
-    covers: ['this Character cannot attack', '... cannot attack until the end of your opponent\'s next turn'],
-    examples: [{ cardNumber: 'OP04-065', snippet: "{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'endOfOpponentsTurn' }" }],
+    covers: ['this Character cannot attack', '... cannot attack unless …', 'If you have {N}+ cards in your hand, this Character cannot attack'],
+    examples: [
+      { cardNumber: 'OP04-065', snippet: "{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'endOfOpponentsTurn' }" },
+      { cardNumber: 'EB04-005', snippet: "{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent', attackUnlessGate: [{ kind: 'opponentCharacterBasePowerCount', power: 5000, atLeast: 2 }] }" },
+    ],
+  },
+  setForcedAttackTarget: {
+    id: 'setForcedAttackTarget',
+    summary: 'While active, the opponent may only attack this Character (taunt). Gated on source/target state via sourceCondition and condition.',
+    params: [
+      { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'sourceCondition', type: 'SourceStateCondition', required: false },
+      { name: 'condition', type: 'IrCondition', required: false },
+    ],
+    covers: ['your opponent cannot attack any card other than this Character'],
+    examples: [{ cardNumber: 'OP01-051', snippet: "{ fn: 'setForcedAttackTarget', duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'opponent' }, condition: { rested: true } }" }],
   },
   preventRest: {
     id: 'preventRest',
@@ -568,6 +584,24 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['Reveal 1 card from the top of your deck. If <filter>, <then>'],
     examples: [{ cardNumber: 'OP04-011', snippet: "{ fn: 'revealTopThen', filter: { category: 'character', minPower: 6000 }, then: [...] }" }],
   },
+  revealOpponentTopIfChosenCostMatches: {
+    id: 'revealOpponentTopIfChosenCostMatches',
+    summary: 'Player chooses a cost, reveals opponent deck top; runs `then` only when printed cost matches.',
+    params: [
+      { name: 'costMin', type: 'number', required: false },
+      { name: 'costMax', type: 'number', required: false },
+      { name: 'then', type: 'SequencedAbilityFunction[]', required: true },
+    ],
+    covers: ['Choose a cost and reveal 1 card from the top of your opponent\'s deck. If the revealed card has the chosen cost, …'],
+    examples: [{ cardNumber: 'OP11-066', snippet: "{ fn: 'revealOpponentTopIfChosenCostMatches', then: [{ fn: 'ko', ... }, { fn: 'addDonFromDeck', count: 1, rested: true }] }" }],
+  },
+  revealOpponentDeckTop: {
+    id: 'revealOpponentDeckTop',
+    summary: 'Reveal (look at) the top card of the opponent\'s deck. Composes with following functions in the same ability.',
+    params: [],
+    covers: ['Look at 1 card from the top of your opponent\'s deck'],
+    examples: [{ cardNumber: 'OP11-062', snippet: "{ fn: 'revealOpponentDeckTop' }, { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle' }" }],
+  },
   turnTopLifeFace: {
     id: 'turnTopLifeFace',
     summary: '"You may turn 1 card from the top of your Life cards face-up/down:" cost. Binds var t.',
@@ -862,7 +896,10 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   selfGivenDonCount: { id: 'selfGivenDonCount', summary: 'You have N or more given DON!! (attached to your Leader/Characters).', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have a total of {N} or more given DON!! cards'], examples: [{ cardNumber: 'OP13-112', snippet: "{ kind: 'selfGivenDonCount', atLeast: 2 }" }] },
   opponentGivenDonCount: { id: 'opponentGivenDonCount', summary: 'Opponent has N or more given DON!!.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If your opponent has any DON!! cards given'], examples: [{ cardNumber: 'OP15-005', snippet: "{ kind: 'opponentGivenDonCount', atLeast: 1 }" }] },
   opponentHasCharacterBasePowerAtLeast: { id: 'opponentHasCharacterBasePowerAtLeast', summary: 'Opponent has a Leader/Character with base power N or more.', params: [{ name: 'power', type: 'number', required: true }], covers: ['If your opponent has a Leader or Character with a base power of {N} or more'], examples: [{ cardNumber: 'OP06-012', snippet: "{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 6000 }" }] },
+  opponentCharacterBasePowerCount: { id: 'opponentCharacterBasePowerCount', summary: 'Opponent has N Characters with base power M or more.', params: [{ name: 'power', type: 'number', required: true }, { name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['your opponent has {N} or more Characters with a base power of {M} or more'], examples: [{ cardNumber: 'EB04-005', snippet: "{ kind: 'opponentCharacterBasePowerCount', power: 5000, atLeast: 2 }" }] },
   anyCharacterCostAtLeast: { id: 'anyCharacterCostAtLeast', summary: 'There is a Character with a cost of N or more (either player).', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['if there is a Character with a cost of {N} or more'], examples: [{ cardNumber: 'OP11-095', snippet: "{ kind: 'anyCharacterCostAtLeast', atLeast: 9 }" }] },
+  anyCharacterBasePowerAtLeast: { id: 'anyCharacterBasePowerAtLeast', summary: 'There is a Character with base power N or more (either player).', params: [{ name: 'power', type: 'number', required: true }], covers: ['unless there is a Character with {N} base power or more'], examples: [{ cardNumber: 'EB04-051', snippet: "{ kind: 'anyCharacterBasePowerAtLeast', power: 12000 }" }] },
+  selfCharactersTotalCostAtLeast: { id: 'selfCharactersTotalCostAtLeast', summary: 'Total current cost of your Characters is N or more.', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['If the total cost of your Characters is {N} or more'], examples: [{ cardNumber: 'OP10-022', snippet: "{ kind: 'selfCharactersTotalCostAtLeast', atLeast: 5 }" }] },
   opponentHasCharacterExactCost: { id: 'opponentHasCharacterExactCost', summary: 'Opponent has a Character with a cost of exactly N.', params: [{ name: 'exactCost', type: 'number', required: true }], covers: ['if your opponent has a Character with a cost of {N}'], examples: [{ cardNumber: 'OP07-087', snippet: "{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }" }] },
   selfDonReturnedThisAction: { id: 'selfDonReturnedThisAction', summary: 'N or more DON!! were returned to the DON!! deck during this cost payment (onDonReturned only).', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['When {N} or more DON!! cards on your field are returned to your DON!! deck', 'When a DON!! card on your field is returned to your DON!! deck'], examples: [{ cardNumber: 'OP09-061', snippet: "{ kind: 'selfDonReturnedThisAction', atLeast: 2 }" }] },
   playedCharacterNoBaseEffect: { id: 'playedCharacterNoBaseEffect', summary: 'The Character just played from hand has no base effect (onCharacterPlayedFromHand only).', params: [], covers: ['Character with no base effect from your hand'], examples: [{ cardNumber: 'OP02-026', snippet: "{ kind: 'playedCharacterNoBaseEffect' }" }] },

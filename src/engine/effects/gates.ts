@@ -313,10 +313,34 @@ function evaluateGate(
       return ids.some((id) => (defs[state.cardsById[id]?.cardDefinitionId ?? '']?.basePower ?? -1) >= gate.power);
     }
 
+    case 'opponentCharacterBasePowerCount': {
+      const opponentId = getOpponentId(state, ownerId);
+      const opp = state.players[opponentId];
+      if (!opp) return false;
+      const count = opp.characterArea.cardIds.filter(
+        (id) => (defs[state.cardsById[id]?.cardDefinitionId ?? '']?.basePower ?? -1) >= gate.power,
+      ).length;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
+    case 'selfCharactersTotalCostAtLeast': {
+      let total = 0;
+      for (const id of player.characterArea.cardIds) total += currentCostForGate(state, defs, id);
+      return total >= gate.atLeast;
+    }
+
     case 'anyCharacterCostAtLeast': {
       const opponentId = getOpponentId(state, ownerId);
       const ids = [...player.characterArea.cardIds, ...state.players[opponentId].characterArea.cardIds];
       return ids.some((id) => currentCostForGate(state, defs, id) >= gate.atLeast);
+    }
+
+    case 'anyCharacterBasePowerAtLeast': {
+      const opponentId = getOpponentId(state, ownerId);
+      const ids = [...player.characterArea.cardIds, ...state.players[opponentId].characterArea.cardIds];
+      return ids.some((id) => (defs[state.cardsById[id]?.cardDefinitionId ?? '']?.basePower ?? -1) >= gate.power);
     }
 
     case 'opponentHasCharacterExactCost': {

@@ -1640,11 +1640,8 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB04-004 — [When Attacking] Your Leader's base power becomes 7000 until the end of your opponent's next End Phase.
   { cardNumber: 'EB04-004', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'setBasePower', target: { group: 'leader', player: 'controller' }, value: 7000, duration: 'endOfOpponentsTurn' }] } },
 
-  // EB04-005 (character) Trafalgar Law —
-  //   This Character cannot attack unless your opponent has 2 or more Characters with a base power of 5000
-  //   or more.
-  // NOTE: not yet implemented (needs conditional static cannot-attack-unless support).
-
+  // EB04-005 — Cannot attack unless opponent has 2+ Characters with base power ≥5000.
+  { cardNumber: 'EB04-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent', attackUnlessGate: [{ kind: 'opponentCharacterBasePowerCount', power: 5000, atLeast: 2 }] }] } },
   // EB04-006 - [On Play] Look at 7; add up to 1 [Lulucia Kingdom].
   {
     cardNumber: 'EB04-006',
@@ -2191,12 +2188,24 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB04-051 (character) Emet —
-  //   This Character cannot attack unless there is a Character with 12000 base power or more. [Trigger]
-  //   Give all of your opponent's Characters −3000 power during this turn. Then, if you have 0 Life cards,
-  //   play this card.
-  // NOTE: not yet implemented (needs conditional static cannot-attack-unless support).
-
+  // EB04-051 — Cannot attack unless any Character has base power ≥12000. PARTIAL: [Trigger] branch deferred.
+  {
+    cardNumber: 'EB04-051',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'preventAttack',
+            target: { ref: 'self' },
+            duration: 'permanent',
+            attackUnlessGate: [{ kind: 'anyCharacterBasePowerAtLeast', power: 12000 }],
+          }],
+        },
+      },
+    ],
+  },
   // EB04-052 (character) Sanji —
   //   [When Attacking] This Character's base power becomes the same as your opponent's Leader during this
   //   turn.[On K.O.] If you have 2 or less Life cards, play up to 1 yellow Character card with 6000 power

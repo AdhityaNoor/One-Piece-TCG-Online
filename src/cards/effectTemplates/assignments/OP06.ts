@@ -206,12 +206,11 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } },
   ] } },
 
-  // OP06-035 (character) Hody Jones —
-  //   [Rush] (This card can attack on the turn in which it is played.)[On Play] Rest up to a total of 2 of
-  //   your opponent's Characters or DON!! cards. Then, add 1 card from the top of your Life cards to your
-  //   hand.
-  // NOTE: not yet implemented (needs template).
-
+  // OP06-035 — [On Play] Rest up to 2 opp Characters or DON!! → add top Life to hand. PARTIAL: [Rush] is card data.
+  { cardNumber: 'OP06-035', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'rest', target: { group: 'charactersOrDon', player: 'opponent' }, optional: true, maxTargets: 2 },
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } },
+  ] } },
   // OP06-036 — [On Play]/[On K.O.] K.O. up to 1 of your opponent's rested Characters with a cost of 4 or less.
   {
     cardNumber: 'OP06-036',

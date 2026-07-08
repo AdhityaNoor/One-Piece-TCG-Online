@@ -34,10 +34,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-006 — [On Play] If Leader {Revolutionary Army}: give up to 1 opp Character −3000 this turn.
   { cardNumber: 'OP05-006', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP05-007 (character) Sabo —
-  //   [On Play] K.O. up to 2 of your opponent's Characters with a total power of 4000 or less.
-  // NOTE: not yet implemented (needs template).
-
+  // OP05-007 — [On Play] K.O. up to 2 opp Characters with combined power ≤4000.
+  { cardNumber: 'OP05-007', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 2, maxCombinedPower: 4000 }] } },
   // OP05-008 — [DON!! x1][Activate: Main][Once Per Turn] Give up to 2 rested DON!! to your Leader or 1 Character.
   { cardNumber: 'OP05-008', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'giveDon', count: 2 }] } },
 

@@ -35,6 +35,11 @@ export interface ChoiceConstraints {
   visibleInstanceIds?: string[];
   /** Discrete option labels for SELECT_OPTION choices; response is the selected option index. */
   options?: { label: string }[];
+  /** Inclusive range for SELECT_NUMBER choices. */
+  numberMin?: number;
+  numberMax?: number;
+  /** For multi-target SELECT_CARDS: selected cards' combined current power must be at most this. */
+  maxCombinedPower?: number;
 }
 
 export interface KoReplacementResumeState {

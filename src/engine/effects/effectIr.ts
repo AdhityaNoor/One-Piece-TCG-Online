@@ -34,6 +34,7 @@ export type Selector =
   | { sel: 'controllerDeckTop' }
   | { sel: 'allCharacters'; minCost?: number; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number } // any player's Characters
   | { sel: 'opponentCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; minDonAttached?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; noBaseEffect?: boolean; excludeName?: string } // optional cost/power (current) + base cost/power + rested/blocker/given-DON!! filters
+  | { sel: 'opponentCharactersOrDon' } // opponent Characters + unattached DON!! in cost area (rest targets)
   | { sel: 'controllerAttachedDon' } // DON!! instance ids currently given to the controller's Leader/Characters/Stages
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
   | { sel: 'opponentHand' } // opponent's hand cards, for effects where the opponent chooses/trashes
@@ -156,7 +157,9 @@ export type EffectOp =
   | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
   | ({ op: 'suppressBlockerActivation'; target: Selector; duration: IrDuration } & EffectOpSequenceGate)
   // Prevent the target Leader/Character from declaring an attack (7-1-1-1) while active.
-  | ({ op: 'preventAttack'; target: Selector; duration: IrDuration; forbiddenTarget?: 'leader'; whileSummoningSick?: boolean } & EffectOpSequenceGate)
+  | ({ op: 'preventAttack'; target: Selector; duration: IrDuration; forbiddenTarget?: 'leader'; whileSummoningSick?: boolean; attackUnlessGate?: AbilityGate[]; condition?: IrCondition } & EffectOpSequenceGate)
+  // While active, the opponent may only attack this Character (taunt).
+  | ({ op: 'setForcedAttackTarget'; target: Selector; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
   // Prevent effect-driven rest on the target Leader/Character for the duration.
   | ({ op: 'preventRest'; target: Selector; duration: IrDuration; effectSourceController?: 'opponent' | 'controller' } & EffectOpSequenceGate)
   // Negate all (or selected timings of) abilities on the target Leader/Character/Stage.
@@ -187,7 +190,8 @@ export type EffectOp =
   | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string; rested?: boolean } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
   | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
-  | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string; chooser?: 'controller' | 'opponent' } & EffectOpSequenceGate)
+  | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string; chooser?: 'controller' | 'opponent'; maxCombinedPower?: number } & EffectOpSequenceGate)
+  | ({ op: 'chooseCost'; min: number; max: number; prompt?: string } & EffectOpSequenceGate)
   | ({ op: 'chooseOption'; prompt: string; chooser?: 'controller' | 'opponent'; options: { label: string; ops: EffectOp[] }[] } & EffectOpSequenceGate)
   // Look at top `look` cards; player adds up to `pick` filter-matching cards to
   // `destination`; `reveal` means the added card identity is public ("reveal up to N").
@@ -199,6 +203,8 @@ export type EffectOp =
   // binding. Non-suspending: the card stays on top; the conditional "then" branch
   // is expressed as following ops gated on `ifPrevious: 'previousRevealMatched'`.
   | ({ op: 'revealTopDeck'; filter?: SearchFilter } & EffectOpSequenceGate)
+  // Reveal the top card of the opponent's deck and record cost-match against __chosenCost.
+  | ({ op: 'revealOpponentDeckTop' } & EffectOpSequenceGate)
   // Trash the top `count` cards of the controller's own deck (self-mill).
   | ({ op: 'trashTopDeck'; count: number } & EffectOpSequenceGate)
   // Trash the top `count` Life cards of a player (e.g. "Trash up to 1 of your opponent's Life cards").
@@ -209,6 +215,7 @@ export type EffectOp =
 export type NonSuspendingEffectOp = Exclude<
   EffectOp,
   | { op: 'chooseTargets' }
+  | { op: 'chooseCost' }
   | { op: 'searchTopDeck' }
   | { op: 'playFromDeck' }
   | { op: 'peekLifeThenPlace' }
@@ -303,7 +310,10 @@ export type AbilityGate =
   | { kind: 'selfGivenDonCount'; atLeast?: number; atMost?: number } // "you have N or more given DON!!" (DON attached to your Leader/Characters)
   | { kind: 'opponentGivenDonCount'; atLeast?: number; atMost?: number } // "opponent has N or more given DON!!"
   | { kind: 'opponentHasCharacterBasePowerAtLeast'; power: number } // "opponent has a Leader or Character with base power N or more"
+  | { kind: 'opponentCharacterBasePowerCount'; power: number; atLeast?: number; atMost?: number } // "opponent has N Characters with base power M or more"
+  | { kind: 'selfCharactersTotalCostAtLeast'; atLeast: number } // "total cost of your Characters is N or more"
   | { kind: 'anyCharacterCostAtLeast'; atLeast: number } // "if there is a Character with a cost of N or more"
+  | { kind: 'anyCharacterBasePowerAtLeast'; power: number } // "if there is a Character with a base power of N or more"
   | { kind: 'opponentHasCharacterExactCost'; exactCost: number } // "if your opponent has a Character with a cost of N"
   | { kind: 'selfDonReturnedThisAction'; atLeast?: number; atMost?: number } // "When N or more DON!! cards on your field are returned …"
   | { kind: 'playedCharacterNoBaseEffect' } // onCharacterPlayedFromHand: the just-played Character has no base effect

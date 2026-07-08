@@ -633,6 +633,8 @@ export class EffectContextImpl implements EffectContext {
     duration: ContinuousEffectDuration;
     forbiddenTarget?: 'leader';
     whileSummoningSick?: boolean;
+    attackUnlessGate?: import('./effectIr').AbilityGate[];
+    condition?: import('../state/game').ContinuousPowerCondition;
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -644,11 +646,15 @@ export class EffectContextImpl implements EffectContext {
         spec.description ??
         (spec.forbiddenTarget === 'leader'
           ? 'cannot attack the opponent\'s Leader'
-          : 'cannot attack'),
+          : spec.attackUnlessGate?.length
+            ? 'cannot attack unless gate passes'
+            : 'cannot attack'),
       attackRestriction: {
         appliesToInstanceId: spec.appliesToInstanceId,
         ...(spec.forbiddenTarget ? { forbiddenTarget: spec.forbiddenTarget } : {}),
         ...(spec.whileSummoningSick ? { whileSummoningSick: true } : {}),
+        ...(spec.attackUnlessGate?.length ? { attackUnlessGate: spec.attackUnlessGate } : {}),
+        ...(spec.condition ? { condition: spec.condition } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -656,6 +662,36 @@ export class EffectContextImpl implements EffectContext {
       actorPlayerId: this.controllerId,
       type: 'EFFECT_RESOLVED',
       message: `${spec.appliesToInstanceId} cannot attack (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  setForcedAttackTarget(spec: {
+    appliesToInstanceId: string;
+    duration: ContinuousEffectDuration;
+    sourceCondition?: import('../state/game').SourceStateCondition;
+    condition?: import('../state/game').ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'opponent must attack this Character',
+      forcedAttackTarget: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        ...(spec.sourceCondition ? { sourceCondition: spec.sourceCondition } : {}),
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToInstanceId} is the only legal attack target for the opponent (${record.description}).`,
       data: { continuousEffectId: record.id, duration: spec.duration },
       relatedCardInstanceIds: [spec.appliesToInstanceId],
       visibility: 'public',

@@ -53,6 +53,7 @@ function selectorFromTarget(target: TargetSpec): Selector {
   if (target.group === 'leaderOrCharacters' && target.player === 'controller') return { sel: 'var', name: 't' };
   if (target.group === 'leaderOrCharacters' && target.player === 'opponent') return { sel: 'var', name: 't' };
   if (target.group === 'characters') return { sel: 'var', name: 't' };
+  if (target.group === 'charactersOrDon' && target.player === 'opponent') return { sel: 'var', name: 't' };
 
   throw new Error(`Unsupported target ${JSON.stringify(target)}`);
 }
@@ -68,6 +69,7 @@ function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTa
   if (target.group === 'leaderOrCharacters' && target.player === 'opponent') return { sel: 'opponentLeaderOrCharacters' };
   if (target.group === 'characters' && target.player === 'controller') return { sel: 'controllerCharacters', ...target.filter };
   if (target.group === 'characters' && target.player === 'opponent') return { sel: 'opponentCharacters', ...target.filter };
+  if (target.group === 'charactersOrDon' && target.player === 'opponent') return { sel: 'opponentCharactersOrDon' };
   if (target.group === 'characters' && target.player === 'any') return { sel: 'allCharacters', ...target.filter };
 
   throw new Error(`Unsupported target choice source ${JSON.stringify(target)}`);
@@ -76,7 +78,7 @@ function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTa
 function targetOps(
   target: TargetSpec,
   effect: (target: Selector) => EffectOp,
-  options: { optional?: boolean; maxTargets?: number; prompt?: string } = {},
+  options: { optional?: boolean; maxTargets?: number; maxCombinedPower?: number; prompt?: string } = {},
 ): EffectOp[] {
   const from = chooseFromTarget(target);
   if (!from) return [effect(selectorFromTarget(target))];
@@ -89,6 +91,7 @@ function targetOps(
       min: options.optional ?? true ? 0 : Math.min(1, max),
       max,
       prompt: options.prompt ?? `Choose ${options.optional ?? true ? 'up to ' : ''}${max} target${max === 1 ? '' : 's'}.`,
+      ...(options.maxCombinedPower !== undefined ? { maxCombinedPower: options.maxCombinedPower } : {}),
     },
     effect(selectorFromTarget(target)),
   ];
@@ -287,13 +290,36 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     }
     case 'ko':
-      return targetOps(f.target, (target) => ({ op: 'ko', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
+      return targetOps(f.target, (target) => ({ op: 'ko', target }), {
+        optional: f.optional,
+        maxTargets: f.maxTargets,
+        maxCombinedPower: f.maxCombinedPower,
+        prompt: f.prompt,
+      });
     case 'rest':
       return targetOps(f.target, (target) => ({ op: 'rest', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
     case 'preventRefresh':
       return targetOps(f.target, (target) => ({ op: 'preventRefresh', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
     case 'preventAttack':
-      return targetOps(f.target, (target) => ({ op: 'preventAttack', target, duration: f.duration }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
+      return targetOps(
+        f.target,
+        (target) => ({
+          op: 'preventAttack',
+          target,
+          duration: f.duration,
+          ...(f.attackUnlessGate?.length ? { attackUnlessGate: f.attackUnlessGate } : {}),
+          ...(f.condition ? { condition: f.condition } : {}),
+        }),
+        { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
+      );
+    case 'setForcedAttackTarget':
+      return [{
+        op: 'setForcedAttackTarget',
+        target: { sel: 'self' },
+        duration: f.duration,
+        ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+        ...(f.condition ? { condition: f.condition } : {}),
+      }];
     case 'preventRest':
       return targetOps(
         f.target,
@@ -810,6 +836,16 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       const branch = f.then.flatMap(functionOps).map((op) => ({ ...op, ifPrevious: 'previousRevealMatched' as const }));
       return [{ op: 'revealTopDeck', ...(f.filter ? { filter: f.filter } : {}) }, ...branch];
     }
+    case 'revealOpponentTopIfChosenCostMatches': {
+      const branch = f.then.flatMap(functionOps).map((op) => ({ ...op, ifPrevious: 'previousRevealMatched' as const }));
+      return [
+        { op: 'chooseCost', min: f.costMin ?? 0, max: f.costMax ?? 10, prompt: 'Choose a cost.' },
+        { op: 'revealOpponentDeckTop' },
+        ...branch,
+      ];
+    }
+    case 'revealOpponentDeckTop':
+      return [{ op: 'revealOpponentDeckTop' }];
   }
   })();
 

@@ -371,6 +371,14 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
       return ids;
     }
+    case 'opponentCharactersOrDon': {
+      const state = ctx.state();
+      const player = state.players[ctx.opponentId];
+      const attached = new Set<string>();
+      for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
+      const donIds = player.costArea.cardIds.filter((id) => !attached.has(id));
+      return [...ctx.opponentCharacterIds(), ...donIds];
+    }
     case 'allStages': {
       const state = ctx.state();
       return [...state.players.p1.stageArea.cardIds, ...state.players.p2.stageArea.cardIds];
@@ -511,6 +519,20 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
           duration: op.duration,
           ...(op.forbiddenTarget ? { forbiddenTarget: op.forbiddenTarget } : {}),
           ...(op.whileSummoningSick ? { whileSummoningSick: true } : {}),
+          ...(op.attackUnlessGate?.length ? { attackUnlessGate: op.attackUnlessGate } : {}),
+          ...(op.condition ? { condition: op.condition } : {}),
+        });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
+    case 'setForcedAttackTarget': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.setForcedAttackTarget({
+          appliesToInstanceId: id,
+          duration: op.duration,
+          ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}),
+          ...(op.condition ? { condition: op.condition } : {}),
         });
       }
       return { selectedIds: ids, movedIds: [] };
@@ -730,7 +752,25 @@ function runOpList(
         playerId: chooserId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
-        constraints: { min: op.min, max: op.max, candidateInstanceIds: candidates },
+        constraints: {
+          min: op.min,
+          max: op.max,
+          candidateInstanceIds: candidates,
+          ...(op.maxCombinedPower !== undefined ? { maxCombinedPower: op.maxCombinedPower } : {}),
+        },
+        sourceInstanceId: ctx.sourceInstanceId,
+        sourceEffectId: 'ir',
+        resumeState: resumeStateForSuspend(coords, i, workingBindings),
+      });
+      return { suspended: true, bindings: workingBindings };
+    }
+    if (op.op === 'chooseCost') {
+      ctx.emitChoice({
+        id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
+        playerId: ctx.controllerId,
+        kind: 'SELECT_NUMBER',
+        prompt: op.prompt ?? 'Choose a cost.',
+        constraints: { min: 1, max: 1, numberMin: op.min, numberMax: op.max },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
         resumeState: resumeStateForSuspend(coords, i, workingBindings),
@@ -838,6 +878,18 @@ function runOpList(
       if (topId) {
         ctx.revealCard(topId);
         matched = op.filter ? matchesSearchFilter(topId, op.filter, ctx) : true;
+      }
+      workingBindings = { ...withResultBindings(workingBindings, EMPTY_RESULT), __lastRevealMatched: boolBinding(matched) };
+      continue;
+    }
+    if (op.op === 'revealOpponentDeckTop') {
+      const [topId] = ctx.topOfDeck(ctx.opponentId, 1);
+      let matched = false;
+      if (topId) {
+        ctx.revealCard(topId);
+        const chosen = parseInt(workingBindings.__chosenCost?.[0] ?? '-1', 10);
+        const printedCost = ctx.definitionOf(topId)?.baseCost ?? -1;
+        matched = chosen >= 0 && printedCost === chosen;
       }
       workingBindings = { ...withResultBindings(workingBindings, EMPTY_RESULT), __lastRevealMatched: boolBinding(matched) };
       continue;
@@ -1100,7 +1152,7 @@ export function resumeProgram(
 
   const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
   const op = suspendedOpAt(ability, rs);
-  if (!op || (op.op !== 'chooseTargets' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption')) return noop(stateWithoutChoice);
+  if (!op || (op.op !== 'chooseTargets' && op.op !== 'chooseCost' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption')) return noop(stateWithoutChoice);
 
   const preserveBranch = (bindings: Record<string, string[]>): PendingChoice['resumeState'] => ({
     abilityIndex: rs.abilityIndex,
@@ -1216,6 +1268,12 @@ export function resumeProgram(
     const mainSuspended = runOps(ability, rs.abilityIndex, rs.opIndex + 1, branchResult.bindings, ctx, defs, registry, actionId);
     if (!mainSuspended) runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
     return finishWithCascade(ctx, defs, actionId, registry);
+  }
+
+  if (op.op === 'chooseCost') {
+    const cost = typeof response === 'number' ? response : -1;
+    const bindings: Record<string, string[]> = { ...rs.bindings, __chosenCost: [String(cost)] };
+    return continueAfterResolvedOp(program, ability, rs, bindings, ctx, defs, actionId, registry);
   }
 
   const selection = Array.isArray(response) ? response : [];
