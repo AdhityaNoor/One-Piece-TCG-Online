@@ -577,6 +577,62 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  negateEffect(spec: {
+    appliesToInstanceId: string;
+    duration: ContinuousEffectDuration;
+    negatedTimings?: import('./effectIr').IrTiming[];
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'effect negated',
+      effectNegation: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        ...(spec.negatedTimings?.length ? { negatedTimings: spec.negatedTimings } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToInstanceId} effect negated (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration, negatedTimings: spec.negatedTimings },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  negateControllerEffects(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    negatedTimings?: import('./effectIr').IrTiming[];
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'controller effects negated',
+      effectNegation: {
+        appliesToControllerId: spec.appliesToControllerId,
+        ...(spec.negatedTimings?.length ? { negatedTimings: spec.negatedTimings } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToControllerId}'s effects negated (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration, negatedTimings: spec.negatedTimings },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
   giveDon(targetInstanceId: string, count: number): void {
     this.giveDonFromCostArea(targetInstanceId, count, this.controllerId, true);
   }

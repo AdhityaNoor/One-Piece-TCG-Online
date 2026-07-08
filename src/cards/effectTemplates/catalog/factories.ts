@@ -263,6 +263,24 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return targetOps(f.target, (target) => ({ op: 'preventRefresh', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
     case 'preventAttack':
       return targetOps(f.target, (target) => ({ op: 'preventAttack', target, duration: f.duration }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
+    case 'negateEffect':
+      return targetOps(
+        f.target,
+        (target) => ({
+          op: 'negateEffect',
+          target,
+          duration: f.duration,
+          ...(f.negatedTimings?.length ? { negatedTimings: f.negatedTimings } : {}),
+        }),
+        { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
+      );
+    case 'negateControllerEffects':
+      return [{
+        op: 'negateControllerEffects',
+        player: f.player,
+        duration: f.duration,
+        ...(f.negatedTimings?.length ? { negatedTimings: f.negatedTimings } : {}),
+      }];
     case 'addCost':
       return targetOps(
         f.target,

@@ -11,7 +11,7 @@ import type { PlayerState } from './player';
 import type { GameLogEntry } from '../logs/logEntry';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { RngState } from '../rng/rng';
-import type { AbilityGate, AbilityCost } from '../effects/effectIr';
+import type { AbilityGate, AbilityCost, IrTiming } from '../effects/effectIr';
 
 /**
  * 6-1-1. Battle (Section 7) is a Main Phase action, not a 6th phase — see
@@ -298,6 +298,16 @@ export interface ContinuousKoReplacementModifier {
   action: KoReplacementAction;
 }
 
+/** "Negate the effect(s)" on one instance or all cards controlled by a player. */
+export interface ContinuousEffectNegation {
+  /** Negate abilities on this Leader/Character/Stage instance. */
+  appliesToInstanceId?: string;
+  /** Negate abilities on all cards controlled by this player. */
+  appliesToControllerId?: string;
+  /** Omitted or empty = all timings; otherwise only the listed timings are negated. */
+  negatedTimings?: IrTiming[];
+}
+
 export interface ContinuousEffectRecord {
   id: string;
   sourceInstanceId: string;
@@ -319,6 +329,8 @@ export interface ContinuousEffectRecord {
   koImmunityModifier?: ContinuousKoImmunityModifier;
   /** Structured optional K.O. replacement. Omitted for unrelated continuous effects. */
   koReplacementModifier?: ContinuousKoReplacementModifier;
+  /** Structured effect negation. Omitted for unrelated continuous effects. */
+  effectNegation?: ContinuousEffectNegation;
 }
 
 export interface GameState {

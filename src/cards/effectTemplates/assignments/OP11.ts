@@ -323,7 +323,6 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-077 (character) Randolph —
   //   [Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, up to 1
   //   of your {Big Mom Pirates} type Characters gains +2 cost until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
 
   // OP11-079 (event) When Two Men Are Fighting the Last Thing I Need Is Some Half-Hearted Assistance!!!! —
   //   [Counter] Choose a cost and reveal 1 card from the top of your opponent's deck. If the revealed card
@@ -594,7 +593,7 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP11-050', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Kelly Funk' }] } }] } },
 
-  { cardNumber: 'OP11-077', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
+  { cardNumber: 'OP11-077', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Big Mom Pirates' } }, amount: 2, duration: 'endOfOpponentsTurn', optional: true }] } },
 
   { cardNumber: 'OP11-095', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Fish-Man' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 

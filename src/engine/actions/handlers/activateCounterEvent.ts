@@ -20,7 +20,7 @@ import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/def
 import { computeCurrentCost } from '../../rules/shared/power';
 import { getOpponentId } from '../../rules/shared/players';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { fireCounter, canPayAbilityCost, payAbilityCost, type EffectTemplateRegistry } from '../../effects';
+import { fireCounter, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, type EffectTemplateRegistry } from '../../effects';
 
 export function validateActivateCounterEvent(
   state: GameState,
@@ -142,13 +142,24 @@ export function executeActivateCounterEvent(
   // counter effect resolves. The Event play cost above is separate.
   const paid = ability?.cost?.length
     ? payAbilityCost(nextState, action.handCardInstanceId, action.playerId, ability.cost, action.actionId, action.abilityCostDonInstanceIds ?? [])
-    : { state: nextState, log: [] as ActionExecuteResult['log'] };
+    : { state: nextState, log: [] as ActionExecuteResult['log'], restedInstanceIds: [] as string[], returnedDonCount: 0 };
+
+  let working = paid.state;
+  let paidLog = [...paid.log];
+  if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
+    const cascaded = afterAbilityCostPaid(working, action.playerId, paid, registry, defs, action.actionId);
+    working = cascaded.state;
+    paidLog = [...paidLog, ...cascaded.log];
+    if (cascaded.pendingChoices.length > 0) {
+      return { state: working, log: [...logger.log, ...paidLog], pendingChoices: cascaded.pendingChoices };
+    }
+  }
 
   // Fire the [Counter] ability (timing 'counter'); may emit a target choice.
-  const fired = fireCounter(paid.state, action.handCardInstanceId, registry, defs, action.actionId);
+  const fired = fireCounter(working, action.handCardInstanceId, registry, defs, action.actionId);
   return {
     state: fired.state,
-    log: [...logger.log, ...paid.log, ...fired.log],
+    log: [...logger.log, ...paidLog, ...fired.log],
     pendingChoices: fired.pendingChoices,
   };
 }

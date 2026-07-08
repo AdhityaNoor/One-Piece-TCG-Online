@@ -61,6 +61,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
   const unlockedColorFilterIsActive = !colorFilterIsLocked && (filter.colors?.length ?? 0) > 0;
   const unlockedCategoryFilterIsActive = !categoryFilterIsLocked && (filter.categories?.length ?? 0) > 0;
   const timingFilterIsActive = Boolean(filter.timing && filter.timing !== 'any');
+  const formatLegalityFilterIsActive = Boolean(filter.formatLegality && filter.formatLegality !== 'any');
 
   const costMin = filter.costMin ?? COST_FILTER_MIN;
   const costMax = filter.costMax ?? COST_FILTER_MAX;
@@ -74,6 +75,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
     Boolean(filter.type) ||
     Boolean(filter.typeQuery) ||
     timingFilterIsActive ||
+    formatLegalityFilterIsActive ||
     unlockedColorFilterIsActive ||
     unlockedCategoryFilterIsActive ||
     costFilterIsActive ||
@@ -176,6 +178,23 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
           <option value="any">All cards</option>
           <option value="lifeTrigger">Has [Trigger]</option>
           <option value="no-lifeTrigger">No [Trigger]</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Format Legality</label>
+        <select
+          value={filter.formatLegality ?? 'any'}
+          onChange={(event) => {
+            const value = event.target.value as 'any' | 'legal' | 'extraLegal' | 'banned';
+            setFilter({ ...filter, formatLegality: value === 'any' ? undefined : value });
+          }}
+          className="op-input mt-1.5 w-full px-3 py-2 text-sm"
+        >
+          <option value="any">All cards</option>
+          <option value="legal">Legal</option>
+          <option value="extraLegal">Extra Legal</option>
+          <option value="banned">Banned</option>
         </select>
       </div>
 

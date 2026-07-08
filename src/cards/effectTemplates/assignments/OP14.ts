@@ -280,7 +280,17 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP14-093', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'anyCharacterExactCost', exactCost: 0 }, { kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'trashFromHand', count: 1 }] } },
 
 
-  { cardNumber: 'OP14-068', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
+  {
+    cardNumber: 'OP14-068',
+    templateId: 'ability',
+    params: {
+      timing: 'onDonReturned',
+      oncePerTurn: true,
+      condition: { turn: 'opponent' },
+      gate: [{ kind: 'leaderType', type: 'Donquixote Pirates' }, { kind: 'selfDonReturnedThisAction', atLeast: 1 }],
+      functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }],
+    },
+  },
 
 
   { cardNumber: 'OP14-069', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 4 } }] } },
@@ -389,9 +399,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP14-068 (character) Trebol —
   //   [Opponent's Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, if
-  //   your Leader has the {Donquixote Pirates} type, add up to 1 DON!! card from your DON!! deck and rest
-  //   it.
-  // NOTE: not yet implemented (needs template).
+  //   your Leader has the {Donquixote Pirates} type, add up to 1 DON!! card from your DON!! deck and rest it.
 
   // OP14-069 (character) Donquixote Doflamingo —
   //   [On Play] DON!! −3: Choose one:• If your Leader has the {Donquixote Pirates} type, K.O. up to 1 of
@@ -511,11 +519,13 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   cards and trash 1 card from your hand.
   // NOTE: not yet implemented (needs template).
 
-  // OP14-096 (event) Ground Death —
-  //   [Main] You may rest 2 of your DON!! cards: Negate the effect of up to 1 of your opponent's Characters
-  //   with a cost of 5 or less during this turn.[Counter] If you have 10 or more cards in your trash, up to
-  //   1 of your Leader or Character cards gains +4000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP14-096',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'negateEffect', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'selfTrashCount', atLeast: 10 }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP14-097',
@@ -525,11 +535,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP14-098 (event) Crescent Cutlass —
-  //   [Main] If there is a Character with a cost of 0 or with a cost of 8 or more, all of your Characters
-  //   with a type including "Baroque Works" gain +3 cost until the end of your opponent's next End
-  //   Phase.[Counter] Your Leader gains +3000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: [Main] cost+aura for "Baroque Works" +3 cost until end of opponent's next End Phase deferred; mapped [Counter] only.
+  { cardNumber: 'OP14-098', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
 
   {
     cardNumber: 'OP14-099',

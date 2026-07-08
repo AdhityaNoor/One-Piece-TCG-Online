@@ -17,7 +17,7 @@ import type { GameState } from '../../state/game';
 import type { ActivateCardEffectAction, ValidationResult } from '../action';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import type { CardDefinitionLookup } from '../../rules/shared/definitions';
-import { fireActivate, evaluateGates, canPayAbilityCost, payAbilityCost, fireRestTransitions, type EffectTemplateRegistry } from '../../effects';
+import { fireActivate, evaluateGates, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, type EffectTemplateRegistry } from '../../effects';
 import type { Ability } from '../../effects/effectIr';
 import type { CardInstance } from '../../state/card';
 
@@ -94,16 +94,16 @@ export function executeActivateCardEffect(
   // Pay the activation cost first (8-3-1-5), then resolve the effect on the paid state.
   const paid = ability?.cost?.length
     ? payAbilityCost(state, action.sourceInstanceId, action.playerId, ability.cost, action.actionId, action.donInstanceIds)
-    : { state, log: [] as ActionExecuteResult['log'], restedInstanceIds: [] as string[] };
+    : { state, log: [] as ActionExecuteResult['log'], restedInstanceIds: [] as string[], returnedDonCount: 0 };
 
   let working = paid.state;
   let log = [...paid.log];
-  if (paid.restedInstanceIds.length > 0) {
-    const rested = fireRestTransitions(working, paid.restedInstanceIds, registry, defs, action.actionId);
-    working = rested.state;
-    log = [...log, ...rested.log];
-    if (rested.pendingChoices.length > 0) {
-      return { state: working, log, pendingChoices: rested.pendingChoices };
+  if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
+    const cascaded = afterAbilityCostPaid(working, action.playerId, paid, registry, defs, action.actionId);
+    working = cascaded.state;
+    log = [...log, ...cascaded.log];
+    if (cascaded.pendingChoices.length > 0) {
+      return { state: working, log, pendingChoices: cascaded.pendingChoices };
     }
   }
 

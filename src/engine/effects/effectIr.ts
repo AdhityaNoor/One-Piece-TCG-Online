@@ -152,6 +152,10 @@ export type EffectOp =
   | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
   // Prevent the target Leader/Character from declaring an attack (7-1-1-1) while active.
   | ({ op: 'preventAttack'; target: Selector; duration: IrDuration } & EffectOpSequenceGate)
+  // Negate all (or selected timings of) abilities on the target Leader/Character/Stage.
+  | ({ op: 'negateEffect'; target: Selector; duration: IrDuration; negatedTimings?: IrTiming[] } & EffectOpSequenceGate)
+  // Negate abilities on all cards controlled by a player (e.g. "your [On Play] effects are negated").
+  | ({ op: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[] } & EffectOpSequenceGate)
   | ({ op: 'giveDon'; target: Selector; count: number } & EffectOpSequenceGate)
   // Reassign up to N DON!! cards already given on the controller's field onto a chosen Character.
   | ({ op: 'giveGivenDon'; donTarget: Selector; characterTarget: Selector } & EffectOpSequenceGate)
@@ -211,7 +215,7 @@ export type NonSuspendingEffectOp = Exclude<
  *                 attacker and the battle's target is an opponent Character.
  *   endOfTurn   — [End of Your Turn]: fires during the source controller's End Phase.
  */
-export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'onBlock' | 'onOpponentsAttack' | 'onBattle' | 'activateMain' | 'onKO' | 'onCharacterKoed' | 'onRested' | 'counter' | 'lifeTrigger' | 'endOfTurn';
+export type IrTiming = 'onEnterPlay' | 'onPlay' | 'whenAttacking' | 'onBlock' | 'onOpponentsAttack' | 'onBattle' | 'activateMain' | 'onKO' | 'onCharacterKoed' | 'onRested' | 'onDonReturned' | 'counter' | 'lifeTrigger' | 'endOfTurn';
 
 /**
  * An activation cost that must be PAID before an activated ability resolves
@@ -269,6 +273,7 @@ export type AbilityGate =
   | { kind: 'opponentHasCharacterBasePowerAtLeast'; power: number } // "opponent has a Leader or Character with base power N or more"
   | { kind: 'anyCharacterCostAtLeast'; atLeast: number } // "if there is a Character with a cost of N or more"
   | { kind: 'opponentHasCharacterExactCost'; exactCost: number } // "if your opponent has a Character with a cost of N"
+  | { kind: 'selfDonReturnedThisAction'; atLeast?: number; atMost?: number } // "When N or more DON!! on your field are returned …"
   | { kind: 'anyOf'; gates: AbilityGate[] }; // OR: satisfied if any sub-gate holds ("if Leader is X or Y")
 
 export interface Ability {

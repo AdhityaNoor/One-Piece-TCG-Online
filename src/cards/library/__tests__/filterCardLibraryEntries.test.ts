@@ -82,4 +82,15 @@ describe('filterCardLibraryEntries', () => {
   it('combines query and facet filters with AND', () => {
     expect(filterCardLibraryEntries(entries, { query: 'luffy', categories: ['character'] })).toEqual([luffy]);
   });
+
+  it('filters by tournament format legality', () => {
+    const standardLegal = makeEntry({ name: 'Portgas.D.Ace', cardNumber: 'OP16-001' });
+    const extraOnly = makeEntry({ name: 'Roronoa Zoro', cardNumber: 'OP01-001' });
+    const banned = makeEntry({ name: 'Nami', cardNumber: 'OP03-040' });
+    const formatEntries = [standardLegal, extraOnly, banned];
+
+    expect(filterCardLibraryEntries(formatEntries, { formatLegality: 'legal' })).toEqual([standardLegal]);
+    expect(filterCardLibraryEntries(formatEntries, { formatLegality: 'extraLegal' })).toEqual([extraOnly]);
+    expect(filterCardLibraryEntries(formatEntries, { formatLegality: 'banned' })).toEqual([banned]);
+  });
 });

@@ -19,15 +19,14 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // NOTE: not yet implemented (needs template).
 
-  // OP04-005 (character) Kung Fu Jugon —
-  //   If you have a [Kung Fu Jugon] other than this Character, this Character gains [Blocker].(After your
-  //   opponent declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
+  // OP04-005 — PARTIAL: "other than this Character" uses selfControlsNamed (counts self when alone).
+  { cardNumber: 'OP04-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Kung Fu Jugon' }] } }] } },
 
-  // OP04-006 (character) Koza —
-  //   [When Attacking] You may give your 1 active Leader −5000 power during this turn: This Character gains
-  //   +2000 power until the start of your next turn.
-  // NOTE: not yet implemented (needs template).
+  // OP04-006 — PARTIAL: "active Leader" requirement not gated.
+  { cardNumber: 'OP04-006', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+    { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true },
+    { fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn', ifPrevious: 'previousSelectedAny' },
+  ] } },
 
   // ── Triage batch (OP04 expressible): Alabasta/Dressrosa/Wano lines. ────────
   // OP04-008 Chaka — [DON!! x1][When Attacking] If Leader [Nefeltari Vivi]: −3000 to 1 opp, then K.O. one at 0 power or less.
@@ -113,10 +112,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   (The [On Your Opponent's Attack] rest clause needs an onOpponentAttack timing — deferred.)
   { cardNumber: 'OP04-030', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 5 } }, optional: true }] } },
 
-  // OP04-118 (character) Nefeltari Vivi —
-  //   All of your red Characters with a cost of 3 or more other than this Character gain [Rush].(This card
-  //   can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
+  // OP04-118 — PARTIAL: red/cost≥3/other-than-self filters not on keyword aura.
+  { cardNumber: 'OP04-118', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'rush', duration: 'permanent' }] } },
 
   // OP04-119 (character) Donquixote Rosinante —
   //   [Opponent's Turn] If this Character is rested, your active Characters with a base cost of 5 cannot be
@@ -133,10 +130,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   this turn.
   // NOTE: not yet implemented (needs template).
 
-  // OP04-034 (character) Lao.G —
-  //   [End of Your Turn] If you have 3 or more active DON!! cards, K.O. up to 1 of your opponent's rested
-  //   Characters with a cost of 3 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP04-034 — PARTIAL: "active DON!!" uses total field DON count proxy.
+  { cardNumber: 'OP04-034', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfDonFieldCount', atLeast: 3 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 3 } }, optional: true }] } },
 
   // OP04-035 Spiderweb — [Counter] +4000 battle, then set up to 1 of your Characters active. [Trigger] Leader +2000 this turn.
   {
@@ -180,15 +175,11 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the static "cannot attack" lock is implemented below; the activated life-to-play ability remains deferred.
   { cardNumber: 'OP04-039', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
 
-  // OP04-042 (character) Ipponmatsu —
-  //   [On Play] Up to 1 of your <Slash> attribute Characters gains +3000 power during this turn. Then,
-  //   trash 1 card from the top of your deck.
-  // NOTE: not yet implemented (needs template).
+  // OP04-042 — PARTIAL: <Slash> attribute filter not on target selector; buffs any Character.
+  { cardNumber: 'OP04-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 1 }] } },
 
-  // OP04-043 (character) Ulti —
-  //   [DON!! x1] [When Attacking] Return up to 1 Character with a cost of 2 or less to the owner's hand or
-  //   the bottom of their deck.
-  // NOTE: not yet implemented (needs template).
+  // OP04-043 — PARTIAL: hand-only return (hand OR deck-bottom choice deferred).
+  { cardNumber: 'OP04-043', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
   // OP04-044 Kaido — [On Play] Return up to 1 Character cost ≤8 and up to 1 Character cost ≤3 to the owner's hand.
   { cardNumber: 'OP04-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 8 } }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -317,12 +308,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   field to your DON!! deck.): Play this card.
   // NOTE: not yet implemented (needs template).
 
-  // OP04-068 (character) Yokozuna —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On Your Opponent's Attack] DON!! −1 (You may return the specified number of DON!!
-  //   cards from your field to your DON!! deck.): Return up to 1 of your opponent's Characters with a cost
-  //   of 2 or less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
+  // OP04-068 — [Blocker] is card data.
+  { cardNumber: 'OP04-068', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
   // OP04-069 (character) Mr.2.Bon.Kurei(Bentham) —
   //   [On Your Opponent's Attack] DON!! −1 (You may return the specified number of DON!! cards from your
@@ -342,10 +329,14 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-072 — [On Your Opponent's Attack] [Once Per Turn] DON!! −2 + rest this: K.O. up to 1 opp Character cost<=4.
   { cardNumber: 'OP04-072', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 2 }, { kind: 'restThis' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
-  // OP04-073 (character) Mr.13 & Ms.Friday —
-  //   [Activate: Main] You may trash this Character and 1 of your Characters with a type including "Baroque
-  //   Works": Add up to 1 DON!! card from your DON!! deck and set it as active. [Trigger] Play this card.
-  // NOTE: not yet implemented (needs template).
+  // OP04-073 — PARTIAL: co-trash Baroque Works Character cost not modeled (trashThis only).
+  {
+    cardNumber: 'OP04-073',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   // OP04-074 Colors Trap — [Counter] DON!! −1: +1000 battle, then rest 1 opp Char cost ≤4. [Trigger] add 1 DON!! (active).
   {
@@ -481,15 +472,13 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-110 — [Blocker] [On K.O.] Add up to 1 opp Character cost<=3 to the top or bottom of opponent's Life face-up.
   { cardNumber: 'OP04-110', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] } },
 
-  //   this Character: Set up to 1 of your [Charlotte Linlin] Characters as active. [Trigger] Play this
-  //   card.
-  // NOTE: not yet implemented (needs template).
+  // OP04-111 — assigned in expressible batch below.
 
   // OP04-112 (character) Yamato —
-  //   [On Play] K.O. up to 1 of your opponent's Characters with a cost equal to or less than the total of
-  //   your and your opponent's Life cards. Then, if you have 1 or less Life cards, add up to 1 card from
-  //   the top of your deck to the top of your Life cards.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP04-112', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromCombinedLife: true } }, optional: true },
+    { fn: 'moveCards', ifGate: [{ kind: 'selfLife', atMost: 1 }], from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true },
+  ] } },
 
   { cardNumber: 'OP04-113', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
@@ -522,5 +511,75 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
       ] } },
     ],
   },
+
+  // ── Expressible batch (triage) ───────────────────────────────────────────
+  // OP04-004 — PARTIAL: "each" Alabasta Character → single-target giveDon.
+  { cardNumber: 'OP04-004', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'giveDon', count: 1, targetTypeIncludes: 'Alabasta', charactersOnly: true, optional: true }] } },
+
+  { cardNumber: 'OP04-012', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 1000, duration: 'permanent', anyOfTypes: ['Alabasta'], sourceCondition: { turn: 'your' } }] } },
+
+  { cardNumber: 'OP04-058', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'opponent' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+
+  {
+    cardNumber: 'OP04-060',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'trashFromHand', count: 1 }] } },
+    ],
+  },
+
+  { cardNumber: 'OP04-079', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, duration: 'duringThisTurn', optional: true },
+    { fn: 'trashTopDeck', count: 2 },
+    { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Dressrosa' } }, optional: true },
+  ] } },
+
+  { cardNumber: 'OP04-084', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'CP', excludeSelfName: true, maxCost: 2 }, remainder: 'trash' },
+    { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'CP', excludeSelfName: true, maxCost: 2 }, optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
+
+  // OP04-086 — PARTIAL: battle-K.O. gate not modeled; fires on any onBattle.
+  { cardNumber: 'OP04-086', templateId: 'ability', params: { timing: 'onBattle', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
+
+  { cardNumber: 'OP04-088', templateId: 'ability', params: { timing: 'activateMain', functions: [
+    { fn: 'restControllerLeaderOrStage' },
+    { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousSelectedAny' },
+  ] } },
+
+  { cardNumber: 'OP04-091', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'restControllerLeaderOrStage' },
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true, ifPrevious: 'previousSelectedAny', ifGate: [{ kind: 'leaderType', type: 'Dressrosa' }] },
+    { fn: 'trashTopDeck', count: 2, ifPrevious: 'previousSelectedAny' },
+  ] } },
+
+  {
+    cardNumber: 'OP04-095',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true },
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifGate: [{ kind: 'selfTrashCount', atLeast: 15 }], ifPrevious: 'previousSelectedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+    ],
+  },
+
+  { cardNumber: 'OP04-098', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'trashTypeFromHand', count: 2, filter: { typeIncludes: 'Land of Wano' }, optional: true },
+    { fn: 'moveCards', ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfLife', atMost: 1 }], from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true },
+  ] } },
+
+  {
+    cardNumber: 'OP04-106',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfLifeLessThanOpponent' }] } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
+
+  { cardNumber: 'OP04-111', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'Homies', excludeSelf: true } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'setActiveControllerCharacter', filter: { name: 'Charlotte Linlin' }, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+  ] } },
 
 ];

@@ -13,7 +13,7 @@ import type { ActivateOnOpponentsAttackAction, ValidationResult } from '../../ac
 import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import type { CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
-import { fireOnOpponentsAttack, evaluateGates, canPayAbilityCost, payAbilityCost, type EffectTemplateRegistry } from '../../effects';
+import { fireOnOpponentsAttack, evaluateGates, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, type EffectTemplateRegistry } from '../../effects';
 import type { Ability } from '../../effects/effectIr';
 import type { CardInstance } from '../../state/card';
 
@@ -98,9 +98,20 @@ export function executeActivateOnOpponentsAttack(
   // Pay the activation cost first (8-3-1-5), then resolve on the paid state.
   const paid = ability?.cost?.length
     ? payAbilityCost(state, action.sourceInstanceId, action.playerId, ability.cost, action.actionId, action.donInstanceIds)
-    : { state, log: [] as ActionExecuteResult['log'] };
+    : { state, log: [] as ActionExecuteResult['log'], restedInstanceIds: [] as string[], returnedDonCount: 0 };
 
-  const fired = fireOnOpponentsAttack(paid.state, action.sourceInstanceId, registry, defs, action.actionId);
+  let working = paid.state;
+  let log = [...paid.log];
+  if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
+    const cascaded = afterAbilityCostPaid(working, action.playerId, paid, registry, defs, action.actionId);
+    working = cascaded.state;
+    log = [...log, ...cascaded.log];
+    if (cascaded.pendingChoices.length > 0) {
+      return { state: working, log, pendingChoices: cascaded.pendingChoices };
+    }
+  }
+
+  const fired = fireOnOpponentsAttack(working, action.sourceInstanceId, registry, defs, action.actionId);
 
   let nextState = fired.state;
   if (ability?.oncePerTurn) {
@@ -111,5 +122,5 @@ export function executeActivateOnOpponentsAttack(
     };
   }
 
-  return { state: nextState, log: [...paid.log, ...fired.log], pendingChoices: fired.pendingChoices };
+  return { state: nextState, log: [...log, ...fired.log], pendingChoices: fired.pendingChoices };
 }

@@ -1249,7 +1249,8 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB03-032 — [Your Turn] [On Play] up to 1 [Charlotte Katakuri] +2000 this turn.
   { cardNumber: 'EB03-032', templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Charlotte Katakuri' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // EB03-033 — PARTIAL: [Opponent's Turn] on-DON-return trigger add-DON clause deferred (reactive timing not in catalog).
+  // EB03-033 Charlotte Brulee — [Opponent's Turn] onDonReturned: if Leader {Big Mom Pirates}, add 1 rested DON!!.
+  { cardNumber: 'EB03-033', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'opponent' }, gate: [{ kind: 'leaderType', type: 'Big Mom Pirates' }, { kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
   // EB03-034 — [On Play] draw 1, place 1 hand card on deck top, add 1 active DON!!; [On K.O.] DON!! −1: deck top → Life top.
   // PARTIAL: hand → deck-top uses deck-bottom proxy until moveCards supports deck-top destination.
   {
@@ -1913,7 +1914,8 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // EB04-035 — PARTIAL: on-DON-return trigger add-DON clause deferred (reactive timing not in catalog). [Blocker] is card data.
+  // EB04-035 Hitokiri Kamazo — [Blocker] is card data. [Your Turn] onDonReturned: if Leader {Kid Pirates}, add 1 rested DON!!.
+  { cardNumber: 'EB04-035', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'leaderType', type: 'Kid Pirates' }, { kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
   // EB04-036 — [On Play] DON!! −1: if Leader {Foxy Pirates}, draw 2 trash 1, rest opp Character cost ≤9; [Activate: Main] add 1 rested DON!!.
   {

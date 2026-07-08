@@ -285,7 +285,6 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-072 (character) Zeff —
   //   When a DON!! card on your field is returned to your DON!! deck, if your Leader is [Sanji], this
   //   Character gains [Rush] during this turn.(This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
 
 
 
@@ -586,7 +585,6 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP12-036', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
-  // PARTIAL: onDonReturned trigger deferred; mapped onRested addDon.
-  { cardNumber: 'OP12-072', templateId: 'ability', params: { timing: 'onRested', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  { cardNumber: 'OP12-072', templateId: 'ability', params: { timing: 'onDonReturned', gate: [{ kind: 'leaderName', name: 'Sanji' }, { kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
 ];

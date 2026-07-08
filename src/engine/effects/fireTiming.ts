@@ -8,12 +8,24 @@ import type { GameState } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { runTimings, resumeProgram } from './interpreter';
-import { evaluateGates } from './gates';
+import { evaluateGates, type GateEvalContext } from './gates';
 import type { Ability } from './effectIr';
 import type { EffectTemplateRegistry } from './effectTemplate';
 
 /** Per-instance once-per-turn key for a triggered [On Battle] ability. Cleared in the Refresh Phase. */
 const ON_BATTLE_OPT_KEY = 'onBattle';
+/** Per-instance once-per-turn key for [When DON!! is returned] abilities. Cleared in the Refresh Phase. */
+const ON_DON_RETURNED_OPT_KEY = 'onDonReturned';
+
+function fieldInstanceIds(state: GameState, playerId: string): string[] {
+  const player = state.players[playerId];
+  if (!player) return [];
+  return [
+    player.leaderInstanceId,
+    ...player.characterArea.cardIds,
+    ...(player.stageArea?.cardIds ?? []),
+  ].filter((id): id is string => !!id);
+}
 
 function noop(state: GameState): ActionExecuteResult {
   return { state, log: [], pendingChoices: [] };
@@ -25,7 +37,13 @@ function noop(state: GameState): ActionExecuteResult {
  * own condition/gate checks so once-per-turn is only consumed when the ability
  * would actually resolve.
  */
-function triggeredAbilityWouldFire(ability: Ability, source: { donAttached: string[]; ownerId: string; controllerId: string }, state: GameState, defs: CardDefinitionLookup): boolean {
+function triggeredAbilityWouldFire(
+  ability: Ability,
+  source: { donAttached: string[]; ownerId: string; controllerId: string },
+  state: GameState,
+  defs: CardDefinitionLookup,
+  eventContext?: GateEvalContext,
+): boolean {
   const c = ability.condition;
   if (c) {
     if (c.donAttachedAtLeast !== undefined && source.donAttached.length < c.donAttachedAtLeast) return false;
@@ -34,9 +52,9 @@ function triggeredAbilityWouldFire(ability: Ability, source: { donAttached: stri
       if (c.turn === 'your' && !isOwnersTurn) return false;
       if (c.turn === 'opponent' && isOwnersTurn) return false;
     }
-    if (c.gate && !evaluateGates(c.gate, state, defs, source.controllerId)) return false;
+    if (c.gate && !evaluateGates(c.gate, state, defs, source.controllerId, undefined, eventContext)) return false;
   }
-  if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, source.controllerId)) return false;
+  if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, source.controllerId, undefined, eventContext)) return false;
   return true;
 }
 
@@ -342,6 +360,74 @@ export function fireRestTransitions(
     if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
   }
   return { state: working, log, pendingChoices: [] };
+}
+
+/**
+ * Fires [When DON!! on your field is returned to your DON!! deck] abilities
+ * (timing onDonReturned) for each in-play card controlled by `playerId`.
+ * Called after effect-sourced DON!! −N costs resolve.
+ */
+export function fireDonReturnedReactions(
+  state: GameState,
+  playerId: string,
+  returnedDonCount: number,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  if (returnedDonCount <= 0) return noop(state);
+  const eventContext: GateEvalContext = { donReturnedCount: returnedDonCount };
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const id of fieldInstanceIds(working, playerId)) {
+    const inst = working.cardsById[id];
+    if (!inst) continue;
+    const program = registry[inst.cardDefinitionId];
+    if (!program?.abilities.some((a) => a.timing === 'onDonReturned')) continue;
+    const abilities = program.abilities.filter((a) => a.timing === 'onDonReturned');
+    for (const ability of abilities) {
+      if (ability.oncePerTurn && inst.oncePerTurnUsed.includes(ON_DON_RETURNED_OPT_KEY)) continue;
+      if (!triggeredAbilityWouldFire(ability, inst, working, defs, eventContext)) continue;
+      const fired = runTimings(program, ['onDonReturned'], working, id, defs, actionId, registry, false, eventContext);
+      working = fired.state;
+      log = [...log, ...fired.log];
+      if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+      if (ability.oncePerTurn) {
+        const updated = working.cardsById[id];
+        if (updated) {
+          working = {
+            ...working,
+            cardsById: {
+              ...working.cardsById,
+              [id]: { ...updated, oncePerTurnUsed: [...updated.oncePerTurnUsed, ON_DON_RETURNED_OPT_KEY] },
+            },
+          };
+        }
+      }
+    }
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
+/** Cascade [When Becomes Rested] and [When DON!! Returned] after an ability cost is paid. */
+export function afterAbilityCostPaid(
+  state: GameState,
+  playerId: string,
+  paid: { restedInstanceIds: readonly string[]; returnedDonCount: number },
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  if (paid.restedInstanceIds.length > 0) {
+    const rested = fireRestTransitions(state, paid.restedInstanceIds, registry, defs, actionId);
+    if (rested.pendingChoices.length > 0) return rested;
+    if (paid.returnedDonCount > 0) {
+      const donReturned = fireDonReturnedReactions(rested.state, playerId, paid.returnedDonCount, registry, defs, actionId);
+      return { state: donReturned.state, log: [...rested.log, ...donReturned.log], pendingChoices: donReturned.pendingChoices };
+    }
+    return rested;
+  }
+  return fireDonReturnedReactions(state, playerId, paid.returnedDonCount, registry, defs, actionId);
 }
 
 /**

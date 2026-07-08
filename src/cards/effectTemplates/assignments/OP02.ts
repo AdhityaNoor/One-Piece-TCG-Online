@@ -331,10 +331,7 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'optionalTrashFromHand', count: 3 },
   ] } },
 
-  // OP02-071 (leader) Magellan —
-  //   [Your Turn] [Once Per Turn] When a DON!! card on the field is returned to your DON!! deck, this
-  //   Leader gains +1000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP02-071', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' }] } },
 
   // OP02-086 - [On K.O.] If Leader has Impel Down, add 1 DON!! rested.
   // OP02-072 - [When Attacking] DON!! -4: K.O. cost <=3, then this Leader +1000.
@@ -346,10 +343,8 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-075 — [Trigger] DON!! −1: play this card.
   { cardNumber: 'OP02-075', templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP02-074 (character) Saldeath —
-  //   Your [Blugori] gains [Blocker]. (After your opponent declares an attack, you may rest this card to
-  //   make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
+  // OP02-074 — Your [Blugori] gains [Blocker].
+  { cardNumber: 'OP02-074', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'blocker', duration: 'permanent', anyOfNames: ['Blugori'] }] } },
 
   // OP02-075 (character) Shiki —
   //   [Trigger] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!

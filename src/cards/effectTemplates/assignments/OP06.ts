@@ -260,10 +260,12 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-042 (leader) Vinsmoke Reiju —
-  //   [Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, draw 1
-  //   card.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP06-042',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
 
   // OP06-043 — [Activate: Main] [Once Per Turn] trash 1 from hand + place Character cost<=2 at deck bottom: this +3000.
   { cardNumber: 'OP06-043', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
@@ -461,19 +463,16 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-073 — [Blocker] [On Play] If you have 8+ DON!! on field, draw 1 and trash 1 from hand.
   { cardNumber: 'OP06-073', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
 
-  // OP06-074 (character) Zephyr (Navy) —
-  //   [On Play] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): Negate the effect of up to 1 of your opponent's Characters during this turn. Then, if that
-  //   Character has 5000 power or less, K.O. it.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: K.O. gate uses maxPower 5000 proxy for "5000 power or less" after negate.
+  { cardNumber: 'OP06-074', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [
+    { fn: 'negateEffect', target: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 5000 } }, optional: true, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
+  ] } },
 
   // OP06-075 — [On Play] DON!! −1: Rest up to 2 of your opponent's Characters with a cost of 2 or less.
   { cardNumber: 'OP06-075', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, maxTargets: 2 }] } },
 
-  // OP06-076 (character) Hitokiri Kamazo —
-  //   [Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, K.O. up
-  //   to 1 of your opponent's Characters with a cost of 2 or less.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP06-076', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
 
   // OP06-077 — [Main] If your DON!! ≤ opponent's, place opp Character cost<=5 at bottom of deck. [Trigger] opp Character cost<=4.
   {

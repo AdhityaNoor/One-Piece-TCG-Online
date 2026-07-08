@@ -16,7 +16,7 @@ import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/definitions';
 import { computeCurrentCost } from '../../rules/shared/power';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { evaluateGates, fireActivate, canPayAbilityCost, payAbilityCost, type EffectTemplateRegistry } from '../../effects';
+import { evaluateGates, fireActivate, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, type EffectTemplateRegistry } from '../../effects';
 
 export function validateActivateEventMain(
   state: GameState,
@@ -129,8 +129,20 @@ export function executeActivateEventMain(
 
   const paid = ability?.cost?.length
     ? payAbilityCost(nextState, action.handCardInstanceId, action.playerId, ability.cost, action.actionId, action.abilityCostDonInstanceIds ?? [])
-    : { state: nextState, log: [] as ActionExecuteResult['log'] };
-  const fired = fireActivate(paid.state, action.handCardInstanceId, registry, defs, action.actionId);
+    : { state: nextState, log: [] as ActionExecuteResult['log'], restedInstanceIds: [] as string[], returnedDonCount: 0 };
 
-  return { state: fired.state, log: [...logger.log, ...paid.log, ...fired.log], pendingChoices: fired.pendingChoices };
+  let working = paid.state;
+  let paidLog = [...paid.log];
+  if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
+    const cascaded = afterAbilityCostPaid(working, action.playerId, paid, registry, defs, action.actionId);
+    working = cascaded.state;
+    paidLog = [...paidLog, ...cascaded.log];
+    if (cascaded.pendingChoices.length > 0) {
+      return { state: working, log: [...logger.log, ...paidLog], pendingChoices: cascaded.pendingChoices };
+    }
+  }
+
+  const fired = fireActivate(working, action.handCardInstanceId, registry, defs, action.actionId);
+
+  return { state: fired.state, log: [...logger.log, ...paidLog, ...fired.log], pendingChoices: fired.pendingChoices };
 }

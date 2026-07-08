@@ -17,7 +17,9 @@ import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoRepl
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates } from './gates';
 import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
-import { fireOnKO, fireRestTransitions } from './fireTiming';
+import { afterAbilityCostPaid, fireOnKO, fireRestTransitions } from './fireTiming';
+import { isAbilityNegated } from './effectNegation';
+import type { GateEvalContext } from './gates';
 import type { EffectTemplateRegistry } from './effectTemplate';
 import type { Ability, EffectOp, EffectProgram, IrCondition, IrTiming, NonSuspendingEffectOp, SearchFilter, SearchPickDestination, SearchRemainderDestination, Selector } from './effectIr';
 
@@ -463,6 +465,26 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       for (const id of ids) ctx.preventAttack({ appliesToInstanceId: id, duration: op.duration });
       return { selectedIds: ids, movedIds: [] };
     }
+    case 'negateEffect': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.negateEffect({
+          appliesToInstanceId: id,
+          duration: op.duration,
+          ...(op.negatedTimings?.length ? { negatedTimings: op.negatedTimings } : {}),
+        });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
+    case 'negateControllerEffects': {
+      const targetPlayerId = op.player === 'controller' ? ctx.controllerId : ctx.opponentId;
+      ctx.negateControllerEffects({
+        appliesToControllerId: targetPlayerId,
+        duration: op.duration,
+        ...(op.negatedTimings?.length ? { negatedTimings: op.negatedTimings } : {}),
+      });
+      return EMPTY_RESULT;
+    }
     case 'giveDon': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.giveDon(id, op.count);
@@ -842,12 +864,14 @@ function runFollowingAbilities(
   actionId: string | null,
   payCosts: boolean,
   registry: EffectTemplateRegistry,
+  eventContext?: GateEvalContext,
 ): boolean {
   for (let i = startAbilityIndex; i < program.abilities.length; i += 1) {
     const ability = program.abilities[i];
     if (ability.timing !== timing) continue;
+    if (isAbilityNegated(ctx.state(), ctx.sourceInstanceId, ability.timing)) continue;
     if (!evalCondition(ability.condition, ctx)) continue;
-    if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId)) continue;
+    if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId, eventContext)) continue;
     if (payCosts && suspendOrPayAbilityCost(ability, i, ctx, actionId, defs, registry)) return true;
     const suspended = runOps(ability, i, 0, {}, ctx, defs);
     if (suspended) return true;
@@ -885,9 +909,9 @@ function suspendOrPayAbilityCost(
   if (canPayAbilityCost(ctx.state(), ctx.sourceInstanceId, ctx.controllerId, ability.cost, []).length > 0) return false;
   const paid = payAbilityCost(ctx.state(), ctx.sourceInstanceId, ctx.controllerId, ability.cost, actionId, []);
   ctx.replaceState(paid.state, paid.log);
-  if (paid.restedInstanceIds.length > 0) {
-    const rested = fireRestTransitions(paid.state, paid.restedInstanceIds, registry, defs, actionId);
-    if (ctx.absorbActionResult(rested)) return true;
+  if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
+    const cascaded = afterAbilityCostPaid(paid.state, ctx.controllerId, paid, registry, defs, actionId);
+    if (ctx.absorbActionResult(cascaded)) return true;
   }
   return false;
 }
@@ -902,6 +926,7 @@ export function runTimings(
   actionId: string | null,
   registry: EffectTemplateRegistry = {},
   payCosts = true,
+  eventContext?: GateEvalContext,
 ): ActionExecuteResult {
   const matching = program.abilities
     .map((ability, index) => ({ ability, index }))
@@ -910,9 +935,10 @@ export function runTimings(
 
   const ctx = new EffectContextImpl(state, sourceInstanceId, defs, actionId);
   for (const { ability, index } of matching) {
+    if (isAbilityNegated(ctx.state(), ctx.sourceInstanceId, ability.timing)) continue;
     if (!evalCondition(ability.condition, ctx)) continue;
     // "If …" board-state gate: an unmet precondition means the ability does nothing.
-    if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId)) continue;
+    if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId, eventContext)) continue;
     if (payCosts && suspendOrPayAbilityCost(ability, index, ctx, actionId, defs, registry)) break;
     const suspended = runOps(ability, index, 0, {}, ctx, defs);
     if (suspended) break; // wait for the choice before any further ability runs
@@ -966,12 +992,12 @@ export function resumeProgram(
     if (reasons.length > 0) return noop(stateWithoutChoice);
     const paid = payAbilityCost(stateWithoutChoice, choice.sourceInstanceId, choice.playerId, ability.cost, actionId, selection);
     const ctx = new EffectContextImpl(paid.state, choice.sourceInstanceId, defs, actionId);
-    if (paid.restedInstanceIds.length > 0) {
-      const rested = fireRestTransitions(paid.state, paid.restedInstanceIds, registry, defs, actionId);
-      ctx.absorbActionResult(rested);
-      if (rested.pendingChoices.length > 0) {
+    if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
+      const cascaded = afterAbilityCostPaid(paid.state, choice.playerId, paid, registry, defs, actionId);
+      ctx.absorbActionResult(cascaded);
+      if (cascaded.pendingChoices.length > 0) {
         const finished = finishWithCascade(ctx, defs, actionId, registry);
-        return { state: finished.state, log: [...paid.log, ...rested.log, ...finished.log], pendingChoices: finished.pendingChoices };
+        return { state: finished.state, log: [...paid.log, ...cascaded.log, ...finished.log], pendingChoices: finished.pendingChoices };
       }
     }
     const suspended = runOps(ability, rs.abilityIndex, 0, rs.bindings, ctx, defs);

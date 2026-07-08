@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { evaluateSavedDeckFormatStatus } from '../../cards/format';
 import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
 import { CanvasMenuButton, DeckListSummary, GameCanvasScreen } from '../components';
 import { useNavigationStore } from '../store/navigationStore';
@@ -30,6 +31,7 @@ function SeatPicker({ label, rows, selectedDeckId, onSelect }: SeatPickerProps) 
                 leaderImageUrl={deck.deck.leader.imageUrl}
                 colors={deck.deck.leader.definition.colors}
                 cardCount={deck.deck.cards.reduce((sum, card) => sum + card.quantity, 0)}
+                formatStatus={evaluateSavedDeckFormatStatus(deck.deck).status}
                 selected={selectedDeckId === entry.deckId}
                 onSelect={() => onSelect(entry.deckId)}
               />

@@ -179,12 +179,17 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-058', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
 
-  // PARTIAL: DON-return trigger + add/rest DON deferred; mapped static +1 cost aura.
-  { cardNumber: 'OP09-061', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraControllerCharacters', amount: 1, duration: 'permanent' }] } },
+  // PARTIAL: onDonReturned trigger implemented; static [DON!! x1] cost aura uses onEnterPlay + donAttachedAtLeast.
+  {
+    cardNumber: 'OP09-061',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addCostAuraControllerCharacters', amount: 1, duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 2 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }, { fn: 'addDonFromDeck', count: 1, rested: true }] } },
+    ],
+  },
 
 
-  // PARTIAL: onDonReturned trigger deferred; mapped endOfTurn setActive DON as weak stand-in.
-  { cardNumber: 'OP09-074', templateId: 'ability', params: { timing: 'endOfTurn', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
+  { cardNumber: 'OP09-074', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
 
 
   { cardNumber: 'OP09-084', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'chooseOne', chooser: 'controller', prompt: 'Choose keyword', options: [{ label: 'doubleAttack', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'untilStartOfNextTurn' }] }, { label: 'banish', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'untilStartOfNextTurn' }] }, { label: 'blocker', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'untilStartOfNextTurn' }] }] }] } },
@@ -327,7 +332,6 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x1] All of your Characters gain +1 cost.[Your Turn] [Once Per Turn] When 2 or more DON!! cards
   //   on your field are returned to your DON!! deck, add up to 1 DON!! card from your DON!! deck and set it
   //   as active, and add up to 1 additional DON!! card and rest it.
-  // NOTE: not yet implemented (needs template).
 
   // OP09-062 — (Leader) [Banish] [When Attacking] you may trash 1 card with a [Trigger] from hand: add 1 DON!! from deck rested.
   { cardNumber: 'OP09-062', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
@@ -372,7 +376,6 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-074 (character) Bepo —
   //   [Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, up to 1
   //   of your Leader or Character cards gains +1000 power during this turn.
-  // NOTE: not yet implemented (needs template).
 
   // OP09-075 — [On Play] If Leader {Kid Pirates}: add 1 top Life to hand → add 1 DON!! (active).
   { cardNumber: 'OP09-075', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Kid Pirates' }], functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addDonFromDeck', count: 1, rested: false, ifPrevious: 'previousMovedAny' }] } },
@@ -411,10 +414,13 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   //   the field by your opponent's effect, add up to 1 DON!! card from your DON!! deck and rest it.
   // NOTE: not yet implemented (needs template).
 
-  // OP09-081 (leader) Marshall.D.Teach —
-  //   Your [On Play] effects are negated.[Activate: Main] You may trash 1 card from your hand: Your
-  //   opponent's [On Play] effects are negated until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP09-081',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'negateControllerEffects', player: 'controller', negatedTimings: ['onPlay'], duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'negateControllerEffects', player: 'opponent', negatedTimings: ['onPlay'], duration: 'endOfOpponentsTurn', ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
   // OP09-083 — [Activate: Main] rest this: If Leader {Blackbeard Pirates}, give up to 1 opp Character −3 cost. [On K.O.] Draw 1.
   {
@@ -425,10 +431,7 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP09-084 (character) Catarina Devon —
-  //   [Activate: Main] [Once Per Turn] If your Leader has the {Blackbeard Pirates} type, this Character
-  //   gains [Double Attack], [Banish] or [Blocker] until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  // OP09-084 — curated above at line ~195; duplicate NOTE removed.
 
   // OP09-085 — [On Play] Play up to 1 {Thriller Bark Pirates} Character cost<=2 from your trash rested.
   { cardNumber: 'OP09-085', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 2 }, rested: true }] } },
@@ -464,12 +467,12 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP09-093 (character) Marshall.D.Teach —
-  //   [Blocker][Activate: Main] [Once Per Turn] If your Leader has the {Blackbeard Pirates} type and this
-  //   Character was played on this turn, negate the effect of up to 1 of your opponent's Leader during this
-  //   turn. Then, negate the effect of up to 1 of your opponent's Characters and that Character cannot
-  //   attack until the end of your opponent's next turn.
-  // NOTE: not yet implemented (selfPlayedThisTurn is available now, but this still needs negate-effect templating before the bundled attack restriction is correct).
+  // PARTIAL: first negate should be opponent Leader only; preventAttack should target the negated Character.
+  { cardNumber: 'OP09-093', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }, { kind: 'selfPlayedThisTurn' }], functions: [
+    { fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+    { fn: 'negateEffect', target: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+    { fn: 'preventAttack', target: { group: 'characters', player: 'opponent' }, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 1 },
+  ] } },
 
   // OP09-095 — [Activate: Main] rest 1 DON!! + rest this: Look 5, reveal up to 1 {Blackbeard Pirates} to hand, rest to bottom.
   { cardNumber: 'OP09-095', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Blackbeard Pirates' }, remainder: 'bottom' }] } },
@@ -483,17 +486,28 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP09-097 (event) Black Vortex —
-  //   [Counter] Negate the effect of up to 1 of your opponent's Leader or Character cards and give that
-  //   card −4000 power during this turn. [Trigger] Negate the effect of up to 1 of your opponent's Leader
-  //   or Character cards during this turn.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: counter negate and −4000 power should apply to the same target.
+  {
+    cardNumber: 'OP09-097',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -4000, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
-  // OP09-098 (event) Black Hole —
-  //   [Main] If your Leader has the {Blackbeard Pirates} type, negate the effect of up to 1 of your
-  //   opponent's Characters during this turn. Then, if that Character has a cost of 4 or less, K.O. it.
-  //   [Trigger] Negate the effect of up to 1 of your opponent's Leader or Character cards during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP09-098',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [
+        { fn: 'negateEffect', target: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   // OP09-099 (stage) — [Activate: Main] rest this + trash 1: Look 3, reveal up to 1 {Blackbeard Pirates} to hand, rest to bottom.
   { cardNumber: 'OP09-099', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Blackbeard Pirates' }, remainder: 'bottom', ifPrevious: 'previousMovedAny' }] } },

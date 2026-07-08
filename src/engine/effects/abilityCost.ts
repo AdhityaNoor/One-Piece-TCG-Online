@@ -102,17 +102,19 @@ export function payAbilityCost(
   costs: AbilityCost[],
   actionId: string | null,
   selectedDonMinusIds: readonly string[] = [],
-): { state: GameState; log: GameLogEntry[]; restedInstanceIds: string[] } {
+): { state: GameState; log: GameLogEntry[]; restedInstanceIds: string[]; returnedDonCount: number } {
   const logger = createActionLogger(state, actionId);
   let working = state;
   let selectedCursor = 0;
   const restedInstanceIds: string[] = [];
+  let returnedDonCount = 0;
 
   for (const cost of costs) {
     switch (cost.kind) {
       case 'donMinus': {
         const selected = selectedDonMinusIds.slice(selectedCursor, selectedCursor + cost.count);
         selectedCursor += cost.count;
+        returnedDonCount += selected.length;
         working = payDonMinus(working, playerId, selected, logger);
         break;
       }
@@ -170,7 +172,7 @@ export function payAbilityCost(
     }
   }
 
-  return { state: { ...working, log: [...working.log, ...logger.log] }, log: logger.log, restedInstanceIds };
+  return { state: { ...working, log: [...working.log, ...logger.log] }, log: logger.log, restedInstanceIds, returnedDonCount };
 }
 
 export function payDonMinus(

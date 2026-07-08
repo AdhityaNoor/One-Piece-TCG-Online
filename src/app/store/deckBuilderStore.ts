@@ -9,6 +9,7 @@
  * render via the selector hook below, not a parallel rule implementation.
  */
 import { create } from 'zustand';
+import { evaluateDeckFormatStatusFromCards, type DeckFormatStatusResult } from '../../cards/format';
 import { resolveCardPrintingsById } from '../lib/cardCatalog';
 import { buildCardLibraryEntry, type CardLibraryEntry } from '../../cards/library';
 import {
@@ -301,5 +302,25 @@ export function useDeckBuilderLegality(): { legal: boolean; reasons: string[] } 
       quantity: s.quantity,
     }));
     return validateDeckConstruction(state.leaderSelection.libraryEntry.definition, entries);
+  });
+}
+
+/** Live tournament format status (Standard / Extra / Banned) for the in-progress deck. */
+export function useDeckBuilderFormatStatus(): DeckFormatStatusResult {
+  return useDeckBuilderStore((state) => {
+    const cards: Array<{ cardNumber: string; name: string }> = [];
+    if (state.leaderSelection) {
+      cards.push({
+        cardNumber: state.leaderSelection.libraryEntry.cardNumber,
+        name: state.leaderSelection.libraryEntry.definition.name,
+      });
+    }
+    for (const selection of state.mainDeckSelections) {
+      cards.push({
+        cardNumber: selection.libraryEntry.cardNumber,
+        name: selection.libraryEntry.definition.name,
+      });
+    }
+    return evaluateDeckFormatStatusFromCards(cards);
   });
 }

@@ -8,9 +8,11 @@
  * component should assume.
  */
 import type { ReactNode } from 'react';
+import type { DeckFormatStatus } from '../../cards/format';
 import type { Color } from '../../engine/state/card';
 import { CARD_COLOR_TOKENS } from '../lib/cardColors';
 import { CardImage } from './CardImage';
+import { DeckFormatBadge } from './DeckFormatBadge';
 
 export interface DeckListSummaryProps {
   name: string;
@@ -20,6 +22,8 @@ export interface DeckListSummaryProps {
   colors?: Color[];
   /** Main-deck card count, e.g. to show "50/50". Omitted entirely when unknown. */
   cardCount?: number;
+  /** Tournament format status from evaluateSavedDeckFormatStatus — Legal / Extra Legal / Banned. */
+  formatStatus?: DeckFormatStatus;
   onSelect?: () => void;
   /** Highlights this row as the current pick — e.g. Deck Select's "which deck is Player 1 using" state. Purely visual, mirrors CardTile's `selected`. */
   selected?: boolean;
@@ -27,7 +31,7 @@ export interface DeckListSummaryProps {
   actions?: ReactNode;
 }
 
-export function DeckListSummary({ name, updatedAt, leaderName, leaderImageUrl, colors, cardCount, onSelect, selected, actions }: DeckListSummaryProps) {
+export function DeckListSummary({ name, updatedAt, leaderName, leaderImageUrl, colors, cardCount, formatStatus, onSelect, selected, actions }: DeckListSummaryProps) {
   const formattedDate = (() => {
     const parsed = new Date(updatedAt);
     return Number.isNaN(parsed.getTime()) ? null : parsed.toLocaleDateString();
@@ -60,8 +64,11 @@ export function DeckListSummary({ name, updatedAt, leaderName, leaderImageUrl, c
         <CardImage src={leaderImageUrl ?? null} alt={leaderName ?? name} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold uppercase tracking-[0.08em] text-white">{name}</p>
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-200/60">
+        <div className="flex flex-col gap-0.5">
+          <p className="truncate text-sm font-bold uppercase leading-tight tracking-[0.08em] text-white">{name}</p>
+          {formatStatus && <DeckFormatBadge status={formatStatus} size="sm" className="w-fit" />}
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-200/60">
           {leaderName && <span className="truncate">{leaderName}</span>}
           {cardCount !== undefined && <span>{cardCount}/50 cards</span>}
           {formattedDate && <span>Updated {formattedDate}</span>}

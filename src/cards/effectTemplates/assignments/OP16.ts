@@ -266,12 +266,16 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-119 (character) Marshall.D.Teach —
-  //   [On Play] Look at 3 cards from the top of your deck; add up to 1 card to the top of your Life cards.
-  //   Then, place the rest at the bottom of your deck in any order. [Trigger] Negate the effect of up to 1
-  //   of your opponent's Characters during this turn. Then, K.O. up to 1 of your opponent's Characters with
-  //   a cost of 5 or less.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: [On Play] look-3-to-life deferred; mapped [Trigger] negate + K.O. bundle.
+  {
+    cardNumber: 'OP16-119',
+    templates: [
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'negateEffect', target: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
+      ] } },
+    ],
+  },
 
 
   // PARTIAL: green color filter on setActive dropped.
@@ -558,11 +562,14 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-115 (event) Black Vortex —
-  //   [Main] If your Leader has the {Blackbeard Pirates} type, add up to 1 card with a [Trigger] other than
-  //   [Black Vortex] from your trash to your hand. [Trigger] Negate the effect of up to 1 of your
-  //   opponent's Leader or Character cards during this turn.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: [Main] trash pick should exclude [Black Vortex] by name.
+  {
+    cardNumber: 'OP16-115',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { hasTrigger: true } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   // OP16-116 — [Main] If 10 DON!!, play [Marshall.D.Teach] from hand. [Trigger] Draw 2, trash 1. PARTIAL: opp-Life-to-hand deferred.
   {
@@ -573,11 +580,17 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-117 (event) Black Hole —
-  //   [Main] You may trash 1 card with a [Trigger] from your hand: Negate the effects of up to 1 of your
-  //   opponent's Characters with a cost of 8 or less during this turn. [Trigger] Add up to 1 {Blackbeard
-  //   Pirates} type card from your trash to your hand.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: [Main] hand trash should filter for cards with a [Trigger].
+  {
+    cardNumber: 'OP16-117',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'negateEffect', target: { group: 'characters', player: 'opponent', filter: { maxCost: 8 } }, duration: 'duringThisTurn', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Blackbeard Pirates' } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   // OP16-118 — [On Play]/[On K.O.] Look 5, reveal up to 1 [Monkey.D.Luffy]/{Whitebeard Pirates} to hand, rest to bottom. PARTIAL: static hand-counter buff deferred.
   {

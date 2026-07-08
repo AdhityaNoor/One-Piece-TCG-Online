@@ -7,6 +7,7 @@
  * Pure data in, pure data out — no React, no I/O.
  */
 import type { CardCategory, Color } from '../../engine/state/card';
+import { cardMatchesFormatLegalityFilter, type FormatLegalityFilter } from '../format/evaluateDeckFormatStatus';
 import type { CardLibraryEntry } from './cardPrintingSummary';
 
 export interface CardLibraryFilter {
@@ -39,6 +40,8 @@ export interface CardLibraryFilter {
    */
   powerMin?: number;
   powerMax?: number;
+  /** Tournament format legality facet. `any`/omitted = no filter. */
+  formatLegality?: 'any' | FormatLegalityFilter;
 }
 
 // Slider bounds for the cost/power facet filters (shared by UI + filtering).
@@ -62,6 +65,8 @@ export function filterCardLibraryEntries(entries: CardLibraryEntry[], filter: Ca
   const typeQuery = filter.typeQuery?.trim().toLowerCase();
   const type = filter.type?.trim().toLowerCase();
   const timing = filter.timing && filter.timing !== 'any' ? filter.timing : undefined;
+  const formatLegality =
+    filter.formatLegality && filter.formatLegality !== 'any' ? filter.formatLegality : undefined;
 
   const costMin = filter.costMin ?? COST_FILTER_MIN;
   const costMax = filter.costMax ?? COST_FILTER_MAX;
@@ -83,6 +88,7 @@ export function filterCardLibraryEntries(entries: CardLibraryEntry[], filter: Ca
     if (type && !normalizedTypes.some((cardType) => cardType.toLowerCase() === type)) return false;
     if (timing === 'lifeTrigger' && !entry.definition.hasTrigger) return false;
     if (timing === 'no-lifeTrigger' && entry.definition.hasTrigger) return false;
+    if (formatLegality && !cardMatchesFormatLegalityFilter(entry.cardNumber, formatLegality)) return false;
     if (costActive) {
       const cost = entry.definition.baseCost;
       if (cost === undefined || cost < costMin || cost > costMax) return false;

@@ -207,6 +207,30 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['this Character cannot attack', '... cannot attack until the end of your opponent\'s next turn'],
     examples: [{ cardNumber: 'OP04-065', snippet: "{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'endOfOpponentsTurn' }" }],
   },
+  negateEffect: {
+    id: 'negateEffect',
+    summary: 'Negate the effect(s) of chosen Leader/Character/Stage cards for the duration.',
+    params: [
+      { name: 'target', type: 'TargetSpec', required: true },
+      { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'negatedTimings', type: 'IrTiming[]', required: false, note: 'omit to negate all timings; e.g. ["onPlay"] for "[On Play] effects are negated"' },
+      { name: 'optional', type: 'boolean', required: false },
+      { name: 'maxTargets', type: 'number', required: false },
+    ],
+    covers: ['Negate the effect of up to 1 of your opponent\'s Leader or Character cards', 'negate the effect of up to 1 of your opponent\'s Characters'],
+    examples: [{ cardNumber: 'OP09-097', snippet: "{ fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 }" }],
+  },
+  negateControllerEffects: {
+    id: 'negateControllerEffects',
+    summary: 'Negate abilities on all cards controlled by a player (optionally limited to specific timings).',
+    params: [
+      { name: 'player', type: "'controller' | 'opponent'", required: true },
+      { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'negatedTimings', type: 'IrTiming[]', required: false },
+    ],
+    covers: ['Your [On Play] effects are negated', 'Your opponent\'s [On Play] effects are negated until the end of your opponent\'s next turn'],
+    examples: [{ cardNumber: 'OP09-081', snippet: "{ fn: 'negateControllerEffects', player: 'controller', negatedTimings: ['onPlay'], duration: 'permanent' }" }],
+  },
   preventBlockers: {
     id: 'preventBlockers',
     summary: 'Opponent cannot activate [Blocker] (optionally only blockers of >= a given power) for the duration.',
@@ -745,6 +769,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   opponentHasCharacterBasePowerAtLeast: { id: 'opponentHasCharacterBasePowerAtLeast', summary: 'Opponent has a Leader/Character with base power N or more.', params: [{ name: 'power', type: 'number', required: true }], covers: ['If your opponent has a Leader or Character with a base power of {N} or more'], examples: [{ cardNumber: 'OP06-012', snippet: "{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 6000 }" }] },
   anyCharacterCostAtLeast: { id: 'anyCharacterCostAtLeast', summary: 'There is a Character with a cost of N or more (either player).', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['if there is a Character with a cost of {N} or more'], examples: [{ cardNumber: 'OP11-095', snippet: "{ kind: 'anyCharacterCostAtLeast', atLeast: 9 }" }] },
   opponentHasCharacterExactCost: { id: 'opponentHasCharacterExactCost', summary: 'Opponent has a Character with a cost of exactly N.', params: [{ name: 'exactCost', type: 'number', required: true }], covers: ['if your opponent has a Character with a cost of {N}'], examples: [{ cardNumber: 'OP07-087', snippet: "{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }" }] },
+  selfDonReturnedThisAction: { id: 'selfDonReturnedThisAction', summary: 'N or more DON!! were returned to the DON!! deck during this cost payment (onDonReturned only).', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['When {N} or more DON!! cards on your field are returned to your DON!! deck', 'When a DON!! card on your field is returned to your DON!! deck'], examples: [{ cardNumber: 'OP09-061', snippet: "{ kind: 'selfDonReturnedThisAction', atLeast: 2 }" }] },
   anyOf: { id: 'anyOf', summary: 'OR: satisfied if any sub-gate holds ("if Leader is X or has {Y} type").', params: [{ name: 'gates', type: 'AbilityGate[]', required: true }], covers: ['if your Leader has the {A} or {B} type'], examples: [{ cardNumber: 'OP11-031', snippet: "{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }" }] },
 };
 
@@ -774,6 +799,7 @@ export const TIMINGS: Record<IrTiming, string> = {
   onKO: '[On K.O.] — when this card is K.O.\'d.',
   onCharacterKoed: 'When one of your Characters is K.O.\'d (event trigger).',
   onRested: '[When this Character becomes rested] — fires when the card transitions active→rested (attack, cost, or effect).',
+  onDonReturned: '[When DON!! on your field is returned to your DON!! deck] — fires after effect-sourced DON!! −N costs (not Refresh Phase returns).',
   counter: '[Counter] — during the opponent\'s attack, from hand.',
   lifeTrigger: '[Trigger] — when this card is revealed from Life.',
   endOfTurn: '[End of Your Turn].',

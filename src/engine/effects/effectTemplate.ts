@@ -122,6 +122,20 @@ export interface EffectContext {
     duration: ContinuousEffectDuration;
     description?: string;
   }): void;
+  /** Negate abilities on the target instance for the given duration. */
+  negateEffect(spec: {
+    appliesToInstanceId: string;
+    duration: ContinuousEffectDuration;
+    negatedTimings?: import('./effectIr').IrTiming[];
+    description?: string;
+  }): void;
+  /** Negate abilities on all cards controlled by a player for the given duration. */
+  negateControllerEffects(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    negatedTimings?: import('./effectIr').IrTiming[];
+    description?: string;
+  }): void;
   /** Give up to `count` un-attached DON!! from the controller's cost area to a Leader/Character (6-5-5). */
   giveDon(targetInstanceId: string, count: number): void;
   /** Reassign one DON!! already given on the field onto another in-play card. */

@@ -327,10 +327,7 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-066 — [Blocker] [On K.O.] Add up to 1 DON!! card from your DON!! deck and rest it.
   { cardNumber: 'OP08-066', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
-  // OP08-067 (character) Charlotte Pudding —
-  //   [Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, add up to
-  //   1 DON!! card from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP08-067', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
   // OP08-068 — [On K.O.] Add DON!! rested. [Trigger] DON!! −1: Play this card.
   {

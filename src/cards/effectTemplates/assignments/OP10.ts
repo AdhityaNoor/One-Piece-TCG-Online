@@ -106,15 +106,19 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP10-028 — [Activate: Main] rest 2 DON!! + trash this: look 5, reveal up to 2 {The Akazaya Nine}, add to hand, rest to bottom.
   { cardNumber: 'OP10-028', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 2 }, { kind: 'trashThis' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'hand', filter: { typeIncludes: 'The Akazaya Nine' }, remainder: 'bottom' }] } },
 
-  // OP10-026 (character) Kin'emon —
-  //   [Activate: Main] You may place this Character and 1 [Kin'emon] with 0 power from your trash at the
-  //   bottom of your deck in any order: Play up to 1 [Kin'emon] with a cost of 6 from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP10-026 — PARTIAL: "this Character" deck-bottom uses name filter (may pick wrong Kin'emon on field).
+  { cardNumber: 'OP10-026', templateId: 'ability', params: { timing: 'activateMain', functions: [
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { name: "Kin'emon", exactBasePower: 0 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { name: "Kin'emon" } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+    { fn: 'playFromHand', filter: { name: "Kin'emon", exactCost: 6 }, ifPrevious: 'previousMovedAny' },
+  ] } },
 
-  // OP10-027 (character) Kin'emon —
-  //   [Activate: Main] You may place this Character and 1 [Kin'emon] with 1000 power from your trash at the
-  //   bottom of your deck in any order: Play up to 1 [Kin'emon] with a cost of 6 from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP10-027 — PARTIAL: same Kin'emon self-target approximation as OP10-026.
+  { cardNumber: 'OP10-027', templateId: 'ability', params: { timing: 'activateMain', functions: [
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { name: "Kin'emon", exactBasePower: 1000 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { name: "Kin'emon" } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+    { fn: 'playFromHand', filter: { name: "Kin'emon", exactCost: 6 }, ifPrevious: 'previousMovedAny' },
+  ] } },
 
 
   // OP10-029 — [On Play] If 2+ rested Characters, set up to 1 rested {ODYSSEY} Character cost<=5 as active.
@@ -430,13 +434,16 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP10-098 (event) Liberation —
-  //   [Main] If the number of your Characters is at least 2 less than the number of your opponent's
-  //   Characters, K.O. up to 1 of your opponent's Characters with a base cost of 6 or less and up to 1 of
-  //   your opponent's Characters with a base cost of 4 or less. [Trigger] Negate the effect of up to 1 of
-  //   each of your opponent's Leader and Character cards during this turn.
-  // NOTE: not yet implemented (needs template).
-
+  // PARTIAL: [Main] dual-K.O. with character-count gate deferred; mapped [Trigger] negate bundle.
+  {
+    cardNumber: 'OP10-098',
+    templates: [
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+        { fn: 'negateEffect', target: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+      ] } },
+    ],
+  },
 
   // OP10-100 (character) Inazuma —
   //   [DON!! x1] [When Attacking] Rest up to 1 of your opponent's Characters with a cost equal to or less
@@ -635,7 +642,7 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP10-010', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfCharacterCurrentPowerCount', power: 6000, atMost: 1 }], functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' }] } },
 
-  // PARTIAL: on-rested DON return trigger deferred; mapped onRested setActive DON.
+  // PARTIAL: on-rested-by-your-effect DON setActive deferred; mapped onRested setActive DON as weak stand-in.
   { cardNumber: 'OP10-036', templateId: 'ability', params: { timing: 'onRested', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
 
   { cardNumber: 'OP10-047', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'Revolutionary Army', minBaseCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addPowerSelf', amount: 3000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' }] } },

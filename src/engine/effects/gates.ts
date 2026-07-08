@@ -33,15 +33,21 @@ function currentCostForGate(state: GameState, defs: CardDefinitionLookup, instan
   return Math.max(0, base + delta);
 }
 
+export interface GateEvalContext {
+  /** DON!! returned to the DON!! deck during the current cost-payment batch. */
+  donReturnedCount?: number;
+}
+
 export function evaluateGates(
   gates: AbilityGate[],
   state: GameState,
   defs: CardDefinitionLookup,
   ownerId: string,
   sourceInstanceId?: string,
+  eventContext?: GateEvalContext,
 ): boolean {
   for (const gate of gates) {
-    if (!evaluateGate(gate, state, defs, ownerId, sourceInstanceId)) return false;
+    if (!evaluateGate(gate, state, defs, ownerId, sourceInstanceId, eventContext)) return false;
   }
   return true;
 }
@@ -52,6 +58,7 @@ function evaluateGate(
   defs: CardDefinitionLookup,
   ownerId: string,
   sourceInstanceId?: string,
+  eventContext?: GateEvalContext,
 ): boolean {
   const player = state.players[ownerId];
   if (!player) return false;
@@ -332,7 +339,14 @@ function evaluateGate(
     }
 
     case 'anyOf':
-      return gate.gates.some((g) => evaluateGate(g, state, defs, ownerId, sourceInstanceId));
+      return gate.gates.some((g) => evaluateGate(g, state, defs, ownerId, sourceInstanceId, eventContext));
+
+    case 'selfDonReturnedThisAction': {
+      const count = eventContext?.donReturnedCount ?? 0;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
 
     case 'opponentHand': {
       const opponentId = getOpponentId(state, ownerId);

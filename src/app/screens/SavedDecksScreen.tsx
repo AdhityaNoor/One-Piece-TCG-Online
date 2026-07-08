@@ -1,7 +1,8 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { evaluateSavedDeckFormatStatus } from '../../cards/format';
 import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
 import type { CardCategory, Color } from '../../engine/state/card';
-import { Button, CanvasMenuButton, GameCanvasScreen, Modal } from '../components';
+import { Button, CanvasMenuButton, DeckFormatBadge, GameCanvasScreen, Modal } from '../components';
 import { resolveAssetUrl } from '../lib/assetUrl';
 import { CARD_COLOR_TOKENS } from '../lib/cardColors';
 import { useNavigationStore } from '../store/navigationStore';
@@ -377,6 +378,11 @@ export function SavedDecksScreen() {
     return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString();
   }, [current]);
 
+  const currentFormatStatus = useMemo(() => {
+    if (!current?.deck.ok) return null;
+    return evaluateSavedDeckFormatStatus(current.deck.deck).status;
+  }, [current]);
+
   return (
     <GameCanvasScreen
       kicker="Deck Rack"
@@ -433,9 +439,12 @@ export function SavedDecksScreen() {
 
                 {/* Deck name & stats */}
                 <div className="text-center">
-                  <p className="font-heading text-base font-black uppercase tracking-[0.10em] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.7)]">
-                    {current?.entry.name}
-                  </p>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <p className="font-heading text-base font-black uppercase leading-tight tracking-[0.10em] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.7)]">
+                      {current?.entry.name}
+                    </p>
+                    {currentFormatStatus && <DeckFormatBadge status={currentFormatStatus} />}
+                  </div>
                   {current?.deck.ok && (
                     <p className="mt-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-gold/65">
                       {current.deck.deck.leader.definition.name}
@@ -536,6 +545,7 @@ export function SavedDecksScreen() {
                   const active = i === clampedIndex;
                   const leaderName = row.deck.ok ? row.deck.deck.leader.definition.name : null;
                   const leaderImg = row.deck.ok ? row.deck.deck.leader.imageUrl : null;
+                  const formatStatus = row.deck.ok ? evaluateSavedDeckFormatStatus(row.deck.deck).status : null;
                   return (
                     <button
                       key={row.entry.deckId}
@@ -552,9 +562,12 @@ export function SavedDecksScreen() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={['truncate text-[11px] font-bold uppercase tracking-[0.04em]', active ? 'text-white' : 'text-white/80'].join(' ')}>
-                          {row.entry.name}
-                        </p>
+                        <div className="flex flex-col gap-0.5">
+                          <p className={['truncate text-[11px] font-bold uppercase leading-tight tracking-[0.04em]', active ? 'text-white' : 'text-white/80'].join(' ')}>
+                            {row.entry.name}
+                          </p>
+                          {formatStatus && <DeckFormatBadge status={formatStatus} size="sm" className="w-fit" />}
+                        </div>
                         <p className="truncate text-[9px] font-bold uppercase tracking-[0.08em] text-white/35">
                           {leaderName ?? 'Unavailable'}
                         </p>

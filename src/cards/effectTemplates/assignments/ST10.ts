@@ -59,10 +59,7 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
   //   activates a [Blocker], K.O. up to 1 of your opponent's Characters with 8000 power or less.
   // NOTE: not yet implemented (needs template).
 
-  // ST10-007 (character) Killer —
-  //   [Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, K.O. up
-  //   to 1 of your opponent's rested Characters with a cost of 3 or less.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'ST10-007', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 3 } }, optional: true }] } },
 
   // ST10-008 Shachi & Penguin — [On Play] If you have 3 or less DON!! on your field, add 2 DON!! and rest them.
   {
@@ -86,10 +83,7 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
     params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'opponentHand', atLeast: 7 }], functions: [{ fn: 'trashFromOpponentHandChosenByOpponent', count: 2 }] },
   },
 
-  // ST10-011 (character) Heat —
-  //   [Your Turn] [Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, this
-  //   Character gains +2000 power until the start of your next turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'ST10-011', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn' }] } },
 
   // ST10-012 Bepo — [On Play]/[When Attacking] If your opponent has more DON!! than you, add 1 DON!! and rest it.
   {
@@ -109,11 +103,7 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST10-014 (character) Wire —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, draw 1
-  //   card and trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'ST10-014', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'trashFromHand', count: 1 }] } },
 
   // ST10-015 (event) Gum-Gum Giant Sumo Slap — [Counter] Up to 1 of your Leader/Character +2000 during
   //   this battle, and K.O. up to 1 opponent Character with 2000 power or less.
