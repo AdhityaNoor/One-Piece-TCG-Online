@@ -13,7 +13,8 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Turn] If your {Navy} type Character with 7000 base power or less would be removed from the field by
   //   your opponent's effect, you may place 3 cards from your trash at the bottom of your deck in any order
   //   instead.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: replacement-effect clause remains deferred; static SWORD attack permission is mapped.
+  { cardNumber: 'OP11-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent', anyOfTypes: ['SWORD'] }] } },
 
   // OP11-002 — [On Play] Give opp Character −1000, then K.O. opp Character with 0 power or less.
   { cardNumber: 'OP11-002', templateId: 'ability', params: { timing: 'onPlay', functions: [
@@ -34,7 +35,7 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
   //   of the attack.)[DON!! x1] This Character cannot be K.O.'d by effects of Characters without the
   //   <Special> attribute.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP11-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { donAttachedAtLeast: 1 }, effectSourceCategory: 'character', effectSourceWithoutAttribute: 'special' }] } },
 
   // OP11-006 — [DON!! x1] [When Attacking] Give up to 1 opp <Special> Characters −5000 this turn.
   //   PARTIAL: <Special> attribute filter dropped (see curated entry below).
@@ -64,7 +65,16 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-012 (character) Franky —
   //   [Your Turn] [Once Per Turn] When your opponent activates an Event, all of your Characters gain +2000
   //   power during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP11-012',
+    templateId: 'ability',
+    params: {
+      timing: 'onOpponentEventActivated',
+      oncePerTurn: true,
+      condition: { turn: 'your' },
+      functions: [{ fn: 'addPowerControllerCharactersAll', amount: 2000, duration: 'duringThisTurn' }],
+    },
+  },
 
 
   // OP11-014 (character) Borsalino —
@@ -440,7 +450,12 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] You may trash 1 card from your hand: Draw 1 card and play up to 1 {SWORD} type Character
   //   card with a cost of 8 or less other than [Helmeppo] from your trash. Then, place the 1 Character
   //   played by this effect at the bottom of the owner's deck at the end of this turn.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: delayed end-of-turn bottom-deck clause for the played Character deferred.
+  { cardNumber: 'OP11-092', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'optionalTrashFromHand', count: 1 },
+    { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
+    { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'SWORD', maxCost: 8, excludeSelfName: true }, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP11-095 (character) Monkey.D.Garp —
   //   [On Play] You may place 3 {Navy} type cards from your trash at the bottom of your deck in any order:

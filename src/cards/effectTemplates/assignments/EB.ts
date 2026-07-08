@@ -733,7 +733,13 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play]/[When Attacking] If your Leader has the {Straw Hat Crew} type and the number of DON!! cards
   //   on your field is equal to or less than the number on your opponent's field, add up to 1 DON!! card
   //   from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB02-037',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }, { kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }, { kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+    ],
+  },
 
   // EB02-038 — [On Play] Play up to 1 {Impel Down} Character cost<=2 from hand.
   { cardNumber: 'EB02-038', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Impel Down', maxCost: 2 } }] } },
@@ -2149,7 +2155,19 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Once Per Turn] If your Leader's type includes "Navy" and this Character would be removed from the
   //   field, you may trash 1 card from your hand instead.[Your Turn] [Once Per Turn] When your opponent's
   //   Character is K.O.'d, draw 1 card.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: the "would be removed from the field" replacement clause is deferred (needs a
+  // replacement-effect primitive). The [Your Turn][Once Per Turn] opponent-K.O. draw is curated.
+  {
+    cardNumber: 'EB04-044',
+    templateId: 'ability',
+    params: {
+      timing: 'onCharacterKoed',
+      oncePerTurn: true,
+      condition: { turn: 'your' },
+      gate: [{ kind: 'koedCharacterController', player: 'opponent' }],
+      functions: [{ fn: 'draw', amount: 1 }],
+    },
+  },
 
   // EB04-045 — [Activate: Main] rest this: if 2+ Characters cost ≥8, Revolutionary Army Leader/Character +1000 this turn.
   // PARTIAL: "2 or more Characters with cost 8+" count gate deferred; mapped with anyCharacterCostAtLeast: 8.

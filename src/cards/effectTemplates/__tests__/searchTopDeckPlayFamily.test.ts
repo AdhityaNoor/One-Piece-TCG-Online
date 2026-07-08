@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { runTimings, resumeProgram } from '../../../engine/effects/interpreter';
 import { buildBaseRig, makeCharacterDef, putCharacterInPlay } from '../../../engine/rules/shared/__tests__/testRig';
-import type { CardDefinition } from '../../../engine/state/card';
+import type { CardDefinition, CardInstance } from '../../../engine/state/card';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
 
 const SRC = makeCharacterDef({ cardDefinitionId: 'SYN-SRC', cardNumber: 'SYN-SRC', category: 'character', baseCost: 3, basePower: 4000 });
@@ -33,7 +33,7 @@ function withDeck(rig: ReturnType<typeof buildBaseRig>, defs: CardDefinition[]) 
             oncePerTurnUsed: [],
             summoningSick: false,
             revealedTo: [],
-          }])),
+          } satisfies CardInstance])),
         },
         players: { ...rig.state.players, p1: { ...rig.state.players.p1, deck: { ...rig.state.players.p1.deck, cardIds: deckIds } } },
       },

@@ -269,10 +269,13 @@ export interface ContinuousRestRestriction {
 /**
  * `'canAttackActive'`: "This Leader/Character can also attack active Characters" —
  * relaxes the normal 7-1-1-2 restriction (only the opponent's Leader or a RESTED
- * Character may be attacked) for the granted instance's own attacks, checked in
- * declareAttack.ts's target-legality validation.
+ * Character may be attacked) for the granted instance's own attacks.
+ *
+ * `'canAttackCharactersWhileSummoningSick'`: "can attack Characters on the turn
+ * in which they are played" — bypasses summoning sickness only when the declared
+ * target is an opponent Character, not when attacking a Leader.
  */
-export type ContinuousKeyword = 'rush' | 'blocker' | 'doubleAttack' | 'banish' | 'unblockable' | 'canAttackActive';
+export type ContinuousKeyword = 'rush' | 'blocker' | 'doubleAttack' | 'banish' | 'unblockable' | 'canAttackActive' | 'canAttackCharactersWhileSummoningSick';
 
 /** A structured keyword grant applied to one instance or a dynamic aura group, with optional dynamic conditions. */
 export interface ContinuousKeywordModifier {
@@ -305,6 +308,8 @@ export interface ContinuousKoImmunityModifier {
    * ("cannot be K.O.'d in battle by Leaders" → 'leader'). Omitted = any attacker.
    */
   attackerCategory?: 'leader' | 'character';
+  /** Battle K.O. only: restrict immunity to attackers with this printed attribute. */
+  attackerAttribute?: string;
   /** Omitted when the immunity is unconditional. */
   condition?: ContinuousPowerCondition;
   /** Gate evaluated against the SOURCE card (e.g. "If this Character is active/rested"). */
@@ -318,6 +323,8 @@ export interface ContinuousKoImmunityModifier {
   effectSourceMaxBasePower?: number;
   /** Effect K.O. only: the K.O.-ing card must be of this category. */
   effectSourceCategory?: 'leader' | 'character';
+  /** Effect K.O. only: the K.O.-ing card must NOT have this printed attribute. */
+  effectSourceWithoutAttribute?: string;
 }
 
 /** Hand filter for a K.O. replacement that trashes from hand. */

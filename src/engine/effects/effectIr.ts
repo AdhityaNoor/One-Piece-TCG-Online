@@ -154,8 +154,8 @@ export type EffectOp =
   | ({ op: 'addKeywordAura'; group: PowerAuraGroup; keyword: ContinuousKeyword; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
   // Grant "cannot be K.O.'d" to the target. scope 'battle' = battle K.O. only (7-1-4-2); 'any' = any source.
   // `attackerCategory` optionally restricts a battle immunity to a given attacker category ("by Leaders").
-  | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character'; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character' } & EffectOpSequenceGate)
-  | ({ op: 'addKoImmunityAura'; group: KoImmunityAuraGroup; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character' } & EffectOpSequenceGate)
+  | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character'; attackerAttribute?: string; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string } & EffectOpSequenceGate)
+  | ({ op: 'addKoImmunityAura'; group: KoImmunityAuraGroup; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string } & EffectOpSequenceGate)
   // Register optional K.O. replacement on enter play ("would be K.O.'d … instead").
   | ({ op: 'registerKoReplacement'; appliesTo: 'self' | 'aura'; appliesToInstanceId?: string; group?: KoReplacementAuraGroup; scope: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; action: KoReplacementAction; condition?: IrCondition; sourceCondition?: SourceStateCondition; duration: IrDuration } & EffectOpSequenceGate)
   | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
@@ -332,6 +332,9 @@ export type AbilityGate =
   | { kind: 'opponentHasCharacterExactCost'; exactCost: number } // "if your opponent has a Character with a cost of N"
   | { kind: 'selfDonReturnedThisAction'; atLeast?: number; atMost?: number } // "When N or more DON!! cards on your field are returned …"
   | { kind: 'playedCharacterNoBaseEffect' } // onCharacterPlayedFromHand: the just-played Character has no base effect
+  // onCharacterKoed only: filter the reactive window by whose Character was K.O.'d.
+  // 'opponent' = "When your opponent's Character is K.O.'d"; 'controller' = "When your Character is K.O.'d".
+  | { kind: 'koedCharacterController'; player: 'opponent' | 'controller' }
   | { kind: 'anyOf'; gates: AbilityGate[] }; // OR: satisfied if any sub-gate holds ("if Leader is X or Y")
 
 export interface Ability {

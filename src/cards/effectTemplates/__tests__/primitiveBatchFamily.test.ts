@@ -2,20 +2,25 @@ import { describe, expect, it } from 'vitest';
 import type { DeclareAttackAction } from '../../../engine/actions/action';
 import { validateResolvePendingChoice } from '../../../engine/actions/handlers/resolvePendingChoice';
 import { runTimings } from '../../../engine/effects/interpreter';
-import { resumeChoice } from '../../../engine/effects/fireTiming';
+import { resumeChoice, fireCharacterKoedReactions } from '../../../engine/effects/fireTiming';
 import { validateDeclareAttack } from '../../../engine/rules/battle/declareAttack';
-import { buildBaseRig, makeCharacterDef, makeLeaderDef, putCharacterInPlay, putDeckCards, putDon } from '../../../engine/rules/shared/__tests__/testRig';
+import { computeCurrentPower } from '../../../engine/rules/shared';
+import { buildBaseRig, makeCharacterDef, makeLeaderDef, putCharacterInPlay, putDeckCards, putDon, putDonDeckCards } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments } from '../assembler';
 import { EB_ASSIGNMENTS } from '../assignments/EB';
 import { OP01_ASSIGNMENTS } from '../assignments/OP01';
 import { PRB_ASSIGNMENTS } from '../assignments/PRB';
 import { OP06_ASSIGNMENTS } from '../assignments/OP06';
 import { OP05_ASSIGNMENTS } from '../assignments/OP05';
+import { OP04_ASSIGNMENTS } from '../assignments/OP04';
+import { OP03_ASSIGNMENTS } from '../assignments/OP03';
 import { OP10_ASSIGNMENTS } from '../assignments/OP10';
 import { OP11_ASSIGNMENTS } from '../assignments/OP11';
 import { OP12_ASSIGNMENTS } from '../assignments/OP12';
 
 const registry = buildRegistryFromAssignments([
+  ...OP03_ASSIGNMENTS,
+  ...OP04_ASSIGNMENTS,
   ...OP05_ASSIGNMENTS,
   ...OP06_ASSIGNMENTS,
   ...OP10_ASSIGNMENTS,
@@ -105,7 +110,7 @@ describe('attack-restriction extensions', () => {
       ...applied.state,
       players: {
         ...applied.state.players,
-        p1: { ...applied.state.players.p1, hand: { cardIds: handCards } },
+        p1: { ...applied.state.players.p1, hand: { ...applied.state.players.p1.hand, cardIds: handCards } },
       },
     };
     expect(validateDeclareAttack(withHand, declareAttack('p1', luffyId, foeLeaderId), rig.defs).legal).toBe(false);
@@ -189,6 +194,7 @@ describe('mixed rest targets', () => {
     const program = registry['EB03-061'];
     const main = program.abilities.find((a) => a.timing === 'activateMain');
     const restOp = main?.ops.find((op) => op.op === 'chooseTargets' && op.from.sel === 'union');
+    if (restOp?.op !== 'chooseTargets') throw new Error('expected chooseTargets');
     expect(restOp?.from).toMatchObject({
       sel: 'union',
       members: [{ sel: 'opponentCharacters', maxCost: 4 }, { sel: 'opponentUnattachedDon' }],
@@ -301,6 +307,7 @@ describe('draw/trash scaling and union attack-restriction targets', () => {
   it('PRB02-017 compiles rested-leader-or-non-Luffy preventAttack selector', () => {
     const onPlay = registry['PRB02-017'].abilities.find((a) => a.timing === 'onPlay');
     const prevent = onPlay?.ops.find((op) => op.op === 'chooseTargets' && op.from.sel === 'opponentLeaderOrCharacters');
+    if (prevent?.op !== 'chooseTargets') throw new Error('expected chooseTargets');
     expect(prevent?.from).toMatchObject({ sel: 'opponentLeaderOrCharacters', restedLeader: true, excludeName: 'Monkey.D.Luffy' });
   });
 
@@ -325,5 +332,144 @@ describe('draw/trash scaling and union attack-restriction targets', () => {
       },
     };
     expect(validateDeclareAttack(nextTurn, declareAttack('p1', selfId, activeTarget), rig.defs).legal).toBe(false);
+  });
+});
+
+describe("opponent's-Character-K.O.'d reactive trigger (koedCharacterController)", () => {
+  const enemyDef = makeCharacterDef({ cardDefinitionId: 'ENEMY-DEF', cardNumber: 'ENEMY-1', name: 'Enemy', baseCost: 2, basePower: 2000 });
+
+  function koTo(state: ReturnType<typeof buildBaseRig>['state'], ids: string[]) {
+    const cardsById = { ...state.cardsById };
+    for (const id of ids) cardsById[id] = { ...cardsById[id], currentZone: 'trash' };
+    return { ...state, cardsById };
+  }
+
+  it('EB04-044 (Koby) draws when the opponent’s Character is K.O.’d on your turn, but only once per turn', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    rig = putDeckCards(rig, 'p1', enemyDef, 5).rig;
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'EB04-044', cardNumber: 'EB04-044', name: 'Koby', baseCost: 3 })));
+    let foeA: string;
+    let foeB: string;
+    ({ rig, instanceId: foeA } = putCharacterInPlay(rig, 'p2', enemyDef));
+    ({ rig, instanceId: foeB } = putCharacterInPlay(rig, 'p2', { ...enemyDef, cardDefinitionId: 'ENEMY-DEF-2', cardNumber: 'ENEMY-2' }));
+
+    const before = rig.state;
+    const handBefore = before.players.p1.hand.cardIds.length;
+    // Two opponent Characters K.O.'d in the same action → [Once Per Turn] fires the draw exactly once.
+    const fired = fireCharacterKoedReactions(before, koTo(before, [foeA, foeB]), registry, rig.defs, 'test');
+    expect(fired.state.players.p1.hand.cardIds.length).toBe(handBefore + 1);
+  });
+
+  it('EB04-044 (Koby) does NOT draw when your OWN Character is K.O.’d', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    rig = putDeckCards(rig, 'p1', enemyDef, 5).rig;
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'EB04-044', cardNumber: 'EB04-044', name: 'Koby', baseCost: 3 })));
+    let mine: string;
+    ({ rig, instanceId: mine } = putCharacterInPlay(rig, 'p1', enemyDef));
+
+    const before = rig.state;
+    const handBefore = before.players.p1.hand.cardIds.length;
+    const fired = fireCharacterKoedReactions(before, koTo(before, [mine]), registry, rig.defs, 'test');
+    expect(fired.state.players.p1.hand.cardIds.length).toBe(handBefore);
+  });
+
+  it('OP01-061 (Kaido) adds an active DON!! when the opponent’s Character is K.O.’d (DON!! x1, Your Turn)', () => {
+    let rig = buildBaseRig({
+      activePlayerId: 'p1',
+      phase: 'main',
+      turnNumber: 3,
+      leaderOverridesP1: makeLeaderDef({ cardDefinitionId: 'OP01-061', cardNumber: 'OP01-061', name: 'Kaido' }),
+    });
+    rig = putDonDeckCards(rig, 'p1', 3).rig;
+    const kaidoId = rig.state.players.p1.leaderInstanceId!;
+    const donRes = putDon(rig, 'p1', 1);
+    rig = donRes.rig;
+    // Satisfy the [DON!! x1] condition by attaching a DON!! to the Leader.
+    rig = { ...rig, state: { ...rig.state, cardsById: { ...rig.state.cardsById, [kaidoId]: { ...rig.state.cardsById[kaidoId], donAttached: [donRes.donIds[0]] } } } };
+    let foe: string;
+    ({ rig, instanceId: foe } = putCharacterInPlay(rig, 'p2', enemyDef));
+
+    const before = rig.state;
+    const costBefore = before.players.p1.costArea.cardIds.length;
+    const fired = fireCharacterKoedReactions(before, koTo(before, [foe]), registry, rig.defs, 'test');
+    const costArea = fired.state.players.p1.costArea.cardIds;
+    expect(costArea.length).toBe(costBefore + 1);
+    const addedDon = costArea.map((id) => fired.state.cardsById[id]).find((c) => c.currentZone === 'costArea' && c.donRested === false && !before.players.p1.costArea.cardIds.includes(c.instanceId));
+    expect(addedDon).toBeDefined();
+  });
+
+  it('OP01-061 (Kaido) does nothing without the [DON!! x1] condition met', () => {
+    let rig = buildBaseRig({
+      activePlayerId: 'p1',
+      phase: 'main',
+      turnNumber: 3,
+      leaderOverridesP1: makeLeaderDef({ cardDefinitionId: 'OP01-061', cardNumber: 'OP01-061', name: 'Kaido' }),
+    });
+    rig = putDonDeckCards(rig, 'p1', 3).rig;
+    let foe: string;
+    ({ rig, instanceId: foe } = putCharacterInPlay(rig, 'p2', enemyDef));
+
+    const before = rig.state;
+    const costBefore = before.players.p1.costArea.cardIds.length;
+    const fired = fireCharacterKoedReactions(before, koTo(before, [foe]), registry, rig.defs, 'test');
+    expect(fired.state.players.p1.costArea.cardIds.length).toBe(costBefore);
+  });
+});
+
+describe('reactive triggers reusing already-wired firing points (custom-trigger)', () => {
+  it('OP11-012 (Franky) buffs all of YOUR Characters +2000 when the opponent activates an Event on your turn', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let frankyId: string;
+    let allyId: string;
+    let foeId: string;
+    ({ rig, instanceId: frankyId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'OP11-012', cardNumber: 'OP11-012', name: 'Franky', baseCost: 4, basePower: 5000 })));
+    ({ rig, instanceId: allyId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'ally', cardNumber: 'ALLY', baseCost: 2, basePower: 2000 })));
+    ({ rig, instanceId: foeId } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ cardDefinitionId: 'foe', cardNumber: 'FOE', baseCost: 2, basePower: 3000 })));
+
+    const state = runTimings(registry['OP11-012'], ['onOpponentEventActivated'], rig.state, frankyId, rig.defs, null, registry).state;
+    expect(computeCurrentPower(rig.defs, state, frankyId)).toBe(7000);
+    expect(computeCurrentPower(rig.defs, state, allyId)).toBe(4000);
+    expect(computeCurrentPower(rig.defs, state, foeId)).toBe(3000); // opponent's Character untouched
+  });
+
+  it('OP03-040 (Nami) trashes the top card of your deck when Life damage is dealt ([DON!! x1])', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3, leaderOverridesP1: makeLeaderDef({ cardDefinitionId: 'OP03-040', cardNumber: 'OP03-040', name: 'Nami' }) });
+    const namiId = rig.state.players.p1.leaderInstanceId!;
+    rig = putDeckCards(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'dk', cardNumber: 'DK', baseCost: 1 }), 5).rig;
+    const donRes = putDon(rig, 'p1', 1);
+    rig = donRes.rig;
+    rig = { ...rig, state: { ...rig.state, cardsById: { ...rig.state.cardsById, [namiId]: { ...rig.state.cardsById[namiId], donAttached: [donRes.donIds[0]] } } } };
+
+    const deckBefore = rig.state.players.p1.deck.cardIds.length;
+    const fired = runTimings(registry['OP03-040'], ['onLifeDamageDealt'], rig.state, namiId, rig.defs, null, registry);
+    expect(fired.pendingChoices).toHaveLength(0);
+    expect(fired.state.players.p1.deck.cardIds.length).toBe(deckBefore - 1);
+  });
+
+  it('OP03-040 (Nami) does nothing without the [DON!! x1] condition met', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3, leaderOverridesP1: makeLeaderDef({ cardDefinitionId: 'OP03-040', cardNumber: 'OP03-040', name: 'Nami' }) });
+    const namiId = rig.state.players.p1.leaderInstanceId!;
+    rig = putDeckCards(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'dk', cardNumber: 'DK', baseCost: 1 }), 5).rig;
+
+    const deckBefore = rig.state.players.p1.deck.cardIds.length;
+    const fired = runTimings(registry['OP03-040'], ['onLifeDamageDealt'], rig.state, namiId, rig.defs, null, registry);
+    expect(fired.state.players.p1.deck.cardIds.length).toBe(deckBefore);
+  });
+
+  it('OP04-024 (Sugar) [On Play] rests a chosen opponent Character with cost <= 4', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sugarId: string;
+    let cheapFoe: string;
+    let bigFoe: string;
+    ({ rig, instanceId: sugarId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'OP04-024', cardNumber: 'OP04-024', name: 'Sugar', baseCost: 2 })));
+    ({ rig, instanceId: cheapFoe } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ cardDefinitionId: 'cf', cardNumber: 'CF', baseCost: 4, basePower: 5000 }), { orientation: 'active' }));
+    ({ rig, instanceId: bigFoe } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ cardDefinitionId: 'bf', cardNumber: 'BF', baseCost: 7, basePower: 7000 }), { orientation: 'active' }));
+
+    const fired = runTimings(registry['OP04-024'], ['onPlay'], rig.state, sugarId, rig.defs, null, registry);
+    expect(fired.pendingChoices).toHaveLength(1);
+    const resolved = resumeChoice(fired.state, fired.pendingChoices[0].id, [cheapFoe], registry, rig.defs, null);
+    expect(resolved.state.cardsById[cheapFoe].orientation).toBe('rested');
+    // the cost-7 Character is out of range and cannot have been chosen
+    expect(resolved.state.cardsById[bigFoe].orientation).toBe('active');
   });
 });

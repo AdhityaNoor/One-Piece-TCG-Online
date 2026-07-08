@@ -24,6 +24,7 @@ const REACTIVE_ONCE_PER_TURN_KEYS: Partial<Record<IrTiming, string>> = {
   onLifeDamageDealt: 'onLifeDamageDealt',
   onDrawOutsideDrawPhase: 'onDrawOutsideDrawPhase',
   onLifeToHand: 'onLifeToHand',
+  onCharacterKoed: 'onCharacterKoed',
 };
 
 function mergeResults(a: ActionExecuteResult, b: ActionExecuteResult): ActionExecuteResult {
@@ -449,15 +450,21 @@ export function fireEndOfTurn(
   return { state: working, log, pendingChoices };
 }
 
-/** Count Characters that were in play in `before` and are now in the trash in `after` (i.e. K.O.'d this action). */
-function charactersKoedBetween(before: GameState, after: GameState): number {
-  let count = 0;
+/**
+ * Characters that were in play in `before` and are now in the trash in `after`
+ * (i.e. K.O.'d this action), tagged with their pre-K.O. controller so reactive
+ * windows can ask "was it YOUR opponent's Character?".
+ */
+function charactersKoedBetween(before: GameState, after: GameState): { controllerId: string }[] {
+  const out: { controllerId: string }[] = [];
   for (const playerId of Object.keys(before.players)) {
     for (const id of before.players[playerId].characterArea.cardIds) {
-      if (after.cardsById[id]?.currentZone === 'trash') count += 1;
+      if (after.cardsById[id]?.currentZone === 'trash') {
+        out.push({ controllerId: before.cardsById[id]?.controllerId ?? playerId });
+      }
     }
   }
-  return count;
+  return out;
 }
 
 /**
@@ -465,7 +472,10 @@ function charactersKoedBetween(before: GameState, after: GameState): number {
  * once per Character K.O.'d over the course of an action (battle OR effect). Called
  * from the dispatcher with the pre-action and post-action states so a single choke
  * point catches every K.O. source. Each card's own [Your Turn]/gate condition still
- * filters whether it actually resolves (e.g. ST08-001 fires only on its owner's turn).
+ * filters whether it actually resolves (e.g. ST08-001 fires only on its owner's turn,
+ * OP01-061 only when the K.O.'d Character was the opponent's via koedCharacterController).
+ * [Once Per Turn] is enforced so a card fires at most once even if several Characters
+ * are K.O.'d in the same action.
  */
 export function fireCharacterKoedReactions(
   before: GameState,
@@ -474,27 +484,20 @@ export function fireCharacterKoedReactions(
   defs: CardDefinitionLookup,
   actionId: string | null,
 ): ActionExecuteResult {
-  const koCount = charactersKoedBetween(before, after);
-  if (koCount === 0) return noop(after);
+  const koed = charactersKoedBetween(before, after);
+  if (koed.length === 0) return noop(after);
   let working = after;
   let log: ActionExecuteResult['log'] = [];
-  let pendingChoices: ActionExecuteResult['pendingChoices'] = [];
-  for (let i = 0; i < koCount; i += 1) {
-    for (const playerId of Object.keys(working.players)) {
-      const player = working.players[playerId];
-      for (const id of [player.leaderInstanceId, ...player.characterArea.cardIds]) {
-        const inst = working.cardsById[id];
-        if (!inst) continue;
-        const program = registry[inst.cardDefinitionId];
-        if (!program || !program.abilities.some((a) => a.timing === 'onCharacterKoed')) continue;
-        const res = runTimings(program, ['onCharacterKoed'], working, id, defs, actionId, registry);
-        working = res.state;
-        log = [...log, ...res.log];
-        pendingChoices = [...pendingChoices, ...res.pendingChoices];
-      }
+  for (const { controllerId } of koed) {
+    const eventContext: GateEvalContext = { koedCharacterControllerId: controllerId };
+    for (const observerId of Object.keys(working.players)) {
+      const res = fireReactiveAbilitiesForPlayer(working, observerId, 'onCharacterKoed', registry, defs, actionId, eventContext);
+      working = res.state;
+      log = [...log, ...res.log];
+      if (res.pendingChoices.length > 0) return { state: working, log, pendingChoices: res.pendingChoices };
     }
   }
-  return { state: working, log, pendingChoices };
+  return { state: working, log, pendingChoices: [] };
 }
 
 /**

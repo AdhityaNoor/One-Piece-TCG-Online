@@ -199,7 +199,15 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-036 (character) Roronoa Zoro —
   //   This card in your hand cannot be played by effects.If your Leader has the <Slash> attribute, this
   //   Character cannot be K.O.'d in battle by <Slash> attribute cards and gains +1000 power.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: "this card in your hand cannot be played by effects" remains deferred.
+  {
+    cardNumber: 'OP12-036',
+    templateId: 'ability',
+    params: { timing: 'onEnterPlay', gate: [{ kind: 'leaderAttribute', attribute: 'slash' }], functions: [
+      { fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', attackerAttribute: 'slash' },
+      { fn: 'addPowerSelf', amount: 1000, duration: 'permanent' },
+    ] },
+  },
 
   // OP12-037 — [Main] rest 3 DON!!: rest up to 2 opp Characters or DON!!. [Counter] Leader +3000 this battle.
   {
@@ -666,8 +674,6 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP12-118', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 8 }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }, { fn: 'setActiveControllerDon', maxTargets: 1 }] } },
 
   { cardNumber: 'OP12-119', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' }, { fn: 'addCost', target: { ref: 'self' }, amount: 2, duration: 'endOfOpponentsTurn', ifPrevious: 'previousMovedAny' }] } }, { templateId: 'ability', params: { timing: 'onKO', condition: { turn: 'opponent' }, functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } }] },
-
-  { cardNumber: 'OP12-036', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
   { cardNumber: 'OP12-072', templateId: 'ability', params: { timing: 'onDonReturned', gate: [{ kind: 'leaderName', name: 'Sanji' }, { kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 

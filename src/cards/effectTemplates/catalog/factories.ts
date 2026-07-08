@@ -757,9 +757,11 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           duration: f.duration,
           ...(f.condition ? { condition: f.condition } : {}),
           ...(f.attackerCategory ? { attackerCategory: f.attackerCategory } : {}),
+          ...(f.attackerAttribute ? { attackerAttribute: f.attackerAttribute } : {}),
           ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}),
           ...(f.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: f.effectSourceMaxBasePower } : {}),
           ...(f.effectSourceCategory ? { effectSourceCategory: f.effectSourceCategory } : {}),
+          ...(f.effectSourceWithoutAttribute ? { effectSourceWithoutAttribute: f.effectSourceWithoutAttribute } : {}),
         },
       ];
     case 'koImmunityControllerCharactersAll':
@@ -832,6 +834,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'giveDonControllerLeader':
       return [{ op: 'giveDon', target: { sel: 'controllerLeader' }, count: f.count }];
+    case 'giveDonSelf':
+      return [{ op: 'giveDon', target: { sel: 'self' }, count: f.count }];
     case 'giveDonFromOpponentCostArea':
       return [
         {

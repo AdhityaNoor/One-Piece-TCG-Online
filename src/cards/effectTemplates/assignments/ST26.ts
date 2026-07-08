@@ -32,4 +32,13 @@ export const ST26_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST26-004 — [On Play] DON!! −2: give up to 2 opp Characters −2000 this turn.
   { cardNumber: 'ST26-004', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, maxTargets: 2 }] } },
 
+  // ST26-005 - [On Play]/[When Attacking] DON!! -2: if Leader multicolored and opponent has 5+ DON!!, Leader base power becomes 7000.
+  {
+    cardNumber: 'ST26-005',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], gate: [{ kind: 'leaderMulticolor' }, { kind: 'opponentDonFieldCount', atLeast: 5 }], functions: [{ fn: 'setBasePower', target: { group: 'leader', player: 'controller' }, value: 7000, duration: 'endOfOpponentsTurn' }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 2 }], gate: [{ kind: 'leaderMulticolor' }, { kind: 'opponentDonFieldCount', atLeast: 5 }], functions: [{ fn: 'setBasePower', target: { group: 'leader', player: 'controller' }, value: 7000, duration: 'endOfOpponentsTurn' }] } },
+    ],
+  },
+
 ];

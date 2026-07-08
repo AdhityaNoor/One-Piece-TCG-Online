@@ -298,7 +298,7 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
   //   of the attack.)[On Play] All of your Characters with 1000 base power or less cannot be K.O.'d by your
   //   opponent's effects until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP10-070', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'koImmunityAuraControllerCharacters', scope: 'effect', duration: 'endOfOpponentsTurn', targetCondition: { maxBasePower: 1000 }, effectSourceController: 'opponent' }] } },
 
   // OP10-071 — [On Play] DON!! −1: Play up to 1 {Donquixote Pirates} cost ≤5 from hand. PARTIAL: [On Opponent's Attack] ramp deferred.
   { cardNumber: 'OP10-071', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Donquixote Pirates', maxCost: 5 } }] } },

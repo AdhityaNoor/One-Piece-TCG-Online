@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { runTimings, resumeProgram } from '../../../engine/effects';
+import { isKoImmune } from '../../../engine/rules/shared';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
 import { buildBaseRig, makeCharacterDef, putCharacterInPlay } from '../../../engine/rules/shared/__tests__/testRig';
 
@@ -94,5 +95,72 @@ describe('family: koImmunitySelf effect-source filter via template', () => {
     const strongResolved = resumeProgram(registry['SYN-KO'], strongKo.state, strongKo.state.pendingChoices[0], [begeId], rig.defs, null, registry);
     expect(strongResolved.state.players.p2.characterArea.cardIds).not.toContain(begeId);
     expect(strongResolved.state.cardsById[begeId].currentZone).toBe('trash');
+  });
+
+  it('prevents battle K.O. only from attackers with the configured attribute', () => {
+    const buggyCard: CardEffectAssignment = {
+      cardNumber: 'SYN-BUGGY',
+      templateId: 'ability',
+      params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', attackerAttribute: 'slash' }] },
+    };
+    const registry = buildRegistryFromAssignments([buggyCard]);
+    const buggyDef = makeCharacterDef({ cardDefinitionId: 'SYN-BUGGY', cardNumber: 'SYN-BUGGY', basePower: 1000 });
+    const slashDef = makeCharacterDef({ cardDefinitionId: 'SYN-SLASH', cardNumber: 'SYN-SLASH', basePower: 5000, attributes: ['slash'] });
+    const strikeDef = makeCharacterDef({ cardDefinitionId: 'SYN-STRIKE', cardNumber: 'SYN-STRIKE', basePower: 5000, attributes: ['strike'] });
+
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let buggyId: string;
+    let slashId: string;
+    let strikeId: string;
+    ({ rig, instanceId: buggyId } = putCharacterInPlay(rig, 'p2', buggyDef));
+    ({ rig, instanceId: slashId } = putCharacterInPlay(rig, 'p1', slashDef));
+    ({ rig, instanceId: strikeId } = putCharacterInPlay(rig, 'p1', strikeDef));
+    const entered = runTimings(registry['SYN-BUGGY'], ['onEnterPlay'], rig.state, buggyId, rig.defs, null, registry).state;
+
+    const slashBattle = { ...entered, currentBattle: { attackerInstanceId: slashId, targetInstanceId: buggyId, originalTargetInstanceId: buggyId, step: 'damage' as const, blockerUsed: false, battlePowerBonuses: {} } };
+    expect(isKoImmune(rig.defs, slashBattle, buggyId, 'battle')).toBe(true);
+
+    const strikeBattle = { ...entered, currentBattle: { ...slashBattle.currentBattle, attackerInstanceId: strikeId } };
+    expect(isKoImmune(rig.defs, strikeBattle, buggyId, 'battle')).toBe(false);
+  });
+
+  it('prevents K.O. from Character effects without the named attribute only', () => {
+    const smokerCard: CardEffectAssignment = {
+      cardNumber: 'SYN-SMOKER',
+      templateId: 'ability',
+      params: {
+        timing: 'onEnterPlay',
+        functions: [{
+          fn: 'koImmunitySelf',
+          scope: 'effect',
+          duration: 'permanent',
+          condition: { donAttachedAtLeast: 1 },
+          effectSourceCategory: 'character',
+          effectSourceWithoutAttribute: 'special',
+        }],
+      },
+    };
+    const registry = buildRegistryFromAssignments([smokerCard, koCard]);
+    const smokerDef = makeCharacterDef({ cardDefinitionId: 'SYN-SMOKER', cardNumber: 'SYN-SMOKER', baseCost: 4 });
+    const strikeDef = makeCharacterDef({ cardDefinitionId: 'SYN-STRIKE', cardNumber: 'SYN-STRIKE', baseCost: 5, attributes: ['strike'] });
+    const specialDef = makeCharacterDef({ cardDefinitionId: 'SYN-SPECIAL', cardNumber: 'SYN-SPECIAL', baseCost: 5, attributes: ['special'] });
+
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let smokerId: string;
+    let strikeId: string;
+    let specialId: string;
+    ({ rig, instanceId: smokerId } = putCharacterInPlay(rig, 'p2', smokerDef, { donAttached: ['don-attached'] }));
+    const entered = runTimings(registry['SYN-SMOKER'], ['onEnterPlay'], rig.state, smokerId, rig.defs, null, registry).state;
+
+    ({ rig, instanceId: strikeId } = putCharacterInPlay({ state: entered, defs: rig.defs }, 'p1', strikeDef));
+    const strikeKo = runTimings(registry['SYN-KO'], ['onPlay'], rig.state, strikeId, rig.defs, null, registry);
+    const strikeResolved = resumeProgram(registry['SYN-KO'], strikeKo.state, strikeKo.state.pendingChoices[0], [smokerId], rig.defs, null, registry);
+    expect(strikeResolved.state.players.p2.characterArea.cardIds).toContain(smokerId);
+
+    ({ rig, instanceId: specialId } = putCharacterInPlay({ state: strikeResolved.state, defs: rig.defs }, 'p1', specialDef));
+    const specialKo = runTimings(registry['SYN-KO'], ['onPlay'], rig.state, specialId, rig.defs, null, registry);
+    const specialResolved = resumeProgram(registry['SYN-KO'], specialKo.state, specialKo.state.pendingChoices[0], [smokerId], rig.defs, null, registry);
+    expect(specialResolved.state.players.p2.characterArea.cardIds).not.toContain(smokerId);
+    expect(specialResolved.state.cardsById[smokerId].currentZone).toBe('trash');
   });
 });

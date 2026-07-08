@@ -251,7 +251,8 @@ function effectSourceMatches(
   if (
     mod.effectSourceController === undefined &&
     mod.effectSourceMaxBasePower === undefined &&
-    mod.effectSourceCategory === undefined
+    mod.effectSourceCategory === undefined &&
+    mod.effectSourceWithoutAttribute === undefined
   ) {
     return true;
   }
@@ -263,6 +264,10 @@ function effectSourceMatches(
   if (mod.effectSourceController === 'controller' && source.ownerId !== record.ownerId) return false;
   if (mod.effectSourceCategory !== undefined && sourceDef.category !== mod.effectSourceCategory) return false;
   if (mod.effectSourceMaxBasePower !== undefined && (sourceDef.basePower ?? Infinity) > mod.effectSourceMaxBasePower) return false;
+  if (mod.effectSourceWithoutAttribute !== undefined) {
+    const blocked = sourceDef.attributes?.some((a) => a.toLowerCase() === mod.effectSourceWithoutAttribute!.toLowerCase()) ?? false;
+    if (blocked) return false;
+  }
   return true;
 }
 
@@ -290,6 +295,12 @@ function koImmunityModifierApplies(
     const attackerId = state.currentBattle?.attackerInstanceId;
     const attackerDef = attackerId ? defs[state.cardsById[attackerId]?.cardDefinitionId ?? ''] : undefined;
     if (attackerDef?.category !== mod.attackerCategory) return false;
+  }
+  if (mod.attackerAttribute !== undefined) {
+    const attackerId = state.currentBattle?.attackerInstanceId;
+    const attackerDef = attackerId ? defs[state.cardsById[attackerId]?.cardDefinitionId ?? ''] : undefined;
+    const attrs = attackerDef?.attributes ?? [];
+    if (!attrs.some((a) => a.toLowerCase() === mod.attackerAttribute!.toLowerCase())) return false;
   }
   if (!effectSourceMatches(mod, record, state, defs, ctx?.koSourceInstanceId)) return false;
   return conditionApplies(mod.condition, record, state, instanceId, defs) && sourceConditionApplies(mod.sourceCondition, record, state);

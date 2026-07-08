@@ -250,7 +250,16 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] Look at 3 cards from the top of your deck and place them at the top or bottom of the deck
   //   in any order. [DON!! x1] [When Attacking] You may trash 1 card from your hand: Place up to 1 of your
   //   opponent's Characters with a cost of 1 or less at the bottom of the owner's deck.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP02-056',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 3, reveal: false, destination: 'deckTopOrBottom' }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'moveCards', ifPrevious: 'previousMovedAny', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true },
+      ] } },
+    ],
+  },
 
   // OP02-057 (character) Bartholomew Kuma —
   //   [On Play] Look at 2 cards from the top of your deck; reveal up to 1 {The Seven Warlords of the Sea}
@@ -299,7 +308,11 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x1] [When Attacking] You may trash 1 card from your hand: Place up to 1 Character with a cost
   //   of 2 or less at the bottom of the owner's deck. Then, at the end of this battle, place this Character
   //   at the bottom of the owner's deck.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: delayed end-of-battle self bottom-deck clause deferred.
+  { cardNumber: 'OP02-064', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [
+    { fn: 'optionalTrashFromHand', count: 1 },
+    { fn: 'moveCards', ifPrevious: 'previousMovedAny', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true },
+  ] } },
 
   // OP02-065 — [Blocker] [End of Your Turn] trash 1 from hand: set this active.
   { cardNumber: 'OP02-065', templateId: 'ability', params: { timing: 'endOfTurn', functions: [

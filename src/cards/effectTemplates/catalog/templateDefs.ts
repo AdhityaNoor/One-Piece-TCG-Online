@@ -188,7 +188,7 @@ export type AbilityFunction =
   | { fn: 'addNextPlayFromHandCostDiscount'; amount: number; filter?: { typeIncludes?: string; minBaseCost?: number } }
   // "This card cannot be K.O.'d" — scope 'battle' (battle K.O. only) or 'any'.
   // `attackerCategory` optionally limits a battle immunity to a given attacker ("by Leaders").
-  | { fn: 'koImmunitySelf'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character'; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character' }
+  | { fn: 'koImmunitySelf'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character'; attackerAttribute?: string; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string }
   | { fn: 'koImmunityControllerCharactersAll'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition }
   | { fn: 'koImmunityAuraControllerCharacters'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; anyOfTypes?: string[]; excludeSource?: boolean; targetCondition?: IrCondition; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller' }
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
@@ -204,6 +204,8 @@ export type AbilityFunction =
   | { fn: 'koAllCharacters'; filter?: { maxCost?: number; maxPower?: number } }
   // Give up to `count` rested DON!! to the controller's Leader (no target choice) — "give ... to this Leader".
   | { fn: 'giveDonControllerLeader'; count: number }
+  // Give up to `count` rested DON!! to the source card itself.
+  | { fn: 'giveDonSelf'; count: number }
   // Give up to `count` DON!! from the opponent's cost area to 1 opponent Character (`restedOnly` when text says "rested DON!!").
   | { fn: 'giveDonFromOpponentCostArea'; count: number; restedOnly?: boolean; optional?: boolean; maxTargets?: number }
   // After choosing an opponent Character (var `t`), give rested DON!! from that card's owner's cost area to their Leader/Character.

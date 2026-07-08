@@ -614,12 +614,12 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfLife', atMost: 2 }] },
   ] } },
 
-  // OP08-114 — [DON!! x1] If fewer Life than opp, this Character +2000. [Trigger] trash 1 → if ≤2 Life play this.
-  //   PARTIAL: the "cannot be K.O.'d in battle by <Slash>" attribute immunity is deferred.
+  // OP08-114 — [DON!! x1] If fewer Life than opp, this Character +2000. Cannot be K.O.'d in battle by <Slash>. [Trigger] trash 1 → if ≤2 Life play this.
   {
     cardNumber: 'OP08-114',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfLifeLessThanOpponent' }] } }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', attackerAttribute: 'slash' }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
     ],
   },

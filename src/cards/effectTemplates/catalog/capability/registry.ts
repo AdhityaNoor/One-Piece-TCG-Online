@@ -118,6 +118,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['give up to {N} rested DON!! card to your Leader', 'give ... to this Leader'],
     examples: [{ cardNumber: 'EB03-014', snippet: "{ fn: 'giveDonControllerLeader', count: 2 }" }],
   },
+  giveDonSelf: {
+    id: 'giveDonSelf',
+    summary: 'Give up to N rested DON!! to the source card itself.',
+    params: [{ name: 'count', type: 'number', required: true }],
+    covers: ['give this Character up to {N} rested DON!! cards'],
+    examples: [{ cardNumber: 'OP01-024', snippet: "{ fn: 'giveDonSelf', count: 2 }" }],
+  },
   giveDonFromOpponentCostArea: {
     id: 'giveDonFromOpponentCostArea',
     summary: 'Give up to N DON!! from the opponent\'s cost area to 1 opponent Character.',
@@ -769,12 +776,14 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'duration', type: 'IrDuration', required: true },
       { name: 'condition', type: 'IrCondition', required: false },
       { name: 'attackerCategory', type: "'leader' | 'character'", required: false },
+      { name: 'attackerAttribute', type: 'string', required: false, note: 'battle K.O. only — attacker must have this attribute' },
       { name: 'effectSourceController', type: "'opponent' | 'controller'", required: false, note: 'effect K.O. only — restrict to opponent/controller effects' },
       { name: 'effectSourceMaxBasePower', type: 'number', required: false, note: 'effect K.O. only — K.O.-ing card printed base power cap' },
       { name: 'effectSourceCategory', type: "'leader' | 'character'", required: false, note: 'effect K.O. only — K.O.-ing card category' },
+      { name: 'effectSourceWithoutAttribute', type: 'string', required: false, note: 'effect K.O. only — K.O.-ing card must not have this attribute' },
     ],
-    covers: ['this Character cannot be K.O.\'d in battle', 'this Character cannot be K.O.\'d by your opponent\'s effects', 'cannot be K.O.\'d by effects of opponent Characters with {N} base power or less'],
-    examples: [{ cardNumber: 'OP14-003', snippet: "{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', effectSourceController: 'opponent', effectSourceMaxBasePower: 5000, effectSourceCategory: 'character' }" }],
+    covers: ['this Character cannot be K.O.\'d in battle', 'this Character cannot be K.O.\'d in battle by <Attribute> attribute Characters', 'this Character cannot be K.O.\'d by your opponent\'s effects', 'cannot be K.O.\'d by effects of opponent Characters with {N} base power or less', 'cannot be K.O.\'d by effects of Characters without the <Attribute> attribute'],
+    examples: [{ cardNumber: 'OP11-005', snippet: "{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { donAttachedAtLeast: 1 }, effectSourceCategory: 'character', effectSourceWithoutAttribute: 'special' }" }],
   },
   koImmunityControllerCharactersAll: {
     id: 'koImmunityControllerCharactersAll',
@@ -936,6 +945,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   opponentHasCharacterExactCost: { id: 'opponentHasCharacterExactCost', summary: 'Opponent has a Character with a cost of exactly N.', params: [{ name: 'exactCost', type: 'number', required: true }], covers: ['if your opponent has a Character with a cost of {N}'], examples: [{ cardNumber: 'OP07-087', snippet: "{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }" }] },
   selfDonReturnedThisAction: { id: 'selfDonReturnedThisAction', summary: 'N or more DON!! were returned to the DON!! deck during this cost payment (onDonReturned only).', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['When {N} or more DON!! cards on your field are returned to your DON!! deck', 'When a DON!! card on your field is returned to your DON!! deck'], examples: [{ cardNumber: 'OP09-061', snippet: "{ kind: 'selfDonReturnedThisAction', atLeast: 2 }" }] },
   playedCharacterNoBaseEffect: { id: 'playedCharacterNoBaseEffect', summary: 'The Character just played from hand has no base effect (onCharacterPlayedFromHand only).', params: [], covers: ['Character with no base effect from your hand'], examples: [{ cardNumber: 'OP02-026', snippet: "{ kind: 'playedCharacterNoBaseEffect' }" }] },
+  koedCharacterController: { id: 'koedCharacterController', summary: "Filters the onCharacterKoed reactive window by whose Character was K.O.'d (onCharacterKoed only).", params: [{ name: 'player', type: "'opponent' | 'controller'", required: true }], covers: ["When your opponent's Character is K.O.'d", 'When your Character is K.O.\u2019d'], examples: [{ cardNumber: 'OP01-061', snippet: "{ kind: 'koedCharacterController', player: 'opponent' }" }] },
   anyOf: { id: 'anyOf', summary: 'OR: satisfied if any sub-gate holds ("if Leader is X or has {Y} type").', params: [{ name: 'gates', type: 'AbilityGate[]', required: true }], covers: ['if your Leader has the {A} or {B} type'], examples: [{ cardNumber: 'OP11-031', snippet: "{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }" }] },
 };
 
@@ -994,6 +1004,7 @@ export const KEYWORDS: Record<ContinuousKeyword, string> = {
   banish: '[Banish] — damage dealt trashes the target without activating its Trigger.',
   unblockable: 'Cannot be blocked.',
   canAttackActive: 'Can attack active Characters/Leader (attack-restriction lift).',
+  canAttackCharactersWhileSummoningSick: 'Can attack Characters on the turn this Character is played, without granting Leader attacks.',
 };
 
 /** Convenience: all capability ids by group, for the doc generator and the triage classifier. */

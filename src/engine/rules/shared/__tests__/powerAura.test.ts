@@ -35,7 +35,7 @@ describe('continuous power aura (addPowerAura)', () => {
       ...plain.rig.state,
       players: {
         ...plain.rig.state.players,
-        p1: { ...plain.rig.state.players.p1, hand: { cardIds: ['h1', 'h2', 'h3'] } },
+        p1: { ...plain.rig.state.players.p1, hand: { ...plain.rig.state.players.p1.hand, cardIds: ['h1', 'h2', 'h3'] } },
       },
       continuousEffects: [aura],
     };
@@ -46,7 +46,7 @@ describe('continuous power aura (addPowerAura)', () => {
       ...smallHand,
       players: {
         ...smallHand.players,
-        p1: { ...smallHand.players.p1, hand: { cardIds: ['h1', 'h2', 'h3', 'h4', 'h5'] } },
+        p1: { ...smallHand.players.p1, hand: { ...smallHand.players.p1.hand, cardIds: ['h1', 'h2', 'h3', 'h4', 'h5'] } },
       },
     };
     expect(computeCurrentPower(plain.rig.defs, bigHand, smile.instanceId)).toBe(2000); // gate not met

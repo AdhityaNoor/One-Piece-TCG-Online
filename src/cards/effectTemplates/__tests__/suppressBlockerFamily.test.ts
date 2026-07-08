@@ -38,7 +38,7 @@ describe('family: suppressBlockerOnTarget via template', () => {
       battlePowerBonuses: {},
     };
     const withBattle = { ...resolved.state, currentBattle: battle };
-    const validation = validateActivateBlocker(withBattle, { type: 'ACTIVATE_BLOCKER', playerId: 'p2', blockerInstanceId: blockerId, actionId: null }, rig.defs);
+    const validation = validateActivateBlocker(withBattle, { type: 'ACTIVATE_BLOCKER', playerId: 'p2', blockerInstanceId: blockerId, actionId: 'test-block' }, rig.defs);
     expect(validation.legal).toBe(false);
   });
 });

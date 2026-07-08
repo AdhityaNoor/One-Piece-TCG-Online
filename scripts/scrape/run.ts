@@ -16,7 +16,6 @@
  *   (ParsedEffect); anything not tightly recognized is flagged needsReview.
  */
 import { fetchAllPlayableCardPrintings, fetchDonCards, type CardApiResult, type FetchLike } from '../../src/cards/api/client';
-import { optcgEndpoints } from '../../src/cards/api/endpoints';
 import type { CardPrintingDto, DonCardDto } from '../../src/cards/api/types';
 import { groupPrintingsByCardNumber } from '../../src/cards/library/groupPrintingsByCardNumber';
 import { normalizeCardPrintings, normalizeDonCard, pickCanonicalPrinting } from '../../src/cards/normalization';
@@ -30,6 +29,8 @@ import {
   type ScrapedCard,
   type ScrapedPrinting,
 } from './scrapeOutput';
+
+const OPTCG_ALL_DON_CARDS_URL = 'https://optcgapi.com/api/allDonCards';
 
 /** Node's global fetch satisfies the adapter's FetchLike contract directly. */
 const fetchImpl: FetchLike = (url) => fetch(url);
@@ -128,7 +129,7 @@ async function main(): Promise<void> {
 
   // --- DON!! cards, 1 bulk request. ---
   console.log('[scrape] fetching all DON!! cards…');
-  const donCards = unwrap('DON cards', await fetchDonCards(fetchImpl, optcgEndpoints.allDonCards()));
+  const donCards = unwrap('DON cards', await fetchDonCards(fetchImpl, OPTCG_ALL_DON_CARDS_URL));
   console.log(`[scrape] ${donCards.length} DON!! cards`);
   for (const don of donCards) {
     try {

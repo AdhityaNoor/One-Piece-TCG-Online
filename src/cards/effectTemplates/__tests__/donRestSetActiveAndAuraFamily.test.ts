@@ -55,6 +55,26 @@ describe('family: restOpponentDon (DON!! denial)', () => {
   });
 });
 
+describe('family: giveDonSelf', () => {
+  const assignment: CardEffectAssignment = {
+    cardNumber: 'SYN-SRC',
+    templateId: 'ability',
+    params: { timing: 'activateMain', functions: [{ fn: 'giveDonSelf', count: 2 }] },
+  };
+
+  it('attaches up to the requested number of rested DON!! to the source', () => {
+    const registry = reg(assignment);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC));
+    const withRested = putDon(rig, 'p1', 3, { rested: true });
+    rig = withRested.rig;
+
+    const fired = runTimings(registry['SYN-SRC'], ['activateMain'], rig.state, sourceId, rig.defs, null, registry);
+    expect(fired.state.cardsById[sourceId].donAttached).toEqual(withRested.donIds.slice(0, 2));
+  });
+});
+
 describe('family: onBattle timing with [Once Per Turn]', () => {
   const assignment: CardEffectAssignment = {
     cardNumber: 'SYN-SRC',

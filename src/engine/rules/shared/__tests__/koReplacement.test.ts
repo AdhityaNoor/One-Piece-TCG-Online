@@ -134,8 +134,8 @@ describe('findKoReplacementRecord', () => {
   });
 
   it('finds aura replacement with restSource when source is on field', () => {
-    const auraDef = makeCharacterDef({ cardNumber: 'OP12-027', attributes: ['Slash'] });
-    const allyDef = makeCharacterDef({ cardNumber: 'ALLY-1', attributes: ['Slash'], baseCost: 3 });
+    const auraDef = makeCharacterDef({ cardNumber: 'OP12-027', attributes: ['slash'] });
+    const allyDef = makeCharacterDef({ cardNumber: 'ALLY-1', attributes: ['slash'], baseCost: 3 });
     let rig = buildBaseRig();
     const aura = putCharacterInPlay(rig, 'p1', auraDef);
     rig = { ...aura.rig, defs: { ...aura.rig.defs, [auraDef.cardDefinitionId]: auraDef, [allyDef.cardDefinitionId]: allyDef } };
@@ -148,7 +148,7 @@ describe('findKoReplacementRecord', () => {
       duration: 'permanent',
       description: 'rest source',
       koReplacementModifier: {
-        appliesToGroup: { ownLeaderAndCharacters: true, charactersOnly: true, anyOfAttributes: ['Slash'], excludeSource: true },
+        appliesToGroup: { ownLeaderAndCharacters: true, charactersOnly: true, anyOfAttributes: ['slash'], excludeSource: true },
         scope: 'effect',
         condition: { maxCost: 5 },
         action: { kind: 'restSource' },
@@ -160,7 +160,7 @@ describe('findKoReplacementRecord', () => {
 
   it('applyKoReplacementCost rests source and leaves ally in play', () => {
     const auraDef = makeCharacterDef({ cardNumber: 'OP12-027' });
-    const allyDef = makeCharacterDef({ cardNumber: 'ALLY-1', attributes: ['Slash'] });
+    const allyDef = makeCharacterDef({ cardNumber: 'ALLY-1', attributes: ['slash'] });
     let rig = buildBaseRig();
     const aura = putCharacterInPlay(rig, 'p1', auraDef);
     rig = { ...aura.rig, defs: { ...aura.rig.defs, [auraDef.cardDefinitionId]: auraDef, [allyDef.cardDefinitionId]: allyDef } };
@@ -173,7 +173,7 @@ describe('findKoReplacementRecord', () => {
       duration: 'permanent',
       description: 'rest source',
       koReplacementModifier: {
-        appliesToGroup: { ownLeaderAndCharacters: true, charactersOnly: true, anyOfAttributes: ['Slash'] },
+        appliesToGroup: { ownLeaderAndCharacters: true, charactersOnly: true, anyOfAttributes: ['slash'] },
         scope: 'effect',
         action: { kind: 'restSource' },
       },

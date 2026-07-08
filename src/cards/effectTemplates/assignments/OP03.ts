@@ -187,7 +187,7 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP03-032 (character) Buggy —
   //   This Character cannot be K.O.'d in battle by <Slash> attribute cards.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP03-032', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', attackerAttribute: 'slash' }] } },
 
   // OP03-033 — [Trigger] If Leader {East Blue}, play this card.
   { cardNumber: 'OP03-033', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'East Blue' }], functions: [{ fn: 'triggerPlaySelf' }] } },
@@ -242,7 +242,9 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   //   When your deck is reduced to 0, you win the game instead of losing, according to the rules.[DON!! x1]
   //   When this Leader's attack deals damage to your opponent's Life, you may trash 1 card from the top of
   //   your deck.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: the deck-out win-condition replacement ("reduced to 0 → you win instead of losing") is deferred
+  // (no win-condition primitive). The [DON!! x1] Life-damage trash is curated, mirroring OP03-041.
+  { cardNumber: 'OP03-040', templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'trashTopDeck', count: 1, optional: true }] } },
 
   // OP03-041 — [DON!! x1] When this Character's attack deals Life damage, trash 7 from deck top.
   { cardNumber: 'OP03-041', templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'trashTopDeck', count: 7, optional: true }] } },

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DeclareAttackAction } from '../../../engine/actions/action';
 import { runTimings, resumeProgram } from '../../../engine/effects/interpreter';
 import { validateDeclareAttack } from '../../../engine/rules/battle/declareAttack';
-import { buildBaseRig, makeCharacterDef, makeEventDef, putCharacterInPlay, putDon, putInHand } from '../../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, makeEventDef, makeStageDef, putCharacterInPlay, putDon, putInHand, putStageInPlay } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments } from '../assembler';
 import { OP01_ASSIGNMENTS } from '../assignments/OP01';
 import { OP02_ASSIGNMENTS } from '../assignments/OP02';
@@ -37,6 +37,7 @@ const GENERIC_ATTACKER = makeCharacterDef({ cardDefinitionId: 'SYN-GENERIC', car
 const HIBARI = makeCharacterDef({ cardDefinitionId: 'EB03-008', cardNumber: 'EB03-008', types: ['SWORD'], baseCost: 2, basePower: 3000 });
 const SWORD_ATTACKER = makeCharacterDef({ cardDefinitionId: 'SYN-SWORD', cardNumber: 'SYN-SWORD', types: ['SWORD'], baseCost: 4, basePower: 5000 });
 const WHIP_EVENT = makeEventDef({ cardDefinitionId: 'EB04-050', cardNumber: 'EB04-050', types: ['SWORD'] });
+const CORRIDA = makeStageDef({ cardDefinitionId: 'OP04-096', cardNumber: 'OP04-096', types: ['Dressrosa'], baseCost: 1 });
 
 function declareAttack(playerId: string, attackerInstanceId: string, targetInstanceId: string): DeclareAttackAction {
   return { type: 'DECLARE_ATTACK', actionId: 'test-attack', playerId, attackerInstanceId, targetInstanceId };
@@ -90,6 +91,37 @@ describe('canAttackActive curated assignments', () => {
     const fired = runTimings(registry['OP04-080'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
     const resolved = resumeProgram(registry['OP04-080'], fired.state, fired.state.pendingChoices[0], [attackerId], rig.defs, null, registry);
     expectCanAttackActive(resolved.state, rig.defs, attackerId, foeId);
+  });
+
+  it('OP04-096 lets Dressrosa Characters attack rested Characters on their played turn only', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', leaderOverridesP1: { types: ['Dressrosa'] } });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putStageInPlay(rig, 'p1', CORRIDA));
+    let attackerId: string;
+    ({ rig, instanceId: attackerId } = putCharacterInPlay(rig, 'p1', DRESSROSA_ATTACKER, { summoningSick: true }));
+    let restedFoeId: string;
+    ({ rig, instanceId: restedFoeId } = putCharacterInPlay(rig, 'p2', ACTIVE_FOE, { orientation: 'rested' }));
+    let activeFoeId: string;
+    ({ rig, instanceId: activeFoeId } = putCharacterInPlay(rig, 'p2', ACTIVE_FOE, { orientation: 'active' }));
+    const opponentLeaderId = rig.state.players.p2.leaderInstanceId;
+
+    expect(validateDeclareAttack(rig.state, declareAttack('p1', attackerId, restedFoeId), rig.defs).legal).toBe(false);
+    const applied = runTimings(registry['OP04-096'], ['onEnterPlay'], rig.state, sourceId, rig.defs, null, registry).state;
+    expect(validateDeclareAttack(applied, declareAttack('p1', attackerId, restedFoeId), rig.defs).legal).toBe(true);
+    expect(validateDeclareAttack(applied, declareAttack('p1', attackerId, opponentLeaderId), rig.defs).legal).toBe(false);
+    expect(validateDeclareAttack(applied, declareAttack('p1', attackerId, activeFoeId), rig.defs).legal).toBe(false);
+  });
+
+  it('OP11-001 lets SWORD Characters attack rested Characters on their played turn', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main' });
+    const sourceId = rig.state.players.p1.leaderInstanceId;
+    let attackerId: string;
+    ({ rig, instanceId: attackerId } = putCharacterInPlay(rig, 'p1', SWORD_ATTACKER, { summoningSick: true }));
+    let foeId: string;
+    ({ rig, instanceId: foeId } = putCharacterInPlay(rig, 'p2', ACTIVE_FOE, { orientation: 'rested' }));
+
+    const applied = runTimings(registry['OP11-001'], ['onEnterPlay'], rig.state, sourceId, rig.defs, null, registry).state;
+    expect(validateDeclareAttack(applied, declareAttack('p1', attackerId, foeId), rig.defs).legal).toBe(true);
   });
 
   it('OP04-081 grants Cavendish canAttackActive while a DON!! is attached', () => {

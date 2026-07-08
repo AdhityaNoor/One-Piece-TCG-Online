@@ -12,7 +12,13 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST29-002 (character) Usopp —
   //   [On Play]/[When Attacking] Rest up to 1 of your opponent's Characters with a cost equal to or less
   //   than the number of your opponent's Life cards.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'ST29-002',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCostFromOpponentLife: true } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCostFromOpponentLife: true } }, optional: true }] } },
+    ],
+  },
 
   // ST29-003 — [Trigger] K.O. up to 1 opp Character cost ≤3. PARTIAL: static ≤-Life +1000 buff deferred.
   { cardNumber: 'ST29-003', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },

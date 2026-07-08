@@ -87,8 +87,13 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] },
   },
 
-  //   Play] Rest up to 1 of your opponent's Characters with a cost of 4 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP04-024 (character) Sugar —
+  //   [Opponent's Turn] [Once Per Turn] When your opponent plays a Character, if your Leader has the
+  //   {Donquixote Pirates} type, rest up to 1 of your opponent's Characters. Then, rest this Character.
+  //   [On Play] Rest up to 1 of your opponent's Characters with a cost of 4 or less.
+  // PARTIAL: the [Opponent's Turn] "when your opponent plays a Character" trigger is deferred (needs an
+  // opponent-plays-a-Character reactive timing). The [On Play] rest is curated (mirrors OP04-025).
+  { cardNumber: 'OP04-024', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
   // OP04-025 — [On Your Opponent's Attack] rest 2 DON!!: rest up to 1 opp Character cost<=4.
   { cardNumber: 'OP04-025', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
@@ -419,6 +424,9 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-094 Trueno Bastardo — [Main] K.O. up to 1 opp Character cost ≤4.
   //   PARTIAL: the "if 15+ trash, cost ≤6 instead" upgrade (trash gate) and the [Trigger] "rest your Leader: K.O." (rest-leader cost) are deferred.
   { cardNumber: 'OP04-094', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+
+  // OP04-096 — If Leader {Dressrosa}, your {Dressrosa} Characters can attack Characters on the turn played.
+  { cardNumber: 'OP04-096', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent', anyOfTypes: ['Dressrosa'], gate: [{ kind: 'leaderType', type: 'Dressrosa' }] }] } },
 
   { cardNumber: 'OP04-097', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { anyOfTypes: ['Animal', 'SMILE'], maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'top', faceUp: true }, optional: true }] } },
 

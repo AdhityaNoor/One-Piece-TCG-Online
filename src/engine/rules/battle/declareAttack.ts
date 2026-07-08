@@ -40,7 +40,14 @@ export function validateDeclareAttack(state: GameState, action: DeclareAttackAct
   } else if (attacker.orientation !== 'active') {
     reasons.push(`'${action.attackerInstanceId}' must be active to attack (7-1-1-1).`);
   } else if (attacker.summoningSick && !hasContinuousKeyword(defs, state, action.attackerInstanceId, 'rush')) {
-    reasons.push(`'${action.attackerInstanceId}' cannot attack the turn it was played (3-7-4) — it has no [Rush].`);
+    const target = state.cardsById[action.targetInstanceId];
+    const canAttackPlayedTurnCharacter =
+      target?.currentZone === 'characterArea' &&
+      target.ownerId !== action.playerId &&
+      hasContinuousKeyword(defs, state, action.attackerInstanceId, 'canAttackCharactersWhileSummoningSick');
+    if (!canAttackPlayedTurnCharacter) {
+      reasons.push(`'${action.attackerInstanceId}' cannot attack the turn it was played (3-7-4) — it has no [Rush].`);
+    }
   } else if (cannotAttack(state, action.attackerInstanceId, defs)) {
     reasons.push(`'${action.attackerInstanceId}' cannot attack — a card effect is preventing it from attacking.`);
   } else {

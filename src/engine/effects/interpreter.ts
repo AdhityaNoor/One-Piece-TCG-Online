@@ -504,9 +504,11 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
           duration: op.duration,
           ...(op.condition ? { condition: op.condition } : {}),
           ...(op.attackerCategory ? { attackerCategory: op.attackerCategory } : {}),
+          ...(op.attackerAttribute ? { attackerAttribute: op.attackerAttribute } : {}),
           ...(op.effectSourceController ? { effectSourceController: op.effectSourceController } : {}),
           ...(op.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: op.effectSourceMaxBasePower } : {}),
           ...(op.effectSourceCategory ? { effectSourceCategory: op.effectSourceCategory } : {}),
+          ...(op.effectSourceWithoutAttribute ? { effectSourceWithoutAttribute: op.effectSourceWithoutAttribute } : {}),
         });
       }
       return { selectedIds: ids, movedIds: [] };
@@ -521,6 +523,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
         ...(op.effectSourceController ? { effectSourceController: op.effectSourceController } : {}),
         ...(op.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: op.effectSourceMaxBasePower } : {}),
         ...(op.effectSourceCategory ? { effectSourceCategory: op.effectSourceCategory } : {}),
+        ...(op.effectSourceWithoutAttribute ? { effectSourceWithoutAttribute: op.effectSourceWithoutAttribute } : {}),
       });
       return { selectedIds: [], movedIds: [] };
     }

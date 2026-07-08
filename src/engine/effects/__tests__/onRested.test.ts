@@ -16,7 +16,7 @@ describe('onRested timing', () => {
       abilities: [{
         timing: 'onRested',
         condition: { turn: 'your' },
-        ops: [{ op: 'ko', target: { sel: 'opponentCharacters', maxCost: 2, rested: true }, optional: true }],
+        ops: [{ op: 'ko', target: { sel: 'opponentCharacters', maxCost: 2, rested: true } }],
       }],
     };
 
@@ -42,7 +42,7 @@ describe('onRested timing', () => {
       abilities: [{
         timing: 'onRested',
         condition: { turn: 'your' },
-        ops: [{ op: 'ko', target: { sel: 'opponentCharacters', maxCost: 2, rested: true }, optional: true }],
+        ops: [{ op: 'ko', target: { sel: 'opponentCharacters', maxCost: 2, rested: true } }],
       }],
     };
 

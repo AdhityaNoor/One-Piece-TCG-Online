@@ -79,7 +79,7 @@ function classify(card: LocalCard): Row {
   const effectAbilities = parsed.abilities.filter((a) => effectActionCount(a) > 0).length;
   const program = CURATED_EFFECT_PROGRAMS[card.cardNumber];
   const curatedAbilities = program ? program.abilities.length : 0;
-  const runtimeTriggers = program ? [...new Set(program.abilities.map((a) => a.trigger))].sort().join('|') : '';
+  const runtimeTriggers = program ? [...new Set(program.abilities.map((a) => a.timing))].sort().join('|') : '';
 
   let status: Status;
   if (program) status = 'curated';

@@ -55,10 +55,10 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   ] } },
 
   // OP01-013 — [Activate: Main] [Once Per Turn] you may add 1 top Life card to hand: this Character gains +2000 power this turn.
-  //   PARTIAL: the "Then, give this Character up to 2 rested DON!!" rider is deferred (giveDon picks a target / fixed count, not a self-only "up to 2").
   { cardNumber: 'OP01-013', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
     { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true },
     { fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+    { fn: 'giveDonSelf', count: 2, ifPrevious: 'previousMovedAny' },
   ] } },
 
   // OP01-014 — [DON!! x1] [On Block] Play up to 1 red Character cost<=2 from hand.
@@ -99,7 +99,13 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-024 (character) Monkey.D.Luffy —
   //   [DON!! x2] This Character cannot be K.O.'d in battle by ＜Strike＞ attribute Characters. [Activate:
   //   Main] [Once Per Turn] Give this Character up to 2 rested DON!! cards.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP01-024',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { donAttachedAtLeast: 2 }, attackerAttribute: 'strike' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDonSelf', count: 2 }] } },
+    ],
+  },
 
   // OP01-026 - [Counter] +4000 to your Leader/Character, then K.O. 4000 power or less. [Trigger] -10000 to opponent Leader/Character.
   {
@@ -278,7 +284,17 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-061 (leader) Kaido —
   //   [DON!! x1] [Your Turn] [Once Per Turn] When your opponent's Character is K.O.'d, add up to 1 DON!!
   //   card from your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP01-061',
+    templateId: 'ability',
+    params: {
+      timing: 'onCharacterKoed',
+      oncePerTurn: true,
+      condition: { turn: 'your', donAttachedAtLeast: 1 },
+      gate: [{ kind: 'koedCharacterController', player: 'opponent' }],
+      functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }],
+    },
+  },
 
   // OP01-062 — [DON!! x1] When you activate an Event, draw 1 if ≤4 cards in hand (once per turn).
   { cardNumber: 'OP01-062', templateId: 'ability', params: { timing: 'onYouEventActivated', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfHand', atMost: 4 }], functions: [{ fn: 'draw', amount: 1, optional: true }] } },

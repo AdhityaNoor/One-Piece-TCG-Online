@@ -470,9 +470,11 @@ export class EffectContextImpl implements EffectContext {
     duration: ContinuousEffectDuration;
     condition?: ContinuousPowerCondition;
     attackerCategory?: 'leader' | 'character';
+    attackerAttribute?: string;
     effectSourceController?: 'opponent' | 'controller';
     effectSourceMaxBasePower?: number;
     effectSourceCategory?: 'leader' | 'character';
+    effectSourceWithoutAttribute?: string;
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -485,10 +487,12 @@ export class EffectContextImpl implements EffectContext {
         appliesToInstanceId: spec.appliesToInstanceId,
         scope: spec.scope,
         ...(spec.attackerCategory ? { attackerCategory: spec.attackerCategory } : {}),
+        ...(spec.attackerAttribute ? { attackerAttribute: spec.attackerAttribute } : {}),
         ...(spec.condition ? { condition: spec.condition } : {}),
         ...(spec.effectSourceController ? { effectSourceController: spec.effectSourceController } : {}),
         ...(spec.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: spec.effectSourceMaxBasePower } : {}),
         ...(spec.effectSourceCategory ? { effectSourceCategory: spec.effectSourceCategory } : {}),
+        ...(spec.effectSourceWithoutAttribute ? { effectSourceWithoutAttribute: spec.effectSourceWithoutAttribute } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -511,6 +515,7 @@ export class EffectContextImpl implements EffectContext {
     effectSourceController?: 'opponent' | 'controller';
     effectSourceMaxBasePower?: number;
     effectSourceCategory?: 'leader' | 'character';
+    effectSourceWithoutAttribute?: string;
     description?: string;
   }): void {
     const mod: ContinuousKoImmunityModifier = {
@@ -521,6 +526,7 @@ export class EffectContextImpl implements EffectContext {
       ...(spec.effectSourceController ? { effectSourceController: spec.effectSourceController } : {}),
       ...(spec.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: spec.effectSourceMaxBasePower } : {}),
       ...(spec.effectSourceCategory ? { effectSourceCategory: spec.effectSourceCategory } : {}),
+      ...(spec.effectSourceWithoutAttribute ? { effectSourceWithoutAttribute: spec.effectSourceWithoutAttribute } : {}),
     };
     const record: ContinuousEffectRecord = {
       id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,

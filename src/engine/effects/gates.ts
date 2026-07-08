@@ -52,6 +52,8 @@ export interface GateEvalContext {
   donReturnedCount?: number;
   /** Character just played from hand (onCharacterPlayedFromHand reactive window). */
   playedCharacterInstanceId?: string;
+  /** Controller (pre-K.O.) of the Character that was K.O.'d (onCharacterKoed reactive window). */
+  koedCharacterControllerId?: string;
 }
 
 export function evaluateGates(
@@ -434,6 +436,13 @@ function evaluateGate(
       const inst = state.cardsById[playedId];
       const def = inst ? defs[inst.cardDefinitionId] : undefined;
       return !!def && cardHasNoBaseEffect(def);
+    }
+
+    case 'koedCharacterController': {
+      const koedControllerId = eventContext?.koedCharacterControllerId;
+      if (!koedControllerId) return false;
+      const isController = koedControllerId === ownerId;
+      return gate.player === 'controller' ? isController : !isController;
     }
 
     case 'selfPlayedThisTurn': {
