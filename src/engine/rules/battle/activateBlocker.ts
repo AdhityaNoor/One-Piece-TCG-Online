@@ -10,7 +10,7 @@ import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
-import { computeCurrentCost, computeCurrentPower } from '../shared/power';
+import { computeCurrentCost, computeCurrentPower, hasContinuousKeyword } from '../shared/power';
 import { fireOnBlock, fireRestTransitions, fireOpponentBlockerActivatedReactions, type EffectTemplateRegistry } from '../../effects';
 
 function isBlockedByRestriction(state: GameState, blockerInstanceId: string, defs: CardDefinitionLookup): boolean {
@@ -60,7 +60,7 @@ export function validateActivateBlocker(state: GameState, action: ActivateBlocke
     reasons.push(`'${action.blockerInstanceId}' must be active to block (7-1-2-1).`);
   } else {
     const def = defs[blocker.cardDefinitionId];
-    if (!def || !def.hasBlocker) {
+    if (!def || (!def.hasBlocker && !hasContinuousKeyword(defs, state, action.blockerInstanceId, 'blocker'))) {
       reasons.push(`'${action.blockerInstanceId}' does not have [Blocker].`);
     } else if (isBlockedByRestriction(state, action.blockerInstanceId, defs)) {
       reasons.push(`'${action.blockerInstanceId}' cannot activate [Blocker] due to an active blocker restriction.`);

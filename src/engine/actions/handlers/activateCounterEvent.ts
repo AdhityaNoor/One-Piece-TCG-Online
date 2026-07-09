@@ -21,6 +21,7 @@ import { computeCurrentCost } from '../../rules/shared/power';
 import { getOpponentId } from '../../rules/shared/players';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { fireCounter, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, type EffectTemplateRegistry } from '../../effects';
+import { recordEventActivation } from '../../effects/eventActivationHistory';
 
 export function validateActivateCounterEvent(
   state: GameState,
@@ -158,7 +159,9 @@ export function executeActivateCounterEvent(
   // Fire the [Counter] ability (timing 'counter'); may emit a target choice.
   const fired = fireCounter(working, action.handCardInstanceId, registry, defs, action.actionId);
 
-  let resultState = fired.state;
+  let resultState = fired.pendingChoices.length === 0
+    ? recordEventActivation(fired.state, action.playerId, action.handCardInstanceId, defs)
+    : fired.state;
   let resultLog = [...logger.log, ...paidLog, ...fired.log];
   if (fired.pendingChoices.length === 0) {
     const reactive = fireEventActivatedReactions(resultState, action.playerId, registry, defs, action.actionId);

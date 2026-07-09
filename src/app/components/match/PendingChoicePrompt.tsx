@@ -415,11 +415,150 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     );
   }
 
+  // Battle K.O. replacement pauses the Damage Step. The engine exposes it as
+  // YES_NO, SELECT_CARDS, or SELECT_OPTION, all resolved through the generic
+  // RESOLVE_PENDING_CHOICE action.
+  if (choice.sourceEffectId === 'rule:battleKoReplacement') {
+    if (choice.kind === 'YES_NO') {
+      return (
+        <Modal open onClose={() => {}} title="K.O. Replacement">
+          <div className="flex flex-col gap-3 p-5">
+            <p className="text-sm text-white/70">{choice.prompt}</p>
+            {errorBanner}
+            <div className="flex gap-2">
+              <Button variant="primary" onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: true })}>
+                Use Effect
+              </Button>
+              <Button variant="secondary" onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: false })}>
+                Decline
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      );
+    }
+
+    if (choice.kind === 'SELECT_OPTION') {
+      const options = choice.constraints.options ?? [];
+      return (
+        <Modal open onClose={() => {}} title="K.O. Replacement">
+          <div className="flex flex-col gap-3 p-5">
+            <p className="text-sm text-white/70">{choice.prompt}</p>
+            {errorBanner}
+            <div className="flex flex-wrap gap-2">
+              {options.map((option, index) => (
+                <Button
+                  key={`${option.label}-${index}`}
+                  variant="primary"
+                  onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: index })}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </Modal>
+      );
+    }
+
+    if (choice.kind === 'SELECT_CARDS') {
+      const candidateIds = choice.constraints.candidateInstanceIds ?? [];
+      const candidates = candidateIds.map((id) => buildCardView(defs, state, images, id));
+      const { min, max } = choice.constraints;
+      const count = selectedIrIds.length;
+      const canConfirm = count >= min && count <= max;
+
+      const toggle = (instanceId: string): void => {
+        setSelectedIrIds((prev) => {
+          if (prev.includes(instanceId)) return prev.filter((id) => id !== instanceId);
+          if (max === 1) return [instanceId];
+          if (prev.length >= max) return prev;
+          return [...prev, instanceId];
+        });
+      };
+
+      return (
+        <Modal open onClose={() => {}} title="K.O. Replacement" maxWidthClassName="max-w-5xl">
+          <div className="flex flex-col gap-3 p-5">
+            <p className="text-sm text-white/70">{choice.prompt}</p>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/50">{min === max ? `Select ${max}` : `Select ${min}-${max}`}</span>
+              <span className="text-[11px] font-semibold text-white/40">{count}/{max} selected</span>
+            </div>
+            {errorBanner}
+            <CardChoiceGallery
+              cards={candidates}
+              selectableIds={new Set(candidateIds)}
+              selectedOrder={selectedIrIds}
+              max={max}
+              onToggle={toggle}
+            />
+            <Button
+              variant="primary"
+              disabled={!canConfirm}
+              onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: selectedIrIds })}
+            >
+              Confirm ({count}/{max})
+            </Button>
+          </div>
+        </Modal>
+      );
+    }
+  }
+
   // Generic interpreter-suspended choice (chooseTargets / searchTopDeck). The
   // candidates are explicit instance ids; the choosing player may see them all
   // (their own search look, or visible target Characters), so we build a
   // CardView for each regardless of zone. Selection is bounded by [min, max].
   if (choice.sourceEffectId === 'ir') {
+    if (choice.kind === 'SELECT_OPTION') {
+      const options = choice.constraints.options ?? [];
+      return (
+        <Modal open onClose={() => {}} title="Choose Option">
+          <div className="flex flex-col gap-3 p-5">
+            <p className="text-sm text-white/70">{choice.prompt}</p>
+            {errorBanner}
+            <div className="flex flex-wrap gap-2">
+              {options.map((option, index) => (
+                <Button
+                  key={`${option.label}-${index}`}
+                  variant="primary"
+                  onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: index })}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </Modal>
+      );
+    }
+
+    if (choice.kind === 'SELECT_NUMBER') {
+      const min = choice.constraints.numberMin ?? 0;
+      const max = choice.constraints.numberMax ?? 10;
+      const numbers = Array.from({ length: Math.max(0, max - min + 1) }, (_, index) => min + index);
+      return (
+        <Modal open onClose={() => {}} title="Choose Number">
+          <div className="flex flex-col gap-3 p-5">
+            <p className="text-sm text-white/70">{choice.prompt}</p>
+            {errorBanner}
+            <div className="flex flex-wrap gap-2">
+              {numbers.map((value) => (
+                <Button
+                  key={value}
+                  variant="primary"
+                  onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: value })}
+                >
+                  {value}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </Modal>
+      );
+    }
+
     const candidateIds = choice.constraints.candidateInstanceIds ?? [];
     const visibleIds = choice.constraints.visibleInstanceIds ?? candidateIds;
     const candidates = visibleIds.map((id) => buildCardView(defs, state, images, id));

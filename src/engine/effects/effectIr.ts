@@ -372,6 +372,7 @@ export type AbilityGate =
   | { kind: 'anyCharacterBasePowerAtLeast'; power: number } // "if there is a Character with a base power of N or more"
   | { kind: 'opponentHasCharacterExactCost'; exactCost: number } // "if your opponent has a Character with a cost of N"
   | { kind: 'selfDonReturnedThisAction'; atLeast?: number; atMost?: number } // "When N or more DON!! cards on your field are returned …"
+  | { kind: 'selfActivatedEventBaseCostThisTurn'; atLeast?: number; atMost?: number } // "If you have activated an Event with a base cost of N or more this turn"
   | { kind: 'donGivenTargetLeaderOrCharacter' } // onDonGiven: the card that received DON is your Leader or a Character
   | { kind: 'donGivenTargetIsSelf' } // onDonGiven: this card/Leader was the DON recipient
   | { kind: 'selfDonGivenThisAction'; atLeast?: number; atMost?: number } // onDonGiven: N+ DON!! were given to this card this event

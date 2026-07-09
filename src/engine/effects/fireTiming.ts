@@ -11,6 +11,7 @@ import { getOpponentId } from '../rules/shared/players';
 import { runTimings, resumeProgram } from './interpreter';
 import { evaluateGates, type GateEvalContext } from './gates';
 import { autoSelectDonMinusIds, canPayAbilityCost, payAbilityCost } from './abilityCost';
+import { recordEventActivation } from './eventActivationHistory';
 import type { Ability, IrTiming } from './effectIr';
 import type { EffectTemplateRegistry } from './effectTemplate';
 
@@ -329,7 +330,9 @@ export function fireNestedEventActivation(
   }
 
   const fired = fireActivate(working, eventInstanceId, registry, defs, actionId);
-  working = fired.state;
+  working = fired.pendingChoices.length === 0
+    ? recordEventActivation(fired.state, activatorPlayerId, eventInstanceId, defs)
+    : fired.state;
   log = [...log, ...fired.log];
   if (fired.pendingChoices.length > 0) {
     return { state: working, log, pendingChoices: fired.pendingChoices };

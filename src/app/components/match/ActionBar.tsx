@@ -33,7 +33,7 @@ const INSTRUCTIONS: Record<string, string> = {
   payingCounterEventCost: 'Tap active DON!! to pay the Counter Event cost, then Confirm.',
   selectActivateSource: 'Tap your own Leader, Character, or Stage that has an [Activate: Main] effect.',
   payingActivateEffectCost: 'Tap DON!! in your Cost Area to return for the activation cost, then Confirm.',
-  selectOnOppAttackSource: "Tap your own Character with an [On Your Opponent's Attack] ability.",
+  selectOnOppAttackSource: "Tap your own Leader, Character, or Stage with an [On Your Opponent's Attack] ability.",
   payingOnOppAttackCost: 'Tap DON!! in your Cost Area to return for the ability cost, then Confirm.',
 };
 
@@ -146,7 +146,7 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
 
   if (battle && battle.step === 'block') {
     const hasEligibleBlocker = actingBoard.characterArea.some((card) => card.orientation === 'active' && card.hasBlocker);
-    const hasEligibleOnOppAttack = actingBoard.characterArea.some((card) => hasOnOpponentsAttack(card));
+    const hasEligibleOnOppAttack = [actingBoard.leader, ...actingBoard.characterArea, ...actingBoard.stageArea].filter(isCardView).some((card) => hasOnOpponentsAttack(card));
     return (
       <div className="flex flex-col gap-2">
         {errorBanner}

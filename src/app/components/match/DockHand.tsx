@@ -44,7 +44,9 @@ export interface DockHandProps {
   position: 'bottom' | 'top';
   selectedIds: Set<string>;
   selectable: (card: CardView) => boolean;
+  canPlay?: (card: CardView) => boolean;
   onCardTap: (card: CardView) => void;
+  onPlayCard?: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
   /** When true the dock slides fully off screen (board is being interacted with). */
   boardFocused: boolean;
@@ -120,11 +122,13 @@ function DockHandCard({
   isTop,
   isSelected,
   canSelect,
+  canPlay,
   showFaces,
   overlapPx,
   onHoverStart,
   onHoverEnd,
   onTap,
+  onPlay,
   onZoom,
 }: {
   card: CardView;
@@ -133,11 +137,13 @@ function DockHandCard({
   isTop: boolean;
   isSelected: boolean;
   canSelect: boolean;
+  canPlay: boolean;
   showFaces: boolean;
   overlapPx: number;
   onHoverStart: () => void;
   onHoverEnd: () => void;
   onTap: () => void;
+  onPlay: () => void;
   onZoom: () => void;
 }) {
   const hiddenDuringFlight = useCardFlightHidden(card.instanceId);
@@ -184,14 +190,26 @@ function DockHandCard({
       </div>
 
       {isHoveredCard && showFaces && (
-        <button
-          type="button"
-          aria-label="View card detail"
-          className="absolute inset-x-0 bottom-0 bg-black/80 py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] text-white"
-          onClick={(e) => { e.stopPropagation(); onZoom(); }}
-        >
-          View
-        </button>
+        <div className="absolute inset-x-0 bottom-0 flex flex-col overflow-hidden rounded-b-[4px] border-t border-white/15 shadow-[0_-8px_16px_rgba(0,0,0,0.35)]">
+          {canPlay && (
+            <button
+              type="button"
+              aria-label={`Play ${card.name}`}
+              className="bg-gold/95 py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] text-navy-950 transition-colors hover:bg-gold"
+              onClick={(e) => { e.stopPropagation(); onPlay(); }}
+            >
+              Play
+            </button>
+          )}
+          <button
+            type="button"
+            aria-label="View card detail"
+            className="bg-black/86 py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] text-white transition-colors hover:bg-black"
+            onClick={(e) => { e.stopPropagation(); onZoom(); }}
+          >
+            View
+          </button>
+        </div>
       )}
 
       {isSelected && (
@@ -212,7 +230,9 @@ export function DockHand({
   position,
   selectedIds,
   selectable,
+  canPlay,
   onCardTap,
+  onPlayCard,
   onCardZoom,
   boardFocused,
 }: DockHandProps) {
@@ -305,11 +325,13 @@ export function DockHand({
               isTop={isTop}
               isSelected={selectedIds.has(card.instanceId)}
               canSelect={selectable(card)}
+              canPlay={canPlay?.(card) ?? false}
               showFaces={showFaces}
               overlapPx={BASE_W * OVERLAP}
               onHoverStart={() => setHoveredIdx(i)}
               onHoverEnd={() => setHoveredIdx(null)}
               onTap={() => onCardTap(card)}
+              onPlay={() => onPlayCard?.(card)}
               onZoom={() => onCardZoom(card)}
             />
           ))}

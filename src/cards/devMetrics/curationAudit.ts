@@ -62,7 +62,7 @@ const TIMING_MARKERS: Partial<Record<IrTiming, RegExp>> = {
   onBlock: /\[On Block\]/i,
   counter: /\[Counter\]/i,
   onOpponentsAttack:
-    /\[On (?:Your )?Opponent's Attack\]|when your opponent(?:'s character)? attacks/i,
+    /\[On (?:Your )?Opponent's Attack\]|when your opponent(?:'s character)? attacks|when this (?:leader|character) attacks or is attacked/i,
   lifeTrigger: /\[Trigger\]/i,
 };
 

@@ -34,6 +34,7 @@ export type NavigationTarget =
   | { screen: 'settings' }
   | { screen: 'debug-tools' }
   | { screen: 'coverage-monitor' }
+  | { screen: 'play-test' }
   | { screen: 'card-library' }
   | { screen: 'deck-builder'; deckIdToEdit?: string }
   | { screen: 'saved-decks' }

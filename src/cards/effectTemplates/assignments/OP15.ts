@@ -40,7 +40,7 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       },
     ],
   },
-  // OP15-002 — PARTIAL: variable Event/Stage trash scaling + event-cost-3+ draw gate deferred; mapped battle trash-1 → +1000 and once-per-turn draw.
+  // OP15-002 — trash any number of Event/Stage cards for +1000 each during battle; event-cost-3+ draw gate.
   {
     cardNumber: 'OP15-002',
     templates: [
@@ -49,8 +49,8 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'whenAttacking',
           functions: [
-            { fn: 'optionalTrashFromHand', count: 1 },
-            { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+            { fn: 'optionalTrashFromHand', anyNumber: true, filter: { anyOf: [{ category: 'event' }, { category: 'stage' }] } },
+            { fn: 'addPowerSelfPerPreviousTrashed', amountPer: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
           ],
         },
       },
@@ -59,12 +59,12 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'onOpponentsAttack',
           functions: [
-            { fn: 'optionalTrashFromHand', count: 1 },
-            { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+            { fn: 'optionalTrashFromHand', anyNumber: true, filter: { anyOf: [{ category: 'event' }, { category: 'stage' }] } },
+            { fn: 'addPowerSelfPerPreviousTrashed', amountPer: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
           ],
         },
       },
-      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfActivatedEventBaseCostThisTurn', atLeast: 3 }], functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },
 
@@ -406,8 +406,14 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP15-053 — [On Play] Look 3, reveal up to 1 {Dressrosa} to hand, rest to bottom. PARTIAL: conditional [Blocker] deferred.
-  { cardNumber: 'OP15-053', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Dressrosa' }, remainder: 'bottom' }] } },
+  // OP15-053 — [DON!! x1] gains [Blocker]. [On Play] Look 3, reveal up to 1 {Dressrosa} to hand, rest to bottom.
+  {
+    cardNumber: 'OP15-053',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Dressrosa' }, remainder: 'bottom' }] } },
+    ],
+  },
 
   // OP15-028 — [On Play] If Leader {East Blue}, give up to 1 DON!! from opponent cost area to opp Character. PARTIAL: opponent-cost-area DON deferred.
   // OP15-054 — [Main] If Leader [Lucy], choose one: draw/trash/play Dressrosa OR return Stage.
@@ -463,8 +469,24 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-057 (stage) — [On Play] If Leader {Dressrosa}, draw 1. PARTIAL: [On Opponent's Attack] clause deferred.
-  { cardNumber: 'OP15-057', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Dressrosa' }], functions: [{ fn: 'draw', amount: 1 }] } },
+  // OP15-057 (stage) — [On Play] If Leader {Dressrosa}, draw 1. [On Opponent's Attack] rest this + trash Event/Stage -> Leader/Character +2000 this battle.
+  {
+    cardNumber: 'OP15-057',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Dressrosa' }], functions: [{ fn: 'draw', amount: 1 }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentsAttack',
+          cost: [{ kind: 'restThis' }],
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1, filter: { anyOf: [{ category: 'event' }, { category: 'stage' }] } },
+            { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP15-058 — PARTIAL: 6-card DON deck rule + second-turn gate deferred; mapped add 1 active + 4 rested DON then give up to 4 DON.
   {

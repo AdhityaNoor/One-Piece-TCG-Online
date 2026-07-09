@@ -68,6 +68,8 @@ export interface PlayerBoardPanelProps {
   mode: BoardSelectionMode;
   /** True for own in-play cards whose curated program exposes an [Activate: Main] ability. */
   canActivateCard?: (card: CardView) => boolean;
+  /** True for own in-play cards whose curated program exposes an [On Your Opponent's Attack] ability. */
+  canOnOppAttackCard?: (card: CardView) => boolean;
   canAttackCard?: (card: CardView) => boolean;
   battlePowerInstanceIds?: Set<string>;
   /** Passed down to PileStack — hides ghost layers while board is active. */
@@ -91,6 +93,7 @@ function leaderCharacterSelectable(
   zone: 'leaderArea' | 'characterArea' | 'stageArea',
   card: CardView,
   canActivate: boolean,
+  canOnOppAttack: boolean,
 ): boolean {
   switch (mode.kind) {
     case 'selectAttacker':
@@ -106,6 +109,8 @@ function leaderCharacterSelectable(
     case 'selectActivateSource':
       // The "Activate Effect" flow: own Leader/Character with a curated [Activate: Main] ability.
       return isOwn && canActivate;
+    case 'selectOnOppAttackSource':
+      return isOwn && canOnOppAttack;
     case 'idle':
       // Idle: an own card with a ready [Activate: Main] effect is tappable directly (the ⚡ badge).
       return isOwn && canActivate;
@@ -127,7 +132,7 @@ function donSelectable(mode: BoardSelectionMode, isOwn: boolean, card: CardView)
   if (mode.kind === 'payingCounterEventCost') {
     return !card.donRested;
   }
-  if (mode.kind === 'payingActivateEffectCost') {
+  if (mode.kind === 'payingActivateEffectCost' || mode.kind === 'payingOnOppAttackCost') {
     return true;
   }
   return false;
@@ -136,6 +141,7 @@ function donSelectable(mode: BoardSelectionMode, isOwn: boolean, card: CardView)
 function selectedDonInstanceIds(mode: BoardSelectionMode): Set<string> {
   if (mode.kind === 'payingCounterEventCost') return new Set(mode.selectedDonIds);
   if (mode.kind === 'payingActivateEffectCost') return new Set(mode.selectedDonIds);
+  if (mode.kind === 'payingOnOppAttackCost') return new Set(mode.selectedDonIds);
   return new Set();
 }
 
@@ -270,10 +276,11 @@ function MatCell({
   );
 }
 
-export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, canAttackCard, battlePowerInstanceIds, boardFocused = false, onCardTap, onCardAttack, onAttachedDonLabelTap, onCardZoom, onAttackTargetHover, canGiveDonOnCard, onGiveDon, onReturnGivenDon, allowReturnGivenDon = true }: PlayerBoardPanelProps) {
+export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, canOnOppAttackCard, canAttackCard, battlePowerInstanceIds, boardFocused = false, onCardTap, onCardAttack, onAttachedDonLabelTap, onCardZoom, onAttackTargetHover, canGiveDonOnCard, onGiveDon, onReturnGivenDon, allowReturnGivenDon = true }: PlayerBoardPanelProps) {
   const attackerSelected = selectedAttackerIds(mode);
   // Mark/select own in-play cards that can activate a [Activate: Main] effect.
   const canActivate = (card: CardView): boolean => isOwn && !!canActivateCard?.(card);
+  const canOnOppAttack = (card: CardView): boolean => isOwn && !!canOnOppAttackCard?.(card);
   const canAttack = (card: CardView): boolean => isOwn && !!canAttackCard?.(card);
   const availableActiveDon = countAvailableDon(board);
   const giveDonControlsFor = (card: CardView) =>
@@ -294,7 +301,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   const selectedDon = selectedDonInstanceIds(mode);
   const [trashGalleryOpen, setTrashGalleryOpen] = useState(false);
   const attachedDonSelectable = (card: CardView): boolean =>
-    isOwn && mode.kind === 'payingActivateEffectCost' && card.donAttachedCount > 0;
+    isOwn && (mode.kind === 'payingActivateEffectCost' || mode.kind === 'payingOnOppAttackCost') && card.donAttachedCount > 0;
   const selectedAttachedDonCount = (card: CardView): number =>
     card.donAttachedIds.filter((id) => selectedDon.has(id)).length;
 
@@ -302,7 +309,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
     <BoardCardTile
       card={leaderCard}
       size="field"
-      selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'leaderArea', leaderCard, canActivate(leaderCard))}
+      selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'leaderArea', leaderCard, canActivate(leaderCard), canOnOppAttack(leaderCard))}
       selected={attackerSelected.has(leaderCard.instanceId)}
       activatable={mode.kind === 'idle' && canActivate(leaderCard)}
       attackable={mode.kind === 'idle' && canAttack(leaderCard)}
@@ -326,7 +333,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
     <BoardCardTile
       card={stageCard}
       size="field"
-      selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'stageArea', stageCard, canActivate(stageCard))}
+      selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'stageArea', stageCard, canActivate(stageCard), canOnOppAttack(stageCard))}
       activatable={mode.kind === 'idle' && canActivate(stageCard)}
       showBattlePower={battlePowerInstanceIds?.has(stageCard.instanceId)}
       onActivate={mode.kind === 'idle' && canActivate(stageCard) ? () => onCardTap('stageArea', stageCard) : undefined}
@@ -370,7 +377,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
             key={card.instanceId}
             card={card}
             size="field"
-            selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'characterArea', card, canActivate(card))}
+            selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'characterArea', card, canActivate(card), canOnOppAttack(card))}
             selected={attackerSelected.has(card.instanceId)}
             activatable={mode.kind === 'idle' && canActivate(card)}
             attackable={mode.kind === 'idle' && canAttack(card)}

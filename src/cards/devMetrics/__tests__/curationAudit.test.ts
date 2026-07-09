@@ -19,6 +19,13 @@ function program(timing: EffectProgram['abilities'][number]['timing']): EffectPr
   };
 }
 
+function programWithTimings(timings: EffectProgram['abilities'][number]['timing'][]): EffectProgram {
+  return {
+    cardNumber: 'TEST-001',
+    abilities: timings.map((timing) => ({ timing, ops: [{ op: 'draw', amount: 1 }] })),
+  };
+}
+
 describe('auditCuratedCard timing markers', () => {
   it('accepts natural-language leader attack phrasing (OP12-081)', () => {
     const findings = auditCuratedCard(
@@ -35,7 +42,7 @@ describe('auditCuratedCard timing markers', () => {
       card(
         'When this Leader attacks or is attacked, you may trash any number of Event or Stage cards from your hand. This Leader gains +1000 power during this battle for each card trashed by this effect.',
       ),
-      program('whenAttacking'),
+      programWithTimings(['whenAttacking', 'onOpponentsAttack']),
     );
     expect(findings.filter((f) => f.category === 'timing')).toEqual([]);
   });

@@ -470,6 +470,15 @@ function evaluateGate(
       return true;
     }
 
+    case 'selfActivatedEventBaseCostThisTurn': {
+      return (state.eventActivationHistory ?? []).some((event) => {
+        if (event.playerId !== ownerId || event.turnNumber !== state.turnNumber) return false;
+        if (gate.atLeast !== undefined && event.baseCost < gate.atLeast) return false;
+        if (gate.atMost !== undefined && event.baseCost > gate.atMost) return false;
+        return true;
+      });
+    }
+
     case 'donGivenTargetLeaderOrCharacter': {
       const targetId = eventContext?.donGivenTargetInstanceId;
       if (!targetId) return false;

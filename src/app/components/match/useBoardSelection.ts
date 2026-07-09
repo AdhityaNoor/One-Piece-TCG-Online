@@ -131,7 +131,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'onOpponentsAttack');
     if (!ability) return false;
     const inst = state.cardsById[card.instanceId];
-    if (!inst || inst.controllerId !== actingPlayerId || inst.currentZone !== 'characterArea') return false;
+    if (!inst || inst.controllerId !== actingPlayerId || (inst.currentZone !== 'leaderArea' && inst.currentZone !== 'characterArea' && inst.currentZone !== 'stageArea')) return false;
     if (ability.oncePerTurn && card.oncePerTurnUsed.includes('onOpponentsAttack')) return false;
     if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, actingPlayerId)) return false;
     if (!abilityConditionMet(ability, inst, state, defs)) return false;
@@ -202,6 +202,52 @@ export function useBoardSelection(actingPlayerId: string | null) {
   function withActingPlayer(build: (playerId: string) => GameAction): void {
     if (!actingPlayerId) return;
     runDispatch(build(actingPlayerId));
+  }
+
+  function playHandCard(card: CardView): void {
+    if (!actingPlayerId || !state || mode.kind !== 'idle') return;
+    if (card.category !== 'character' && card.category !== 'stage' && card.category !== 'event') return;
+    const instance = state.cardsById[card.instanceId];
+    if (!instance || instance.ownerId !== actingPlayerId || instance.currentZone !== 'hand') return;
+
+    const cost = currentCostOf(card);
+    const donInstanceIds = activeCostAreaDonIds(actingPlayerId).slice(0, cost);
+    if (donInstanceIds.length < cost) {
+      setLastError([`${card.name} costs ${cost} DON!!, but only ${donInstanceIds.length} active DON!! are available.`]);
+      return;
+    }
+
+    runDispatch({
+      type: PLAY_ACTION_BY_CATEGORY[card.category],
+      actionId: createActionId(),
+      playerId: actingPlayerId,
+      handCardInstanceId: card.instanceId,
+      donInstanceIds,
+    } as GameAction);
+  }
+
+  function canPlayHandCard(card: CardView): boolean {
+    if (!actingPlayerId || !state || mode.kind !== 'idle') return false;
+    if (card.category !== 'character' && card.category !== 'stage' && card.category !== 'event') return false;
+    const instance = state.cardsById[card.instanceId];
+    if (!instance || instance.ownerId !== actingPlayerId || instance.currentZone !== 'hand') return false;
+
+    const cost = currentCostOf(card);
+    const donInstanceIds = activeCostAreaDonIds(actingPlayerId).slice(0, cost);
+    if (donInstanceIds.length < cost) return false;
+
+    return validateAction(
+      state,
+      {
+        type: PLAY_ACTION_BY_CATEGORY[card.category],
+        actionId: 'ui-preview',
+        playerId: actingPlayerId,
+        handCardInstanceId: card.instanceId,
+        donInstanceIds,
+      } as GameAction,
+      defs,
+      registry,
+    ).legal;
   }
 
   // --- Mode entry points, called from ActionBar's mode-switch buttons ---
@@ -486,8 +532,8 @@ export function useBoardSelection(actingPlayerId: string | null) {
       }
 
       case 'selectOnOppAttackSource': {
-        // [On Your Opponent's Attack]: defender taps one of their Characters with the ability.
-        if (!isOwnCard || zone !== 'characterArea') return;
+        // [On Your Opponent's Attack]: defender taps one of their Leader/Character/Stage cards with the ability.
+        if (!isOwnCard || (zone !== 'leaderArea' && zone !== 'characterArea' && zone !== 'stageArea')) return;
         if (!hasOnOpponentsAttack(card)) return;
         activateOnOppAttackFromCard(card);
         return;
@@ -553,6 +599,8 @@ export function useBoardSelection(actingPlayerId: string | null) {
     confirmActivateMainCost,
     confirmOnOppAttackCost,
     beginAttackWithCard,
+    canPlayHandCard,
+    playHandCard,
     passStep,
     endMainPhase,
     concede,

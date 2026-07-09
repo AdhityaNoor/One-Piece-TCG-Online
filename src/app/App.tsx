@@ -18,6 +18,7 @@ import {
   DeckSelectScreen,
   MainMenuScreen,
   MatchScreen,
+  PlayTestScreen,
   PlayMenuScreen,
   SavedDecksScreen,
   SettingsScreen,
@@ -42,6 +43,8 @@ export function App() {
         return <DebugToolsScreen />;
       case 'coverage-monitor':
         return <CoverageMonitorScreen />;
+      case 'play-test':
+        return <PlayTestScreen />;
       case 'card-library':
         return <CardLibraryScreen />;
       case 'deck-builder':

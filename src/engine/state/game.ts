@@ -486,6 +486,14 @@ export type DelayedEffectRecord =
       triggerTurnNumber: number;
     };
 
+export interface EventActivationRecord {
+  playerId: string;
+  cardDefinitionId: string;
+  cardNumber: string;
+  baseCost: number;
+  turnNumber: number;
+}
+
 export interface GameState {
   /** 0 during the 'setup' phase (Section 5 hasn't reached 5-2-1-8 yet); 1 from the moment the first turn begins. */
   turnNumber: number;
@@ -506,6 +514,8 @@ export interface GameState {
   rng: RngState;
   continuousEffects: ContinuousEffectRecord[];
   delayedEffects?: DelayedEffectRecord[];
+  /** Events activated this game. Gates filter by turnNumber/player so prior turns cannot leak into current effects. */
+  eventActivationHistory?: EventActivationRecord[];
   /** Keyed by `${cardInstanceId}:${effectId}`; cleared on that instance's owner's Refresh Phase. */
   oncePerTurnUsage: Record<string, true>;
   pendingChoices: PendingChoice[];

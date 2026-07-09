@@ -6,6 +6,47 @@ import { buildRegistryFromAssignments } from '../assembler';
 import { buildCuratedEffectRegistry } from '../curatedPrograms';
 
 describe('curated effect template integration with match engine dispatch', () => {
+  it('prompts EB01-033 On Play DON!! -1 when its Water Seven leader gate is met', () => {
+    const blueno = makeCharacterDef({
+      cardDefinitionId: 'EB01-033',
+      cardNumber: 'EB01-033',
+      name: 'Blueno',
+      category: 'character',
+      baseCost: 0,
+      basePower: 4000,
+    });
+
+    let rig = buildBaseRig({
+      phase: 'main',
+      activePlayerId: 'p1',
+      turnNumber: 3,
+      leaderOverridesP1: {
+        cardDefinitionId: 'OP03-058',
+        cardNumber: 'OP03-058',
+        name: 'Iceburg',
+        category: 'leader',
+        types: ['Water Seven', 'Galley-La Company'],
+      },
+    });
+    let handId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', blueno));
+    const { rig: withDon, donIds } = putDon(rig, 'p1', 1, { rested: true });
+    rig = withDon;
+
+    const registry = buildCuratedEffectRegistry(rig.defs);
+    const result = executeAction(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+
+    expect(result.state.pendingChoices[0]).toMatchObject({
+      sourceEffectId: 'ir',
+      constraints: { min: 1, max: 1, candidateInstanceIds: [donIds[0]] },
+    });
+  });
+
   it('pauses automatic DON!! -N triggered abilities for selected DON, pays it, then resolves ops', () => {
     const attacker = makeCharacterDef({
       cardDefinitionId: 'TEST-WHEN-ATTACKING-DON-MINUS',

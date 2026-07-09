@@ -17,6 +17,7 @@ import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/def
 import { computeCurrentCost } from '../../rules/shared/power';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { evaluateGates, fireActivate, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, type EffectTemplateRegistry } from '../../effects';
+import { recordEventActivation } from '../../effects/eventActivationHistory';
 
 export function validateActivateEventMain(
   state: GameState,
@@ -144,7 +145,9 @@ export function executeActivateEventMain(
 
   const fired = fireActivate(working, action.handCardInstanceId, registry, defs, action.actionId);
 
-  let resultState = fired.state;
+  let resultState = fired.pendingChoices.length === 0
+    ? recordEventActivation(fired.state, action.playerId, action.handCardInstanceId, defs)
+    : fired.state;
   let resultLog = [...logger.log, ...paidLog, ...fired.log];
   if (fired.pendingChoices.length === 0) {
     const reactive = fireEventActivatedReactions(resultState, action.playerId, registry, defs, action.actionId);

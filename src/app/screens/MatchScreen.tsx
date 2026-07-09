@@ -33,7 +33,7 @@ import { useMatchStore } from '../store/matchStore';
 import { useSettingsStore } from '../store/settingsStore';
 import type { CardView } from '../../board/projection';
 
-export function MatchScreen() {
+export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNode } = {}) {
   const current = useCurrentScreen();
   const resetTo = useNavigationStore((state) => state.resetTo);
   const load = useSavedDecksStore((state) => state.load);
@@ -51,6 +51,7 @@ export function MatchScreen() {
   const localPlayerId = useMatchStore((s) => s.localPlayerId);
   const playerNames = useMatchStore((s) => s.playerNames);
   const isCasual = localPlayerId !== null;
+  const playTestMode = useMatchStore((s) => s.playTestMode);
   const nameFor = (id: string): string => playerNames[id] ?? id;
 
   const [pauseOpen, setPauseOpen] = useState(false);
@@ -61,7 +62,7 @@ export function MatchScreen() {
   const tableShellRef = useRef<HTMLDivElement | null>(null);
   const navyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
 
-  const isMatchScreen = current.screen === 'match';
+  const isMatchScreen = current.screen === 'match' || current.screen === 'play-test';
   const deckIdA = current.screen === 'match' ? current.deckIdA : null;
   const deckIdB = current.screen === 'match' ? current.deckIdB : null;
   // Casual presentation config off the nav target (undefined == hotseat).
@@ -114,7 +115,7 @@ export function MatchScreen() {
   function handleQuit(): void {
     resetMatch();
     resetMatchSetup();
-    resetTo({ screen: 'main-menu' });
+    resetTo(playTestMode ? { screen: 'debug-tools' } : { screen: 'main-menu' });
   }
 
   // --- Deck load failure: nothing to play, surface the reason and bail out. ---
@@ -226,8 +227,9 @@ export function MatchScreen() {
           {battleLabel}
         </p>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid-cols-[220px_minmax(0,1fr)_220px]">
-          <aside className="flex min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid-cols-[330px_minmax(0,1fr)_330px]">
+          {leftPanelOverride}
+          <aside className={[leftPanelOverride ? 'hidden' : 'flex', 'min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]'].join(' ')}>
             <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -311,6 +313,7 @@ export function MatchScreen() {
                   reverseRows={true}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
+                  canOnOppAttackCard={selection.hasOnOpponentsAttack}
                   canAttackCard={selection.canDeclareAttackWith}
                   battlePowerInstanceIds={battlePowerInstanceIds}
                   onMatCardTap={(zone, card) => selection.handleCardTap(topPlayerId, zone, card)}
@@ -338,6 +341,7 @@ export function MatchScreen() {
                   reverseRows={false}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
+                  canOnOppAttackCard={selection.hasOnOpponentsAttack}
                   canAttackCard={selection.canDeclareAttackWith}
                   battlePowerInstanceIds={battlePowerInstanceIds}
                   onMatCardTap={(zone, card) => selection.handleCardTap(bottomPlayerId, zone, card)}
@@ -363,7 +367,9 @@ export function MatchScreen() {
               position="top"
               selectedIds={selectedHandIds(selection.mode)}
               selectable={(card) => (isCasual ? false : handSelectable(selection.mode, actingPlayerId === topPlayerId, card, selection.hasCounter))}
+              canPlay={(card) => (isCasual ? false : actingPlayerId === topPlayerId && selection.canPlayHandCard(card))}
               onCardTap={(card) => selection.handleCardTap(topPlayerId, 'hand', card)}
+              onPlayCard={selection.playHandCard}
               onCardZoom={openZoom}
               boardFocused={boardHovered}
             />
@@ -374,7 +380,9 @@ export function MatchScreen() {
               position="bottom"
               selectedIds={selectedHandIds(selection.mode)}
               selectable={(card) => handSelectable(selection.mode, actingPlayerId === bottomPlayerId, card, selection.hasCounter)}
+              canPlay={(card) => actingPlayerId === bottomPlayerId && selection.canPlayHandCard(card)}
               onCardTap={(card) => selection.handleCardTap(bottomPlayerId, 'hand', card)}
+              onPlayCard={selection.playHandCard}
               onCardZoom={openZoom}
               boardFocused={boardHovered}
             />
@@ -845,6 +853,7 @@ function PlayerSideRow({
   onCardZoom,
   onAttackTargetHover,
   canActivateCard,
+  canOnOppAttackCard,
   canAttackCard,
   battlePowerInstanceIds,
   boardFocused,
@@ -864,6 +873,7 @@ function PlayerSideRow({
   onCardZoom: (card: CardView) => void;
   onAttackTargetHover: (card: CardView | null) => void;
   canActivateCard: (card: CardView) => boolean;
+  canOnOppAttackCard: (card: CardView) => boolean;
   canAttackCard: (card: CardView) => boolean;
   battlePowerInstanceIds: Set<string>;
   boardFocused: boolean;
@@ -881,6 +891,7 @@ function PlayerSideRow({
         reverseRows={reverseRows}
         mode={mode}
         canActivateCard={canActivateCard}
+        canOnOppAttackCard={canOnOppAttackCard}
         canAttackCard={canAttackCard}
         battlePowerInstanceIds={battlePowerInstanceIds}
         boardFocused={boardFocused}

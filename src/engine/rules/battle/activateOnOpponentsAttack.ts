@@ -57,8 +57,8 @@ export function validateActivateOnOpponentsAttack(
   }
 
   const source = state.cardsById[action.sourceInstanceId];
-  if (!source || source.controllerId !== action.playerId || source.currentZone !== 'characterArea') {
-    reasons.push(`'${action.sourceInstanceId}' is not one of ${action.playerId}'s Characters in play.`);
+  if (!source || source.controllerId !== action.playerId || (source.currentZone !== 'leaderArea' && source.currentZone !== 'characterArea' && source.currentZone !== 'stageArea')) {
+    reasons.push(`'${action.sourceInstanceId}' is not one of ${action.playerId}'s Leader/Character/Stage cards in play.`);
     return { legal: reasons.length === 0, reasons };
   }
 

@@ -53,6 +53,10 @@ effect-coverage.md
 effect-review-worklist.csv
 effect-triage.csv
 effect-triage.md
+effect-triage-clusters.md
+curation-audit.csv
+curation-audit.md
+CAPABILITY.md
 
 *.log
 npm-debug.log*

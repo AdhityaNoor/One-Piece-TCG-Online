@@ -38,6 +38,16 @@ export function DebugToolsScreen() {
         </section>
 
         <section className="op-panel p-4">
+          <p className="op-section-title">Play Test</p>
+          <p className="mt-2 text-sm leading-6 text-slate-200/70">
+            Start a generated sandbox match, inject catalog cards into either hand, force turns, and adjust DON!! while the normal match rules still resolve.
+          </p>
+          <div className="mt-4 flex justify-center">
+            <CanvasMenuButton label="Open Play Test" prominence="primary" size="sm" onClick={() => navigateTo({ screen: 'play-test' })} />
+          </div>
+        </section>
+
+        <section className="op-panel p-4">
           <p className="op-section-title">Display Preferences</p>
           <p className="mt-2 text-sm leading-6 text-slate-200/70">Show-both-hands, animations, and 3D toggles.</p>
           <div className="mt-4 flex justify-center">

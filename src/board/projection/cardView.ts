@@ -9,7 +9,7 @@
  */
 import type { CardCategory, Color, Orientation } from '../../engine/state/card';
 import type { GameState } from '../../engine/state/game';
-import { computeCurrentCost, computeCurrentPower, type CardDefinitionLookup } from '../../engine/rules/shared';
+import { computeCurrentCost, computeCurrentPower, hasContinuousKeyword, type CardDefinitionLookup } from '../../engine/rules/shared';
 
 export interface CardView {
   instanceId: string;
@@ -132,7 +132,7 @@ export function buildCardView(
     donAttachedIds: instance.donAttached,
     oncePerTurnUsed: instance.oncePerTurnUsed,
     summoningSick: instance.summoningSick,
-    hasBlocker: def.hasBlocker,
+    hasBlocker: def.hasBlocker || hasContinuousKeyword(defs, state, instanceId, 'blocker'),
     hasRush: def.hasRush,
     hasDoubleAttack: def.hasDoubleAttack,
     hasBanish: def.hasBanish ?? false,
