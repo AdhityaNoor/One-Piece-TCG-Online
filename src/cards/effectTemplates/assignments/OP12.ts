@@ -168,11 +168,17 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP12-028 (character) Kouzuki Hiyori —
-  //   [Activate: Main] You may rest 1 of your DON!! cards and this Character: If your Leader is [Roronoa
-  //   Zoro], look at 5 cards from the top of your deck; reveal up to 1 <Slash> attribute card or green
-  //   Event and add it to your hand. Then, place the rest at the bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP12-028 — [Activate: Main] rest 1 DON!! + this: if Leader [Zoro], search top 5 for Slash card or green Event.
+  {
+    cardNumber: 'OP12-028',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }],
+      gate: [{ kind: 'leaderName', name: 'Roronoa Zoro' }],
+      functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ attribute: 'slash' }, { category: 'event', color: 'green' }] } }],
+    },
+  },
 
   // OP12-029 — [On Play] Rest up to 1 opp Character cost ≤2, then K.O. up to 1 opp rested Character with base cost ≤1.
   { cardNumber: 'OP12-029', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxBaseCost: 1 } }, optional: true }] } },
@@ -190,11 +196,8 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-033 — [Blocker][On Block] Rest up to 1 opp Character cost ≤5.
   { cardNumber: 'OP12-033', templateId: 'ability', params: { timing: 'onBlock', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
 
-  // OP12-034 (character) Perona —
-  //   [On Play] If your Leader has the <Slash> attribute, look at 5 cards from the top of your deck; reveal
-  //   up to 1 <Slash> attribute card or green Event and add it to your hand. Then, place the rest at the
-  //   bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP12-034 — [On Play] if Leader has Slash attribute, search top 5 for Slash card or green Event.
+  { cardNumber: 'OP12-034', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderAttribute', attribute: 'slash' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ attribute: 'slash' }, { category: 'event', color: 'green' }] } }] } },
 
   // OP12-036 (character) Roronoa Zoro —
   //   This card in your hand cannot be played by effects.If your Leader has the <Slash> attribute, this

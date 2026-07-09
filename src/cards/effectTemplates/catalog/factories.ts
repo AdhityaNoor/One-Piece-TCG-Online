@@ -681,6 +681,17 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
                 : `Look at the top ${f.look}: add up to ${f.pick} matching card${f.pick === 1 ? '' : 's'} to ${f.destination === 'lifeTop' ? 'the top of your Life cards' : 'your hand'}; the rest ${f.remainder === 'trash' ? 'go to your trash' : f.remainder === 'deckTopOrBottom' ? 'are placed at the top or bottom of your deck in any order' : 'go to the bottom of your deck'}.`,
         },
       ];
+    case 'searchDeck':
+      return [
+        {
+          op: 'searchDeck',
+          pick: f.pick,
+          reveal: f.reveal,
+          destination: f.destination,
+          ...(f.filter ? { filter: f.filter } : {}),
+          prompt: `Search your deck: add up to ${f.pick} matching card${f.pick === 1 ? '' : 's'} to your hand, then shuffle your deck.`,
+        },
+      ];
     case 'addPowerSelf':
       return targetOps({ ref: 'self' }, (target) => ({ op: 'addPower', target, amount: f.amount, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }));
     case 'addPowerSelfScaling':

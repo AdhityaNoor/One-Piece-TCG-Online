@@ -1753,7 +1753,13 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB04-010 (stage) Lulucia Kingdom —
   //   [Opponent's Turn] All of your Characters with a base cost of 1 gain +5000 power.[On Play] Set the
   //   power of up to 1 of your opponent's Characters to 0 during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB04-010',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 5000, duration: 'permanent', sourceCondition: { turn: 'opponent' }, targetCondition: { maxBaseCost: 1, minBaseCost: 1 } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setBasePower', target: { group: 'characters', player: 'opponent' }, value: 0, duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
 
   // EB04-011 (character) Scaled Neptunian —
   //   [Rush: Character] [On Play] Draw per {Neptunian}, trash same number from hand.

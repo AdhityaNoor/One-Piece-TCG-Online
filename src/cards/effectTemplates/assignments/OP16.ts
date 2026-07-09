@@ -303,7 +303,13 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Main] If you have 10 DON!! cards on your field, all of your [Prisoner of Impel Down] cards' base
   //   power becomes 7000 during this turn.[Counter] Up to 1 of your [Buggy] gains +4000 power during this
   //   battle.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP16-058',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfDonFieldCount', atLeast: 10 }], functions: [{ fn: 'setBasePowerAuraControllerTypes', value: 7000, duration: 'duringThisTurn', anyOfNames: ['Prisoner of Impel Down'] }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Buggy' } }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
+    ],
+  },
 
   { cardNumber: 'OP16-059', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
 

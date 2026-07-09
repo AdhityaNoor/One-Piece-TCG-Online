@@ -11,7 +11,7 @@
  * bespoke card logic.
  */
 import type { ContinuousEffectDuration, ContinuousKeyword, ContinuousPowerCondition, KoImmunityAuraGroup, KoReplacementAction, KoReplacementAuraGroup, PowerAuraGroup, PowerScale, SourceStateCondition } from '../state/game';
-import type { CardCategory, Color } from '../state/card';
+import type { Attribute, CardCategory, Color } from '../state/card';
 
 /** Resolves to a set of CardInstance ids at run time. Pure data. */
 export type Selector =
@@ -71,6 +71,8 @@ export interface SearchFilter {
   category?: Exclude<CardCategory, 'don'>;
   /** Card color gate (2-3), e.g. "red Event". */
   color?: Color;
+  /** Leader/Character attribute gate (2-5), e.g. "<Slash> attribute card". */
+  attribute?: Attribute;
   /** Exact card name (2-1), e.g. "play up to 1 [Gaimon]". */
   name?: string;
   maxCost?: number;
@@ -130,7 +132,7 @@ export interface EffectOpSequenceGate {
 }
 
 /**
- * One instruction. `chooseTargets` and `searchTopDeck` both suspend the program
+ * One instruction. `chooseTargets`, `searchTopDeck`, and `searchDeck` suspend the program
  * via a PendingChoice; `chooseTargets` binds the player's selection to `var`
  * (later ops reference it via { sel: 'var', name }), while `searchTopDeck`
  * resolves its own deck movement on resume.
@@ -215,6 +217,10 @@ export type EffectOp =
   // Without that text, the added card remains secret to the controller.
   // The rest go to the configured destination (bottom by default).
   | ({ op: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination; prompt: string; rested?: boolean } & EffectOpSequenceGate)
+  // Search the controller's full deck, choose up to `pick` matching cards, move
+  // them to `destination`, then shuffle the deck. `reveal` controls whether the
+  // chosen card identity is public.
+  | ({ op: 'searchDeck'; pick: number; reveal: boolean; destination: Extract<SearchPickDestination, 'hand'>; filter?: SearchFilter; prompt: string } & EffectOpSequenceGate)
   // Reveal the top card of the controller's own deck (public), test it against an
   // optional predicate, and record whether it matched via the __lastRevealMatched
   // binding. Non-suspending: the card stays on top; the conditional "then" branch
@@ -246,6 +252,7 @@ export type NonSuspendingEffectOp = Exclude<
   | { op: 'chooseLifeToTrash' }
   | { op: 'chooseOption' }
   | { op: 'trashFromHandByCountVar' }
+  | { op: 'searchDeck' }
 >;
 
 /**

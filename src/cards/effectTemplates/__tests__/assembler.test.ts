@@ -159,6 +159,21 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'trashCards', target: { sel: 'var', name: 't' } });
   });
 
+  it('searchDeck lowers to a full-deck search choice', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'searchDeck', pick: 1, reveal: true, destination: 'hand', filter: { name: 'Artificial Devil Fruit SMILE' } }],
+    });
+
+    expect(p.abilities[0].ops[0]).toMatchObject({
+      op: 'searchDeck',
+      pick: 1,
+      reveal: true,
+      destination: 'hand',
+      filter: { name: 'Artificial Devil Fruit SMILE' },
+    });
+  });
+
   it('moveCards can let the opponent choose a card from their hand for deck-bottom placement', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onPlay',

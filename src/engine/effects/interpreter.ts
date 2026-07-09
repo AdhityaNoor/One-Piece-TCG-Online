@@ -171,6 +171,7 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
   if (filter.excludeSelfName && selfName !== undefined && def.name === selfName) return false;
   if (filter.category && def.category !== filter.category) return false;
   if (filter.color && !def.colors.includes(filter.color)) return false;
+  if (filter.attribute && !def.attributes?.includes(filter.attribute)) return false;
   if (filter.name && def.name !== filter.name) return false;
   if (filter.maxCost !== undefined && (def.baseCost ?? Infinity) > filter.maxCost) return false;
   if (filter.minCost !== undefined && (def.baseCost ?? -Infinity) < filter.minCost) return false;
@@ -1004,6 +1005,27 @@ function runOpList(
       });
       return { suspended: true, bindings: workingBindings };
     }
+    if (op.op === 'searchDeck') {
+      const deckIds = ctx.controllerDeckIds();
+      if (deckIds.length === 0) continue;
+      const eligible = searchEligible(deckIds, op.filter, ctx);
+      if (eligible.length === 0) {
+        ctx.shuffleDeck(ctx.controllerId);
+        workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
+        continue;
+      }
+      ctx.emitChoice({
+        id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
+        playerId: ctx.controllerId,
+        kind: 'SELECT_CARDS',
+        prompt: op.prompt,
+        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: deckIds },
+        sourceInstanceId: ctx.sourceInstanceId,
+        sourceEffectId: 'ir',
+        resumeState: resumeStateForSuspend(coords, i, workingBindings),
+      });
+      return { suspended: true, bindings: workingBindings };
+    }
     if (op.op === 'lookLifeAndReorder') {
       const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
       const ids = ctx.lifeIds(playerId);
@@ -1387,7 +1409,7 @@ export function resumeProgram(
 
   const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
   const op = suspendedOpAt(ability, rs);
-  if (!op || (op.op !== 'chooseTargets' && op.op !== 'chooseCost' && op.op !== 'searchTopDeck' && op.op !== 'playFromDeck' && op.op !== 'lookLifeAndReorder' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption' && op.op !== 'trashFromHandByCountVar')) return noop(stateWithoutChoice);
+  if (!op || (op.op !== 'chooseTargets' && op.op !== 'chooseCost' && op.op !== 'searchTopDeck' && op.op !== 'searchDeck' && op.op !== 'playFromDeck' && op.op !== 'lookLifeAndReorder' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption' && op.op !== 'trashFromHandByCountVar')) return noop(stateWithoutChoice);
 
   const preserveBranch = (bindings: Record<string, string[]>): PendingChoice['resumeState'] => ({
     abilityIndex: rs.abilityIndex,
@@ -1512,6 +1534,13 @@ export function resumeProgram(
     ctx.shuffleDeck(ctx.controllerId);
     const afterPlayBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
     return continueAfterResolvedOp(program, ability, rs, afterPlayBindings, ctx, defs, actionId, registry);
+  }
+
+  if (op.op === 'searchDeck') {
+    const selection = Array.isArray(response) ? response : [];
+    ctx.searchDeckResolve(ctx.controllerId, selection, op.reveal);
+    const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
+    return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
   }
 
   if (op.op === 'lookLifeAndReorder') {

@@ -464,10 +464,8 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true },
   ] } },
 
-  // OP01-098 (character) Kurozumi Orochi —
-  //   [On Play] Reveal up to 1 [Artificial Devil Fruit SMILE] from your deck and add it to your hand. Then,
-  //   shuffle your deck.
-  // NOTE: not yet implemented (needs template).
+  // OP01-098 — [On Play] Reveal up to 1 [Artificial Devil Fruit SMILE] from deck, add to hand, then shuffle.
+  { cardNumber: 'OP01-098', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchDeck', pick: 1, reveal: true, destination: 'hand', filter: { name: 'Artificial Devil Fruit SMILE' } }] } },
 
   // OP01-099 (character) Kurozumi Semimaru —
   //   {Kurozumi Clan} type Characters other than your [Kurozumi Semimaru] cannot be K.O.'d in battle.

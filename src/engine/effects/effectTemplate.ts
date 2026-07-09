@@ -215,6 +215,8 @@ export interface EffectContext {
    * may use a player-selected order when supplied.
    */
   searchResolve(playerId: string, lookedIds: string[], chosenIds: string[], remainder: SearchRemainderDestination, reveal: boolean, destination: SearchPickDestination, bottomOrderIds?: string[]): void;
+  /** Resolve a full-deck search to hand, then shuffle the deck. */
+  searchDeckResolve(playerId: string, chosenIds: string[], reveal: boolean): void;
   /** Resolve a "look at top N, play one, bottom/trash the rest" search-play effect. */
   searchPlayResolve(playerId: string, lookedIds: string[], chosenIds: string[], remainder: SearchRemainderDestination, rested?: boolean, bottomOrderIds?: string[]): void;
   /** Resolve a top-deck search/look whose placement returns cards to top and bottom in selected order. */

@@ -678,11 +678,25 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'filter', type: 'SearchFilter', required: false },
       { name: 'remainder', type: "'bottom' | 'trash' | 'deckTopOrBottom'", required: false },
     ],
-    covers: ['look at {N} cards from the top of your deck; reveal up to 1 {type} card and add it to your hand', 'place the rest at the top or bottom of the deck in any order'],
+    covers: ['look at {N} cards from the top of your deck; reveal up to 1 {type} card and add it to your hand', 'reveal up to 1 <attribute> card or {color} Event and add it to your hand', 'place the rest at the top or bottom of the deck in any order'],
     examples: [
       { cardNumber: 'OP06-013', snippet: "{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'FILM' }, remainder: 'bottom' }" },
       { cardNumber: 'OP02-057', snippet: "{ fn: 'searchTopDeck', look: 2, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'The Seven Warlords of the Sea' }, remainder: 'deckTopOrBottom' }" },
+      { cardNumber: 'OP12-034', snippet: "{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ attribute: 'slash' }, { category: 'event', color: 'green' }] } }" },
     ],
+  },
+  searchDeck: {
+    id: 'searchDeck',
+    summary: 'Search the full deck, pick up to `pick` matching cards to hand, then shuffle.',
+    params: [
+      { name: 'pick', type: 'number', required: true },
+      { name: 'reveal', type: 'boolean', required: true },
+      { name: 'destination', type: "'hand'", required: true },
+      { name: 'filter', type: 'SearchFilter', required: false },
+    ],
+    covers: ['Reveal up to {N} [{name}] from your deck and add it to your hand. Then, shuffle your deck.'],
+    excludes: ['look at top N cards; use searchTopDeck', 'play from deck; use playFromDeck/searchTopDeck destination play'],
+    examples: [{ cardNumber: 'OP01-098', snippet: "{ fn: 'searchDeck', pick: 1, reveal: true, destination: 'hand', filter: { name: 'Artificial Devil Fruit SMILE' } }" }],
   },
   revealTopThen: {
     id: 'revealTopThen',

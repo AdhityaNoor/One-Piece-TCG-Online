@@ -2009,6 +2009,47 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  searchDeckResolve(playerId: string, chosenIds: string[], reveal: boolean): void {
+    const player = this.working.players[playerId];
+    if (!player) return;
+
+    const deckSet = new Set(player.deck.cardIds);
+    const chosen = chosenIds.filter((id) => deckSet.has(id));
+    const chosenSet = new Set(chosen);
+    const remainingDeckIds = player.deck.cardIds.filter((id) => !chosenSet.has(id));
+    const seededRng = createSeededRng(this.working.rng.seed);
+    const shuffled = seededRng.shuffle(this.working.rng, remainingDeckIds);
+
+    let hand = player.hand;
+    const cardsById = { ...this.working.cardsById };
+    for (const id of chosen) {
+      hand = addToZoneBottom(hand, id);
+      cardsById[id] = { ...cardsById[id], currentZone: 'hand', revealedTo: reveal ? 'all' : [playerId] };
+    }
+    for (const id of shuffled.result) {
+      const card = cardsById[id];
+      if (card) cardsById[id] = { ...card, currentZone: 'deck', revealedTo: [] };
+    }
+
+    this.working = {
+      ...this.working,
+      rng: shuffled.nextState,
+      players: {
+        ...this.working.players,
+        [playerId]: { ...player, hand, deck: { ...player.deck, cardIds: shuffled.result } },
+      },
+      cardsById,
+    };
+    this.logger.push({
+      actorPlayerId: playerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${playerId} searched their deck: ${reveal ? 'revealed and ' : ''}added ${chosen.length} card${chosen.length === 1 ? '' : 's'} to hand, then shuffled.`,
+      data: { searchedZone: 'deck', addedCount: chosen.length, addedInstanceIds: reveal ? chosen : [], privateAddedInstanceIds: reveal ? [] : chosen, reveal, remainingDeckCount: shuffled.result.length },
+      relatedCardInstanceIds: chosen,
+      visibility: reveal ? 'public' : { visibleTo: [playerId] },
+    });
+  }
+
   searchPlayResolve(playerId: string, lookedIds: string[], chosenIds: string[], remainder: SearchRemainderDestination, rested = false, bottomOrderIds?: string[]): void {
     const player = this.working.players[playerId];
     if (!player || lookedIds.length === 0) return;

@@ -103,11 +103,16 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
 
-  // OP13-016 (character) Monkey.D.Garp —
-  //   [On Play] If your Leader is [Sabo], [Portgas.D.Ace] or [Monkey.D.Luffy], look at 4 cards from the top
-  //   of your deck; reveal up to 1 card with a cost of 3 or more and add it to your hand. Then, place the
-  //   rest at the bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
+  // OP13-016 — [On Play] if Leader is Sabo/Ace/Luffy, search top 4 for cost 3+ card.
+  {
+    cardNumber: 'OP13-016',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderName', name: 'Sabo' }, { kind: 'leaderName', name: 'Portgas.D.Ace' }, { kind: 'leaderName', name: 'Monkey.D.Luffy' }] }],
+      functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { minCost: 3 } }],
+    },
+  },
 
   // OP13-017 (character) Monkey.D.Dragon —
   //   [Once Per Turn] If your {Revolutionary Army} type Character would be removed from the field by your

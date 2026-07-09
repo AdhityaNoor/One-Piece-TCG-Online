@@ -150,6 +150,7 @@ export type AbilityFunction =
   | { fn: 'playFromTrash'; filter: SearchFilter; maxTargets?: number; rested?: boolean }
   | { fn: 'triggerPlaySelf' }
   | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination; rested?: boolean }
+  | { fn: 'searchDeck'; pick: number; reveal: boolean; destination: Extract<SearchPickDestination, 'hand'>; filter?: SearchFilter }
   // "Reveal 1 card from the top of your deck. If <filter>, <then>." Reveals the top card
   // (public), leaves it on top, and runs `then` only when the card matches `filter`
   // (omit filter for an unconditional reveal). `then` branch functions must not use

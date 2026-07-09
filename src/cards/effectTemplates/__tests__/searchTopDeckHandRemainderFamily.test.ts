@@ -3,13 +3,15 @@
  */
 import { describe, expect, it } from 'vitest';
 import { runTimings, resumeProgram } from '../../../engine/effects/interpreter';
-import { buildBaseRig, makeCharacterDef, putCharacterInPlay } from '../../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, makeEventDef, putCharacterInPlay } from '../../../engine/rules/shared/__tests__/testRig';
 import type { CardDefinition, CardInstance } from '../../../engine/state/card';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
 
 const SRC = makeCharacterDef({ cardDefinitionId: 'SYN-SRC', cardNumber: 'SYN-SRC', category: 'character', baseCost: 3 });
 const WARLORD = makeCharacterDef({ cardDefinitionId: 'SYN-WL', cardNumber: 'SYN-WL', category: 'character', baseCost: 4, types: ['The Seven Warlords of the Sea'] });
 const FILLER = makeCharacterDef({ cardDefinitionId: 'SYN-FILL', cardNumber: 'SYN-FILL', category: 'character', baseCost: 1 });
+const SLASH = makeCharacterDef({ cardDefinitionId: 'SYN-SLASH', cardNumber: 'SYN-SLASH', category: 'character', attributes: ['slash'] });
+const GREEN_EVENT = makeEventDef({ cardDefinitionId: 'SYN-GREEN-EVENT', cardNumber: 'SYN-GREEN-EVENT', category: 'event', colors: ['green'] });
 
 function withDeck(rig: ReturnType<typeof buildBaseRig>, defs: CardDefinition[]) {
   const deckIds = defs.map((_, i) => `deck-${i}`);
@@ -72,5 +74,26 @@ describe('family: searchTopDeck hand + deckTopOrBottom remainder', () => {
     expect(resolved.players.p1.hand.cardIds).toContain(seeded.deckIds[1]);
     expect(resolved.players.p1.deck.cardIds).toEqual([seeded.deckIds[0]]);
     expect(resolved.cardsById[seeded.deckIds[0]].currentZone).toBe('deck');
+  });
+
+  it('filters candidates by attribute or another normal card property', () => {
+    const registry = buildRegistryFromAssignments([{
+      cardNumber: 'SYN-SRC',
+      templateId: 'ability',
+      params: {
+        timing: 'onPlay',
+        functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ attribute: 'slash' }, { category: 'event', color: 'green' }] }, remainder: 'bottom' }],
+      },
+    }]);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC));
+    const seeded = withDeck(rig, [FILLER, SLASH, GREEN_EVENT]);
+    rig = seeded.rig;
+
+    const fired = runTimings(registry['SYN-SRC'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+    const handChoice = fired.state.pendingChoices[0];
+
+    expect(handChoice.constraints.candidateInstanceIds).toEqual([seeded.deckIds[1], seeded.deckIds[2]]);
   });
 });
