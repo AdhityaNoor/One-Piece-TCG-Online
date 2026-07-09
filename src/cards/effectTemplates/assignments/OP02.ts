@@ -282,9 +282,9 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   //   opponent declares an attack, you may rest this card to make it the new target of the attack.)
   // NOTE: not yet implemented (needs template).
 
-  // OP02-051 — PARTIAL: "draw to 3 hand" approximated as draw 1; blue {Impel Down} cost≤6 play mapped.
+  // OP02-051 — [On Play] Draw until 3 in hand, then play up to 1 blue {Impel Down} cost<=6 from hand.
   { cardNumber: 'OP02-051', templateId: 'ability', params: { timing: 'onPlay', functions: [
-    { fn: 'draw', amount: 1 },
+    { fn: 'drawUntilHandCount', targetCount: 3 },
     { fn: 'playFromHand', filter: { category: 'character', color: 'blue', typeIncludes: 'Impel Down', maxCost: 6 } },
   ] } },
 
@@ -326,7 +326,7 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-061 (character) Morley —
   //   [When Attacking] If you have 1 or less cards in your hand, your opponent cannot activate the
   //   [Blocker] of any Character with a cost of 5 or less during this battle.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP02-061', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfHand', atMost: 1 }], functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle', blockerMaxCost: 5 }] } },
 
   // OP02-062 — [On Play]/[When Attacking] trash 2 from hand: return up to 1 Character cost<=4 to hand; then this gains [Double Attack] this turn.
   {
@@ -397,11 +397,17 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP02-069 (event) DEATH WINK —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +6000 power during this battle. Then, draw
-  //   cards so that you have 2 cards in your hand. [Trigger] Return up to 1 Character with a cost of 7 or
-  //   less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
+  // OP02-069 — [Counter] +6000 battle, then draw until 2 in hand. [Trigger] return cost<=7 Character.
+  {
+    cardNumber: 'OP02-069',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 6000, duration: 'duringThisBattle', optional: true },
+        { fn: 'drawUntilHandCount', targetCount: 2 },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 7 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+    ],
+  },
 
   // OP02-070 — (Stage) [Activate: Main] rest this Stage: If Leader [Emporio.Ivankov], draw 1 and trash 1; then trash up to 3.
   { cardNumber: 'OP02-070', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderName', name: 'Emporio.Ivankov' }], functions: [
@@ -553,7 +559,7 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-101 (character) Strawberry —
   //   [When Attacking] If there is a Character with a cost of 0, your opponent cannot activate the
   //   [Blocker] of any Character with a cost of 5 or less during this battle.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP02-101', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'anyCharacterExactCost', exactCost: 0 }], functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle', blockerMaxCost: 5 }] } },
 
   // OP02-102 — K.O. immune to effects. [When Attacking] if a cost-0 Character exists, +2000 this battle.
   {

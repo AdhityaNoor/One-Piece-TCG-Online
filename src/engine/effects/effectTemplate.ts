@@ -117,6 +117,8 @@ export interface EffectContext {
     appliesToAttackerInstanceId: string;
     duration: ContinuousEffectDuration;
     blockerPowerAtLeast?: number;
+    blockerPowerAtMost?: number;
+    blockerMaxCost?: number;
     description?: string;
   }): void;
   /** Prevent the target Character from activating [Blocker] for the record duration. */

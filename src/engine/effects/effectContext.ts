@@ -45,6 +45,8 @@ export class EffectContextImpl implements EffectContext {
   }[] = [];
   /** Event instance ids queued for nested [Main] activation; drained after the main program finishes. */
   private readonly pendingEventActivations: string[] = [];
+  /** New Character instance ids played from trash by this resolution; drained for onCharacterPlayedFromTrash reactions. */
+  private readonly playedFromTrash: string[] = [];
 
   private static readonly FIELD_ZONES = new Set(['leaderArea', 'characterArea', 'stageArea']);
 
@@ -634,6 +636,8 @@ export class EffectContextImpl implements EffectContext {
     appliesToAttackerInstanceId: string;
     duration: ContinuousEffectDuration;
     blockerPowerAtLeast?: number;
+    blockerPowerAtMost?: number;
+    blockerMaxCost?: number;
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -643,12 +647,14 @@ export class EffectContextImpl implements EffectContext {
       duration: spec.duration,
       description:
         spec.description ??
-        (spec.blockerPowerAtLeast === undefined
+        (spec.blockerPowerAtLeast === undefined && spec.blockerPowerAtMost === undefined && spec.blockerMaxCost === undefined
           ? 'opponent cannot activate Blocker'
-          : `opponent cannot activate Blocker with ${spec.blockerPowerAtLeast} or more power`),
+          : 'opponent cannot activate matching Blocker'),
       blockerRestriction: {
         appliesToAttackerInstanceId: spec.appliesToAttackerInstanceId,
         ...(spec.blockerPowerAtLeast !== undefined ? { blockerPowerAtLeast: spec.blockerPowerAtLeast } : {}),
+        ...(spec.blockerPowerAtMost !== undefined ? { blockerPowerAtMost: spec.blockerPowerAtMost } : {}),
+        ...(spec.blockerMaxCost !== undefined ? { blockerMaxCost: spec.blockerMaxCost } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -656,7 +662,13 @@ export class EffectContextImpl implements EffectContext {
       actorPlayerId: this.controllerId,
       type: 'EFFECT_RESOLVED',
       message: `${record.description} while ${spec.appliesToAttackerInstanceId} attacks.`,
-      data: { continuousEffectId: record.id, duration: spec.duration, blockerPowerAtLeast: spec.blockerPowerAtLeast },
+      data: {
+        continuousEffectId: record.id,
+        duration: spec.duration,
+        blockerPowerAtLeast: spec.blockerPowerAtLeast,
+        blockerPowerAtMost: spec.blockerPowerAtMost,
+        blockerMaxCost: spec.blockerMaxCost,
+      },
       relatedCardInstanceIds: [spec.appliesToAttackerInstanceId],
       visibility: 'public',
     });
@@ -1052,6 +1064,12 @@ export class EffectContextImpl implements EffectContext {
   takePendingEventActivations(): string[] {
     const drained = [...this.pendingEventActivations];
     this.pendingEventActivations.length = 0;
+    return drained;
+  }
+
+  takePlayedFromTrash(): string[] {
+    const drained = [...this.playedFromTrash];
+    this.playedFromTrash.length = 0;
     return drained;
   }
 
@@ -1543,6 +1561,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [newId],
       visibility: 'public',
     });
+    this.playedFromTrash.push(newId);
 
     const limit = newCharacterArea.maxSize ?? Infinity;
     if (newCharacterArea.cardIds.length > limit) {

@@ -232,7 +232,26 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-050 (character) Gotti —
   //   [When Attacking] You may trash 1 {Firetank Pirates} type card from your hand: Return up to 1
   //   Character with a cost of 1 or less to the owner's hand or place it at the bottom of their deck.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP11-050',
+    templateId: 'ability',
+    params: {
+      timing: 'whenAttacking',
+      functions: [
+        { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Firetank Pirates' }, optional: true },
+        {
+          fn: 'chooseOne',
+          chooser: 'controller',
+          prompt: 'Choose where to move a cost 1 or less Character.',
+          ifPrevious: 'previousSelectedAny',
+          options: [
+            { label: 'hand', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 1 } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 }] },
+            { label: 'bottomDeck', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 }] },
+          ],
+        },
+      ],
+    },
+  },
 
 
   // OP11-054 — [Blocker][On Play] If Leader multicolored: Draw 3, place 2 from hand at bottom of deck.
@@ -461,7 +480,23 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] You may place 3 {Navy} type cards from your trash at the bottom of your deck in any order:
   //   Give up to 1 rested DON!! card to 1 of your Leader. Then, if there is a Character with a cost of 9 or
   //   more, K.O. up to 1 of your opponent's Characters with a cost of 7 or less.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP11-095',
+    templateId: 'ability',
+    params: { timing: 'onPlay', functions: [{
+      fn: 'chooseOne',
+      chooser: 'controller',
+      prompt: 'Place 3 Navy cards from trash at the bottom of your deck?',
+      options: [
+        { label: 'skip', functions: [] },
+        { label: 'pay', functions: [
+          { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Navy' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, minTargets: 3, maxTargets: 3 },
+          { fn: 'giveDonControllerLeader', count: 1, ifPrevious: 'previousMovedAny' },
+          { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 7 } }, optional: true, ifGate: [{ kind: 'anyCharacterCostAtLeast', atLeast: 9 }], ifPrevious: 'previousMovedAny' },
+        ] },
+      ],
+    }] },
+  },
 
 
   // OP11-097 — [Counter] up to 1 Leader/Char +1000 this battle. PARTIAL: the "10+ trash → recur black Char" rider needs a trash-count gate (deferred).
@@ -563,7 +598,7 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the on-play canAttackActive grant is implemented below; the attack-triggered power buff remains deferred.
   { cardNumber: 'OP11-119', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller' }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }] } },
 
-  { cardNumber: 'OP11-013', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', blockerPowerAtLeast: 2001 }] } },
+  { cardNumber: 'OP11-013', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', blockerPowerAtMost: 2000 }] } },
 
   // OP11-019 (event) Glorp Web!! —
   //   [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if

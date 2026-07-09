@@ -36,7 +36,7 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-005 (character) Thatch —
   //   If you have a Character with 8000 power or more and a type including "Whitebeard Pirates", give this
   //   card in your hand −3 cost.[Blocker]
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP16-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'selfTypedCharacterPowerAtLeast', typeIncludes: 'Whitebeard Pirates', power: 8000 }] }] } },
 
   // ── Triage batch (OP16 expressible). "reveal 8000-power Char from hand" cost, "base power becomes same as..." swaps, named-present gates, and opp-Life-to-opponent's-hand are deferred. ──
   { cardNumber: 'OP16-006', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, optional: true }] } },
@@ -83,7 +83,34 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   If your Leader's card name includes "Ace" and you have 6 or more DON!! cards on your field, give this
   //   card in your hand −2 cost.[On Your Opponent's Attack] You may trash 1 Character card with 8000 power
   //   from your hand: Your Leader and this Character's base power becomes 7000 during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP16-015',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -2, duration: 'permanent', gate: [{ kind: 'leaderNameIncludes', name: 'Ace' }, { kind: 'selfDonFieldCount', atLeast: 6 }] }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentsAttack',
+          functions: [{
+            fn: 'chooseOne',
+            chooser: 'controller',
+            prompt: 'Trash an 8000-power Character from hand?',
+            options: [
+              { label: 'skip', functions: [] },
+              {
+                label: 'pay',
+                functions: [
+                  { fn: 'trashTypeFromHand', count: 1, filter: { category: 'character', exactPower: 8000 } },
+                  { fn: 'setBasePower', target: { group: 'leader', player: 'controller' }, value: 7000, duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny' },
+                  { fn: 'setBasePower', target: { ref: 'self' }, value: 7000, duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny' },
+                ],
+              },
+            ],
+          }],
+        },
+      },
+    ],
+  },
 
   // OP16-017 (character) LittleOars Jr. —
   //   If you have no Characters with a type including "Whitebeard Pirates" and a cost of 8 or more, give
@@ -212,7 +239,7 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP16-042 (character) Prisoner of Impel Down —
   //   Under the rules of this game, you may have any number of this card in your deck.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP16-042', templateId: 'noRuntime', params: {} },
 
 
   // OP16-045 (character) Crocodile —
@@ -223,7 +250,7 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-047 (character) Donquixote Doflamingo —
   //   [Activate: Main] You may rest this Character: If your opponent has 8 or more cards in their hand,
   //   they place 2 cards from their hand at the bottom of their deck in any order.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP16-047', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'opponentHand', atLeast: 8 }], functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, minTargets: 2, maxTargets: 2, chooser: 'opponent' }] } },
 
   // OP16-048 — [On Play] If Leader {Impel Down}, draw 1, play [Prisoner of Impel Down] from hand. PARTIAL: opp-attack Blocker grant deferred.
   { cardNumber: 'OP16-048', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { category: 'character', name: 'Prisoner of Impel Down' } }] } },
@@ -283,7 +310,8 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-060 (leader) Sengoku —
   //   [Activate: Main] You may return 8 of your active DON!! cards to your DON!! deck: Play up to 3
   //   {Admiral} type Character cards with different card names from your hand.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: "different card names" across the selected cards is not enforced yet.
+  { cardNumber: 'OP16-060', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 8, activeOnly: true }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Admiral' }, maxTargets: 3 }] } },
 
   // OP16-063 — [On Play] Add up to 2 DON!! (rested). PARTIAL: DON!! −1 disable-opp-Blocker activate deferred.
   { cardNumber: 'OP16-063', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 2, rested: true }] } },
@@ -461,7 +489,7 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-079 (leader) Yamato —
   //   When a {Land of Wano} type Character card is played from your trash, that Character gains [Rush]
   //   during this turn.(This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP16-079', templateId: 'ability', params: { timing: 'onCharacterPlayedFromTrash', gate: [{ kind: 'playedCharacterTypeIncludes', typeIncludes: 'Land of Wano' }], functions: [{ fn: 'addKeyword', target: { ref: 'eventPlayedCharacter' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
   // OP16-080 (leader) Marshall.D.Teach —
   //   [Opponent's Turn] All of your Characters gain +1 cost.[On Your Opponent's Attack] [Once Per Turn] You
@@ -486,7 +514,7 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-084 (character) Kouzuki Momonosuke —
   //   [Activate: Main] You may trash this Character with a cost of 20 or more: If you have 9 or more DON!!
   //   cards on your field, play up to 1 [Kouzuki Momonosuke] with a cost of 9 from your trash.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP16-084', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'selfDonFieldCount', atLeast: 9 }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', name: 'Kouzuki Momonosuke', exactCost: 9 } }] } },
 
   // OP16-085 — [Blocker][On Play] Play {Land of Wano} cost ≤6 from trash (exclude-[Momonosuke] dropped).
   { cardNumber: 'OP16-085', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Land of Wano', maxCost: 6 } }] } },

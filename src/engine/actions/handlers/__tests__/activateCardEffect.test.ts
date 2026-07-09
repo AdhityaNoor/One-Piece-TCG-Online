@@ -86,4 +86,36 @@ describe('ACTIVATE_CARD_EFFECT ability costs', () => {
     expect(result.state.cardsById[attachedDonId].currentZone).toBe('donDeck');
     expect(result.state.cardsById[attachedDonId].donRested).toBe(false);
   });
+
+  it('requires active cost-area DON!! for active-only DON!! return costs', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const stageDef = makeStageDef({ cardDefinitionId: 'STAGE-ACTIVE-DON-MINUS', baseCost: 0 });
+    const { rig, instanceId: stageId } = putStageInPlay(base, 'p1', stageDef);
+    const { rig: withDon, donIds } = putDon(rig, 'p1', 2);
+    const [activeDonId, restedDonId] = donIds;
+    const state = {
+      ...withDon.state,
+      cardsById: {
+        ...withDon.state.cardsById,
+        [activeDonId]: { ...withDon.state.cardsById[activeDonId], donRested: false },
+        [restedDonId]: { ...withDon.state.cardsById[restedDonId], donRested: true },
+      },
+    };
+    const registry: EffectTemplateRegistry = {
+      [stageDef.cardDefinitionId]: {
+        cardNumber: stageDef.cardDefinitionId,
+        abilities: [{ timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1, activeOnly: true }], ops: [] }],
+      },
+    };
+
+    expect(validateActivateCardEffect(state, activate(stageId, [restedDonId]), registry, withDon.defs).legal).toBe(false);
+    expect(validateActivateCardEffect(state, activate(stageId, [activeDonId]), registry, withDon.defs).legal).toBe(true);
+
+    const result = executeActivateCardEffect(state, activate(stageId, [activeDonId]), withDon.defs, registry);
+
+    expect(result.state.players.p1.costArea.cardIds).not.toContain(activeDonId);
+    expect(result.state.players.p1.costArea.cardIds).toContain(restedDonId);
+    expect(result.state.players.p1.donDeck.cardIds).toContain(activeDonId);
+    expect(result.state.cardsById[activeDonId].donRested).toBe(false);
+  });
 });

@@ -46,7 +46,29 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-007 (character) Ace & Sabo & Luffy —
   //   [Activate: Main] You may give 1 of your active DON!! cards to 1 of your Leader or Character cards and
   //   trash this Character: Give up to 1 of your opponent's Characters −3000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP13-007',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Give 1 active DON!! and trash this Character?',
+        options: [
+          { label: 'skip', functions: [] },
+          {
+            label: 'pay',
+            functions: [
+              { fn: 'giveDon', count: 1, activeDonOnly: true },
+              { fn: 'trashSelf', ifPrevious: 'previousMovedAny' },
+              { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+            ],
+          },
+        ],
+      }],
+    },
+  },
 
   // OP13-008 — aura K.O. replacement: trash this Character to save ally {Revolutionary Army} from opp effect K.O.
   {
@@ -235,7 +257,19 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-053 (character) Marshall.D.Teach —
   //   [When Attacking] You may trash 1 of your Characters with a type including "Whitebeard Pirates": Draw
   //   1 card and this Character gains [Banish] during this turn.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP13-053', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{
+    fn: 'chooseOne',
+    chooser: 'controller',
+    prompt: 'Trash 1 Whitebeard Pirates Character?',
+    options: [
+      { label: 'skip', functions: [] },
+      { label: 'pay', functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'Whitebeard Pirates' } }, to: { zone: 'trash', player: 'owner' }, minTargets: 1, maxTargets: 1 },
+        { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+      ] },
+    ],
+  }] } },
 
   { cardNumber: 'OP13-054', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfLife', atMost: 3 }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'giveDon', count: 1 }] } },
 
@@ -358,25 +392,83 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   the start of the game, play up to 1 {Mary Geoise} type Stage card from your deck.[Activate: Main]
   //   [Once Per Turn] You may trash 1 of your {Celestial Dragons} type Characters or 1 card from your hand:
   //   Draw 1 card.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: deck construction and start-of-game Stage play remain deferred.
+  { cardNumber: 'OP13-079', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{
+    fn: 'chooseOne',
+    chooser: 'controller',
+    prompt: 'Choose a card to trash.',
+    options: [
+      { label: 'character', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'Celestial Dragons' } }, to: { zone: 'trash', player: 'owner' }, minTargets: 1, maxTargets: 1 }, { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }] },
+      { label: 'hand', functions: [{ fn: 'trashFromHand', count: 1 }, { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }] },
+    ],
+  }] } },
 
   // OP13-080 (character) St. Ethanbaron V. Nusjuro —
   //   If you have 7 or more cards in your trash, this Character cannot be removed from the field by your
   //   opponent's effects and gains [Rush].[When Attacking] If you have 10 or more cards in your trash, give
   //   up to 1 of your opponent's Characters −2000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: field-removal immunity remains deferred; [Rush] and attack debuff are mapped.
+  {
+    cardNumber: 'OP13-080',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfTrashCount', atLeast: 10 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
 
   // OP13-081 (character) Koala —
   //   If your Leader has the {Revolutionary Army} type, this Character gains +3 cost.[Activate: Main] [Once
   //   Per Turn] You may place 1 card from your trash at the bottom of your deck: Give up to 1 rested DON!!
   //   card to your Leader or 1 of your Characters.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP13-081',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCost', target: { ref: 'self' }, amount: 3, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }] } }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Place 1 card from trash at the bottom of your deck?',
+        options: [
+          { label: 'skip', functions: [] },
+          { label: 'pay', functions: [
+            { fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, minTargets: 1, maxTargets: 1 },
+            { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' },
+          ] },
+        ],
+      }] } },
+    ],
+  },
 
   // OP13-082 (character) Five Elders —
   //   [Activate: Main] If your Leader is [Imu], you may rest 1 of your DON!! cards and trash 1 card from
   //   your hand: Trash all of your Characters and play up to 5 {Five Elders} type Character cards with 5000
   //   power and different card names from your trash.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: "different card names" across the played cards is not enforced yet.
+  {
+    cardNumber: 'OP13-082',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'restDon', count: 1 }],
+      gate: [{ kind: 'leaderName', name: 'Imu' }],
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Trash 1 card from hand?',
+        options: [
+          { label: 'skip', functions: [] },
+          {
+            label: 'pay',
+            functions: [
+              { fn: 'trashFromHand', count: 1 },
+              { fn: 'moveAllCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'trash', player: 'owner' }, ifPrevious: 'previousMovedAny' },
+              { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Five Elders', exactPower: 5000 }, maxTargets: 5 },
+            ],
+          },
+        ],
+      }],
+    },
+  },
 
   // OP13-083 — [On Play] Look 5, reveal up to 1 {Five Elders} to hand, rest to bottom. PARTIAL: static trash-count immunity deferred.
   { cardNumber: 'OP13-083', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Five Elders' }, remainder: 'bottom' }] } },
@@ -385,7 +477,8 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   If you have 7 or more cards in your trash, this Character cannot be removed from the field by your
   //   opponent's effects.[Your Turn] If you have 10 or more cards in your trash, set the base power of all
   //   of your {Five Elders} type Characters to 7000.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: field-removal immunity remains deferred; Five Elders base-power aura is mapped.
+  { cardNumber: 'OP13-084', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'setBasePowerAuraControllerTypes', value: 7000, duration: 'permanent', anyOfTypes: ['Five Elders'], sourceCondition: { turn: 'your' }, gate: [{ kind: 'selfTrashCount', atLeast: 10 }] }] } },
 
   // OP13-086 - [On Play] Look at 3; add Celestial Dragons other than self, trash rest, then trash 1 from hand.
   {

@@ -60,6 +60,17 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['Draw {N} cards', 'draw {N} card'],
     examples: [{ cardNumber: 'OP01-055', snippet: "{ fn: 'draw', amount: 2 }" }],
   },
+  drawUntilHandCount: {
+    id: 'drawUntilHandCount',
+    summary: 'Draw only enough cards for the chosen player to reach N cards in hand.',
+    params: [
+      { name: 'targetCount', type: 'number', required: true },
+      { name: 'player', type: "'controller' | 'opponent'", required: false },
+    ],
+    covers: ['draw cards so that you have {N} cards in your hand'],
+    excludes: ['Draw a fixed number of cards', 'draw until deck/hand has a dynamic count not expressible as a fixed target'],
+    examples: [{ cardNumber: 'OP02-069', snippet: "{ fn: 'drawUntilHandCount', targetCount: 2 }" }],
+  },
   drawAndTrash: {
     id: 'drawAndTrash',
     summary: 'Draw N then trash M from hand as one atomic step ("draw N and trash M").',
@@ -95,8 +106,9 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'optional', type: 'boolean', required: false },
       { name: 'targetTypeIncludes', type: 'string', required: false },
       { name: 'charactersOnly', type: 'boolean', required: false },
+      { name: 'activeDonOnly', type: 'boolean', required: false },
     ],
-    covers: ['give up to {N} rested DON!! card to your Leader or 1 of your Characters'],
+    covers: ['give up to {N} rested DON!! card to your Leader or 1 of your Characters', 'give {N} active DON!! card to your Leader or Character'],
     excludes: ['give THIS Character up to N (self-only, "up to")', 'give to EACH of your {type} Characters'],
     examples: [{ cardNumber: 'EB01-002', snippet: "{ fn: 'giveDon', count: 1 }" }],
   },
@@ -316,9 +328,11 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'target', type: "'self' | 'chosenControllerLeaderOrCharacter'", required: false },
       { name: 'filter', type: '{ typeIncludes?: string; name?: string; minPower?: number }', required: false },
       { name: 'blockerPowerAtLeast', type: 'number', required: false },
+      { name: 'blockerPowerAtMost', type: 'number', required: false },
+      { name: 'blockerMaxCost', type: 'number', required: false },
       { name: 'powerBonus', type: 'number', required: false, note: 'with chosen target: grant +N power for the same duration before registering blocker suppression' },
     ],
-    covers: ['your opponent cannot activate [Blocker] during this battle', 'if the selected card attacks during this turn, your opponent cannot activate [Blocker]'],
+    covers: ['your opponent cannot activate [Blocker] during this battle', 'if the selected card attacks during this turn, your opponent cannot activate [Blocker]', 'cannot activate the [Blocker] of any Character with a cost of {N} or less', 'cannot activate a [Blocker] Character that has {N} or less power'],
     examples: [{ cardNumber: 'OP07-057', snippet: "{ fn: 'preventBlockers', duration: 'duringThisTurn', target: 'chosenControllerLeaderOrCharacter', filter: { typeIncludes: 'The Seven Warlords of the Sea' }, powerBonus: 2000 }" }],
   },
   preventBlockersOnPreviousTarget: {
@@ -525,6 +539,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['trash {N} cards from the top of your deck'],
     examples: [{ cardNumber: 'OP04-079', snippet: "{ fn: 'trashTopDeck', count: 2 }" }],
   },
+  trashSelf: {
+    id: 'trashSelf',
+    summary: 'Trash the source card as an ordered effect function, not as an activation cost.',
+    params: [],
+    covers: ['and trash this Character:', 'trash this Character, then'],
+    examples: [{ cardNumber: 'OP13-007', snippet: "{ fn: 'trashSelf', ifPrevious: 'previousMovedAny' }" }],
+  },
   moveCards: {
     id: 'moveCards',
     summary: 'Generic zone move: from a source (characters/hand/trash/deck/life) to a destination (hand/life/deck-bottom/trash). Covers return-to-hand, bottom-deck, life-to-hand, etc.',
@@ -538,6 +559,16 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['return up to 1 Character to the owner\'s hand', 'place ... at the bottom of the owner\'s deck', 'add 1 card from the top of your Life to your hand', 'your opponent places 1 card from their hand at the bottom of their deck'],
     excludes: ['character source filter by CURRENT minCost (only minBaseCost exists)', 'return to hand OR bottom of deck (player choice of destination)'],
     examples: [{ cardNumber: 'OP01-047', snippet: "{ fn: 'moveCards', from: { zone: 'characters', player: 'any' }, to: { zone: 'hand', player: 'owner' }, optional: true }" }],
+  },
+  moveAllCards: {
+    id: 'moveAllCards',
+    summary: 'Generic no-choice movement: move every card in a source selector to a destination.',
+    params: [
+      { name: 'from', type: 'MoveCardSource', required: true },
+      { name: 'to', type: 'MoveCardDestination', required: true },
+    ],
+    covers: ['Trash all of your Characters', 'place all matching Characters at the bottom of the owner\'s deck'],
+    examples: [{ cardNumber: 'OP13-082', snippet: "{ fn: 'moveAllCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'trash', player: 'owner' } }" }],
   },
   moveAllCharactersToBottomDeck: {
     id: 'moveAllCharactersToBottomDeck',
@@ -974,6 +1005,7 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
 
 export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   leaderName: { id: 'leaderName', summary: 'If your Leader is [X].', params: [{ name: 'name', type: 'string', required: true }], covers: ['If your Leader is [{name}]'], examples: [{ cardNumber: 'OP12-059', snippet: "{ kind: 'leaderName', name: 'Sanji' }" }] },
+  leaderNameIncludes: { id: 'leaderNameIncludes', summary: 'If your Leader card name includes X.', params: [{ name: 'name', type: 'string', required: true }], covers: ['If your Leader\'s card name includes "{name}"'], examples: [{ cardNumber: 'OP16-015', snippet: "{ kind: 'leaderNameIncludes', name: 'Ace' }" }] },
   leaderType: { id: 'leaderType', summary: 'If your Leader has the {T} type.', params: [{ name: 'type', type: 'string', required: true }], covers: ['If your Leader has the {{type}} type', 'If your Leader\'s type includes "{type}"'], examples: [{ cardNumber: 'OP06-010', snippet: "{ kind: 'leaderType', type: 'FILM' }" }] },
   leaderAttribute: { id: 'leaderAttribute', summary: 'If your Leader has the <X> attribute.', params: [{ name: 'attribute', type: 'string', required: true }], covers: ['If your Leader has the <{attribute}> attribute'], examples: [{ cardNumber: 'OP12-021', snippet: "{ kind: 'leaderAttribute', attribute: 'slash' }" }] },
   leaderMulticolor: { id: 'leaderMulticolor', summary: 'If your Leader is multicolored.', params: [], covers: ['If your Leader is multicolored'], examples: [{ cardNumber: 'EB03-004', snippet: "{ kind: 'leaderMulticolor' }" }] },
@@ -1023,9 +1055,10 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   opponentHasCharacterExactCost: { id: 'opponentHasCharacterExactCost', summary: 'Opponent has a Character with a cost of exactly N.', params: [{ name: 'exactCost', type: 'number', required: true }], covers: ['if your opponent has a Character with a cost of {N}'], examples: [{ cardNumber: 'OP07-087', snippet: "{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }" }] },
   selfDonReturnedThisAction: { id: 'selfDonReturnedThisAction', summary: 'N or more DON!! were returned to the DON!! deck during this cost payment (onDonReturned only).', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['When {N} or more DON!! cards on your field are returned to your DON!! deck', 'When a DON!! card on your field is returned to your DON!! deck'], examples: [{ cardNumber: 'OP09-061', snippet: "{ kind: 'selfDonReturnedThisAction', atLeast: 2 }" }] },
   donGivenTargetLeaderOrCharacter: { id: 'donGivenTargetLeaderOrCharacter', summary: 'The DON!! recipient is your Leader or a Character (onDonGiven only).', params: [], covers: ['When this Leader or any of your Characters is given a DON!! card'], examples: [{ cardNumber: 'OP02-002', snippet: "{ kind: 'donGivenTargetLeaderOrCharacter' }" }] },
-  donGivenTargetIsSelf: { id: 'donGivenTargetIsSelf', summary: 'This card was the DON!! recipient (onDonGiven only).', params: [], covers: ['When this Character is given a DON!! card'], examples: [] },
-  selfDonGivenThisAction: { id: 'selfDonGivenThisAction', summary: 'N or more DON!! were given to this card this event (onDonGiven only).', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['When this Character is given {N} or more DON!! cards'], examples: [] },
+  donGivenTargetIsSelf: { id: 'donGivenTargetIsSelf', summary: 'This card was the DON!! recipient (onDonGiven only).', params: [], covers: ['When this Character is given a DON!! card'], examples: [{ cardNumber: 'OP13-007', snippet: "{ kind: 'donGivenTargetIsSelf' }" }] },
+  selfDonGivenThisAction: { id: 'selfDonGivenThisAction', summary: 'N or more DON!! were given to this card this event (onDonGiven only).', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['When this Character is given {N} or more DON!! cards'], examples: [{ cardNumber: 'OP13-007', snippet: "{ kind: 'selfDonGivenThisAction', atLeast: 1 }" }] },
   playedCharacterNoBaseEffect: { id: 'playedCharacterNoBaseEffect', summary: 'The Character just played from hand has no base effect (onCharacterPlayedFromHand only).', params: [], covers: ['Character with no base effect from your hand'], examples: [{ cardNumber: 'OP02-026', snippet: "{ kind: 'playedCharacterNoBaseEffect' }" }] },
+  playedCharacterTypeIncludes: { id: 'playedCharacterTypeIncludes', summary: 'The just-played Character carries a type (played-character reactive windows).', params: [{ name: 'typeIncludes', type: 'string', required: true }], covers: ['When a {type} type Character card is played'], examples: [{ cardNumber: 'OP16-079', snippet: "{ kind: 'playedCharacterTypeIncludes', typeIncludes: 'Land of Wano' }" }] },
   koedCharacterController: { id: 'koedCharacterController', summary: "Filters the onCharacterKoed reactive window by whose Character was K.O.'d (onCharacterKoed only).", params: [{ name: 'player', type: "'opponent' | 'controller'", required: true }], covers: ["When your opponent's Character is K.O.'d", 'When your Character is K.O.\u2019d'], examples: [{ cardNumber: 'OP01-061', snippet: "{ kind: 'koedCharacterController', player: 'opponent' }" }] },
   removedFromFieldController: { id: 'removedFromFieldController', summary: 'Whose card was removed from the field (onRemovedFromField only).', params: [{ name: 'player', type: "'opponent' | 'controller'", required: true }], covers: ['When your Character is removed', 'When your {Type} type Character is removed'], examples: [{ cardNumber: 'OP13-078', snippet: "{ kind: 'removedFromFieldController', player: 'controller' }" }] },
   removedByEffectController: { id: 'removedByEffectController', summary: 'Whose effect removed the card (onRemovedFromField only).', params: [{ name: 'player', type: "'opponent' | 'controller'", required: true }], covers: ['removed from the field by your effect', "removed from the field by your opponent's effect"], examples: [{ cardNumber: 'OP07-038', snippet: "{ kind: 'removedByEffectController', player: 'controller' }" }] },
@@ -1039,7 +1072,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
 // ---------------------------------------------------------------------------
 
 export const COSTS: Record<AbilityCost['kind'], CapabilitySpec> = {
-  donMinus: { id: 'donMinus', summary: 'DON!! −N: return N DON!! from the field to the DON!! deck.', params: [{ name: 'count', type: 'number', required: true }], covers: ['DON!! −{N}'], examples: [{ cardNumber: 'OP12-069', snippet: "cost: [{ kind: 'donMinus', count: 1 }]" }] },
+  donMinus: { id: 'donMinus', summary: 'DON!! −N: return N DON!! from the field to the DON!! deck.', params: [{ name: 'count', type: 'number', required: true }, { name: 'activeOnly', type: 'boolean', required: false }], covers: ['DON!! −{N}', 'return {N} active DON!! cards to your DON!! deck'], examples: [{ cardNumber: 'OP12-069', snippet: "cost: [{ kind: 'donMinus', count: 1 }]" }] },
   restThis: { id: 'restThis', summary: 'Rest the source card as a cost.', params: [], covers: ['You may rest this card:'], examples: [{ cardNumber: 'OP05-026', snippet: "cost: [{ kind: 'restThis' }]" }] },
   trashThis: { id: 'trashThis', summary: 'Trash the source card as a cost (NOT a K.O.; does not fire [On K.O.]).', params: [], covers: ['You may trash this Character:'], examples: [{ cardNumber: 'EB01-042', snippet: "cost: [{ kind: 'trashThis' }]" }] },
   restDon: { id: 'restDon', summary: 'Rest N of your active DON!! cards as a cost.', params: [{ name: 'count', type: 'number', required: true }], covers: ['➀/➁/... (rest the specified number of DON!! cards)'], examples: [{ cardNumber: 'OP16-006', snippet: "cost: [{ kind: 'restDon', count: 2 }]" }] },
@@ -1070,6 +1103,7 @@ export const TIMINGS: Record<IrTiming, string> = {
   onDrawOutsideDrawPhase: '[When you draw outside your Draw Phase] — fires after each effect-sourced draw.',
   onLifeToHand: '[When a card is added to your hand from your Life] — fires after Life→hand in battle.',
   onCharacterPlayedFromHand: '[When you play a Character from your hand] — fires on your other in-play cards.',
+  onCharacterPlayedFromTrash: '[When you play a Character from your trash] — fires on your other in-play cards.',
   counter: '[Counter] — during the opponent\'s attack, from hand.',
   lifeTrigger: '[Trigger] — when this card is revealed from Life.',
   endOfTurn: '[End of Your Turn].',

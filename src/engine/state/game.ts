@@ -220,6 +220,10 @@ export interface ContinuousBlockerRestriction {
   appliesToBlockerInstanceId?: string;
   /** Omitted for "cannot activate [Blocker]" with no blocker filter (attacker-scoped only). */
   blockerPowerAtLeast?: number;
+  /** Restrict only Blocker Characters with current power at or below this value. */
+  blockerPowerAtMost?: number;
+  /** Restrict only Blocker Characters with current cost at or below this value. */
+  blockerMaxCost?: number;
 }
 
 /** Prevents the target Leader/Character from declaring an attack (7-1-1-1) while this record is active. */

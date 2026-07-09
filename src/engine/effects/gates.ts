@@ -65,7 +65,7 @@ export interface GateEvalContext {
   removedFromFieldControllerId?: string;
   /** Player who controlled the effect that removed the card. */
   removedByEffectControllerId?: string;
-  /** Character just played from hand (onCharacterPlayedFromHand reactive window). */
+  /** Character just played from hand/trash (played-character reactive windows). */
   playedCharacterInstanceId?: string;
   /** Controller (pre-K.O.) of the Character that was K.O.'d (onCharacterKoed reactive window). */
   koedCharacterControllerId?: string;
@@ -103,6 +103,14 @@ function evaluateGate(
       const def = defs[leaderInst.cardDefinitionId];
       if (!def) return false;
       return def.name === gate.name;
+    }
+
+    case 'leaderNameIncludes': {
+      const leaderInst = state.cardsById[player.leaderInstanceId];
+      if (!leaderInst) return false;
+      const def = defs[leaderInst.cardDefinitionId];
+      if (!def) return false;
+      return def.name.toLowerCase().includes(gate.name.toLowerCase());
     }
 
     case 'leaderType': {
@@ -486,6 +494,14 @@ function evaluateGate(
       const inst = state.cardsById[playedId];
       const def = inst ? defs[inst.cardDefinitionId] : undefined;
       return !!def && cardHasNoBaseEffect(def);
+    }
+
+    case 'playedCharacterTypeIncludes': {
+      const playedId = eventContext?.playedCharacterInstanceId;
+      if (!playedId) return false;
+      const def = defs[state.cardsById[playedId]?.cardDefinitionId ?? ''];
+      if (!def) return false;
+      return typeMatches(def.types, gate.typeIncludes);
     }
 
     case 'koedCharacterController': {

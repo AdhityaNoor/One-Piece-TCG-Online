@@ -16,6 +16,7 @@ import type { CardCategory, Color } from '../state/card';
 /** Resolves to a set of CardInstance ids at run time. Pure data. */
 export type Selector =
   | { sel: 'self' } // the source card
+  | { sel: 'eventPlayedCharacter' } // the Character instance from the current played-character event
   | { sel: 'controllerLeader' }
   | ({ sel: 'controllerCharacters' } & CharacterMoveFilter)
   | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; name?: string; excludeSelf?: boolean; minPower?: number }
@@ -136,6 +137,7 @@ export interface EffectOpSequenceGate {
  */
 export type EffectOp =
   | ({ op: 'draw'; amount: number; player?: 'controller' | 'opponent' } & EffectOpSequenceGate)
+  | ({ op: 'drawUntilHandCount'; targetCount: number; player?: 'controller' | 'opponent' } & EffectOpSequenceGate)
   | ({ op: 'addPower'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition; scale?: PowerScale } & EffectOpSequenceGate)
   // Register an "aura"/anthem power modifier over a dynamic target group (e.g. "your
   // {Supernovas} Leaders and Characters gain +1000"), optionally gated on source state.
@@ -159,7 +161,7 @@ export type EffectOp =
   | ({ op: 'addKoImmunityAura'; group: KoImmunityAuraGroup; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string } & EffectOpSequenceGate)
   // Register optional K.O. replacement on enter play ("would be K.O.'d … instead").
   | ({ op: 'registerKoReplacement'; appliesTo: 'self' | 'aura'; appliesToInstanceId?: string; group?: KoReplacementAuraGroup; scope: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; action: KoReplacementAction; condition?: IrCondition; sourceCondition?: SourceStateCondition; duration: IrDuration } & EffectOpSequenceGate)
-  | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number } & EffectOpSequenceGate)
+  | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number; blockerPowerAtMost?: number; blockerMaxCost?: number } & EffectOpSequenceGate)
   | ({ op: 'suppressBlockerActivation'; target: Selector; duration: IrDuration } & EffectOpSequenceGate)
   // Prevent the target Leader/Character from declaring an attack (7-1-1-1) while active.
   | ({ op: 'preventAttack'; target: Selector; duration: IrDuration; forbiddenTarget?: 'leader'; forbiddenTargetFilter?: import('../state/game').ForbiddenAttackTargetFilter; whileSummoningSick?: boolean; attackUnlessGate?: AbilityGate[]; condition?: IrCondition } & EffectOpSequenceGate)
@@ -273,6 +275,7 @@ export type IrTiming =
   | 'onDrawOutsideDrawPhase'
   | 'onLifeToHand'
   | 'onCharacterPlayedFromHand'
+  | 'onCharacterPlayedFromTrash'
   | 'counter'
   | 'lifeTrigger'
   | 'endOfTurn';
@@ -284,7 +287,7 @@ export type IrTiming =
  * templates until reviewed rather than resolving for free.
  */
 export type AbilityCost =
-  | { kind: 'donMinus'; count: number } // return N DON!! from the field to the DON!! deck
+  | { kind: 'donMinus'; count: number; activeOnly?: boolean } // return N DON!! from the field to the DON!! deck; activeOnly restricts to active cost-area DON!!
   | { kind: 'restThis' } // rest the source card
   | { kind: 'trashThis' } // trash the source card (not a K.O.; does not fire [On K.O.])
   | { kind: 'restDon'; count: number }; // rest N of your active DON!! cards
@@ -295,6 +298,7 @@ export type AbilityCost =
  */
 export type AbilityGate =
   | { kind: 'leaderName'; name: string } // "If your Leader is [X]"
+  | { kind: 'leaderNameIncludes'; name: string } // "If your Leader's card name includes X"
   | { kind: 'leaderType'; type: string } // "If your Leader has the {Y} type"
   | { kind: 'leaderMulticolor' } // "If your Leader is multicolored"
   | { kind: 'selfCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more/less Characters"
@@ -350,6 +354,7 @@ export type AbilityGate =
   | { kind: 'donGivenTargetIsSelf' } // onDonGiven: this card/Leader was the DON recipient
   | { kind: 'selfDonGivenThisAction'; atLeast?: number; atMost?: number } // onDonGiven: N+ DON!! were given to this card this event
   | { kind: 'playedCharacterNoBaseEffect' } // onCharacterPlayedFromHand: the just-played Character has no base effect
+  | { kind: 'playedCharacterTypeIncludes'; typeIncludes: string } // onCharacterPlayed*: the just-played Character carries this type
   // onCharacterKoed only: filter the reactive window by whose Character was K.O.'d.
   // 'opponent' = "When your opponent's Character is K.O.'d"; 'controller' = "When your Character is K.O.'d".
   | { kind: 'koedCharacterController'; player: 'opponent' | 'controller' }

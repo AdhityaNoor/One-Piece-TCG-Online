@@ -24,10 +24,14 @@ export function fieldDonIds(state: GameState, playerId: string): string[] {
   return [...ids];
 }
 
-function activeDonCount(state: GameState, playerId: string): number {
+function activeDonIds(state: GameState, playerId: string): string[] {
   const player = state.players[playerId];
-  if (!player) return 0;
-  return player.costArea.cardIds.filter((id) => state.cardsById[id]?.donRested === false).length;
+  if (!player) return [];
+  return player.costArea.cardIds.filter((id) => state.cardsById[id]?.donRested === false);
+}
+
+function activeDonCount(state: GameState, playerId: string): number {
+  return activeDonIds(state, playerId).length;
 }
 
 export function requiredDonMinusCount(costs: AbilityCost[] = []): number {
@@ -38,9 +42,21 @@ export function requiredDonMinusCount(costs: AbilityCost[] = []): number {
 
 /** Auto-pick field DON!! for nested/free activations that cannot prompt for DON!! −N selection. */
 export function autoSelectDonMinusIds(state: GameState, playerId: string, costs: AbilityCost[] = []): string[] {
-  const needed = requiredDonMinusCount(costs);
-  if (needed <= 0) return [];
-  return fieldDonIds(state, playerId).slice(0, needed);
+  const selected: string[] = [];
+  const used = new Set<string>();
+  for (const cost of costs) {
+    if (cost.kind !== 'donMinus') continue;
+    const candidates = cost.activeOnly ? activeDonIds(state, playerId) : fieldDonIds(state, playerId);
+    let pickedForCost = 0;
+    for (const id of candidates) {
+      if (used.has(id)) continue;
+      selected.push(id);
+      used.add(id);
+      pickedForCost += 1;
+      if (pickedForCost >= cost.count) break;
+    }
+  }
+  return selected;
 }
 
 export function canPayAbilityCost(
@@ -60,6 +76,7 @@ export function canPayAbilityCost(
     reasons.push('Selected DON!! for DON!! -N costs must not contain duplicates.');
   }
   const fieldDon = new Set(fieldDonIds(state, playerId));
+  const activeDon = new Set(activeDonIds(state, playerId));
   for (const donId of uniqueSelectedDon) {
     const donInstance = state.cardsById[donId];
     if (!donInstance || donInstance.ownerId !== playerId || !fieldDon.has(donId)) {
@@ -67,12 +84,19 @@ export function canPayAbilityCost(
     }
   }
 
+  let selectedCursor = 0;
   for (const cost of costs) {
     switch (cost.kind) {
       case 'donMinus': {
-        const available = fieldDonIds(state, playerId).length;
+        const selectedForCost = selectedDonMinusIds.slice(selectedCursor, selectedCursor + cost.count);
+        selectedCursor += cost.count;
+        const available = cost.activeOnly ? activeDon.size : fieldDonIds(state, playerId).length;
         if (available < cost.count) {
-          reasons.push(`Cost requires returning ${cost.count} DON!! but only ${available} are on the field.`);
+          reasons.push(`Cost requires returning ${cost.count}${cost.activeOnly ? ' active' : ''} DON!! but only ${available} are available.`);
+        }
+        if (cost.activeOnly) {
+          const inactive = selectedForCost.filter((id) => !activeDon.has(id));
+          if (inactive.length > 0) reasons.push('Cost requires active DON!! from the cost area.');
         }
         break;
       }

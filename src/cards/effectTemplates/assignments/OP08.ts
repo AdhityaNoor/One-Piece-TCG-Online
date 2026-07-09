@@ -374,7 +374,7 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-072 (character) Biscuit Warrior —
   //   Under the rules of this game, you may have any number of this card in your deck.[Blocker] (After your
   //   opponent declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP08-072', templateId: 'noRuntime', params: {} },
 
   // OP08-073 — [Opponent's Turn] [On K.O.] DON!! −1: Play up to 1 [Count Niwatori] cost<=6 from deck, then shuffle.
   { cardNumber: 'OP08-073', templateId: 'ability', params: { timing: 'onKO', condition: { turn: 'opponent' }, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'playFromDeck', filter: { category: 'character', name: 'Count Niwatori', maxCost: 6 } }] } },

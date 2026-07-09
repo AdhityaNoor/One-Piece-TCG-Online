@@ -10,7 +10,7 @@ import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
-import { computeCurrentPower } from '../shared/power';
+import { computeCurrentCost, computeCurrentPower } from '../shared/power';
 import { fireOnBlock, fireRestTransitions, fireOpponentBlockerActivatedReactions, type EffectTemplateRegistry } from '../../effects';
 
 function isBlockedByRestriction(state: GameState, blockerInstanceId: string, defs: CardDefinitionLookup): boolean {
@@ -23,8 +23,13 @@ function isBlockedByRestriction(state: GameState, blockerInstanceId: string, def
       continue;
     }
     if (!battle || restriction.appliesToAttackerInstanceId !== battle.attackerInstanceId) continue;
-    if (restriction.blockerPowerAtLeast === undefined) return true;
-    if (computeCurrentPower(defs, state, blockerInstanceId) >= restriction.blockerPowerAtLeast) return true;
+    if (restriction.blockerPowerAtLeast === undefined && restriction.blockerPowerAtMost === undefined && restriction.blockerMaxCost === undefined) return true;
+    const power = computeCurrentPower(defs, state, blockerInstanceId);
+    const cost = computeCurrentCost(defs, state, blockerInstanceId);
+    if (restriction.blockerPowerAtLeast !== undefined && power < restriction.blockerPowerAtLeast) continue;
+    if (restriction.blockerPowerAtMost !== undefined && power > restriction.blockerPowerAtMost) continue;
+    if (restriction.blockerMaxCost !== undefined && cost > restriction.blockerMaxCost) continue;
+    return true;
   }
   return false;
 }

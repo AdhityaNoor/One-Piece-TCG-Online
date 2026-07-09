@@ -10,7 +10,7 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // --- Batch: OP03 cards expressible with existing primitives ---
   // OP03-001 — PARTIAL: attack/defend variable Event/Stage trash → scaling battle power deferred.
   // OP03-002 — [DON!! x1] [When Attacking] opp cannot activate [Blocker] Characters with 2000 or less power.
-  { cardNumber: 'OP03-002', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle', blockerPowerAtLeast: 2001 }] } },
+  { cardNumber: 'OP03-002', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle', blockerPowerAtMost: 2000 }] } },
 
   // OP03-011 — [DON!! x1] [When Attacking] Give up to 1 of your opponent's Characters −2000 power.
   // OP03-003 - [On Play] Look at 5; add Whitebeard Pirates card other than this card's name.

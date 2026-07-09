@@ -18,7 +18,7 @@ import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoRepl
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates, countSelfTypedCharacters } from './gates';
 import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
-import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation } from './fireTiming';
+import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions } from './fireTiming';
 import { isAbilityNegated } from './effectNegation';
 import type { GateEvalContext } from './gates';
 import type { EffectTemplateRegistry } from './effectTemplate';
@@ -131,6 +131,18 @@ function finishWithCascade(
     const inst = working.cardsById[eventId];
     if (!inst) continue;
     const fired = fireNestedEventActivation(working, eventId, inst.controllerId, registry, defs, actionId);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+
+  const playedFromTrashQueue = ctx.takePlayedFromTrash();
+  guard = 0;
+  while (playedFromTrashQueue.length > 0 && guard++ < 200) {
+    const id = playedFromTrashQueue.shift()!;
+    const inst = working.cardsById[id];
+    if (!inst) continue;
+    const fired = fireCharacterPlayedFromTrashReactions(working, inst.controllerId, id, registry, defs, actionId);
     working = fired.state;
     log = [...log, ...fired.log];
     if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
@@ -273,6 +285,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
   switch (sel.sel) {
     case 'self':
       return [ctx.sourceInstanceId];
+    case 'eventPlayedCharacter':
+      return bindings.__eventPlayedCharacter ?? [];
     case 'controllerLeader':
       return [ctx.controllerLeaderId()];
     case 'controllerCharacters': {
@@ -475,11 +489,22 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
   }
 }
 
+function initialBindings(eventContext?: GateEvalContext): Record<string, string[]> {
+  return eventContext?.playedCharacterInstanceId ? { __eventPlayedCharacter: [eventContext.playedCharacterInstanceId] } : {};
+}
+
 function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Record<string, string[]>): OpResult {
   switch (op.op) {
     case 'draw':
       ctx.draw(op.player === 'opponent' ? ctx.opponentId : ctx.controllerId, op.amount);
       return { selectedIds: [], movedIds: op.amount > 0 ? ['__draw'] : [] };
+    case 'drawUntilHandCount': {
+      const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      const handCount = playerId === ctx.controllerId ? ctx.controllerHandIds().length : ctx.opponentHandIds().length;
+      const amount = Math.max(0, op.targetCount - handCount);
+      ctx.draw(playerId, amount);
+      return { selectedIds: [], movedIds: amount > 0 ? ['__draw'] : [] };
+    }
     case 'revealCards': {
       const ids = resolveSelector(op.target, ctx, bindings);
       ctx.revealCards(ids);
@@ -575,6 +600,8 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
           appliesToAttackerInstanceId: id,
           duration: op.duration,
           ...(op.blockerPowerAtLeast !== undefined ? { blockerPowerAtLeast: op.blockerPowerAtLeast } : {}),
+          ...(op.blockerPowerAtMost !== undefined ? { blockerPowerAtMost: op.blockerPowerAtMost } : {}),
+          ...(op.blockerMaxCost !== undefined ? { blockerMaxCost: op.blockerMaxCost } : {}),
         });
       }
       return { selectedIds: ids, movedIds: [] };
@@ -1124,9 +1151,10 @@ function runOpList(
       continue;
     }
     if (op.op === 'draw') {
-      ctx.draw(ctx.controllerId, op.amount);
+      const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      ctx.draw(playerId, op.amount);
       if (op.amount > 0 && ctx.state().currentPhase !== 'draw') {
-        const reactive = fireDrawOutsideDrawPhaseReactions(ctx.state(), ctx.controllerId, registry, defs, actionId);
+        const reactive = fireDrawOutsideDrawPhaseReactions(ctx.state(), playerId, registry, defs, actionId);
         if (reactive.pendingChoices.length > 0) {
           ctx.absorbActionResult(reactive);
           return { suspended: true, bindings: workingBindings };
@@ -1134,6 +1162,22 @@ function runOpList(
         ctx.replaceState(reactive.state, reactive.log);
       }
       workingBindings = withResultBindings(workingBindings, { selectedIds: [], movedIds: op.amount > 0 ? ['__draw'] : [] });
+      continue;
+    }
+    if (op.op === 'drawUntilHandCount') {
+      const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      const handCount = playerId === ctx.controllerId ? ctx.controllerHandIds().length : ctx.opponentHandIds().length;
+      const amount = Math.max(0, op.targetCount - handCount);
+      ctx.draw(playerId, amount);
+      if (amount > 0 && ctx.state().currentPhase !== 'draw') {
+        const reactive = fireDrawOutsideDrawPhaseReactions(ctx.state(), playerId, registry, defs, actionId);
+        if (reactive.pendingChoices.length > 0) {
+          ctx.absorbActionResult(reactive);
+          return { suspended: true, bindings: workingBindings };
+        }
+        ctx.replaceState(reactive.state, reactive.log);
+      }
+      workingBindings = withResultBindings(workingBindings, { selectedIds: [], movedIds: amount > 0 ? ['__draw'] : [] });
       continue;
     }
     workingBindings = withResultBindings(workingBindings, applyOp(op, ctx, workingBindings));
@@ -1208,7 +1252,7 @@ function runFollowingAbilities(
     if (!evalCondition(ability.condition, ctx)) continue;
     if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId, eventContext)) continue;
     if (payCosts && suspendOrPayAbilityCost(ability, i, ctx, actionId, defs, registry)) return true;
-    const suspended = runOps(ability, i, 0, {}, ctx, defs, registry, actionId);
+    const suspended = runOps(ability, i, 0, initialBindings(eventContext), ctx, defs, registry, actionId);
     if (suspended) return true;
   }
   return false;
@@ -1275,7 +1319,7 @@ export function runTimings(
     // "If …" board-state gate: an unmet precondition means the ability does nothing.
     if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId, eventContext)) continue;
     if (payCosts && suspendOrPayAbilityCost(ability, index, ctx, actionId, defs, registry)) break;
-    const suspended = runOps(ability, index, 0, {}, ctx, defs, registry, actionId);
+    const suspended = runOps(ability, index, 0, initialBindings(eventContext), ctx, defs, registry, actionId);
     if (suspended) break; // wait for the choice before any further ability runs
   }
   return finishWithCascade(ctx, defs, actionId, registry);

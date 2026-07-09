@@ -396,7 +396,15 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] DON!! −3: Choose one:• If your Leader has the {Donquixote Pirates} type, K.O. up to 1 of
   //   your opponent's Characters with a cost of 8 or less.• Up to 3 of your opponent's Characters with a
   //   cost of 7 or less cannot be rested until the end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP14-069', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 3 }], functions: [{
+    fn: 'chooseOne',
+    chooser: 'controller',
+    prompt: 'Choose one.',
+    options: [
+      { label: 'ko', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 8 } }, optional: true, ifGate: [{ kind: 'leaderType', type: 'Donquixote Pirates' }] }] },
+      { label: 'preventRest', functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 7 } }, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 3 }] },
+    ],
+  }] } },
 
   // OP14-070 (character) Buffalo —
   //   When this Character becomes rested by your opponent's Character's effect, you may return 1 DON!! card
@@ -474,7 +482,35 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] [Once Per Turn] You may K.O. 1 of your {Thriller Bark Pirates} type Characters: Your
   //   Leader and all of your Characters gain +1000 power during this turn.[When Attacking] You may trash 3
   //   cards from your hand: Add up to 1 card from the top of your deck to the top of your Life cards.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP14-080',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'K.O. 1 Thriller Bark Pirates Character?',
+        options: [
+          { label: 'skip', functions: [] },
+          { label: 'pay', functions: [
+            { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates' } }, maxTargets: 1 },
+            { fn: 'addPowerAuraControllerTypes', amount: 1000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+          ] },
+        ],
+      }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Trash 3 cards from hand?',
+        options: [
+          { label: 'skip', functions: [] },
+          { label: 'pay', functions: [
+            { fn: 'trashFromHand', count: 3 },
+            { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' },
+          ] },
+        ],
+      }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP14-081',
@@ -594,7 +630,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] [Once Per Turn] You may reveal 3 {Amazon Lily} or {Kuja Pirates} type cards from
   //   your hand: Give your Leader and all of your Characters up to 1 rested DON!! card each. [Trigger] If
   //   your Leader has the {Kuja Pirates} type, play this card.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: reveal-3 hand cost and multi-target DON!! distribution remain deferred; Trigger is mapped.
+  { cardNumber: 'OP14-105', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
   {
     cardNumber: 'OP14-107',

@@ -119,6 +119,58 @@ describe('validateActivateBlocker', () => {
     expect(validateActivateBlocker(battling, activateBlocker('p2', largeBlockerId), rig.defs).legal).toBe(false);
   });
 
+  it('only rejects blockers at or below a maximum power restriction', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    let rig = base;
+    let smallBlockerId: string;
+    let largeBlockerId: string;
+    ({ rig, instanceId: smallBlockerId } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ hasBlocker: true, basePower: 2000 })));
+    ({ rig, instanceId: largeBlockerId } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ hasBlocker: true, basePower: 3000 })));
+    const battling = {
+      ...rig.state,
+      currentBattle: battleAt('block'),
+      continuousEffects: [
+        {
+          id: 'ce-small-blockers-off',
+          sourceInstanceId: 'source-x',
+          ownerId: 'p1',
+          duration: 'duringThisBattle' as const,
+          description: 'small blockers cannot activate',
+          blockerRestriction: { appliesToAttackerInstanceId: 'attacker-x', blockerPowerAtMost: 2000 },
+        },
+      ],
+    };
+
+    expect(validateActivateBlocker(battling, activateBlocker('p2', smallBlockerId), rig.defs).legal).toBe(false);
+    expect(validateActivateBlocker(battling, activateBlocker('p2', largeBlockerId), rig.defs).legal).toBe(true);
+  });
+
+  it('only rejects blockers at or below a maximum cost restriction', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    let rig = base;
+    let cheapBlockerId: string;
+    let expensiveBlockerId: string;
+    ({ rig, instanceId: cheapBlockerId } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ hasBlocker: true, baseCost: 5 })));
+    ({ rig, instanceId: expensiveBlockerId } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ hasBlocker: true, baseCost: 6 })));
+    const battling = {
+      ...rig.state,
+      currentBattle: battleAt('block'),
+      continuousEffects: [
+        {
+          id: 'ce-cheap-blockers-off',
+          sourceInstanceId: 'source-x',
+          ownerId: 'p1',
+          duration: 'duringThisBattle' as const,
+          description: 'cheap blockers cannot activate',
+          blockerRestriction: { appliesToAttackerInstanceId: 'attacker-x', blockerMaxCost: 5 },
+        },
+      ],
+    };
+
+    expect(validateActivateBlocker(battling, activateBlocker('p2', cheapBlockerId), rig.defs).legal).toBe(false);
+    expect(validateActivateBlocker(battling, activateBlocker('p2', expensiveBlockerId), rig.defs).legal).toBe(true);
+  });
+
   it('rejects [Blocker] activation on a Character with a direct suppression record', () => {
     const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
     let rig = base;

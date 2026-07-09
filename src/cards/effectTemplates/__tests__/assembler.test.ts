@@ -69,6 +69,13 @@ describe('buildRegistryFromAssignments', () => {
     });
     expect(registry['COMBO-001'].abilities[1].ops[1]).toMatchObject({ op: 'addCost', amount: -4 });
   });
+
+  it('can mark reviewed non-runtime card text without creating engine abilities', () => {
+    const registry = buildRegistryFromAssignments([
+      { cardNumber: 'NO-RUNTIME-001', templateId: 'noRuntime', params: {} },
+    ]);
+    expect(registry['NO-RUNTIME-001']).toEqual({ cardNumber: 'NO-RUNTIME-001', abilities: [] });
+  });
 });
 
 describe('template factories - structural correctness', () => {
@@ -77,6 +84,11 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities).toHaveLength(1);
     expect(p.abilities[0].timing).toBe('onPlay');
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'draw', amount: 2 });
+  });
+
+  it('drawUntilHandCount lowers to a draw-to-target op', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'counter', functions: [{ fn: 'drawUntilHandCount', targetCount: 2 }] });
+    expect(p.abilities[0].ops[0]).toEqual({ op: 'drawUntilHandCount', targetCount: 2 });
   });
 
   it('giveDon function produces chooseTargets then giveDon', () => {
@@ -358,6 +370,20 @@ describe('template factories - structural correctness', () => {
     });
     expect(chosen.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerLeaderOrCharacters', typeIncludes: 'Straw Hat Crew' } });
     expect(chosen.abilities[0].ops[1]).toMatchObject({ op: 'preventBlockers', target: { sel: 'var', name: 't' }, duration: 'duringThisTurn' });
+  });
+
+  it('preventBlockers carries blocker max-cost and max-power filters', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'whenAttacking',
+      functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle', blockerMaxCost: 5, blockerPowerAtMost: 2000 }],
+    });
+
+    expect(p.abilities[0].ops[0]).toMatchObject({
+      op: 'preventBlockers',
+      target: { sel: 'self' },
+      blockerMaxCost: 5,
+      blockerPowerAtMost: 2000,
+    });
   });
 
   it('triggerPlaySelf produces a source-card play op', () => {

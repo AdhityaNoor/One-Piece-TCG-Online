@@ -28,6 +28,7 @@ const REACTIVE_ONCE_PER_TURN_KEYS: Partial<Record<IrTiming, string>> = {
   onLifeToHand: 'onLifeToHand',
   onCharacterKoed: 'onCharacterKoed',
   onRemovedFromField: 'onRemovedFromField',
+  onCharacterPlayedFromTrash: 'onCharacterPlayedFromTrash',
 };
 
 function mergeResults(a: ActionExecuteResult, b: ActionExecuteResult): ActionExecuteResult {
@@ -162,6 +163,32 @@ export function fireCharacterPlayedFromHandReactions(
     const program = registry[inst.cardDefinitionId];
     if (!program?.abilities.some((a) => a.timing === 'onCharacterPlayedFromHand')) continue;
     const fired = runTimings(program, ['onCharacterPlayedFromHand'], working, id, defs, actionId, registry, false, eventContext);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
+/** Fires leader/field reactions when a Character is played from trash. */
+export function fireCharacterPlayedFromTrashReactions(
+  state: GameState,
+  playerId: string,
+  playedInstanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const eventContext: GateEvalContext = { playedCharacterInstanceId: playedInstanceId };
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const id of fieldInstanceIds(working, playerId)) {
+    if (id === playedInstanceId) continue;
+    const inst = working.cardsById[id];
+    if (!inst) continue;
+    const program = registry[inst.cardDefinitionId];
+    if (!program?.abilities.some((a) => a.timing === 'onCharacterPlayedFromTrash')) continue;
+    const fired = runTimings(program, ['onCharacterPlayedFromTrash'], working, id, defs, actionId, registry, false, eventContext);
     working = fired.state;
     log = [...log, ...fired.log];
     if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };

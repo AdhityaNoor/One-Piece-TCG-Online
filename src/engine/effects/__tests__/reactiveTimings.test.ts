@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { EffectProgram } from '../effectIr';
-import { resumeProgram } from '../interpreter';
+import { resumeProgram, runTimings } from '../interpreter';
+import { hasContinuousKeyword } from '../../rules/shared/power';
 import {
   fireCharacterPlayedFromHandReactions,
   fireEventActivatedReactions,
@@ -10,9 +11,11 @@ import {
   buildBaseRig,
   makeCharacterDef,
   makeLeaderDef,
+  nextTestId,
   putCharacterInPlay,
   putDeckCards,
   putDon,
+  putInHand,
 } from '../../rules/shared/__tests__/testRig';
 
 describe('reactive timings', () => {
@@ -39,6 +42,26 @@ describe('reactive timings', () => {
     const handBefore = withUsopp.rig.state.players.p2.hand.cardIds.length;
     const result = fireEventActivatedReactions(withUsopp.rig.state, 'p1', registry, withUsopp.rig.defs, 'test');
     expect(result.state.players.p2.hand.cardIds.length).toBe(handBefore + 1);
+  });
+
+  it('drawUntilHandCount only draws the missing cards to reach the target hand size', () => {
+    const sourceDef = makeCharacterDef({ cardDefinitionId: 'DRAW-UNTIL-SOURCE', cardNumber: 'TEST-DRAW-UNTIL' });
+    const handDef = makeCharacterDef({ cardDefinitionId: 'HAND-CARD', cardNumber: 'HAND-001' });
+    const deckDef = makeCharacterDef({ cardDefinitionId: 'DECK-CARD', cardNumber: 'DECK-001' });
+    const base = buildBaseRig({ activePlayerId: 'p1', phase: 'main' });
+    const withSource = putCharacterInPlay(base, 'p1', sourceDef);
+    const withHand = putInHand(withSource.rig, 'p1', handDef);
+    const withDeck = putDeckCards(withHand.rig, 'p1', deckDef, 5);
+
+    const program = {
+      cardNumber: 'TEST-DRAW-UNTIL',
+      abilities: [{ timing: 'onPlay', ops: [{ op: 'drawUntilHandCount', targetCount: 3 }] }],
+    } satisfies EffectProgram;
+
+    const result = runTimings(program, ['onPlay'], withDeck.rig.state, withSource.instanceId, withDeck.rig.defs, 'test', { [sourceDef.cardDefinitionId]: program });
+
+    expect(result.state.players.p1.hand.cardIds.length).toBe(3);
+    expect(result.state.players.p1.deck.cardIds.length).toBe(3);
   });
 
   it('onCharacterPlayedFromHand sets DON!! active for Sanji leader', () => {
@@ -100,5 +123,65 @@ describe('reactive timings', () => {
 
     const result = fireOpponentBlockerActivatedReactions(withTarget.rig.state, 'p1', registry, withTarget.rig.defs, 'test');
     expect(result.state.cardsById[withTarget.instanceId]?.currentZone).toBe('trash');
+  });
+
+  it('onCharacterPlayedFromTrash can grant Rush to the played Character', () => {
+    const yamatoLeader = makeLeaderDef({ cardDefinitionId: 'OP16-079-DEF', cardNumber: 'OP16-079' });
+    const sourceDef = makeCharacterDef({ cardDefinitionId: 'PLAY-FROM-TRASH-SOURCE' });
+    const wanoDef = makeCharacterDef({
+      cardDefinitionId: 'WANO-TRASH-CHAR',
+      cardNumber: 'WANO-001',
+      types: ['Land of Wano'],
+      hasRush: false,
+    });
+    const base = buildBaseRig({ activePlayerId: 'p1', leaderOverridesP1: yamatoLeader });
+    const withSource = putCharacterInPlay(base, 'p1', sourceDef);
+    const trashId = nextTestId('trash-character');
+    const player = withSource.rig.state.players.p1;
+    const state = {
+      ...withSource.rig.state,
+      cardsById: {
+        ...withSource.rig.state.cardsById,
+        [trashId]: {
+          instanceId: trashId,
+          cardDefinitionId: wanoDef.cardDefinitionId,
+          ownerId: 'p1',
+          controllerId: 'p1',
+          currentZone: 'trash',
+          orientation: null,
+          faceState: 'faceUp',
+          donAttached: [],
+          appliedContinuousEffectIds: [],
+          oncePerTurnUsed: [],
+          summoningSick: false,
+          revealedTo: 'all',
+        },
+      },
+      players: {
+        ...withSource.rig.state.players,
+        p1: { ...player, trash: { ...player.trash, cardIds: [trashId] } },
+      },
+    };
+    const defs = { ...withSource.rig.defs, [sourceDef.cardDefinitionId]: sourceDef, [wanoDef.cardDefinitionId]: wanoDef };
+    const registry = {
+      [sourceDef.cardDefinitionId]: {
+        cardNumber: 'PLAY-FROM-TRASH-SOURCE',
+        abilities: [{ timing: 'activateMain', ops: [{ op: 'playFromTrash', target: { sel: 'controllerTrash', filter: { typeIncludes: 'Land of Wano' } } }] }],
+      } satisfies EffectProgram,
+      [yamatoLeader.cardDefinitionId]: {
+        cardNumber: 'OP16-079',
+        abilities: [{
+          timing: 'onCharacterPlayedFromTrash',
+          gate: [{ kind: 'playedCharacterTypeIncludes', typeIncludes: 'Land of Wano' }],
+          ops: [{ op: 'addKeyword', target: { sel: 'eventPlayedCharacter' }, keyword: 'rush', duration: 'duringThisTurn' }],
+        }],
+      } satisfies EffectProgram,
+    };
+
+    const result = runTimings(registry[sourceDef.cardDefinitionId], ['activateMain'], state, withSource.instanceId, defs, 'test', registry, false);
+    const playedId = result.state.players.p1.characterArea.cardIds.find((id) => result.state.cardsById[id]?.cardDefinitionId === wanoDef.cardDefinitionId);
+
+    expect(playedId).toBeDefined();
+    expect(hasContinuousKeyword(defs, result.state, playedId!, 'rush')).toBe(true);
   });
 });

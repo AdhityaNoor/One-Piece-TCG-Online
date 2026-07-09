@@ -39,6 +39,7 @@ function program(cardNumber: string, abilities: Ability[]): EffectProgram {
 function selectorFromTarget(target: TargetSpec): Selector {
   if ('ref' in target) {
     if (target.ref === 'self') return { sel: 'self' };
+    if (target.ref === 'eventPlayedCharacter') return { sel: 'eventPlayedCharacter' };
     if (target.ref === 'previous') return { sel: 'var', name: 't' };
     if (target.ref === 'battleOpponent') return { sel: 'var', name: 't' };
   }
@@ -242,6 +243,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
   switch (f.fn) {
     case 'draw':
       return [{ op: 'draw', amount: f.amount, ...(f.player ? { player: f.player } : {}) }];
+    case 'drawUntilHandCount':
+      return [{ op: 'drawUntilHandCount', targetCount: f.targetCount, ...(f.player ? { player: f.player } : {}) }];
     case 'addDonFromDeck':
       return [{ op: 'addDonFromDeck', count: f.count, rested: f.rested }];
     case 'giveDon': {
@@ -277,7 +280,9 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           max: 1,
           prompt: 'Give DON!! to your Leader or 1 of your Characters.',
         },
-        { op: 'giveDon', target: { sel: 'var', name: 't' }, count: f.count },
+        f.activeDonOnly
+          ? { op: 'giveDonFromCostArea', target: { sel: 'var', name: 't' }, count: f.count, donOwner: 'controller', activeOnly: true }
+          : { op: 'giveDon', target: { sel: 'var', name: 't' }, count: f.count },
       ];
     }
     case 'preventBlockersOnPreviousTarget':
@@ -454,6 +459,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
             target: { sel: 'var', name: 't' },
             duration: f.duration,
             ...(f.blockerPowerAtLeast !== undefined ? { blockerPowerAtLeast: f.blockerPowerAtLeast } : {}),
+            ...(f.blockerPowerAtMost !== undefined ? { blockerPowerAtMost: f.blockerPowerAtMost } : {}),
+            ...(f.blockerMaxCost !== undefined ? { blockerMaxCost: f.blockerMaxCost } : {}),
           },
         ];
       }
@@ -463,6 +470,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           target: { sel: 'self' },
           duration: f.duration,
           ...(f.blockerPowerAtLeast !== undefined ? { blockerPowerAtLeast: f.blockerPowerAtLeast } : {}),
+          ...(f.blockerPowerAtMost !== undefined ? { blockerPowerAtMost: f.blockerPowerAtMost } : {}),
+          ...(f.blockerMaxCost !== undefined ? { blockerMaxCost: f.blockerMaxCost } : {}),
         },
       ];
     }
@@ -556,8 +565,12 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
     }
     case 'trashTopDeck':
       return [{ op: 'trashTopDeck', count: f.count }];
+    case 'trashSelf':
+      return [{ op: 'trashCards', target: { sel: 'self' } }];
     case 'moveCards':
       return moveCardsOps(f);
+    case 'moveAllCards':
+      return [moveOpForDestination(f.to, selectorFromMoveSource(f.from))];
     case 'moveAllCharactersToBottomDeck':
       return [{ op: 'moveToBottomDeck', target: { sel: 'allCharacters', ...(f.filter ?? {}) } }];
     case 'peekLifeAndPlace':
@@ -963,8 +976,9 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
 const FACTORY_MAP: {
   [T in TemplateId]: (cardNumber: string, params: TemplateParamMap[T]) => EffectProgram;
 } = {
+  noRuntime: (cn) => program(cn, []),
   ability: (cn, p) => {
-    const implicitGates = p.functions.some((f) => f.fn === 'giveDon' || f.fn === 'giveGivenDon')
+    const implicitGates = p.functions.some((f) => (f.fn === 'giveDon' && !f.activeDonOnly) || f.fn === 'giveGivenDon')
       ? ([{ kind: 'selfRestedDonCount', atLeast: 1 }] as const)
       : [];
     const gates = [...(p.gate ?? []), ...implicitGates];

@@ -25,6 +25,7 @@ import type { Color } from '../../../engine/state/card';
 
 export const TEMPLATE_IDS = {
   ABILITY: 'ability',
+  NO_RUNTIME: 'noRuntime',
 } as const;
 
 export type TemplateId = (typeof TEMPLATE_IDS)[keyof typeof TEMPLATE_IDS];
@@ -86,6 +87,7 @@ export type TargetSpec =
   | { ref: 'self' }
   | { ref: 'previous' }
   | { ref: 'battleOpponent' }
+  | { ref: 'eventPlayedCharacter' }
   | { group: 'leader'; player: 'controller' }
   | { group: 'leader'; player: 'opponent'; filter?: { rested?: boolean } }
   | { group: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: TargetFilter }
@@ -94,6 +96,7 @@ export type TargetSpec =
 
 export type AbilityFunction =
   | { fn: 'draw'; amount: number; optional?: boolean; player?: 'controller' | 'opponent' }
+  | { fn: 'drawUntilHandCount'; targetCount: number; player?: 'controller' | 'opponent' }
   | { fn: 'addDonFromDeck'; count: number; rested: boolean }
   | { fn: 'giveDon'; count: number; optional?: boolean; targetTypeIncludes?: string; charactersOnly?: boolean; targetName?: string; activeDonOnly?: boolean }
   | { fn: 'preventBlockersOnPreviousTarget'; duration: IrDuration }
@@ -125,7 +128,7 @@ export type AbilityFunction =
   | { fn: 'addKeywordAuraControllerTypes'; keyword: ContinuousKeyword; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // Aura: grant a keyword to ALL of the controller's Characters (chars only), optionally name/type-filtered.
   | { fn: 'addKeywordAuraControllerCharacters'; keyword: ContinuousKeyword; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
-  | { fn: 'preventBlockers'; duration: IrDuration; target?: 'self' | 'chosenControllerLeaderOrCharacter'; filter?: { typeIncludes?: string; name?: string; minPower?: number }; blockerPowerAtLeast?: number; powerBonus?: number }
+  | { fn: 'preventBlockers'; duration: IrDuration; target?: 'self' | 'chosenControllerLeaderOrCharacter'; filter?: { typeIncludes?: string; name?: string; minPower?: number }; blockerPowerAtLeast?: number; blockerPowerAtMost?: number; blockerMaxCost?: number; powerBonus?: number }
   | { fn: 'suppressBlockerOnTarget'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number }
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
   | { fn: 'drawAndTrashByTypedCharacterCount'; typeIncludes: string }
@@ -134,7 +137,9 @@ export type AbilityFunction =
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
   | { fn: 'revealOpponentHand'; count?: number }
   | { fn: 'trashTopDeck'; count: number; optional?: boolean }
+  | { fn: 'trashSelf' }
   | { fn: 'moveCards'; from: MoveCardSource; to: MoveCardDestination; optional?: boolean; minTargets?: number; maxTargets?: number; prompt?: string; chooser?: 'controller' | 'opponent' }
+  | { fn: 'moveAllCards'; from: Extract<MoveCardSource, { zone: 'characters' | 'stages' }>; to: MoveCardDestination }
   | { fn: 'moveAllCharactersToBottomDeck'; filter?: { maxCost?: number; maxPower?: number; maxBaseCost?: number; maxBasePower?: number } }
   | { fn: 'peekLifeAndPlace'; from: 'controllerOrOpponentTop'; placement: 'topOrBottom' }
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
@@ -242,4 +247,5 @@ export interface AbilityTemplateParams {
 
 export interface TemplateParamMap {
   ability: AbilityTemplateParams;
+  noRuntime: Record<string, never>;
 }

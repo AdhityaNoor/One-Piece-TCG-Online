@@ -366,7 +366,7 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-075 (character) Pacifista —
   //   Under the rules of this game, you may have any number of this card in your deck. [Blocker] (After
   //   your opponent declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
+  { cardNumber: 'OP01-075', templateId: 'noRuntime', params: {} },
 
   // OP01-078 — [Blocker] [DON!! x1] [When Attacking]/[On Block] Draw 1 if you have 5 or less cards in hand.
   {
