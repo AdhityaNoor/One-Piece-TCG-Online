@@ -447,11 +447,15 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB01-058 — [DON!! x1] [Your Turn] If 2 or less Life, this Character +2000 (continuous, composed).
   { cardNumber: 'EB01-058', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 1, turn: 'your', gate: [{ kind: 'selfLife', atMost: 2 }] } }] } },
 
-  // EB01-057 (character) Shirahoshi —
-  //   When this Character is K.O.'d by your opponent's effect, add up to 1 card from the top of your deck
-  //   to the top of your Life cards.[Blocker] (After your opponent declares an attack, you may rest this
-  //   card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
+  // EB01-057 — [Blocker] is printed. PARTIAL: "K.O.'d by your opponent's effect" gate on onKO deferred.
+  {
+    cardNumber: 'EB01-057',
+    templateId: 'ability',
+    params: {
+      timing: 'onKO',
+      functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }],
+    },
+  },
 
   // EB01-058 (character) Mont Blanc Cricket —
   //   [DON!! x1] [Your Turn] If you have 2 or less Life cards, this Character gains +2000 power.
@@ -506,11 +510,8 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }, { fn: 'trashFromHand', count: 1 }] } },
     ],
   },
-  // EB01-061 (character) Mr.2.Bon.Kurei(Bentham) —
-  //   [On Play] Add up to 1 DON!! card from your DON!! deck and set it as active.[When Attacking] Select up
-  //   to 1 of your opponent's Characters. This Character's base power becomes the same as the selected
-  //   Character's power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // EB01-061 — PARTIAL: [When Attacking] copy opponent Character base power (dynamic) deferred; mapped [On Play] add 1 active DON!!.
+  { cardNumber: 'EB01-061', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
 
   // EB02-002 — [Activate: Main] rest this: up to 1 {Revolutionary Army} Character (other than self) +2000 this turn.
   { cardNumber: 'EB02-002', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Revolutionary Army', excludeSelf: true } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
@@ -684,11 +685,22 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // EB02-023 (character) Crocodile —
-  //   [Your Turn] [Once Per Turn] When your opponent's Character is returned to the owner's hand by your
-  //   effect, look at 3 cards from the top of your deck and place them at the top or bottom of the deck in
-  //   any order.
-  // NOTE: not yet implemented (needs template).
+  // EB02-023 — PARTIAL: "returned to hand" destination filter deferred; mapped onRemovedFromField + searchTopDeck 3.
+  {
+    cardNumber: 'EB02-023',
+    templateId: 'ability',
+    params: {
+      timing: 'onRemovedFromField',
+      oncePerTurn: true,
+      condition: { turn: 'your' },
+      gate: [
+        { kind: 'removedFromFieldCategory', category: 'character' },
+        { kind: 'removedFromFieldController', player: 'opponent' },
+        { kind: 'removedByEffectController', player: 'controller' },
+      ],
+      functions: [{ fn: 'searchTopDeck', look: 3, pick: 3, reveal: false, destination: 'deckTopOrBottom' }],
+    },
+  },
 
   // EB02-024 — [On Play] Draw 2, place 2 from hand at bottom of deck; then return up to 1 Character cost<=1 to hand.
   { cardNumber: 'EB02-024', templateId: 'ability', params: { timing: 'onPlay', functions: [
@@ -739,10 +751,25 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // EB02-030 (event) And That's When Somebody Makes Fun of Their Friend's Dream!!!! —
-  //   [Counter] If any of your Characters would be K.O.'d in battle during this turn, you may trash 1 card
-  //   from your hand instead. [Trigger] Draw 1 card.
-  // NOTE: not yet implemented (needs template).
+  // EB02-030 — [Counter] battle K.O. replacement aura for this turn; [Trigger] draw 1.
+  {
+    cardNumber: 'EB02-030',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [{
+            fn: 'registerKoReplacementAura',
+            scope: 'battle',
+            trashFromHand: { count: 1 },
+            duration: 'duringThisTurn',
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
 
   // EB02-031 — (Event) same searcher as EB02-008.
   {
@@ -1041,12 +1068,36 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB03-001 (leader) Nefeltari Vivi —
-  //   [Once Per Turn] If your Character with a base cost of 4 or more would be K.O.'d, you may trash 1 card
-  //   from your hand instead.[Activate: Main] You may rest this Leader: Give up to 1 of your opponent's
-  //   Characters −2000 power during this turn. Then, up to 1 of your Characters without a [When Attacking]
-  //   effect gains [Rush] during this turn.
-  // NOTE: not yet implemented (needs template).
+  // EB03-001 — K.O. replacement aura (cost ≥4); [Activate: Main] rest: −2000 opp Character + Rush to no-[When Attacking] Character.
+  {
+    cardNumber: 'EB03-001',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementAura',
+            oncePerTurn: true,
+            trashFromHand: { count: 1 },
+            targetCondition: { minBaseCost: 4 },
+            duration: 'permanent',
+          }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          cost: [{ kind: 'restThis' }],
+          functions: [
+            { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true },
+            { fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { noBaseEffect: true } }, keyword: 'rush', duration: 'duringThisTurn', optional: true },
+          ],
+        },
+      },
+    ],
+  },
 
   // EB03-003 — [On Play] if Leader [Uta]: draw 2, play up to 1 vanilla Character ≤6000 base power from hand.
   {
@@ -2328,11 +2379,8 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -1, duration: 'duringThisTurn', optional: true },
   ] } },
 
-  // EB04-043 (character) Kaku —
-  //   [Once Per Turn] If your black Character with a base cost of 5 or less would be K.O.'d by your
-  //   opponent's effect, you may place 3 cards from your trash at the bottom of your deck in any order
-  //   instead.[On Play] Trash 2 cards from the top of your deck.
-  // NOTE: not yet implemented (needs template).
+  // EB04-043 — PARTIAL: K.O. replacement "place 3 from trash to deck bottom" deferred; mapped [On Play] trashTopDeck 2.
+  { cardNumber: 'EB04-043', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 2 }] } },
 
   // EB04-044 (character) Koby —
   //   [Once Per Turn] If your Leader's type includes "Navy" and this Character would be removed from the
@@ -2442,11 +2490,16 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
       },
     ],
   },
-  // EB04-052 (character) Sanji —
-  //   [When Attacking] This Character's base power becomes the same as your opponent's Leader during this
-  //   turn.[On K.O.] If you have 2 or less Life cards, play up to 1 yellow Character card with 6000 power
-  //   or less from your hand.
-  // NOTE: not yet implemented (needs template).
+  // EB04-052 — PARTIAL: [When Attacking] copy opponent Leader base power deferred; mapped [On K.O.] yellow ≤6000 play at ≤2 Life.
+  {
+    cardNumber: 'EB04-052',
+    templateId: 'ability',
+    params: {
+      timing: 'onKO',
+      gate: [{ kind: 'selfLife', atMost: 2 }],
+      functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'yellow', maxPower: 6000 } }],
+    },
+  },
 
   // EB04-053 — [Blocker] [On Block] If 2 or less Life, draw 1.
   { cardNumber: 'EB04-053', templateId: 'ability', params: { timing: 'onBlock', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'draw', amount: 1 }] } },

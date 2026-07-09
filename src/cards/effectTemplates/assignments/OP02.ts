@@ -464,12 +464,14 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { color: 'purple', typeIncludes: 'Impel Down', excludeSelfName: true } }] },
   },
 
-  // OP02-085 (character) Magellan —
-  //   [On Play] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): Your opponent returns 1 DON!! card from their field to their DON!! deck. [Opponent's Turn]
-  //   When this Character is K.O.'d, your opponent returns 2 DON!! cards from their field to their DON!!
-  //   deck.
-  // NOTE: not yet implemented (needs template).
+  // OP02-085 — [On Play] DON!! −1: return 1 opp DON!!; [Opponent's Turn] [On K.O.] return 2 opp DON!!.
+  {
+    cardNumber: 'OP02-085',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'returnOpponentDon', count: 1 }] } },
+      { templateId: 'ability', params: { timing: 'onKO', condition: { turn: 'opponent' }, functions: [{ fn: 'returnOpponentDon', count: 2 }] } },
+    ],
+  },
 
   { cardNumber: 'OP02-086', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 

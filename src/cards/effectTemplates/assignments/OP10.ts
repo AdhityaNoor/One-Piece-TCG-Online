@@ -140,7 +140,22 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP10-032 (character) Tashigi —
   //   If you have a green Character other than [Tashigi] that would be removed from the field by your
   //   opponent's effect, you may rest this Character instead.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: non-K.O. field-removal branch deferred; effect-K.O. rest-this proxy mapped (OP12-027 pattern).
+  {
+    cardNumber: 'OP10-032',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        excludeSource: true,
+        targetCondition: { color: 'green' },
+        restSource: true,
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP10-033 (character) Nami —
   //   PARTIAL: {ODYSSEY} type filter on rested-character gate not modeled; rested DON!! target deferred.
@@ -212,7 +227,25 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   //   All of your {Dressrosa} type Characters with a cost of 2 or more gain +1 cost.[Opponent's Turn] [Once
   //   Per Turn] This effect can be activated when your {Dressrosa} type Character is removed from the field
   //   by your opponent's effect or K.O.'d. If you have 5 or less cards in your hand, draw 1 card.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: minBaseCost 2+ filter on the cost aura and battle-K.O. trigger branch deferred.
+  {
+    cardNumber: 'OP10-042',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraControllerCharacters', amount: 1, duration: 'permanent', anyOfTypes: ['Dressrosa'] }] } },
+      { templateId: 'ability', params: {
+        timing: 'onRemovedFromField',
+        oncePerTurn: true,
+        condition: { turn: 'opponent' },
+        gate: [
+          { kind: 'removedFromFieldCategory', category: 'character' },
+          { kind: 'removedFromFieldController', player: 'controller' },
+          { kind: 'removedFromFieldTypeIncludes', typeIncludes: 'Dressrosa' },
+          { kind: 'removedByEffectController', player: 'opponent' },
+        ],
+        functions: [{ fn: 'draw', amount: 1, ifGate: [{ kind: 'selfHand', atMost: 5 }] }],
+      } },
+    ],
+  },
 
 
 
@@ -227,10 +260,23 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
 
-  // OP10-049 (character) Sabo —
-  //   If your Character with a base cost of 7 or less other than [Sabo] would be removed from the field by
-  //   your opponent's effect, you may return this Character to the owner's hand instead.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP10-049',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+        effectSourceController: 'opponent',
+        excludeSource: true,
+        targetCondition: { maxBaseCost: 7 },
+        returnSourceToHand: true,
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP10-051 — [DON!! x1] [When Attacking] Search up to 1 {Revolutionary Army} Character.
   { cardNumber: 'OP10-051', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'Revolutionary Army' }, remainder: 'bottom' }] } },

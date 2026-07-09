@@ -297,7 +297,18 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-052 (character) Marco —
   //   [Opponent's Turn] You may trash 1 card from your hand: When this Character is K.O.'d by your
   //   opponent's effect, play this Character card from your trash rested.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: opponent's-turn prepaid hand cost and K.O.-by-opponent-effect gate deferred; onKO play-from-trash chain mapped (OP02-018 pattern).
+  {
+    cardNumber: 'OP09-052',
+    templateId: 'ability',
+    params: {
+      timing: 'onKO',
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'playFromTrash', filter: { name: 'Marco' }, rested: true, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // OP09-053 — [On Play] Search [Richie], then play up to 1 [Richie] from hand.
   { cardNumber: 'OP09-053', templateId: 'ability', params: { timing: 'onPlay', functions: [
@@ -438,7 +449,22 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-080 (stage) Thousand Sunny —
   //   [Opponent's Turn] You may rest this Stage: When your {Straw Hat Crew} type Character is removed from
   //   the field by your opponent's effect, add up to 1 DON!! card from your DON!! deck and rest it.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: opponent's-turn rest-this-Stage prepaid cost deferred (OP13-078 pattern for the removal hook).
+  {
+    cardNumber: 'OP09-080',
+    templateId: 'ability',
+    params: {
+      timing: 'onRemovedFromField',
+      oncePerTurn: true,
+      gate: [
+        { kind: 'removedFromFieldCategory', category: 'character' },
+        { kind: 'removedFromFieldController', player: 'controller' },
+        { kind: 'removedFromFieldTypeIncludes', typeIncludes: 'Straw Hat Crew' },
+        { kind: 'removedByEffectController', player: 'opponent' },
+      ],
+      functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }],
+    },
+  },
 
   {
     cardNumber: 'OP09-081',

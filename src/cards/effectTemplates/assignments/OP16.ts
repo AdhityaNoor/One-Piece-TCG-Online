@@ -77,7 +77,45 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   If one of your Characters would be removed from the field by your opponent's effect, you may K.O.
   //   this Character instead.[On K.O.] You may trash 1 Character card with 8000 power from your hand: Play
   //   this Character card from your trash.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP16-014',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementAura',
+            scope: 'effect',
+            charactersOnly: true,
+            trashSource: true,
+            duration: 'permanent',
+          }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onKO',
+          functions: [{
+            fn: 'chooseOne',
+            chooser: 'controller',
+            prompt: 'Trash an 8000-power Character from hand to play this from trash?',
+            options: [
+              { label: 'skip', functions: [] },
+              {
+                label: 'pay',
+                functions: [
+                  { fn: 'trashTypeFromHand', count: 1, filter: { category: 'character', exactPower: 8000 } },
+                  { fn: 'playFromTrash', filter: { category: 'character', name: 'Marco' }, ifPrevious: 'previousSelectedAny' },
+                ],
+              },
+            ],
+          }],
+        },
+      },
+    ],
+  },
 
   // OP16-015 (character) Monkey.D.Luffy —
   //   If your Leader's card name includes "Ace" and you have 6 or more DON!! cards on your field, give this
@@ -191,7 +229,8 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   When this Character is K.O.'d by your opponent's effect, rest up to 1 of your opponent's
   //   Characters.[Blocker] (After your opponent declares an attack, you may rest this card to make it the
   //   new target of the attack.)
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: opponent-effect-only K.O. gate deferred; [Blocker] is printed.
+  { cardNumber: 'OP16-024', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
 
   // OP16-025 — [When Attacking] If you have [Antlerkov], play up to 1 Character cost<=2 from hand.
   { cardNumber: 'OP16-025', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfControlsNamed', name: 'Antlerkov' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 2 } }] } },
@@ -220,7 +259,14 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-033 (character) Morley —
   //   If this Character would be K.O.'d, you may rest 2 of your cards instead.[Unblockable] (This card
   //   cannot be blocked.)
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: "rest 2 of your cards" → restDon proxy.
+  {
+    cardNumber: 'OP16-033',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'unblockable', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementSelf', scope: 'any', restDon: { count: 2 }, duration: 'permanent' }] } },
+    ],
+  },
 
 
   { cardNumber: 'OP16-035', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }, { fn: 'optionalTrashFromHand', count: 1 }, { fn: 'giveDon', count: 3, ifPrevious: 'previousMovedAny' }] } },
@@ -242,7 +288,21 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-041 (leader) Buggy —
   //   [DON!! x1] [Once Per Turn] This effect can be activated when your {Impel Down} type Character card is
   //   removed from the field. Play up to 1 [Prisoner of Impel Down] card from your hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP16-041',
+    templateId: 'ability',
+    params: {
+      timing: 'onRemovedFromField',
+      oncePerTurn: true,
+      condition: { donAttachedAtLeast: 1 },
+      gate: [
+        { kind: 'removedFromFieldCategory', category: 'character' },
+        { kind: 'removedFromFieldController', player: 'controller' },
+        { kind: 'removedFromFieldTypeIncludes', typeIncludes: 'Impel Down' },
+      ],
+      functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Prisoner of Impel Down' } }],
+    },
+  },
 
   // OP16-042 (character) Prisoner of Impel Down —
   //   Under the rules of this game, you may have any number of this card in your deck.
@@ -504,12 +564,26 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   during this turn.(This card can attack on the turn in which it is played.)
   { cardNumber: 'OP16-079', templateId: 'ability', params: { timing: 'onCharacterPlayedFromTrash', gate: [{ kind: 'playedCharacterTypeIncludes', typeIncludes: 'Land of Wano' }], functions: [{ fn: 'addKeyword', target: { ref: 'eventPlayedCharacter' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
-  // OP16-080 — PARTIAL: attack-target redirect deferred; mapped opponent-turn +1 cost aura + optional trigger trash on attack.
+  // OP16-080 — opponent-turn +1 cost aura; [On Your Opponent's Attack] optional trash [Trigger] → redirect attack to Leader or {Blackbeard Pirates} Character.
   {
     cardNumber: 'OP16-080',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraControllerCharacters', amount: 1, duration: 'permanent', sourceCondition: { turn: 'opponent' } }] } },
-      { templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [{ fn: 'trashFromHand', count: 1, optional: true }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentsAttack',
+          oncePerTurn: true,
+          functions: [
+            { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
+            {
+              fn: 'redirectAttackTarget',
+              target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Blackbeard Pirates', typeFilterCharactersOnly: true } },
+              ifPrevious: 'previousMovedAny',
+            },
+          ],
+        },
+      },
     ],
   },
 

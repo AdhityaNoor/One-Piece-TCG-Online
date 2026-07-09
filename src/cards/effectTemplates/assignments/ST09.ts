@@ -5,8 +5,7 @@
  * templates — evidence the effect language covers this archetype: static conditional self buffs
  * gated on Life count and generic moveCards compositions for Life/deck movement.
  *
- * DEFERRED (need engine capability not yet present):
- *   ST09-010 Ace — "If this would be K.O.'d, trash 1 Life instead": a K.O. REPLACEMENT effect. NEW.
+ * PARTIAL: ST09-010 Ace — K.O. replacement (trash top/bottom Life instead) deferred.
  *   ST09-015 (event, rider) — "add an opponent's Character to the top/bottom of the owner's Life
  *            face-up": opponent-Character-to-Life. NEW (the +4000 Counter + draw Trigger ARE below).
  *
@@ -67,10 +66,20 @@ export const ST09_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST09-009 Fugetsu Omusubi — [Trigger] K.O. up to 1 opponent Character cost <=1 (add-to-hand clause omitted).
   { cardNumber: 'ST09-009', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
 
-  // ST09-010 (character) Portgas.D.Ace —
-  //   [Once Per Turn] If this Character would be K.O.'d, you may trash 1 card from the top or bottom of
-  //   your Life cards instead.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'ST09-010',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementSelf',
+        scope: 'effect',
+        oncePerTurn: true,
+        trashLife: { position: 'topOrBottom' },
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // ST09-012 Yamato — [When Attacking] You may add 1 top/bottom Life to hand: +2000 until the start of your next turn.
   {

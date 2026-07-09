@@ -14,15 +14,31 @@ function koReplacementAction(f: {
   returnDon?: { count?: number };
   restDon?: { count?: number };
   lifeToHand?: { position?: 'top' | 'topOrBottom' };
+  trashLife?: { position?: 'top' | 'bottom' | 'topOrBottom' };
   trashSource?: true;
+  returnSourceToHand?: true;
   restSource?: true;
   restCharacter?: true;
+  bottomDeckCharacter?: true;
+  trashSelfAndDraw?: { amount: number };
+  trashTrashToDeckBottom?: { count: number };
+  giveSelfPowerPenalty?: { amount: number; duration: import('../../../engine/effects/effectIr').IrDuration };
+  giveLeaderPowerPenalty?: { amount: number; duration: import('../../../engine/effects/effectIr').IrDuration };
+  moveTargetToLifeFaceDown?: true;
 }): KoReplacementAction {
   if (f.returnDon) return { kind: 'payAbilityCosts', costs: [{ kind: 'donMinus', count: f.returnDon.count ?? 1 }] };
   if (f.restDon) return { kind: 'payAbilityCosts', costs: [{ kind: 'restDon', count: f.restDon.count ?? 1 }] };
   if (f.lifeToHand) return { kind: 'chooseLifeToHand', position: f.lifeToHand.position ?? 'top' };
+  if (f.trashLife) return { kind: 'trashLife', position: f.trashLife.position ?? 'topOrBottom' };
   if (f.restSource) return { kind: 'restSource' };
   if (f.restCharacter) return { kind: 'restCharacter', count: 1 };
+  if (f.bottomDeckCharacter) return { kind: 'bottomDeckCharacter', count: 1 };
+  if (f.trashSelfAndDraw) return { kind: 'trashSelfAndDraw', drawAmount: f.trashSelfAndDraw.amount };
+  if (f.trashTrashToDeckBottom) return { kind: 'trashTrashToDeckBottom', count: f.trashTrashToDeckBottom.count };
+  if (f.giveSelfPowerPenalty) return { kind: 'giveSelfPowerPenalty', amount: f.giveSelfPowerPenalty.amount, duration: f.giveSelfPowerPenalty.duration };
+  if (f.giveLeaderPowerPenalty) return { kind: 'giveLeaderPowerPenalty', amount: f.giveLeaderPowerPenalty.amount, duration: f.giveLeaderPowerPenalty.duration };
+  if (f.moveTargetToLifeFaceDown) return { kind: 'moveTargetToLifeFaceDown' };
+  if (f.returnSourceToHand) return { kind: 'returnSourceToHand' };
   if (f.trashSource) return { kind: 'trashSource' };
   if (f.trashSelf) return { kind: 'trashSelf' };
   return {
@@ -94,17 +110,18 @@ function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTa
 function targetOps(
   target: TargetSpec,
   effect: (target: Selector) => EffectOp,
-  options: { optional?: boolean; maxTargets?: number; maxCombinedPower?: number; prompt?: string } = {},
+  options: { optional?: boolean; minTargets?: number; maxTargets?: number; maxCombinedPower?: number; prompt?: string } = {},
 ): EffectOp[] {
   const from = chooseFromTarget(target);
   if (!from) return [effect(selectorFromTarget(target))];
   const max = options.maxTargets ?? 1;
+  const min = options.minTargets ?? (options.optional ?? true ? 0 : Math.min(1, max));
   return [
     {
       op: 'chooseTargets',
       var: 't',
       from,
-      min: options.optional ?? true ? 0 : Math.min(1, max),
+      min,
       max,
       prompt: options.prompt ?? `Choose ${options.optional ?? true ? 'up to ' : ''}${max} target${max === 1 ? '' : 's'}.`,
       ...(options.maxCombinedPower !== undefined ? { maxCombinedPower: options.maxCombinedPower } : {}),
@@ -352,6 +369,36 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
         ...(f.condition ? { condition: f.condition } : {}),
       }];
+    case 'redirectAttackTarget':
+      return targetOps(
+        f.target,
+        (target) => ({ op: 'redirectAttackTarget', target }),
+        { optional: f.optional, maxTargets: f.maxTargets ?? 1, prompt: f.prompt },
+      );
+    case 'swapBasePower': {
+      const from = chooseFromTarget(f.target);
+      if (!from) throw new Error(`swapBasePower requires a choosable target, got ${JSON.stringify(f.target)}`);
+      const minT = f.minTargets ?? 2;
+      const maxT = f.maxTargets ?? minT;
+      const leaderAndCharacter = f.swapKind === 'leaderAndCharacter';
+      return [
+        {
+          op: 'chooseTargets',
+          var: 'swap',
+          from,
+          min: minT,
+          max: maxT,
+          prompt: f.prompt ?? (leaderAndCharacter ? 'Select your Leader and 1 Character to swap base power.' : `Select ${minT} cards to swap base power.`),
+          ...(leaderAndCharacter ? { mustIncludeControllerLeader: true } : {}),
+        },
+        {
+          op: 'swapBasePower',
+          var: 'swap',
+          duration: f.duration,
+          ...(leaderAndCharacter ? { mustIncludeControllerLeader: true } : {}),
+        },
+      ];
+    }
     case 'preventRest':
       return targetOps(
         f.target,
@@ -894,6 +941,10 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           appliesTo: 'self',
           scope: f.scope ?? 'any',
           ...(f.oncePerTurn ? { oncePerTurn: true } : {}),
+          ...(f.replacementTriggers ? { replacementTriggers: f.replacementTriggers } : {}),
+          ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}),
+          ...(f.activationGate ? { activationGate: f.activationGate } : {}),
+          ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
           action: koReplacementAction(f),
           duration: f.duration,
         },
@@ -913,17 +964,44 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           },
           scope: f.scope ?? 'any',
           ...(f.oncePerTurn ? { oncePerTurn: true } : {}),
+          ...(f.replacementTriggers ? { replacementTriggers: f.replacementTriggers } : {}),
+          ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}),
+          ...(f.effectSourceCategory ? { effectSourceCategory: f.effectSourceCategory } : {}),
           ...(f.targetCondition ? { condition: f.targetCondition } : {}),
           ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
           action: koReplacementAction(f),
           duration: f.duration,
         },
       ];
+    case 'registerRestReplacementSelf':
+      return [
+        {
+          op: 'registerRestReplacement',
+          ...(f.oncePerTurn ? { oncePerTurn: true } : {}),
+          ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+          ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}),
+          ...(f.effectSourceCategory ? { effectSourceCategory: f.effectSourceCategory } : {}),
+          action: { kind: 'restCharacter' as const, count: 1 },
+          duration: f.duration,
+        },
+      ];
+    case 'setBasePowerFromLeader':
+      return [
+        {
+          op: 'setBasePowerFromLeader',
+          target: selectorFromTarget(f.target),
+          duration: f.duration,
+          ...(f.condition ? { condition: f.condition } : {}),
+          ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+        },
+      ];
+    case 'drawByEventCount':
+      return [{ op: 'drawByEventCount', countField: f.countField }];
     case 'koAllCharacters':
       return [
         {
           op: 'ko',
-          target: { sel: 'allCharacters', ...(f.filter?.maxCost !== undefined ? { maxCost: f.filter.maxCost } : {}), ...(f.filter?.maxPower !== undefined ? { maxPower: f.filter.maxPower } : {}) },
+          target: { sel: 'allCharacters', ...(f.filter?.maxCost !== undefined ? { maxCost: f.filter.maxCost } : {}), ...(f.filter?.maxPower !== undefined ? { maxPower: f.filter.maxPower } : {}), ...(f.filter?.rested !== undefined ? { rested: f.filter.rested } : {}) },
         },
       ];
     case 'giveDonControllerLeader':
@@ -1000,6 +1078,7 @@ const FACTORY_MAP: {
         ...(gates.length > 0 ? { gate: gates } : {}),
         ...(p.cost && p.cost.length > 0 ? { cost: p.cost } : {}),
         ...(p.oncePerTurn ? { oncePerTurn: true } : {}),
+        ...(p.optionalActivate ? { optionalActivate: true } : {}),
         ...(p.battlingOpponentAttribute ? { battlingOpponentAttribute: p.battlingOpponentAttribute } : {}),
         ...(p.requiresOpponentKoed ? { requiresOpponentKoed: true } : {}),
         ops: p.functions.flatMap(functionOps),

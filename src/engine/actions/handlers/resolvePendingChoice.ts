@@ -18,7 +18,7 @@ import type { ResolvePendingChoiceAction, ValidationResult } from '../action';
 import { createActionLogger } from '../../rules/shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { resumeChoice, fireLifeTrigger, fireOnKO, type EffectTemplateRegistry } from '../../effects';
+import { resumeChoice, fireLifeTrigger, fireOnKO, fireTriggerActivatedReactions, type EffectTemplateRegistry } from '../../effects';
 import { finishBattleAfterKoDecision } from '../../rules/battle/damageStep';
 import { resolveKoReplacementStep, validateKoReplacementResponse } from '../../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../../rules/shared/definitions';
@@ -143,17 +143,32 @@ export function executeResolvePendingChoice(
       return { state: { ...state, pendingChoices: remaining }, log: [], pendingChoices: [] };
     }
     const fired = fireLifeTrigger({ ...state, pendingChoices: remaining }, cardId, registry, defs, action.actionId);
-    const inst = fired.state.cardsById[cardId];
-    if (!inst || inst.currentZone !== 'hand') {
+    if (fired.pendingChoices.length > 0) {
       return { state: fired.state, log: fired.log, pendingChoices: fired.pendingChoices };
     }
-    const owner = fired.state.players[inst.ownerId];
-    const working: GameState = {
-      ...fired.state,
-      players: { ...fired.state.players, [inst.ownerId]: { ...owner, hand: removeFromZone(owner.hand, cardId), trash: addToZoneTop(owner.trash, cardId) } },
-      cardsById: { ...fired.state.cardsById, [cardId]: { ...inst, currentZone: 'trash' } },
+    const inst = fired.state.cardsById[cardId];
+    const activatorId = inst?.ownerId;
+    let working = fired.state;
+    let log = fired.log;
+    if (activatorId) {
+      const reactions = fireTriggerActivatedReactions(working, activatorId, registry, defs, action.actionId);
+      working = reactions.state;
+      log = [...log, ...reactions.log];
+      if (reactions.pendingChoices.length > 0) {
+        return { state: working, log, pendingChoices: reactions.pendingChoices };
+      }
+    }
+    const instAfter = working.cardsById[cardId];
+    if (!instAfter || instAfter.currentZone !== 'hand') {
+      return { state: working, log, pendingChoices: [] };
+    }
+    const owner = working.players[instAfter.ownerId];
+    const finalState: GameState = {
+      ...working,
+      players: { ...working.players, [instAfter.ownerId]: { ...owner, hand: removeFromZone(owner.hand, cardId), trash: addToZoneTop(owner.trash, cardId) } },
+      cardsById: { ...working.cardsById, [cardId]: { ...instAfter, currentZone: 'trash' } },
     };
-    return { state: working, log: fired.log, pendingChoices: fired.pendingChoices };
+    return { state: finalState, log, pendingChoices: [] };
   }
 
   const logger = createActionLogger(state, action.actionId);

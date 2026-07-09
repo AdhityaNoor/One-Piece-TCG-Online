@@ -48,6 +48,8 @@ export interface KoReplacementResumeState {
   recordId: string;
   cause: 'battle' | 'effect';
   actorPlayerId: string;
+  /** Which removal event triggered this replacement (defaults to 'ko'). */
+  removalTrigger?: 'ko' | 'returnToHand' | 'bottomDeck';
   /** Resume a suspended IR program after the K.O. (or replacement) resolves. */
   ir?: {
     sourceInstanceId: string;
@@ -57,6 +59,10 @@ export interface KoReplacementResumeState {
     branchIndex?: number;
     branchOpIndex?: number;
     remainingKoTargetIds?: string[];
+    /** Remaining targets for a suspended returnToHand / moveToBottomDeck op. */
+    remainingRemovalTargetIds?: string[];
+    /** Which removal op suspended (returnToHand | moveToBottomDeck). */
+    suspendedRemovalOp?: 'returnToHand' | 'moveToBottomDeck';
   };
   /** Battle damage step paused mid-resolution for a replacement prompt. */
   battle?: {

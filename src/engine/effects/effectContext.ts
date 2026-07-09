@@ -15,7 +15,7 @@ import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/z
 import { getOpponentId } from '../rules/shared/players';
 import { cannotBeRestedByEffect, computeCurrentCost, computeCurrentPower, isKoImmune } from '../rules/shared/power';
 import { isControllerLifeToHandPrevented } from '../rules/shared/lifeToHandRestriction';
-import { koReplacementDescription } from '../rules/shared/koAttempt';
+import { koReplacementDescription, restReplacementDescription } from '../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { createSeededRng } from '../rng/seededRng';
 import type { EffectContext } from './effectTemplate';
@@ -47,6 +47,8 @@ export class EffectContextImpl implements EffectContext {
   private readonly pendingEventActivations: string[] = [];
   /** New Character instance ids played from trash by this resolution; drained for onCharacterPlayedFromTrash reactions. */
   private readonly playedFromTrash: string[] = [];
+  /** Hand cards trashed by this resolution's effects; drained for onHandTrashed cascade. */
+  private readonly handTrashed: { ownerId: string; count: number; effectSourceInstanceId: string }[] = [];
 
   private static readonly FIELD_ZONES = new Set(['leaderArea', 'characterArea', 'stageArea']);
 
@@ -456,6 +458,39 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  /** "base power becomes the same as your Leader's base power" — resolved at read time. */
+  setContinuousBasePowerFromLeader(spec: {
+    appliesToInstanceId: string;
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    sourceCondition?: import('../state/game').SourceStateCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'base power becomes the same as your Leader\'s base power',
+      powerModifier: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        amount: 0,
+        setBaseFromLeader: true,
+        ...(spec.condition ? { condition: spec.condition } : {}),
+        ...(spec.sourceCondition ? { sourceCondition: spec.sourceCondition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to ${spec.appliesToInstanceId}.`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
   addContinuousKeyword(spec: {
     appliesToInstanceId: string;
     keyword: ContinuousKeyword;
@@ -632,6 +667,35 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  addContinuousRestReplacement(spec: {
+    appliesToInstanceId: string;
+    modifier: Omit<import('../state/game').ContinuousRestReplacementModifier, 'appliesToInstanceId'>;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const mod: import('../state/game').ContinuousRestReplacementModifier = {
+      appliesToInstanceId: spec.appliesToInstanceId,
+      ...spec.modifier,
+    };
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? restReplacementDescription(mod),
+      restReplacementModifier: mod,
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} registered on ${spec.appliesToInstanceId}.`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
   preventBlockers(spec: {
     appliesToAttackerInstanceId: string;
     duration: ContinuousEffectDuration;
@@ -796,6 +860,27 @@ export class EffectContextImpl implements EffectContext {
       message: `${spec.appliesToInstanceId} is the only legal attack target for the opponent (${record.description}).`,
       data: { continuousEffectId: record.id, duration: spec.duration },
       relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  /** Retarget the in-progress battle's defender (7-1-2-1-style redirect during Block Step). */
+  redirectAttackTarget(newTargetInstanceId: string): void {
+    const battle = this.working.currentBattle;
+    if (!battle) return;
+    const target = this.working.cardsById[newTargetInstanceId];
+    if (!target || (target.currentZone !== 'leaderArea' && target.currentZone !== 'characterArea')) return;
+    if (target.controllerId !== this.controllerId) return;
+    this.working = {
+      ...this.working,
+      currentBattle: { ...battle, targetInstanceId: newTargetInstanceId },
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `Attack target changed to ${newTargetInstanceId}.`,
+      data: { newTargetInstanceId, previousTargetInstanceId: battle.targetInstanceId },
+      relatedCardInstanceIds: [newTargetInstanceId, battle.attackerInstanceId],
       visibility: 'public',
     });
   }
@@ -1070,6 +1155,12 @@ export class EffectContextImpl implements EffectContext {
   takePlayedFromTrash(): string[] {
     const drained = [...this.playedFromTrash];
     this.playedFromTrash.length = 0;
+    return drained;
+  }
+
+  takeHandTrashed(): { ownerId: string; count: number; effectSourceInstanceId: string }[] {
+    const drained = [...this.handTrashed];
+    this.handTrashed.length = 0;
     return drained;
   }
 
@@ -1737,6 +1828,9 @@ export class EffectContextImpl implements EffectContext {
       visibility: 'public',
     });
     if (EffectContextImpl.FIELD_ZONES.has(fromZone)) this.recordFieldRemoval(instanceId, fromZone);
+    if (fromZone === 'hand') {
+      this.handTrashed.push({ ownerId: inst.ownerId, count: 1, effectSourceInstanceId: this.sourceInstanceId });
+    }
   }
 
   rest(targetInstanceId: string): void {
@@ -1866,12 +1960,15 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
-  trashLife(playerId: string, n: number): void {
+  trashLife(playerId: string, n: number, position: 'top' | 'bottom' = 'top'): void {
     const player = this.working.players[playerId];
     if (!player || n <= 0) return;
-    const moving = player.lifeArea.cardIds.slice(0, n); // top Life card(s); Life is face-down, so "up to N" is taken as the top N
+    const lifeIds = player.lifeArea.cardIds;
+    const moving = position === 'bottom' ? lifeIds.slice(-n) : lifeIds.slice(0, n);
     if (moving.length === 0) return;
-    const remainingLife = player.lifeArea.cardIds.slice(moving.length);
+    const remainingLife = position === 'bottom'
+      ? lifeIds.slice(0, lifeIds.length - moving.length)
+      : lifeIds.slice(moving.length);
     let trash = player.trash;
     const cardsById = { ...this.working.cardsById };
     for (const id of moving) {

@@ -248,7 +248,20 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-045 (character) Thatch —
   //   If this Character would be removed from the field by your opponent's effect or K.O.'d, trash this
   //   Character and draw 1 card instead.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: draw-1 payoff and non-K.O. field-removal branches deferred; K.O. trash-self proxy mapped.
+  {
+    cardNumber: 'OP08-045',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementSelf',
+        scope: 'any',
+        trashSelf: true,
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP08-046 (character) Shakuyaku —
   //   [Your Turn] [Once Per Turn] When a Character is removed from the field by your effect, if your

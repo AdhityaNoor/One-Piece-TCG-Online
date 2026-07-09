@@ -9,8 +9,10 @@ import type { CardCategory } from '../../state/card';
 import type {
   ContinuousEffectRecord,
   ContinuousKoReplacementModifier,
+  ContinuousRestReplacementModifier,
   GameState,
   KoReplacementHandFilter,
+  KoReplacementTrigger,
 } from '../../state/game';
 import type { KoReplacementResumeState, PendingChoice } from '../../events/pendingChoice';
 import type { GameLogEntry } from '../../logs/logEntry';
@@ -22,6 +24,7 @@ import { createActionLogger } from './actionLogger';
 import { fieldDonIds, payAbilityCost, requiredDonMinusCount } from '../../effects/abilityCost';
 import { EffectContextImpl } from '../../effects/effectContext';
 import type { KoReplacementAction } from '../../state/game';
+import { evaluateGates } from '../../effects/gates';
 
 export type KoCause = 'battle' | 'effect';
 
@@ -91,10 +94,53 @@ function koChoiceRouting(
   };
 }
 
+function eligibleBottomDeckCharacters(state: GameState, ownerId: string, excludeInstanceId?: string): string[] {
+  const charArea = state.players[ownerId]?.characterArea.cardIds ?? [];
+  return charArea.filter((id) => id !== excludeInstanceId && state.cardsById[id]?.currentZone === 'characterArea');
+}
+
+function replacementTriggersInclude(mod: ContinuousKoReplacementModifier, trigger: KoReplacementTrigger): boolean {
+  const triggers = mod.replacementTriggers ?? ['ko'];
+  return triggers.includes(trigger);
+}
+
+function replacementEffectSourceMatches(
+  mod: ContinuousKoReplacementModifier,
+  record: ContinuousEffectRecord,
+  state: GameState,
+  defs: CardDefinitionLookup,
+  effectSourceInstanceId: string | undefined,
+): boolean {
+  if (
+    mod.effectSourceController === undefined &&
+    mod.effectSourceCategory === undefined
+  ) {
+    return true;
+  }
+  if (!effectSourceInstanceId) return false;
+  const source = state.cardsById[effectSourceInstanceId];
+  if (!source) return false;
+  const sourceDef = getDefinition(defs, source);
+  if (mod.effectSourceController === 'opponent' && source.ownerId === record.ownerId) return false;
+  if (mod.effectSourceController === 'controller' && source.ownerId !== record.ownerId) return false;
+  if (mod.effectSourceCategory !== undefined && sourceDef.category !== mod.effectSourceCategory) return false;
+  return true;
+}
+
 function replacementCostIsImmediate(action: KoReplacementAction): boolean {
   if (action.kind === 'chooseLifeToHand') return action.position === 'top';
+  if (action.kind === 'trashLife') return action.position === 'top';
   if (action.kind === 'payAbilityCosts') return requiredDonMinusCount(action.costs) === 0;
-  return action.kind === 'trashSelf' || action.kind === 'trashSource' || action.kind === 'restSource';
+  return (
+    action.kind === 'trashSelf' ||
+    action.kind === 'trashSource' ||
+    action.kind === 'returnSourceToHand' ||
+    action.kind === 'restSource' ||
+    action.kind === 'giveSelfPowerPenalty' ||
+    action.kind === 'giveLeaderPowerPenalty' ||
+    action.kind === 'moveTargetToLifeFaceDown' ||
+    action.kind === 'trashSelfAndDraw'
+  );
 }
 
 function recordById(state: GameState, recordId: string) {
@@ -172,6 +218,35 @@ function replacementCostAvailable(
   if (mod.action.kind === 'chooseLifeToHand') {
     return (state.players[target.ownerId]?.lifeArea.cardIds.length ?? 0) >= 1;
   }
+  if (mod.action.kind === 'trashLife') {
+    return (state.players[target.ownerId]?.lifeArea.cardIds.length ?? 0) >= 1;
+  }
+  if (mod.action.kind === 'returnSourceToHand') {
+    const source = state.cardsById[record.sourceInstanceId];
+    return source?.currentZone === 'characterArea';
+  }
+  if (mod.action.kind === 'bottomDeckCharacter') {
+    const eligible = eligibleBottomDeckCharacters(state, target.ownerId, targetInstanceId);
+    return eligible.length >= mod.action.count;
+  }
+  if (mod.action.kind === 'trashSelfAndDraw') {
+    const source = state.cardsById[record.sourceInstanceId];
+    return source?.currentZone === 'characterArea';
+  }
+  if (mod.action.kind === 'trashTrashToDeckBottom') {
+    const trash = state.players[target.ownerId]?.trash.cardIds ?? [];
+    return trash.length >= mod.action.count;
+  }
+  if (mod.action.kind === 'giveSelfPowerPenalty') {
+    const source = state.cardsById[record.sourceInstanceId];
+    return source?.currentZone === 'characterArea' || source?.currentZone === 'leaderArea';
+  }
+  if (mod.action.kind === 'giveLeaderPowerPenalty') {
+    return !!state.players[target.ownerId]?.leaderInstanceId;
+  }
+  if (mod.action.kind === 'moveTargetToLifeFaceDown') {
+    return true;
+  }
   return true;
 }
 
@@ -180,16 +255,21 @@ export function findKoReplacementRecord(
   targetInstanceId: string,
   cause: KoCause,
   defs: CardDefinitionLookup,
+  opts?: { removalTrigger?: KoReplacementTrigger; effectSourceInstanceId?: string },
 ): ContinuousEffectRecord | null {
   const target = state.cardsById[targetInstanceId];
   if (!target) return null;
+  const removalTrigger = opts?.removalTrigger ?? 'ko';
   for (const record of state.continuousEffects) {
     const mod = record.koReplacementModifier;
     if (!mod) continue;
+    if (!replacementTriggersInclude(mod, removalTrigger)) continue;
     if (!replacementTargetMatches(mod, record, state, targetInstanceId, defs)) continue;
     if (!replacementApplies(mod, cause)) continue;
     if (!continuousTargetConditionApplies(mod.condition, record, state, targetInstanceId, defs)) continue;
     if (!sourceConditionApplies(mod.sourceCondition, record, state)) continue;
+    if (mod.activationGate?.length && !evaluateGates(mod.activationGate, state, defs, record.ownerId, record.sourceInstanceId)) continue;
+    if (!replacementEffectSourceMatches(mod, record, state, defs, opts?.effectSourceInstanceId)) continue;
     const source = state.cardsById[record.sourceInstanceId];
     if (mod.oncePerTurn && source?.oncePerTurnUsed.includes(REPLACEMENT_OPT_KEY(record.id))) continue;
     if (!replacementCostAvailable(mod, record, state, targetInstanceId, defs)) continue;
@@ -233,8 +313,14 @@ export function buildKoReplacementPayChoice(
   const routing = koChoiceRouting(record, resumeState);
   if (mod.action.kind === 'trashSelf') return null;
   if (mod.action.kind === 'trashSource') return null;
+  if (mod.action.kind === 'returnSourceToHand') return null;
   if (mod.action.kind === 'restSource') return null;
+  if (mod.action.kind === 'giveSelfPowerPenalty') return null;
+  if (mod.action.kind === 'giveLeaderPowerPenalty') return null;
+  if (mod.action.kind === 'moveTargetToLifeFaceDown') return null;
+  if (mod.action.kind === 'trashSelfAndDraw') return null;
   if (mod.action.kind === 'chooseLifeToHand' && mod.action.position === 'top') return null;
+  if (mod.action.kind === 'trashLife' && mod.action.position === 'top') return null;
   if (mod.action.kind === 'restCharacter') {
     const eligible = eligibleRestCharacters(state, target.ownerId, targetInstanceId);
     return {
@@ -275,6 +361,47 @@ export function buildKoReplacementPayChoice(
       kind: 'SELECT_OPTION',
       prompt: 'Choose a Life card to add to your hand to avoid the K.O.',
       constraints: { min: 1, max: 1, options: options.map(({ label }) => ({ label })) },
+      sourceInstanceId: routing.sourceInstanceId,
+      sourceEffectId: routing.sourceEffectId,
+      resumeState,
+    };
+  }
+  if (mod.action.kind === 'trashLife' && mod.action.position === 'topOrBottom') {
+    const life = state.players[target.ownerId]?.lifeArea.cardIds ?? [];
+    const options: { label: string }[] = [{ label: 'Top Life card' }];
+    if (life.length > 1) options.push({ label: 'Bottom Life card' });
+    return {
+      id: choiceId,
+      playerId: target.ownerId,
+      kind: 'SELECT_OPTION',
+      prompt: 'Choose a Life card to trash to avoid the K.O.',
+      constraints: { min: 1, max: 1, options: options.map(({ label }) => ({ label })) },
+      sourceInstanceId: routing.sourceInstanceId,
+      sourceEffectId: routing.sourceEffectId,
+      resumeState,
+    };
+  }
+  if (mod.action.kind === 'bottomDeckCharacter') {
+    const eligible = eligibleBottomDeckCharacters(state, target.ownerId, targetInstanceId);
+    return {
+      id: choiceId,
+      playerId: target.ownerId,
+      kind: 'SELECT_CARDS',
+      prompt: `Choose ${mod.action.count} Character${mod.action.count === 1 ? '' : 's'} to place at the bottom of the deck instead.`,
+      constraints: { min: mod.action.count, max: mod.action.count, candidateInstanceIds: eligible },
+      sourceInstanceId: routing.sourceInstanceId,
+      sourceEffectId: routing.sourceEffectId,
+      resumeState,
+    };
+  }
+  if (mod.action.kind === 'trashTrashToDeckBottom') {
+    const trash = state.players[target.ownerId]?.trash.cardIds ?? [];
+    return {
+      id: choiceId,
+      playerId: target.ownerId,
+      kind: 'SELECT_CARDS',
+      prompt: `Choose ${mod.action.count} card${mod.action.count === 1 ? '' : 's'} from your trash to place at the bottom of your deck instead.`,
+      constraints: { min: mod.action.count, max: mod.action.count, candidateInstanceIds: trash },
       sourceInstanceId: routing.sourceInstanceId,
       sourceEffectId: routing.sourceEffectId,
       resumeState,
@@ -442,6 +569,82 @@ export function applyKoReplacementCost(
     const paid = payAbilityCost(working, record.sourceInstanceId, target.ownerId, mod.action.costs, actionId, selectedIds);
     working = paid.state;
     logger.log.push(...paid.log);
+  } else if (mod.action.kind === 'returnSourceToHand') {
+    const sourceId = record.sourceInstanceId;
+    const ctx = new EffectContextImpl(working, sourceId, defs, actionId);
+    ctx.returnToHand(sourceId);
+    const moved = ctx.finish();
+    working = moved.state;
+    logger.log.push(...moved.log);
+  } else if (mod.action.kind === 'bottomDeckCharacter') {
+    const selectedIds = Array.isArray(selection) ? selection : [];
+    const ctx = new EffectContextImpl(working, record.sourceInstanceId, defs, actionId);
+    for (const id of selectedIds) ctx.moveToBottomDeck(id);
+    const moved = ctx.finish();
+    working = moved.state;
+    logger.log.push(...moved.log);
+  } else if (mod.action.kind === 'trashSelfAndDraw') {
+    const sourceId = record.sourceInstanceId;
+    const ctx = new EffectContextImpl(working, sourceId, defs, actionId);
+    ctx.trashCard(sourceId);
+    ctx.draw(target.ownerId, mod.action.drawAmount);
+    const moved = ctx.finish();
+    working = moved.state;
+    logger.log.push(...moved.log);
+  } else if (mod.action.kind === 'trashLife') {
+    const ownerId = target.ownerId;
+    const life = working.players[ownerId]?.lifeArea.cardIds ?? [];
+    let lifePosition: 'top' | 'bottom' = 'top';
+    if (mod.action.position === 'topOrBottom') {
+      const idx = typeof selection === 'number' ? selection : 0;
+      lifePosition = idx === 1 && life.length > 1 ? 'bottom' : 'top';
+    } else if (mod.action.position === 'bottom') {
+      lifePosition = 'bottom';
+    }
+    const ctx = new EffectContextImpl(working, record.sourceInstanceId, defs, actionId);
+    ctx.trashLife(ownerId, 1, lifePosition);
+    const moved = ctx.finish();
+    working = moved.state;
+    logger.log.push(...moved.log);
+  } else if (mod.action.kind === 'trashTrashToDeckBottom') {
+    const selectedIds = Array.isArray(selection) ? selection : [];
+    const ctx = new EffectContextImpl(working, record.sourceInstanceId, defs, actionId);
+    for (const id of selectedIds) ctx.moveToBottomDeck(id);
+    const moved = ctx.finish();
+    working = moved.state;
+    logger.log.push(...moved.log);
+  } else if (mod.action.kind === 'giveSelfPowerPenalty') {
+    const sourceId = record.sourceInstanceId;
+    const ctx = new EffectContextImpl(working, sourceId, defs, actionId);
+    ctx.addContinuousPower({
+      appliesToInstanceId: sourceId,
+      amount: -mod.action.amount,
+      duration: mod.action.duration,
+      description: `−${mod.action.amount} power (replacement cost)`,
+    });
+    const moved = ctx.finish();
+    working = moved.state;
+    logger.log.push(...moved.log);
+  } else if (mod.action.kind === 'giveLeaderPowerPenalty') {
+    const leaderId = working.players[target.ownerId]?.leaderInstanceId;
+    if (leaderId) {
+      const ctx = new EffectContextImpl(working, record.sourceInstanceId, defs, actionId);
+      ctx.addContinuousPower({
+        appliesToInstanceId: leaderId,
+        amount: -mod.action.amount,
+        duration: mod.action.duration,
+        description: `Leader −${mod.action.amount} power (replacement cost)`,
+      });
+      const moved = ctx.finish();
+      working = moved.state;
+      logger.log.push(...moved.log);
+    }
+  } else if (mod.action.kind === 'moveTargetToLifeFaceDown') {
+    const ctx = new EffectContextImpl(working, record.sourceInstanceId, defs, actionId);
+    ctx.moveToLifeTop(targetInstanceId, false);
+    const moved = ctx.finish();
+    working = moved.state;
+    logger.log.push(...moved.log);
   } else if (mod.action.kind === 'chooseLifeToHand') {
     const ownerId = target.ownerId;
     const life = working.players[ownerId]?.lifeArea.cardIds ?? [];
@@ -548,6 +751,24 @@ export function koReplacementDescription(mod: ContinuousKoReplacementModifier): 
       parts.push('to avoid this K.O.?');
       return parts.join(' ');
     }
+    case 'trashLife':
+      return mod.action.position === 'topOrBottom'
+        ? 'Trash 1 card from the top or bottom of your Life cards instead?'
+        : 'Trash the top card of your Life cards instead?';
+    case 'returnSourceToHand':
+      return 'Return this Character to your hand instead of removing the ally?';
+    case 'bottomDeckCharacter':
+      return `Place ${mod.action.count} of your Character${mod.action.count === 1 ? '' : 's'} at the bottom of the deck instead?`;
+    case 'trashSelfAndDraw':
+      return `Trash this Character and draw ${mod.action.drawAmount} card${mod.action.drawAmount === 1 ? '' : 's'} instead?`;
+    case 'trashTrashToDeckBottom':
+      return `Place ${mod.action.count} cards from your trash at the bottom of your deck instead?`;
+    case 'giveSelfPowerPenalty':
+      return `Give this Character −${mod.action.amount} power during this turn instead?`;
+    case 'giveLeaderPowerPenalty':
+      return `Give your Leader −${mod.action.amount} power during this turn instead?`;
+    case 'moveTargetToLifeFaceDown':
+      return 'Add the ally to the top of your Life cards face-down instead?';
   }
 }
 
@@ -555,10 +776,12 @@ export type KoReplacementStepResult = {
   state: GameState;
   log: GameLogEntry[];
   pendingChoices: PendingChoice[];
-  /** Resume the paused effect or battle once replacement (or declined K.O.) is resolved. */
+  /** Resume the paused effect or battle once replacement (or declined removal) is resolved. */
   resumeKr?: KoReplacementResumeState;
-  /** Effect-path decline: caller should fire [On K.O.] on this target before resuming IR. */
+  /** Effect-path decline on K.O.: caller should fire [On K.O.] before resuming IR. */
   declinedEffectKoTargetId?: string;
+  /** Effect-path decline on non-K.O. removal: apply the original removal before resuming IR. */
+  declinedRemoval?: { targetInstanceId: string; kind: 'returnToHand' | 'bottomDeck' };
 };
 
 /** Resolve one K.O. replacement PendingChoice step (confirm or pay-cost). */
@@ -577,16 +800,48 @@ export function resolveKoReplacementStep(
   const record = recordById(working, kr.recordId);
   if (!record) return { state: working, log: [], pendingChoices: [] };
 
+  if (record.restReplacementModifier) {
+    if (choice.kind === 'YES_NO') {
+      const accepted = response === true;
+      if (!accepted) {
+        const target = working.cardsById[kr.targetInstanceId];
+        if (target && target.orientation !== 'rested') {
+          working = restCardInState(working, kr.targetInstanceId);
+        }
+        return { state: working, log: [], pendingChoices: [], resumeKr: kr };
+      }
+      const payChoice = buildRestReplacementPayChoice(working, kr.targetInstanceId, record, `${choice.id}__pay`, choice.resumeState!);
+      if (!payChoice) return { state: working, log: [], pendingChoices: [], resumeKr: kr };
+      return { state: working, log: [], pendingChoices: [payChoice] };
+    }
+    if (kr.phase === 'payCost') {
+      const selection = Array.isArray(response) ? response : [];
+      const replaced = applyRestReplacementCost(working, kr.targetInstanceId, record, selection, actionId);
+      return { state: replaced.state, log: replaced.log, pendingChoices: [], resumeKr: kr };
+    }
+    return { state: working, log: [], pendingChoices: [] };
+  }
+
   if (choice.kind === 'YES_NO') {
     const accepted = response === true;
     if (!accepted) {
-      const applied = applyKoToTrash(working, kr.targetInstanceId, kr.actorPlayerId, kr.cause, defs, actionId);
+      const trigger = kr.removalTrigger ?? 'ko';
+      if (trigger === 'ko') {
+        const applied = applyKoToTrash(working, kr.targetInstanceId, kr.actorPlayerId, kr.cause, defs, actionId);
+        return {
+          state: applied.state,
+          log: applied.log,
+          pendingChoices: [],
+          resumeKr: kr,
+          ...(kr.cause === 'effect' ? { declinedEffectKoTargetId: kr.targetInstanceId } : {}),
+        };
+      }
       return {
-        state: applied.state,
-        log: applied.log,
+        state: working,
+        log: [],
         pendingChoices: [],
         resumeKr: kr,
-        ...(kr.cause === 'effect' ? { declinedEffectKoTargetId: kr.targetInstanceId } : {}),
+        declinedRemoval: { targetInstanceId: kr.targetInstanceId, kind: trigger },
       };
     }
     const mod = record.koReplacementModifier!;
@@ -647,4 +902,131 @@ export function validateKoReplacementResponse(choice: PendingChoice, response: u
     reasons.push(`Unexpected choice kind '${choice.kind}' for K.O. replacement.`);
   }
   return reasons;
+}
+
+const REST_REPLACEMENT_OPT_KEY = (recordId: string) => `restReplacement:${recordId}`;
+
+function restReplacementEffectSourceMatches(
+  mod: ContinuousRestReplacementModifier,
+  record: ContinuousEffectRecord,
+  state: GameState,
+  defs: CardDefinitionLookup,
+  effectSourceInstanceId: string | undefined,
+): boolean {
+  if (mod.effectSourceController === undefined && mod.effectSourceCategory === undefined) return true;
+  if (!effectSourceInstanceId) return false;
+  const source = state.cardsById[effectSourceInstanceId];
+  if (!source) return false;
+  const sourceDef = getDefinition(defs, source);
+  if (mod.effectSourceController === 'opponent' && source.ownerId === record.ownerId) return false;
+  if (mod.effectSourceController === 'controller' && source.ownerId !== record.ownerId) return false;
+  if (mod.effectSourceCategory !== undefined && sourceDef.category !== mod.effectSourceCategory) return false;
+  return true;
+}
+
+export function findRestReplacementRecord(
+  state: GameState,
+  targetInstanceId: string,
+  defs: CardDefinitionLookup,
+  effectSourceInstanceId: string,
+): ContinuousEffectRecord | null {
+  const target = state.cardsById[targetInstanceId];
+  if (!target) return null;
+  for (const record of state.continuousEffects) {
+    const mod = record.restReplacementModifier;
+    if (!mod) continue;
+    if (mod.appliesToInstanceId !== targetInstanceId) continue;
+    if (!sourceConditionApplies(mod.sourceCondition, record, state)) continue;
+    if (!restReplacementEffectSourceMatches(mod, record, state, defs, effectSourceInstanceId)) continue;
+    const source = state.cardsById[record.sourceInstanceId];
+    if (mod.oncePerTurn && source?.oncePerTurnUsed.includes(REST_REPLACEMENT_OPT_KEY(record.id))) continue;
+    const eligible = eligibleRestCharacters(state, target.ownerId, targetInstanceId);
+    if (eligible.length < mod.action.count) continue;
+    return record;
+  }
+  return null;
+}
+
+export function restReplacementDescription(mod: ContinuousRestReplacementModifier): string {
+  return `Rest ${mod.action.count} of your other Character${mod.action.count === 1 ? '' : 's'} instead of resting this Character?`;
+}
+
+export function buildRestReplacementConfirmChoice(
+  state: GameState,
+  targetInstanceId: string,
+  record: ContinuousEffectRecord,
+  choiceId: string,
+  resumeState: PendingChoice['resumeState'],
+): PendingChoice {
+  const target = state.cardsById[targetInstanceId]!;
+  return {
+    id: choiceId,
+    playerId: target.ownerId,
+    kind: 'YES_NO',
+    prompt: record.description,
+    constraints: { min: 0, max: 1 },
+    sourceInstanceId: resumeState?.koReplacement?.ir?.sourceInstanceId ?? record.sourceInstanceId,
+    sourceEffectId: 'ir',
+    resumeState,
+  };
+}
+
+export function buildRestReplacementPayChoice(
+  state: GameState,
+  targetInstanceId: string,
+  record: ContinuousEffectRecord,
+  choiceId: string,
+  resumeState: PendingChoice['resumeState'],
+): PendingChoice | null {
+  const mod = record.restReplacementModifier!;
+  const target = state.cardsById[targetInstanceId];
+  if (!target) return null;
+  const eligible = eligibleRestCharacters(state, target.ownerId, targetInstanceId);
+  return {
+    id: choiceId,
+    playerId: target.ownerId,
+    kind: 'SELECT_CARDS',
+    prompt: `Choose ${mod.action.count} Character${mod.action.count === 1 ? '' : 's'} to rest instead.`,
+    constraints: { min: mod.action.count, max: mod.action.count, candidateInstanceIds: eligible },
+    sourceInstanceId: resumeState?.koReplacement?.ir?.sourceInstanceId ?? record.sourceInstanceId,
+    sourceEffectId: 'ir',
+    resumeState,
+  };
+}
+
+export function applyRestReplacementCost(
+  state: GameState,
+  targetInstanceId: string,
+  record: ContinuousEffectRecord,
+  selection: string[],
+  actionId: string | null,
+): { state: GameState; log: GameLogEntry[] } {
+  const mod = record.restReplacementModifier!;
+  const logger = createActionLogger(state, actionId);
+  let working = state;
+  for (const id of selection) {
+    working = restCardInState(working, id);
+    logger.push({
+      actorPlayerId: state.cardsById[targetInstanceId]?.ownerId ?? record.ownerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${id} was rested as a rest replacement.`,
+      data: { restedInstanceId: id, targetInstanceId, restReplacement: true },
+      relatedCardInstanceIds: [id, targetInstanceId],
+      visibility: 'public',
+    });
+  }
+  const source = working.cardsById[record.sourceInstanceId];
+  if (mod.oncePerTurn && source) {
+    working = {
+      ...working,
+      cardsById: {
+        ...working.cardsById,
+        [record.sourceInstanceId]: {
+          ...source,
+          oncePerTurnUsed: [...source.oncePerTurnUsed, REST_REPLACEMENT_OPT_KEY(record.id)],
+        },
+      },
+    };
+  }
+  return { state: { ...working, log: [...working.log, ...logger.log] }, log: logger.log };
 }

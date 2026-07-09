@@ -7,8 +7,18 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // --- Batch: OP03 cards expressible with existing primitives ---
-  // OP03-001 — PARTIAL: attack/defend variable Event/Stage trash → scaling battle power deferred.
+  // OP03-001 — PARTIAL: attack-or-defended variable Event/Stage trash → scaling battle power deferred; mapped whenAttacking trash-1 → +1000 this battle.
+  {
+    cardNumber: 'OP03-001',
+    templateId: 'ability',
+    params: {
+      timing: 'whenAttacking',
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
   // OP03-002 — [DON!! x1] [When Attacking] opp cannot activate [Blocker] Characters with 2000 or less power.
   { cardNumber: 'OP03-002', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle', blockerPowerAtMost: 2000 }] } },
 
@@ -428,10 +438,18 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-080 — [On Play] place 2 CP from trash at bottom: K.O. up to 1 opp Character cost<=3.
   { cardNumber: 'OP03-080', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'CP' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 2 }, { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
 
-  // OP03-076 (leader) Rob Lucci —
-  //   [Your Turn] [Once Per Turn] You may trash 2 cards from your hand: When your opponent's Character is
-  //   K.O.'d, set this Leader as active.
-  // NOTE: not yet implemented (needs template).
+  // OP03-076 — PARTIAL: "trash 2 hand to arm" reactive window deferred; mapped [Your Turn] onCharacterKoed set Leader active.
+  {
+    cardNumber: 'OP03-076',
+    templateId: 'ability',
+    params: {
+      timing: 'onCharacterKoed',
+      oncePerTurn: true,
+      condition: { turn: 'your' },
+      gate: [{ kind: 'koedCharacterController', player: 'opponent' }],
+      functions: [{ fn: 'setActiveControllerLeader' }],
+    },
+  },
 
   // OP03-077 — PARTIAL: life→deck top deferred; mapped DON!!−2 + trash 1 hand → deck top to Life at ≤1 Life.
   {

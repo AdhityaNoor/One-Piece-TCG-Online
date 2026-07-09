@@ -16,6 +16,7 @@ import { runRefreshPhase } from './runRefreshPhase';
 import { runDrawPhase } from './runDrawPhase';
 import { runDonPhase } from './runDonPhase';
 import { runEndPhaseAndHandoff } from './runEndPhaseAndHandoff';
+import { fireStartOfTurnReactions } from '../../effects/fireTiming';
 
 export interface AdvanceAutomaticPhasesResult {
   state: GameState;
@@ -52,6 +53,14 @@ export function advanceAutomaticPhases(state: GameState, defs: CardDefinitionLoo
         const result = runDonPhase(current);
         current = result.state;
         log.push(...result.log);
+        if (current.currentPhase === 'main' && !current.gameOver) {
+          const sot = fireStartOfTurnReactions(current, registry, defs, null);
+          current = sot.state;
+          log.push(...sot.log);
+          if (sot.pendingChoices.length > 0) {
+            return { state: { ...current, pendingChoices: [...current.pendingChoices, ...sot.pendingChoices] }, log };
+          }
+        }
         break;
       }
       case 'end': {

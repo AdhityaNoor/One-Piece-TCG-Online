@@ -26,9 +26,11 @@ const REACTIVE_ONCE_PER_TURN_KEYS: Partial<Record<IrTiming, string>> = {
   onLifeDamageDealt: 'onLifeDamageDealt',
   onDrawOutsideDrawPhase: 'onDrawOutsideDrawPhase',
   onLifeToHand: 'onLifeToHand',
+  onTriggerActivated: 'onTriggerActivated',
   onCharacterKoed: 'onCharacterKoed',
   onRemovedFromField: 'onRemovedFromField',
   onCharacterPlayedFromTrash: 'onCharacterPlayedFromTrash',
+  onHandTrashed: 'onHandTrashed',
 };
 
 function mergeResults(a: ActionExecuteResult, b: ActionExecuteResult): ActionExecuteResult {
@@ -130,6 +132,25 @@ export function fireLifeToHandReactions(
   actionId: string | null,
 ): ActionExecuteResult {
   return fireReactiveAbilitiesForPlayer(state, playerId, 'onLifeToHand', registry, defs, actionId);
+}
+
+/** Fires [When a [Trigger] activates] for every in-play card (all controllers). */
+export function fireTriggerActivatedReactions(
+  state: GameState,
+  activatorPlayerId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const observerId of Object.keys(state.players)) {
+    const fired = fireReactiveAbilitiesForPlayer(working, observerId, 'onTriggerActivated', registry, defs, actionId);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+  return { state: working, log, pendingChoices: [] };
 }
 
 /** Fires [When you draw outside your Draw Phase] for `drawerPlayerId`'s in-play cards. */
@@ -790,6 +811,71 @@ export function afterAbilityCostPaid(
     return rested;
   }
   return fireDonReturnedReactions(state, playerId, paid.returnedDonCount, registry, defs, actionId);
+}
+
+/** Fires [When a card is trashed from your hand by your card's effect] for the hand owner. */
+export function fireHandTrashedReactions(
+  state: GameState,
+  event: { ownerId: string; count: number; effectSourceInstanceId: string },
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  if (event.count <= 0) return noop(state);
+  const eventContext: GateEvalContext = {
+    handTrashedCount: event.count,
+    handTrashEffectSourceInstanceId: event.effectSourceInstanceId,
+  };
+  return fireReactiveAbilitiesForPlayer(state, event.ownerId, 'onHandTrashed', registry, defs, actionId, eventContext);
+}
+
+/** Fires optional [Start of your turn] activations for the active player's in-play cards. */
+export function fireStartOfTurnReactions(
+  state: GameState,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const playerId = state.activePlayerId;
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const id of fieldInstanceIds(working, playerId)) {
+    const inst = working.cardsById[id];
+    if (!inst) continue;
+    const program = registry[inst.cardDefinitionId];
+    if (!program?.abilities.some((a) => a.timing === 'onStartOfTurn')) continue;
+    for (const ability of program.abilities.filter((a) => a.timing === 'onStartOfTurn')) {
+      if (!triggeredAbilityWouldFire(ability, inst, working, defs)) continue;
+      if (ability.optionalActivate) {
+        working = {
+          ...working,
+          pendingChoices: [
+            ...working.pendingChoices,
+            {
+              id: `${id}:start-of-turn:${ability.timing}:${working.pendingChoices.length}`,
+              playerId,
+              kind: 'YES_NO',
+              prompt: `Activate start-of-turn effect on ${id}?`,
+              constraints: { min: 0, max: 1 },
+              sourceInstanceId: id,
+              sourceEffectId: 'ir',
+              resumeState: {
+                abilityIndex: program.abilities.indexOf(ability),
+                opIndex: -2,
+                bindings: {},
+              },
+            },
+          ],
+        };
+        return { state: working, log, pendingChoices: working.pendingChoices.slice(-1) };
+      }
+      const fired = runTimings(program, ['onStartOfTurn'], working, id, defs, actionId, registry, false);
+      working = fired.state;
+      log = [...log, ...fired.log];
+      if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+    }
+  }
+  return { state: working, log, pendingChoices: [] };
 }
 
 /**

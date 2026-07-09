@@ -7,11 +7,22 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // OP14-001 (leader) Trafalgar Law —
-  //   [Activate: Main] [Once Per Turn] Select 2 of your {Supernovas} or {Heart Pirates} type Characters.
-  //   Swap the base power of the selected Characters with each other during this turn.
-  // NOTE: not yet implemented (needs template).
-
+  // OP14-001 (leader) Trafalgar Law — [Activate: Main] [Once Per Turn] swap base power of 2 {Supernovas}/{Heart Pirates} Characters.
+  {
+    cardNumber: 'OP14-001',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      functions: [{
+        fn: 'swapBasePower',
+        target: { group: 'characters', player: 'controller', filter: { anyOfTypes: ['Supernovas', 'Heart Pirates'] } },
+        duration: 'duringThisTurn',
+        minTargets: 2,
+        maxTargets: 2,
+      }],
+    },
+  },
   // OP14-002 — [When Attacking] If 5000+ power: draw 1 and K.O. up to 1 opp Character with 3000 base power or less.
   { cardNumber: 'OP14-002', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfInstancePowerAtLeast', power: 5000 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 3000 } }, optional: true }] } },
 
@@ -32,12 +43,28 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-006 — [When Attacking] If 5000+ power: give up to 1 opp Character −2000 this turn.
   { cardNumber: 'OP14-006', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfInstancePowerAtLeast', power: 5000 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP14-009 — PARTIAL: base-power swap deferred; mapped [Rush] + optional trash-2 on opponent's attack.
+  // OP14-009 — [Rush] [On Your Opponent's Attack] [Once Per Turn] optional trash 2: swap Leader + 1 Character base power during this battle.
   {
     cardNumber: 'OP14-009',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
-      { templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [{ fn: 'trashFromHand', count: 2, optional: true }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentsAttack',
+          oncePerTurn: true,
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 2 },
+            {
+              fn: 'swapBasePower',
+              target: { group: 'leaderOrCharacters', player: 'controller' },
+              duration: 'duringThisBattle',
+              swapKind: 'leaderAndCharacter',
+              ifPrevious: 'previousMovedAny',
+            },
+          ],
+        },
+      },
     ],
   },
 
@@ -72,11 +99,21 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-016 — [DON!! x1][When Attacking] give up to 1 opp Character −2000. PARTIAL: removal-replacement deferred.
   { cardNumber: 'OP14-016', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP14-017 (event) Chambres —
-  //   [Main] Select 2 of your opponent's Characters with 9000 base power or less. Swap the base power of
-  //   the selected Characters with each other during this turn.
-  // NOTE: not yet implemented (needs template).
-
+  // OP14-017 (event) Chambres — [Main] swap base power of 2 opponent Characters (≤9000 base power) this turn.
+  {
+    cardNumber: 'OP14-017',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [{
+        fn: 'swapBasePower',
+        target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 9000 } },
+        duration: 'duringThisTurn',
+        minTargets: 2,
+        maxTargets: 2,
+      }],
+    },
+  },
   // OP14-018 — [Trigger] play up to 1 red Character ≤2000 power from hand. PARTIAL: the power-gated [Counter] buff is deferred.
   { cardNumber: 'OP14-018', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'red', maxPower: 2000 } }] } },
 
@@ -108,7 +145,19 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Your Turn] When this Character becomes rested, you may add 1 card from the top of your Life cards to
   //   your hand. If you do, up to 1 of your opponent's rested Characters or Stages will not become active
   //   in your opponent's next Refresh Phase.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: Stage preventRefresh option deferred.
+  {
+    cardNumber: 'OP14-021',
+    templateId: 'ability',
+    params: {
+      timing: 'onRested',
+      condition: { turn: 'your' },
+      functions: [
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, duration: 'untilStartOfNextTurn', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
 
   { cardNumber: 'OP14-023', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveSelf' }] } },
@@ -149,7 +198,34 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Opponent's Turn] If this Character would be removed from the field by your opponent's effect, you
   //   may rest 1 of your cards instead.[Activate: Main] [Once Per Turn] You may rest 2 of your cards: This
   //   Character gains +2000 power until the end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: field-removal uses K.O.-replacement proxy; "rest N of your cards" → restDon cost.
+  {
+    cardNumber: 'OP14-029',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementSelf',
+            scope: 'effect',
+            restCharacter: true,
+            duration: 'permanent',
+            sourceCondition: { turn: 'opponent' },
+          }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          cost: [{ kind: 'restDon', count: 2 }],
+          functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'endOfOpponentsTurn' }],
+        },
+      },
+    ],
+  },
 
   // OP14-031 (character) Nami —
   //   [Blocker][On Play] Rest up to 2 of your opponent's Characters with a cost of 8 or less. Then, set up
@@ -240,7 +316,33 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Opponent's Turn] When you play a Character, draw 1 card.[DON!! x1] [Once Per Turn] When one of your
   //   {Amazon Lily} or {Kuja Pirates} type Characters with 5000 base power or more is K.O.'d, add up to 1
   //   card from the top of your opponent's Life cards to the owner's hand.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: ally K.O. uses onRemovedFromField proxy (battle K.O. + type/base-power filters deferred).
+  {
+    cardNumber: 'OP14-041',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onCharacterPlayedFromHand',
+          condition: { turn: 'opponent' },
+          functions: [{ fn: 'draw', amount: 1 }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onRemovedFromField',
+          oncePerTurn: true,
+          condition: { donAttachedAtLeast: 1 },
+          gate: [
+            { kind: 'removedFromFieldCategory', category: 'character' },
+            { kind: 'removedFromFieldController', player: 'controller' },
+          ],
+          functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' }, optional: true }],
+        },
+      },
+    ],
+  },
 
   { cardNumber: 'OP14-042', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Fish-Man' }], functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { minCost: 2 }, remainder: 'bottom' }] } },
 
@@ -265,7 +367,30 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   9 or less cannot be rested until the end of your opponent's next End Phase.[On Your Opponent's
   //   Attack] [Once Per Turn] You may trash 1 card from your hand: Up to 1 of your Leader or Character
   //   cards gains +2000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP14-119',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onRested',
+          condition: { turn: 'your' },
+          functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 9 } }, duration: 'endOfOpponentsTurn', optional: true }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentsAttack',
+          oncePerTurn: true,
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP14-120 (character) Crocodile —
   //   [On Play] Up to 1 of your opponent's Characters with a cost of 9 or less cannot attack until the end
@@ -343,10 +468,20 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-052 — [Blocker][On Play] trash 3 from hand: play up to 1 {Impel Down} cost ≤6 from hand.
   { cardNumber: 'OP14-052', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromHand', count: 3 }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Impel Down', maxCost: 6 } }] } },
 
-  // OP14-053 (character) Vista —
-  //   [Blocker][Opponent's Turn] If you have 7 or less cards in your hand, this Character's base power
-  //   becomes the same as your Leader's base power.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP14-053',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'setBasePowerFromLeader',
+        target: { ref: 'self' },
+        duration: 'endOfOpponentsTurn',
+        sourceCondition: { turn: 'opponent' },
+        condition: { gate: [{ kind: 'selfHand', atMost: 7 }] },
+      }],
+    },
+  },
 
   // OP14-054 — [On Play] If Leader {Fish-Man}, draw 3. PARTIAL: the [End of Your Turn] trash-to-5 is deferred.
   { cardNumber: 'OP14-054', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Fish-Man' }], functions: [{ fn: 'draw', amount: 3 }] } },
@@ -377,11 +512,20 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP14-060 (leader) Donquixote Doflamingo —
-  //   [On Your Opponent's Attack] [Once Per Turn] DON!! −1: Select your Leader or 1 of your {Donquixote
-  //   Pirates} type Characters. Change the attack target to the selected card.
-  // NOTE: not yet implemented (needs template).
-
+  // OP14-060 (leader) Donquixote Doflamingo — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: redirect attack to Leader or {Donquixote Pirates} Character.
+  {
+    cardNumber: 'OP14-060',
+    templateId: 'ability',
+    params: {
+      timing: 'onOpponentsAttack',
+      oncePerTurn: true,
+      cost: [{ kind: 'donMinus', count: 1 }],
+      functions: [{
+        fn: 'redirectAttackTarget',
+        target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Donquixote Pirates', typeFilterCharactersOnly: true } },
+      }],
+    },
+  },
   // OP14-061 — [When Attacking] DON!! −1: give up to 1 opp Character −2000. PARTIAL: removal-replacement deferred.
   { cardNumber: 'OP14-061', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
@@ -420,7 +564,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-070 (character) Buffalo —
   //   When this Character becomes rested by your opponent's Character's effect, you may return 1 DON!! card
   //   from your field to your DON!! deck. If you do, set this Character as active.[Blocker]
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: opponent-Character-effect rested gate + DON return cost deferred; mapped setActiveSelf on onRested.
+  { cardNumber: 'OP14-070', templateId: 'ability', params: { timing: 'onRested', oncePerTurn: true, functions: [{ fn: 'setActiveSelf' }] } },
 
   {
     cardNumber: 'OP14-072',
@@ -586,10 +731,21 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP14-092 (character) Mr.3(Galdino) —
-  //   [Opponent's Turn] [Once Per Turn] If this Character would be K.O.'d, you may place 3 cards from your
-  //   trash at the bottom of your deck in any order instead.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP14-092',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementSelf',
+        scope: 'effect',
+        oncePerTurn: true,
+        sourceCondition: { turn: 'opponent' },
+        trashTrashToDeckBottom: { count: 3 },
+        duration: 'permanent',
+      }],
+    },
+  },
 
 
   // OP14-094 (character) Mr.5(Gem) —

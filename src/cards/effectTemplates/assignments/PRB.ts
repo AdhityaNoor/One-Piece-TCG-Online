@@ -32,16 +32,27 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   their field, your opponent rests 1 of their active DON!! cards at the start of their next Main Phase.
   { cardNumber: 'PRB02-005', templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, gate: [{ kind: 'leaderMulticolor' }, { kind: 'opponentDonFieldCount', atMost: 7 }], functions: [{ fn: 'restOpponentDonAtStartOfNextMain' }] } },
 
-  // PRB02-006 (character) Roronoa Zoro —
-  //   [Opponent's Turn] If this Character would be rested by your opponent's Character's effect, you may
-  //   rest 1 of your other Characters instead.[Blocker]
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'PRB02-006',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerRestReplacementSelf',
+        sourceCondition: { turn: 'opponent' },
+        effectSourceController: 'opponent',
+        effectSourceCategory: 'character',
+        duration: 'permanent',
+      }],
+    },
+  },
 
 
   // PRB02-009 (character) Mr.3(Galdino) —
   //   This effect can be activated when this Character is rested by your opponent's effect. You may trash
   //   this Character and draw 2 cards.[Blocker]
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: "rested by opponent's effect" trigger deferred; mapped onRested trash-self → draw 2.
+  { cardNumber: 'PRB02-009', templateId: 'ability', params: { timing: 'onRested', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'draw', amount: 2 }] } },
 
   // PRB02-010 (character) Charlotte Pudding —
   //   [On Play] DON!! −2: If your Leader has the {Big Mom Pirates} type and your opponent has 6 or more

@@ -210,6 +210,12 @@ export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState
       // "base power becomes N" (2-6): overwrite the base. Last applicable set wins,
       // since continuousEffects is in append (recalculation) order (8-1-3-3-5).
       base = mod.setBase;
+    } else if (mod.setBaseFromLeader) {
+      const leaderId = state.players[instance.ownerId]?.leaderInstanceId;
+      if (leaderId) {
+        const leaderDef = getDefinition(defs, state.cardsById[leaderId]);
+        base = leaderDef.basePower ?? 0;
+      }
     } else {
       continuousBonus += mod.amount + scaleAmount(mod.scale, record.ownerId, state, defs);
     }

@@ -59,16 +59,40 @@ export const ST30_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'playFromTrash', filter: { name: 'Marco' }, rested: true, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // ST30-009 (character) LittleOars Jr. —
-  //   If your Character with 6000 base power would be removed from the field by your opponent's effect, you
-  //   may trash this Character and draw 1 card instead.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'ST30-009',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+        effectSourceController: 'opponent',
+        targetCondition: { exactBasePower: 6000 },
+        trashSelfAndDraw: { amount: 1 },
+        duration: 'permanent',
+      }],
+    },
+  },
 
-  // ST30-011 (character) Buggy —
-  //   If your Character with 6000 base power would be removed from the field by your opponent's effect, you
-  //   may rest this Character instead.[Blocker] (After your opponent declares an attack, you may rest this
-  //   card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
+
+  {
+    cardNumber: 'ST30-011',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+        effectSourceController: 'opponent',
+        targetCondition: { exactBasePower: 6000 },
+        restSource: true,
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // ST30-012 — [On Play] rest 1 DON!!: this gains [Rush] this turn. [When Attacking] rest up to 1 opp [Blocker] Character.
   {

@@ -31,7 +31,16 @@ export const ST15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
   //   of the attack.)[Opponent's Turn] When this Character is K.O.'d by an effect, up to 1 of your Leader
   //   gains +2000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: "K.O.'d by an effect" source filter deferred; mapped onKO Leader +2000 on opponent's turn. [Blocker] is printed.
+  {
+    cardNumber: 'ST15-003',
+    templateId: 'ability',
+    params: {
+      timing: 'onKO',
+      condition: { turn: 'opponent' },
+      functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'duringThisTurn', optional: true }],
+    },
+  },
 
   // ST15-004 — [On Play] If Leader {Whitebeard Pirates}, give up to 1 opp Character −2000, then add 1 top Life to hand.
   { cardNumber: 'ST15-004', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }, { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } }] } },

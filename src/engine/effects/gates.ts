@@ -69,6 +69,10 @@ export interface GateEvalContext {
   playedCharacterInstanceId?: string;
   /** Controller (pre-K.O.) of the Character that was K.O.'d (onCharacterKoed reactive window). */
   koedCharacterControllerId?: string;
+  /** Cards trashed from hand by an effect this event (onHandTrashed reactive window). */
+  handTrashedCount?: number;
+  /** Instance id of the card whose effect trashed from hand (onHandTrashed filter). */
+  handTrashEffectSourceInstanceId?: string;
 }
 
 export function evaluateGates(
@@ -536,6 +540,14 @@ function evaluateGate(
       const removedId = eventContext?.removedFromFieldInstanceId;
       if (!removedId) return false;
       const def = defs[state.cardsById[removedId]?.cardDefinitionId ?? ''];
+      if (!def) return false;
+      return typeMatches(def.types, gate.typeIncludes);
+    }
+
+    case 'effectSourceTypeIncludes': {
+      const sourceId = eventContext?.handTrashEffectSourceInstanceId;
+      if (!sourceId) return false;
+      const def = defs[state.cardsById[sourceId]?.cardDefinitionId ?? ''];
       if (!def) return false;
       return typeMatches(def.types, gate.typeIncludes);
     }

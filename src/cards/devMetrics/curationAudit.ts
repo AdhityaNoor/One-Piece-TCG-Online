@@ -54,13 +54,15 @@ const KEYWORD_TEXT: Record<string, string> = {
 };
 
 const TIMING_MARKERS: Partial<Record<IrTiming, RegExp>> = {
-  onPlay: /\[On Play\]/i,
+  onPlay: /\[On Play\]|\[Main\]/i,
   onKO: /\[On K\.?O\.?\]|K\.?O\.?['’ʼ]?d/i,
-  whenAttacking: /\[When Attacking\]/i,
+  whenAttacking:
+    /\[When Attacking\]|when this (?:leader|character) attacks(?: or is attacked)?|when this leader attacks your opponent(?:'s)? leader/i,
   activateMain: /\[Activate:\s*Main\]|\[Main\]/i,
   onBlock: /\[On Block\]/i,
   counter: /\[Counter\]/i,
-  onOpponentsAttack: /\[On (Your )?Opponent's Attack\]|when your opponent attacks/i,
+  onOpponentsAttack:
+    /\[On (?:Your )?Opponent's Attack\]|when your opponent(?:'s character)? attacks/i,
   lifeTrigger: /\[Trigger\]/i,
 };
 

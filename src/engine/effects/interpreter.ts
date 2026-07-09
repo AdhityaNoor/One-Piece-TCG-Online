@@ -14,11 +14,12 @@ import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { cardHasNoBaseEffect } from './cardHasNoBaseEffect';
 import { computeCurrentPower } from '../rules/shared/power';
-import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoReplacementStep } from '../rules/shared/koAttempt';
+import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoReplacementStep, findRestReplacementRecord, buildRestReplacementConfirmChoice, buildRestReplacementPayChoice, applyRestReplacementCost } from '../rules/shared/koAttempt';
+import type { KoReplacementTrigger } from '../state/game';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates, countSelfTypedCharacters } from './gates';
 import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
-import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions } from './fireTiming';
+import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions, fireHandTrashedReactions } from './fireTiming';
 import { isAbilityNegated } from './effectNegation';
 import type { GateEvalContext } from './gates';
 import type { EffectTemplateRegistry } from './effectTemplate';
@@ -143,6 +144,16 @@ function finishWithCascade(
     const inst = working.cardsById[id];
     if (!inst) continue;
     const fired = fireCharacterPlayedFromTrashReactions(working, inst.controllerId, id, registry, defs, actionId);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+
+  const handTrashedQueue = ctx.takeHandTrashed();
+  guard = 0;
+  while (handTrashedQueue.length > 0 && guard++ < 200) {
+    const event = handTrashedQueue.shift()!;
+    const fired = fireHandTrashedReactions(working, event, registry, defs, actionId);
     working = fired.state;
     log = [...log, ...fired.log];
     if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
@@ -313,9 +324,17 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     }
     case 'controllerLeaderOrCharacters': {
       let ids = [ctx.controllerLeaderId(), ...ctx.controllerCharacterIds()];
-      if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
+      const leaderId = ctx.controllerLeaderId();
+      if (sel.typeIncludes !== undefined) {
+        const type = sel.typeIncludes;
+        ids = ids.filter((id) => (sel.typeFilterCharactersOnly && id === leaderId) || hasType(ctx.definitionOf(id)?.types ?? [], type));
+      }
+      if (sel.anyOfTypes !== undefined) {
+        ids = ids.filter((id) => (sel.typeFilterCharactersOnly && id === leaderId) || sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
+      }
       if (sel.name !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name === sel.name);
       if (sel.minPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) >= sel.minPower!);
+      if (sel.maxBasePower !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.basePower ?? Infinity) <= sel.maxBasePower!);
       if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
       return ids;
     }
@@ -424,6 +443,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       ids = applyBaseFilters(ids, sel, ctx);
+      if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       return ids;
     }
     case 'opponentCharacters': {
@@ -491,7 +511,10 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
 }
 
 function initialBindings(eventContext?: GateEvalContext): Record<string, string[]> {
-  return eventContext?.playedCharacterInstanceId ? { __eventPlayedCharacter: [eventContext.playedCharacterInstanceId] } : {};
+  const bindings: Record<string, string[]> = {};
+  if (eventContext?.playedCharacterInstanceId) bindings.__eventPlayedCharacter = [eventContext.playedCharacterInstanceId];
+  if (eventContext?.handTrashedCount !== undefined) bindings.__eventHandTrashedCount = [String(eventContext.handTrashedCount)];
+  return bindings;
 }
 
 function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Record<string, string[]>): OpResult {
@@ -541,6 +564,18 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
         ctx.setContinuousBasePower({ appliesToInstanceId: id, value: op.value, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
+    case 'setBasePowerFromLeader': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.setContinuousBasePowerFromLeader({
+          appliesToInstanceId: id,
+          duration: op.duration,
+          ...(op.condition ? { condition: op.condition } : {}),
+          ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}),
+        });
       }
       return { selectedIds: ids, movedIds: [] };
     }
@@ -650,6 +685,23 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       }
       return { selectedIds: ids, movedIds: [] };
     }
+    case 'redirectAttackTarget': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      const newTarget = ids[0];
+      if (newTarget) ctx.redirectAttackTarget(newTarget);
+      return { selectedIds: newTarget ? [newTarget] : [], movedIds: [] };
+    }
+    case 'swapBasePower': {
+      const ids = bindings[op.var] ?? [];
+      if (ids.length !== 2) return EMPTY_RESULT;
+      if (op.mustIncludeControllerLeader && !ids.includes(ctx.controllerLeaderId())) return EMPTY_RESULT;
+      const [a, b] = ids;
+      const powerA = ctx.definitionOf(a)?.basePower ?? 0;
+      const powerB = ctx.definitionOf(b)?.basePower ?? 0;
+      ctx.setContinuousBasePower({ appliesToInstanceId: a, value: powerB, duration: op.duration, description: `base power becomes ${powerB} (swapped)` });
+      ctx.setContinuousBasePower({ appliesToInstanceId: b, value: powerA, duration: op.duration, description: `base power becomes ${powerA} (swapped)` });
+      return { selectedIds: ids, movedIds: [] };
+    }
     case 'preventRest': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
@@ -731,6 +783,24 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
           ...(op.oncePerTurn ? { oncePerTurn: true } : {}),
           ...(op.condition ? { condition: op.condition } : {}),
           ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}),
+          ...(op.replacementTriggers ? { replacementTriggers: op.replacementTriggers } : {}),
+          ...(op.effectSourceController ? { effectSourceController: op.effectSourceController } : {}),
+          ...(op.effectSourceCategory ? { effectSourceCategory: op.effectSourceCategory } : {}),
+          ...(op.activationGate ? { activationGate: op.activationGate } : {}),
+          action: op.action,
+        },
+        duration: op.duration,
+      });
+      return { selectedIds: [], movedIds: [] };
+    }
+    case 'registerRestReplacement': {
+      ctx.addContinuousRestReplacement({
+        appliesToInstanceId: op.appliesToInstanceId ?? ctx.sourceInstanceId,
+        modifier: {
+          ...(op.oncePerTurn ? { oncePerTurn: true } : {}),
+          ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}),
+          ...(op.effectSourceController ? { effectSourceController: op.effectSourceController } : {}),
+          ...(op.effectSourceCategory ? { effectSourceCategory: op.effectSourceCategory } : {}),
           action: op.action,
         },
         duration: op.duration,
@@ -864,10 +934,6 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     case 'revealOpponentDeckTop':
       // Handled specially in runOps (it records the cost-match binding);
       // this branch keeps the switch exhaustive and is never reached at runtime.
-      return { selectedIds: [], movedIds: [] };
-    case 'drawByTypedCharacterCount':
-      // Handled specially in runOps (it must set the __lastDrawCount binding and
-      // fire draw reactions); this branch keeps the switch exhaustive.
       return { selectedIds: [], movedIds: [] };
   }
 }
@@ -1121,7 +1187,10 @@ function runOpList(
       const ids = resolveSelector(op.target, ctx, workingBindings);
       for (let ki = 0; ki < ids.length; ki++) {
         const id = ids[ki];
-        const record = findKoReplacementRecord(ctx.state(), id, 'effect', defs);
+        const record = findKoReplacementRecord(ctx.state(), id, 'effect', defs, {
+          removalTrigger: 'ko',
+          effectSourceInstanceId: ctx.sourceInstanceId,
+        });
         if (record) {
           const suspendOpIndex = coords.branchIndex !== undefined ? coords.opIndex : i;
           const irResume = {
@@ -1144,6 +1213,7 @@ function runOpList(
                 recordId: record.id,
                 cause: 'effect',
                 actorPlayerId: ctx.controllerId,
+                removalTrigger: 'ko',
                 ir: irResume,
               },
             }),
@@ -1153,6 +1223,103 @@ function runOpList(
         ctx.koApply(id);
       }
       workingBindings = withResultBindings(workingBindings, { selectedIds: ids, movedIds: ids });
+      continue;
+    }
+    if (op.op === 'returnToHand' || op.op === 'moveToBottomDeck') {
+      const removalTrigger: KoReplacementTrigger = op.op === 'returnToHand' ? 'returnToHand' : 'bottomDeck';
+      const ids = resolveSelector(op.target, ctx, workingBindings);
+      for (let ri = 0; ri < ids.length; ri++) {
+        const id = ids[ri];
+        const record = findKoReplacementRecord(ctx.state(), id, 'effect', defs, {
+          removalTrigger,
+          effectSourceInstanceId: ctx.sourceInstanceId,
+        });
+        if (record) {
+          const suspendOpIndex = coords.branchIndex !== undefined ? coords.opIndex : i;
+          const irResume = {
+            sourceInstanceId: ctx.sourceInstanceId,
+            abilityIndex: coords.abilityIndex,
+            opIndex: suspendOpIndex,
+            bindings: workingBindings,
+            ...(coords.branchIndex !== undefined ? { branchIndex: coords.branchIndex, branchOpIndex: i } : {}),
+            remainingRemovalTargetIds: ids.slice(ri + 1),
+            suspendedRemovalOp: op.op,
+          };
+          ctx.emitChoice(
+            buildKoReplacementConfirmChoice(ctx.state(), id, record, `${ctx.sourceInstanceId}__removal-${coords.abilityIndex}-${i}-${id}`, {
+              abilityIndex: coords.abilityIndex,
+              opIndex: suspendOpIndex,
+              bindings: workingBindings,
+              ...(coords.branchIndex !== undefined ? { branchIndex: coords.branchIndex, branchOpIndex: i } : {}),
+              koReplacement: {
+                phase: 'confirm',
+                targetInstanceId: id,
+                recordId: record.id,
+                cause: 'effect',
+                actorPlayerId: ctx.controllerId,
+                removalTrigger,
+                ir: irResume,
+              },
+            }),
+          );
+          return { suspended: true, bindings: workingBindings };
+        }
+        if (op.op === 'returnToHand') ctx.returnToHand(id);
+        else ctx.moveToBottomDeck(id);
+      }
+      workingBindings = withResultBindings(workingBindings, { selectedIds: ids, movedIds: ids });
+      continue;
+    }
+    if (op.op === 'rest') {
+      const ids = resolveSelector(op.target, ctx, workingBindings);
+      for (let ri = 0; ri < ids.length; ri++) {
+        const id = ids[ri];
+        const record = findRestReplacementRecord(ctx.state(), id, defs, ctx.sourceInstanceId);
+        if (record) {
+          const suspendOpIndex = coords.branchIndex !== undefined ? coords.opIndex : i;
+          const irResume = {
+            sourceInstanceId: ctx.sourceInstanceId,
+            abilityIndex: coords.abilityIndex,
+            opIndex: suspendOpIndex,
+            bindings: workingBindings,
+            ...(coords.branchIndex !== undefined ? { branchIndex: coords.branchIndex, branchOpIndex: i } : {}),
+            remainingRemovalTargetIds: ids.slice(ri + 1),
+          };
+          ctx.emitChoice(
+            buildRestReplacementConfirmChoice(ctx.state(), id, record, `${ctx.sourceInstanceId}__rest-${coords.abilityIndex}-${i}-${id}`, {
+              abilityIndex: coords.abilityIndex,
+              opIndex: suspendOpIndex,
+              bindings: workingBindings,
+              ...(coords.branchIndex !== undefined ? { branchIndex: coords.branchIndex, branchOpIndex: i } : {}),
+              koReplacement: {
+                phase: 'confirm',
+                targetInstanceId: id,
+                recordId: record.id,
+                cause: 'effect',
+                actorPlayerId: ctx.controllerId,
+                ir: irResume,
+              },
+            }),
+          );
+          return { suspended: true, bindings: workingBindings };
+        }
+        ctx.rest(id);
+      }
+      workingBindings = withResultBindings(workingBindings, { selectedIds: ids, movedIds: [] });
+      continue;
+    }
+    if (op.op === 'drawByEventCount') {
+      const count = parseInt(workingBindings.__eventHandTrashedCount?.[0] ?? '0', 10);
+      ctx.draw(ctx.controllerId, count);
+      if (count > 0 && ctx.state().currentPhase !== 'draw') {
+        const reactive = fireDrawOutsideDrawPhaseReactions(ctx.state(), ctx.controllerId, registry, defs, actionId);
+        if (reactive.pendingChoices.length > 0) {
+          ctx.absorbActionResult(reactive);
+          return { suspended: true, bindings: workingBindings };
+        }
+        ctx.replaceState(reactive.state, reactive.log);
+      }
+      workingBindings = withResultBindings(workingBindings, { selectedIds: [], movedIds: count > 0 ? ['__draw'] : [] });
       continue;
     }
     if (op.op === 'drawByTypedCharacterCount') {
@@ -1377,11 +1544,30 @@ export function resumeProgram(
         return { state: working, log, pendingChoices: fired.pendingChoices };
       }
     }
+    if (step.declinedRemoval) {
+      const declineCtx = new EffectContextImpl(working, step.resumeKr?.ir?.sourceInstanceId ?? choice.sourceInstanceId ?? '', defs, actionId);
+      if (step.declinedRemoval.kind === 'returnToHand') declineCtx.returnToHand(step.declinedRemoval.targetInstanceId);
+      else declineCtx.moveToBottomDeck(step.declinedRemoval.targetInstanceId);
+      const declined = declineCtx.finish();
+      working = declined.state;
+      log = [...log, ...declined.log];
+    }
     if (step.resumeKr) {
       const continued = continueKoOpAfterReplacement(working, step.resumeKr, defs, actionId, registry);
       return { state: continued.state, log: [...log, ...continued.log], pendingChoices: continued.pendingChoices };
     }
     return { state: working, log, pendingChoices: [] };
+  }
+
+  if (rs.opIndex === -2) {
+    if (response !== true) return noop(stateWithoutChoice);
+    const ability = program.abilities[rs.abilityIndex];
+    if (!ability) return noop(stateWithoutChoice);
+    const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
+    const suspended = runOps(ability, rs.abilityIndex, 0, rs.bindings, ctx, defs, registry, actionId);
+    if (suspended) return finishWithCascade(ctx, defs, actionId, registry);
+    runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
+    return finishWithCascade(ctx, defs, actionId, registry);
   }
 
   const ability = program.abilities[rs.abilityIndex];
@@ -1625,10 +1811,74 @@ function continueKoOpAfterReplacement(
   if (!program) return { state, log: [], pendingChoices: [] };
 
   const ctx = new EffectContextImpl(state, ir.sourceInstanceId, defs, actionId);
+  const pendingRemovalIds = [...(ir.remainingRemovalTargetIds ?? [])];
+  const suspendedRemovalOp = ir.suspendedRemovalOp;
+  if (suspendedRemovalOp && pendingRemovalIds.length >= 0) {
+    const removalTrigger: KoReplacementTrigger = suspendedRemovalOp === 'returnToHand' ? 'returnToHand' : 'bottomDeck';
+    for (let ri = 0; ri < pendingRemovalIds.length; ri++) {
+      const id = pendingRemovalIds[ri];
+      const record = findKoReplacementRecord(ctx.state(), id, 'effect', defs, {
+        removalTrigger,
+        effectSourceInstanceId: ir.sourceInstanceId,
+      });
+      if (record) {
+        ctx.emitChoice(
+          buildKoReplacementConfirmChoice(ctx.state(), id, record, `${ir.sourceInstanceId}__removal-resume-${id}`, {
+            abilityIndex: ir.abilityIndex,
+            opIndex: ir.opIndex,
+            bindings: ir.bindings,
+            ...(ir.branchIndex !== undefined ? { branchIndex: ir.branchIndex, branchOpIndex: ir.branchOpIndex } : {}),
+            koReplacement: {
+              phase: 'confirm',
+              targetInstanceId: id,
+              recordId: record.id,
+              cause: 'effect',
+              actorPlayerId: ctx.controllerId,
+              removalTrigger,
+              ir: { ...ir, remainingRemovalTargetIds: pendingRemovalIds.slice(ri + 1) },
+            },
+          }),
+        );
+        return finishWithCascade(ctx, defs, actionId, registry);
+      }
+      if (suspendedRemovalOp === 'returnToHand') ctx.returnToHand(id);
+      else ctx.moveToBottomDeck(id);
+    }
+  }
+
+  const pendingRestIds = ir.suspendedRemovalOp ? [] : [...(ir.remainingRemovalTargetIds ?? [])];
+  for (let ri = 0; ri < pendingRestIds.length; ri++) {
+    const id = pendingRestIds[ri];
+    const record = findRestReplacementRecord(ctx.state(), id, defs, ir.sourceInstanceId);
+    if (record) {
+      ctx.emitChoice(
+        buildRestReplacementConfirmChoice(ctx.state(), id, record, `${ir.sourceInstanceId}__rest-resume-${id}`, {
+          abilityIndex: ir.abilityIndex,
+          opIndex: ir.opIndex,
+          bindings: ir.bindings,
+          ...(ir.branchIndex !== undefined ? { branchIndex: ir.branchIndex, branchOpIndex: ir.branchOpIndex } : {}),
+          koReplacement: {
+            phase: 'confirm',
+            targetInstanceId: id,
+            recordId: record.id,
+            cause: 'effect',
+            actorPlayerId: ctx.controllerId,
+            ir: { ...ir, remainingRemovalTargetIds: pendingRestIds.slice(ri + 1) },
+          },
+        }),
+      );
+      return finishWithCascade(ctx, defs, actionId, registry);
+    }
+    ctx.rest(id);
+  }
+
   const pendingKoIds = [...(ir.remainingKoTargetIds ?? [])];
   for (let ki = 0; ki < pendingKoIds.length; ki++) {
     const id = pendingKoIds[ki];
-    const record = findKoReplacementRecord(ctx.state(), id, 'effect', defs);
+    const record = findKoReplacementRecord(ctx.state(), id, 'effect', defs, {
+      removalTrigger: 'ko',
+      effectSourceInstanceId: ir.sourceInstanceId,
+    });
     if (record) {
       const suspendOpIndex = ir.branchIndex !== undefined ? ir.opIndex : ir.opIndex;
       ctx.emitChoice(

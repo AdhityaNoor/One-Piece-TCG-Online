@@ -19,7 +19,7 @@ export type Selector =
   | { sel: 'eventPlayedCharacter' } // the Character instance from the current played-character event
   | { sel: 'controllerLeader' }
   | ({ sel: 'controllerCharacters' } & CharacterMoveFilter)
-  | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; name?: string; excludeSelf?: boolean; minPower?: number }
+  | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; anyOfTypes?: string[]; name?: string; excludeSelf?: boolean; minPower?: number; maxBasePower?: number; typeFilterCharactersOnly?: boolean }
   | { sel: 'opponentLeader'; rested?: boolean }
   | { sel: 'controllerLeaderOrStage'; typeIncludes?: string } // controller's Leader + Stage cards (for 'rest 1 of your {X} Leader or Stage' costs)
   | { sel: 'opponentLeaderOrCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; excludeName?: string; restedLeader?: boolean }
@@ -35,7 +35,7 @@ export type Selector =
   | { sel: 'controllerLifeTopBottom' } // top and bottom Life cards, de-duplicated for 1-card Life
   | { sel: 'controllerOrOpponentLifeTop' } // top Life card from either player, de-duplicated only by absent zones
   | { sel: 'controllerDeckTop' }
-  | { sel: 'allCharacters'; minCost?: number; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number } // any player's Characters
+  | { sel: 'allCharacters'; minCost?: number; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean } // any player's Characters
   | { sel: 'opponentCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; minDonAttached?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; noBaseEffect?: boolean; excludeName?: string } // optional cost/power (current) + base cost/power + rested/blocker/given-DON!! filters
   | { sel: 'controllerAttachedDon' } // DON!! instance ids currently given to the controller's Leader/Characters/Stages
   | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
@@ -152,6 +152,7 @@ export type EffectOp =
   // Characters gain +2 cost", "give all of your opponent's Characters −1 cost").
   | ({ op: 'addCostAura'; group: PowerAuraGroup; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition; usesRemaining?: number } & EffectOpSequenceGate)
   | ({ op: 'setBasePower'; target: Selector; value: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate) // "base power BECOMES N" (2-6): overwrite base; additive modifiers still stack on top
+  | ({ op: 'setBasePowerFromLeader'; target: Selector; duration: IrDuration; condition?: IrCondition; sourceCondition?: SourceStateCondition } & EffectOpSequenceGate) // "base power becomes the same as your Leader's base power"
   | ({ op: 'setBaseCost'; target: Selector; value: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate) // "base cost BECOMES N" (2-7): overwrite base cost
   | ({ op: 'addKeyword'; target: Selector; keyword: ContinuousKeyword; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
   // Register a continuous keyword grant over a dynamic target group (e.g. "all of your [Shura]
@@ -162,7 +163,8 @@ export type EffectOp =
   | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character'; attackerAttribute?: string; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string } & EffectOpSequenceGate)
   | ({ op: 'addKoImmunityAura'; group: KoImmunityAuraGroup; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string } & EffectOpSequenceGate)
   // Register optional K.O. replacement on enter play ("would be K.O.'d … instead").
-  | ({ op: 'registerKoReplacement'; appliesTo: 'self' | 'aura'; appliesToInstanceId?: string; group?: KoReplacementAuraGroup; scope: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; action: KoReplacementAction; condition?: IrCondition; sourceCondition?: SourceStateCondition; duration: IrDuration } & EffectOpSequenceGate)
+  | ({ op: 'registerKoReplacement'; appliesTo: 'self' | 'aura'; appliesToInstanceId?: string; group?: KoReplacementAuraGroup; scope: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; action: KoReplacementAction; condition?: IrCondition; sourceCondition?: SourceStateCondition; replacementTriggers?: import('../state/game').KoReplacementTrigger[]; effectSourceController?: 'opponent' | 'controller'; effectSourceCategory?: 'leader' | 'character'; activationGate?: AbilityGate[]; duration: IrDuration } & EffectOpSequenceGate)
+  | ({ op: 'registerRestReplacement'; appliesToInstanceId?: string; oncePerTurn?: boolean; action: { kind: 'restCharacter'; count: number }; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller'; effectSourceCategory?: 'leader' | 'character'; duration: IrDuration } & EffectOpSequenceGate)
   | ({ op: 'preventBlockers'; target: Selector; duration: IrDuration; blockerPowerAtLeast?: number; blockerPowerAtMost?: number; blockerMaxCost?: number } & EffectOpSequenceGate)
   | ({ op: 'suppressBlockerActivation'; target: Selector; duration: IrDuration } & EffectOpSequenceGate)
   // Prevent the target Leader/Character from declaring an attack (7-1-1-1) while active.
@@ -171,6 +173,10 @@ export type EffectOp =
   | ({ op: 'preventAttackController'; player: 'controller' | 'opponent'; duration: IrDuration; forbiddenTarget?: 'leader' } & EffectOpSequenceGate)
   // While active, the opponent may only attack this Character (taunt).
   | ({ op: 'setForcedAttackTarget'; target: Selector; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
+  // During an in-progress battle, retarget the current attack onto a chosen defender (7-1-2-1-style redirect, not taunt).
+  | ({ op: 'redirectAttackTarget'; target: Selector } & EffectOpSequenceGate)
+  // Crosswise swap printed base power between exactly two prior chooseTargets selections.
+  | ({ op: 'swapBasePower'; var: string; duration: IrDuration; mustIncludeControllerLeader?: boolean } & EffectOpSequenceGate)
   // Prevent effect-driven rest on the target Leader/Character for the duration.
   | ({ op: 'preventRest'; target: Selector; duration: IrDuration; effectSourceController?: 'opponent' | 'controller'; condition?: IrCondition } & EffectOpSequenceGate)
   // Negate all (or selected timings of) abilities on the target Leader/Character/Stage.
@@ -209,7 +215,7 @@ export type EffectOp =
   | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string; rested?: boolean } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
   | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
-  | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string; chooser?: 'controller' | 'opponent'; maxCombinedPower?: number } & EffectOpSequenceGate)
+  | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string; chooser?: 'controller' | 'opponent'; maxCombinedPower?: number; mustIncludeControllerLeader?: boolean } & EffectOpSequenceGate)
   | ({ op: 'chooseCost'; min: number; max: number; prompt?: string } & EffectOpSequenceGate)
   | ({ op: 'chooseOption'; prompt: string; chooser?: 'controller' | 'opponent'; options: { label: string; ops: EffectOp[] }[] } & EffectOpSequenceGate)
   // Look at top `look` cards; player adds up to `pick` filter-matching cards to
@@ -237,6 +243,7 @@ export type EffectOp =
   | ({ op: 'addDonFromDeck'; count: number; rested: boolean } & EffectOpSequenceGate)
   // Draw N where N = count of controller's in-play Characters with a matching type.
   | ({ op: 'drawByTypedCharacterCount'; typeIncludes: string } & EffectOpSequenceGate)
+  | ({ op: 'drawByEventCount'; countField: 'handTrashedCount' } & EffectOpSequenceGate)
   // Suspending: trash N from hand where N is read from bindings[countVar] (set by drawByTypedCharacterCount).
   | ({ op: 'trashFromHandByCountVar'; countVar: string; prompt?: string } & EffectOpSequenceGate);
 
@@ -253,6 +260,8 @@ export type NonSuspendingEffectOp = Exclude<
   | { op: 'chooseOption' }
   | { op: 'trashFromHandByCountVar' }
   | { op: 'searchDeck' }
+  | { op: 'drawByEventCount' }
+  | { op: 'drawByTypedCharacterCount' }
 >;
 
 /**
@@ -281,8 +290,11 @@ export type IrTiming =
   | 'onLifeDamageDealt'
   | 'onDrawOutsideDrawPhase'
   | 'onLifeToHand'
+  | 'onTriggerActivated'
   | 'onCharacterPlayedFromHand'
   | 'onCharacterPlayedFromTrash'
+  | 'onStartOfTurn'
+  | 'onHandTrashed'
   | 'counter'
   | 'lifeTrigger'
   | 'endOfTurn';
@@ -369,6 +381,7 @@ export type AbilityGate =
   | { kind: 'removedByEffectController'; player: 'opponent' | 'controller' } // onRemovedFromField: whose effect caused the removal
   | { kind: 'removedFromFieldCategory'; category: Exclude<CardCategory, 'don'> } // onRemovedFromField: removed card category
   | { kind: 'removedFromFieldTypeIncludes'; typeIncludes: string } // onRemovedFromField: removed card carries this type
+  | { kind: 'effectSourceTypeIncludes'; typeIncludes: string } // reactive: effect source carries this type
   | { kind: 'anyOf'; gates: AbilityGate[] }; // OR: satisfied if any sub-gate holds ("if Leader is X or Y")
 
 export interface Ability {
@@ -379,6 +392,8 @@ export interface Ability {
   gate?: AbilityGate[];
   /** 10-2-13 [Once Per Turn] — an activated ability may only be used once per turn per source. */
   oncePerTurn?: boolean;
+  /** onStartOfTurn only: player may decline before the ability resolves. */
+  optionalActivate?: boolean;
   /** Activation cost(s) paid on use (8-3-1-5); [Activate: Main] and [Counter] handlers pay these before resolution. */
   cost?: AbilityCost[];
   /**

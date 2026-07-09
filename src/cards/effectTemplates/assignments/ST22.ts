@@ -28,7 +28,20 @@ export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
   //   If this Character would be removed from the field by your opponent's effect, you may trash 2 cards
   //   from your hand instead.[Activate: Main] [Once Per Turn] You may rest 3 of your DON!! cards and return
   //   1 of your Characters other than this Character to the owner's hand: Set this Character as active.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: removal replacement (trash 2 from hand) deferred; mapped activateMain bounce → setActive.
+  {
+    cardNumber: 'ST22-005',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      cost: [{ kind: 'restDon', count: 3 }],
+      functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { excludeSelf: true } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+        { fn: 'setActiveSelf', ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // ST22-011 (character) Whitey Bay —
   //   [Your Turn] [On Play] You may reveal 2 cards with a type including "Whitebeard Pirates" from your

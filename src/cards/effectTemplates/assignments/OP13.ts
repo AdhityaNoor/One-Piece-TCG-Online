@@ -127,10 +127,23 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP13-017 (character) Monkey.D.Dragon —
-  //   [Once Per Turn] If your {Revolutionary Army} type Character would be removed from the field by your
-  //   opponent's effect, you may give this Character −2000 power during this turn instead.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP13-017',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        oncePerTurn: true,
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+        effectSourceController: 'opponent',
+        anyOfTypes: ['Revolutionary Army'],
+        giveSelfPowerPenalty: { amount: 2000, duration: 'duringThisTurn' },
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP13-019 — [Main] rest 4 DON!!: give up to 1 opp Char −3000, K.O. up to 1 opp Char 3000 power or less. [Counter] Leader +3000.
   {
@@ -555,7 +568,17 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-100 (leader) Jewelry Bonney —
   //   [Your Turn] [Once Per Turn] This effect can be activated when you play a Character with a [Trigger].
   //   Give up to 2 rested DON!! cards to 1 of your Leader or Character cards.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: played-Character [Trigger] gate deferred; mapped giveDon on any Character play.
+  {
+    cardNumber: 'OP13-100',
+    templateId: 'ability',
+    params: {
+      timing: 'onCharacterPlayedFromHand',
+      oncePerTurn: true,
+      condition: { turn: 'your' },
+      functions: [{ fn: 'giveDon', count: 2 }],
+    },
+  },
 
   // OP13-102 — [Trigger] Draw 1, rest up to 1 opp Character cost ≤3. PARTIAL: the trash-self [Main] is deferred.
   { cardNumber: 'OP13-102', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },

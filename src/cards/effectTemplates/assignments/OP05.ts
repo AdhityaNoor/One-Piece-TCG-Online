@@ -7,11 +7,8 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // OP05-001 (leader) Sabo —
-  //   [DON!! x1] [Opponent's Turn] [Once Per Turn] If your Character with 5000 power or more would be
-  //   K.O.'d, you may give that Character −1000 power during this turn instead of that Character being
-  //   K.O.'d.
-  // NOTE: not yet implemented (needs template).
+  // OP05-001 — PARTIAL: K.O. replacement via −1000 power instead deferred; no matching primitive.
+  { cardNumber: 'OP05-001', templateId: 'noRuntime', params: {} },
 
   // OP05-002 — [Activate: Main] [OPT] trash 1 Revolutionary Army: up to 3 Rev Army +3000 this turn.
   // PARTIAL: Characters with [Trigger] omitted (no hasTrigger on addPower target filter).
@@ -130,11 +127,17 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] },
   },
 
-  // OP05-119 (character) Monkey.D.Luffy —
-  //   [On Play] DON!! −10: Place all of your Characters except this Character at the bottom of your deck in
-  //   any order. Then, take an extra turn after this one.[Activate: Main] [Once Per Turn] ➀: Add up to 1
-  //   DON!! card from your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
+  // OP05-119 — PARTIAL: DON!!−10 bottom-deck allies + extra turn deferred; mapped [Activate: Main] ➀ add 1 active DON!!.
+  {
+    cardNumber: 'OP05-119',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      cost: [{ kind: 'restDon', count: 1 }],
+      functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }],
+    },
+  },
 
   // --- codegen batch ---
   { cardNumber: 'OP05-027', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
@@ -500,10 +503,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP05-098 (leader) Enel —
-  //   [Opponent's Turn] [Once Per Turn] When your number of Life cards becomes 0, add 1 card from the top
-  //   of your deck to the top of your Life cards. Then, trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP05-098 — PARTIAL: onLifeBecomesZero reactive window deferred; no matching primitive.
+  { cardNumber: 'OP05-098', templateId: 'noRuntime', params: {} },
 
   // OP05-099 — PARTIAL: optional opp life-trash vs −2000 branch not modeled; rest + optional life trash + −2000 mapped.
   { cardNumber: 'OP05-099', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restThis' }], functions: [
@@ -511,10 +512,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true },
   ] } },
 
-  // OP05-100 (character) Enel —
-  //   [Rush][Once Per Turn] If this Character would leave the field, you may trash 1 card from the top of
-  //   your Life cards instead. If there is a [Monkey.D.Luffy] Character, this effect is negated.
-  // NOTE: not yet implemented (needs template).
+  // OP05-100 — [Rush] templated. PARTIAL: leave-field life-trash replacement + Luffy negation deferred.
+  { cardNumber: 'OP05-100', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
 
   // OP05-101 — static: if ≤2 Life, +1000. [On Play] Look 5, reveal up to 1 [Holly] to hand (rest to bottom), then play up to 1 [Holly].
   {
@@ -553,10 +552,16 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-107 — [Your Turn] [Once Per Turn] When Life→hand, +2000 this turn.
   { cardNumber: 'OP05-107', templateId: 'ability', params: { timing: 'onLifeToHand', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
 
-  // OP05-109 (character) Pagaya —
-  //   [Once Per Turn] When a [Trigger] activates, draw 2 cards and trash 2 cards from your hand.
-  // NOTE: not yet implemented (needs template).
-
+  // OP05-109 (character) Pagaya — [Once Per Turn] When a [Trigger] activates, draw 2 and trash 2 from hand.
+  {
+    cardNumber: 'OP05-109',
+    templateId: 'ability',
+    params: {
+      timing: 'onTriggerActivated',
+      oncePerTurn: true,
+      functions: [{ fn: 'draw', amount: 2 }, { fn: 'trashFromHand', count: 2 }],
+    },
+  },
   // OP05-111 — [On Play] play [Kotori] from hand: add up to 1 opp Character cost<=3 to opp Life face-up. PARTIAL: play-Kotori optional chain simplified.
   { cardNumber: 'OP05-111', templateId: 'ability', params: { timing: 'onPlay', functions: [
     { fn: 'playFromHand', filter: { category: 'character', name: 'Kotori' } },

@@ -127,7 +127,18 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   When this Character is K.O.'d by your opponent's effect, you may trash 1 card from your hand and rest
   //   1 of your DON!! cards. If you do, play up to 1 {Fish-Man} or {Merfolk} type Character card with a
   //   cost of 6 or less from your hand.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: opponent-effect K.O. gate and optional trash+rest DON payment deferred; onKO play-from-hand mapped.
+  {
+    cardNumber: 'OP11-024',
+    templateId: 'ability',
+    params: {
+      timing: 'onKO',
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'playFromHand', filter: { category: 'character', anyOf: [{ typeIncludes: 'Fish-Man' }, { typeIncludes: 'Merfolk' }], maxCost: 6 }, optional: true, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // OP11-025 — [On Your Opponent's Attack] [Once Per Turn] rest 1 DON!! + rest this: up to 1 Leader/Character +1000 battle.
   { cardNumber: 'OP11-025', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisBattle', optional: true }] } },
@@ -192,18 +203,44 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-042 — [On Play] you may trash 1 {Firetank Pirates} card from hand: this Character gains [Rush] this turn.
   { cardNumber: 'OP11-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Firetank Pirates' }, optional: true }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' }] } },
 
-  // OP11-040 (leader) Monkey.D.Luffy —
-  //   This effect can be activated at the start of your turn. If you have 8 or more DON!! cards on your
-  //   field, look at 5 cards from the top of your deck; reveal up to 1 {Straw Hat Crew} type card and add
-  //   it to your hand. Then, place the rest at the top or bottom of the deck in any order.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP11-040',
+    templateId: 'ability',
+    params: {
+      timing: 'onStartOfTurn',
+      optionalActivate: true,
+      gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }],
+      functions: [{
+        fn: 'searchTopDeck',
+        look: 5,
+        pick: 1,
+        reveal: true,
+        destination: 'hand',
+        filter: { typeIncludes: 'Straw Hat Crew' },
+        remainder: 'deckTopOrBottom',
+      }],
+    },
+  },
 
   // OP11-041 (leader) Nami —
   //   [Your Turn] [Once Per Turn] This effect can be activated when a card is removed from your or your
   //   opponent's Life cards. If you have 7 or less cards in your hand, draw 1 card.[DON!! x1] [On Your
   //   Opponent's Attack] [Once Per Turn] You may trash 1 card from your hand: This Leader gains +2000 power
   //   during this turn.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: life-removed draw trigger deferred; onOpponentsAttack trash-for-power mapped.
+  {
+    cardNumber: 'OP11-041',
+    templateId: 'ability',
+    params: {
+      timing: 'onOpponentsAttack',
+      oncePerTurn: true,
+      condition: { donAttachedAtLeast: 1 },
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
 
 
@@ -462,7 +499,16 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
   //   of the attack.)[Once Per Turn] This effect can be activated when your opponent's Character attacks.
   //   If that Character has the <Slash> attribute, this Character gains +5000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: [Blocker] is printed; <Slash> attacker-attribute gate deferred; onOpponentsAttack +5000 battle power mapped.
+  {
+    cardNumber: 'OP11-088',
+    templateId: 'ability',
+    params: {
+      timing: 'onOpponentsAttack',
+      oncePerTurn: true,
+      functions: [{ fn: 'addPowerSelf', amount: 5000, duration: 'duringThisBattle' }],
+    },
+  },
 
 
   // OP11-092 (character) Helmeppo —
@@ -530,17 +576,54 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP11-104', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Fish-Man Island' }, remainder: 'bottom', ifPrevious: 'previousSelectedAny' }] } },
 
 
-  // OP11-101 (character) Capone"Gang"Bege —
-  //   [Blocker][Once Per Turn] If your {Supernovas} type Character other than [Capone"Gang"Bege] would be
-  //   removed from the field by your opponent's effect, you may add it to the top of your Life cards
-  //   face-down instead.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP11-101',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        oncePerTurn: true,
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+        effectSourceController: 'opponent',
+        anyOfTypes: ['Supernovas'],
+        excludeSource: true,
+        moveTargetToLifeFaceDown: true,
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP11-102 (character) Camie —
   //   [Your Turn] [Once Per Turn] This effect can be activated when your opponent activates an Event or
   //   [Trigger]. If your opponent has 2 or more Life cards, trash 1 card from the top of each of your and
   //   your opponent's Life cards.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP11-102',
+    templates: [
+      { templateId: 'ability', params: {
+        timing: 'onOpponentEventActivated',
+        oncePerTurn: true,
+        condition: { turn: 'your' },
+        gate: [{ kind: 'opponentLife', atLeast: 2 }],
+        functions: [
+          { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'trash', player: 'owner' } },
+          { fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top' }, to: { zone: 'trash', player: 'owner' } },
+        ],
+      } },
+      { templateId: 'ability', params: {
+        timing: 'onTriggerActivated',
+        oncePerTurn: true,
+        condition: { turn: 'your' },
+        gate: [{ kind: 'opponentLife', atLeast: 2 }],
+        functions: [
+          { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'trash', player: 'owner' } },
+          { fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top' }, to: { zone: 'trash', player: 'owner' } },
+        ],
+      } },
+    ],
+  },
 
 
 

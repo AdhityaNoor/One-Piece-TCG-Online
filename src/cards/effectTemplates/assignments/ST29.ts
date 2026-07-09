@@ -44,7 +44,12 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
   //   If your {Egghead} type Character would be K.O.'d by your opponent's effect, you may turn 1 card from
   //   the top of your Life cards face-up instead. [Trigger] If your Leader is [Monkey.D.Luffy], play this
   //   card.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: Egghead K.O.-replacement (turn top Life face-up) deferred; mapped [Trigger] play-self when Leader is Luffy.
+  {
+    cardNumber: 'ST29-008',
+    templateId: 'ability',
+    params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Monkey.D.Luffy' }], functions: [{ fn: 'triggerPlaySelf' }] },
+  },
 
   // ST29-012 — [Activate: Main][OPT] give up to 1 rested DON!! to 1 [Monkey.D.Luffy] card. [Trigger] play this.
   {

@@ -349,10 +349,15 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-068 — [Your Turn] [Double Attack] if 5+ cards in hand
   { cardNumber: 'OP01-068', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent', condition: { turn: 'your', gate: [{ kind: 'selfHand', atLeast: 5 }] } }] } },
 
-  // OP01-067 (character) Crocodile —
-  //   [Banish] (When this card deals damage, the target card is trashed without activating its Trigger.)
-  //   [DON!! x1] Give blue Events in your hand −1 cost.
-  // NOTE: not yet implemented (needs template).
+  // OP01-067 — [Banish] is templated. PARTIAL: [DON!! x1] blue Event hand cost −1 deferred (no typed hand cost aura).
+  {
+    cardNumber: 'OP01-067',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'permanent' }],
+    },
+  },
 
   // OP01-068 (character) Gecko Moria —
   //   [Your Turn] This Character gains [Double Attack] if you have 5 or more cards in your hand. (This card
@@ -385,11 +390,18 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP01-121 (character) Yamato —
-  //   Also treat this card's name as [Kouzuki Oden] according to the rules. [Double Attack] (This card
-  //   deals 2 damage.) [Banish] (When this card deals damage, the target card is trashed without activating
-  //   its Trigger.)
-  // NOTE: not yet implemented (needs template).
+  // OP01-121 — [Double Attack] + [Banish] templated. PARTIAL: name alias [Kouzuki Oden] is card metadata.
+  {
+    cardNumber: 'OP01-121',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent' },
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'permanent' },
+      ],
+    },
+  },
 
   // --- codegen batch ---
   { cardNumber: 'OP01-073', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },

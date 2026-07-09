@@ -232,10 +232,15 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-039 — [Trigger] up to 1 Leader/Char +1000 this turn. PARTIAL: the [Main] "set your Zoro Leader active" needs a set-Leader-active op (deferred).
   { cardNumber: 'OP12-039', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP12-040 (leader) Kuzan —
-  //   When a card is trashed from your hand by your {Navy} type card's effect, draw cards equal to the
-  //   number of cards trashed.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP12-040',
+    templateId: 'ability',
+    params: {
+      timing: 'onHandTrashed',
+      gate: [{ kind: 'effectSourceTypeIncludes', typeIncludes: 'Navy' }],
+      functions: [{ fn: 'drawByEventCount', countField: 'handTrashedCount' }],
+    },
+  },
 
   // OP12-041 (leader) — [When Attacking] If your DON!! ≤ opponent's, add 1 DON!! (rested). PARTIAL: the "activate Event from hand" main is deferred.
   { cardNumber: 'OP12-041', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
@@ -282,7 +287,22 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-048 (character) Donquixote Rosinante —
   //   [Opponent's Turn] If your blue {Navy} type Character would be removed from the field by your
   //   opponent's effect, you may rest this Character and trash 1 card from your hand instead.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: compound rest+trash replacement; blue color filter dropped; mapped restSource only.
+  {
+    cardNumber: 'OP12-048',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        anyOfTypes: ['Navy'],
+        restSource: true,
+        sourceCondition: { turn: 'opponent' },
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP12-051 — [Activate: Main] rest this + trash 1 from hand: up to 1 opp Character base cost≤4 cannot activate [Blocker] this turn.
   {
@@ -419,7 +439,16 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   //   more, draw 1 card.[Once Per Turn] This effect can be activated when your opponent plays a Character
   //   with a base cost of 8 or more, or when your opponent plays a Character using a Character's effect.
   //   Your opponent adds 1 card from the top of their Life cards to their hand.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: "2+ Characters cost 8+" gate approximated; opponent-play Life trigger deferred.
+  {
+    cardNumber: 'OP12-081',
+    templateId: 'ability',
+    params: {
+      timing: 'whenAttacking',
+      gate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }],
+      functions: [{ fn: 'draw', amount: 1 }],
+    },
+  },
 
   // OP12-084 — [Blocker][On Play] If Leader {Revolutionary Army}, trash 3 from top of deck.
   { cardNumber: 'OP12-084', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }], functions: [{ fn: 'trashTopDeck', count: 3 }] } },

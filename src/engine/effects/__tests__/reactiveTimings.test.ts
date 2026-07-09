@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { GameState } from '../../state/game';
 import type { EffectProgram } from '../effectIr';
 import { resumeProgram, runTimings } from '../interpreter';
 import { hasContinuousKeyword } from '../../rules/shared/power';
@@ -138,7 +139,7 @@ describe('reactive timings', () => {
     const withSource = putCharacterInPlay(base, 'p1', sourceDef);
     const trashId = nextTestId('trash-character');
     const player = withSource.rig.state.players.p1;
-    const state = {
+    const state: GameState = {
       ...withSource.rig.state,
       cardsById: {
         ...withSource.rig.state.cardsById,

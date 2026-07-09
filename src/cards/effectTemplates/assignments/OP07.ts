@@ -234,11 +234,23 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Amazon Lily' }, { typeIncludes: 'Kuja Pirates' }], excludeSelfName: true } }] },
   },
 
-  // OP07-042 (character) Gecko Moria —
-  //   [Once Per Turn] If your Leader has the {The Seven Warlords of the Sea} type and this Character would
-  //   be removed from the field by your opponent's effect, you may place 1 of your Characters other than
-  //   [Gecko Moria] at the bottom of the owner's deck instead.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP07-042',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementSelf',
+        scope: 'effect',
+        oncePerTurn: true,
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+        effectSourceController: 'opponent',
+        activationGate: [{ kind: 'leaderType', type: 'The Seven Warlords of the Sea' }],
+        bottomDeckCharacter: true,
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP07-043 — [On Play] Up to 1 of your [Boa Hancock] cards gains +2000 power during this turn.
   { cardNumber: 'OP07-043', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Boa Hancock' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
@@ -485,7 +497,26 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] You may place 4 {Thriller Bark Pirates} type cards from your trash at the bottom of
   //   your deck in any order: This Character gains [Banish] and +1000 power during this turn.(When this
   //   card deals damage, the target card is trashed without activating its Trigger.)
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP07-083',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Place 4 Thriller Bark Pirates cards from trash at the bottom of your deck?',
+        options: [
+          { label: 'skip', functions: [] },
+          { label: 'pay', functions: [
+            { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, minTargets: 4, maxTargets: 4 },
+            { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+            { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+          ] },
+        ],
+      }],
+    },
+  },
 
   // OP07-085 — [On Play] trash 1 of your Characters: K.O. up to 1 opponent Character.
   { cardNumber: 'OP07-085', templateId: 'ability', params: { timing: 'onPlay', functions: [

@@ -228,6 +228,18 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the static "cannot attack" lock is implemented below; the activated life-to-play ability remains deferred.
   { cardNumber: 'OP04-039', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
 
+  // OP04-040 — PARTIAL: combined Life+hand ≤4 gate and optional deck→Life branch deferred; mapped draw 1 at hand ≤4.
+  {
+    cardNumber: 'OP04-040',
+    templateId: 'ability',
+    params: {
+      timing: 'whenAttacking',
+      condition: { donAttachedAtLeast: 1 },
+      gate: [{ kind: 'selfHand', atMost: 4 }],
+      functions: [{ fn: 'draw', amount: 1 }],
+    },
+  },
+
   // OP04-041 (character) Apis —
   {
     cardNumber: 'OP04-041',
@@ -259,15 +271,19 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   place the rest at the bottom of your deck in any order.
   // NOTE: not yet implemented (needs template).
 
-  // OP04-047 (character) Ice Oni —
-  //   [Your Turn] At the end of a battle in which this Character battles your opponent's Character with a
-  //   cost of 5 or less, place the opponent's Character you battled with at the bottom of the owner's deck.
-  // NOTE: not yet implemented (needs template).
+  // OP04-047 — PARTIAL: battled opponent Character cost ≤5 filter deferred; mapped [Your Turn] onBattle bottom-deck battled Character.
+  {
+    cardNumber: 'OP04-047',
+    templateId: 'ability',
+    params: {
+      timing: 'onBattle',
+      condition: { turn: 'your' },
+      functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 5 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 }],
+    },
+  },
 
-  // OP04-048 (character) Sasaki —
-  //   [On Play] Return all cards in your hand to your deck and shuffle your deck. Then, draw cards equal to
-  //   the number you returned to your deck.
-  // NOTE: not yet implemented (needs template).
+  // OP04-048 — PARTIAL: return-all-hand shuffle + draw-equal-to-returned deferred; no matching primitive.
+  { cardNumber: 'OP04-048', templateId: 'noRuntime', params: {} },
 
   // OP04-049 — [On K.O.] Draw 1 card.
   { cardNumber: 'OP04-049', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
@@ -390,11 +406,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-068 — [Blocker] is card data.
   { cardNumber: 'OP04-068', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
-  // OP04-069 (character) Mr.2.Bon.Kurei(Bentham) —
-  //   [On Your Opponent's Attack] DON!! −1 (You may return the specified number of DON!! cards from your
-  //   field to your DON!! deck.): This Character's base power becomes the same as the power of your
-  //   opponent's attacking Leader or Character during this turn. [Trigger] DON!! −1: Play this card.
-  // NOTE: not yet implemented (needs template).
+  // OP04-069 — PARTIAL: onOpponentsAttack copy attacker power deferred; mapped [Trigger] DON!! −1 play this.
+  { cardNumber: 'OP04-069', templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
   // OP04-070 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: give up to 1 opp Character −1000 this turn.
   { cardNumber: 'OP04-070', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
@@ -463,8 +476,19 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  //   opponent's Characters with a cost of 1 or less. Then, trash 2 cards from the top of your deck.
-  // NOTE: not yet implemented (needs template).
+  // OP04-082 — PARTIAL: K.O. replacement "rest Leader or Corrida Coliseum" deferred; mapped [On Play] Rebecca line.
+  {
+    cardNumber: 'OP04-082',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'leaderName', name: 'Rebecca' }],
+      functions: [
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true },
+        { fn: 'trashTopDeck', count: 1 },
+      ],
+    },
+  },
 
   // OP04-090 (character) Monkey.D.Luffy —
   //   PARTIAL: the static active-Character attack grant is implemented below; the recycle-to-set-active line remains deferred.

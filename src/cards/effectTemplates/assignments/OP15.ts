@@ -103,10 +103,22 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP15-007', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'East Blue' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 5 } }] } },
 
 
-  // OP15-009 (character) Koby —
-  //   If your Character with 7000 base power or less would be removed from the field by your opponent's
-  //   effect, you may give your Leader −2000 power during this turn instead.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP15-009',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+        effectSourceController: 'opponent',
+        targetCondition: { maxBasePower: 7000 },
+        giveLeaderPowerPenalty: { amount: 2000, duration: 'duringThisTurn' },
+        duration: 'permanent',
+      }],
+    },
+  },
 
   { cardNumber: 'OP15-010', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
@@ -208,7 +220,19 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Under the rules of this game, you do not lose when your deck has 0 cards. You lose at the end of the
   //   turn in which your deck becomes 0 cards.[Activate: Main] [Once Per Turn] Trash 4 cards from the top
   //   of your deck. Then, if your deck has 0 cards, set up to 1 of your Characters as active.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: deck-empty loss rule deferred; mapped activateMain trash + conditional setActive.
+  {
+    cardNumber: 'OP15-022',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      functions: [
+        { fn: 'trashTopDeck', count: 4 },
+        { fn: 'setActiveControllerCharacter', maxTargets: 1, ifGate: [{ kind: 'selfDeckCount', atMost: 0 }] },
+      ],
+    },
+  },
 
 
   // OP15-013 — curated above.
@@ -245,7 +269,8 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-031 (character) Purinpurin —
   //   [On Play] Select up to 1 of your opponent's rested Characters. If the chosen Character has a cost
   //   equal to the number of DON!! cards given to it, K.O. it.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: cost-equals-given-DON K.O. gate deferred; mapped K.O. rested Character with any given DON.
+  { cardNumber: 'OP15-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, minDonAttached: 1 } }, optional: true }] } },
 
   // OP15-032 — [On Play] Rest up to 1 opp Character. PARTIAL: trash-self activate deferred.
   { cardNumber: 'OP15-032', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
@@ -271,7 +296,20 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-035 (character) Laboon —
   //   If your Character with 7000 base power or less would be removed from the field by your opponent's
   //   effect, you may rest 2 of your cards instead.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: "rest 2 of your cards" → restDon proxy; "7000 base power or less" target filter dropped.
+  {
+    cardNumber: 'OP15-035',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        restDon: { count: 2 },
+        duration: 'permanent',
+      }],
+    },
+  },
 
   {
     cardNumber: 'OP15-036',
@@ -351,10 +389,22 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP15-051', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'Dressrosa' }] } }] } },
 
-  // OP15-052 (character) Leo —
-  //   If your Character with 7000 base power or less would be removed from the field by your opponent's
-  //   effect, you may place 1 of your Characters at the bottom of the owner's deck instead.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP15-052',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+        effectSourceController: 'opponent',
+        targetCondition: { maxBasePower: 7000 },
+        bottomDeckCharacter: true,
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP15-053 — [On Play] Look 3, reveal up to 1 {Dressrosa} to hand, rest to bottom. PARTIAL: conditional [Blocker] deferred.
   { cardNumber: 'OP15-053', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Dressrosa' }, remainder: 'bottom' }] } },
@@ -473,7 +523,15 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   If you have 6 or more DON!! cards on your field, this Character gains [Rush].When your opponent
   //   activates an Event or [Blocker], reveal up to 1 card from the top of your Life cards. This Character
   //   gains +1000 power during this turn per 1 cost on the revealed card.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: opponent Event/Blocker activation + Life-reveal scaling power deferred.
+  {
+    cardNumber: 'OP15-119',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfDonFieldCount', atLeast: 6 }] } }],
+    },
+  },
 
 
   // PARTIAL: [Activate: Main] DON-scaling debuff deferred; mapped onPlay give 3 opp rested DON + Rush.

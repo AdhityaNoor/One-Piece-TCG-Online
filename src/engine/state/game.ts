@@ -179,9 +179,11 @@ export interface ContinuousPowerModifier {
    * instead of adding to it. When present, `amount` is ignored for this record; additive
    * `amount`/`scale`/DON!! bonuses from OTHER records still stack on top of the set value.
    * If several applicable set records exist, the LAST-applied one wins (append order =
-   * recalculation order, 8-1-3-3-5). Fixed value only — "becomes the same as X" is not modeled.
+   * recalculation order, 8-1-3-3-5).
    */
   setBase?: number;
+  /** "base power becomes the same as your Leader's base power" — resolved at read time. */
+  setBaseFromLeader?: true;
   /** Gate evaluated against the buffed (modified) card. Omitted when unconditional. */
   condition?: ContinuousPowerCondition;
   /** Gate evaluated against the SOURCE card. Omitted when the modifier does not depend on source state. */
@@ -348,14 +350,33 @@ export type KoReplacementAction =
   | { kind: 'trashSelf' }
   /** Trash the aura source character (ally replacement — "trash this Character instead"). */
   | { kind: 'trashSource' }
+  /** Return the aura source character to its owner's hand instead of removing the ally. */
+  | { kind: 'returnSourceToHand' }
   /** Rest the aura source character instead of the K.O. */
   | { kind: 'restSource' }
   /** Rest one or more of your Characters instead of the K.O. */
   | { kind: 'restCharacter'; count: number }
+  /** Place one or more of your Characters at the bottom of the owner's deck instead. */
+  | { kind: 'bottomDeckCharacter'; count: number }
+  /** Trash this Character and draw N (ally field-removal replacement on aura source). */
+  | { kind: 'trashSelfAndDraw'; drawAmount: number }
+  /** Trash a Life card (top/bottom) instead of being K.O.'d. */
+  | { kind: 'trashLife'; position: 'top' | 'bottom' | 'topOrBottom' }
+  /** Place N cards from your trash at the bottom of your deck in chosen order. */
+  | { kind: 'trashTrashToDeckBottom'; count: number }
+  /** Give the aura source −N power for the duration instead of removing the ally. */
+  | { kind: 'giveSelfPowerPenalty'; amount: number; duration: ContinuousEffectDuration }
+  /** Give your Leader −N power for the duration instead of removing the ally. */
+  | { kind: 'giveLeaderPowerPenalty'; amount: number; duration: ContinuousEffectDuration }
+  /** Move the ally that would be removed to the top of your Life face-down instead. */
+  | { kind: 'moveTargetToLifeFaceDown' }
   /** Pay structured ability costs (e.g. `{ kind: 'donMinus', count: 1 }`). */
   | { kind: 'payAbilityCosts'; costs: AbilityCost[] }
   /** Add a Life card to hand — same op shape as effect IR `chooseLifeToHand`. */
   | { kind: 'chooseLifeToHand'; position: 'top' | 'topOrBottom' };
+
+/** Which field-removal event a replacement modifier listens for. Omitted = K.O. only (legacy). */
+export type KoReplacementTrigger = 'ko' | 'returnToHand' | 'bottomDeck';
 
 /** Aura target group for K.O. replacement on ally Characters. */
 export type KoReplacementAuraGroup = PowerAuraGroup & { excludeSource?: true };
@@ -369,11 +390,28 @@ export interface ContinuousKoReplacementModifier {
   appliesToGroup?: KoReplacementAuraGroup;
   scope: 'battle' | 'effect' | 'any';
   oncePerTurn?: boolean;
+  /** Events that can trigger this replacement. Defaults to `['ko']` when omitted. */
+  replacementTriggers?: KoReplacementTrigger[];
+  /** Restrict to removals by opponent/controller-sourced effects. */
+  effectSourceController?: 'opponent' | 'controller';
+  effectSourceCategory?: 'leader' | 'character';
+  /** Board-state gate evaluated when the replacement would fire (e.g. Leader type). */
+  activationGate?: AbilityGate[];
   /** Condition on the character that would be K.O.'d. */
   condition?: ContinuousPowerCondition;
   /** Condition on the aura source card (e.g. [Opponent's Turn]). */
   sourceCondition?: SourceStateCondition;
   action: KoReplacementAction;
+}
+
+/** "Would be rested by an effect … rest another Character instead." */
+export interface ContinuousRestReplacementModifier {
+  appliesToInstanceId: string;
+  oncePerTurn?: boolean;
+  effectSourceController?: 'opponent' | 'controller';
+  effectSourceCategory?: 'leader' | 'character';
+  sourceCondition?: SourceStateCondition;
+  action: { kind: 'restCharacter'; count: number };
 }
 
 /** "You cannot add Life cards to your hand using your own effects" (self-sourced Life→hand only). */
@@ -416,6 +454,8 @@ export interface ContinuousEffectRecord {
   koImmunityModifier?: ContinuousKoImmunityModifier;
   /** Structured optional K.O. replacement. Omitted for unrelated continuous effects. */
   koReplacementModifier?: ContinuousKoReplacementModifier;
+  /** Structured optional rest replacement. Omitted for unrelated continuous effects. */
+  restReplacementModifier?: ContinuousRestReplacementModifier;
   /** Structured effect negation. Omitted for unrelated continuous effects. */
   effectNegation?: ContinuousEffectNegation;
   /** Blocks controller-sourced Life→hand moves. Omitted for unrelated continuous effects. */

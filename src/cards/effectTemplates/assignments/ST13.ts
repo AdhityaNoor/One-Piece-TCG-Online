@@ -48,7 +48,21 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   according to the rules.[DON!! x2] [Activate: Main] [Once Per Turn] You may trash 1 card from your
   //   hand: If you have 0 Life cards, add up to 2 Character cards with a cost of 5 from your hand or trash
   //   to the top of your Life cards face-up.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: face-up Life-to-deck-bottom replacement rule deferred; mapped activateMain hand/trash → Life.
+  {
+    cardNumber: 'ST13-003',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      condition: { donAttachedAtLeast: 2 },
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'moveCards', ifGate: [{ kind: 'selfLife', atMost: 0 }], from: { zone: 'hand', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 2, ifPrevious: 'previousMovedAny' },
+        { fn: 'moveCards', ifGate: [{ kind: 'selfLife', atMost: 0 }], from: { zone: 'trash', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 2, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // ST13-004 (character) Edward.Newgate —
   //   [On Play] Add 1 card from the top of your deck to the top of your Life cards. Then, look at all your
