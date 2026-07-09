@@ -3,6 +3,7 @@
  * can continue across screens while remaining purely UI/presentation state.
  */
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSettingsStore } from '../store/settingsStore';
 import {
   SETTINGS_PANEL_ICON_BUTTON,
@@ -74,13 +75,16 @@ function SettingSwitch({ checked, label, onToggle }: { checked: boolean; label: 
   );
 }
 
-export function BacksoundControl() {
+export function BacksoundControl({ className }: { className?: string } = {}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const sfxRef = useRef<HTMLAudioElement>(null);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [mobileActionHost, setMobileActionHost] = useState<HTMLElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackBlocked, setPlaybackBlocked] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [pseudoFullscreen, setPseudoFullscreen] = useState(false);
 
   const backsoundEnabled = useSettingsStore((state) => state.backsoundEnabled);
   const backsoundVolume = useSettingsStore((state) => state.backsoundVolume);
@@ -94,6 +98,31 @@ export function BacksoundControl() {
   const setSfxVolume = useSettingsStore((state) => state.setSfxVolume);
   const setMatchNavyBackgroundEnabled = useSettingsStore((state) => state.setMatchNavyBackgroundEnabled);
   const setAnimationsEnabled = useSettingsStore((state) => state.setAnimationsEnabled);
+
+  useEffect(() => {
+    const syncHost = () => setMobileActionHost(document.getElementById('mobile-action-settings-slot'));
+    syncHost();
+
+    const observer = new MutationObserver(syncHost);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const syncFullscreen = () => setIsFullscreen(!!document.fullscreenElement || document.documentElement.classList.contains('op-pseudo-fullscreen'));
+    syncFullscreen();
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    return () => document.removeEventListener('fullscreenchange', syncFullscreen);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('op-pseudo-fullscreen', pseudoFullscreen);
+    setIsFullscreen(!!document.fullscreenElement || pseudoFullscreen);
+    if (pseudoFullscreen) window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    return () => {
+      document.documentElement.classList.remove('op-pseudo-fullscreen');
+    };
+  }, [pseudoFullscreen]);
 
   useEffect(() => {
     if (!panelOpen) return;
@@ -119,6 +148,23 @@ export function BacksoundControl() {
     if (!sfx) return;
     sfx.volume = sfxVolume;
   }, [sfxVolume]);
+
+  async function toggleFullscreen(): Promise<void> {
+    if (pseudoFullscreen) {
+      setPseudoFullscreen(false);
+      return;
+    }
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      setPseudoFullscreen(true);
+    }
+  }
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -215,8 +261,17 @@ export function BacksoundControl() {
     return () => document.removeEventListener('click', playClickSfx);
   }, [sfxEnabled, sfxVolume]);
 
-  return (
-    <div ref={rootRef} className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 font-body text-white">
+  const inlineInMobileActions = mobileActionHost !== null;
+  const control = (
+    <div
+      ref={rootRef}
+      className={[
+        inlineInMobileActions
+          ? 'op-backsound-inline relative flex flex-col items-end gap-2 font-body text-white'
+          : 'op-backsound-floating fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 font-body text-white',
+        className ?? '',
+      ].join(' ')}
+    >
       <audio
         ref={audioRef}
         src={BACKSOUND_SRC}
@@ -298,6 +353,16 @@ export function BacksoundControl() {
                 checked={matchNavyBackgroundEnabled}
                 onToggle={() => setMatchNavyBackgroundEnabled(!matchNavyBackgroundEnabled)}
               />
+              <button
+                type="button"
+                className={[SETTINGS_PANEL_OPTION, 'justify-between gap-3'].join(' ')}
+                onClick={() => void toggleFullscreen()}
+              >
+                <span className={SETTINGS_PANEL_LABEL}>Fullscreen</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/50">
+                  {isFullscreen ? 'On' : 'Off'}
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -314,4 +379,6 @@ export function BacksoundControl() {
       </button>
     </div>
   );
+
+  return inlineInMobileActions ? createPortal(control, mobileActionHost) : control;
 }

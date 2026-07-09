@@ -2,7 +2,9 @@
  * Engine-capability tests for deferred (scheduled) effect primitives:
  *   - trashSelfAtEndOfTurn
  *   - moveSelfToBottomDeckAtEndOfBattle
+ *   - moveBattleOpponentToBottomDeckAtEndOfBattle
  *   - movePreviousMovedToBottomDeckAtEndOfTurn
+ *   - optionalReturnControllerDon (EOT immediate chain)
  */
 import { describe, expect, it } from 'vitest';
 import { runTimings, resumeProgram } from '../../../engine/effects/interpreter';
@@ -66,6 +68,82 @@ describe('semantic family: delayed effects', () => {
     expect(afterBattle.cardsById[sourceId].currentZone).toBe('deck');
     expect(afterBattle.players.p1.deck.cardIds.at(-1)).toBe(sourceId);
     expect(afterBattle.delayedEffects ?? []).toHaveLength(0);
+  });
+
+  it('moveBattleOpponentToBottomDeckAtEndOfBattle schedules the battled opponent at end of battle', () => {
+    const OPP = makeCharacterDef({ cardDefinitionId: 'SYN-OPP', cardNumber: 'SYN-OPP', category: 'character', baseCost: 4, basePower: 4000 });
+    const assignment: CardEffectAssignment = {
+      cardNumber: 'SYN-SRC',
+      templateId: 'ability',
+      params: { timing: 'onBattle', functions: [{ fn: 'moveBattleOpponentToBottomDeckAtEndOfBattle', maxCost: 5 }] },
+    };
+    const registry = programFor(assignment);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sourceId: string;
+    let oppId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC, { summoningSick: false }));
+    ({ rig, instanceId: oppId } = putCharacterInPlay(
+      { ...rig, defs: { ...rig.defs, [OPP.cardDefinitionId]: OPP } },
+      'p2',
+      OPP,
+      { summoningSick: false },
+    ));
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        currentBattle: {
+          attackerInstanceId: sourceId,
+          targetInstanceId: oppId,
+          originalTargetInstanceId: oppId,
+          step: 'damage',
+          blockerUsed: false,
+          battlePowerBonuses: {},
+        },
+      },
+    };
+
+    const fired = runTimings(registry['SYN-SRC'], ['onBattle'], rig.state, sourceId, rig.defs, null, registry);
+    const choice = fired.state.pendingChoices[0];
+    expect(choice).toBeDefined();
+
+    const resolved = resumeProgram(registry['SYN-SRC'], fired.state, choice!, [oppId], rig.defs, null, registry);
+    expect(resolved.state.delayedEffects?.some((e) => e.kind === 'moveInstanceToBottomDeckAtEndOfBattle')).toBe(true);
+
+    const afterBattle = consumeEndOfBattleDelayedEffects(resolved.state, sourceId).state;
+    expect(afterBattle.cardsById[oppId].currentZone).toBe('deck');
+    expect(afterBattle.players.p2.deck.cardIds.at(-1)).toBe(oppId);
+  });
+
+  it('optionalReturnControllerDon gates setActive and Blocker on returned DON!!', () => {
+    const assignment: CardEffectAssignment = {
+      cardNumber: 'SYN-SRC',
+      templateId: 'ability',
+      params: {
+        timing: 'endOfTurn',
+        functions: [
+          { fn: 'optionalReturnControllerDon' },
+          { fn: 'setActiveSelf', ifPrevious: 'previousMovedAny' },
+          { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'endOfOpponentsTurn', ifPrevious: 'previousMovedAny' },
+        ],
+      },
+    };
+    const registry = programFor(assignment);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC, { orientation: 'rested' }));
+    const withDon = putDon(rig, 'p1', 2, { rested: true });
+    rig = withDon.rig;
+
+    const fired = runTimings(registry['SYN-SRC'], ['endOfTurn'], rig.state, sourceId, rig.defs, null, registry);
+    const choice = fired.state.pendingChoices[0];
+    expect(choice).toBeDefined();
+
+    const donId = withDon.donIds[0];
+    const resolved = resumeProgram(registry['SYN-SRC'], fired.state, choice!, [donId], rig.defs, null, registry);
+    expect(resolved.state.cardsById[donId]?.currentZone).toBe('donDeck');
+    expect(resolved.state.cardsById[sourceId]?.orientation).toBe('active');
+    expect(resolved.state.continuousEffects.some((ce) => ce.sourceInstanceId === sourceId && ce.keywordModifier?.keyword === 'blocker')).toBe(true);
   });
 
   it('movePreviousMovedToBottomDeckAtEndOfTurn schedules only when a prior step moved a card', () => {
@@ -186,5 +264,72 @@ describe('semantic family: delayed effects', () => {
     expect(ended.players.p1.hand.cardIds).toHaveLength(2);
     expect(handIds.filter((id) => ended.cardsById[id]?.currentZone === 'trash')).toHaveLength(2);
     void sourceId;
+  });
+
+  it('returnSelfToHandAtEndOfTurn returns the source to hand at end of turn', () => {
+    const assignment: CardEffectAssignment = {
+      cardNumber: 'SYN-SRC',
+      templateId: 'ability',
+      params: { timing: 'whenAttacking', functions: [{ fn: 'returnSelfToHandAtEndOfTurn' }] },
+    };
+    const registry = programFor(assignment);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC));
+
+    const scheduled = runTimings(registry['SYN-SRC'], ['whenAttacking'], rig.state, sourceId, rig.defs, null, registry);
+    expect(scheduled.state.delayedEffects).toHaveLength(1);
+
+    const ended = runEndPhaseAndHandoff({ ...scheduled.state, currentPhase: 'end' }, rig.defs, registry).state;
+    expect(ended.cardsById[sourceId].currentZone).toBe('hand');
+    expect(ended.players.p1.characterArea.cardIds).not.toContain(sourceId);
+  });
+
+  it('preventRefreshOnGivenCharacterAtEndOfTurn skips refresh when target is rested with enough DON!!', () => {
+    const assignment: CardEffectAssignment = {
+      cardNumber: 'SYN-SRC',
+      templateId: 'ability',
+      params: {
+        timing: 'onPlay',
+        functions: [{ fn: 'preventRefreshOnGivenCharacterAtEndOfTurn', minDonAttached: 3 }],
+      },
+    };
+    const registry = programFor(assignment);
+    const OPP = makeCharacterDef({ cardDefinitionId: 'SYN-OPP', cardNumber: 'SYN-OPP', category: 'character', baseCost: 4, basePower: 4000 });
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sourceId: string;
+    let oppId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC));
+    ({ rig, instanceId: oppId } = putCharacterInPlay(
+      { ...rig, defs: { ...rig.defs, [OPP.cardDefinitionId]: OPP } },
+      'p2',
+      OPP,
+      { orientation: 'rested' },
+    ));
+    const withDon = putDon(rig, 'p2', 3, { rested: true });
+    rig = {
+      ...withDon.rig,
+      state: {
+        ...withDon.rig.state,
+        cardsById: {
+          ...withDon.rig.state.cardsById,
+          [oppId]: { ...withDon.rig.state.cardsById[oppId], donAttached: [...withDon.donIds] },
+        },
+        delayedEffects: [{
+          id: 'test:prevent-refresh',
+          kind: 'preventRefreshOnCharacterAtEndOfTurn' as const,
+          sourceInstanceId: sourceId,
+          ownerId: 'p1',
+          triggerPlayerId: 'p1',
+          targetInstanceId: oppId,
+          minDonAttached: 3,
+          requireRested: true,
+        }],
+      },
+    };
+
+    const ended = runEndPhaseAndHandoff({ ...rig.state, currentPhase: 'end' }, rig.defs, registry).state;
+    expect(ended.cardsById[oppId].skipNextRefresh).toBe(true);
+    void assignment;
   });
 });

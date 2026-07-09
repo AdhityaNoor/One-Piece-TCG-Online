@@ -435,6 +435,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
       return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === false);
     }
+    case 'controllerFieldDon':
+      return fieldDonIds(ctx.state(), ctx.controllerId);
     case 'opponentFieldDon':
       return fieldDonIds(ctx.state(), ctx.opponentId);
     case 'opponentActiveDon': {
@@ -486,6 +488,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const inst = ctx.state().cardsById[opposingId];
       // Only an opponent Character still in play (already-K.O.'d = nothing to K.O.).
       if (!inst || inst.currentZone !== 'characterArea' || inst.controllerId === ctx.controllerId) return [];
+      if (sel.maxCost !== undefined && ctx.costOf(opposingId) > sel.maxCost) return [];
       return [opposingId];
     }
     case 'controllerLifeTopBottom':
@@ -938,12 +941,29 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return EMPTY_RESULT;
     }
     case 'scheduleMoveSourceToBottomDeckAtEndOfBattle': {
+      const battleAttackerId = ctx.state().currentBattle?.attackerInstanceId ?? ctx.sourceInstanceId;
       ctx.scheduleDelayedEffect({
         id: `${ctx.sourceInstanceId}:bottom-deck:eob:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
         kind: 'moveSourceToBottomDeckAtEndOfBattle',
         sourceInstanceId: ctx.sourceInstanceId,
         ownerId: ctx.controllerId,
-        battleAttackerInstanceId: ctx.sourceInstanceId,
+        battleAttackerInstanceId: battleAttackerId,
+      });
+      return EMPTY_RESULT;
+    }
+    case 'scheduleMoveInstanceToBottomDeckAtEndOfBattle': {
+      const varName = op.fromVar ?? '__lastMovedIds';
+      const ids = bindings[varName] ?? [];
+      const targetId = ids[op.index ?? 0];
+      if (!targetId) return EMPTY_RESULT;
+      const battleAttackerId = ctx.state().currentBattle?.attackerInstanceId ?? ctx.sourceInstanceId;
+      ctx.scheduleDelayedEffect({
+        id: `${ctx.sourceInstanceId}:bottom-deck:eob:${targetId}:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
+        kind: 'moveInstanceToBottomDeckAtEndOfBattle',
+        sourceInstanceId: ctx.sourceInstanceId,
+        ownerId: ctx.controllerId,
+        battleAttackerInstanceId: battleAttackerId,
+        targetInstanceId: targetId,
       });
       return EMPTY_RESULT;
     }
@@ -991,6 +1011,32 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
         ownerId: ctx.controllerId,
         triggerPlayerId: ctx.controllerId,
         ...(op.requiresLeaderType ? { requiresLeaderType: op.requiresLeaderType } : {}),
+      });
+      return EMPTY_RESULT;
+    }
+    case 'scheduleReturnSourceToHandAtEndOfTurn': {
+      ctx.scheduleDelayedEffect({
+        id: `${ctx.sourceInstanceId}:return-hand:eot:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
+        kind: 'returnSourceToHandAtEndOfTurn',
+        sourceInstanceId: ctx.sourceInstanceId,
+        ownerId: ctx.controllerId,
+        triggerPlayerId: ctx.controllerId,
+      });
+      return EMPTY_RESULT;
+    }
+    case 'schedulePreventRefreshOnCharacterAtEndOfTurn': {
+      const varName = op.fromVar ?? '__lastMovedIds';
+      const targetId = (bindings[varName] ?? [])[0];
+      if (!targetId) return EMPTY_RESULT;
+      ctx.scheduleDelayedEffect({
+        id: `${ctx.sourceInstanceId}:prevent-refresh:eot:${targetId}:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
+        kind: 'preventRefreshOnCharacterAtEndOfTurn',
+        sourceInstanceId: ctx.sourceInstanceId,
+        ownerId: ctx.controllerId,
+        triggerPlayerId: ctx.controllerId,
+        targetInstanceId: targetId,
+        minDonAttached: op.minDonAttached,
+        requireRested: op.requireRested !== false,
       });
       return EMPTY_RESULT;
     }
@@ -1982,7 +2028,11 @@ export function resumeProgram(
   }
 
   const selection = Array.isArray(response) ? response : [];
-  const bindings: Record<string, string[]> = { ...rs.bindings, [op.var]: selection };
+  const bindings: Record<string, string[]> = {
+    ...rs.bindings,
+    [op.var]: selection,
+    __lastSelected: boolBinding(selection.length > 0),
+  };
   return continueAfterResolvedOp(program, ability, rs, bindings, ctx, defs, actionId, registry);
 }
 

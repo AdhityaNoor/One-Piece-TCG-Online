@@ -37,6 +37,7 @@ export interface BoardCardTileProps {
   onZoom?: () => void;
   onHoverStart?: () => void;
   onHoverEnd?: () => void;
+  compactBadges?: boolean;
   /** Main-phase Give DON stepper — shown in the stacked hover menu. */
   giveDonControls?: {
     availableActiveDon: number;
@@ -154,7 +155,7 @@ const KEYWORD_ICON: Record<KeywordKey, { name: string; srcs: string[] }> = {
  * clip-path also clips the border. The keyword name is kept as an accessible
  * label/tooltip since the text is now an icon.
  */
-function KeywordLabel({ keyword }: { keyword: KeywordKey }) {
+function KeywordLabel({ keyword, compact = false }: { keyword: KeywordKey; compact?: boolean }) {
   const { name, srcs } = KEYWORD_ICON[keyword];
   return (
     <span
@@ -165,7 +166,7 @@ function KeywordLabel({ keyword }: { keyword: KeywordKey }) {
         role="img"
         aria-label={name}
         title={name}
-        className="flex items-center justify-center gap-[0.12em] px-3 py-1 text-2xl leading-none"
+        className={['flex items-center justify-center gap-[0.12em] leading-none', compact ? 'px-2 py-0.5 text-sm' : 'px-3 py-1 text-2xl'].join(' ')}
         style={{ clipPath: KEYWORD_HEX_CLIP, backgroundColor: '#f97316' }}
       >
         {srcs.map((src, index) => (
@@ -182,7 +183,7 @@ function KeywordLabel({ keyword }: { keyword: KeywordKey }) {
  * scrollWidth reports the un-transformed layout width, so re-measuring after a
  * scale is stable. Runs on label changes and whenever the card resizes.
  */
-function KeywordRow({ labels, maxWidth }: { labels: KeywordKey[]; maxWidth: number }) {
+function KeywordRow({ labels, maxWidth, compact = false }: { labels: KeywordKey[]; maxWidth: number; compact?: boolean }) {
   const rowRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -201,7 +202,7 @@ function KeywordRow({ labels, maxWidth }: { labels: KeywordKey[]; maxWidth: numb
         style={{ transform: `scale(${scale})`, transformOrigin: 'center' }}
       >
         {labels.map((label) => (
-          <KeywordLabel key={label} keyword={label} />
+          <KeywordLabel key={label} keyword={label} compact={compact} />
         ))}
       </div>
     </div>
@@ -254,6 +255,7 @@ export function BoardCardTile({
   onZoom,
   onHoverStart,
   onHoverEnd,
+  compactBadges = false,
   giveDonControls,
 }: BoardCardTileProps) {
   const dims = SIZE_PX[size];
@@ -311,11 +313,12 @@ export function BoardCardTile({
       </div>
 
       {(visiblePowerDelta !== null || visibleCostDelta !== null || hasAttachedDon || keywordLabels.length > 0) && (
-        <div className="absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5">
+        <div className={['absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center', compactBadges ? 'gap-1' : 'gap-1.5'].join(' ')}>
           {visiblePowerDelta !== null && (
             <div
               className={[
-                'pointer-events-none rounded-lg border px-3 py-1.5 text-2xl font-black leading-none shadow-[0_12px_30px_rgba(0,0,0,0.55)]',
+                'pointer-events-none rounded-lg border font-black leading-none shadow-[0_12px_30px_rgba(0,0,0,0.55)]',
+                compactBadges ? 'px-2 py-1 text-sm' : 'px-3 py-1.5 text-2xl',
                 visiblePowerDelta > 0
                   ? 'border-[#00ff47] bg-[#003d16]/80 text-[#00ff47] shadow-[0_12px_30px_rgba(0,0,0,0.55),0_0_24px_rgba(0,255,71,0.42)]'
                   : 'border-[#ff1f1f] bg-[#4a0000]/80 text-[#ff1f1f] shadow-[0_12px_30px_rgba(0,0,0,0.55),0_0_24px_rgba(255,31,31,0.42)]',
@@ -328,7 +331,8 @@ export function BoardCardTile({
           {visibleCostDelta !== null && (
             <div
               className={[
-                'pointer-events-none rounded-lg border px-3 py-1.5 text-2xl font-black leading-none shadow-[0_12px_30px_rgba(0,0,0,0.55)]',
+                'pointer-events-none rounded-lg border font-black leading-none shadow-[0_12px_30px_rgba(0,0,0,0.55)]',
+                compactBadges ? 'px-2 py-1 text-sm' : 'px-3 py-1.5 text-2xl',
                 visibleCostDelta > 0
                   ? 'border-[#ffffff] bg-black text-white shadow-[0_12px_30px_rgba(0,0,0,0.55),0_0_22px_rgba(255,255,255,0.24)]'
                   : 'border-[#00d5ff] bg-[#001f33]/90 text-[#00d5ff] shadow-[0_12px_30px_rgba(0,0,0,0.55),0_0_24px_rgba(0,213,255,0.36)]',
@@ -344,7 +348,8 @@ export function BoardCardTile({
               disabled={!attachedDonSelectable}
               onClick={(event) => { event.stopPropagation(); onAttachedDonSelect?.(); }}
               className={[
-                'rounded-lg border px-3 py-1.5 text-[1.2rem] font-black uppercase leading-none text-white shadow-[0_12px_30px_rgba(0,0,0,0.55)] transition',
+                'rounded-lg border font-black uppercase leading-none text-white shadow-[0_12px_30px_rgba(0,0,0,0.55)] transition',
+                compactBadges ? 'px-2 py-1 text-[0.72rem]' : 'px-3 py-1.5 text-[1.2rem]',
                 attachedDonSelectable ? 'cursor-pointer hover:border-white hover:bg-black' : 'cursor-default',
                 attachedDonSelected
                   ? 'border-white bg-black ring-2 ring-white/70'
@@ -353,16 +358,16 @@ export function BoardCardTile({
               aria-label={`${card.donAttachedCount} attached DON on ${card.name}`}
               title={attachedDonSelectable ? 'Select attached DON!!' : `${card.donAttachedCount} attached DON!!`}
             >
-              DON <span className="align-[0.08em] text-[0.7rem]">x</span> {card.donAttachedCount}
+              DON <span className={compactBadges ? 'align-[0.08em] text-[0.48rem]' : 'align-[0.08em] text-[0.7rem]'}>x</span> {card.donAttachedCount}
             </button>
           )}
 
-          {keywordLabels.length > 0 && <KeywordRow labels={keywordLabels} maxWidth={Math.max(0, tileWidth * CARD_ASPECT - 6)} />}
+          {keywordLabels.length > 0 && <KeywordRow labels={keywordLabels} maxWidth={Math.max(0, tileWidth * CARD_ASPECT - 6)} compact={compactBadges} />}
         </div>
       )}
 
       {showBattlePower && card.power !== null && (
-        <div className="pointer-events-none absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-[#ff1f1f] bg-[#5a0000]/68 px-3.5 py-2 text-2xl font-black leading-none text-[#ff1f1f] shadow-[0_12px_30px_rgba(0,0,0,0.58),0_0_30px_rgba(255,31,31,0.5)] backdrop-blur-md">
+        <div className={['pointer-events-none absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-[#ff1f1f] bg-[#5a0000]/68 font-black leading-none text-[#ff1f1f] shadow-[0_12px_30px_rgba(0,0,0,0.58),0_0_30px_rgba(255,31,31,0.5)] backdrop-blur-md', compactBadges ? 'px-2.5 py-1.5 text-base' : 'px-3.5 py-2 text-2xl'].join(' ')}>
           {card.power.toLocaleString()}
         </div>
       )}

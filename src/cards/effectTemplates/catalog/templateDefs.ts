@@ -188,16 +188,21 @@ export type AbilityFunction =
   | { fn: 'restOpponentDonAtStartOfNextMain'; maxTargets?: number }
   | { fn: 'trashSelfAtEndOfTurn' }
   | { fn: 'moveSelfToBottomDeckAtEndOfBattle' }
+  | { fn: 'moveBattleOpponentToBottomDeckAtEndOfBattle'; maxCost?: number }
   | { fn: 'movePreviousMovedToBottomDeckAtEndOfTurn'; ifPrevious?: SequenceCondition }
   | { fn: 'trashControllerCharacterAtEndOfTurn'; filter?: { typeIncludes?: string } }
   | { fn: 'returnDonToMatchOpponentAtEndOfTurn' }
   | { fn: 'moveDeckTopToLifeAtEndOfTurn'; gates?: AbilityGate[]; ifPrevious?: SequenceCondition }
   | { fn: 'trashHandDownTo'; handSize: number }
   | { fn: 'trashFaceUpLife' }
+  | { fn: 'returnSelfToHandAtEndOfTurn'; ifPrevious?: SequenceCondition }
+  | { fn: 'preventRefreshOnGivenCharacterAtEndOfTurn'; minDonAttached: number; requireRested?: boolean; ifPrevious?: SequenceCondition }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
   | { fn: 'restOpponentDon'; maxTargets?: number; optional?: boolean }
   // Rest up to N of the controller's active DON!! cards (optional effect-chain payment).
   | { fn: 'restControllerDon'; maxTargets?: number; optional?: boolean }
+  // Controller may return 1+ DON!! from field to DON!! deck (optional; gates subsequent steps via ifPrevious).
+  | { fn: 'optionalReturnControllerDon'; maxTargets?: number }
   // Opponent chooses N DON!! cards from their field and returns them to their DON!! deck.
   | { fn: 'returnOpponentDon'; count: number }
   // Aura: give the controller's own Leader + Characters (optionally type-filtered)

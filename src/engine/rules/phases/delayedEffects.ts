@@ -131,6 +131,34 @@ function moveDeckTopToLifeState(state: GameState, playerId: string, faceUp = fal
   };
 }
 
+function returnInstanceToHandState(state: GameState, instanceId: string): GameState {
+  const inst = state.cardsById[instanceId];
+  if (!inst || inst.currentZone === 'hand') return state;
+  const owner = state.players[inst.ownerId];
+  if (!owner) return state;
+  const newOwner = {
+    ...owner,
+    hand: addToZoneBottom(owner.hand, instanceId),
+    characterArea: removeFromZone(owner.characterArea, instanceId),
+    stageArea: removeFromZone(owner.stageArea, instanceId),
+  };
+  return {
+    ...state,
+    players: { ...state.players, [inst.ownerId]: newOwner },
+    cardsById: {
+      ...state.cardsById,
+      [instanceId]: {
+        ...inst,
+        currentZone: 'hand',
+        donAttached: [],
+        summoningSick: false,
+        revealedTo: [inst.ownerId],
+      },
+    },
+    continuousEffects: state.continuousEffects.filter((ce) => ce.sourceInstanceId !== instanceId),
+  };
+}
+
 function stripDue<T extends { id: string }>(delayed: T[], due: T[]): GameState['delayedEffects'] {
   const dueIds = new Set(due.map((effect) => effect.id));
   return delayed.filter((effect) => !dueIds.has(effect.id));
@@ -256,6 +284,45 @@ export function consumeEndOfTurnDelayedEffects(
         relatedCardInstanceIds: [beforeTop],
         visibility: 'public',
       });
+      continue;
+    }
+
+    if (effect.kind === 'returnSourceToHandAtEndOfTurn') {
+      const inst = working.cardsById[effect.sourceInstanceId];
+      if (!inst || inst.currentZone === 'hand') continue;
+      working = returnInstanceToHandState(working, effect.sourceInstanceId);
+      logger.push({
+        actorPlayerId: effect.ownerId,
+        type: 'CARD_MOVED',
+        message: `${effect.sourceInstanceId} was returned to its owner's hand at end of turn.`,
+        data: { delayedEffectId: effect.id, instanceId: effect.sourceInstanceId, position: 'hand' },
+        relatedCardInstanceIds: [effect.sourceInstanceId],
+        visibility: 'public',
+      });
+      continue;
+    }
+
+    if (effect.kind === 'preventRefreshOnCharacterAtEndOfTurn') {
+      const inst = working.cardsById[effect.targetInstanceId];
+      if (!inst || inst.currentZone !== 'characterArea') continue;
+      if (effect.requireRested && inst.orientation !== 'rested') continue;
+      if (inst.donAttached.length < effect.minDonAttached) continue;
+      if (inst.skipNextRefresh === true) continue;
+      working = {
+        ...working,
+        cardsById: {
+          ...working.cardsById,
+          [effect.targetInstanceId]: { ...inst, skipNextRefresh: true },
+        },
+      };
+      logger.push({
+        actorPlayerId: effect.ownerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${effect.targetInstanceId} will not become active in its controller's next Refresh Phase.`,
+        data: { delayedEffectId: effect.id, targetInstanceId: effect.targetInstanceId },
+        relatedCardInstanceIds: [effect.targetInstanceId],
+        visibility: 'public',
+      });
     }
   }
 
@@ -310,22 +377,27 @@ export function consumeEndOfBattleDelayedEffects(
   if (!attackerInstanceId) return { state, log: [] };
   const delayed = state.delayedEffects ?? [];
   const due = delayed.filter(
-    (effect) => effect.kind === 'moveSourceToBottomDeckAtEndOfBattle' && effect.battleAttackerInstanceId === attackerInstanceId,
+    (effect) =>
+      (effect.kind === 'moveSourceToBottomDeckAtEndOfBattle' || effect.kind === 'moveInstanceToBottomDeckAtEndOfBattle')
+      && effect.battleAttackerInstanceId === attackerInstanceId,
   );
   if (due.length === 0) return { state, log: [] };
 
   let working = state;
   const logger = createActionLogger(state, null);
   for (const effect of due) {
-    const inst = working.cardsById[effect.sourceInstanceId];
+    const instanceId = effect.kind === 'moveInstanceToBottomDeckAtEndOfBattle'
+      ? effect.targetInstanceId
+      : effect.sourceInstanceId;
+    const inst = working.cardsById[instanceId];
     if (!inst || inst.currentZone === 'deck') continue;
-    working = moveInstanceToBottomDeck(working, effect.sourceInstanceId);
+    working = moveInstanceToBottomDeck(working, instanceId);
     logger.push({
       actorPlayerId: effect.ownerId,
       type: 'CARD_MOVED',
-      message: `${effect.sourceInstanceId} was placed at the bottom of its owner's deck at end of battle.`,
-      data: { delayedEffectId: effect.id, instanceId: effect.sourceInstanceId, position: 'bottom' },
-      relatedCardInstanceIds: [effect.sourceInstanceId],
+      message: `${instanceId} was placed at the bottom of its owner's deck at end of battle.`,
+      data: { delayedEffectId: effect.id, instanceId, position: 'bottom' },
+      relatedCardInstanceIds: [instanceId],
       visibility: 'public',
     });
   }

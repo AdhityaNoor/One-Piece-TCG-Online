@@ -25,12 +25,13 @@ export type Selector =
   | { sel: 'opponentLeaderOrCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; excludeName?: string; restedLeader?: boolean }
   | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
   | { sel: 'controllerActiveDon' } // the controller's active, un-attached DON!! in the cost area (rest targets)
+  | { sel: 'controllerFieldDon' } // the controller's DON!! on field (cost area + attached)
   | { sel: 'opponentFieldDon' } // opponent's DON!! on field (cost area + attached), for opponent-chosen returns
   | { sel: 'opponentActiveDon' } // the opponent's active, un-attached DON!! in the cost area (rest targets)
   | { sel: 'opponentRestedDon' } // the opponent's rested, un-attached DON!! in the cost area
   | { sel: 'opponentUnattachedDon' } // the opponent's un-attached DON!! in the cost area, any orientation
   | { sel: 'ownerLeaderOrCharactersOfVar'; varName: string } // Leader + Characters of the owner of the first id in `varName`
-  | { sel: 'battleOpponent' } // the opponent Character the source is currently battling (in currentBattle), if still in play
+  | { sel: 'battleOpponent'; maxCost?: number } // the opponent Character the source is currently battling (in currentBattle), if still in play
   | { sel: 'controllerLifeTop' } // the top card of the controller's own Life (for "add 1 from the top of your Life")
   | { sel: 'opponentLifeTop' } // the top card of the opponent's Life
   | { sel: 'controllerLifeTopBottom' } // top and bottom Life cards, de-duplicated for 1-card Life
@@ -204,12 +205,15 @@ export type EffectOp =
   | ({ op: 'scheduleRestOpponentDonAtStartOfNextMain'; maxTargets: number } & EffectOpSequenceGate)
   | ({ op: 'scheduleTrashSourceAtEndOfTurn' } & EffectOpSequenceGate)
   | ({ op: 'scheduleMoveSourceToBottomDeckAtEndOfBattle' } & EffectOpSequenceGate)
+  | ({ op: 'scheduleMoveInstanceToBottomDeckAtEndOfBattle'; fromVar?: string; index?: number } & EffectOpSequenceGate)
   | ({ op: 'scheduleMoveInstanceToBottomDeckAtEndOfTurn'; fromVar?: string; index?: number } & EffectOpSequenceGate)
   | ({ op: 'scheduleTrashControllerCharacterAtEndOfTurn'; typeIncludes?: string } & EffectOpSequenceGate)
   | ({ op: 'scheduleReturnDonToMatchOpponentAtEndOfTurn' } & EffectOpSequenceGate)
   | ({ op: 'scheduleMoveDeckTopToLifeAtEndOfTurn'; requiresLeaderType?: string } & EffectOpSequenceGate)
   | ({ op: 'trashHandDownTo'; handSize: number } & EffectOpSequenceGate)
   | ({ op: 'trashFaceUpLife' } & EffectOpSequenceGate)
+  | ({ op: 'scheduleReturnSourceToHandAtEndOfTurn' } & EffectOpSequenceGate)
+  | ({ op: 'schedulePreventRefreshOnCharacterAtEndOfTurn'; fromVar?: string; minDonAttached: number; requireRested?: boolean } & EffectOpSequenceGate)
   | ({ op: 'returnDonToDonDeck'; target: Selector } & EffectOpSequenceGate) // return DON!! on field to its owner's DON!! deck
   | ({ op: 'preventRefresh'; target: Selector } & EffectOpSequenceGate) // "will not become active in its controller's next Refresh Phase"
   | ({ op: 'returnToHand'; target: Selector } & EffectOpSequenceGate) // bounce a Character to its owner's hand

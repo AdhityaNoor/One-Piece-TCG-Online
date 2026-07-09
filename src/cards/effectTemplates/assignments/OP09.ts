@@ -376,16 +376,16 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-066', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentDonMoreThanSelf' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
 
   // OP09-068 (character) Tony Tony.Chopper —
-  //   PARTIAL: optional "1 or more" DON!! return deferred; mapped as DON!! −1 cost.
+  //   [End of Your Turn] You may return 1+ DON!! from field: set active + [Blocker] until end of opponent's turn.
   {
     cardNumber: 'OP09-068',
     templateId: 'ability',
     params: {
       timing: 'endOfTurn',
-      cost: [{ kind: 'donMinus', count: 1 }],
       functions: [
-        { fn: 'setActiveSelf' },
-        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'endOfOpponentsTurn' },
+        { fn: 'optionalReturnControllerDon' },
+        { fn: 'setActiveSelf', ifPrevious: 'previousMovedAny' },
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'endOfOpponentsTurn', ifPrevious: 'previousMovedAny' },
       ],
     },
   },

@@ -220,6 +220,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['your opponent returns {N} DON!! card from their field to their DON!! deck'],
     examples: [{ cardNumber: 'OP14-065', snippet: "{ fn: 'returnOpponentDon', count: 1 }" }],
   },
+  optionalReturnControllerDon: {
+    id: 'optionalReturnControllerDon',
+    summary: 'Controller may return 1 or more DON!! from field to DON!! deck; subsequent steps can gate on previousMovedAny.',
+    params: [{ name: 'maxTargets', type: 'number', required: false }],
+    covers: ['you may return 1 or more DON!! cards from your field to your DON!! deck'],
+    examples: [{ cardNumber: 'OP09-068', snippet: "{ fn: 'optionalReturnControllerDon' }" }],
+  },
   restControllerLeaderOrStage: {
     id: 'restControllerLeaderOrStage',
     summary: 'Rest 1 chosen controller Leader/Stage (optionally type-filtered) — a "rest your {X} Leader/Stage:" cost. Binds var t.',
@@ -942,6 +949,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['at the end of this battle, place this Character at the bottom of the owner\'s deck'],
     examples: [{ cardNumber: 'OP02-064', snippet: "{ fn: 'moveSelfToBottomDeckAtEndOfBattle' }" }],
   },
+  moveBattleOpponentToBottomDeckAtEndOfBattle: {
+    id: 'moveBattleOpponentToBottomDeckAtEndOfBattle',
+    summary: 'Optionally schedule the battled opponent Character (cost-filtered) to be placed at the bottom of its owner\'s deck at end of battle.',
+    params: [{ name: 'maxCost', type: 'number', required: false }],
+    covers: ['you may place 1 of your opponent\'s Characters with a cost of N or less at the bottom of their owner\'s deck at the end of this battle'],
+    examples: [{ cardNumber: 'OP04-047', snippet: "{ fn: 'moveBattleOpponentToBottomDeckAtEndOfBattle', maxCost: 5 }" }],
+  },
   movePreviousMovedToBottomDeckAtEndOfTurn: {
     id: 'movePreviousMovedToBottomDeckAtEndOfTurn',
     summary: 'Schedule the most recently moved card (from the prior effect step) to be placed at the bottom of its owner\'s deck at end of turn.',
@@ -986,6 +1000,24 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     params: [],
     covers: ['trash all your face-up Life cards'],
     examples: [{ cardNumber: 'ST13-002', snippet: "{ fn: 'trashFaceUpLife' }" }],
+  },
+  returnSelfToHandAtEndOfTurn: {
+    id: 'returnSelfToHandAtEndOfTurn',
+    summary: 'Schedule the source Character to return to its owner\'s hand at end of turn.',
+    params: [{ name: 'ifPrevious', type: 'SequenceCondition', required: false }],
+    covers: ['return this Character to the owner\'s hand at the end of this turn'],
+    examples: [{ cardNumber: 'OP04-009', snippet: "{ fn: 'returnSelfToHandAtEndOfTurn', ifPrevious: 'previousSelectedAny' }" }],
+  },
+  preventRefreshOnGivenCharacterAtEndOfTurn: {
+    id: 'preventRefreshOnGivenCharacterAtEndOfTurn',
+    summary: 'Schedule prevent-refresh on a prior chosen Character at end of turn if it is rested and has enough attached DON!!.',
+    params: [
+      { name: 'minDonAttached', type: 'number', required: true },
+      { name: 'requireRested', type: 'boolean', required: false },
+      { name: 'ifPrevious', type: 'SequenceCondition', required: false },
+    ],
+    covers: ['at the end of this turn, up to 1 rested Character with {N} or more DON!! cards given will not become active in your opponent\'s next Refresh Phase'],
+    examples: [{ cardNumber: 'OP15-025', snippet: "{ fn: 'preventRefreshOnGivenCharacterAtEndOfTurn', minDonAttached: 3, ifPrevious: 'previousMovedAny' }" }],
   },
   addPowerAuraControllerTypes: {
     id: 'addPowerAuraControllerTypes',

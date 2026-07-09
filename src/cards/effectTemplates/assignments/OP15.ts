@@ -611,8 +611,11 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP15-023', templates: [{ templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'preventRefresh', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 2 }] } }, { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDonFromOpponentCostArea', count: 1, restedOnly: true, optional: true }, { fn: 'giveDonFromPreviousTargetOwnerCostArea', count: 1, restedOnly: true, optional: true, ifPrevious: 'previousSelectedAny' }] } }] },
 
 
-  // PARTIAL: end-of-turn preventRefresh rider deferred.
-  { cardNumber: 'OP15-025', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDonFromOpponentCostArea', count: 2, optional: true }] } },
+  // OP15-025 — [On Play] give up to 2 opponent DON!! to 1 opp Character; EOT prevent refresh on rested target with 3+ given DON!!.
+  { cardNumber: 'OP15-025', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'giveDonFromOpponentCostArea', count: 2, optional: true },
+    { fn: 'preventRefreshOnGivenCharacterAtEndOfTurn', minDonAttached: 3, ifPrevious: 'previousMovedAny' },
+  ] } },
 
 
   { cardNumber: 'OP15-038', templates: [{ templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 8, minDonAttached: 2 } }, optional: true }] } }, { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Krieg' } }, amount: 4000, duration: 'duringThisBattle', optional: true }] } }] },

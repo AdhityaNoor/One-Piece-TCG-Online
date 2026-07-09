@@ -14,9 +14,10 @@ export interface ModalProps {
   panelStyle?: CSSProperties;
   bodyClassName?: string;
   showCloseButton?: boolean;
+  rootClassName?: string;
 }
 
-export function Modal({ open, onClose, title, children, maxWidthClassName = 'max-w-lg', panelStyle, bodyClassName = 'max-h-[80vh] overflow-y-auto', showCloseButton = true }: ModalProps) {
+export function Modal({ open, onClose, title, children, maxWidthClassName = 'max-w-lg', panelStyle, bodyClassName = 'max-h-[80vh] overflow-y-auto', showCloseButton = true, rootClassName }: ModalProps) {
   useEffect(() => {
     if (!open) return;
     function handleKeyDown(event: KeyboardEvent) {
@@ -29,7 +30,7 @@ export function Modal({ open, onClose, title, children, maxWidthClassName = 'max
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div className={['fixed inset-0 z-[120] flex items-center justify-center p-4', rootClassName ?? ''].join(' ')} role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
       <div
         className={['relative z-10 w-full overflow-hidden rounded-[1.5rem] border border-white/10 bg-gradient-to-b from-navy-900 to-navy-950 text-slate-100 shadow-[0_30px_80px_rgba(0,0,0,0.55)]', maxWidthClassName].join(' ')}

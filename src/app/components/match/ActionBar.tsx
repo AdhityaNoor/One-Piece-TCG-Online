@@ -100,6 +100,7 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
     confirmCounterEvent,
     confirmActivateMainCost,
     confirmOnOppAttackCost,
+    confirmPlayCard,
     passStep,
     endMainPhase,
   } = selection;
@@ -117,6 +118,11 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
         {errorBanner}
         <p className="text-xs text-white/60">{INSTRUCTIONS[mode.kind]}</p>
         <div className="flex flex-wrap gap-2">
+          {mode.kind === 'confirmPlayCost' && (
+            <Button variant="primary" size="sm" onClick={confirmPlayCard}>
+              Play {mode.cardName} ({mode.cost} DON!!)
+            </Button>
+          )}
           {mode.kind === 'payingCounterEventCost' && (
             <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmCounterEvent}>
               Play Counter ({mode.selectedDonIds.length}/{mode.cost} DON!!)

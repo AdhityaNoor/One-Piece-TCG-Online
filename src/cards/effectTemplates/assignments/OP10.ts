@@ -621,9 +621,8 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP10-087', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'restControllerLeaderOrStage', typeIncludes: 'Dressrosa' }, { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifGate: [{ kind: 'opponentHand', atLeast: 5 }], ifPrevious: 'previousSelectedAny' }, { fn: 'trashTopDeck', count: 2, ifPrevious: 'previousMovedAny' }] } },
 
-  // PARTIAL: Event-trigger DON return deferred.
-  // PARTIAL: cost 3–8 filter dropped (setActiveControllerCharacter filter has no minCost).
-  { cardNumber: 'OP10-099', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'turnTopLifeFace', faceUp: true }, { fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { typeIncludes: 'Supernovas', maxCost: 8 }, ifPrevious: 'previousSelectedAny' }, { fn: 'addKeyword', target: { ref: 'previous' }, keyword: 'blocker', duration: 'endOfOpponentsTurn', ifPrevious: 'previousMovedAny' }] } },
+  // OP10-099 — [End of Your Turn] may turn top Life face-up: set 1 Supernovas cost 3–8 active + [Blocker].
+  { cardNumber: 'OP10-099', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'turnTopLifeFace', faceUp: true }, { fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { typeIncludes: 'Supernovas', minCost: 3, maxCost: 8 }, ifPrevious: 'previousSelectedAny' }, { fn: 'addKeyword', target: { ref: 'previous' }, keyword: 'blocker', duration: 'endOfOpponentsTurn', ifPrevious: 'previousMovedAny' }] } },
 
   { cardNumber: 'OP10-103', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { category: 'character', typeIncludes: 'Supernovas' } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 

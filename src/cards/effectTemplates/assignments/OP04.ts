@@ -56,10 +56,10 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // ── Triage batch (OP04 expressible): Alabasta/Dressrosa/Wano lines. ────────
   { cardNumber: 'OP04-008', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'leaderName', name: 'Nefeltari Vivi' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 0 } }, optional: true }] } },
 
-  // OP04-009 — PARTIAL: EOT return deferred; mapped optional active Leader −5000 then immediate self-return.
+  // OP04-009 — [When Attacking] may give active Leader −5000: return this Character to hand at end of turn.
   { cardNumber: 'OP04-009', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
     { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true, ifGate: [{ kind: 'leaderActive' }] },
-    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
+    { fn: 'returnSelfToHandAtEndOfTurn', ifPrevious: 'previousSelectedAny' },
   ] } },
 
   { cardNumber: 'OP04-010', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { typeIncludes: 'Animal', maxPower: 3000 } }] } },
@@ -310,14 +310,14 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   place the rest at the bottom of your deck in any order.
   // NOTE: not yet implemented (needs template).
 
-  // OP04-047 — PARTIAL: battled opponent Character cost ≤5 filter deferred; mapped [Your Turn] onBattle bottom-deck battled Character.
+  // OP04-047 — [Your Turn] [When Battling] You may place 1 opp Character cost ≤5 at bottom of deck at end of battle.
   {
     cardNumber: 'OP04-047',
     templateId: 'ability',
     params: {
       timing: 'onBattle',
       condition: { turn: 'your' },
-      functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 5 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 }],
+      functions: [{ fn: 'moveBattleOpponentToBottomDeckAtEndOfBattle', maxCost: 5 }],
     },
   },
 

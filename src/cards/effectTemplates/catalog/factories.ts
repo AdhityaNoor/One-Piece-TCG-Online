@@ -891,6 +891,20 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'scheduleTrashSourceAtEndOfTurn' }];
     case 'moveSelfToBottomDeckAtEndOfBattle':
       return [{ op: 'scheduleMoveSourceToBottomDeckAtEndOfBattle' }];
+    case 'moveBattleOpponentToBottomDeckAtEndOfBattle': {
+      const maxCost = f.maxCost ?? 5;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'battleOpponent', maxCost },
+          min: 0,
+          max: 1,
+          prompt: `You may place 1 of your opponent's Characters with a cost of ${maxCost} or less at the bottom of their owner's deck at the end of this battle.`,
+        },
+        { op: 'scheduleMoveInstanceToBottomDeckAtEndOfBattle', fromVar: 't', index: 0, ifPrevious: 'previousSelectedAny' },
+      ];
+    }
     case 'movePreviousMovedToBottomDeckAtEndOfTurn':
       return [{ op: 'scheduleMoveInstanceToBottomDeckAtEndOfTurn', fromVar: '__lastMovedIds', index: 0 }];
     case 'trashControllerCharacterAtEndOfTurn':
@@ -905,6 +919,15 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'trashHandDownTo', handSize: f.handSize }];
     case 'trashFaceUpLife':
       return [{ op: 'trashFaceUpLife' }];
+    case 'returnSelfToHandAtEndOfTurn':
+      return [{ op: 'scheduleReturnSourceToHandAtEndOfTurn' }];
+    case 'preventRefreshOnGivenCharacterAtEndOfTurn':
+      return [{
+        op: 'schedulePreventRefreshOnCharacterAtEndOfTurn',
+        fromVar: '__lastMovedIds',
+        minDonAttached: f.minDonAttached,
+        requireRested: f.requireRested !== false,
+      }];
     case 'returnOpponentDon':
       return [
         {
@@ -918,6 +941,20 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
         { op: 'returnDonToDonDeck', target: { sel: 'var', name: 't' } },
       ];
+    case 'optionalReturnControllerDon': {
+      const maxTargets = f.maxTargets ?? 10;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerFieldDon' },
+          min: 0,
+          max: maxTargets,
+          prompt: 'You may return 1 or more DON!! cards from your field to your DON!! deck.',
+        },
+        { op: 'returnDonToDonDeck', target: { sel: 'var', name: 't' } },
+      ];
+    }
     case 'addPowerAuraControllerTypes':
       return [
         {

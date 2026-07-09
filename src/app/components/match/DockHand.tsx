@@ -13,7 +13,7 @@
  * Touch: TODO — mouse-driven only for now.
  */
 
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
 import type { CardView } from '../../../board/projection';
 import { useCardAnimationStore } from '../../store/cardAnimationStore';
 import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
@@ -50,6 +50,13 @@ export interface DockHandProps {
   onCardZoom: (card: CardView) => void;
   /** When true the dock slides fully off screen (board is being interacted with). */
   boardFocused: boolean;
+  /** Optional per-render geometry override, used by mobile without changing desktop sizing. */
+  cardWidthPx?: number;
+  maxVisibleCards?: number;
+  restPeekRatio?: number;
+  touchReveal?: boolean;
+  forceOpen?: boolean;
+  onRequestHide?: () => void;
 }
 
 // ── Arrow keyframe styles (injected once) ──────────────────────────────────
@@ -69,15 +76,19 @@ function ArrowBtn({
   dir,
   disabled,
   onClick,
+  width,
+  height,
 }: {
   dir: 'left' | 'right';
   disabled: boolean;
   onClick: () => void;
+  width: number;
+  height: number;
 }) {
   return (
     <div
       className="relative flex-shrink-0 flex items-center justify-center"
-      style={{ zIndex: 60, width: ARROW_W, height: BASE_H }}
+      style={{ zIndex: 60, width, height }}
     >
       <button
         type="button"
@@ -125,6 +136,8 @@ function DockHandCard({
   canPlay,
   showFaces,
   overlapPx,
+  cardWidth,
+  cardHeight,
   onHoverStart,
   onHoverEnd,
   onTap,
@@ -140,6 +153,8 @@ function DockHandCard({
   canPlay: boolean;
   showFaces: boolean;
   overlapPx: number;
+  cardWidth: number;
+  cardHeight: number;
   onHoverStart: () => void;
   onHoverEnd: () => void;
   onTap: () => void;
@@ -158,8 +173,8 @@ function DockHandCard({
       ].join(' ')}
       data-card-instance-id={card.instanceId}
       style={{
-        width: `${BASE_W}px`,
-        height: `${BASE_H}px`,
+        width: `${cardWidth}px`,
+        height: `${cardHeight}px`,
         marginLeft: index === 0 ? 0 : `-${overlapPx}px`,
         transform: `scale(${scale})`,
         transformOrigin: isTop ? 'top center' : 'bottom center',
@@ -235,49 +250,161 @@ export function DockHand({
   onPlayCard,
   onCardZoom,
   boardFocused,
+  cardWidthPx,
+  maxVisibleCards,
+  restPeekRatio,
+  touchReveal = false,
+  forceOpen = false,
+  onRequestHide,
 }: DockHandProps) {
   const [dockHovered, setDockHovered] = useState(false);
+  const [touchOpen, setTouchOpen] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [windowStart, setWindowStart] = useState(0);
+  const touchCloseTimer = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchHorizontalSwipe = useRef(false);
+  const touchLastX = useRef<number | null>(null);
+  const stripRef = useRef<HTMLDivElement | null>(null);
   const hiddenDuringFlight = useCardAnimationStore((s) => s.hiddenDuringFlight);
 
   // Keep cards that are mid-flight in the visible window so animation can
   // measure their dock slot (see CardMovementOverlay / boardAnchors.ts).
+  const cardWidth = cardWidthPx ?? BASE_W;
+  const cardHeight = Math.round(cardWidth * 88 / 63);
+  const arrowWidth = Math.max(32, Math.round(cardWidth * ARROW_W / BASE_W));
+  const maxVisible = maxVisibleCards ?? MAX_VISIBLE;
+
   useLayoutEffect(() => {
-    if (cards.length <= MAX_VISIBLE) return;
+    if (cards.length <= maxVisible) return;
     setWindowStart((current) => {
       let next = current;
       for (let i = 0; i < cards.length; i++) {
         if (!hiddenDuringFlight[cards[i].instanceId]) continue;
         if (i < next) next = i;
-        if (i >= next + MAX_VISIBLE) next = Math.max(0, i - MAX_VISIBLE + 1);
+        if (i >= next + maxVisible) next = Math.max(0, i - maxVisible + 1);
       }
       return next;
     });
-  }, [cards, hiddenDuringFlight]);
+  }, [cards, hiddenDuringFlight, maxVisible]);
 
   const isTop = position === 'top';
-  const isOpen = dockHovered && !boardFocused;
+  const isOpen = (dockHovered || touchOpen || forceOpen) && !boardFocused;
   const showFaces = isOwn || isOpen;
+  const restPeek = restPeekRatio ?? PEEK;
 
   // Three translate states:
   //  open        → 0          (fully visible)
   //  boardFocused → ±BASE_H   (fully off screen — slide away)
   //  idle peek   → ±BASE_H*PEEK (50 % hidden at edge)
-  const peekPx = BASE_H * PEEK;
+  const peekPx = cardHeight * restPeek;
   const translateY = isOpen
     ? 0
     : boardFocused
-      ? (isTop ? -BASE_H : BASE_H)
+      ? (isTop ? -cardHeight : cardHeight)
       : (isTop ? -peekPx : peekPx);
 
-  const needsScroll = cards.length > MAX_VISIBLE;
-  const visibleCards = needsScroll
-    ? cards.slice(windowStart, windowStart + MAX_VISIBLE)
+  const usesTouchScroll = touchReveal;
+  const needsScroll = cards.length > maxVisible;
+  const needsWindowScroll = needsScroll && !usesTouchScroll;
+  const visibleCards = needsWindowScroll
+    ? cards.slice(windowStart, windowStart + maxVisible)
     : cards;
 
   function scrollLeft() { setWindowStart((s) => Math.max(0, s - 1)); setHoveredIdx(null); }
-  function scrollRight() { setWindowStart((s) => Math.min(cards.length - MAX_VISIBLE, s + 1)); setHoveredIdx(null); }
+  function scrollRight() { setWindowStart((s) => Math.min(cards.length - maxVisible, s + 1)); setHoveredIdx(null); }
+
+  const revealForTouch = (): void => {
+    if (!touchReveal) return;
+    setTouchOpen(true);
+    if (touchCloseTimer.current !== null) window.clearTimeout(touchCloseTimer.current);
+    touchCloseTimer.current = window.setTimeout(() => {
+      setTouchOpen(false);
+      setHoveredIdx(null);
+      touchCloseTimer.current = null;
+    }, 2400);
+  };
+
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
+    if (touchReveal) {
+      touchStartX.current = event.clientX;
+      touchStartY.current = event.clientY;
+      touchLastX.current = event.clientX;
+      touchHorizontalSwipe.current = false;
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    }
+    revealForTouch();
+  };
+
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>): void => {
+    if (!touchReveal || touchStartY.current === null || touchStartX.current === null) return;
+    const deltaX = event.clientX - touchStartX.current;
+    const deltaY = event.clientY - touchStartY.current;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    if (usesTouchScroll && absX > 6 && absX > absY) {
+      const lastX = touchLastX.current ?? event.clientX;
+      const deltaFromLast = event.clientX - lastX;
+      stripRef.current?.scrollBy({ left: -deltaFromLast, behavior: 'auto' });
+      touchLastX.current = event.clientX;
+      touchHorizontalSwipe.current = true;
+      return;
+    }
+
+    if (!needsWindowScroll || absX < 36 || absX <= absY) return;
+
+    touchHorizontalSwipe.current = true;
+    if (deltaX < 0) scrollRight();
+    else scrollLeft();
+    touchStartX.current = event.clientX;
+    touchStartY.current = event.clientY;
+    revealForTouch();
+  };
+
+  const handlePointerUp = (event: PointerEvent<HTMLDivElement>): void => {
+    if (!touchReveal || touchStartY.current === null || touchStartX.current === null) return;
+    const deltaX = event.clientX - touchStartX.current;
+    const deltaY = event.clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+    touchLastX.current = null;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+
+    if (touchHorizontalSwipe.current) {
+      touchHorizontalSwipe.current = false;
+      return;
+    }
+
+    if (needsWindowScroll && absX >= 28 && absX > absY) {
+      if (deltaX < 0) scrollRight();
+      else scrollLeft();
+      revealForTouch();
+      return;
+    }
+
+    if (absY < 24) return;
+
+    const hidesInNaturalDirection = isTop ? deltaY < 0 : deltaY > 0;
+    if (deltaY > 0 || hidesInNaturalDirection) {
+      if (touchCloseTimer.current !== null) {
+        window.clearTimeout(touchCloseTimer.current);
+        touchCloseTimer.current = null;
+      }
+      setTouchOpen(false);
+      setHoveredIdx(null);
+      onRequestHide?.();
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (touchCloseTimer.current !== null) window.clearTimeout(touchCloseTimer.current);
+    };
+  }, []);
 
   if (cards.length === 0) return null;
 
@@ -289,14 +416,29 @@ export function DockHand({
       <div
         aria-label={`${isOwn ? 'Your' : "Opponent's"} hand — ${cards.length} card${cards.length !== 1 ? 's' : ''}`}
         className="pointer-events-none absolute left-0 right-0 z-[100] flex justify-center"
-        style={{ [isTop ? 'top' : 'bottom']: 0, height: `${BASE_H}px`, overflow: 'visible' }}
+        style={{ [isTop ? 'top' : 'bottom']: 0, height: `${cardHeight}px`, overflow: 'visible' }}
         data-board-zone="hand"
         data-board-player={playerId}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={(event) => {
+          event.currentTarget.releasePointerCapture?.(event.pointerId);
+          touchStartX.current = null;
+          touchStartY.current = null;
+          touchLastX.current = null;
+          touchHorizontalSwipe.current = false;
+        }}
       >
         <div
-          className="pointer-events-auto relative flex items-end"
+          ref={stripRef}
+          className="pointer-events-auto"
           style={{
+            maxWidth: usesTouchScroll ? '100%' : undefined,
+            overflowX: usesTouchScroll ? 'auto' : 'visible',
+            scrollbarWidth: usesTouchScroll ? 'none' : undefined,
             transform: `translateY(${translateY}px)`,
+            touchAction: touchReveal ? 'none' : undefined,
             transition: isOpen
               ? 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
               : boardFocused
@@ -307,38 +449,51 @@ export function DockHand({
           onMouseLeave={() => { setDockHovered(false); setHoveredIdx(null); }}
         >
           <div
-            aria-hidden="true"
-            data-board-card-anchor
-            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[4px]"
-            style={{ width: `${BASE_W}px`, height: `${BASE_H}px` }}
-          />
-          {needsScroll && (
-            <ArrowBtn dir="left" disabled={windowStart === 0} onClick={scrollLeft} />
-          )}
-
-          {visibleCards.map((card, i) => (
-            <DockHandCard
-              key={card.instanceId}
-              card={card}
-              index={i}
-              hoveredIdx={hoveredIdx}
-              isTop={isTop}
-              isSelected={selectedIds.has(card.instanceId)}
-              canSelect={selectable(card)}
-              canPlay={canPlay?.(card) ?? false}
-              showFaces={showFaces}
-              overlapPx={BASE_W * OVERLAP}
-              onHoverStart={() => setHoveredIdx(i)}
-              onHoverEnd={() => setHoveredIdx(null)}
-              onTap={() => onCardTap(card)}
-              onPlay={() => onPlayCard?.(card)}
-              onZoom={() => onCardZoom(card)}
+            className="relative flex items-end"
+            style={{
+              minWidth: usesTouchScroll ? 'max-content' : undefined,
+              paddingInline: usesTouchScroll ? `${Math.round(cardWidth * 0.35)}px` : undefined,
+              paddingBlock: usesTouchScroll ? `${Math.round(cardHeight * 0.32)}px` : undefined,
+              marginBlock: usesTouchScroll ? `-${Math.round(cardHeight * 0.32)}px` : undefined,
+              overflow: 'visible',
+            }}
+          >
+            <div
+              aria-hidden="true"
+              data-board-card-anchor
+              className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[4px]"
+              style={{ width: `${cardWidth}px`, height: `${cardHeight}px` }}
             />
-          ))}
+            {needsWindowScroll && (
+              <ArrowBtn dir="left" disabled={windowStart === 0} onClick={scrollLeft} width={arrowWidth} height={cardHeight} />
+            )}
 
-          {needsScroll && (
-            <ArrowBtn dir="right" disabled={windowStart + MAX_VISIBLE >= cards.length} onClick={scrollRight} />
-          )}
+            {visibleCards.map((card, i) => (
+              <DockHandCard
+                key={card.instanceId}
+                card={card}
+                index={i}
+                hoveredIdx={hoveredIdx}
+                isTop={isTop}
+                isSelected={selectedIds.has(card.instanceId)}
+                canSelect={selectable(card)}
+                canPlay={canPlay?.(card) ?? false}
+                showFaces={showFaces}
+                overlapPx={cardWidth * OVERLAP}
+                cardWidth={cardWidth}
+                cardHeight={cardHeight}
+                onHoverStart={() => setHoveredIdx(i)}
+                onHoverEnd={() => setHoveredIdx(null)}
+                onTap={() => onCardTap(card)}
+                onPlay={() => onPlayCard?.(card)}
+                onZoom={() => onCardZoom(card)}
+              />
+            ))}
+
+            {needsWindowScroll && (
+              <ArrowBtn dir="right" disabled={windowStart + maxVisible >= cards.length} onClick={scrollRight} width={arrowWidth} height={cardHeight} />
+            )}
+          </div>
         </div>
       </div>
     </>

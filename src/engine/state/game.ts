@@ -528,6 +528,14 @@ export type DelayedEffectRecord =
     }
   | {
       id: string;
+      kind: 'moveInstanceToBottomDeckAtEndOfBattle';
+      sourceInstanceId: string;
+      ownerId: string;
+      battleAttackerInstanceId: string;
+      targetInstanceId: string;
+    }
+  | {
+      id: string;
       kind: 'moveInstanceToBottomDeckAtEndOfTurn';
       sourceInstanceId: string;
       ownerId: string;
@@ -556,6 +564,23 @@ export type DelayedEffectRecord =
       ownerId: string;
       triggerPlayerId: string;
       requiresLeaderType?: string;
+    }
+  | {
+      id: string;
+      kind: 'returnSourceToHandAtEndOfTurn';
+      sourceInstanceId: string;
+      ownerId: string;
+      triggerPlayerId: string;
+    }
+  | {
+      id: string;
+      kind: 'preventRefreshOnCharacterAtEndOfTurn';
+      sourceInstanceId: string;
+      ownerId: string;
+      triggerPlayerId: string;
+      targetInstanceId: string;
+      minDonAttached: number;
+      requireRested: boolean;
     };
 
 export interface EventActivationRecord {
