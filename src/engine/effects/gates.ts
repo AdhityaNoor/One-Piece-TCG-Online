@@ -13,7 +13,7 @@ import type { AbilityGate } from './effectIr';
 import type { GameState } from '../state/game';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { getOpponentId } from '../rules/shared/players';
-import { fieldDonIds } from './abilityCost';
+import { countControllerActiveUnattachedDon, fieldDonIds } from './abilityCost';
 import { computeCurrentPower } from '../rules/shared/power';
 import { cardHasNoBaseEffect } from './cardHasNoBaseEffect';
 
@@ -71,10 +71,14 @@ export interface GateEvalContext {
   playedFromCharacterEffect?: boolean;
   /** Controller (pre-K.O.) of the Character that was K.O.'d (onCharacterKoed reactive window). */
   koedCharacterControllerId?: string;
-  /** Cards trashed from hand by an effect this event (onHandTrashed reactive window). */
+  /** Instance ids trashed from hand by an effect this event (onHandTrashed reactive window). */
   handTrashedCount?: number;
   /** Instance id of the card whose effect trashed from hand (onHandTrashed filter). */
   handTrashEffectSourceInstanceId?: string;
+  /** How the current [On K.O.] window was triggered (onKO only). */
+  koCause?: 'battle' | 'effect';
+  /** Instance id of the card/effect that K.O.'d the onKO source (onKO only). */
+  koSourceInstanceId?: string;
 }
 
 export function evaluateGates(
@@ -136,12 +140,34 @@ function evaluateGate(
       return def.attributes.some((a) => a.toLowerCase() === want);
     }
 
+    case 'opponentLeaderAttribute': {
+      const opponentId = getOpponentId(state, ownerId);
+      const opponent = state.players[opponentId];
+      if (!opponent) return false;
+      const leaderInst = state.cardsById[opponent.leaderInstanceId];
+      if (!leaderInst) return false;
+      const def = defs[leaderInst.cardDefinitionId];
+      if (!def?.attributes?.length) return false;
+      const want = gate.attribute.toLowerCase();
+      return def.attributes.some((a) => a.toLowerCase() === want);
+    }
+
     case 'leaderMulticolor': {
       const leaderInst = state.cardsById[player.leaderInstanceId];
       if (!leaderInst) return false;
       const def = defs[leaderInst.cardDefinitionId];
       if (!def) return false;
       return def.colors.length > 1;
+    }
+
+    case 'leaderActive': {
+      const leaderInst = state.cardsById[player.leaderInstanceId];
+      return leaderInst?.orientation === 'active';
+    }
+
+    case 'leaderRested': {
+      const leaderInst = state.cardsById[player.leaderInstanceId];
+      return leaderInst?.orientation === 'rested';
     }
 
     case 'selfCharacterCount': {
@@ -170,6 +196,13 @@ function evaluateGate(
 
     case 'selfDonFieldCount': {
       const count = fieldDonIds(state, ownerId).length;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
+    case 'selfActiveDonCount': {
+      const count = countControllerActiveUnattachedDon(state, ownerId);
       if (gate.atLeast !== undefined && count < gate.atLeast) return false;
       if (gate.atMost !== undefined && count > gate.atMost) return false;
       return true;
@@ -542,6 +575,18 @@ function evaluateGate(
       const isController = koedControllerId === ownerId;
       return gate.player === 'controller' ? isController : !isController;
     }
+
+    case 'koByOpponentEffect': {
+      if (eventContext?.koCause !== 'effect') return false;
+      const koSourceId = eventContext.koSourceInstanceId;
+      if (!koSourceId) return false;
+      const koSource = state.cardsById[koSourceId];
+      if (!koSource) return false;
+      return koSource.controllerId === getOpponentId(state, ownerId);
+    }
+
+    case 'koByEffect':
+      return eventContext?.koCause === 'effect';
 
     case 'removedFromFieldController': {
       const removedControllerId = eventContext?.removedFromFieldControllerId;

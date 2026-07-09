@@ -21,6 +21,7 @@
     "triage": "tsx scripts/effect-triage/run.ts",
     "triage:clusters": "node scripts/effect-triage-clusters.mjs",
     "audit:curation": "tsx scripts/curation-audit/run.ts",
+    "scan:partials": "tsx scripts/partial-curation-scan/run.ts",
     "capability:doc": "tsx scripts/capability-doc/run.ts",
     "upload:blob-assets": "node scripts/upload-blob-assets.mjs"
   },

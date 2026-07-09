@@ -31,15 +31,6 @@ export const ST30_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST30-003 — [Your Turn] all Characters with 6000 base power +1000.
   { cardNumber: 'ST30-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 1000, duration: 'permanent', targetCondition: { exactBasePower: 6000 }, sourceCondition: { turn: 'your' } }] } },
 
-  // ST30-004 (character) Emporio.Ivankov —
-  //   [On Play] You may reveal 2 Character cards with 6000 power from your hand: Draw 3 cards and trash 2
-  //   cards from your hand.
-  // NOTE: not yet implemented (needs template).
-
-  // ST30-006 (character) Jinbe —
-  //   [On Play] You may trash 1 Character card with 6000 power from your hand: Draw 2 cards.
-  // NOTE: not yet implemented (needs template).
-
   // ── Triage batch (ST30 expressible). "reveal 6000-power Char from hand" costs and self/named power gates deferred. ──
   // ST30-007 — [On Play] rest 1 DON!!: this gains [Rush] this turn. [When Attacking] give up to 1 opp Character −1000.
   {

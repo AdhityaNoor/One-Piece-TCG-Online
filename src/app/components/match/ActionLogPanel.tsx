@@ -40,6 +40,7 @@ export interface ActionLogDockProps {
   log: GameLogEntry[];
   playerNames?: PlayerNameMap;
   viewerPlayerId?: string | null;
+  className?: string;
 }
 
 function isSecret(entry: GameLogEntry): boolean {
@@ -58,9 +59,9 @@ export function ActionLogPanel({ open, onClose, log, playerNames, viewerPlayerId
   );
 }
 
-export function ActionLogDock({ log, playerNames, viewerPlayerId = null }: ActionLogDockProps) {
+export function ActionLogDock({ log, playerNames, viewerPlayerId = null, className }: ActionLogDockProps) {
   return (
-    <aside className="flex min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
+    <aside className={['order-3 flex max-h-[28dvh] min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)] xl:order-none xl:max-h-none', className ?? ''].join(' ')}>
       <ActionLogDockContent log={log} playerNames={playerNames} viewerPlayerId={viewerPlayerId} />
     </aside>
   );
@@ -181,11 +182,11 @@ function ActionLogDockContent({
 
   return (
     <>
-      <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
+      <div className="border-b border-gold/25 bg-black/18 px-3 py-2 xl:px-4 xl:py-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Match</p>
-            <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Logs</h2>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gold xl:text-[10px] xl:tracking-[0.24em]">Match</p>
+            <h2 className="font-display text-xs font-black uppercase tracking-[0.14em] text-white xl:text-sm xl:tracking-[0.16em]">Logs</h2>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">{log.length} entries</p>
           </div>
           <button
@@ -198,7 +199,7 @@ function ActionLogDockContent({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+      <div className="min-h-0 flex-1 overflow-y-auto p-2 xl:p-3">
         {ordered.length === 0 ? (
           <p className="border border-dashed border-white/10 px-3 py-6 text-center text-xs text-white/30">No log entries yet.</p>
         ) : (

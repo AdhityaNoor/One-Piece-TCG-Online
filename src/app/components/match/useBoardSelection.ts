@@ -217,13 +217,19 @@ export function useBoardSelection(actingPlayerId: string | null) {
       return;
     }
 
-    runDispatch({
-      type: PLAY_ACTION_BY_CATEGORY[card.category],
-      actionId: createActionId(),
-      playerId: actingPlayerId,
-      handCardInstanceId: card.instanceId,
-      donInstanceIds,
-    } as GameAction);
+    if (cost === 0) {
+      runDispatch({
+        type: PLAY_ACTION_BY_CATEGORY[card.category],
+        actionId: createActionId(),
+        playerId: actingPlayerId,
+        handCardInstanceId: card.instanceId,
+        donInstanceIds: [],
+      } as GameAction);
+      return;
+    }
+
+    setMode({ kind: 'confirmPlayCost', handCardInstanceId: card.instanceId, cardCategory: card.category, cardName: card.name, cost, donInstanceIds });
+    setLastError(null);
   }
 
   function canPlayHandCard(card: CardView): boolean {

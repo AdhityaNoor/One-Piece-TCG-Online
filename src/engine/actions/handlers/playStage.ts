@@ -17,6 +17,7 @@ import { createActionLogger } from '../../rules/shared/actionLogger';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/definitions';
 import { computeCurrentCost } from '../../rules/shared/power';
+import { isControllerHandPlayPrevented } from '../../rules/shared/handPlayRestriction';
 import { mintRuntimeInstanceId } from '../../rules/shared/mintInstance';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { fireOnPlay, type EffectTemplateRegistry } from '../../effects';
@@ -48,6 +49,10 @@ export function validatePlayStage(state: GameState, action: PlayStageAction, def
   }
   if (def.category !== 'stage') {
     reasons.push(`'${def.name}' is a ${def.category}, not a Stage.`);
+  }
+
+  if (isControllerHandPlayPrevented(state, action.playerId)) {
+    reasons.push('You cannot play cards from your hand during this turn.');
   }
 
   const cost = computeCurrentCost(defs, state, action.handCardInstanceId);

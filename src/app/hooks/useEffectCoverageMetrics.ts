@@ -9,6 +9,7 @@ import {
   computeEffectMetrics,
   type EffectMetrics,
 } from '../../cards/devMetrics';
+import { assignmentSourceBundle } from '../dev/assignmentSourceBundle';
 import { browserFetch, cardLibraryCache, CARD_LIBRARY_CACHE_TTL_MS } from '../lib/runtime';
 
 export type MetricsLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -67,7 +68,9 @@ export function useEffectCoverageMetrics(): {
 
   const metrics = useMemo(() => {
     if (!printings) return null;
-    return computeEffectMetrics(catalogCardsFromPrintings(printings));
+    return computeEffectMetrics(catalogCardsFromPrintings(printings), {
+      assignmentSources: assignmentSourceBundle,
+    });
   }, [printings]);
 
   return {

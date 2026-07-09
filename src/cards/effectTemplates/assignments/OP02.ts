@@ -58,11 +58,6 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-008 — [DON!! x1] if 2 or less Life and Leader {Whitebeard Pirates}, [Rush]
   { cardNumber: 'OP02-008', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfLife', atMost: 2 }, { kind: 'leaderType', type: 'Whitebeard Pirates' }] } }] } },
 
-  // OP02-008 (character) Jozu —
-  //   [DON!! x1] If you have 2 or less Life cards and your Leader's type includes "Whitebeard Pirates",
-  //   this Character gains [Rush]. (This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
-
   // OP02-009 — [On Play] If Leader {Whitebeard Pirates}, give up to 1 opp Character −4000 this turn and add 1 top Life to hand.
   { cardNumber: 'OP02-009', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [
     { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -4000, duration: 'duringThisTurn', optional: true },
@@ -105,11 +100,6 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
       { fn: 'playFromTrash', filter: { name: 'Marco' }, rested: true, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfLife', atMost: 2 }] },
     ] },
   },
-
-  // OP02-019 (character) Rakuyo —
-  //   [DON!! x1] [Your Turn] All of your Characters with a type including "Whitebeard Pirates" gain +1000
-  //   power.
-  // NOTE: not yet implemented (needs template).
 
   // OP02-021 — (Event) [Main] If Leader {Whitebeard Pirates}, K.O. up to 1 opp Character with 3000 power or less. [Trigger] give up to 1 opp Leader/Character −3000 this turn.
   {
@@ -205,11 +195,6 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-031 — if you have [Kouzuki Oden], [Blocker]
   { cardNumber: 'OP02-031', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Kouzuki Oden' }] } }] } },
 
-  // OP02-031 (character) Kouzuki Toki —
-  //   If you have a [Kouzuki Oden] Character, this Character gains [Blocker]. (After your opponent declares
-  //   an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
-
   // OP02-032 — [On Play] rest 2 DON!!: set up to 1 {Minks} Character cost<=5 active.
   { cardNumber: 'OP02-032', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'setActiveControllerCharacter', filter: { typeIncludes: 'Minks', maxCost: 5 }, maxTargets: 1 }] } },
 
@@ -287,11 +272,6 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP02-050 — if 1 or less cards in hand, +2000
   { cardNumber: 'OP02-050', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'selfHand', atMost: 1 }] } }] } },
-
-  // OP02-050 (character) Inazuma —
-  //   If you have 1 or less cards in your hand, this Character gains +2000 power. [Blocker] (After your
-  //   opponent declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
 
   // OP02-051 — [On Play] Draw until 3 in hand, then play up to 1 blue {Impel Down} cost<=6 from hand.
   { cardNumber: 'OP02-051', templateId: 'ability', params: { timing: 'onPlay', functions: [
@@ -441,11 +421,6 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-074 — Your [Blugori] gains [Blocker].
   { cardNumber: 'OP02-074', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'blocker', duration: 'permanent', anyOfNames: ['Blugori'] }] } },
 
-  // OP02-075 (character) Shiki —
-  //   [Trigger] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): Play this card.
-  // NOTE: not yet implemented (needs template).
-
   // OP02-076 - [On Play] DON!! -1: K.O. cost <=1.
   { cardNumber: 'OP02-076', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
 
@@ -536,10 +511,6 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
     condition: { donAttachedAtLeast: 1 },
     functions: [{ fn: 'setActiveSelf' }],
   } },
-  // OP02-095 (character) Onigumo —
-  //   If there is a Character with a cost of 0, this Character gains [Banish]. (When this card deals
-  //   damage, the target card is trashed without activating its Trigger.)
-  // NOTE: not yet implemented (needs template).
 
   // OP02-096 - [On Play] Draw 1. [When Attacking] Give opponent Character -4 cost this turn.
   {
@@ -564,10 +535,6 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP02-100 — If you have [Fullbody], this Character cannot be K.O.'d in battle (continuous, composed).
   { cardNumber: 'OP02-100', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Fullbody' }] } }] } },
-
-  // OP02-100 (character) Jango —
-  //   If you have [Fullbody], this Character cannot be K.O.'d in battle.
-  // NOTE: not yet implemented (needs template).
 
   // OP02-101 (character) Strawberry —
   //   [When Attacking] If there is a Character with a cost of 0, your opponent cannot activate the
@@ -626,11 +593,6 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP02-114 — [Opponent's Turn] +1000 and cannot be K.O.'d by effects.
   { cardNumber: 'OP02-114', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { turn: 'opponent' } }, { fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { turn: 'opponent' } }] } },
-
-  // OP02-114 (character) Borsalino —
-  //   [Opponent's Turn] This Character gains +1000 power and cannot be K.O.'d by effects. [Blocker] (After
-  //   your opponent declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
 
   // OP02-115 - [DON!! x2] [When Attacking] K.O. opponent Character with cost 0.
   { cardNumber: 'OP02-115', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 0 } }, optional: true }] } },

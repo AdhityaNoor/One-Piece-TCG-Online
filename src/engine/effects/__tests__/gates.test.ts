@@ -114,6 +114,12 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'leaderAttribute', attribute: 'strike' }], rig.state, rig.defs, 'p1')).toBe(false);
   });
 
+  it('checks opponentLeaderAttribute against the opponent Leader definition', () => {
+    let rig = buildBaseRig({ leaderOverridesP2: { attributes: ['slash'] } });
+    expect(evaluateGates([{ kind: 'opponentLeaderAttribute', attribute: 'slash' }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'opponentLeaderAttribute', attribute: 'strike' }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
   it('checks selfHasCharacterBasePowerAtLeast against printed base power on your Characters', () => {
     const base = buildBaseRig();
     const mid = putCharacterInPlay(base, 'p1', makeCharacterDef({ basePower: 6000 }));
@@ -224,5 +230,62 @@ describe('evaluateGates', () => {
       },
     };
     expect(evaluateGates([{ kind: 'selfInstancePowerAtLeast', power: 7000 }], rig.state, rig.defs, 'p1', charId)).toBe(true);
+  });
+
+  it('checks leaderActive and leaderRested from Leader orientation', () => {
+    const rig = buildBaseRig();
+    const leaderId = rig.state.players.p1.leaderInstanceId;
+    expect(evaluateGates([{ kind: 'leaderActive' }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'leaderRested' }], rig.state, rig.defs, 'p1')).toBe(false);
+
+    const rested = {
+      ...rig.state,
+      cardsById: {
+        ...rig.state.cardsById,
+        [leaderId]: { ...rig.state.cardsById[leaderId], orientation: 'rested' as const },
+      },
+    };
+    expect(evaluateGates([{ kind: 'leaderActive' }], rested, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'leaderRested' }], rested, rig.defs, 'p1')).toBe(true);
+  });
+
+  it('checks koByOpponentEffect only for effect K.O.s from the opponent', () => {
+    let rig = buildBaseRig();
+    const victimDef = makeCharacterDef({ cardDefinitionId: 'VICTIM', cardNumber: 'VICTIM' });
+    const oppKoDef = makeCharacterDef({ cardDefinitionId: 'OPP-KO', cardNumber: 'OPP-KO' });
+    let victimId: string;
+    let oppKoId: string;
+    ({ rig, instanceId: victimId } = putCharacterInPlay(rig, 'p1', victimDef));
+    ({ rig, instanceId: oppKoId } = putCharacterInPlay(rig, 'p2', oppKoDef));
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        cardsById: {
+          ...rig.state.cardsById,
+          [victimId]: { ...rig.state.cardsById[victimId], currentZone: 'trash' },
+        },
+      },
+    };
+
+    const gate = [{ kind: 'koByOpponentEffect' as const }];
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1', victimId, { koCause: 'battle', koSourceInstanceId: oppKoId })).toBe(false);
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1', victimId, { koCause: 'effect', koSourceInstanceId: oppKoId })).toBe(true);
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1', victimId, { koCause: 'effect', koSourceInstanceId: victimId })).toBe(false);
+  });
+
+  it('checks koByEffect for any effect K.O. (not battle)', () => {
+    const rig = buildBaseRig();
+    const gate = [{ kind: 'koByEffect' as const }];
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { koCause: 'battle' })).toBe(false);
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { koCause: 'effect' })).toBe(true);
+  });
+
+  it('checks selfActiveDonCount for unattached active DON!! in cost area', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putDon(rig, 'p1', 2, { rested: false }));
+    ({ rig } = putDon(rig, 'p1', 1, { rested: true }));
+    expect(evaluateGates([{ kind: 'selfActiveDonCount', atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfActiveDonCount', atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(false);
   });
 });

@@ -27,17 +27,14 @@ export const ST15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST15-003 (character) Kingdew —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[Opponent's Turn] When this Character is K.O.'d by an effect, up to 1 of your Leader
-  //   gains +2000 power during this turn.
-  // PARTIAL: "K.O.'d by an effect" source filter deferred; mapped onKO Leader +2000 on opponent's turn. [Blocker] is printed.
+  // ST15-003 (character) Kingdew — [Blocker] printed. [Opponent's Turn] K.O.'d by effect → Leader +2000.
   {
     cardNumber: 'ST15-003',
     templateId: 'ability',
     params: {
       timing: 'onKO',
       condition: { turn: 'opponent' },
+      gate: [{ kind: 'koByEffect' }],
       functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'duringThisTurn', optional: true }],
     },
   },

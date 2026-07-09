@@ -1,5 +1,6 @@
 import type { GameState } from '../../state/game';
 import { createActionLogger } from '../shared/actionLogger';
+import { isControllerCharacterSetActiveDonPrevented } from '../shared/characterSetActiveDonRestriction';
 import type { PhaseStepResult } from './phaseStepResult';
 
 function setDonRested(state: GameState, ids: string[], rested: boolean): GameState {
@@ -20,6 +21,7 @@ export function consumeEndOfTurnDelayedEffects(state: GameState, endingPlayerId:
   let working = state;
   const logger = createActionLogger(state, null);
   for (const effect of due) {
+    if (isControllerCharacterSetActiveDonPrevented(working, effect.ownerId, effect.sourceInstanceId)) continue;
     const player = working.players[effect.ownerId];
     if (!player) continue;
     const ids = player.costArea.cardIds.filter((id) => working.cardsById[id]?.donRested === true).slice(0, effect.maxTargets);

@@ -1,6 +1,7 @@
 /**
  * Engine-capability tests for reusable DON!! denial, set-active, and aura families:
  *   - restOpponentDon            (DON!! denial: rest an opponent's active DON!!)
+ *   - restControllerDon          (optional rest your active DON!! in effect chains)
  *   - onBattle timing            (+ [Once Per Turn] enforcement in fireOnBattle)
  *   - onBattle requiresOpponentKoed (deferred post-K.O. set-active, OP02-094)
  *   - endOfTurn timing           (fired for the ending player's cards)
@@ -53,6 +54,39 @@ describe('family: restOpponentDon (DON!! denial)', () => {
     rig = putDon(rig, 'p2', 1, { rested: false }).rig;
     const fired = runTimings(registry['SYN-SRC'], ['whenAttacking'], rig.state, attackerId, rig.defs, null, registry);
     expect(fired.state.pendingChoices).toEqual([]);
+  });
+});
+
+describe('family: restControllerDon (optional self DON!! rest)', () => {
+  const assignment: CardEffectAssignment = {
+    cardNumber: 'SYN-SRC',
+    templateId: 'ability',
+    params: {
+      timing: 'onOpponentsAttack',
+      oncePerTurn: true,
+      functions: [
+        { fn: 'restControllerDon', maxTargets: 1, optional: true },
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousSelectedAny' },
+      ],
+    },
+  };
+
+  it('offers the controller\'s ACTIVE DON!! and rests the chosen one', () => {
+    const registry = reg(assignment);
+    let rig = buildBaseRig({ activePlayerId: 'p2', phase: 'main', turnNumber: 3 });
+    let defenderId: string;
+    ({ rig, instanceId: defenderId } = putCharacterInPlay(rig, 'p1', SRC));
+    const { rig: withActive, donIds: activeDon } = putDon(rig, 'p1', 1, { rested: false });
+    rig = withActive;
+    const { rig: withRested } = putDon(rig, 'p1', 1, { rested: true });
+    rig = withRested;
+
+    const fired = runTimings(registry['SYN-SRC'], ['onOpponentsAttack'], rig.state, defenderId, rig.defs, null, registry);
+    const choice = fired.state.pendingChoices[0];
+    expect(choice.constraints.candidateInstanceIds).toEqual(activeDon);
+
+    const resolved = resumeProgram(registry['SYN-SRC'], fired.state, choice, activeDon, rig.defs, null, registry);
+    expect(resolved.state.cardsById[activeDon[0]].donRested).toBe(true);
   });
 });
 

@@ -363,12 +363,24 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP03-058 (leader) Iceburg —
-  //   This Leader cannot attack.[Activate: Main] DON!! −1 (You may return the specified number of DON!!
-  //   cards from your field to your DON!! deck.) You may rest this Leader: Play up to 1 {Galley-La Company}
-  //   type Character card with a cost of 5 or less from your hand.
-  //   PARTIAL: the static "cannot attack" lock is implemented below; the activated play-from-hand ability remains deferred.
-  { cardNumber: 'OP03-058', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+  // OP03-058 — [Activate: Main] DON!! −1: you may rest this Leader → play {Galley-La Company} cost≤5 from hand. Cannot attack is static below.
+  {
+    cardNumber: 'OP03-058',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          cost: [{ kind: 'donMinus', count: 1 }],
+          functions: [
+            { fn: 'rest', target: { group: 'leader', player: 'controller' }, optional: true },
+            { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Galley-La Company', maxCost: 5 }, ifPrevious: 'previousSelectedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP03-059 — [When Attacking] DON!! −1: this Character gains [Banish] during this battle.
   { cardNumber: 'OP03-059', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'duringThisBattle' }] } },

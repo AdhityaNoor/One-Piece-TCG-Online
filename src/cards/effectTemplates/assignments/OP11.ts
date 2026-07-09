@@ -127,15 +127,16 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   When this Character is K.O.'d by your opponent's effect, you may trash 1 card from your hand and rest
   //   1 of your DON!! cards. If you do, play up to 1 {Fish-Man} or {Merfolk} type Character card with a
   //   cost of 6 or less from your hand.
-  // PARTIAL: opponent-effect K.O. gate and optional trash+rest DON payment deferred; onKO play-from-hand mapped.
   {
     cardNumber: 'OP11-024',
     templateId: 'ability',
     params: {
       timing: 'onKO',
+      gate: [{ kind: 'koByOpponentEffect' }],
       functions: [
         { fn: 'optionalTrashFromHand', count: 1 },
-        { fn: 'playFromHand', filter: { category: 'character', anyOf: [{ typeIncludes: 'Fish-Man' }, { typeIncludes: 'Merfolk' }], maxCost: 6 }, optional: true, ifPrevious: 'previousMovedAny' },
+        { fn: 'restControllerDon', maxTargets: 1, optional: true, ifPrevious: 'previousMovedAny' },
+        { fn: 'playFromHand', filter: { category: 'character', anyOf: [{ typeIncludes: 'Fish-Man' }, { typeIncludes: 'Merfolk' }], maxCost: 6 }, optional: true, ifPrevious: 'previousSelectedAny' },
       ],
     },
   },
@@ -164,11 +165,27 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the [Activate: Main] "your {Fish-Man}/{Merfolk} Character can attack Characters when played" grant is deferred.
   { cardNumber: 'OP11-031', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
 
-  // OP11-034 — PARTIAL: cannot-be-rested uses preventRefresh proxy; active-character rest-lock deferred.
-  { cardNumber: 'OP11-034', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }], functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true, maxTargets: 1 }] } },
+  // OP11-034 — [Activate: Main] rest this: if Leader {Fish-Man}/{Merfolk}, up to 1 opp cost≤3 cannot be rested.
+  { cardNumber: 'OP11-034', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }], functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
-  // OP11-035 — [On Play] Rest up to 1 opp Character. PARTIAL: the K.O.-triggered play-from-hand is deferred.
-  { cardNumber: 'OP11-035', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
+  // OP11-035 — [On Play] rest up to 1 opp Character; [On K.O.] rest DON → play Fish-Man/Merfolk cost≤4.
+  {
+    cardNumber: 'OP11-035',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onKO',
+          gate: [{ kind: 'koByOpponentEffect' }],
+          functions: [
+            { fn: 'restControllerDon', maxTargets: 1, optional: true },
+            { fn: 'playFromHand', filter: { category: 'character', anyOf: [{ typeIncludes: 'Fish-Man' }, { typeIncludes: 'Merfolk' }], maxCost: 4 }, optional: true, ifPrevious: 'previousSelectedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP11-036 — [On Play] If Leader [Shirahoshi]: Look 5, reveal up to 1 {Neptunian}/[Shirahoshi] to hand, rest to bottom.
   { cardNumber: 'OP11-036', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Shirahoshi' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Neptunian' }, { name: 'Shirahoshi' }] }, remainder: 'bottom' }] } },
@@ -680,75 +697,6 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP11-013', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', blockerPowerAtMost: 2000 }] } },
 
-  // OP11-019 (event) Glorp Web!! —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if
-  //   your opponent has a Character with 6000 power or more, up to 1 of your Leader or Character cards
-  //   gains +1000 power during this turn. [Trigger] Up to 1 of your Leader or Character cards gains +1000
-  //   power during this turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-027 (character) Bulge-Eyed Neptunian —
-  //   If your Leader is [Shirahoshi], this Character can attack Characters on the turn in which it is
-  //   played.
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-043 (character) Vinsmoke Ichiji —
-  //   [Blocker][On Your Opponent's Attack] [Once Per Turn] This effect can be activated when you only have
-  //   Characters with a type including "GERMA". Up to 1 of your Leader or Character cards gains +1000 power
-  //   during this battle. Then, trash 2 cards from the top of your deck.
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-046 (character) Vinsmoke Yonji —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)If you only have Characters with a type including "GERMA", this Character cannot be
-  //   K.O.'d or rested by your opponent's effects.
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-051 (character) Sanji —
-  //   When this Character is K.O.'d by your opponent's effect, look at 5 cards from the top of your deck
-  //   and play up to 1 {Straw Hat Crew} type Character card with a cost of 5 or less. Then, place the rest
-  //   at the bottom of your deck in any order.[On Play] Return up to 1 Character with 5000 base power or
-  //   less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-059 (event) Gum-Gum King Cobra —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if
-  //   you have 4 or less cards in your hand, that card gains an additional +2000 power during this battle.
-  //   [Trigger] Return up to 1 Character with a cost of 2 or less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-065 (character) Charlotte Anana —
-  //   If you have a purple {Big Mom Pirates} type Character other than [Charlotte Anana], this Character
-  //   gains [Blocker].(After your opponent declares an attack, you may rest this card to make it the new
-  //   target of the attack.)
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-072 (character) Charlotte Mont-d'or —
-  //   [Activate: Main] [Once Per Turn] DON!! −1, You may rest this Character: Your opponent places 2 cards
-  //   from their trash at the bottom of their deck in any order. Then, add 1 card from the top of your Life
-  //   cards to your hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-091 (character) Berry Good —
-  //   [On Play] Your opponent places 3 Events from their trash at the bottom of their deck in any order.
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-096 (character) Ripper —
-  //   If you have a black {Navy} type Character other than [Ripper], this Character gains [Blocker].(After
-  //   your opponent declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-107 (character) Topknot Neptunian —
-  //   [Blocker][Activate: Main] [Once Per Turn] If your Leader is [Shirahoshi], you may turn 1 card from
-  //   the top of your Life cards face-down: Set this Character as active at the end of this turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP11-117 (stage) Fish-Man Island —
-  //   [Activate: Main] [Once Per Turn] If your Leader is [Shirahoshi], you may turn 1 card from the top of
-  //   your Life cards face-up: Up to 1 of your {Neptunian}, {Fish-Man}, or {Merfolk} type Characters gains
-  //   +1000 power during this turn.
-  // NOTE: not yet implemented (needs template).
-
   { cardNumber: 'OP11-019', templates: [{ templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true, ifGate: [{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 6000 }] }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } }] },
 
   { cardNumber: 'OP11-027', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent', condition: { gate: [{ kind: 'leaderName', name: 'Shirahoshi' }] } }] } },
@@ -758,8 +706,7 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // PARTIAL: rest-immunity deferred; mapped effect-KO immunity when all chars are GERMA.
   { cardNumber: 'OP11-046', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { gate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'GERMA' }] } }] } },
 
-  // PARTIAL: "KO'd by opponent's effect" gate on return deferred.
-  { cardNumber: 'OP11-051', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxBasePower: 5000 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } }, { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', maxCost: 5 }, remainder: 'bottom' }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', maxCost: 5 }, ifPrevious: 'previousMovedAny' }] } }] },
+  { cardNumber: 'OP11-051', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxBasePower: 5000 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } }, { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'koByOpponentEffect' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', maxCost: 5 }, remainder: 'bottom' }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', maxCost: 5 }, ifPrevious: 'previousMovedAny' }] } }] },
 
   { cardNumber: 'OP11-059', templates: [{ templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifGate: [{ kind: 'selfHand', atMost: 4 }] }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } }] },
 

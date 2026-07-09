@@ -44,9 +44,9 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // --- codegen batch ---
   { cardNumber: 'OP07-008', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP07-006 — PARTIAL: "active Leader" requirement not gated.
+  // OP07-006 — [On Play] You may give your active Leader −5000: draw 1 and trash 1 from hand.
   { cardNumber: 'OP07-006', templateId: 'ability', params: { timing: 'onPlay', functions: [
-    { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true },
+    { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true, ifGate: [{ kind: 'leaderActive' }] },
     { fn: 'drawAndTrash', drawCount: 1, trashCount: 1, ifPrevious: 'previousSelectedAny' },
   ] } },
 
@@ -142,8 +142,8 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-030 — if you have [Camie], [Blocker]
   { cardNumber: 'OP07-030', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Camie' }] } }] } },
 
-  // OP07-025 — PARTIAL: played Character should enter rested (playFromHand has no rested flag).
-  { cardNumber: 'OP07-025', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Caribou', maxCost: 4 } }] } },
+  // OP07-025 — [On Play] play [Caribou] cost≤4 from hand rested.
+  { cardNumber: 'OP07-025', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Caribou', maxCost: 4 }, rested: true }] } },
 
   // OP07-026 (character) Jewelry Bonney —
   //   PARTIAL: rested DON!! cards not included in preventRefresh target.
@@ -155,18 +155,6 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 }],
     },
   },
-
-  // OP07-029 (character) Basil Hawkins —
-  //   If your Leader has the {Supernovas} type, this Character gains [Blocker].(After your opponent
-  //   declares an attack, you may rest this card to make it the new target of the attack.)[Once Per Turn]
-  //   If this Character would be removed from the field by your opponent's effect, you may rest 1 of your
-  //   opponent's Characters instead.
-  // NOTE: not yet implemented (needs template).
-
-  // OP07-030 (character) Pappag —
-  //   If you have a [Camie] Character, this Character gains [Blocker].(After your opponent declares an
-  //   attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
 
   // OP07-031 — PARTIAL: fires on any Character rest during your turn, not only rests caused by your effects.
   { cardNumber: 'OP07-031', templateId: 'ability', params: { timing: 'onRested', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
@@ -292,8 +280,8 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP07-049 — PARTIAL: played Character should enter rested (playFromHand has no rested flag).
-  { cardNumber: 'OP07-049', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Edward Weevil', maxCost: 4 } }] } },
+  // OP07-049 — [On Play] play [Edward Weevil] cost≤4 from hand rested.
+  { cardNumber: 'OP07-049', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Edward Weevil', maxCost: 4 }, rested: true }] } },
 
   { cardNumber: 'OP07-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], atLeast: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
@@ -308,12 +296,6 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   { cardNumber: 'OP07-052', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], atLeast: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
-
-  // OP07-053 (character) Portgas.D.Ace —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On Play] Draw 2 cards and place 2 cards from your hand at the top or bottom of your
-  //   deck in any order.
-  // NOTE: not yet implemented (needs template).
 
   // OP07-054 - [Blocker] [On Play] Draw 1 card.
   // Note: [Blocker] is an engine keyword flag. Only the on-play draw is templated.
@@ -481,11 +463,6 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-080 — [On Play] place 2 CP from trash at bottom: give up to 1 opp Character −3 cost this turn.
   { cardNumber: 'OP07-080', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'CP' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 2 }, { fn: 'addCost', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP07-080 (character) Kaku —
-  //   [On Play] You may place 2 cards with a type including "CP" from your trash at the bottom of your deck
-  //   in any order: Give up to 1 of your opponent's Characters −3 cost during this turn.
-  // NOTE: not yet implemented (needs template).
-
   // OP07-081 (character) Kalifa —
   //   [DON!! x1] [Your Turn] Give all of your opponent's Characters −1 cost.
   { cardNumber: 'OP07-081', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -1, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
@@ -530,10 +507,6 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-087 — [Your Turn] if opponent has a cost-0 Character, +3000
   { cardNumber: 'OP07-087', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { turn: 'your', gate: [{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }] } }] } },
 
-  // OP07-087 (character) Baskerville —
-  //   [Your Turn] If your opponent has a Character with a cost of 0, this Character gains +3000 power.
-  // NOTE: not yet implemented (needs template).
-
   // OP07-088 — [On Play] Up to 1 of your [Rob Lucci] cards gains +2000 power during this turn.
   { cardNumber: 'OP07-088', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Rob Lucci' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
@@ -548,11 +521,6 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', minCost: 4 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 9 },
     { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
   ] } },
-
-  // OP07-092 (character) Joseph —
-  //   [On Play] You may place 2 cards with a type including "CP" from your trash at the bottom of your deck
-  //   in any order: K.O. up to 1 of your opponent's Characters with a cost of 1 or less.
-  // NOTE: not yet implemented (needs template).
 
   // OP07-093 — [On Play] reorder 3 trash → deck bottom: opp trashes 1 hand, then optional opp trash → deck bottom.
   { cardNumber: 'OP07-093', templateId: 'ability', params: { timing: 'onPlay', functions: [

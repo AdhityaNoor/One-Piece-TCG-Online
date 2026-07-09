@@ -15,6 +15,9 @@ import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/z
 import { getOpponentId } from '../rules/shared/players';
 import { cannotBeRestedByEffect, computeCurrentCost, computeCurrentPower, isKoImmune } from '../rules/shared/power';
 import { isControllerLifeToHandPrevented } from '../rules/shared/lifeToHandRestriction';
+import { isControllerCharacterPlayPrevented } from '../rules/shared/characterPlayRestriction';
+import { isControllerHandPlayPrevented } from '../rules/shared/handPlayRestriction';
+import { isControllerCharacterSetActiveDonPrevented } from '../rules/shared/characterSetActiveDonRestriction';
 import { koReplacementDescription, restReplacementDescription } from '../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { createSeededRng } from '../rng/seededRng';
@@ -34,7 +37,7 @@ export class EffectContextImpl implements EffectContext {
   /** Instance ids this resolution rested via rest(); drained by the interpreter to cascade [When Becomes Rested] (onRested). */
   private readonly rested: string[] = [];
   /** Instance ids this resolution moved to the trash via ko(); drained by the interpreter to cascade [On K.O.] (10-2-17). */
-  private readonly koed: string[] = [];
+  private readonly koed: { targetInstanceId: string; cause: 'effect'; sourceInstanceId: string }[] = [];
   /** DON!! given to Leader/Character targets this resolution; drained for onDonGiven cascade. */
   private readonly donGiven: { targetInstanceId: string; count: number }[] = [];
   /** Cards removed from the field by this resolution's effects; drained for onRemovedFromField cascade. */
@@ -997,6 +1000,92 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  preventControllerCharacterPlay(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    minBaseCost?: number;
+    maxBaseCost?: number;
+    description?: string;
+  }): void {
+    const costFilter =
+      spec.minBaseCost !== undefined && spec.maxBaseCost !== undefined
+        ? `with base cost ${spec.minBaseCost}–${spec.maxBaseCost}`
+        : spec.minBaseCost !== undefined
+          ? `with base cost ${spec.minBaseCost} or greater`
+          : spec.maxBaseCost !== undefined
+            ? `with base cost ${spec.maxBaseCost} or less`
+            : '';
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? `cannot play Character cards ${costFilter}`.trim(),
+      characterPlayRestriction: {
+        appliesToControllerId: spec.appliesToControllerId,
+        ...(spec.minBaseCost !== undefined ? { minBaseCost: spec.minBaseCost } : {}),
+        ...(spec.maxBaseCost !== undefined ? { maxBaseCost: spec.maxBaseCost } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToControllerId} cannot play Character cards ${costFilter} (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration, minBaseCost: spec.minBaseCost, maxBaseCost: spec.maxBaseCost },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  preventControllerHandPlay(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'cannot play cards from hand',
+      handPlayRestriction: { appliesToControllerId: spec.appliesToControllerId },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToControllerId} cannot play cards from hand (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  preventControllerCharacterSetActiveDon(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'cannot set DON!! cards as active using Character effects',
+      characterSetActiveDonRestriction: { appliesToControllerId: spec.appliesToControllerId },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToControllerId} cannot set DON!! cards as active using Character effects (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
   giveDon(targetInstanceId: string, count: number): void {
     this.giveDonFromCostArea(targetInstanceId, count, this.controllerId, { restedOnly: true });
   }
@@ -1114,7 +1203,7 @@ export class EffectContextImpl implements EffectContext {
       visibility: 'public',
     });
     this.recordFieldRemoval(targetInstanceId, fromZone);
-    this.koed.push(targetInstanceId);
+    this.koed.push({ targetInstanceId, cause: 'effect', sourceInstanceId: this.sourceInstanceId });
   }
 
   ko(targetInstanceId: string): void {
@@ -1128,8 +1217,8 @@ export class EffectContextImpl implements EffectContext {
     return drained;
   }
 
-  /** Drain and return the ids K.O.'d via ko() this resolution (for [On K.O.] cascade). */
-  takeKoed(): string[] {
+  /** Drain K.O. events from this resolution (for [On K.O.] cascade). */
+  takeKoed(): { targetInstanceId: string; cause: 'battle' | 'effect'; sourceInstanceId: string }[] {
     const drained = [...this.koed];
     this.koed.length = 0;
     return drained;
@@ -1242,6 +1331,41 @@ export class EffectContextImpl implements EffectContext {
       type: 'CARD_MOVED',
       message: `${instanceId} was placed at the bottom of its owner's deck.`,
       data: { from: fromZone, to: 'deck', position: 'bottom', instanceId },
+      relatedCardInstanceIds: [instanceId],
+      visibility: 'public',
+    });
+    this.recordFieldRemoval(instanceId, fromZone);
+  }
+
+  moveToTopDeck(instanceId: string): void {
+    const inst = this.working.cardsById[instanceId];
+    if (!inst) return;
+    const fromZone = inst.currentZone;
+    const owner = this.working.players[inst.ownerId];
+    if (!owner) return;
+    const newOwner = {
+      ...owner,
+      hand: removeFromZone(owner.hand, instanceId),
+      trash: removeFromZone(owner.trash, instanceId),
+      characterArea: removeFromZone(owner.characterArea, instanceId),
+      stageArea: removeFromZone(owner.stageArea, instanceId),
+      lifeArea: removeFromZone(owner.lifeArea, instanceId),
+      deck: addToZoneTop(owner.deck, instanceId),
+    };
+    this.working = {
+      ...this.working,
+      players: { ...this.working.players, [inst.ownerId]: newOwner },
+      cardsById: {
+        ...this.working.cardsById,
+        [instanceId]: { ...inst, currentZone: 'deck', donAttached: [], summoningSick: false, revealedTo: [] },
+      },
+      continuousEffects: this.working.continuousEffects.filter((ce) => ce.sourceInstanceId !== instanceId),
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'CARD_MOVED',
+      message: `${instanceId} was placed at the top of its owner's deck.`,
+      data: { from: fromZone, to: 'deck', position: 'top', instanceId },
       relatedCardInstanceIds: [instanceId],
       visibility: 'public',
     });
@@ -1442,6 +1566,17 @@ export class EffectContextImpl implements EffectContext {
     const handInst = this.working.cardsById[handInstanceId];
     const def = handInst ? this.defs[handInst.cardDefinitionId] : undefined;
     if (!handInst || !def || handInst.currentZone !== 'hand') return;
+    if (isControllerHandPlayPrevented(this.working, handInst.controllerId)) {
+      this.logger.push({
+        actorPlayerId: handInst.controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${handInst.controllerId} cannot play ${def.name} from hand — hand play is restricted this turn.`,
+        data: { instanceId: handInstanceId, prevented: true },
+        relatedCardInstanceIds: [handInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     if (def.category === 'stage') {
       this.playStageFromHand(handInstanceId);
       return;
@@ -1454,6 +1589,18 @@ export class EffectContextImpl implements EffectContext {
   queueEventActivationFromHand(handInstanceId: string): void {
     const handInst = this.working.cardsById[handInstanceId];
     if (!handInst || handInst.currentZone !== 'hand') return;
+    if (isControllerHandPlayPrevented(this.working, handInst.controllerId)) {
+      const def = this.defs[handInst.cardDefinitionId];
+      this.logger.push({
+        actorPlayerId: handInst.controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${handInst.controllerId} cannot activate ${def?.name ?? handInstanceId} from hand — hand play is restricted this turn.`,
+        data: { instanceId: handInstanceId, prevented: true },
+        relatedCardInstanceIds: [handInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     const def = this.defs[handInst.cardDefinitionId];
     if (!def || def.category !== 'event') return;
     const controllerId = handInst.controllerId;
@@ -1511,6 +1658,17 @@ export class EffectContextImpl implements EffectContext {
     const def = this.defs[handInst.cardDefinitionId];
     if (!def || def.category !== 'stage') return;
     const controllerId = handInst.controllerId;
+    if (isControllerHandPlayPrevented(this.working, controllerId)) {
+      this.logger.push({
+        actorPlayerId: controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${controllerId} cannot play ${def.name} from hand — hand play is restricted this turn.`,
+        data: { instanceId: handInstanceId, prevented: true },
+        relatedCardInstanceIds: [handInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     const player = this.working.players[controllerId];
     if (!player) return;
 
@@ -1568,6 +1726,28 @@ export class EffectContextImpl implements EffectContext {
     const def = this.defs[handInst.cardDefinitionId];
     if (!def || def.category !== 'character') return; // only Characters can be played to the field
     const controllerId = handInst.controllerId;
+    if (isControllerHandPlayPrevented(this.working, controllerId)) {
+      this.logger.push({
+        actorPlayerId: controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${controllerId} cannot play ${def.name} from hand — hand play is restricted this turn.`,
+        data: { instanceId: handInstanceId, prevented: true },
+        relatedCardInstanceIds: [handInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
+    if (isControllerCharacterPlayPrevented(this.working, controllerId, this.defs, handInst.cardDefinitionId)) {
+      this.logger.push({
+        actorPlayerId: controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${controllerId} cannot play ${def.name} from hand — Character play is restricted this turn.`,
+        data: { instanceId: handInstanceId, prevented: true },
+        relatedCardInstanceIds: [handInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     const player = this.working.players[controllerId];
     if (!player) return;
 
@@ -1631,6 +1811,17 @@ export class EffectContextImpl implements EffectContext {
     const def = this.defs[trashInst.cardDefinitionId];
     if (!def || def.category !== 'character') return; // only Characters can be played to the field
     const controllerId = trashInst.controllerId;
+    if (isControllerCharacterPlayPrevented(this.working, controllerId, this.defs, trashInst.cardDefinitionId)) {
+      this.logger.push({
+        actorPlayerId: controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${controllerId} cannot play ${def.name} from trash — Character play is restricted this turn.`,
+        data: { instanceId: trashInstanceId, prevented: true },
+        relatedCardInstanceIds: [trashInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     const player = this.working.players[controllerId];
     if (!player) return;
 
@@ -1693,6 +1884,17 @@ export class EffectContextImpl implements EffectContext {
     const def = this.defs[deckInst.cardDefinitionId];
     if (!def || def.category !== 'character') return;
     const controllerId = deckInst.controllerId;
+    if (isControllerCharacterPlayPrevented(this.working, controllerId, this.defs, deckInst.cardDefinitionId)) {
+      this.logger.push({
+        actorPlayerId: controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${controllerId} cannot play ${def.name} from deck — Character play is restricted this turn.`,
+        data: { instanceId: deckInstanceId, prevented: true },
+        relatedCardInstanceIds: [deckInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     const player = this.working.players[controllerId];
     if (!player) return;
 
@@ -1913,7 +2115,21 @@ export class EffectContextImpl implements EffectContext {
   setActive(targetInstanceId: string): void {
     const inst = this.working.cardsById[targetInstanceId];
     if (!inst) return;
-    const isDon = inst.orientation === null; // DON!! carry orientation:null and track state via donRested
+    const isDon = inst.orientation === null;
+    if (
+      isDon &&
+      isControllerCharacterSetActiveDonPrevented(this.working, this.controllerId, this.sourceInstanceId)
+    ) {
+      this.logger.push({
+        actorPlayerId: this.controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${this.controllerId} cannot set DON!! cards as active using Character effects — move prevented.`,
+        data: { instanceId: targetInstanceId, prevented: true },
+        relatedCardInstanceIds: [targetInstanceId, this.sourceInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     if (isDon) {
       if (inst.donRested !== true) return;
       this.working = { ...this.working, cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, donRested: false } } };
@@ -1932,6 +2148,20 @@ export class EffectContextImpl implements EffectContext {
   }
 
   scheduleDelayedEffect(effect: import('../state/game').DelayedEffectRecord): void {
+    if (
+      effect.kind === 'setActiveControllerDonAtEndOfTurn' &&
+      isControllerCharacterSetActiveDonPrevented(this.working, effect.ownerId, effect.sourceInstanceId)
+    ) {
+      this.logger.push({
+        actorPlayerId: this.controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${effect.ownerId} cannot schedule DON!! set-active at end of turn — Character effect restriction is active.`,
+        data: { delayedEffectKind: effect.kind, prevented: true },
+        relatedCardInstanceIds: [effect.sourceInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     this.working = {
       ...this.working,
       delayedEffects: [...(this.working.delayedEffects ?? []), effect],

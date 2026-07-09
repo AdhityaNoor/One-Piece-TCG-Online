@@ -160,6 +160,26 @@ export interface EffectContext {
     duration: ContinuousEffectDuration;
     description?: string;
   }): void;
+  /** Register "cannot play Character cards [matching filter] this turn" for a player. */
+  preventControllerCharacterPlay(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    minBaseCost?: number;
+    maxBaseCost?: number;
+    description?: string;
+  }): void;
+  /** Register "cannot play cards from hand this turn" for a player. */
+  preventControllerHandPlay(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void;
+  /** Register "cannot set DON!! active using Character effects this turn" for a player. */
+  preventControllerCharacterSetActiveDon(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void;
   /** Give up to `count` un-attached DON!! from the controller's cost area to a Leader/Character (6-5-5). */
   giveDon(targetInstanceId: string, count: number): void;
   /** Reassign one DON!! already given on the field onto another in-play card. */
@@ -170,6 +190,8 @@ export interface EffectContext {
   returnToHand(targetInstanceId: string): void;
   /** Move a card to the bottom of its owner's deck, dropping attachments/continuous effects it sourced. */
   moveToBottomDeck(instanceId: string): void;
+  /** Move a card to the top of its owner's deck, dropping attachments/continuous effects it sourced. */
+  moveToTopDeck(instanceId: string): void;
   /** Move a card to the top of its owner's Life cards, optionally face-up. */
   moveToLifeTop(instanceId: string, faceUp?: boolean): void;
   /** Move a Life card to the bottom of its owner's Life cards. */

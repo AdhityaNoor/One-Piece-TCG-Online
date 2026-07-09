@@ -43,12 +43,6 @@ export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // ST22-011 (character) Whitey Bay —
-  //   [Your Turn] [On Play] You may reveal 2 cards with a type including "Whitebeard Pirates" from your
-  //   hand: Up to 1 of your Leader with a type including "Whitebeard Pirates" gains +2000 power during this
-  //   turn.
-  // NOTE: not yet implemented (needs template).
-
   // ST22-012 — K.O. replacement (trash 1 from hand, opp effect, OPT) + [When Attacking] reveal top for +1000.
   {
     cardNumber: 'ST22-012',

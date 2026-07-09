@@ -27,7 +27,22 @@ export function fieldDonIds(state: GameState, playerId: string): string[] {
 function activeDonIds(state: GameState, playerId: string): string[] {
   const player = state.players[playerId];
   if (!player) return [];
-  return player.costArea.cardIds.filter((id) => state.cardsById[id]?.donRested === false);
+  const attached = new Set<string>();
+  for (const inst of Object.values(state.cardsById)) {
+    if (inst.controllerId !== playerId) continue;
+    for (const donId of inst.donAttached) attached.add(donId);
+  }
+  return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === false);
+}
+
+/** DON!! candidates for paying DON!! −N costs (active-only when any cost requires it). */
+export function donMinusCandidateIds(state: GameState, playerId: string, costs: AbilityCost[]): string[] {
+  const activeOnly = costs.some((c) => c.kind === 'donMinus' && c.activeOnly);
+  return activeOnly ? activeDonIds(state, playerId) : fieldDonIds(state, playerId);
+}
+
+export function countControllerActiveUnattachedDon(state: GameState, playerId: string): number {
+  return activeDonIds(state, playerId).length;
 }
 
 function activeDonCount(state: GameState, playerId: string): number {

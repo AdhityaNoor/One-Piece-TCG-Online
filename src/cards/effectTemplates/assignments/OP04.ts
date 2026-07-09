@@ -7,15 +7,30 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // OP04-001 (leader) Nefeltari Vivi —
-  //   PARTIAL: the static "cannot attack" lock is implemented below; the activated power-and-play ability remains deferred.
-  { cardNumber: 'OP04-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+  // OP04-001 — Cannot attack; [Activate: Main] [Once Per Turn] rest 2 DON!!: draw 1 and up to 1 Character gains [Rush] this turn.
+  {
+    cardNumber: 'OP04-001',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          cost: [{ kind: 'restDon', count: 2 }],
+          functions: [
+            { fn: 'draw', amount: 1 },
+            { fn: 'addKeyword', target: { group: 'characters', player: 'controller' }, keyword: 'rush', duration: 'duringThisTurn', optional: true },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP04 coverage batch: base-power targeting, trigger-play, and simple activated draw.
   { cardNumber: 'OP04-003', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 5000 } }, optional: true }] } },
 
-  // OP04-002 (character) Igaram —
-  //   PARTIAL: "1 active Leader" requirement not gated; mapped rest → Leader −5000 → Alabasta search.
+  // OP04-002 — [Activate: Main] You may rest this and give your active Leader −5000: search Alabasta from top 5.
   {
     cardNumber: 'OP04-002',
     templateId: 'ability',
@@ -23,8 +38,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'activateMain',
       cost: [{ kind: 'restThis' }],
       functions: [
-        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn' },
-        { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Alabasta' }, remainder: 'bottom' },
+        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true, ifGate: [{ kind: 'leaderActive' }] },
+        { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Alabasta' }, remainder: 'bottom', ifPrevious: 'previousSelectedAny' },
       ],
     },
   },
@@ -32,18 +47,18 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-005 — PARTIAL: "other than this Character" uses selfControlsNamed (counts self when alone).
   { cardNumber: 'OP04-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Kung Fu Jugon' }] } }] } },
 
-  // OP04-006 — PARTIAL: "active Leader" requirement not gated.
+  // OP04-006 — [When Attacking] You may give your active Leader −5000: this Character +2000 until your next turn.
   { cardNumber: 'OP04-006', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
-    { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true },
+    { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true, ifGate: [{ kind: 'leaderActive' }] },
     { fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn', ifPrevious: 'previousSelectedAny' },
   ] } },
 
   // ── Triage batch (OP04 expressible): Alabasta/Dressrosa/Wano lines. ────────
   { cardNumber: 'OP04-008', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'leaderName', name: 'Nefeltari Vivi' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 0 } }, optional: true }] } },
 
-  // OP04-009 — PARTIAL: EOT return deferred; mapped optional Leader −5000 then immediate self-return.
+  // OP04-009 — PARTIAL: EOT return deferred; mapped optional active Leader −5000 then immediate self-return.
   { cardNumber: 'OP04-009', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
-    { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true },
+    { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn', optional: true, ifGate: [{ kind: 'leaderActive' }] },
     { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
   ] } },
 
@@ -77,9 +92,11 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-017 Happiness Punch — [Counter] give up to 1 opp Leader/Char −2000 this turn.
-  //   PARTIAL: the "if your Leader is active, −1000 more" rider needs a leader-active gate (deferred).
-  { cardNumber: 'OP04-017', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+  // OP04-017 — [Counter] up to 1 opp Leader/Character −2000; −1000 more if your Leader is active.
+  { cardNumber: 'OP04-017', templateId: 'ability', params: { timing: 'counter', functions: [
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true },
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true, ifGate: [{ kind: 'leaderActive' }] },
+  ] } },
 
   {
     cardNumber: 'OP04-018',
@@ -133,14 +150,14 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-027 Daddy Masterson — [DON!! x1][End of Your Turn] Set this Character active.
   { cardNumber: 'OP04-027', templateId: 'ability', params: { timing: 'endOfTurn', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'setActiveSelf' }] } },
 
-  // OP04-028 (character) Diamante — PARTIAL: "active DON!!" gate uses total field DON count proxy (see OP04-034).
+  // OP04-028 (character) Diamante — [DON!! x1][End of Your Turn] If 2+ active DON!!, set active.
   {
     cardNumber: 'OP04-028',
     templateId: 'ability',
     params: {
       timing: 'endOfTurn',
       condition: { donAttachedAtLeast: 1 },
-      gate: [{ kind: 'selfDonFieldCount', atLeast: 2 }],
+      gate: [{ kind: 'selfActiveDonCount', atLeast: 2 }],
       functions: [{ fn: 'setActiveSelf' }],
     },
   },
@@ -155,20 +172,34 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-118 — PARTIAL: red/cost≥3/other-than-self filters not on keyword aura.
   { cardNumber: 'OP04-118', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'rush', duration: 'permanent' }] } },
 
-  // OP04-119 — PARTIAL: [On Play] rest-this play-green-cost-5-from-hand deferred; static K.O. immunity mapped.
+  // OP04-119 — [Opponent's Turn] if rested, active allies base cost 5 immune to effects; [On Play] rest this → play green cost≤5 from hand.
   {
     cardNumber: 'OP04-119',
-    templateId: 'ability',
-    params: {
-      timing: 'onEnterPlay',
-      functions: [{
-        fn: 'koImmunityAuraControllerCharacters',
-        scope: 'effect',
-        duration: 'permanent',
-        targetCondition: { minBaseCost: 5, maxBaseCost: 5, rested: false },
-        sourceCondition: { rested: true, turn: 'opponent' },
-      }],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'koImmunityAuraControllerCharacters',
+            scope: 'effect',
+            duration: 'permanent',
+            targetCondition: { minBaseCost: 5, maxBaseCost: 5, rested: false },
+            sourceCondition: { rested: true, turn: 'opponent' },
+          }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'rest', target: { ref: 'self' }, optional: true },
+            { fn: 'playFromHand', filter: { category: 'character', color: 'green', maxCost: 5 }, ifPrevious: 'previousSelectedAny' },
+          ],
+        },
+      },
+    ],
   },
 
   // --- codegen batch ---
@@ -183,8 +214,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'setActiveControllerDonAtEndOfTurn', maxTargets: 1 },
   ] } },
 
-  // OP04-034 — PARTIAL: "active DON!!" uses total field DON count proxy.
-  { cardNumber: 'OP04-034', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfDonFieldCount', atLeast: 3 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 3 } }, optional: true }] } },
+  // OP04-034 — [End of Your Turn] If 3+ active DON!!, K.O. up to 1 opp rested Character cost ≤3.
+  { cardNumber: 'OP04-034', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfActiveDonCount', atLeast: 3 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 3 } }, optional: true }] } },
 
   // OP04-035 Spiderweb — [Counter] +4000 battle, then set up to 1 of your Characters active. [Trigger] Leader +2000 this turn.
   {
@@ -256,8 +287,16 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-042 — PARTIAL: <Slash> attribute filter not on target selector; buffs any Character.
   { cardNumber: 'OP04-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 1 }] } },
 
-  // OP04-043 — PARTIAL: hand-only return (hand OR deck-bottom choice deferred).
-  { cardNumber: 'OP04-043', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  // OP04-043 — [When Attacking] [DON!! x1] Return up to 1 cost≤2 Character to owner's hand or deck bottom.
+  { cardNumber: 'OP04-043', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{
+    fn: 'chooseOne',
+    chooser: 'controller',
+    prompt: 'Return to hand or deck bottom:',
+    options: [
+      { label: 'hand', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] },
+      { label: 'deckBottom', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] },
+    ],
+  }] } },
 
   // OP04-044 Kaido — [On Play] Return up to 1 Character cost ≤8 and up to 1 Character cost ≤3 to the owner's hand.
   { cardNumber: 'OP04-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 8 } }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -290,10 +329,6 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP04-050 — [Activate: Main] trash 1 from hand + rest this: draw 1.
   { cardNumber: 'OP04-050', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'trashFromHand', count: 1 }, { fn: 'draw', amount: 1 }] } },
-
-  // OP04-050 (character) Hanger —
-  //   [Activate: Main] You may trash 1 card from your hand and rest this Character: Draw 1 card.
-  // NOTE: not yet implemented (needs template).
 
   // OP04-051 — [On Play] Look at 5; add up to 1 Animal Kingdom Pirates (excl. same name).
   {
@@ -378,30 +413,11 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-067 — [Blocker] [Trigger] DON!! −1: play this.
   { cardNumber: 'OP04-067', templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP04-064 (character) Ms. All Sunday —
-  //   [On Play] Add up to 1 DON!! card from your DON!! deck and rest it. Then, if you have 6 or more DON!!
-  //   cards on your field, draw 1 card. [Trigger] DON!! −2 (You may return the specified number of DON!!
-  //   cards from your field to your DON!! deck.): Play this card.
-  // NOTE: not yet implemented (needs template).
-
   // OP04-065 (character) Miss.Goldenweek(Marianne) —
   //   [On Play] If your Leader's type includes "Baroque Works", up to 1 of your opponent's Characters with
   //   a cost of 5 or less cannot attack until the start of your next turn. [Trigger] DON!! −1 (You may
   //   return the specified number of DON!! cards from your field to your DON!! deck.): Play this card.
   { cardNumber: 'OP04-065', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, duration: 'untilStartOfNextTurn', optional: true }] } },
-
-  // OP04-066 (character) Miss.Valentine(Mikita) —
-  //   [On Play] Look at 5 cards from the top of your deck; reveal up to 1 card with a type including
-  //   "Baroque Works" and add it to your hand. Then, place the rest at the bottom of your deck in any
-  //   order. [Trigger] DON!! −1 (You may return the specified number of DON!! cards from your field to your
-  //   DON!! deck.): Play this card.
-  // NOTE: not yet implemented (needs template).
-
-  // OP04-067 (character) Miss.MerryChristmas(Drophy) —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.) [Trigger] DON!! −1 (You may return the specified number of DON!! cards from your
-  //   field to your DON!! deck.): Play this card.
-  // NOTE: not yet implemented (needs template).
 
   // OP04-068 — [Blocker] is card data.
   { cardNumber: 'OP04-068', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -569,11 +585,6 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP04-104 — [Blocker] [Trigger] trash 1 from hand: play this.
   { cardNumber: 'OP04-104', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
-
-  // OP04-104 (character) Sanji —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.) [Trigger] You may trash 1 card from your hand: Play this card.
-  // NOTE: not yet implemented (needs template).
 
   // OP04-105 — [Activate: Main] [Once Per Turn] you may trash 1 card with a [Trigger] from hand: rest up to 1 opp Character cost<=2.
   { cardNumber: 'OP04-105', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [

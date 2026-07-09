@@ -251,11 +251,20 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
   // OP15-013 — curated above.
-  // OP15-024 — [Opponent's Turn] [Blocker] + [On K.O.] rest opp Leader/Char cost ≤7. PARTIAL: rest-immunity deferred.
+  // OP15-024 — [Opponent's Turn] cannot be rested by opp Leader/Character effects + [Blocker]; [On K.O.] rest opp Leader/Char cost≤7.
   {
     cardNumber: 'OP15-024',
     templates: [
-      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { turn: 'opponent' } }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [
+            { fn: 'preventRest', target: { ref: 'self' }, duration: 'permanent', effectSourceController: 'opponent', condition: { turn: 'opponent' } },
+            { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { turn: 'opponent' } },
+          ],
+        },
+      },
       { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 7 } }, optional: true }] } },
     ],
   },

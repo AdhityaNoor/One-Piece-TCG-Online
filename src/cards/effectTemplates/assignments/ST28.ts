@@ -21,16 +21,6 @@ export const ST28_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST28-003 — [Trigger] If Leader {Land of Wano} and opponent has 3 or less Life, play this.
   { cardNumber: 'ST28-003', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Land of Wano' }, { kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // ST28-002 (character) Izo —
-  //   [DON!! x2] This Character gains [Blocker].[On Play] Your {Land of Wano} type Leader gains [Banish]
-  //   during this turn.
-  // NOTE: not yet implemented (needs template).
-
-  // ST28-003 (character) Kin'emon —
-  //   [Trigger] If your Leader has the {Land of Wano} type and your opponent has 3 or less Life cards, play
-  //   this card.
-  // NOTE: not yet implemented (needs template).
-
   // ST28-004 — PARTIAL: DON!! return-to-cost rested modeled as donMinus; Leader +1000 if ≤2 Life mapped.
   {
     cardNumber: 'ST28-004',

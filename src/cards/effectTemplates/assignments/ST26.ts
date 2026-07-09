@@ -24,11 +24,6 @@ export const ST26_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST26-003 — [On Play] DON!! −2: add up to 1 DON!! from deck active.
   { cardNumber: 'ST26-003', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
 
-  // ST26-003 (character) Nico Robin —
-  //   [On Play] DON!! −2 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): Add up to 1 DON!! card from your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
-
   // ST26-004 — [On Play] DON!! −2: give up to 2 opp Characters −2000 this turn.
   { cardNumber: 'ST26-004', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, maxTargets: 2 }] } },
 

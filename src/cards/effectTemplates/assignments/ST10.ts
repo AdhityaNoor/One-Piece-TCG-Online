@@ -44,11 +44,6 @@ export const ST10_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST10-004 — [On Play] If opponent has a Character with 5000+ power, this Character gains [Rush] this turn.
   { cardNumber: 'ST10-004', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', ifGate: [{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 5000 }] }] } },
 
-  // ST10-004 (character) Sanji —
-  //   [On Play] If your opponent has a Character with 5000 or more power, this Character gains [Rush]
-  //   during this turn.(This card can attack on the turn in which it is played.)
-  // NOTE: not yet implemented (needs template).
-
   // ST10-005 Jinbe — [DON!! x1] [When Attacking] Give up to 1 opponent Character −2000 power this turn.
   { cardNumber: 'ST10-005', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 

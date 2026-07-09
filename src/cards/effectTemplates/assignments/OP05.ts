@@ -441,10 +441,10 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP05-091 — [On Play] add black Character cost 3–7 (not Rebecca) from trash to hand; play black cost<=3 from hand. PARTIAL: played Character should enter rested.
+  // OP05-091 — [On Play] add black Character cost 3–7 (not Rebecca) from trash to hand; play black cost≤3 from hand rested.
   { cardNumber: 'OP05-091', templateId: 'ability', params: { timing: 'onPlay', functions: [
     { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', color: 'black', minCost: 3, maxCost: 7, excludeSelfName: true } }, to: { zone: 'hand', player: 'owner' }, optional: true },
-    { fn: 'playFromHand', filter: { category: 'character', color: 'black', maxCost: 3 } },
+    { fn: 'playFromHand', filter: { category: 'character', color: 'black', maxCost: 3 }, rested: true },
   ] } },
 
   // OP05-092 — [Your Turn] if only {Celestial Dragons} on field, all opp Characters −6 cost.

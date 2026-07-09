@@ -137,10 +137,7 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP10-030 — [Activate: Main] Set up to 1 DON!! active. PARTIAL: the "cannot set DON!! active via Character effects this turn" restriction is deferred.
   { cardNumber: 'OP10-030', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
 
-  // OP10-032 (character) Tashigi —
-  //   If you have a green Character other than [Tashigi] that would be removed from the field by your
-  //   opponent's effect, you may rest this Character instead.
-  // PARTIAL: non-K.O. field-removal branch deferred; effect-K.O. rest-this proxy mapped (OP12-027 pattern).
+  // OP10-032 — rest this Character to save another green Character from opponent-effect removal.
   {
     cardNumber: 'OP10-032',
     templateId: 'ability',
@@ -149,6 +146,7 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [{
         fn: 'registerKoReplacementAura',
         scope: 'effect',
+        effectSourceController: 'opponent',
         excludeSource: true,
         targetCondition: { color: 'green' },
         restSource: true,
@@ -599,114 +597,6 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP10-119', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { typeIncludes: 'Supernovas' } }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }, { fn: 'giveDon', count: 1 }] } },
 
   { cardNumber: 'OP10-001', templates: [{ templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 1000, duration: 'permanent', anyOfTypes: ['Navy', 'Punk Hazard'], sourceCondition: { turn: 'opponent' } }] } }, { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfCharacterCurrentPowerCount', power: 7000, atLeast: 1 }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } }] },
-
-  // --- Batch: OP10 expressible with existing primitives (+ rested-char gate) ---
-  // OP10-001 (leader) Smoker —
-  //   [Opponent's Turn] All of your {Navy} or {Punk Hazard} type Characters gain +1000 power.[Activate:
-  //   Main] [Once Per Turn] If you have a Character with 7000 power or more, set up to 2 of your DON!!
-  //   cards as active.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-002 (leader) Caesar Clown —
-  //   [DON!! x2] [When Attacking] You may return 1 of your {Punk Hazard} type Characters with a cost of 2
-  //   or more to the owner's hand: K.O. up to 1 of your opponent's Characters with 4000 power or less.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-003 (leader) Sugar —
-  //   [End of Your Turn] If you have a {Donquixote Pirates} type Character with 6000 power or more, set up
-  //   to 1 of your DON!! cards as active.[Opponent's Turn] [Once Per Turn] When you activate an Event, add
-  //   up to 1 DON!! card from your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-010 (character) Chadros.Higelyges (Brownbeard) —
-  //   [When Attacking] If you have 1 or less Characters with 6000 power or more, this Character gains +1000
-  //   power during this turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-036 (character) Perona —
-  //   [Your Turn] [Once Per Turn] If a Character is rested by your effect, set up to 1 of your DON!! cards
-  //   as active.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-047 (character) Koala —
-  //   [When Attacking] You may return 1 of your {Revolutionary Army} type Characters with a cost of 3 or
-  //   more to the owner's hand: This Character gains +3000 power during this turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-056 (character) Mansherry —
-  //   [On Play] You may rest 1 of your {Dressrosa} type Leader or Stage cards, and return 1 of your
-  //   {Dressrosa} type Characters with a cost of 4 or more to the owner's hand: Return up to 1 of your
-  //   opponent's Characters with a cost of 4 or less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-057 (character) Leo —
-  //   [On Play] You may rest your Leader or 1 of your Stage cards: If your Leader is [Usopp], look at 5
-  //   cards from the top of your deck; reveal up to 2 {Dressrosa} type cards other than [Leo] and add them
-  //   to your hand. Then, place the rest at the bottom of your deck in any order, and trash 1 card from
-  //   your hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-077 (character) Bellamy —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On Block] You may rest 2 of your DON!! cards: Add up to 1 DON!! card from your DON!!
-  //   deck and set it as active.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-083 (character) Kouzuki Momonosuke —
-  //   [Activate: Main] You may rest this Character and 1 of your {Dressrosa} type Leader or Stage cards:
-  //   Give up to 1 of your opponent's Characters -2 cost during this turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-087 (character) Tony Tony.Chopper —
-  //   [Activate: Main] You may rest this Character and 1 of your {Dressrosa} type Leader or Stage cards: If
-  //   your opponent has 5 or more cards in their hand, your opponent trashes 1 card from their hand. Then,
-  //   trash 2 cards from the top of your deck.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-099 (leader) Eustass"Captain"Kid —
-  //   [End of Your Turn] You may turn 1 card from the top of your Life cards face-up: Set up to 1 of your
-  //   {Supernovas} type Characters with a cost of 3 to 8 as active. That Character gains [Blocker] until
-  //   the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-103 (character) Capone"Gang"Bege —
-  //   [On Play] You may add 1 card from the top or bottom of your Life cards to your hand: Add up to 1
-  //   {Supernovas} type Character card from your hand to the top of your Life cards face-up.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-107 (character) Jewelry Bonney —
-  //   [Blocker][On Play] You may add 1 card from the top or bottom of your Life cards to your hand: Add up
-  //   to 1 {Supernovas} type Character card with a cost of 5 from your hand to the top of your Life cards
-  //   face-up.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-108 (character) Scratchmen Apoo —
-  //   If you have a yellow {Supernovas} type Character other than [Scratchmen Apoo], this Character gains
-  //   [Blocker].
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-110 (character) Heat & Wire —
-  //   [On Play] Rest up to 1 of your opponent's Characters with a cost equal to or less than the number of
-  //   your opponent's Life cards. [Trigger] If you have 2 or less Life cards, play this card.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-114 (character) X.Drake —
-  //   [Activate: Main] You may rest this Character: If the number of your Life cards is equal to or less
-  //   than the number of your opponent's Life cards, rest up to 1 of your opponent's Characters with a cost
-  //   of 4 or less.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-115 (event) Let's Meet Again in the New World —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, if
-  //   you have 0 Life cards, draw 1 card. [Trigger] K.O. up to 1 of your opponent's Characters with a cost
-  //   equal to or less than the number of your opponent's Life cards.
-  // NOTE: not yet implemented (needs template).
-
-  // OP10-118 (character) Monkey.D.Luffy —
-  //   Once per turn, this Character cannot be K.O.'d by your opponent's effects.[When Attacking] You may
-  //   place 3 cards from your trash at the bottom of your deck in any order: If your opponent has 5 or more
-  //   cards in their hand, your opponent trashes 1 card from their hand.
-  // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP10-002', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'Punk Hazard', minBaseCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 

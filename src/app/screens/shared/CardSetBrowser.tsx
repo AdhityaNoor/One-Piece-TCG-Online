@@ -121,8 +121,8 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
   }
 
   return (
-    <aside className="flex flex-col gap-3">
-      <div>
+    <aside className="grid grid-cols-2 gap-3 xl:flex xl:flex-col">
+      <div className="col-span-2">
         <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Set Library</label>
         {setsStatus === 'loading' && <p className="mt-1 text-xs text-slate-200/60">Loading sets...</p>}
         {setsStatus === 'error' && (
@@ -144,7 +144,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
         )}
       </div>
 
-      <div>
+      <div className="col-span-2">
         <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Search</label>
         <input
           type="search"
@@ -220,7 +220,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
         </div>
       </div>
 
-      <div>
+      <div className="col-span-2">
         <div className="flex items-center justify-between gap-2">
           <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Power</p>
           <p className="font-heading text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">
@@ -313,7 +313,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
       </div>
 
       {hasActiveFilter && (
-        <Button variant="ghost" size="sm" onClick={clearUnlockedFilters}>
+        <Button variant="ghost" size="sm" onClick={clearUnlockedFilters} className="col-span-2">
           Clear filters
         </Button>
       )}

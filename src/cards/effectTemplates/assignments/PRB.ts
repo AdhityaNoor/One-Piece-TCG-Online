@@ -54,19 +54,6 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   // PARTIAL: "rested by opponent's effect" trigger deferred; mapped onRested trash-self → draw 2.
   { cardNumber: 'PRB02-009', templateId: 'ability', params: { timing: 'onRested', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'draw', amount: 2 }] } },
 
-  // PRB02-010 (character) Charlotte Pudding —
-  //   [On Play] DON!! −2: If your Leader has the {Big Mom Pirates} type and your opponent has 6 or more
-  //   DON!! cards on their field, draw 2 cards. Then, play up to 1 {Big Mom Pirates} type Character card
-  //   with 6000 to 8000 power from your hand.
-  // NOTE: not yet implemented (needs template).
-
-
-
-  // PRB02-014 (character) Sabo —
-  //   If you have 15 or more cards in your trash, give this card in your hand −3 cost.[Blocker] (After your
-  //   opponent declares an attack, you may rest this card to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
-
 
 
   // PRB02-017 (character) Boa Hancock —
@@ -97,11 +84,6 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, maxTargets: 1 }] } },
     ],
   },
-
-  // PRB02-018 (character) Portgas.D.Ace —
-  //   [On Play] If you have a face-up Life card, play up to 1 [Sabo], [Portgas.D.Ace], or [Monkey.D.Luffy]
-  //   with a cost of 2 from your hand or trash.
-  // NOTE: not yet implemented (needs template).
 
 
   { cardNumber: 'PRB02-001', templates: [{ templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'Navy' }] } }] } }, { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 3000 } }, optional: true }, { fn: 'draw', amount: 1, ifGate: [{ kind: 'selfHand', atMost: 6 }], ifPrevious: 'previousSelectedAny' }] } }] },
@@ -135,8 +117,24 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'PRB02-014', templateId: 'ability', params: { timing: 'onEnterPlay', gate: [{ kind: 'selfTrashCount', atLeast: 15 }], functions: [{ fn: 'addCost', target: { ref: 'self' }, amount: -3, duration: 'permanent' }] } },
 
 
-  // PARTIAL: face-up Life gate + play from trash deferred; mapped hand play only.
-  { cardNumber: 'PRB02-018', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 2, anyOf: [{ name: 'Sabo' }, { name: 'Portgas.D.Ace' }, { name: 'Monkey.D.Luffy' }] } }] } },
+  // PRB02-018 — [On Play] If face-up Life: play up to 1 [Sabo]/[Ace]/[Luffy] cost≤2 from hand or trash.
+  {
+    cardNumber: 'PRB02-018',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'selfHasFaceUpLife' }],
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Play from:',
+        options: [
+          { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 2, anyOf: [{ name: 'Sabo' }, { name: 'Portgas.D.Ace' }, { name: 'Monkey.D.Luffy' }] } }] },
+          { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { category: 'character', maxCost: 2, anyOf: [{ name: 'Sabo' }, { name: 'Portgas.D.Ace' }, { name: 'Monkey.D.Luffy' }] } }] },
+        ],
+      }],
+    },
+  },
 
   // --- codegen batch ---
   { cardNumber: 'PRB02-008', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 2 }] } },

@@ -100,7 +100,7 @@ export type AbilityFunction =
   | { fn: 'draw'; amount: number; optional?: boolean; player?: 'controller' | 'opponent' }
   | { fn: 'drawUntilHandCount'; targetCount: number; player?: 'controller' | 'opponent' }
   | { fn: 'addDonFromDeck'; count: number; rested: boolean }
-  | { fn: 'giveDon'; count: number; optional?: boolean; targetTypeIncludes?: string; charactersOnly?: boolean; targetName?: string; activeDonOnly?: boolean }
+  | { fn: 'giveDon'; count: number; optional?: boolean; targetTypeIncludes?: string; anyOfTypes?: string[]; charactersOnly?: boolean; targetName?: string; activeDonOnly?: boolean }
   | { fn: 'preventBlockersOnPreviousTarget'; duration: IrDuration }
   | { fn: 'preventAttackLeaderWhileSummoningSick'; duration: IrDuration }
   | { fn: 'giveGivenDon'; count?: number; optional?: boolean; targetTypeIncludes?: string }
@@ -119,6 +119,10 @@ export type AbilityFunction =
   | { fn: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[] }
   // "You cannot add Life cards to your hand using your own effects" for the controller (or opponent).
   | { fn: 'preventControllerLifeToHand'; duration: IrDuration; player?: 'controller' | 'opponent' }
+  // "You cannot play Character cards [matching filter] this turn" for the controller (or opponent).
+  | { fn: 'preventControllerCharacterPlay'; duration: IrDuration; player?: 'controller' | 'opponent'; minBaseCost?: number; maxBaseCost?: number }
+  | { fn: 'preventControllerHandPlay'; duration: IrDuration; player?: 'controller' | 'opponent' }
+  | { fn: 'preventControllerCharacterSetActiveDon'; duration: IrDuration; player?: 'controller' | 'opponent' }
   | { fn: 'addCost'; target: TargetSpec; amount: number; duration?: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'addPower'; target: TargetSpec; amount: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   // "This card's / your Leader's base power BECOMES N" (2-6): a SET (overwrite), not a +/− delta.
@@ -184,6 +188,8 @@ export type AbilityFunction =
   | { fn: 'restOpponentDonAtStartOfNextMain'; maxTargets?: number }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
   | { fn: 'restOpponentDon'; maxTargets?: number; optional?: boolean }
+  // Rest up to N of the controller's active DON!! cards (optional effect-chain payment).
+  | { fn: 'restControllerDon'; maxTargets?: number; optional?: boolean }
   // Opponent chooses N DON!! cards from their field and returns them to their DON!! deck.
   | { fn: 'returnOpponentDon'; count: number }
   // Aura: give the controller's own Leader + Characters (optionally type-filtered)
@@ -214,8 +220,8 @@ export type AbilityFunction =
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
   | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
   // Register optional K.O. replacement on this card ("would be K.O.'d … instead").
-  | { fn: 'registerKoReplacementSelf'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; replacementTriggers?: ('ko' | 'returnToHand' | 'bottomDeck')[]; effectSourceController?: 'opponent' | 'controller'; activationGate?: AbilityGate[]; sourceCondition?: SourceStateCondition; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; trashSelf?: true; trashLife?: { position?: 'top' | 'bottom' | 'topOrBottom' }; trashTrashToDeckBottom?: { count: number }; bottomDeckCharacter?: true; restCharacter?: true; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
-  | { fn: 'registerKoReplacementAura'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; replacementTriggers?: ('ko' | 'returnToHand' | 'bottomDeck')[]; effectSourceController?: 'opponent' | 'controller'; effectSourceCategory?: 'leader' | 'character'; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfAttributes?: string[]; charactersOnly?: boolean; excludeSource?: boolean; targetCondition?: IrCondition; sourceCondition?: SourceStateCondition; trashSource?: true; returnSourceToHand?: true; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; restSource?: true; restCharacter?: true; bottomDeckCharacter?: true; trashSelfAndDraw?: { amount: number }; giveSelfPowerPenalty?: { amount: number; duration: IrDuration }; giveLeaderPowerPenalty?: { amount: number; duration: IrDuration }; moveTargetToLifeFaceDown?: true; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
+  | { fn: 'registerKoReplacementSelf'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; replacementTriggers?: ('ko' | 'returnToHand' | 'bottomDeck')[]; effectSourceController?: 'opponent' | 'controller'; activationGate?: AbilityGate[]; sourceCondition?: SourceStateCondition; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; trashSelf?: true; trashLife?: { position?: 'top' | 'bottom' | 'topOrBottom' }; trashTrashToDeckBottom?: { count: number }; turnTopLifeFace?: { faceUp: boolean }; bottomDeckCharacter?: true; restCharacter?: true; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
+  | { fn: 'registerKoReplacementAura'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; replacementTriggers?: ('ko' | 'returnToHand' | 'bottomDeck')[]; effectSourceController?: 'opponent' | 'controller'; effectSourceCategory?: 'leader' | 'character'; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfAttributes?: string[]; charactersOnly?: boolean; excludeSource?: boolean; targetCondition?: IrCondition; sourceCondition?: SourceStateCondition; trashSource?: true; returnSourceToHand?: true; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; restSource?: true; restCharacter?: true; bottomDeckCharacter?: true; trashSelfAndDraw?: { amount: number }; giveSelfPowerPenalty?: { amount: number; duration: IrDuration }; giveLeaderPowerPenalty?: { amount: number; duration: IrDuration }; moveTargetToLifeFaceDown?: true; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; trashTrashToDeckBottom?: { count: number }; turnTopLifeFace?: { faceUp: boolean }; duration: IrDuration }
   | { fn: 'registerRestReplacementSelf'; oncePerTurn?: boolean; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller'; effectSourceCategory?: 'leader' | 'character'; duration: IrDuration }
   | { fn: 'setBasePowerFromLeader'; target: TargetSpec; duration: IrDuration; condition?: IrCondition; sourceCondition?: SourceStateCondition }
   | { fn: 'drawByEventCount'; countField: 'handTrashedCount' }
@@ -226,6 +232,7 @@ export type AbilityFunction =
   | { fn: 'koAllCharacters'; filter?: { maxCost?: number; maxPower?: number; rested?: boolean } }
   // Give up to `count` rested DON!! to the controller's Leader (no target choice) — "give ... to this Leader".
   | { fn: 'giveDonControllerLeader'; count: number }
+  | { fn: 'giveDonLeaderAndCharacter'; count: number }
   // Give up to `count` rested DON!! to the source card itself.
   | { fn: 'giveDonSelf'; count: number }
   // Give up to `count` DON!! from the opponent's cost area to 1 opponent Character (`restedOnly` when text says "rested DON!!").

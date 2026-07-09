@@ -48,7 +48,8 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   according to the rules.[DON!! x2] [Activate: Main] [Once Per Turn] You may trash 1 card from your
   //   hand: If you have 0 Life cards, add up to 2 Character cards with a cost of 5 from your hand or trash
   //   to the top of your Life cards face-up.
-  // PARTIAL: face-up Life-to-deck-bottom replacement rule deferred; mapped activateMain hand/trash → Life.
+  // ST13-003 — PARTIAL: face-up Life-to-deck-bottom replacement rule deferred.
+  //   [Activate: Main] trash 1 from hand: if 0 Life, add up to 2 cost-5 Characters from hand or trash to Life top face-up.
   {
     cardNumber: 'ST13-003',
     templateId: 'ability',
@@ -58,8 +59,17 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
       condition: { donAttachedAtLeast: 2 },
       functions: [
         { fn: 'optionalTrashFromHand', count: 1 },
-        { fn: 'moveCards', ifGate: [{ kind: 'selfLife', atMost: 0 }], from: { zone: 'hand', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 2, ifPrevious: 'previousMovedAny' },
-        { fn: 'moveCards', ifGate: [{ kind: 'selfLife', atMost: 0 }], from: { zone: 'trash', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 2, ifPrevious: 'previousMovedAny' },
+        {
+          fn: 'chooseOne',
+          chooser: 'controller',
+          prompt: 'Add Characters from:',
+          ifGate: [{ kind: 'selfLife', atMost: 0 }],
+          ifPrevious: 'previousMovedAny',
+          options: [
+            { label: 'fromHand', functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 2 }] },
+            { label: 'fromTrash', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 2 }] },
+          ],
+        },
       ],
     },
   },

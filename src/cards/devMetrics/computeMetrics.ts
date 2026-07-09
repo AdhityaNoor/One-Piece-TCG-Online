@@ -8,27 +8,52 @@ import { CURATED_EFFECT_PROGRAMS } from '../effectTemplates';
 import { classifyTriage } from '../effectTemplates/catalog/capability/triage';
 import { auditCuratedCard, emptyAuditByCategory } from './curationAudit';
 import { classifyCoverage } from './coverage';
-import type { AuditCategory, CatalogCard, EffectMetrics, SetMetrics, TriageRow } from './types';
+import {
+  emptyPartialByKind,
+  enrichPartialFindings,
+  partialCardNumberSet,
+  scanPartialCurations,
+  type AssignmentSourceFile,
+} from './partialCurationScan';
+import type { AuditCategory, CatalogCard, EffectMetrics, PartialCurationFinding, SetMetrics, TriageRow } from './types';
+
+export interface ComputeEffectMetricsOptions {
+  assignmentSources?: AssignmentSourceFile[];
+}
 
 function emptySetMetrics(setCode: string): SetMetrics {
   return {
     setCode,
     curated: 0,
+    partialCurated: 0,
     needsTemplate: 0,
     vanilla: 0,
     triageExpressible: 0,
     triageNeedsPrimitive: 0,
     triageDefer: 0,
     auditFindings: 0,
+    partialFindings: 0,
+    stalePartialNotes: 0,
   };
 }
 
 /** Build full metrics snapshot from deduplicated catalog cards. */
-export function computeEffectMetrics(cards: CatalogCard[]): EffectMetrics {
+export function computeEffectMetrics(cards: CatalogCard[], options: ComputeEffectMetricsOptions = {}): EffectMetrics {
   const sorted = [...cards].sort((a, b) => a.cardNumber.localeCompare(b.cardNumber));
   const byNumber = new Map(sorted.map((c) => [c.cardNumber, c]));
 
-  const coverageRows = sorted.map(classifyCoverage);
+  const rawPartialFindings = options.assignmentSources?.length
+    ? scanPartialCurations(options.assignmentSources)
+    : [];
+  const partialFindings: PartialCurationFinding[] = enrichPartialFindings(rawPartialFindings, byNumber);
+  const partialCards = partialCardNumberSet(partialFindings);
+  const partialNoteCounts = new Map<string, number>();
+  for (const f of partialFindings) {
+    if (!f.cardNumber || !f.hasAssignment || f.kind === 'batchNote' || f.kind === 'notImplemented') continue;
+    partialNoteCounts.set(f.cardNumber, (partialNoteCounts.get(f.cardNumber) ?? 0) + 1);
+  }
+
+  const coverageRows = sorted.map((c) => classifyCoverage(c, partialCards, partialNoteCounts));
   const triageRows: TriageRow[] = [];
   const auditFindings = [];
   const bySet = new Map<string, SetMetrics>();
@@ -45,12 +70,30 @@ export function computeEffectMetrics(cards: CatalogCard[]): EffectMetrics {
   let auditScanned = 0;
   const auditByCategory = emptyAuditByCategory();
   const flaggedCards = new Set<string>();
+  const partialByKind = emptyPartialByKind();
+  let partialCuratedCards = 0;
+  let stalePartialNotes = 0;
+  let unassignedDeferNotes = 0;
+
+  for (const f of partialFindings) {
+    partialByKind[f.kind]++;
+    const setRow = bySet.get(f.setCode) ?? emptySetMetrics(f.setCode);
+    setRow.partialFindings++;
+    if (f.isStale) {
+      stalePartialNotes++;
+      setRow.stalePartialNotes++;
+    }
+    if (f.kind === 'notImplemented' && !f.hasAssignment) unassignedDeferNotes++;
+    bySet.set(f.setCode, setRow);
+  }
+  partialCuratedCards = partialCards.size;
 
   for (const row of coverageRows) {
     const setRow = bySet.get(row.setCode) ?? emptySetMetrics(row.setCode);
     if (row.status === 'curated') {
       coverageCurated++;
       setRow.curated++;
+      if (row.partialCurated) setRow.partialCurated++;
     } else if (row.status === 'needsTemplate') {
       coverageNeedsTemplate++;
       setRow.needsTemplate++;
@@ -143,10 +186,18 @@ export function computeEffectMetrics(cards: CatalogCard[]): EffectMetrics {
       findings: auditFindings.length,
       byCategory: auditByCategory,
     },
+    partial: {
+      findingCount: partialFindings.length,
+      partialCuratedCards,
+      staleNotes: stalePartialNotes,
+      unassignedDeferNotes,
+      byKind: partialByKind,
+    },
     bySet: [...bySet.values()].sort((a, b) => a.setCode.localeCompare(b.setCode)),
     topReasons,
     coverageRows,
     triageRows,
     auditFindings,
+    partialFindings,
   };
 }

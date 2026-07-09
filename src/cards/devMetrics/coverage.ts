@@ -12,7 +12,7 @@ function effectActionCount(ability: { actions: { op: string }[] }): number {
 }
 
 /** Classify one catalog card into curated / needsTemplate / vanilla. */
-export function classifyCoverage(card: CatalogCard): CoverageRow {
+export function classifyCoverage(card: CatalogCard, partialCards?: Set<string>, partialNoteCounts?: Map<string, number>): CoverageRow {
   const text = card.en?.effectText ?? '';
   const base = {
     setCode: card.setCode,
@@ -23,7 +23,16 @@ export function classifyCoverage(card: CatalogCard): CoverageRow {
   };
 
   if (!text.trim()) {
-    return { ...base, status: 'vanilla', curatedAbilities: 0, effectAbilities: 0, runtimeTriggers: '', parserReview: false };
+    return {
+      ...base,
+      status: 'vanilla',
+      partialCurated: false,
+      partialNoteCount: 0,
+      curatedAbilities: 0,
+      effectAbilities: 0,
+      runtimeTriggers: '',
+      parserReview: false,
+    };
   }
 
   const parsed = parseEffect(card.cardNumber, text);
@@ -40,6 +49,8 @@ export function classifyCoverage(card: CatalogCard): CoverageRow {
   return {
     ...base,
     status,
+    partialCurated: partialCards?.has(card.cardNumber) ?? false,
+    partialNoteCount: partialNoteCounts?.get(card.cardNumber) ?? 0,
     curatedAbilities,
     effectAbilities,
     runtimeTriggers: runtimeTriggers || (isStaticEngineKeywordOnly(text) ? 'staticKeyword' : ''),

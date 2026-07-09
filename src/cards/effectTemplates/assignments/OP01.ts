@@ -10,15 +10,10 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-001 — (Leader) [DON!! x1] [Your Turn] All of your Characters gain +1000 power.
   { cardNumber: 'OP01-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 1000, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
 
-  // --- Batch: OP01 cards expressible with existing primitives ---
-  // OP01-001 (leader) Roronoa Zoro —
-  //   [DON!! x1] [Your Turn] All of your Characters gain +1000 power.
-  // NOTE: not yet implemented (needs template).
-
-  // OP01-002 — PARTIAL: "different color than returned Character" play filter deferred.
+  // OP01-002 — return 1 Character, play cost≤5 Character different color than returned.
   { cardNumber: 'OP01-002', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restDon', count: 2 }], gate: [{ kind: 'selfCharacterCount', atLeast: 5 }], functions: [
     { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
-    { fn: 'playFromHand', filter: { category: 'character', maxCost: 5 }, ifPrevious: 'previousMovedAny' },
+    { fn: 'playFromHand', filter: { category: 'character', maxCost: 5, excludeColorsOfPreviousMove: true }, ifPrevious: 'previousMovedAny' },
   ] } },
 
   // OP01-003 (leader) Monkey.D.Luffy —
@@ -92,11 +87,6 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-019 — [DON!! x2] [Opponent's Turn] +3000
   { cardNumber: 'OP01-019', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { donAttachedAtLeast: 2, turn: 'opponent' } }] } },
 
-  // OP01-019 (character) Bartolomeo —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.) [DON!! x2] [Opponent's Turn] This Character gains +3000 power.
-  // NOTE: not yet implemented (needs template).
-
   { cardNumber: 'OP01-020', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
   // OP01-021 (character) Franky —
@@ -165,10 +155,6 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-032 — [DON!! x1] if opponent has 2+ rested Characters, +2000
   { cardNumber: 'OP01-032', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'opponentRestedCharacterCount', atLeast: 2 }] } }] } },
 
-  // OP01-032 (character) Ashura Doji —
-  //   [DON!! x1] If your opponent has 2 or more rested Characters, this Character gains +2000 power.
-  // NOTE: not yet implemented (needs template).
-
   // OP01-033 — [On Play] Rest up to 1 of your opponent's Characters with a cost of 4 or less.
   { cardNumber: 'OP01-033', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
@@ -224,12 +210,6 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'playFromHand', filter: { category: 'character', maxCost: 3 }, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // OP01-047 (character) Trafalgar Law —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.) [On Play] You may return 1 Character to your hand: Play up to 1 Character card with a
-  //   cost of 3 or less from your hand.
-  // NOTE: not yet implemented (needs template).
-
   // OP01-048 — [On Play] Rest up to 1 of your opponent's Characters with a cost of 3 or less.
   { cardNumber: 'OP01-048', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
 
@@ -239,11 +219,12 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-050 — [Blocker] [On Play] If you don't have [Shachi], play up to 1 [Shachi] from hand.
   { cardNumber: 'OP01-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDoesNotControlNamed', name: 'Shachi' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Shachi' } }] } },
 
-  // OP01-051 — [DON!! x1][Opponent's Turn] if rested, opponent must attack this Character. PARTIAL: [Activate: Main] play-from-hand deferred.
+  // OP01-051 — [DON!! x1][Opponent's Turn] forced attack if rested; [Activate: Main] rest this → play cost≤3 from hand.
   {
     cardNumber: 'OP01-051',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'setForcedAttackTarget', duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'opponent' }, condition: { rested: true } }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restThis' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 3 } }] } },
     ],
   },
   // OP01-052 — [When Attacking] [Once Per Turn] If you have 2 or more rested Characters, draw 1.
@@ -359,11 +340,6 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP01-068 (character) Gecko Moria —
-  //   [Your Turn] This Character gains [Double Attack] if you have 5 or more cards in your hand. (This card
-  //   deals 2 damage.)
-  // NOTE: not yet implemented (needs template).
-
   // OP01-069 — [On K.O.] Play up to 1 [Smiley] from your deck, then shuffle.
   { cardNumber: 'OP01-069', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromDeck', filter: { category: 'character', name: 'Smiley' } }] } },
 
@@ -405,10 +381,6 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // --- codegen batch ---
   { cardNumber: 'OP01-073', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
-
-  // OP01-072 (character) Smiley —
-  //   [DON!! x1] [Your Turn] This Character gains +1000 power for every card in your hand.
-  // NOTE: not yet implemented (needs template).
 
   // OP01-074 — [Blocker] [On K.O.] Play up to 1 [Pacifista] cost<=4 from hand.
   { cardNumber: 'OP01-074', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Pacifista', maxCost: 4 } }] } },
@@ -561,11 +533,6 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP01-109 — [DON!! x1] [Your Turn] if 8+ DON!!, +1000
   { cardNumber: 'OP01-109', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 1, turn: 'your', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }] } }] } },
-
-  // OP01-109 (character) Who's.Who —
-  //   [DON!! x1] [Your Turn] If you have 8 or more DON!! cards on your field, this Character gains +1000
-  //   power.
-  // NOTE: not yet implemented (needs template).
 
   // OP01-111 — [Blocker] [On Block] DON!! −1: this Character gains +1000 this turn.
   { cardNumber: 'OP01-111', templateId: 'ability', params: { timing: 'onBlock', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' }] } },

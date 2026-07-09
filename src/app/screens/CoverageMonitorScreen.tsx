@@ -6,13 +6,14 @@ import { useMemo, useState } from 'react';
 import { CanvasMenuButton, GameCanvasScreen } from '../components';
 import { useEffectCoverageMetrics } from '../hooks/useEffectCoverageMetrics';
 import { useNavigationStore } from '../store/navigationStore';
-import type { AuditFinding, CoverageRow, SetMetrics, TriageRow } from '../../cards/devMetrics';
+import type { AuditFinding, CoverageRow, PartialCurationFinding, SetMetrics, TriageRow } from '../../cards/devMetrics';
 
-type Tab = 'overview' | 'coverage' | 'triage' | 'audit';
+type Tab = 'overview' | 'coverage' | 'partials' | 'triage' | 'audit';
 
 const TAB_LABELS: Record<Tab, string> = {
   overview: 'Overview',
   coverage: 'Coverage',
+  partials: 'Partials',
   triage: 'Triage',
   audit: 'Audit',
 };
@@ -82,8 +83,21 @@ export function CoverageMonitorScreen() {
     return metrics.auditFindings.filter(matchesFilters);
   }, [metrics, setFilter, normalizedQuery]);
 
+  const filteredPartial = useMemo(() => {
+    if (!metrics) return [];
+    return metrics.partialFindings.filter((f) => {
+      if (setFilter && f.setCode !== setFilter) return false;
+      if (!normalizedQuery) return true;
+      return (
+        (f.cardNumber?.toUpperCase().includes(normalizedQuery) ?? false) ||
+        (f.name?.toUpperCase().includes(normalizedQuery) ?? false) ||
+        f.note.toUpperCase().includes(normalizedQuery)
+      );
+    });
+  }, [metrics, setFilter, normalizedQuery]);
+
   const statusLine = metrics
-    ? `${metrics.coverage.curatedPct}% curated · ${metrics.coverage.needsTemplate} need templates`
+    ? `${metrics.coverage.curatedPct}% curated · ${metrics.partial.partialCuratedCards} partial · ${metrics.coverage.needsTemplate} need templates`
     : status === 'loading'
       ? 'Computing…'
       : 'Awaiting catalog';
@@ -112,11 +126,12 @@ export function CoverageMonitorScreen() {
               Live metrics from the curated registry. Mirrors{' '}
               <code className="rounded bg-black/35 px-1 py-0.5 text-[10px] text-gold/80">npm run coverage</code>,{' '}
               <code className="rounded bg-black/35 px-1 py-0.5 text-[10px] text-gold/80">triage</code>, and{' '}
-              <code className="rounded bg-black/35 px-1 py-0.5 text-[10px] text-gold/80">audit:curation</code>.
+              <code className="rounded bg-black/35 px-1 py-0.5 text-[10px] text-gold/80">audit:curation</code>,{' '}
+              <code className="rounded bg-black/35 px-1 py-0.5 text-[10px] text-gold/80">scan:partials</code>.
             </p>
 
             <div className="mt-4 flex flex-wrap gap-1.5">
-              {(['overview', 'coverage', 'triage', 'audit'] as Tab[]).map((t) => (
+              {(['overview', 'coverage', 'partials', 'triage', 'audit'] as Tab[]).map((t) => (
                 <button key={t} type="button" onClick={() => setTab(t)} className={tabButtonClass(tab === t)}>
                   {TAB_LABELS[t]}
                 </button>
@@ -175,6 +190,7 @@ export function CoverageMonitorScreen() {
             <div className="mt-2 min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
               {tab === 'overview' && <OverviewTab metrics={metrics} setRows={filteredSetMetrics} />}
               {tab === 'coverage' && <CoverageTab rows={filteredCoverage} />}
+              {tab === 'partials' && <PartialsTab rows={filteredPartial} partialCards={metrics.partial.partialCuratedCards} />}
               {tab === 'triage' && <TriageTab rows={filteredTriage} topReasons={metrics.topReasons} />}
               {tab === 'audit' && <AuditTab rows={filteredAudit} flagged={metrics.audit.flaggedCards} />}
             </div>
@@ -186,18 +202,25 @@ export function CoverageMonitorScreen() {
 }
 
 function OverviewTab({ metrics, setRows }: { metrics: NonNullable<ReturnType<typeof useEffectCoverageMetrics>['metrics']>; setRows: SetMetrics[] }) {
-  const { coverage, triage, audit, withEffectText } = metrics;
+  const { coverage, triage, audit, partial, withEffectText } = metrics;
+  const fullyCurated = coverage.curated - partial.partialCuratedCards;
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <StatCard label="Curated" value={coverage.curated} sub={`${coverage.curatedPct}% of ${withEffectText} with text`} />
+        <StatCard label="Partial curated" value={partial.partialCuratedCards} sub={`${fullyCurated} fully done`} />
         <StatCard label="Needs template" value={coverage.needsTemplate} sub={pct(coverage.needsTemplate, withEffectText)} />
-        <StatCard label="Triage backlog" value={triage.analyzed} sub={`${triage.expressible} expressible`} />
         <StatCard
           label="Audit flags"
           value={audit.flaggedCards}
           sub={audit.findings === 0 ? 'clean' : `${audit.findings} findings`}
         />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <StatCard label="Triage backlog" value={triage.analyzed} sub={`${triage.expressible} expressible`} />
+        <StatCard label="Partial markers" value={partial.findingCount} sub={`${partial.staleNotes} stale notes`} />
+        <StatCard label="Unassigned defer" value={partial.unassignedDeferNotes} sub="NOTE without assignment" />
       </div>
 
       <div className="op-card-well p-3">
@@ -250,6 +273,7 @@ function SetBreakdownTable({ rows }: { rows: SetMetrics[] }) {
             <tr>
               <th className="px-3 py-2 font-bold uppercase tracking-wider">Set</th>
               <th className="px-2 py-2 text-right">Curated</th>
+              <th className="px-2 py-2 text-right">Partial</th>
               <th className="px-2 py-2 text-right">Needs</th>
               <th className="px-2 py-2 text-right">Expr.</th>
               <th className="px-2 py-2 text-right">Prim.</th>
@@ -262,6 +286,7 @@ function SetBreakdownTable({ rows }: { rows: SetMetrics[] }) {
               <tr key={s.setCode} className="border-t border-white/6 text-white/85">
                 <td className="px-3 py-2 font-mono text-gold/80">{s.setCode}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{s.curated}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-orange-200/90">{s.partialCurated || '—'}</td>
                 <td className="px-2 py-2 text-right tabular-nums text-amber-200/90">{s.needsTemplate}</td>
                 <td className="px-2 py-2 text-right tabular-nums text-emerald-200/80">{s.triageExpressible}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{s.triageNeedsPrimitive}</td>
@@ -273,6 +298,25 @@ function SetBreakdownTable({ rows }: { rows: SetMetrics[] }) {
         </table>
       </div>
     </div>
+  );
+}
+
+function PartialsTab({ rows, partialCards }: { rows: PartialCurationFinding[]; partialCards: number }) {
+  const assigned = rows.filter((f) => f.cardNumber && f.hasAssignment && f.kind !== 'batchNote');
+  return (
+    <CardTable
+      title={`Partial / deferred markers (${assigned.length} on assigned cards; ${partialCards} unique cards)`}
+      empty="No PARTIAL/deferred markers for this filter."
+      headers={['Card', 'Set', 'Kind', 'Stale', 'Note']}
+      rows={assigned.slice(0, 300).map((f) => [
+        f.cardNumber ?? '—',
+        f.setCode,
+        f.kind,
+        f.isStale ? 'yes' : '—',
+        truncate(f.note, 140),
+      ])}
+      footnote={assigned.length > 300 ? `Showing first 300 of ${assigned.length} rows.` : undefined}
+    />
   );
 }
 

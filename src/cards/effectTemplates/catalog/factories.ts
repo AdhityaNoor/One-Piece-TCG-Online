@@ -22,6 +22,7 @@ function koReplacementAction(f: {
   bottomDeckCharacter?: true;
   trashSelfAndDraw?: { amount: number };
   trashTrashToDeckBottom?: { count: number };
+  turnTopLifeFace?: { faceUp: boolean };
   giveSelfPowerPenalty?: { amount: number; duration: import('../../../engine/effects/effectIr').IrDuration };
   giveLeaderPowerPenalty?: { amount: number; duration: import('../../../engine/effects/effectIr').IrDuration };
   moveTargetToLifeFaceDown?: true;
@@ -35,6 +36,7 @@ function koReplacementAction(f: {
   if (f.bottomDeckCharacter) return { kind: 'bottomDeckCharacter', count: 1 };
   if (f.trashSelfAndDraw) return { kind: 'trashSelfAndDraw', drawAmount: f.trashSelfAndDraw.amount };
   if (f.trashTrashToDeckBottom) return { kind: 'trashTrashToDeckBottom', count: f.trashTrashToDeckBottom.count };
+  if (f.turnTopLifeFace) return { kind: 'turnTopLifeFace', faceUp: f.turnTopLifeFace.faceUp };
   if (f.giveSelfPowerPenalty) return { kind: 'giveSelfPowerPenalty', amount: f.giveSelfPowerPenalty.amount, duration: f.giveSelfPowerPenalty.duration };
   if (f.giveLeaderPowerPenalty) return { kind: 'giveLeaderPowerPenalty', amount: f.giveLeaderPowerPenalty.amount, duration: f.giveLeaderPowerPenalty.duration };
   if (f.moveTargetToLifeFaceDown) return { kind: 'moveTargetToLifeFaceDown' };
@@ -178,6 +180,7 @@ function moveOpForDestination(to: MoveCardDestination, target: Extract<EffectOp,
     };
   }
   if (to.zone === 'deck' && to.player === 'owner' && to.position === 'bottom') return { op: 'moveToBottomDeck', target };
+  if (to.zone === 'deck' && to.player === 'owner' && to.position === 'top') return { op: 'moveToTopDeck', target };
   if (to.zone === 'trash' && to.player === 'owner') return { op: 'trashCards', target };
   throw new Error(`Unsupported move destination ${JSON.stringify(to)}`);
 }
@@ -298,8 +301,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         ];
       }
       const from = f.charactersOnly
-        ? ({ sel: 'controllerCharacters' as const, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}) })
-        : ({ sel: 'controllerLeaderOrCharacters' as const, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}) });
+        ? ({ sel: 'controllerCharacters' as const, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}), ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) })
+        : ({ sel: 'controllerLeaderOrCharacters' as const, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}), ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) });
       return [
         {
           op: 'chooseTargets',
@@ -438,6 +441,26 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
     case 'preventControllerLifeToHand':
       return [{
         op: 'preventControllerLifeToHand',
+        player: f.player ?? 'controller',
+        duration: f.duration,
+      }];
+    case 'preventControllerCharacterPlay':
+      return [{
+        op: 'preventControllerCharacterPlay',
+        player: f.player ?? 'controller',
+        duration: f.duration,
+        ...(f.minBaseCost !== undefined ? { minBaseCost: f.minBaseCost } : {}),
+        ...(f.maxBaseCost !== undefined ? { maxBaseCost: f.maxBaseCost } : {}),
+      }];
+    case 'preventControllerHandPlay':
+      return [{
+        op: 'preventControllerHandPlay',
+        player: f.player ?? 'controller',
+        duration: f.duration,
+      }];
+    case 'preventControllerCharacterSetActiveDon':
+      return [{
+        op: 'preventControllerCharacterSetActiveDon',
         player: f.player ?? 'controller',
         duration: f.duration,
       }];
@@ -848,6 +871,20 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'rest', target: { sel: 'var', name: 't' } },
       ];
     }
+    case 'restControllerDon': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerActiveDon' },
+          min: 0,
+          max: maxTargets,
+          prompt: `Rest up to ${maxTargets} of your DON!! cards (or decline).`,
+        },
+        { op: 'rest', target: { sel: 'var', name: 't' } },
+      ];
+    }
     case 'restOpponentDonAtStartOfNextMain':
       return [{ op: 'scheduleRestOpponentDonAtStartOfNextMain', maxTargets: f.maxTargets ?? 1 }];
     case 'returnOpponentDon':
@@ -1042,6 +1079,19 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'giveDonControllerLeader':
       return [{ op: 'giveDon', target: { sel: 'controllerLeader' }, count: f.count }];
+    case 'giveDonLeaderAndCharacter':
+      return [
+        { op: 'giveDon', target: { sel: 'controllerLeader' }, count: f.count },
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerCharacters' },
+          min: 0,
+          max: 1,
+          prompt: 'Give up to 1 rested DON!! card to 1 of your Characters.',
+        },
+        { op: 'giveDon', target: { sel: 'var', name: 't' }, count: f.count },
+      ];
     case 'giveDonSelf':
       return [{ op: 'giveDon', target: { sel: 'self' }, count: f.count }];
     case 'giveDonFromOpponentCostArea':

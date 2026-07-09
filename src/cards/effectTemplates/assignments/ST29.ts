@@ -40,15 +40,26 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'ST29-009', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Monkey.D.Luffy' }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // ST29-008 (character) Nami —
-  //   If your {Egghead} type Character would be K.O.'d by your opponent's effect, you may turn 1 card from
-  //   the top of your Life cards face-up instead. [Trigger] If your Leader is [Monkey.D.Luffy], play this
-  //   card.
-  // PARTIAL: Egghead K.O.-replacement (turn top Life face-up) deferred; mapped [Trigger] play-self when Leader is Luffy.
+  // ST29-008 — Egghead ally: opponent-effect K.O. → turn top Life face-up. [Trigger] play when Leader is Luffy.
   {
     cardNumber: 'ST29-008',
-    templateId: 'ability',
-    params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Monkey.D.Luffy' }], functions: [{ fn: 'triggerPlaySelf' }] },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementAura',
+            scope: 'effect',
+            effectSourceController: 'opponent',
+            anyOfTypes: ['Egghead'],
+            turnTopLifeFace: { faceUp: true },
+            duration: 'permanent',
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Monkey.D.Luffy' }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
   },
 
   // ST29-012 — [Activate: Main][OPT] give up to 1 rested DON!! to 1 [Monkey.D.Luffy] card. [Trigger] play this.
@@ -69,12 +80,6 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // ST29-013 — [Trigger] K.O. up to 1 opp Character cost ≤ combined Life (both players).
   { cardNumber: 'ST29-013', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromCombinedLife: true } }, optional: true }] } },
-
-  // ST29-014 (character) Roronoa Zoro —
-  //   [Rush: Character] (This card can attack Characters on the turn in which it is played.)[Activate:
-  //   Main] [Once Per Turn] You may trash 1 card with a [Trigger] from your hand: Draw 1 card and give up
-  //   to 1 rested DON!! card to your Leader or 1 of your Characters.
-  // NOTE: not yet implemented (needs template).
 
   // ST29-015 — [Counter] up to 1 Leader/Char +2000 this battle, then if ≤1 Life give opp Leader/Char −2000. [Trigger] Draw 1.
   {

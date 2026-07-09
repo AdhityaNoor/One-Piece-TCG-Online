@@ -25,12 +25,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP13-002 (leader) Portgas.D.Ace —
-  //   [On Your Opponent's Attack] [Once Per Turn] You may trash 1 card from your hand: Give up to 1 of your
-  //   opponent's Leader or Character cards −2000 power during this battle.[DON!! x1] [Once Per Turn] When
-  //   you take damage or your Character with 6000 base power or more is K.O.'d, draw 1 card.
-  // NOTE: not yet implemented (needs template).
-
   // OP13-003 (leader) Gol.D.Roger —
   //   If you have any DON!! cards on your field, 1 DON!! card placed during your DON!! Phase is given to
   //   your Leader.If you have 9 or less DON!! cards on your field, give this Leader −2000 power.
@@ -173,8 +167,17 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-022 (stage) — [Activate: Main] rest this: up to 1 Character base power ≤2000 +1000 this turn.
   { cardNumber: 'OP13-022', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { maxBasePower: 2000 } }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP13-023 — [On Play] Set up to 2 DON!! active. PARTIAL: base-cost-5 play restriction and [On K.O.] play-rested deferred.
-  { cardNumber: 'OP13-023', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
+  // OP13-023 — [On Play] set 2 DON active + block base-cost-5+ Characters. [On K.O.] play cost≤5 Character rested.
+  {
+    cardNumber: 'OP13-023',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [
+        { fn: 'setActiveControllerDon', maxTargets: 2 },
+        { fn: 'preventControllerCharacterPlay', duration: 'duringThisTurn', minBaseCost: 5 },
+      ] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 5 }, rested: true }] } },
+    ],
+  },
 
   // OP13-024 (character) Gordon —
   //   [On Play] You may reveal 1 {Music} or {FILM} type card from your hand: Set up to 2 of your DON!!
@@ -187,24 +190,20 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-027 — [On Play] Set up to 2 DON!! active. PARTIAL: OR-type [End of Your Turn] ramp deferred.
   { cardNumber: 'OP13-027', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
 
-  // OP13-028 (character) Shanks —
-  //   PARTIAL: "cannot play cards from your hand this turn" deferred; mapped set all DON!! active (up to 10).
+  // OP13-028 — [On Play] Set all DON active, then cannot play cards from hand this turn.
   {
     cardNumber: 'OP13-028',
     templateId: 'ability',
     params: {
       timing: 'onPlay',
-      functions: [{ fn: 'setActiveControllerDon', maxTargets: 10 }],
+      functions: [
+        { fn: 'setActiveControllerDon', maxTargets: 10 },
+        { fn: 'preventControllerHandPlay', duration: 'duringThisTurn' },
+      ],
     },
   },
 
   { cardNumber: 'OP13-030', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
-
-  // OP13-031 (character) Trafalgar Law —
-  //   If you have 1 or less Life cards, this Character gains [Blocker].[On Play] You may return 1 of your
-  //   Characters to the owner's hand: Play up to 1 Character card with a cost of 5 or less from your hand
-  //   rested.
-  // NOTE: not yet implemented (needs template).
 
   // OP13-032 (character) Nico Robin —
   //   [On Play] Up to 1 of your opponent's Characters with a cost of 8 or less cannot be rested until the
@@ -644,8 +643,11 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-117 — [Trigger] Draw 1. PARTIAL: the turn-Life-face-up [Main] K.O. is deferred.
   { cardNumber: 'OP13-117', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
 
-  // OP13-118 — [Double Attack][On Play] If Leader multicolored, set up to 4 DON!! active. PARTIAL: base-cost-5 play restriction deferred.
-  { cardNumber: 'OP13-118', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderMulticolor' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 4 }] } },
+  // OP13-118 — [Double Attack][On Play] If Leader multicolored, set up to 4 DON!! active, then cannot play base-cost-5+ Characters this turn.
+  { cardNumber: 'OP13-118', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderMulticolor' }], functions: [
+    { fn: 'setActiveControllerDon', maxTargets: 4 },
+    { fn: 'preventControllerCharacterPlay', duration: 'duringThisTurn', minBaseCost: 5 },
+  ] } },
 
   // OP13-119 — static: if ≤3 Life, [Rush]. [On Play] give 1 rested DON!! to Leader, then return up to 1 opp Char cost ≤5. PARTIAL: opp-play drawback deferred.
   {
@@ -657,38 +659,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   { cardNumber: 'OP13-025', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'FILM' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
-
-  // OP13-026 (character) Sunny-Kun —
-  //   [Activate: Main] [Once Per Turn] You may rest 1 of your DON!! cards: This Character gains +2000 power
-  //   until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP13-038 (event) Gum-Gum Elephant Gun —
-  //   [Main] Rest up to 1 of your opponent's Characters with a cost of 5 or less. Then, set up to 2 of your
-  //   DON!! cards as active at the end of this turn. [Trigger] Rest up to 1 of your opponent's Characters
-  //   with a cost of 5 or less.
-  // NOTE: not yet implemented (needs template).
-
-  // OP13-061 (character) Inuarashi —
-  //   [On Play] If you have any DON!! cards given, add up to 1 DON!! card from your DON!! deck and rest it.
-  //   Then, K.O. up to 1 of your opponent's Characters with a cost of 1 or less.
-  // NOTE: not yet implemented (needs template).
-
-  // OP13-066 (character) Silvers Rayleigh —
-  //   [Rush][On Play] If you have any DON!! cards given, rest up to 1 of your opponent's Characters with a
-  //   cost of 5 or less. Then, add up to 1 DON!! card from your DON!! deck and set it as active at the end
-  //   of this turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP13-092 (character) Saint Mjosgard —
-  //   [On Play] If you have 3 or less Life cards, play up to 1 {Mary Geoise} type Stage card with a cost of
-  //   1 from your trash.
-  // NOTE: not yet implemented (needs template).
-
-  // OP13-095 (character) Saint Rosward —
-  //   [On Play] You may trash 1 card from your hand: If you only have {Celestial Dragons} type Characters,
-  //   K.O. up to 2 of your opponent's Characters with a base cost of 3 or less.
-  // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP13-026', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn' }] } },
 

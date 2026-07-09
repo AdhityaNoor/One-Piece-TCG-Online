@@ -74,11 +74,6 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   // P-073 — [Activate: Main][OPT] add 1 top/bottom Life to hand → this Character +1000 this turn.
   { cardNumber: 'P-073', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' }] } },
 
-  // P-074 (character) Portgas.D.Ace —
-  //   [Activate: Main] You may return this Character to the owner's hand: Look at 5 cards from the top of
-  //   your deck and place them at the top or bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
-
   // P-075 — [On Play] give up to 1 rested DON!! to Leader/1 Char. [When Attacking] if you have a cost-8+ Character, draw 1 trash 1.
   {
     cardNumber: 'P-075',
@@ -93,12 +88,6 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // P-079 — [Blocker] [End of Your Turn] If 2+ rested {ODYSSEY} Characters, set this Character as active.
   { cardNumber: 'P-079', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'ODYSSEY', atLeast: 2, rested: true }], functions: [{ fn: 'setActiveSelf' }] } },
-
-  // P-081 (character) Dracule Mihawk —
-  //   [Activate: Main] You may return this Character to the owner's hand: If you have 3 or more blue {Cross
-  //   Guild} type Characters, play up to 1 {Cross Guild} type Character card with a cost of 5 from your
-  //   hand.
-  // NOTE: not yet implemented (needs template).
 
   // P-082 — [Your Turn] [On Play] if Leader {Cross Guild} or {Baroque Works}, place up to 1 opp Character power<=2000 at bottom of deck.
   { cardNumber: 'P-082', templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Cross Guild' }, { kind: 'leaderType', type: 'Baroque Works' }] }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxPower: 2000 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },

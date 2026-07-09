@@ -50,13 +50,13 @@ export function CardLibraryResultTile({ entry, setName }: CardLibraryResultTileP
             </span>
           )}
 
-          <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/45 group-hover:opacity-100">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/28 opacity-100 transition sm:bg-black/0 sm:opacity-0 sm:group-hover:bg-black/45 sm:group-hover:opacity-100">
             <span className="border border-gold/50 bg-white px-2.5 py-1 font-heading text-[10px] font-black uppercase tracking-[0.08em] text-navy-950 shadow-[0_5px_0_rgba(0,0,0,0.45)]">
               View
             </span>
           </div>
 
-          <div className="opacity-0 transition group-hover:opacity-100">
+          <div className="opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100" onClick={(event) => event.stopPropagation()}>
             <PrintingVariantPicker
               cardNumber={entry.cardNumber}
               printings={entry.printings}

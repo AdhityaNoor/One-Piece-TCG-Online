@@ -51,7 +51,7 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
 
   return (
     <>
-      <div className="w-[8.5rem]">
+      <div className="w-full sm:w-[8.5rem]">
         <div
           onContextMenu={(event) => {
             event.preventDefault();
@@ -71,6 +71,7 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
             event.dataTransfer.setData(DECK_BUILDER_CARD_DRAG_MIME, JSON.stringify(payload));
             event.dataTransfer.setData('text/plain', `${entry.cardNumber} ${entry.definition.name}`);
           }}
+          onClick={handleSelect}
           className={['group relative block w-full text-left', canDrag ? 'cursor-grab active:cursor-grabbing' : '', !isLeaderCard && (!hasLeader || atCopyLimit) ? 'opacity-55' : ''].join(' ')}
           title={isLeaderCard ? (isCurrentLeader ? 'Current leader' : 'Drag or click to set leader') : hasLeader ? 'Drag or click to add to deck' : 'Pick a leader first'}
         >
@@ -85,17 +86,21 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
               {isCurrentLeader ? 'Leader' : 'Set'}
             </span>
           )}
-          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition group-hover:bg-black/55 group-hover:opacity-100">
+          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-100 transition sm:bg-black/0 sm:opacity-0 sm:group-hover:bg-black/55 sm:group-hover:opacity-100">
             <button
               type="button"
-              onClick={() => setZoomOpen(true)}
+              onClick={(event) => {
+                event.stopPropagation();
+                setZoomOpen(true);
+              }}
               className="border border-gold/50 bg-white px-2.5 py-1 font-heading text-[10px] font-black uppercase tracking-[0.08em] text-navy-950 shadow-[0_5px_0_rgba(0,0,0,0.45)] transition hover:bg-gold active:translate-y-[2px]"
             >
               View
             </button>
             <button
               type="button"
-              onClick={() => {
+              onClick={(event) => {
+                event.stopPropagation();
                 if (isLeaderCard) {
                   handleSelect();
                   return;
@@ -109,7 +114,7 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
               {isLeaderCard ? 'Set' : '+'}
             </button>
           </div>
-          <div className="opacity-0 transition group-hover:opacity-100">
+          <div className="opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100" onClick={(event) => event.stopPropagation()}>
             <PrintingVariantPicker
               cardNumber={entry.cardNumber}
               printings={entry.printings}

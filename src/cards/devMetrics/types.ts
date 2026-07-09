@@ -18,11 +18,29 @@ export interface CoverageRow {
   name: string;
   category: string;
   status: CoverageStatus;
+  /** Assigned in registry but assignment file still has PARTIAL/deferred markers. */
+  partialCurated: boolean;
+  partialNoteCount: number;
   curatedAbilities: number;
   effectAbilities: number;
   runtimeTriggers: string;
   parserReview: boolean;
   effectText: string;
+}
+
+export type PartialCurationKind = 'partial' | 'deferred' | 'dropped' | 'notImplemented' | 'batchNote';
+
+export interface PartialCurationFinding {
+  cardNumber: string | null;
+  setCode: string;
+  name?: string;
+  sourceFile: string;
+  line: number;
+  kind: PartialCurationKind;
+  note: string;
+  hasAssignment: boolean;
+  isStale: boolean;
+  effectText?: string;
 }
 
 export type AuditCategory = 'type' | 'name' | 'keyword' | 'timing';
@@ -53,12 +71,15 @@ export interface TriageRow {
 export interface SetMetrics {
   setCode: string;
   curated: number;
+  partialCurated: number;
   needsTemplate: number;
   vanilla: number;
   triageExpressible: number;
   triageNeedsPrimitive: number;
   triageDefer: number;
   auditFindings: number;
+  partialFindings: number;
+  stalePartialNotes: number;
 }
 
 export interface EffectMetrics {
@@ -84,9 +105,17 @@ export interface EffectMetrics {
     findings: number;
     byCategory: Record<AuditCategory, number>;
   };
+  partial: {
+    findingCount: number;
+    partialCuratedCards: number;
+    staleNotes: number;
+    unassignedDeferNotes: number;
+    byKind: Record<PartialCurationKind, number>;
+  };
   bySet: SetMetrics[];
   topReasons: Array<{ reason: string; count: number }>;
   coverageRows: CoverageRow[];
   triageRows: TriageRow[];
   auditFindings: AuditFinding[];
+  partialFindings: PartialCurationFinding[];
 }

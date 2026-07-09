@@ -132,10 +132,7 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP12-021 (character) Ipponmatsu —
-  //   If your Leader has the <Slash> attribute and you have 6 or more rested DON!! cards, this Character
-  //   cannot be rested by your opponent's effects.[Blocker]
-  //   PARTIAL: [Blocker] is card data.
+  // OP12-021 — if Leader <Slash> and 6+ rested DON!!: this Character cannot be rested by opponent effects. [Blocker] is card data.
   {
     cardNumber: 'OP12-021',
     templateId: 'ability',
@@ -150,7 +147,7 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
       }],
     },
   },
-  // OP12-027 — aura K.O. replacement: rest this Character to save ally <Slash> cost ≤5. PARTIAL: [Blocker] is printed.
+  // OP12-027 — aura K.O. replacement: rest this Character to save ally <Slash> cost ≤5 from opponent effects. [Blocker] is printed.
   {
     cardNumber: 'OP12-027',
     templateId: 'ability',
@@ -159,6 +156,7 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [{
         fn: 'registerKoReplacementAura',
         scope: 'effect',
+        effectSourceController: 'opponent',
         anyOfAttributes: ['Slash'],
         excludeSource: true,
         targetCondition: { maxCost: 5 },
@@ -183,8 +181,11 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-029 — [On Play] Rest up to 1 opp Character cost ≤2, then K.O. up to 1 opp rested Character with base cost ≤1.
   { cardNumber: 'OP12-029', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxBaseCost: 1 } }, optional: true }] } },
 
-  // OP12-030 — [Blocker][On Play] Set up to 4 DON!! active. PARTIAL: the "cannot play base-cost-7+ Characters this turn" restriction is deferred.
-  { cardNumber: 'OP12-030', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 4 }] } },
+  // OP12-030 — [Blocker][On Play] Set up to 4 DON!! active, then cannot play base-cost-7+ Characters this turn.
+  { cardNumber: 'OP12-030', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'setActiveControllerDon', maxTargets: 4 },
+    { fn: 'preventControllerCharacterPlay', duration: 'duringThisTurn', minBaseCost: 7 },
+  ] } },
 
   // OP12-031 — [On Play] Rest up to 1 opp Character (base cost 6 or less); then give up to 3 rested DON!! to your Leader.
   { cardNumber: 'OP12-031', templateId: 'ability', params: { timing: 'onPlay', functions: [
@@ -579,105 +580,6 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP12-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfHandMatching', category: 'event', atLeast: 2 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { maxBasePower: 4000 } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP12-117 (event) Slam Gibson —
-  //   [Main] You may rest 5 of your DON!! cards: If your Leader has the {Supernovas} type, add up to 1
-  //   Character with a cost of 9 or less to the top or bottom of the owner's Life cards face-down.[Counter]
-  //   Your Leader gains +3000 power during this battle.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-118 (character) Jewelry Bonney —
-  //   [Blocker][On Play] If you have 8 or more rested cards, draw 2 cards and trash 1 card from your hand.
-  //   Then, set up to 1 of your DON!! cards as active.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-119 (character) Bartholomew Kuma —
-  //   [On Play] You may trash 1 card from your hand: Add up to 1 card from the top of your deck to the top
-  //   of your Life cards. Then, this Character gains +2 cost until the end of your opponent's next End
-  //   Phase.[Opponent's Turn] [On K.O.] Add up to 1 card from the top of your deck to the top of your Life
-  //   cards.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-009 (character) Jinbe —
-  //   [On Play] You may reveal 2 Events from your hand: This Character gains [Rush] during this turn. Then,
-  //   this Character gains +1000 power until the end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-012 (character) Buggy —
-  //   [On Play] Up to 1 of your Characters with a type including "Roger Pirates" other than [Buggy] gains
-  //   [Blocker] until the end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-015 (character) Monkey.D.Luffy —
-  //   If you have a total of 2 or more given DON!! cards, this Character gains +2000 power.[On Play] You
-  //   may reveal 2 Events from your hand: Play up to 1 red Character card with 3000 power or less from your
-  //   hand. Then, give up to 1 rested DON!! card to your Leader or 1 of your Characters.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-018 (event) Color of the Supreme King Haki —
-  //   [Counter] Up to 1 of your Characters or [Silvers Rayleigh] gains +2000 power during this battle.
-  //   Then, you may rest 1 of your DON!! cards. If you do, give your opponent's Leader and all of their
-  //   Characters −1000 power during this turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-022 (character) Inuarashi —
-  //   [Activate: Main] You may rest this Character: Up to 1 of your opponent's rested Characters with a
-  //   cost of 5 or less will not become active in your opponent's next Refresh Phase.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-024 (character) Gyukimaru —
-  //   If this Character is active, this Character cannot be K.O.'d by your opponent's effects.[When
-  //   Attacking] If you have a total of 3 or more given DON!! cards, rest up to 1 of your opponent's
-  //   Characters with a base cost of 6 or less.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-026 (character) Kuina —
-  //   [Activate: Main] You may rest this Character: Rest up to 1 of your opponent's Characters with a base
-  //   cost of 4 or less. Then, give up to 3 rested DON!! cards to your [Roronoa Zoro] Leader.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-058 (event) I Will Make Whitebeard the King of the Pirates —
-  //   [Main] If your Leader's type includes "Whitebeard Pirates", reveal 1 card from the top of your deck.
-  //   If that card is a Character card with a type including "Whitebeard Pirates" and a cost of 9 or less,
-  //   you may play that card. If you do, that Character gains [Rush] during this turn. [Trigger] Draw 1
-  //   card.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-060 (event) Boeuf Burst —
-  //   [Main] If your Leader is multicolored, choose one:• Return up to 1 of your opponent's Characters with
-  //   a cost of 4 or less to the owner's hand.• If you have 6 or less cards in your hand, draw 2 cards.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-073 (character) Trafalgar Law —
-  //   [On Play] If the number of DON!! cards on your field is equal to or less than the number on your
-  //   opponent's field, add up to 1 DON!! card from your DON!! deck and set it as active. Then, all of your
-  //   [Donquixote Rosinante] and {Heart Pirates} type Characters gain +1000 power until the end of your
-  //   opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-074 (character) Patty —
-  //   [On Play] You may trash 1 Event from your hand: If your Leader is [Sanji], add up to 1 DON!! card
-  //   from your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-085 (character) Karasu —
-  //   If your Leader has the {Revolutionary Army} type, this Character gains +3 cost.[When Attacking] If
-  //   your Leader has the {Revolutionary Army} type and your opponent has 5 or more cards in their hand,
-  //   your opponent trashes 1 card from their hand.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-098 (event) Hair Removal Fist —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if
-  //   you have a {Revolutionary Army} type Character with a cost of 8 or more, that card gains an
-  //   additional +2000 power during this battle. [Trigger] Draw 1 card and trash 1 card from the top of
-  //   your deck.
-  // NOTE: not yet implemented (needs template).
-
-  // OP12-101 (character) Jewelry Bonney —
-  //   [Activate: Main] You may rest this Character: Your {Supernovas} type Leader gains +1000 power until
-  //   the end of your opponent's next turn. [Trigger] If your Leader has the {Supernovas} type, play this
-  //   card.
-  // NOTE: not yet implemented (needs template).
-
   { cardNumber: 'OP12-009', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'event', atLeast: 2 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }, { fn: 'addPowerSelf', amount: 1000, duration: 'endOfOpponentsTurn' }] } },
 
   { cardNumber: 'OP12-012', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Roger Pirates', excludeSelf: true } }, keyword: 'blocker', duration: 'endOfOpponentsTurn', optional: true }] } },
@@ -689,8 +591,11 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP12-022', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 5 } }, optional: true }] } },
 
-  // PARTIAL: active-only KO immunity approximated.
-  { cardNumber: 'OP12-024', templates: [{ templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent' }] } }, { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfGivenDonCount', atLeast: 3 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 6 } }, optional: true }] } }] },
+  // OP12-024 — active-only: cannot be K.O.'d by opponent effects. [When Attacking] given DON≥3: rest opp base cost≤6.
+  { cardNumber: 'OP12-024', templates: [
+    { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { rested: false }, effectSourceController: 'opponent' }] } },
+    { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfGivenDonCount', atLeast: 3 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 6 } }, optional: true }] } },
+  ] },
 
   { cardNumber: 'OP12-026', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 4 } }, optional: true }, { fn: 'giveDonControllerLeader', count: 3 }] } },
 

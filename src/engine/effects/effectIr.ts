@@ -24,6 +24,7 @@ export type Selector =
   | { sel: 'controllerLeaderOrStage'; typeIncludes?: string } // controller's Leader + Stage cards (for 'rest 1 of your {X} Leader or Stage' costs)
   | { sel: 'opponentLeaderOrCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; excludeName?: string; restedLeader?: boolean }
   | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
+  | { sel: 'controllerActiveDon' } // the controller's active, un-attached DON!! in the cost area (rest targets)
   | { sel: 'opponentFieldDon' } // opponent's DON!! on field (cost area + attached), for opponent-chosen returns
   | { sel: 'opponentActiveDon' } // the opponent's active, un-attached DON!! in the cost area (rest targets)
   | { sel: 'opponentRestedDon' } // the opponent's rested, un-attached DON!! in the cost area
@@ -89,6 +90,8 @@ export interface SearchFilter {
   hasTrigger?: boolean;
   /** Vanilla / no base effect (2-8-5): no effect text other than static keywords, and no [Trigger]. */
   noBaseEffect?: boolean;
+  /** After a prior moveCards in the same sequence, exclude hand cards sharing any color with the moved card(s). */
+  excludeColorsOfPreviousMove?: boolean;
 }
 
 /** Filters for moveCards when the source zone is the character field. */
@@ -185,6 +188,10 @@ export type EffectOp =
   | ({ op: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[] } & EffectOpSequenceGate)
   // "You cannot add Life cards to your hand using your own effects" for the controller.
   | ({ op: 'preventControllerLifeToHand'; player: 'controller' | 'opponent'; duration: IrDuration } & EffectOpSequenceGate)
+  // "You cannot play Character cards [matching filter] this turn" for the controller.
+  | ({ op: 'preventControllerCharacterPlay'; player?: 'controller' | 'opponent'; duration: IrDuration; minBaseCost?: number; maxBaseCost?: number } & EffectOpSequenceGate)
+  | ({ op: 'preventControllerHandPlay'; player?: 'controller' | 'opponent'; duration: IrDuration } & EffectOpSequenceGate)
+  | ({ op: 'preventControllerCharacterSetActiveDon'; player?: 'controller' | 'opponent'; duration: IrDuration } & EffectOpSequenceGate)
   | ({ op: 'giveDon'; target: Selector; count: number } & EffectOpSequenceGate)
   // Reassign up to N DON!! cards already given on the controller's field onto a chosen Character.
   | ({ op: 'giveGivenDon'; donTarget: Selector; characterTarget: Selector } & EffectOpSequenceGate)
@@ -199,6 +206,7 @@ export type EffectOp =
   | ({ op: 'preventRefresh'; target: Selector } & EffectOpSequenceGate) // "will not become active in its controller's next Refresh Phase"
   | ({ op: 'returnToHand'; target: Selector } & EffectOpSequenceGate) // bounce a Character to its owner's hand
   | ({ op: 'moveToBottomDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's deck
+  | ({ op: 'moveToTopDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the top of their owner's deck
   | ({ op: 'moveToLifeTop'; target: Selector; faceUp?: boolean } & EffectOpSequenceGate) // move chosen cards to the top of their owner's Life
   | ({ op: 'moveToLifeBottom'; target: Selector; faceUp?: boolean } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's Life
   | ({ op: 'turnLifeFace'; target: Selector; faceUp: boolean } & EffectOpSequenceGate) // flip chosen Life cards face-up/face-down in place
@@ -322,10 +330,13 @@ export type AbilityGate =
   | { kind: 'leaderNameIncludes'; name: string } // "If your Leader's card name includes X"
   | { kind: 'leaderType'; type: string } // "If your Leader has the {Y} type"
   | { kind: 'leaderMulticolor' } // "If your Leader is multicolored"
+  | { kind: 'leaderActive' } // "If your Leader is active" / "your 1 active Leader"
+  | { kind: 'leaderRested' } // "If your Leader is rested"
   | { kind: 'selfCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more/less Characters"
   | { kind: 'selfRestedCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more rested Characters"
   | { kind: 'opponentCharacterCount'; atLeast?: number; atMost?: number } // "If your opponent has N or less Characters"
   | { kind: 'selfDonFieldCount'; atLeast?: number; atMost?: number } // "If you have N or less DON!! cards on your field"
+  | { kind: 'selfActiveDonCount'; atLeast?: number; atMost?: number } // "If you have N or more active DON!! cards" (unattached in cost area)
   | { kind: 'selfRestedDonCount'; atLeast?: number; atMost?: number } // "rested DON!! cards" available in cost area and not already attached
   | { kind: 'selfLife'; atLeast?: number; atMost?: number } // "If you have N or less Life cards"
   | { kind: 'selfHasFaceUpLife' } // "If you have a face-up Life card"
@@ -350,6 +361,8 @@ export type AbilityGate =
   | { kind: 'selfBattledOpponentCharacterThisTurn' }
   // "If your Leader has the <X> attribute."
   | { kind: 'leaderAttribute'; attribute: string }
+  // "If your opponent's Leader has the <X> attribute."
+  | { kind: 'opponentLeaderAttribute'; attribute: string }
   | { kind: 'selfTrashCount'; atLeast?: number; atMost?: number } // "N or more/less cards in your trash"
   | { kind: 'selfDeckCount'; atLeast?: number; atMost?: number } // "N or less cards in your deck"
   | { kind: 'selfTypedCharacterCount'; typeIncludes: string; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {type} Characters"
@@ -383,6 +396,10 @@ export type AbilityGate =
   // onCharacterKoed only: filter the reactive window by whose Character was K.O.'d.
   // 'opponent' = "When your opponent's Character is K.O.'d"; 'controller' = "When your Character is K.O.'d".
   | { kind: 'koedCharacterController'; player: 'opponent' | 'controller' }
+  // onKO only: the Character was K.O.'d by an opponent-controlled effect (not battle damage).
+  | { kind: 'koByOpponentEffect' }
+  // onKO only: the Character was K.O.'d by any effect (not battle damage).
+  | { kind: 'koByEffect' }
   | { kind: 'removedFromFieldController'; player: 'opponent' | 'controller' } // onRemovedFromField: whose card left the field
   | { kind: 'removedByEffectController'; player: 'opponent' | 'controller' } // onRemovedFromField: whose effect caused the removal
   | { kind: 'removedFromFieldCategory'; category: Exclude<CardCategory, 'don'> } // onRemovedFromField: removed card category

@@ -57,6 +57,8 @@ effect-triage-clusters.md
 curation-audit.csv
 curation-audit.md
 CAPABILITY.md
+effect-partial-coverage.csv
+effect-partial-coverage.md
 
 *.log
 npm-debug.log*

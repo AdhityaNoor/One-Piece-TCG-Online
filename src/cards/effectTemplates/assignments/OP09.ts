@@ -21,13 +21,6 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-004 — Give all of your opponent's Characters −1000 power. [Rush]
   { cardNumber: 'OP09-004', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraOpponentCharacters', amount: -1000, duration: 'permanent' }] } },
 
-
-  // OP09-005 (character) Silvers Rayleigh —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On Play] If your opponent has 2 or more Characters with a base power of 5000 or more,
-  //   draw 2 cards and trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
-
   // ── Triage batch (OP09 expressible). "return 1 or more DON!!" is approximated as DON!! −1. ──
   // OP09-007 — [Blocker][On Play] your Leader +1000 this turn (the "4000 power or less" leader filter is dropped).
   { cardNumber: 'OP09-007', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'duringThisTurn' }] } },
@@ -67,11 +60,6 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-015 — [Blocker][On K.O.] If Leader {Red-Haired Pirates}, K.O. up to 1 opp Character with base power 6000 or less.
   { cardNumber: 'OP09-015', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }, optional: true }] } },
 
-  // OP09-017 (character) Wire —
-  //   [DON!! x1] If your Leader has 7000 power or more and the {Kid Pirates} type, this Character gains
-  //   [Rush].
-  // NOTE: not yet implemented (needs template).
-
   // OP09-019 — [Main] If Leader {Red-Haired Pirates}, give up to 1 opp Character −3000. [Trigger] Draw 1.
   //   PARTIAL: the "if opp has a 5000+ power Character, draw 1" rider needs a power-based gate (deferred).
   {
@@ -109,8 +97,24 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP09-023 — [On Play] If Leader {ODYSSEY}, set up to 3 DON!! active. PARTIAL: the [On Opponent's Attack] rest-DON buff is deferred.
-  { cardNumber: 'OP09-023', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'ODYSSEY' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 3 }] } },
+  // OP09-023 — [On Play] If Leader {ODYSSEY}, set up to 3 DON!! active. [On Opponent's Attack] rest DON → +2000 battle.
+  {
+    cardNumber: 'OP09-023',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'ODYSSEY' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 3 }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentsAttack',
+          oncePerTurn: true,
+          functions: [
+            { fn: 'restControllerDon', maxTargets: 1, optional: true },
+            { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousSelectedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP09-024 — [On Play] If 2+ rested Characters, draw 2 & trash 2.
   { cardNumber: 'OP09-024', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
@@ -294,15 +298,14 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-051 — [On Play] Place up to 1 opp Character at bottom of deck. PARTIAL: the conditional "place this Character at bottom" self-clause is deferred.
   { cardNumber: 'OP09-051', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
-  // OP09-052 (character) Marco —
-  //   [Opponent's Turn] You may trash 1 card from your hand: When this Character is K.O.'d by your
-  //   opponent's effect, play this Character card from your trash rested.
-  // PARTIAL: opponent's-turn prepaid hand cost and K.O.-by-opponent-effect gate deferred; onKO play-from-trash chain mapped (OP02-018 pattern).
+  // OP09-052 (character) Marco — [Opponent's Turn] onKO by opponent effect: trash hand → play self from trash rested.
   {
     cardNumber: 'OP09-052',
     templateId: 'ability',
     params: {
       timing: 'onKO',
+      condition: { turn: 'opponent' },
+      gate: [{ kind: 'koByOpponentEffect' }],
       functions: [
         { fn: 'optionalTrashFromHand', count: 1 },
         { fn: 'playFromTrash', filter: { name: 'Marco' }, rested: true, ifPrevious: 'previousMovedAny' },
@@ -330,11 +333,6 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Cross Guild' }, remainder: 'bottom' }] } },
     ],
   },
-
-  // OP09-058 (event) Special Muggy Ball —
-  //   [Main] Your opponent chooses 1 of their Character with a cost of 6 or less and return to the owner's
-  //   hand. [Trigger] Return up to 1 Character with a cost of 3 or less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
 
   // OP09-059 — [Counter] up to 1 Leader/Char +3000 this battle. [Trigger] Draw 1. PARTIAL: the "trash up to 2 → mill same number" clause needs dynamic-count mill (deferred).
   {
@@ -665,11 +663,5 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP09-119 — [On Play] DON!! −1: Draw 1 and this Character gains [Rush] this turn.
   { cardNumber: 'OP09-119', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
-
-  // --- Batch: OP09 expressible with existing primitives (+ selfRestedCharacterCount gate) ---
-  // OP09-001 (leader) Shanks —
-  //   [Once Per Turn] This effect can be activated when your opponent attacks. Give up to 1 of your
-  //   opponent's Leader or Character cards −1000 power during this turn.
-  // NOTE: not yet implemented (needs template).
 
 ];

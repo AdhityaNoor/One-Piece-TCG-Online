@@ -128,17 +128,25 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-022 — [End of Your Turn] If Leader {FILM} or {Straw Hat Crew}, set up to 2 DON!! active.
   { cardNumber: 'OP14-022', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'FILM' }, { kind: 'leaderType', type: 'Straw Hat Crew' }] }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
 
-  // OP14-020 — PARTIAL: opp-Leader <Slash> +1000 and cannot-play-Characters deferred; mapped rest-self → set 3 DON active when cost-5+ Character present.
+  // OP14-020 — opp <Slash> Leader: +1000 power. [Activate: Main] cost-5+ Character present: set 3 DON active, cannot play Characters this turn.
   {
     cardNumber: 'OP14-020',
-    templateId: 'ability',
-    params: {
-      timing: 'activateMain',
-      oncePerTurn: true,
-      cost: [{ kind: 'restThis' }],
-      gate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 5 }],
-      functions: [{ fn: 'setActiveControllerDon', maxTargets: 3 }],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'opponentLeaderAttribute', attribute: 'slash' }] } }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          cost: [{ kind: 'restThis' }],
+          gate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 5 }],
+          functions: [
+            { fn: 'setActiveControllerDon', maxTargets: 3 },
+            { fn: 'preventControllerCharacterPlay', duration: 'duringThisTurn' },
+          ],
+        },
+      },
+    ],
   },
 
   // OP14-021 (character) Issho —
@@ -162,11 +170,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP14-023', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveSelf' }] } },
 
-  // OP14-024 — [On Play] Set up to 3 DON!! active. [On K.O.] Rest up to 1 opp Character. PARTIAL: play restriction deferred.
+  // OP14-024 — [On Play] Set up to 3 DON!! active, then cannot play Characters this turn. [On K.O.] Rest up to 1 opp Character.
   {
     cardNumber: 'OP14-024',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 3 }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [
+        { fn: 'setActiveControllerDon', maxTargets: 3 },
+        { fn: 'preventControllerCharacterPlay', duration: 'duringThisTurn' },
+      ] } },
       { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
     ],
   },
@@ -240,12 +251,23 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   cost of 4 or less.
   { cardNumber: 'OP14-032', templateId: 'ability', params: { timing: 'onRested', condition: { turn: 'your' }, functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
-  // OP14-033 (character) Perona —
-  //   [On Play] Up to 2 of your opponent's Characters with a cost of 5 or less cannot be rested until the
-  //   end of your opponent's next End Phase.[On K.O.] You may rest 1 of your cards: Play up to 1 green
-  //   Character card with a cost of 5 or less from your hand.
-  // PARTIAL: On K.O. "rest 1 of your cards" cost into play-from-hand is not modeled yet.
-  { cardNumber: 'OP14-033', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 2 }] } },
+  // OP14-033 — [On Play] preventRest up to 2 opp cost≤5; [On K.O.] rest 1 of your cards → play green cost≤5 from hand.
+  {
+    cardNumber: 'OP14-033',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 2 }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onKO',
+          functions: [
+            { fn: 'rest', target: { group: 'leaderOrCharacters', player: 'controller' }, optional: true, maxTargets: 1 },
+            { fn: 'playFromHand', filter: { category: 'character', color: 'green', maxCost: 5 }, ifPrevious: 'previousSelectedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP14-034 — [Your Turn] green {Straw Hat Crew} base cost ≥4 +1000; [OPT] rest 1 Character to save ally from opp effect K.O.
   {
@@ -715,19 +737,21 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-090 — [On Play] Rest up to 1 opp Character cost 0. PARTIAL: the static "can attack Characters" clause is deferred.
   { cardNumber: 'OP14-090', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { exactCost: 0 } }, optional: true }] } },
 
-  // OP14-091 (character) Mr.2.Bon.Kurei(Bentham) —
-  //   [On K.O.] Play up to 1 Character card with a type including "Baroque Works" and a cost of 5 or less
-  //   other than [Mr.2.Bon.Kurei(Bentham)] from your hand or trash.
-  // PARTIAL: hand OR trash is mapped as two independent optional plays.
+  // OP14-091 — [On K.O.] Play up to 1 Baroque Works Character cost≤5 (other than Bentham) from hand or trash.
   {
     cardNumber: 'OP14-091',
     templateId: 'ability',
     params: {
       timing: 'onKO',
-      functions: [
-        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 5, excludeSelfName: true }, maxTargets: 1 },
-        { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 5, excludeSelfName: true }, maxTargets: 1 },
-      ],
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Play Baroque Works Character from:',
+        options: [
+          { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 5, excludeSelfName: true } }] },
+          { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 5, excludeSelfName: true } }] },
+        ],
+      }],
     },
   },
 
@@ -746,13 +770,6 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
       }],
     },
   },
-
-
-  // OP14-094 (character) Mr.5(Gem) —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[On Play] If there is a Character with a cost of 0 or with a cost of 8 or more, draw 2
-  //   cards and trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
 
   {
     cardNumber: 'OP14-096',
@@ -790,11 +807,6 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   { cardNumber: 'OP14-102', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 4 }, rested: true }] } },
-
-  // OP14-103 (character) Gloriosa (Grandma Nyon) —
-  //   [On Play] You may add 1 card from the top or bottom of your Life cards to your hand: Add up to 1 card
-  //   from your hand to the top of your Life cards. [Trigger] Play this card.
-  // NOTE: not yet implemented (needs template).
 
   // OP14-104 — [Trigger] Play up to 1 Character cost ≤4 from trash. PARTIAL: the play-or-add-to-Life [On Play] choice is deferred.
   { cardNumber: 'OP14-104', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', maxCost: 4 } }] } },

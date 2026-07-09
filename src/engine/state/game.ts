@@ -364,6 +364,8 @@ export type KoReplacementAction =
   | { kind: 'trashLife'; position: 'top' | 'bottom' | 'topOrBottom' }
   /** Place N cards from your trash at the bottom of your deck in chosen order. */
   | { kind: 'trashTrashToDeckBottom'; count: number }
+  /** Turn the top Life card face-up/face-down instead of being K.O.'d. */
+  | { kind: 'turnTopLifeFace'; faceUp: boolean }
   /** Give the aura source −N power for the duration instead of removing the ally. */
   | { kind: 'giveSelfPowerPenalty'; amount: number; duration: ContinuousEffectDuration }
   /** Give your Leader −N power for the duration instead of removing the ally. */
@@ -419,6 +421,25 @@ export interface ContinuousLifeToHandRestriction {
   appliesToControllerId: string;
 }
 
+/** "You cannot play Character cards [matching filter] during this turn." */
+export interface ContinuousCharacterPlayRestriction {
+  appliesToControllerId: string;
+  /** When set, only Characters with base cost >= this value are blocked. */
+  minBaseCost?: number;
+  /** When set, only Characters with base cost <= this value are blocked. */
+  maxBaseCost?: number;
+}
+
+/** "You cannot play cards from your hand during this turn." */
+export interface ContinuousHandPlayRestriction {
+  appliesToControllerId: string;
+}
+
+/** "You cannot set DON!! cards as active using Character effects during this turn." */
+export interface ContinuousCharacterSetActiveDonRestriction {
+  appliesToControllerId: string;
+}
+
 /** "Negate the effect(s)" on one instance or all cards controlled by a player. */
 export interface ContinuousEffectNegation {
   /** Negate abilities on this Leader/Character/Stage instance. */
@@ -460,6 +481,12 @@ export interface ContinuousEffectRecord {
   effectNegation?: ContinuousEffectNegation;
   /** Blocks controller-sourced Life→hand moves. Omitted for unrelated continuous effects. */
   lifeToHandRestriction?: ContinuousLifeToHandRestriction;
+  /** Blocks Character plays from hand/trash/deck for a controller. Omitted for unrelated continuous effects. */
+  characterPlayRestriction?: ContinuousCharacterPlayRestriction;
+  /** Blocks all card plays from hand for a controller. Omitted for unrelated continuous effects. */
+  handPlayRestriction?: ContinuousHandPlayRestriction;
+  /** Blocks Character-sourced DON!! set-active effects for a controller. Omitted for unrelated continuous effects. */
+  characterSetActiveDonRestriction?: ContinuousCharacterSetActiveDonRestriction;
   /**
    * One-shot counter for cost discounts that expire after N matching plays from hand.
    * Omitted = unlimited until duration expiry.

@@ -487,12 +487,16 @@ export function fireOnKO(
   registry: EffectTemplateRegistry,
   defs: CardDefinitionLookup,
   actionId: string | null,
+  koContext?: { cause: 'battle' | 'effect'; sourceInstanceId?: string },
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTimings(program, ['onKO'], state, instanceId, defs, actionId, registry);
+  const eventContext: GateEvalContext | undefined = koContext
+    ? { koCause: koContext.cause, koSourceInstanceId: koContext.sourceInstanceId }
+    : undefined;
+  return runTimings(program, ['onKO'], state, instanceId, defs, actionId, registry, true, eventContext);
 }
 
 /**

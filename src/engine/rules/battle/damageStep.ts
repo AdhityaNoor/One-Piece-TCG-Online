@@ -309,7 +309,7 @@ export function resolveDamageAndEndOfBattle(
 
       // [On K.O.] (10-2-17) fires now that the Character is in the trash.
       // No-op without a curated onKO ability; collect its log/choices.
-      const koFired = fireOnKO(nextState, targetId, registry, defs, causedByActionId);
+      const koFired = fireOnKO(nextState, targetId, registry, defs, causedByActionId, { cause: 'battle', sourceInstanceId: attackerId });
       nextState = koFired.state;
       koLog = [...koLog, ...koFired.log];
       koPending = [...koPending, ...koFired.pendingChoices];
@@ -373,7 +373,10 @@ export function finishBattleAfterKoDecision(
   const targetInTrash = nextState.cardsById[targetId]?.currentZone === 'trash';
 
   if (targetInTrash) {
-    const koFired = fireOnKO(nextState, targetId, registry, defs, actionId ?? kr.battle?.causedByActionId ?? null);
+    const koFired = fireOnKO(nextState, targetId, registry, defs, actionId ?? kr.battle?.causedByActionId ?? null, {
+      cause: 'battle',
+      sourceInstanceId: kr.battle?.attackerId,
+    });
     nextState = koFired.state;
     koLog = koFired.log;
     koPending = koFired.pendingChoices;

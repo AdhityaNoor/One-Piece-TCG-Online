@@ -18,7 +18,7 @@ import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoRepl
 import type { KoReplacementTrigger } from '../state/game';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates, countSelfTypedCharacters } from './gates';
-import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
+import { canPayAbilityCost, donMinusCandidateIds, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
 import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, fireHandTrashedReactions } from './fireTiming';
 import { isAbilityNegated } from './effectNegation';
 import type { GateEvalContext } from './gates';
@@ -45,10 +45,12 @@ function conditionMet(op: EffectOp, bindings: Record<string, string[]>, ctx: Eff
 }
 
 function withResultBindings(bindings: Record<string, string[]>, result: OpResult): Record<string, string[]> {
+  const movedInstanceIds = result.movedIds.filter((id) => !id.startsWith('__'));
   return {
     ...bindings,
     __lastSelected: boolBinding(result.selectedIds.length > 0),
     __lastMoved: boolBinding(result.movedIds.length > 0),
+    __lastMovedIds: movedInstanceIds,
   };
 }
 
@@ -75,19 +77,18 @@ function finishWithCascade(
   const queue = ctx.takeKoed();
   let guard = 0;
   while (queue.length > 0 && guard++ < 200) {
-    const id = queue.shift()!;
-    const inst = working.cardsById[id];
+    const event = queue.shift()!;
+    const inst = working.cardsById[event.targetInstanceId];
     const program = inst ? registry[inst.cardDefinitionId] : undefined;
-    if (!program) continue;
-    const idx = program.abilities.findIndex((a) => a.timing === 'onKO');
-    if (idx < 0) continue;
-    const sub = new EffectContextImpl(working, id, defs, actionId);
-    const suspended = runOps(program.abilities[idx], idx, 0, {}, sub, defs, registry, actionId);
-    const subRes = sub.finish();
+    if (!program?.abilities.some((a) => a.timing === 'onKO')) continue;
+    const eventContext: GateEvalContext = {
+      koCause: event.cause,
+      koSourceInstanceId: event.sourceInstanceId,
+    };
+    const subRes = runTimings(program, ['onKO'], working, event.targetInstanceId, defs, actionId, registry, true, eventContext);
     working = subRes.state;
     log = [...log, ...subRes.log];
-    queue.push(...sub.takeKoed());
-    if (suspended) return { state: working, log, pendingChoices: subRes.pendingChoices };
+    if (subRes.pendingChoices.length > 0) return { state: working, log, pendingChoices: subRes.pendingChoices };
   }
 
   const restedQueue = ctx.takeRested();
@@ -195,15 +196,22 @@ function hasType(defTypes: string[], required: string): boolean {
   );
 }
 
-function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContextImpl): boolean {
+function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContextImpl, bindings: Record<string, string[]> = {}): boolean {
   const def = ctx.definitionOf(id);
   if (!def) return false;
-  if (filter.anyOf !== undefined && !filter.anyOf.some((child) => matchesSearchFilter(id, child, ctx))) return false;
+  if (filter.anyOf !== undefined && !filter.anyOf.some((child) => matchesSearchFilter(id, child, ctx, bindings))) return false;
   const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
   if (filter.typeIncludes && !hasType(def.types, filter.typeIncludes)) return false;
   if (filter.excludeSelfName && selfName !== undefined && def.name === selfName) return false;
   if (filter.category && def.category !== filter.category) return false;
   if (filter.color && !def.colors.includes(filter.color)) return false;
+  if (filter.excludeColorsOfPreviousMove) {
+    const movedIds = bindings.__lastMovedIds ?? [];
+    const excludedColors = new Set(
+      movedIds.flatMap((movedId) => ctx.definitionOf(movedId)?.colors ?? []),
+    );
+    if (excludedColors.size > 0 && def.colors.some((c) => excludedColors.has(c))) return false;
+  }
   if (filter.attribute && !def.attributes?.includes(filter.attribute)) return false;
   if (filter.name && def.name !== filter.name) return false;
   if (filter.maxCost !== undefined && (def.baseCost ?? Infinity) > filter.maxCost) return false;
@@ -220,9 +228,9 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
   return true;
 }
 
-function searchEligible(ids: string[], filter: SearchFilter | undefined, ctx: EffectContextImpl): string[] {
+function searchEligible(ids: string[], filter: SearchFilter | undefined, ctx: EffectContextImpl, bindings: Record<string, string[]> = {}): string[] {
   if (!filter) return ids;
-  return ids.filter((id) => matchesSearchFilter(id, filter, ctx));
+  return ids.filter((id) => matchesSearchFilter(id, filter, ctx, bindings));
 }
 
 /**
@@ -420,6 +428,13 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
       return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === true);
     }
+    case 'controllerActiveDon': {
+      const state = ctx.state();
+      const player = state.players[ctx.controllerId];
+      const attached = new Set<string>();
+      for (const id of Object.keys(state.cardsById)) for (const d of state.cardsById[id].donAttached) attached.add(d);
+      return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === false);
+    }
     case 'opponentFieldDon':
       return fieldDonIds(ctx.state(), ctx.opponentId);
     case 'opponentActiveDon': {
@@ -538,7 +553,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return ids;
     }
     case 'controllerHand':
-      return searchEligible(ctx.controllerHandIds(), sel.filter, ctx);
+      return searchEligible(ctx.controllerHandIds(), sel.filter, ctx, bindings);
     case 'opponentHand':
       return ctx.opponentHandIds();
     case 'controllerTrash':
@@ -785,6 +800,26 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       ctx.preventControllerLifeToHand({ appliesToControllerId: targetPlayerId, duration: op.duration });
       return EMPTY_RESULT;
     }
+    case 'preventControllerCharacterPlay': {
+      const targetPlayerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      ctx.preventControllerCharacterPlay({
+        appliesToControllerId: targetPlayerId,
+        duration: op.duration,
+        ...(op.minBaseCost !== undefined ? { minBaseCost: op.minBaseCost } : {}),
+        ...(op.maxBaseCost !== undefined ? { maxBaseCost: op.maxBaseCost } : {}),
+      });
+      return EMPTY_RESULT;
+    }
+    case 'preventControllerHandPlay': {
+      const targetPlayerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      ctx.preventControllerHandPlay({ appliesToControllerId: targetPlayerId, duration: op.duration });
+      return EMPTY_RESULT;
+    }
+    case 'preventControllerCharacterSetActiveDon': {
+      const targetPlayerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      ctx.preventControllerCharacterSetActiveDon({ appliesToControllerId: targetPlayerId, duration: op.duration });
+      return EMPTY_RESULT;
+    }
     case 'giveDon': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.giveDon(id, op.count);
@@ -910,6 +945,11 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     case 'moveToBottomDeck': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.moveToBottomDeck(id);
+      return { selectedIds: ids, movedIds: ids };
+    }
+    case 'moveToTopDeck': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) ctx.moveToTopDeck(id);
       return { selectedIds: ids, movedIds: ids };
     }
     case 'moveToLifeTop': {
@@ -1519,13 +1559,14 @@ function suspendOrPayAbilityCost(
 
   const requiredDon = requiredDonMinusCount(ability.cost);
   if (requiredDon > 0) {
-    const candidates = fieldDonIds(ctx.state(), ctx.controllerId);
+    const activeOnly = ability.cost.some((c) => c.kind === 'donMinus' && c.activeOnly);
+    const candidates = donMinusCandidateIds(ctx.state(), ctx.controllerId, ability.cost);
     if (candidates.length < requiredDon) return false;
     ctx.emitChoice({
       id: `${ctx.sourceInstanceId}__ir-cost-${abilityIndex}`,
       playerId: ctx.controllerId,
       kind: 'SELECT_CARDS',
-      prompt: `Choose ${requiredDon} DON!! on your field to return to your DON!! deck.`,
+      prompt: `Choose ${requiredDon} ${activeOnly ? 'active ' : ''}DON!! on your field to return to your DON!! deck.`,
       constraints: { min: requiredDon, max: requiredDon, candidateInstanceIds: candidates },
       sourceInstanceId: ctx.sourceInstanceId,
       sourceEffectId: 'ir',
@@ -1602,7 +1643,10 @@ export function resumeProgram(
     let working = step.state;
     let log = step.log;
     if (step.declinedEffectKoTargetId) {
-      const fired = fireOnKO(working, step.declinedEffectKoTargetId, registry, defs, actionId);
+      const fired = fireOnKO(working, step.declinedEffectKoTargetId, registry, defs, actionId, {
+        cause: 'effect',
+        sourceInstanceId: step.resumeKr?.ir?.sourceInstanceId,
+      });
       working = fired.state;
       log = [...log, ...fired.log];
       if (fired.pendingChoices.length > 0) {

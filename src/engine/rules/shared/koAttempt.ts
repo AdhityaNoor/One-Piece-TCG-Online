@@ -139,7 +139,8 @@ function replacementCostIsImmediate(action: KoReplacementAction): boolean {
     action.kind === 'giveSelfPowerPenalty' ||
     action.kind === 'giveLeaderPowerPenalty' ||
     action.kind === 'moveTargetToLifeFaceDown' ||
-    action.kind === 'trashSelfAndDraw'
+    action.kind === 'trashSelfAndDraw' ||
+    action.kind === 'turnTopLifeFace'
   );
 }
 
@@ -236,6 +237,9 @@ function replacementCostAvailable(
   if (mod.action.kind === 'trashTrashToDeckBottom') {
     const trash = state.players[target.ownerId]?.trash.cardIds ?? [];
     return trash.length >= mod.action.count;
+  }
+  if (mod.action.kind === 'turnTopLifeFace') {
+    return (state.players[target.ownerId]?.lifeArea.cardIds.length ?? 0) >= 1;
   }
   if (mod.action.kind === 'giveSelfPowerPenalty') {
     const source = state.cardsById[record.sourceInstanceId];
@@ -613,6 +617,16 @@ export function applyKoReplacementCost(
     const moved = ctx.finish();
     working = moved.state;
     logger.log.push(...moved.log);
+  } else if (mod.action.kind === 'turnTopLifeFace') {
+    const life = working.players[target.ownerId]?.lifeArea.cardIds ?? [];
+    const topId = life[0];
+    if (topId) {
+      const ctx = new EffectContextImpl(working, record.sourceInstanceId, defs, actionId);
+      ctx.turnLifeFace(topId, mod.action.faceUp);
+      const moved = ctx.finish();
+      working = moved.state;
+      logger.log.push(...moved.log);
+    }
   } else if (mod.action.kind === 'giveSelfPowerPenalty') {
     const sourceId = record.sourceInstanceId;
     const ctx = new EffectContextImpl(working, sourceId, defs, actionId);
@@ -763,6 +777,8 @@ export function koReplacementDescription(mod: ContinuousKoReplacementModifier): 
       return `Trash this Character and draw ${mod.action.drawAmount} card${mod.action.drawAmount === 1 ? '' : 's'} instead?`;
     case 'trashTrashToDeckBottom':
       return `Place ${mod.action.count} cards from your trash at the bottom of your deck instead?`;
+    case 'turnTopLifeFace':
+      return `Turn the top card of your Life cards face-${mod.action.faceUp ? 'up' : 'down'} instead?`;
     case 'giveSelfPowerPenalty':
       return `Give this Character −${mod.action.amount} power during this turn instead?`;
     case 'giveLeaderPowerPenalty':

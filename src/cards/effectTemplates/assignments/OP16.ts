@@ -41,36 +41,6 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // ── Triage batch (OP16 expressible). "reveal 8000-power Char from hand" cost, "base power becomes same as..." swaps, named-present gates, and opp-Life-to-opponent's-hand are deferred. ──
   { cardNumber: 'OP16-006', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, optional: true }] } },
 
-  // OP16-007 (character) Jozu —
-  //   [Blocker][On Play] You may reveal 1 Character card with 8000 power from your hand: Give up to 1 of
-  //   your opponent's Characters −1000 power during this turn.
-  // NOTE: not yet implemented (needs template).
-
-  // OP16-008 (character) Squard —
-  //   [On Play] You may trash 1 of your Characters with 10000 base power: K.O. up to 1 of your opponent's
-  //   Characters with 8000 power or less.
-  // NOTE: not yet implemented (needs template).
-
-  // OP16-009 (character) Speed Jil —
-  //   [On Play] You may trash 1 Character card with 8000 power from your hand: This Character gains [Rush]
-  //   and +2000 power until the end of your opponent's next End Phase.
-  // NOTE: not yet implemented (needs template).
-
-  // OP16-010 (character) Namule —
-  //   [On Play] You may reveal 1 Character card with 8000 power from your hand: K.O. up to 1 of your
-  //   opponent's Characters with 2000 base power or less.
-  // NOTE: not yet implemented (needs template).
-
-  // OP16-011 (character) Vista —
-  //   [On Play] You may reveal 1 Character card with 8000 power from your hand: Draw 1 card.[DON!! x1]
-  //   [When Attacking] K.O. up to 2 of your opponent's Characters with 2000 base power or less.
-  // NOTE: not yet implemented (needs template).
-
-  // OP16-012 (character) Benn.Beckman —
-  //   [Blocker][On Play] You may rest 1 of your DON!! cards: If your Leader has the {Red-Haired Pirates}
-  //   type and you have 10 DON!! cards on your field, play up to 1 [Shanks] from your hand.
-  // NOTE: not yet implemented (needs template).
-
   { cardNumber: 'OP16-013', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 8000 } }, optional: true }] } },
 
   // OP16-014 (character) Marco —
@@ -150,12 +120,6 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-017 (character) LittleOars Jr. —
-  //   If you have no Characters with a type including "Whitebeard Pirates" and a cost of 8 or more, give
-  //   this Character −4000 power.[Blocker] (After your opponent declares an attack, you may rest this card
-  //   to make it the new target of the attack.)
-  // NOTE: not yet implemented (needs template).
-
   // OP16-018 — aura K.O. replacement: trash Char ≥6000 from hand to save ally {Red-Haired Pirates}.
   {
     cardNumber: 'OP16-018',
@@ -227,10 +191,8 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP16-024 (character) Inazuma —
   //   When this Character is K.O.'d by your opponent's effect, rest up to 1 of your opponent's
-  //   Characters.[Blocker] (After your opponent declares an attack, you may rest this card to make it the
-  //   new target of the attack.)
-  // PARTIAL: opponent-effect-only K.O. gate deferred; [Blocker] is printed.
-  { cardNumber: 'OP16-024', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
+  //   Characters.[Blocker] is printed on the card.
+  { cardNumber: 'OP16-024', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'koByOpponentEffect' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
 
   // OP16-025 — [When Attacking] If you have [Antlerkov], play up to 1 Character cost<=2 from hand.
   { cardNumber: 'OP16-025', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfControlsNamed', name: 'Antlerkov' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 2 } }] } },
@@ -307,12 +269,6 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-042 (character) Prisoner of Impel Down —
   //   Under the rules of this game, you may have any number of this card in your deck.
   { cardNumber: 'OP16-042', templateId: 'noRuntime', params: {} },
-
-
-  // OP16-045 (character) Crocodile —
-  //   [Blocker][On Play] You may return 1 of your Characters with a cost of 2 or more to the owner's hand:
-  //   Play up to 1 {Impel Down} type Character card with a cost of 2 or less from your hand.
-  // NOTE: not yet implemented (needs template).
 
   // OP16-047 (character) Donquixote Doflamingo —
   //   [Activate: Main] You may rest this Character: If your opponent has 8 or more cards in their hand,
@@ -622,11 +578,6 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP16-085 — [Blocker][On Play] Play {Land of Wano} cost ≤6 from trash (exclude-[Momonosuke] dropped).
   { cardNumber: 'OP16-085', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Land of Wano', maxCost: 6 } }] } },
-
-  // OP16-087 (character) Shinobu —
-  //   [On Play] You may trash this Character: If your Leader has the {Land of Wano} type, draw 1 card and
-  //   up to 1 of your [Kouzuki Momonosuke] gains +20 cost during this turn.
-  // NOTE: not yet implemented (needs template).
 
   { cardNumber: 'OP16-089', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, duration: 'duringThisTurn', optional: true }] } },
 

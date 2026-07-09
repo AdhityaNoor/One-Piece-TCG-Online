@@ -17,6 +17,7 @@ import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/def
 import { computeCurrentCost } from '../../rules/shared/power';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { evaluateGates, fireActivate, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, type EffectTemplateRegistry } from '../../effects';
+import { isControllerHandPlayPrevented } from '../../rules/shared/handPlayRestriction';
 import { recordEventActivation } from '../../effects/eventActivationHistory';
 
 export function validateActivateEventMain(
@@ -51,6 +52,10 @@ export function validateActivateEventMain(
   }
   if (def.category !== 'event') {
     reasons.push(`'${def.name}' is a ${def.category}, not an Event.`);
+  }
+
+  if (isControllerHandPlayPrevented(state, action.playerId)) {
+    reasons.push('You cannot play cards from your hand during this turn.');
   }
 
   const program = registry[handInstance.cardDefinitionId];
