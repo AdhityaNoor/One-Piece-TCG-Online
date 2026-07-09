@@ -442,10 +442,24 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // PARTIAL: [On Play] look-3-to-life deferred; mapped [Trigger] negate + K.O. bundle.
+  // OP16-119 — [On Play] look 3 → up to 1 to Life top, rest bottom in order; [Trigger] negate + K.O.
   {
     cardNumber: 'OP16-119',
     templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [{
+            fn: 'searchTopDeck',
+            look: 3,
+            pick: 1,
+            reveal: false,
+            destination: 'lifeTop',
+            remainder: 'bottom',
+          }],
+        },
+      },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
         { fn: 'negateEffect', target: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
         { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
@@ -694,8 +708,31 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-107 — [Trigger] trash 1 → play this. PARTIAL: [On K.O.] opp-Life-to-hand is deferred.
-  { cardNumber: 'OP16-107', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
+  // OP16-107 — [On K.O.] up to 1 opp top Life → owner's hand; [Trigger] trash 1 → play this.
+  {
+    cardNumber: 'OP16-107',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onKO',
+          functions: [{
+            fn: 'moveCards',
+            from: { zone: 'life', player: 'opponent', position: 'top', count: 1 },
+            to: { zone: 'hand', player: 'owner' },
+            optional: true,
+          }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'lifeTrigger',
+          functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }],
+        },
+      },
+    ],
+  },
 
   { cardNumber: 'OP16-108', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Blackbeard Pirates', maxCost: 6 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 
@@ -737,11 +774,29 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-116 — [Main] If 10 DON!!, play [Marshall.D.Teach] from hand. [Trigger] Draw 2, trash 1. PARTIAL: opp-Life-to-hand deferred.
+  // OP16-116 — [Main] If 10 DON!! play Marshall.D.Teach; then opp top Life → owner's hand. [Trigger] Draw 2, trash 1.
   {
     cardNumber: 'OP16-116',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfDonFieldCount', atLeast: 10 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Marshall.D.Teach' } }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [
+            {
+              fn: 'playFromHand',
+              filter: { category: 'character', name: 'Marshall.D.Teach' },
+              ifGate: [{ kind: 'selfDonFieldCount', atLeast: 10 }],
+            },
+            {
+              fn: 'moveCards',
+              from: { zone: 'life', player: 'opponent', position: 'top', count: 1 },
+              to: { zone: 'hand', player: 'owner' },
+              optional: true,
+            },
+          ],
+        },
+      },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
     ],
   },

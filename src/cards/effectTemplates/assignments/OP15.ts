@@ -142,18 +142,33 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [{ fn: 'addCostAuraSameCardInHand', amount: -2, duration: 'permanent', gate: [{ kind: 'selfLeaderPowerAtMost', power: 0 }] }],
     },
   },
-  // OP15-014 — K.O. replacement (trash Event from hand). PARTIAL: onPlay activate Dressrosa Event deferred.
+  // OP15-014 — K.O. replacement (trash Event from hand); [On Play] activate Dressrosa Event cost ≤3 from hand.
   {
     cardNumber: 'OP15-014',
-    templateId: 'ability',
-    params: {
-      timing: 'onEnterPlay',
-      functions: [{
-        fn: 'registerKoReplacementSelf',
-        trashFromHand: { count: 1, filter: { category: 'event' } },
-        duration: 'permanent',
-      }],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementSelf',
+            trashFromHand: { count: 1, filter: { category: 'event' } },
+            duration: 'permanent',
+          }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [{
+            fn: 'activateEventFromHand',
+            filter: { category: 'event', typeIncludes: 'Dressrosa', maxCost: 3 },
+            maxTargets: 1,
+          }],
+        },
+      },
+    ],
   },
 
   // OP15-015 — [On Play] give opp rested DON to opp Char, then −1000 to opp Char with DON given.
@@ -460,11 +475,35 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
         ],
       }],
     },
-  },  // OP15-056 — [Main] Draw 2. [Trigger] Draw 2. PARTIAL: the "[Lucy] Leader gains [Double Attack]/+3000" clause is deferred.
+  },
+
+  // OP15-056 — [Main] Draw 2, then [Lucy] Leader gains [Double Attack] and +3000 this turn. [Trigger] Draw 2.
   {
     cardNumber: 'OP15-056',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'draw', amount: 2 }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [
+            { fn: 'draw', amount: 2 },
+            {
+              fn: 'addKeyword',
+              target: { group: 'leader', player: 'controller' },
+              keyword: 'doubleAttack',
+              duration: 'duringThisTurn',
+              ifGate: [{ kind: 'leaderName', name: 'Lucy' }],
+            },
+            {
+              fn: 'addPower',
+              target: { group: 'leader', player: 'controller' },
+              amount: 3000,
+              duration: 'duringThisTurn',
+              ifGate: [{ kind: 'leaderName', name: 'Lucy' }],
+            },
+          ],
+        },
+      },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }] } },
     ],
   },

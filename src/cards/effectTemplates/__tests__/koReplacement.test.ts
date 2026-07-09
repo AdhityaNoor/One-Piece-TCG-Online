@@ -29,6 +29,29 @@ describe('K.O. replacement runtime', () => {
     expect(findKoReplacementRecord(withHand.rig.state, instanceId, 'effect', withHand.rig.defs)).not.toBeNull();
   });
 
+  it('OP15-014 onPlay offers to activate a Dressrosa Event from hand', () => {
+    const program = applyTemplate('OP15-014', 'ability', {
+      timing: 'onPlay',
+      functions: [{
+        fn: 'activateEventFromHand',
+        filter: { category: 'event', typeIncludes: 'Dressrosa', maxCost: 3 },
+        maxTargets: 1,
+      }],
+    });
+    const charDef = makeCharacterDef({ cardNumber: 'OP15-014' });
+    const eventDef = makeEventDef({ cardNumber: 'EVT-DRESS', types: ['Dressrosa'], baseCost: 3 });
+    let rig = buildBaseRig();
+    const { rig: withHand } = putInHand({ state: rig.state, defs: { ...rig.defs, [eventDef.cardDefinitionId]: eventDef } }, 'p1', eventDef);
+    rig = withHand;
+    const { rig: withChar, instanceId } = putCharacterInPlay(rig, 'p1', charDef);
+    rig = withChar;
+    rig.defs[charDef.cardDefinitionId] = charDef;
+
+    const fired = runTimings(program, ['onPlay'], rig.state, instanceId, rig.defs, null, { [charDef.cardDefinitionId]: program });
+    expect(fired.pendingChoices).toHaveLength(1);
+    expect(fired.pendingChoices[0]?.prompt).toContain('Event');
+  });
+
   it('offers replacement instead of effect K.O. when eligible hand card exists', () => {
     const targetDef = makeCharacterDef({ cardNumber: 'OP15-014', name: 'Bartolomeo' });
     const koProgram = applyTemplate('KO-001', 'ability', {

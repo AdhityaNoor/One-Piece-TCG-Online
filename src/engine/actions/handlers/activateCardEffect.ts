@@ -25,7 +25,7 @@ function isInPlay(zone: string): boolean {
   return zone === 'leaderArea' || zone === 'characterArea' || zone === 'stageArea';
 }
 
-function abilityConditionMet(ability: Ability, source: CardInstance, state: GameState, defs: CardDefinitionLookup): boolean {
+function abilityConditionMet(ability: Ability, source: CardInstance, sourceInstanceId: string, state: GameState, defs: CardDefinitionLookup): boolean {
   const condition = ability.condition;
   if (!condition) return true;
   if (condition.donAttachedAtLeast !== undefined && source.donAttached.length < condition.donAttachedAtLeast) return false;
@@ -34,7 +34,7 @@ function abilityConditionMet(ability: Ability, source: CardInstance, state: Game
     if (condition.turn === 'your' && !isOwnersTurn) return false;
     if (condition.turn === 'opponent' && isOwnersTurn) return false;
   }
-  if (condition.gate && !evaluateGates(condition.gate, state, defs, source.controllerId)) return false;
+  if (condition.gate && !evaluateGates(condition.gate, state, defs, source.controllerId, sourceInstanceId)) return false;
   return true;
 }
 
@@ -63,10 +63,10 @@ export function validateActivateCardEffect(
   if (!ability) {
     reasons.push(`'${source.cardDefinitionId}' has no activatable [Activate: Main] effect.`);
   }
-  if (ability?.gate && !evaluateGates(ability.gate, state, defs, action.playerId)) {
+  if (ability?.gate && !evaluateGates(ability.gate, state, defs, action.playerId, action.sourceInstanceId)) {
     reasons.push(`'${source.cardDefinitionId}' can't be activated right now — its "If …" condition isn't met.`);
   }
-  if (ability && !abilityConditionMet(ability, source, state, defs)) {
+  if (ability && !abilityConditionMet(ability, source, action.sourceInstanceId, state, defs)) {
     reasons.push(`'${source.cardDefinitionId}' can't be activated right now — its activation condition isn't met.`);
   }
   if (ability?.cost?.length) {

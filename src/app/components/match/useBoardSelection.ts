@@ -48,7 +48,7 @@ const PLAY_ACTION_BY_CATEGORY: Record<'character' | 'stage' | 'event', GameActio
   event: 'ACTIVATE_EVENT_MAIN',
 };
 
-function abilityConditionMet(ability: Ability, source: CardInstance, state: NonNullable<ReturnType<typeof useMatchStore.getState>['state']>, defs: ReturnType<typeof useMatchStore.getState>['defs']): boolean {
+function abilityConditionMet(ability: Ability, source: CardInstance, sourceInstanceId: string, state: NonNullable<ReturnType<typeof useMatchStore.getState>['state']>, defs: ReturnType<typeof useMatchStore.getState>['defs']): boolean {
   const condition = ability.condition;
   if (!condition) return true;
   if (condition.donAttachedAtLeast !== undefined && source.donAttached.length < condition.donAttachedAtLeast) return false;
@@ -57,7 +57,7 @@ function abilityConditionMet(ability: Ability, source: CardInstance, state: NonN
     if (condition.turn === 'your' && !isOwnersTurn) return false;
     if (condition.turn === 'opponent' && isOwnersTurn) return false;
   }
-  if (condition.gate && !evaluateGates(condition.gate, state, defs, source.controllerId)) return false;
+  if (condition.gate && !evaluateGates(condition.gate, state, defs, source.controllerId, sourceInstanceId)) return false;
   return true;
 }
 
@@ -82,8 +82,8 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (!inst || inst.controllerId !== actingPlayerId) return false;
     if (state.currentPhase !== 'main' || actingPlayerId !== state.activePlayerId) return false;
     if (ability.oncePerTurn && card.oncePerTurnUsed.includes('activateMain')) return false;
-    if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, actingPlayerId)) return false;
-    if (!abilityConditionMet(ability, inst, state, defs)) return false;
+    if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, actingPlayerId, card.instanceId)) return false;
+    if (!abilityConditionMet(ability, inst, card.instanceId, state, defs)) return false;
     if (ability.cost?.length) {
       const requiredDon = requiredDonMinusCount(ability.cost);
       const selectedDon = requiredDon > 0 ? fieldDonIds(state, actingPlayerId).slice(0, requiredDon) : [];
@@ -133,8 +133,8 @@ export function useBoardSelection(actingPlayerId: string | null) {
     const inst = state.cardsById[card.instanceId];
     if (!inst || inst.controllerId !== actingPlayerId || (inst.currentZone !== 'leaderArea' && inst.currentZone !== 'characterArea' && inst.currentZone !== 'stageArea')) return false;
     if (ability.oncePerTurn && card.oncePerTurnUsed.includes('onOpponentsAttack')) return false;
-    if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, actingPlayerId)) return false;
-    if (!abilityConditionMet(ability, inst, state, defs)) return false;
+    if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, actingPlayerId, card.instanceId)) return false;
+    if (!abilityConditionMet(ability, inst, card.instanceId, state, defs)) return false;
     if (ability.cost?.length) {
       const requiredDon = requiredDonMinusCount(ability.cost);
       const selectedDon = requiredDon > 0 ? fieldDonIds(state, actingPlayerId).slice(0, requiredDon) : [];

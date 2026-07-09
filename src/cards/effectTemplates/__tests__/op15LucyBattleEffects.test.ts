@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { executeActivateOnOpponentsAttack, validateActivateOnOpponentsAttack } from '../../../engine/rules/battle/activateOnOpponentsAttack';
-import { computeCurrentPower } from '../../../engine/rules/shared/power';
+import { computeCurrentPower, hasContinuousKeyword } from '../../../engine/rules/shared/power';
 import {
   buildBaseRig,
   makeCharacterDef,
@@ -8,10 +8,13 @@ import {
   makeLeaderDef,
   makeStageDef,
   putCharacterInPlay,
+  putDeckCards,
+  putDon,
   putInHand,
   putStageInPlay,
 } from '../../../engine/rules/shared/__tests__/testRig';
 import { resumeProgram, runTimings } from '../../../engine/effects/interpreter';
+import { executeActivateEventMain } from '../../../engine/actions/handlers/activateEventMain';
 import { buildRegistryFromAssignments } from '../assembler';
 import { OP15_ASSIGNMENTS } from '../assignments/OP15';
 
@@ -137,5 +140,36 @@ describe('OP15-002 Lucy battle effects', () => {
 
     const resolved = resumeProgram(registry['OP15-057'], afterTrash.state, targetChoice!, [lucyId], rig.defs, 'test', registry).state;
     expect(computeCurrentPower(rig.defs, resolved, lucyId)).toBe(7000);
+  });
+});
+
+describe('OP15-056 Flame-Flame Fruit event', () => {
+  it('[Main] draws 2 then gives Lucy Leader [Double Attack] and +3000 this turn', () => {
+    const lucy = makeLeaderDef({ cardDefinitionId: 'OP15-002', cardNumber: 'OP15-002', name: 'Lucy' });
+    const event = makeEventDef({ cardDefinitionId: 'OP15-056', cardNumber: 'OP15-056', baseCost: 7 });
+    const filler = makeCharacterDef({ cardDefinitionId: 'OP15-056-FILLER', cardNumber: 'OP15-056-FILLER' });
+
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 5, leaderOverridesP1: lucy });
+    const lucyId = rig.state.players.p1.leaderInstanceId;
+    rig = putDeckCards(rig, 'p1', filler, 2).rig;
+    const withDon = putDon(rig, 'p1', 7);
+    const withEvent = putInHand(withDon.rig, 'p1', event);
+
+    const activated = executeActivateEventMain(
+      withEvent.rig.state,
+      {
+        type: 'ACTIVATE_EVENT_MAIN',
+        actionId: 'op15-056-main',
+        playerId: 'p1',
+        handCardInstanceId: withEvent.instanceId,
+        donInstanceIds: withDon.donIds,
+      },
+      withEvent.rig.defs,
+      registry,
+    ).state;
+
+    expect(activated.players.p1.hand.cardIds).toHaveLength(2);
+    expect(hasContinuousKeyword(withEvent.rig.defs, activated, lucyId, 'doubleAttack')).toBe(true);
+    expect(computeCurrentPower(withEvent.rig.defs, activated, lucyId)).toBe(8000);
   });
 });

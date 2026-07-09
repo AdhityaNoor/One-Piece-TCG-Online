@@ -4,6 +4,13 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useSettingsStore } from '../store/settingsStore';
+import {
+  SETTINGS_PANEL_ICON_BUTTON,
+  SETTINGS_PANEL_LABEL,
+  SETTINGS_PANEL_OPTION,
+  SETTINGS_PANEL_SHELL,
+  SETTINGS_PANEL_TITLE,
+} from './settingsPanelStyles';
 
 const BACKSOUND_SRC = '/audio/main-menu-backsound.mp3';
 const UI_CLICK_SRC = '/audio/ui-click.wav';
@@ -43,9 +50,12 @@ function SettingSwitch({ checked, label, onToggle }: { checked: boolean; label: 
       role="switch"
       aria-checked={checked}
       onClick={onToggle}
-      className="flex w-full items-center justify-between gap-3 border border-white/10 bg-white/[0.04] px-3 py-2 text-left transition-all hover:border-white/20 hover:bg-white/10"
+      className={[
+        SETTINGS_PANEL_OPTION,
+        'justify-between gap-3',
+      ].join(' ')}
     >
-      <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/68">{label}</span>
+      <span className={SETTINGS_PANEL_LABEL}>{label}</span>
       <span
         className={[
           'inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full border border-white/15 p-0.5 transition-colors',
@@ -221,13 +231,13 @@ export function BacksoundControl() {
       <audio ref={sfxRef} src={UI_CLICK_SRC} preload="auto" />
 
       {panelOpen && (
-        <div className="w-64 border border-white/15 bg-black/55 p-3 shadow-[0_18px_42px_rgba(0,0,0,0.3)] backdrop-blur-md">
+        <div className={`w-64 p-3 ${SETTINGS_PANEL_SHELL}`}>
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/72">Backsound</p>
+            <p className={SETTINGS_PANEL_TITLE}>Backsound</p>
             <button
               type="button"
               onClick={togglePlayback}
-              className="flex h-9 w-9 items-center justify-center border border-white/15 bg-white/5 text-white/72 transition-all hover:bg-white/12 hover:text-white"
+              className={SETTINGS_PANEL_ICON_BUTTON}
               aria-label={isPlaying ? 'Pause backsound' : 'Play backsound'}
               title={isPlaying ? 'Pause backsound' : 'Play backsound'}
             >
@@ -250,11 +260,11 @@ export function BacksoundControl() {
           {playbackBlocked && <p className="mt-3 text-[11px] leading-4 text-white/58">Tap the speaker once to start music.</p>}
           <div className="mt-4 border-t border-white/10 pt-3">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/72">SFX</p>
+              <p className={SETTINGS_PANEL_TITLE}>SFX</p>
               <button
                 type="button"
                 onClick={() => setSfxEnabled(!sfxEnabled)}
-                className="flex h-9 w-9 items-center justify-center border border-white/15 bg-white/5 text-white/72 transition-all hover:bg-white/12 hover:text-white"
+                className={SETTINGS_PANEL_ICON_BUTTON}
                 aria-label={sfxEnabled ? 'Mute sound effects' : 'Enable sound effects'}
                 title={sfxEnabled ? 'Mute sound effects' : 'Enable sound effects'}
               >
@@ -276,7 +286,7 @@ export function BacksoundControl() {
             </label>
           </div>
           <div className="mt-4 border-t border-white/10 pt-3">
-            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/72">Visuals</p>
+            <p className={`mb-2 ${SETTINGS_PANEL_TITLE}`}>Visuals</p>
             <div className="flex flex-col gap-2">
               <SettingSwitch
                 label="Animations"

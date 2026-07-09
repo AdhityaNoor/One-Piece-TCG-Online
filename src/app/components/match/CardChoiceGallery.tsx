@@ -59,17 +59,17 @@ export function CardChoiceGallery({ cards, selectableIds, selectedOrder, max, on
               alt={card.name}
               className={[
                 'rounded-none',
-                isSelected ? 'ring-4 ring-gold' : selectable ? 'ring-1 ring-white/15 group-hover:ring-gold/60' : '',
+                isSelected ? 'ring-1 ring-white/30' : selectable ? 'ring-1 ring-white/15 group-hover:ring-white/25' : '',
               ].join(' ')}
             />
 
             {isSelected && (
-              <span className="absolute -right-2 -top-2 z-10 flex h-7 min-w-7 items-center justify-center rounded-full border-2 border-white bg-gold px-1 font-heading text-sm font-black leading-none text-black shadow-[0_3px_0_rgba(0,0,0,0.5)]">
+              <span className="absolute -right-2 -top-2 z-10 flex h-6 min-w-6 items-center justify-center border border-white/20 bg-black/55 px-1 text-[10px] font-black uppercase tracking-[0.08em] text-white/80 shadow-[0_8px_20px_rgba(0,0,0,0.28)] backdrop-blur-md">
                 {showOrderNumbers ? (orderById.get(card.instanceId) ?? 0) + 1 : '✓'}
               </span>
             )}
 
-            <p className="mt-1 truncate text-center text-[11px] font-semibold text-white/75">{card.name}</p>
+            <p className="mt-1 truncate text-center text-[10px] font-black uppercase tracking-[0.12em] text-white/68">{card.name}</p>
           </button>
         );
       })}

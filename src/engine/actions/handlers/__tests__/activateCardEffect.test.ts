@@ -118,4 +118,28 @@ describe('ACTIVATE_CARD_EFFECT ability costs', () => {
     expect(result.state.players.p1.donDeck.cardIds).toContain(activeDonId);
     expect(result.state.cardsById[activeDonId].donRested).toBe(false);
   });
+
+  it('allows activateMain when selfPlayedThisTurn gate matches the activating source', () => {
+    const base = buildBaseRig({
+      phase: 'main',
+      activePlayerId: 'p1',
+      turnNumber: 4,
+      leaderOverridesP1: { types: ['Blackbeard Pirates'] },
+    });
+    const charDef = makeCharacterDef({ cardDefinitionId: 'SYN-PLAYED-THIS-TURN' });
+    const { rig: withChar, instanceId } = putCharacterInPlay(base, 'p1', charDef, { enteredPlayTurn: 4 });
+    const registry: EffectTemplateRegistry = {
+      [charDef.cardDefinitionId]: {
+        cardNumber: charDef.cardDefinitionId,
+        abilities: [{
+          timing: 'activateMain',
+          oncePerTurn: true,
+          gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }, { kind: 'selfPlayedThisTurn' }],
+          ops: [{ op: 'draw', amount: 1 }],
+        }],
+      },
+    };
+
+    expect(validateActivateCardEffect(withChar.state, activate(instanceId), registry, withChar.defs).legal).toBe(true);
+  });
 });

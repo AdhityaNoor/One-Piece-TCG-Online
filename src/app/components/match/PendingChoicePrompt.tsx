@@ -6,8 +6,9 @@
  * overflow trash (the one real RESOLVE_PENDING_CHOICE case — see
  * actions/handlers/resolvePendingChoice.ts doc comment).
  *
- * Reuses the existing Modal shell rather than inventing a new one — this is
- * exactly the kind of "blocking decision" Modal.tsx already exists for.
+ * Reuses ChoicePromptPanel (gear-menu glass styling) rather than the heavy
+ * Modal shell — blocking decisions get the same compact floating panel look
+ * as the global settings menu.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { GameState } from '../../../engine/state/game';
@@ -15,12 +16,28 @@ import type { GameAction } from '../../../engine/actions';
 import type { CardDefinitionLookup } from '../../../engine/rules/shared';
 import { createActionId, useMatchStore } from '../../store/matchStore';
 import { projectPlayerBoard, buildCardView, type CardView } from '../../../board/projection';
-import { Modal } from '../Modal';
-import { Button } from '../Button';
 import { CardImage } from '../CardImage';
 import { ZoneSection } from './ZoneSection';
 import { CardChoiceGallery } from './CardChoiceGallery';
 import { StlCoinCanvas, COIN_FLIP_DURATION_MS } from './StlCoinCanvas';
+import {
+  ChoicePromptActionList,
+  ChoicePromptActionRow,
+  ChoicePromptError,
+  ChoicePromptInset,
+  ChoicePromptMessage,
+  ChoicePromptMeta,
+  ChoicePromptOption,
+  ChoicePromptShell,
+} from './ChoicePromptPanel';
+import {
+  SETTINGS_PANEL_BODY,
+  SETTINGS_PANEL_LABEL,
+  SETTINGS_PANEL_META,
+  SETTINGS_PANEL_SCRIM,
+  SETTINGS_PANEL_SHELL,
+  SETTINGS_PANEL_TITLE,
+} from '../settingsPanelStyles';
 
 export interface PendingChoicePromptProps {
   state: GameState;
@@ -67,7 +84,7 @@ function TossCanvas() {
       y: (index * 127) % 900,
       size: 1 + ((index * 5) % 4),
       speed: 0.18 + ((index * 19) % 18) / 40,
-      color: index % 3 === 0 ? '#ffd34a' : index % 3 === 1 ? '#ef4444' : '#7dd3fc',
+      color: index % 3 === 0 ? 'rgba(255,255,255,0.55)' : index % 3 === 1 ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.25)',
     }));
 
     const resize = (): void => {
@@ -85,7 +102,7 @@ function TossCanvas() {
       context.clearRect(0, 0, width, height);
 
       const vignette = context.createRadialGradient(width * 0.5, height * 0.46, 0, width * 0.5, height * 0.46, Math.max(width, height) * 0.72);
-      vignette.addColorStop(0, 'rgba(255,211,74,0.13)');
+      vignette.addColorStop(0, 'rgba(255,255,255,0.06)');
       vignette.addColorStop(0.42, 'rgba(7,17,38,0.18)');
       vignette.addColorStop(1, 'rgba(3,7,19,0.72)');
       context.fillStyle = vignette;
@@ -93,7 +110,7 @@ function TossCanvas() {
 
       context.save();
       context.globalAlpha = 0.16;
-      context.strokeStyle = '#d9a441';
+      context.strokeStyle = '#ffffff';
       context.lineWidth = 1;
       for (let x = -height; x < width + height; x += 108) {
         context.beginPath();
@@ -107,8 +124,8 @@ function TossCanvas() {
         const x = ((streak.x + frame * streak.speed) % (width + streak.length + 160)) - streak.length;
         const y = streak.y % Math.max(height, 1);
         const gradient = context.createLinearGradient(x, y, x + streak.length, y - 38);
-        gradient.addColorStop(0, 'rgba(255,211,74,0)');
-        gradient.addColorStop(0.48, `rgba(255,211,74,${streak.alpha})`);
+        gradient.addColorStop(0, 'rgba(255,255,255,0)');
+        gradient.addColorStop(0.48, `rgba(255,255,255,${streak.alpha * 0.45})`);
         gradient.addColorStop(1, 'rgba(255,255,255,0)');
         context.strokeStyle = gradient;
         context.lineWidth = 3;
@@ -173,15 +190,15 @@ function SetupTossOverlay({
   const canChoose = !!pick && resolved;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/44 text-white backdrop-blur-md">
+    <div className={`fixed inset-0 z-50 overflow-hidden text-white ${SETTINGS_PANEL_SCRIM}`}>
       <TossCanvas />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_48%,_rgba(255,211,74,0.16),_transparent_28%),linear-gradient(180deg,_rgba(3,7,19,0.18),_rgba(3,7,19,0.82))]" />
+      <div className="pointer-events-none absolute inset-0 bg-black/20" />
       <section className="pointer-events-auto relative z-10 flex h-full flex-col items-center justify-center px-5 text-center">
-        <p className="mb-3 text-[11px] font-black uppercase tracking-[0.28em] text-gold drop-shadow-[0_2px_0_rgba(0,0,0,0.7)]">Starting Toss</p>
-        <h2 className="font-display text-[clamp(2.6rem,8vw,7rem)] font-black uppercase leading-[0.88] tracking-[0.02em] text-white drop-shadow-[0_8px_0_rgba(0,0,0,0.62)]">
+        <p className={`mb-3 ${SETTINGS_PANEL_TITLE}`}>Starting Toss</p>
+        <h2 className="font-display text-[clamp(2rem,6vw,4.5rem)] font-black uppercase leading-[0.92] tracking-[0.04em] text-white/72">
           Call It
         </h2>
-        <p className="mt-4 max-w-2xl text-sm font-semibold uppercase tracking-[0.1em] text-white/66 sm:text-base">
+        <p className={`mt-4 max-w-2xl ${SETTINGS_PANEL_BODY} sm:text-[12px]`}>
           P1 calls Jolly Roger or Sunny Go. If correct, P1 chooses first or second. If wrong, P2 chooses.
         </p>
 
@@ -190,44 +207,45 @@ function SetupTossOverlay({
         </div>
 
         {!pick ? (
-          <div className="flex flex-wrap justify-center gap-3">
-            <Button variant="primary" size="lg" className="min-w-[13rem]" onClick={() => onPick('jollyRoger')}>
+          <ChoicePromptActionRow>
+            <ChoicePromptOption className="min-w-[13rem] flex-1" onClick={() => onPick('jollyRoger')}>
               Jolly Roger
-            </Button>
-            <Button variant="secondary" size="lg" className="min-w-[13rem]" onClick={() => onPick('sunnyGo')}>
+            </ChoicePromptOption>
+            <ChoicePromptOption className="min-w-[13rem] flex-1" onClick={() => onPick('sunnyGo')}>
               Sunny Go
-            </Button>
-          </div>
+            </ChoicePromptOption>
+          </ChoicePromptActionRow>
         ) : (
-          <div className="w-full max-w-2xl rounded-2xl border border-gold/25 bg-black/28 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.36)]">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/50">P1 called {coinSideLabel(pick)}</p>
-            <p className="mt-2 text-2xl font-black uppercase tracking-[0.08em] text-white">
+          <div className={`w-full max-w-2xl p-3 ${SETTINGS_PANEL_SHELL}`}>
+            <p className={SETTINGS_PANEL_TITLE}>Toss Result</p>
+            <p className={`mt-2 ${SETTINGS_PANEL_LABEL}`}>P1 called {coinSideLabel(pick)}</p>
+            <p className={`mt-2 ${SETTINGS_PANEL_LABEL}`}>
               {resolved ? (
-                <>
-                  Result: <span className="text-gold">{coinSideLabel(result)}</span>
-                </>
+                <>Result: {coinSideLabel(result)}</>
               ) : (
                 'Flipping...'
               )}
             </p>
             {resolved && (
-              <p className="mt-2 text-sm font-semibold text-white/70">
-                <span className="font-black text-gold">{decidingPlayerId}</span> won the toss and chooses who goes first.
+              <p className={`mt-2 ${SETTINGS_PANEL_BODY}`}>
+                <span className={SETTINGS_PANEL_LABEL}>{decidingPlayerId}</span> won the toss and chooses who goes first.
               </p>
             )}
             {errorBanner}
-            <div className="mt-4 flex flex-wrap justify-center gap-3">
-              <Button variant="primary" size="lg" disabled={!canChoose} onClick={() => onChoose(true)}>
+            <div className="mt-3">
+              <ChoicePromptActionList>
+              <ChoicePromptOption disabled={!canChoose} onClick={() => onChoose(true)}>
                 Go First
-              </Button>
-              <Button variant="secondary" size="lg" disabled={!canChoose} onClick={() => onChoose(false)}>
+              </ChoicePromptOption>
+              <ChoicePromptOption disabled={!canChoose} onClick={() => onChoose(false)}>
                 Go Second
-              </Button>
+              </ChoicePromptOption>
+              </ChoicePromptActionList>
             </div>
           </div>
         )}
 
-        <div className="mt-8 h-1 w-[min(34rem,72vw)] bg-[linear-gradient(90deg,_transparent,_rgba(255,211,74,0.95),_transparent)] shadow-[0_0_24px_rgba(255,211,74,0.55)]" />
+        <div className="mt-8 h-px w-[min(34rem,72vw)] bg-white/10" />
       </section>
     </div>
   );
@@ -235,20 +253,19 @@ function SetupTossOverlay({
 
 function OpeningHandPreview({ cards }: { cards: CardView[] }) {
   return (
-    <section className="rounded-xl border border-white/10 bg-black/18 p-3">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="text-xs font-black uppercase tracking-[0.16em] text-gold">Opening Hand</h3>
-        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">{cards.length} cards</span>
+    <ChoicePromptInset title="Opening Hand">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/68">{cards.length} cards</span>
       </div>
       <div className="grid grid-cols-5 gap-2">
         {cards.map((card) => (
           <div key={card.instanceId} className="min-w-0">
             <CardImage src={card.imageUrl} alt={card.name} className="rounded-md" eager />
-            <p className="mt-1 truncate text-center text-[10px] font-semibold text-white/70">{card.name}</p>
+            <p className="mt-1 truncate text-center text-[10px] font-black uppercase tracking-[0.12em] text-white/68">{card.name}</p>
           </div>
         ))}
       </div>
-    </section>
+    </ChoicePromptInset>
   );
 }
 
@@ -285,9 +302,7 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     window.setTimeout(() => setTossResolved(true), COIN_FLIP_DURATION_MS);
   }
 
-  const errorBanner = error && error.length > 0 && (
-    <p className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">{error.join(' ')}</p>
-  );
+  const errorBanner = error && error.length > 0 ? <ChoicePromptError messages={error} /> : null;
 
   if (state.currentPhase === 'setup' && state.setupState) {
     const { setupState } = state;
@@ -328,23 +343,21 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
       const decidingPlayerId = firstPlayer.hasMulliganed ? setupState.goingSecondPlayerId : setupState.goingFirstPlayerId;
       const handCards = state.players[decidingPlayerId].hand.cardIds.map((instanceId) => buildCardView(defs, state, images, instanceId));
       return (
-        <Modal open onClose={() => {}} title="Mulligan" maxWidthClassName="max-w-3xl">
-          <div className="flex flex-col gap-3 p-5">
-            <p className="text-sm text-white/70">
-              <span className="font-bold text-white">{decidingPlayerId}</span>, redraw your opening hand of 5 once? (5-2-1-6)
-            </p>
-            <OpeningHandPreview cards={handCards} />
-            {errorBanner}
-            <div className="flex gap-2">
-              <Button variant="primary" onClick={() => run({ type: 'MULLIGAN_DECISION', actionId: createActionId(), playerId: decidingPlayerId, redraw: true })}>
-                Redraw
-              </Button>
-              <Button variant="secondary" onClick={() => run({ type: 'MULLIGAN_DECISION', actionId: createActionId(), playerId: decidingPlayerId, redraw: false })}>
-                Keep Hand
-              </Button>
-            </div>
-          </div>
-        </Modal>
+        <ChoicePromptShell title="Mulligan" maxWidthClassName="max-w-3xl">
+          <ChoicePromptMessage>
+            <span className="text-white/68">{decidingPlayerId}</span>, redraw your opening hand of 5 once? (5-2-1-6)
+          </ChoicePromptMessage>
+          <OpeningHandPreview cards={handCards} />
+          {errorBanner}
+          <ChoicePromptActionList>
+            <ChoicePromptOption onClick={() => run({ type: 'MULLIGAN_DECISION', actionId: createActionId(), playerId: decidingPlayerId, redraw: true })}>
+              Redraw
+            </ChoicePromptOption>
+            <ChoicePromptOption onClick={() => run({ type: 'MULLIGAN_DECISION', actionId: createActionId(), playerId: decidingPlayerId, redraw: false })}>
+              Keep Hand
+            </ChoicePromptOption>
+          </ChoicePromptActionList>
+        </ChoicePromptShell>
       );
     }
   }
@@ -355,10 +368,10 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
   if (choice.sourceEffectId === 'rule:characterAreaOverflow') {
     const board = projectPlayerBoard(state, defs, images, choice.playerId);
     return (
-      <Modal open onClose={() => {}} title="Character Area Limit">
-        <div className="flex flex-col gap-3 p-5">
-          <p className="text-sm text-white/70">{choice.prompt}</p>
-          {errorBanner}
+      <ChoicePromptShell title="Character Area Limit" maxWidthClassName="max-w-2xl">
+        <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+        {errorBanner}
+        <ChoicePromptInset>
           <ZoneSection
             label="Character Area"
             cards={board.characterArea}
@@ -366,15 +379,14 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
             selectableIds={new Set(board.characterArea.map((c) => c.instanceId))}
             onCardSelect={(card) => setSelectedTrashId(card.instanceId)}
           />
-          <Button
-            variant="danger"
-            disabled={!selectedTrashId}
-            onClick={() => selectedTrashId && run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: [selectedTrashId] })}
-          >
-            Trash Selected Character
-          </Button>
-        </div>
-      </Modal>
+        </ChoicePromptInset>
+        <ChoicePromptOption
+          disabled={!selectedTrashId}
+          onClick={() => selectedTrashId && run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: [selectedTrashId] })}
+        >
+          Trash Selected Character
+        </ChoicePromptOption>
+      </ChoicePromptShell>
     );
   }
 
@@ -384,34 +396,36 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     const card = choice.sourceInstanceId ? buildCardView(defs, state, images, choice.sourceInstanceId) : null;
     const triggerText = card?.triggerText ?? card?.text ?? '';
     return (
-      <Modal open onClose={() => {}} title="Life [Trigger]" maxWidthClassName="max-w-2xl">
-        <div className="flex flex-col gap-3 p-5">
-          <p className="text-sm text-white/70">{choice.prompt}</p>
-          {card && (
+      <ChoicePromptShell title="Life Trigger" maxWidthClassName="max-w-2xl">
+        <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+        {card && (
+          <ChoicePromptInset>
             <div className="flex gap-4">
               <div className="w-40 shrink-0">
-                <CardImage src={card.imageUrl} alt={card.name} className="rounded-none ring-2 ring-gold/60" eager />
+                <CardImage src={card.imageUrl} alt={card.name} className="rounded-none ring-1 ring-white/15" eager />
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <p className="text-base font-black uppercase tracking-[0.06em] text-white">{card.name}</p>
-                <div className="border border-gold/30 bg-black/30 p-3">
-                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.16em] text-gold">Trigger</p>
-                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-100">{triggerText || 'No trigger text.'}</p>
+                <p className={SETTINGS_PANEL_LABEL}>{card.name}</p>
+                <div className="border border-white/10 bg-white/[0.04] p-3">
+                  <p className={`mb-1 ${SETTINGS_PANEL_META}`}>Trigger</p>
+                  <p className={`whitespace-pre-wrap ${SETTINGS_PANEL_BODY}`}>{triggerText || 'No trigger text.'}</p>
                 </div>
               </div>
             </div>
-          )}
-          {errorBanner}
-          <div className="flex gap-2">
-            <Button variant="primary" onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: choice.sourceInstanceId ? [choice.sourceInstanceId] : [] })}>
-              Activate Trigger
-            </Button>
-            <Button variant="secondary" onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: [] })}>
-              Keep in Hand
-            </Button>
-          </div>
-        </div>
-      </Modal>
+          </ChoicePromptInset>
+        )}
+        {errorBanner}
+        <ChoicePromptActionList>
+          <ChoicePromptOption
+            onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: choice.sourceInstanceId ? [choice.sourceInstanceId] : [] })}
+          >
+            Activate Trigger
+          </ChoicePromptOption>
+          <ChoicePromptOption onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: [] })}>
+            Keep in Hand
+          </ChoicePromptOption>
+        </ChoicePromptActionList>
+      </ChoicePromptShell>
     );
   }
 
@@ -421,43 +435,38 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
   if (choice.sourceEffectId === 'rule:battleKoReplacement') {
     if (choice.kind === 'YES_NO') {
       return (
-        <Modal open onClose={() => {}} title="K.O. Replacement">
-          <div className="flex flex-col gap-3 p-5">
-            <p className="text-sm text-white/70">{choice.prompt}</p>
-            {errorBanner}
-            <div className="flex gap-2">
-              <Button variant="primary" onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: true })}>
-                Use Effect
-              </Button>
-              <Button variant="secondary" onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: false })}>
-                Decline
-              </Button>
-            </div>
-          </div>
-        </Modal>
+        <ChoicePromptShell title="K.O. Replacement">
+          <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+          {errorBanner}
+          <ChoicePromptActionList>
+            <ChoicePromptOption onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: true })}>
+              Use Effect
+            </ChoicePromptOption>
+            <ChoicePromptOption onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: false })}>
+              Decline
+            </ChoicePromptOption>
+          </ChoicePromptActionList>
+        </ChoicePromptShell>
       );
     }
 
     if (choice.kind === 'SELECT_OPTION') {
       const options = choice.constraints.options ?? [];
       return (
-        <Modal open onClose={() => {}} title="K.O. Replacement">
-          <div className="flex flex-col gap-3 p-5">
-            <p className="text-sm text-white/70">{choice.prompt}</p>
-            {errorBanner}
-            <div className="flex flex-wrap gap-2">
-              {options.map((option, index) => (
-                <Button
-                  key={`${option.label}-${index}`}
-                  variant="primary"
-                  onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: index })}
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </Modal>
+        <ChoicePromptShell title="K.O. Replacement">
+          <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+          {errorBanner}
+          <ChoicePromptActionList>
+            {options.map((option, index) => (
+              <ChoicePromptOption
+                key={`${option.label}-${index}`}
+                onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: index })}
+              >
+                {option.label}
+              </ChoicePromptOption>
+            ))}
+          </ChoicePromptActionList>
+        </ChoicePromptShell>
       );
     }
 
@@ -478,14 +487,14 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
       };
 
       return (
-        <Modal open onClose={() => {}} title="K.O. Replacement" maxWidthClassName="max-w-5xl">
-          <div className="flex flex-col gap-3 p-5">
-            <p className="text-sm text-white/70">{choice.prompt}</p>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/50">{min === max ? `Select ${max}` : `Select ${min}-${max}`}</span>
-              <span className="text-[11px] font-semibold text-white/40">{count}/{max} selected</span>
-            </div>
-            {errorBanner}
+        <ChoicePromptShell title="K.O. Replacement" maxWidthClassName="max-w-5xl">
+          <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+          <div className="flex items-center justify-between gap-3">
+            <ChoicePromptMeta>{min === max ? `Select ${max}` : `Select ${min}-${max}`}</ChoicePromptMeta>
+            <ChoicePromptMeta>{count}/{max} selected</ChoicePromptMeta>
+          </div>
+          {errorBanner}
+          <ChoicePromptInset>
             <CardChoiceGallery
               cards={candidates}
               selectableIds={new Set(candidateIds)}
@@ -493,15 +502,14 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
               max={max}
               onToggle={toggle}
             />
-            <Button
-              variant="primary"
-              disabled={!canConfirm}
-              onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: selectedIrIds })}
-            >
-              Confirm ({count}/{max})
-            </Button>
-          </div>
-        </Modal>
+          </ChoicePromptInset>
+          <ChoicePromptOption
+            disabled={!canConfirm}
+            onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: selectedIrIds })}
+          >
+            Confirm ({count}/{max})
+          </ChoicePromptOption>
+        </ChoicePromptShell>
       );
     }
   }
@@ -514,23 +522,20 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     if (choice.kind === 'SELECT_OPTION') {
       const options = choice.constraints.options ?? [];
       return (
-        <Modal open onClose={() => {}} title="Choose Option">
-          <div className="flex flex-col gap-3 p-5">
-            <p className="text-sm text-white/70">{choice.prompt}</p>
-            {errorBanner}
-            <div className="flex flex-wrap gap-2">
-              {options.map((option, index) => (
-                <Button
-                  key={`${option.label}-${index}`}
-                  variant="primary"
-                  onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: index })}
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </Modal>
+        <ChoicePromptShell title="Choose Option">
+          <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+          {errorBanner}
+          <ChoicePromptActionList>
+            {options.map((option, index) => (
+              <ChoicePromptOption
+                key={`${option.label}-${index}`}
+                onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: index })}
+              >
+                {option.label}
+              </ChoicePromptOption>
+            ))}
+          </ChoicePromptActionList>
+        </ChoicePromptShell>
       );
     }
 
@@ -539,23 +544,20 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
       const max = choice.constraints.numberMax ?? 10;
       const numbers = Array.from({ length: Math.max(0, max - min + 1) }, (_, index) => min + index);
       return (
-        <Modal open onClose={() => {}} title="Choose Number">
-          <div className="flex flex-col gap-3 p-5">
-            <p className="text-sm text-white/70">{choice.prompt}</p>
-            {errorBanner}
-            <div className="flex flex-wrap gap-2">
-              {numbers.map((value) => (
-                <Button
-                  key={value}
-                  variant="primary"
-                  onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: value })}
-                >
-                  {value}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </Modal>
+        <ChoicePromptShell title="Choose Number">
+          <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+          {errorBanner}
+          <ChoicePromptActionList>
+            {numbers.map((value) => (
+              <ChoicePromptOption
+                key={value}
+                onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: value })}
+              >
+                {value}
+              </ChoicePromptOption>
+            ))}
+          </ChoicePromptActionList>
+        </ChoicePromptShell>
       );
     }
 
@@ -577,15 +579,15 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     };
 
     return (
-      <Modal open onClose={() => {}} title="Choose" maxWidthClassName="max-w-5xl">
-        <div className="flex flex-col gap-3 p-5">
-          <p className="text-sm text-white/70">{choice.prompt}</p>
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/50">{selectLabel}</span>
-            <span className="text-[11px] font-semibold text-white/40">{count}/{max} selected</span>
-          </div>
-          {errorBanner}
-          {candidates.length > 0 ? (
+      <ChoicePromptShell title="Choose" maxWidthClassName="max-w-5xl">
+        <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+        <div className="flex items-center justify-between gap-3">
+          <ChoicePromptMeta>{selectLabel}</ChoicePromptMeta>
+          <ChoicePromptMeta>{count}/{max} selected</ChoicePromptMeta>
+        </div>
+        {errorBanner}
+        {candidates.length > 0 ? (
+          <ChoicePromptInset>
             <CardChoiceGallery
               cards={candidates}
               selectableIds={new Set(candidateIds)}
@@ -593,27 +595,24 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
               max={max}
               onToggle={toggle}
             />
-          ) : (
-            <p className="text-xs text-white/50">No eligible cards — confirm to continue.</p>
-          )}
-          <Button
-            variant="primary"
-            disabled={!canConfirm}
-            onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: selectedIrIds })}
-          >
-            {min === 0 && count === 0 ? 'Decline' : `Confirm (${count}/${max})`}
-          </Button>
-        </div>
-      </Modal>
+          </ChoicePromptInset>
+        ) : (
+          <ChoicePromptMessage>No eligible cards — confirm to continue.</ChoicePromptMessage>
+        )}
+        <ChoicePromptOption
+          disabled={!canConfirm}
+          onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: selectedIrIds })}
+        >
+          {min === 0 && count === 0 ? 'Decline' : `Confirm (${count}/${max})`}
+        </ChoicePromptOption>
+      </ChoicePromptShell>
     );
   }
 
   return (
-    <Modal open onClose={() => {}} title="Pending Choice">
-      <div className="flex flex-col gap-2 p-5">
-        <p className="text-sm text-white/70">{choice.prompt}</p>
-        <p className="text-xs text-red-300">No UI implemented yet for sourceEffectId '{choice.sourceEffectId}'.</p>
-      </div>
-    </Modal>
+    <ChoicePromptShell title="Pending Choice">
+      <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+      <ChoicePromptMessage>No UI implemented yet for sourceEffectId &apos;{choice.sourceEffectId}&apos;.</ChoicePromptMessage>
+    </ChoicePromptShell>
   );
 }

@@ -1190,7 +1190,7 @@ function runOpList(
       return { suspended: true, bindings: workingBindings };
     }
     if (op.op === 'chooseLifeToHand' || op.op === 'chooseLifeToTrash') {
-      const options = lifePositionOptions(ctx, op.position, op.optional);
+      const options = lifePositionOptions(ctx, op.position, op.optional, op.op === 'chooseLifeToHand' ? (op.player ?? 'controller') : 'controller');
       if (options.length === 0) {
         workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
         continue;
@@ -1813,7 +1813,7 @@ export function resumeProgram(
 
   if (op.op === 'chooseLifeToHand') {
     const selectedIndex = typeof response === 'number' ? response : -1;
-    const afterLifeBindings = withResultBindings(rs.bindings, resolveLifePositionToHand(ctx, op.position, op.optional, selectedIndex));
+    const afterLifeBindings = withResultBindings(rs.bindings, resolveLifePositionToHand(ctx, op.position, op.optional, selectedIndex, op.player ?? 'controller'));
     return continueAfterResolvedOp(program, ability, rs, afterLifeBindings, ctx, defs, actionId, registry);
   }
 

@@ -404,7 +404,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
             />
           </div>
 
-          <ActionLogDock log={matchState.log} playerNames={playerNames} />
+          <ActionLogDock log={matchState.log} playerNames={playerNames} viewerPlayerId={bottomPlayerId} />
         </div>
       </div>
 

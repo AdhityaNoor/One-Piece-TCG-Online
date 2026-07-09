@@ -207,6 +207,15 @@ function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>)
     ];
   }
   if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'opponent' && f.to.zone === 'hand' && f.to.player === 'owner') {
+    if (optional) {
+      return [{
+        op: 'chooseLifeToHand',
+        position: 'top',
+        optional: true,
+        player: 'opponent',
+        prompt: f.prompt ?? 'You may add 1 card from the top of your opponent\'s Life cards to the owner\'s hand.',
+      }];
+    }
     return [{ op: 'moveLifeTopToHand', player: 'opponent', count }];
   }
   if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'opponent' && f.to.zone === 'trash' && f.to.player === 'owner') {

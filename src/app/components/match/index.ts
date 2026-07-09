@@ -12,6 +12,7 @@ export * from './PhaseIndicator';
 export * from './ZoneRow';
 export * from './PlayerBoardPanel';
 export * from './ActionBar';
+export * from './ChoicePromptPanel';
 export * from './PendingChoicePrompt';
 export * from './ActionLogPanel';
 export * from './TrashPile';
