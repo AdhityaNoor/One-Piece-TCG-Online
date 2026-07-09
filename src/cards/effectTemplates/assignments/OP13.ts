@@ -7,10 +7,23 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // OP13-001 (leader) Monkey.D.Luffy —
-  //   [DON!! x1] [On Your Opponent's Attack] If you have 5 or less active DON!! cards, you may rest any
-  //   number of your DON!! cards. For every DON!! card rested this way, this Leader or up to 1 of your
-  //   {Straw Hat Crew} type Characters gains +2000 power during this battle.
+  // OP13-001 — PARTIAL: variable DON rest → scaling +2000 deferred; mapped rest-1-DON → +2000 Straw Hat Crew battle buff.
+  {
+    cardNumber: 'OP13-001',
+    templateId: 'ability',
+    params: {
+      timing: 'onOpponentsAttack',
+      condition: { donAttachedAtLeast: 1 },
+      cost: [{ kind: 'restDon', count: 1 }],
+      functions: [{
+        fn: 'addPower',
+        target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Straw Hat Crew' } },
+        amount: 2000,
+        duration: 'duringThisBattle',
+        optional: true,
+      }],
+    },
+  },
 
   // OP13-002 (leader) Portgas.D.Ace —
   //   [On Your Opponent's Attack] [Once Per Turn] You may trash 1 card from your hand: Give up to 1 of your
@@ -162,9 +175,15 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP13-027', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
 
   // OP13-028 (character) Shanks —
-  //   [On Play] Set all of your DON!! cards as active. Then, you cannot play cards from your hand during
-  //   this turn.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: "cannot play cards from your hand this turn" deferred; mapped set all DON!! active (up to 10).
+  {
+    cardNumber: 'OP13-028',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [{ fn: 'setActiveControllerDon', maxTargets: 10 }],
+    },
+  },
 
   { cardNumber: 'OP13-030', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
 
@@ -548,9 +567,8 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP13-105', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'lookLifeAndReorder' }] } },
 
   // OP13-106 (character) Conney —
-  //   [Opponent's Turn] When a [Trigger] activates, this Character gains [Blocker] during this turn.
-  //   [Trigger] Play this card.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: [Opponent's Turn] Trigger-activated Blocker deferred; mapped [Trigger] play this card.
+  { cardNumber: 'OP13-106', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
   // OP13-108 — [On Play] If Leader {Egghead}, this gains [Rush] this turn. [Trigger] if ≤1 Life rest opp cost ≤7. PARTIAL: opp-life drawback deferred.
   {

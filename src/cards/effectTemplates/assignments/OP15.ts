@@ -40,12 +40,33 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       },
     ],
   },
-  // OP15-002 (leader) Lucy —
-  //   [When Attacking]/[On Your Opponent's Attack] You may trash any number of Event or Stage cards from
-  //   your hand. This Leader gains +1000 power during this battle for every card trashed.[Activate: Main]
-  //   [Once Per Turn] If you have activated an Event with a base cost of 3 or more during this turn, draw 1
-  //   card.
-  // NOTE: not yet implemented (needs template).
+  // OP15-002 — PARTIAL: variable Event/Stage trash scaling + event-cost-3+ draw gate deferred; mapped battle trash-1 → +1000 and once-per-turn draw.
+  {
+    cardNumber: 'OP15-002',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'whenAttacking',
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentsAttack',
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
 
   // OP15-003 — K.O. replacement (trash Char ≤6000 power from hand) + Morgan-style activate.
   {
@@ -233,9 +254,18 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP15-034', templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Brook' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
 
   // OP15-033 (character) Hody Jones —
-  //   [On Play] Set your {Fish-Man} type Leader as active. Then, add 1 card from the top of your Life cards
-  //   to your hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP15-033',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'leaderType', type: 'Fish-Man' }],
+      functions: [
+        { fn: 'setActiveControllerLeader' },
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+      ],
+    },
+  },
 
 
   // OP15-035 (character) Laboon —
@@ -386,12 +416,20 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-057 (stage) — [On Play] If Leader {Dressrosa}, draw 1. PARTIAL: [On Opponent's Attack] clause deferred.
   { cardNumber: 'OP15-057', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Dressrosa' }], functions: [{ fn: 'draw', amount: 1 }] } },
 
-  // OP15-058 (leader) Enel —
-  //   Under the rules of this game, your DON!! deck consists of 6 cards.[Activate: Main] [Once Per Turn] If
-  //   it is your second turn or later, add up to 1 DON!! card from your DON!! deck and set it as active,
-  //   and add up to 4 additional DON!! cards and rest them. Then, give up to 4 rested DON!! cards to 1 of
-  //   your Characters.
-  // NOTE: not yet implemented (needs template).
+  // OP15-058 — PARTIAL: 6-card DON deck rule + second-turn gate deferred; mapped add 1 active + 4 rested DON then give up to 4 DON.
+  {
+    cardNumber: 'OP15-058',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      functions: [
+        { fn: 'addDonFromDeck', count: 1, rested: false },
+        { fn: 'addDonFromDeck', count: 4, rested: true },
+        { fn: 'giveDon', count: 4, ifPrevious: 'previousSelectedAny' },
+      ],
+    },
+  },
 
   // OP15-059 — PARTIAL: opponent may return active DON!! modal deferred; mapped: rest self → opp Leader/Char −2000.
   {

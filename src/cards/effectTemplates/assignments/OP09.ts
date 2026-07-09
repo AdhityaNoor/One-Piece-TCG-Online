@@ -94,11 +94,20 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-021 (stage) — [Activate: Main] rest this: If Leader {Red-Haired Pirates}, give up to 1 opp Character −1000.
   { cardNumber: 'OP09-021', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP09-022 (leader) Lim —
-  //   Your Character cards are played rested.[Activate: Main] [Once Per Turn] You may rest 3 of your DON!!
-  //   cards: Add up to 1 DON!! card from your DON!! deck and rest it, and play up to 1 {ODYSSEY} type
-  //   Character card with a cost of 5 or less from your hand.
-  // NOTE: not yet implemented (needs template).
+  // OP09-022 — PARTIAL: "Characters played rested" static rule deferred; mapped activate rest-3-DON → add rested DON + play ODYSSEY.
+  {
+    cardNumber: 'OP09-022',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      cost: [{ kind: 'restDon', count: 3 }],
+      functions: [
+        { fn: 'addDonFromDeck', count: 1, rested: true },
+        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'ODYSSEY', maxCost: 5 }, ifPrevious: 'previousSelectedAny' },
+      ],
+    },
+  },
 
   // OP09-023 — [On Play] If Leader {ODYSSEY}, set up to 3 DON!! active. PARTIAL: the [On Opponent's Attack] rest-DON buff is deferred.
   { cardNumber: 'OP09-023', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'ODYSSEY' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 3 }] } },
@@ -340,9 +349,16 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   ] } },
 
   // OP09-064 (character) Killer —
-  //   [On Play] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): Set up to 1 of your {Kid Pirates} type Leader as active.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP09-064',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      cost: [{ kind: 'donMinus', count: 1 }],
+      gate: [{ kind: 'leaderType', type: 'Kid Pirates' }],
+      functions: [{ fn: 'setActiveControllerLeader' }],
+    },
+  },
 
   // OP09-065 — [On Play] DON!! −1: this gains [Rush] this turn, then rest up to 1 opp Character cost ≤6.
   { cardNumber: 'OP09-065', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },
@@ -351,9 +367,19 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-066', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentDonMoreThanSelf' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
 
   // OP09-068 (character) Tony Tony.Chopper —
-  //   [End of Your Turn] You may return 1 or more DON!! cards from your field to your DON!! deck: Set this
-  //   Character as active. Then, this Character gains [Blocker] until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: optional "1 or more" DON!! return deferred; mapped as DON!! −1 cost.
+  {
+    cardNumber: 'OP09-068',
+    templateId: 'ability',
+    params: {
+      timing: 'endOfTurn',
+      cost: [{ kind: 'donMinus', count: 1 }],
+      functions: [
+        { fn: 'setActiveSelf' },
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'endOfOpponentsTurn' },
+      ],
+    },
+  },
 
   // OP09-069 - [On Play] Look at 4; add Straw Hat Crew or Heart Pirates with cost 2+.
   {
@@ -452,10 +478,19 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-088', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'trashFromHand', count: 2 }, { fn: 'draw', amount: 2 }] } },
 
   // OP09-089 (character) Stronger —
-  //   [Activate: Main] You may trash 1 card from your hand and trash this Character: If your Leader has the
-  //   {Blackbeard Pirates} type, draw 1 card. Then, give up to 1 of your opponent's Characters –2 cost
-  //   during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP09-089',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'trashSelf', ifPrevious: 'previousMovedAny' },
+        { fn: 'draw', amount: 1, ifGate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], ifPrevious: 'previousMovedAny' },
+        { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // OP09-090 — [Activate: Main] rest this: If Leader {Blackbeard Pirates}, K.O. up to 1 opp Character cost ≤1. [On K.O.] Draw 1.
   {
@@ -599,10 +634,8 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP09-118 (character) Gol.D.Roger —
-  //   [Rush] (This card can attack on the turn in which it is played.)When your opponent activates
-  //   [Blocker], if either you or your opponent has 0 Life cards, you win the game.
-  // NOTE: not yet implemented (needs template).
+  // OP09-118 — PARTIAL: win-the-game on Blocker at 0 Life deferred; mapped [Rush].
+  { cardNumber: 'OP09-118', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
 
   // OP09-119 — [On Play] DON!! −1: Draw 1 and this Character gains [Rush] this turn.
   { cardNumber: 'OP09-119', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },

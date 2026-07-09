@@ -14,6 +14,21 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04 coverage batch: base-power targeting, trigger-play, and simple activated draw.
   { cardNumber: 'OP04-003', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 5000 } }, optional: true }] } },
 
+  // OP04-002 (character) Igaram —
+  //   PARTIAL: "1 active Leader" requirement not gated; mapped rest → Leader −5000 → Alabasta search.
+  {
+    cardNumber: 'OP04-002',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'restThis' }],
+      functions: [
+        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: -5000, duration: 'duringThisTurn' },
+        { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Alabasta' }, remainder: 'bottom' },
+      ],
+    },
+  },
+
   // OP04-005 — PARTIAL: "other than this Character" uses selfControlsNamed (counts self when alone).
   { cardNumber: 'OP04-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Kung Fu Jugon' }] } }] } },
 
@@ -34,7 +49,18 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP04-010', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { typeIncludes: 'Animal', maxPower: 3000 } }] } },
 
-  // NOTE: not yet implemented (needs template).
+  // OP04-011 (character) Nami —
+  {
+    cardNumber: 'OP04-011',
+    templateId: 'ability',
+    params: {
+      timing: 'whenAttacking',
+      functions: [
+        { fn: 'revealTopThen', filter: { category: 'character', minPower: 6000 }, then: [{ fn: 'addPowerSelf', amount: 3000, duration: 'duringThisTurn' }] },
+        { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'deck', player: 'owner', position: 'bottom' } },
+      ],
+    },
+  },
 
   // OP04-013 Pell — [DON!! x1][When Attacking] K.O. up to 1 opp Character with 4000 power or less.
   { cardNumber: 'OP04-013', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, optional: true }] } },
@@ -107,11 +133,17 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-027 Daddy Masterson — [DON!! x1][End of Your Turn] Set this Character active.
   { cardNumber: 'OP04-027', templateId: 'ability', params: { timing: 'endOfTurn', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'setActiveSelf' }] } },
 
-  // OP04-028 (character) Diamante —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[DON!! x1] [End of Your Turn] If you have 2 or more active DON!! cards, set this
-  //   Character as active.
-  // NOTE: not yet implemented (needs template).
+  // OP04-028 (character) Diamante — PARTIAL: "active DON!!" gate uses total field DON count proxy (see OP04-034).
+  {
+    cardNumber: 'OP04-028',
+    templateId: 'ability',
+    params: {
+      timing: 'endOfTurn',
+      condition: { donAttachedAtLeast: 1 },
+      gate: [{ kind: 'selfDonFieldCount', atLeast: 2 }],
+      functions: [{ fn: 'setActiveSelf' }],
+    },
+  },
 
   // OP04-029 Dellinger — [End of Your Turn] Set up to 1 DON!! active.
   { cardNumber: 'OP04-029', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
@@ -196,6 +228,19 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the static "cannot attack" lock is implemented below; the activated life-to-play ability remains deferred.
   { cardNumber: 'OP04-039', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
 
+  // OP04-041 (character) Apis —
+  {
+    cardNumber: 'OP04-041',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 2 },
+        { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'East Blue' }, remainder: 'bottom', ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
+
   // OP04-042 — PARTIAL: <Slash> attribute filter not on target selector; buffs any Character.
   { cardNumber: 'OP04-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 1 }] } },
 
@@ -249,9 +294,19 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP04-053 (character) Page One —
-  //   [DON!! x1] [Once Per Turn] When you activate an Event, draw 1 card. Then, place 1 card from your hand
-  //   at the bottom of your deck.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP04-053',
+    templateId: 'ability',
+    params: {
+      timing: 'onYouEventActivated',
+      oncePerTurn: true,
+      condition: { donAttachedAtLeast: 1 },
+      functions: [
+        { fn: 'draw', amount: 1 },
+        { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1 },
+      ],
+    },
+  },
 
   // OP04-055 — PARTIAL: compound "trash Ice Oni + bottom-deck Character" activation cost is sequenced as mappable steps.
   {
@@ -442,10 +497,16 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   add 1 card from the top of your deck to the top of your Life cards.
   // NOTE: not yet implemented (needs template).
 
-  // OP04-099 (character) Olin —
-  //   Also treat this card's name as [Charlotte Linlin] according to the rules. [Trigger] If you have 1 or
-  //   less Life cards, play this card.
-  // NOTE: not yet implemented (needs template).
+  // OP04-099 (character) Olin — PARTIAL: alternate-name [Charlotte Linlin] deferred.
+  {
+    cardNumber: 'OP04-099',
+    templateId: 'ability',
+    params: {
+      timing: 'lifeTrigger',
+      gate: [{ kind: 'selfLife', atMost: 1 }],
+      functions: [{ fn: 'triggerPlaySelf' }],
+    },
+  },
 
   // OP04-100 (character) Capone"Gang"Bege —
   //   [Trigger] Up to 1 of your opponent's Leader or Character cards cannot attack during this turn.
@@ -460,10 +521,19 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP04-102 (character) Kin'emon —
-  //   [Activate: Main] [Once Per Turn] ➀ (You may rest the specified number of DON!! cards in your cost
-  //   area.) You may add 1 card from the top or bottom of your Life cards to your hand: Set this Character
-  //   as active.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP04-102',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      cost: [{ kind: 'restDon', count: 1 }],
+      functions: [
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'setActiveSelf', ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   {
     cardNumber: 'OP04-103',

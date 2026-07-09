@@ -176,9 +176,16 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP16-021', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: false, destination: 'hand', remainder: 'bottom' }] } },
 
   // OP16-022 (leader) Monkey.D.Luffy —
-  //   [Activate: Main] [Once Per Turn] If the only Characters on your field are {Impel Down} type
-  //   Characters, set up to 2 of your DON!! cards as active.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP16-022',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      gate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'Impel Down' }],
+      functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }],
+    },
+  },
 
   // OP16-024 (character) Inazuma —
   //   When this Character is K.O.'d by your opponent's effect, rest up to 1 of your opponent's
@@ -497,11 +504,14 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   during this turn.(This card can attack on the turn in which it is played.)
   { cardNumber: 'OP16-079', templateId: 'ability', params: { timing: 'onCharacterPlayedFromTrash', gate: [{ kind: 'playedCharacterTypeIncludes', typeIncludes: 'Land of Wano' }], functions: [{ fn: 'addKeyword', target: { ref: 'eventPlayedCharacter' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
-  // OP16-080 (leader) Marshall.D.Teach —
-  //   [Opponent's Turn] All of your Characters gain +1 cost.[On Your Opponent's Attack] [Once Per Turn] You
-  //   may trash 1 card with a [Trigger] from your hand: Change the target of that attack to this Leader or
-  //   to one of your {Blackbeard Pirates} type Character cards.
-  // NOTE: not yet implemented (needs template).
+  // OP16-080 — PARTIAL: attack-target redirect deferred; mapped opponent-turn +1 cost aura + optional trigger trash on attack.
+  {
+    cardNumber: 'OP16-080',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraControllerCharacters', amount: 1, duration: 'permanent', sourceCondition: { turn: 'opponent' } }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [{ fn: 'trashFromHand', count: 1, optional: true }] } },
+    ],
+  },
 
   { cardNumber: 'OP16-081', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 

@@ -143,9 +143,16 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // NOTE: not yet implemented (needs template).
 
   // OP10-033 (character) Nami —
-  //   [On Play] If you have 2 or more rested {ODYSSEY} type Characters, up to 1 of your opponent's rested
-  //   DON!! cards will not become active in your opponent's next Refresh Phase.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: {ODYSSEY} type filter on rested-character gate not modeled; rested DON!! target deferred.
+  {
+    cardNumber: 'OP10-033',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }],
+      functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 }],
+    },
+  },
 
   // OP10-034 — [Once Per Turn] battle K.O. replacement (top Life → hand).
   {
@@ -240,11 +247,19 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
 
-  // OP10-058 (character) Rebecca —
-  //   [On Play] If there is a Character with a cost of 8 or more, draw 1 card. Then, reveal up to 2
-  //   {Dressrosa} type Character cards with a cost of 7 or less other than [Rebecca] from your hand. Play 1
-  //   of the revealed cards and play the other card rested if it has a cost of 4 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP10-058 — PARTIAL: reveal-2-hand choose-one rested branch deferred; mapped cost-8+ gate → draw + play Dressrosa from hand.
+  {
+    cardNumber: 'OP10-058',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }],
+      functions: [
+        { fn: 'draw', amount: 1 },
+        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Dressrosa', maxCost: 7, excludeSelfName: true }, optional: true },
+      ],
+    },
+  },
 
   // OP10-059 — [Main] Search {Dressrosa} Character. [Trigger] same.
   {

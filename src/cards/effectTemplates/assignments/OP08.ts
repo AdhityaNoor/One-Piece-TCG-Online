@@ -226,12 +226,21 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-042 — [DON!! x1] [When Attacking] Return up to 1 Character with a cost of 3 or less to the owner's hand.
   { cardNumber: 'OP08-042', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
-  // OP08-043 (character) Edward.Newgate —
-  //   [On Play] If your Leader's type includes "Whitebeard Pirates" and you have 2 or less Life cards,
-  //   select all of your opponent's Characters on their field. Until the end of your opponent's next turn,
-  //   none of the selected Characters can attack unless your opponent trashes 2 cards from their hand
-  //   whenever they attack.
-  // NOTE: not yet implemented (needs template).
+  // OP08-043 — PARTIAL: attack-unless-trash-2 tax deferred; mapped gated preventAttack on opp Characters.
+  {
+    cardNumber: 'OP08-043',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }, { kind: 'selfLife', atMost: 2 }],
+      functions: [{
+        fn: 'preventAttack',
+        target: { group: 'characters', player: 'opponent' },
+        duration: 'endOfOpponentsTurn',
+        optional: true,
+      }],
+    },
+  },
 
   // OP08-044 — [Activate: Main] [OPT] reveal 2 {Whitebeard Pirates} cards from hand: this Character +2000 this turn.
   { cardNumber: 'OP08-044', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 2 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
@@ -380,11 +389,32 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP08-073', templateId: 'ability', params: { timing: 'onKO', condition: { turn: 'opponent' }, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'playFromDeck', filter: { category: 'character', name: 'Count Niwatori', maxCost: 6 } }] } },
 
   // OP08-074 (character) Black Maria —
-  //   [Activate: Main] [Once Per Turn] If you have no other [Black Maria] Characters, add up to 5 DON!!
-  //   cards from your DON!! deck and rest them. Then, at the end of this turn, return DON!! cards from your
-  //   field to your DON!! deck until you have the same number of DON!! cards on your field as your
-  //   opponent.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: end-of-turn DON!! return-to-match-opponent deferred.
+  {
+    cardNumber: 'OP08-074',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      gate: [{ kind: 'selfOtherNamedCharacterCount', name: 'Black Maria', atMost: 0 }],
+      functions: [{ fn: 'addDonFromDeck', count: 5, rested: true }],
+    },
+  },
+
+  // OP08-079 (character) Kaido —
+  {
+    cardNumber: 'OP08-079',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 7 } }, optional: true, maxTargets: 1, ifGate: [{ kind: 'selfPlayedThisTurn' }], ifPrevious: 'previousMovedAny' },
+        { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // OP08-075 — [Main] DON!! −1: Rest up to 1 opp Character cost ≤2. [Trigger] add 1 DON!! (active). PARTIAL: "turn all your Life face-down" deferred.
   {
@@ -409,12 +439,6 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP08-077 — [Main] DON!! −2: if Leader {Animal Kingdom Pirates} or {Big Mom Pirates}, K.O. up to 2 opp Characters cost<=6.
   { cardNumber: 'OP08-077', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 2 }], gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }, { kind: 'leaderType', type: 'Big Mom Pirates' }] }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, maxTargets: 2 }] } },
-
-  // OP08-079 (character) Kaido —
-  //   [Activate: Main] [Once Per Turn] You may trash 1 card from your hand: If this Character was played on
-  //   this turn, trash up to 1 of your opponent's Characters with a cost of 7 or less. Then, your opponent
-  //   trashes 1 card from their hand.
-  // NOTE: not yet implemented (needs template).
 
   // OP08-080 — [On Play] Look at 5; add up to 1 Animal Kingdom Pirates (excl. same name).
   {

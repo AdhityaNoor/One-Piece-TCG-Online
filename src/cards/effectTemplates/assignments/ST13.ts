@@ -23,11 +23,25 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // ST13-002 (leader) Portgas.D.Ace —
-  //   [DON!! x2] [Activate: Main] [Once Per Turn] Look at 5 cards from the top of your deck and add up to 1
-  //   Character card with a cost of 5 to the top of your Life cards face-up. Then, place the rest at the
-  //   bottom of your deck in any order.[End of Your Turn] Trash all your face-up Life cards.
-  // NOTE: not yet implemented (needs template).
+  // ST13-002 — PARTIAL: face-up Life + EOT trash face-up Life deferred; mapped search cost-5 Character to Life top.
+  {
+    cardNumber: 'ST13-002',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      condition: { donAttachedAtLeast: 2 },
+      functions: [{
+        fn: 'searchTopDeck',
+        look: 5,
+        pick: 1,
+        reveal: true,
+        destination: 'lifeTop',
+        filter: { category: 'character', exactCost: 5 },
+        remainder: 'bottom',
+      }],
+    },
+  },
 
   // ST13-003 (leader) Monkey.D.Luffy —
   //   Your face-up Life cards are placed at the bottom of your deck instead of being added to your hand,
@@ -61,11 +75,20 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST13-006 — [Blocker][On Play] play up to 1 each of [Sabo], [Portgas.D.Ace], [Monkey.D.Luffy] with cost 2 from hand.
   { cardNumber: 'ST13-006', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Sabo', exactCost: 2 } }, { fn: 'playFromHand', filter: { category: 'character', name: 'Portgas.D.Ace', exactCost: 2 } }, { fn: 'playFromHand', filter: { category: 'character', name: 'Monkey.D.Luffy', exactCost: 2 } }] } },
 
-  // ST13-007 (character) Sabo —
-  //   [Activate: Main] You may trash this Character: Reveal 1 card from the top of your Life cards. If that
-  //   card is a [Sabo] with a cost of 5, you may play that card. If you do, up to 1 of your Leader gains
-  //   +2000 power until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  // ST13-007 — PARTIAL: reveal-top-Life-then-play chain deferred; mapped trash-self → turn top Life face-up → play matching Character → Leader +2000.
+  {
+    cardNumber: 'ST13-007',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'trashThis' }],
+      functions: [
+        { fn: 'turnTopLifeFace', faceUp: true },
+        { fn: 'playFromHand', filter: { category: 'character', name: 'Sabo', exactCost: 5 }, optional: true, ifPrevious: 'previousSelectedAny' },
+        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // ST13-008 Sabo — [On Play] You may trash 1 from the top/bottom of your Life: K.O. up to 1 opponent Character cost <=5.
   {
@@ -87,11 +110,20 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // ST13-010 (character) Portgas.D.Ace —
-  //   [Activate: Main] You may trash this Character: Reveal 1 card from the top of your Life cards. If that
-  //   card is a [Portgas.D.Ace] with a cost of 5, you may play that card. If you do, up to 1 of your Leader
-  //   gains +2000 power until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  // ST13-010 — PARTIAL: reveal-top-Life-then-play chain deferred; mapped trash-self → turn top Life face-up → play matching Character → Leader +2000.
+  {
+    cardNumber: 'ST13-010',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'trashThis' }],
+      functions: [
+        { fn: 'turnTopLifeFace', faceUp: true },
+        { fn: 'playFromHand', filter: { category: 'character', name: 'Portgas.D.Ace', exactCost: 5 }, optional: true, ifPrevious: 'previousSelectedAny' },
+        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // ST13-011 Ace — [On Play] If you have 2 or less Life cards, this Character gains [Rush].
   {
@@ -111,11 +143,20 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST13-013 — [On Play] Look at 5; add [Sabo]/[Ace]/[Luffy] with cost 5 or less to hand.
   { cardNumber: 'ST13-013', templateId: 'ability', params: { timing: 'onPlay', functions: [SEARCH_BROTHERS] } },
 
-  // ST13-014 (character) Monkey.D.Luffy —
-  //   [Activate: Main] You may trash this Character: Reveal 1 card from the top of your Life cards. If that
-  //   card is a [Monkey.D.Luffy] with a cost of 5, you may play that card. If you do, up to 1 of your
-  //   Leader gains +2000 power until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  // ST13-014 — PARTIAL: reveal-top-Life-then-play chain deferred; mapped trash-self → turn top Life face-up → play matching Character → Leader +2000.
+  {
+    cardNumber: 'ST13-014',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'trashThis' }],
+      functions: [
+        { fn: 'turnTopLifeFace', faceUp: true },
+        { fn: 'playFromHand', filter: { category: 'character', name: 'Monkey.D.Luffy', exactCost: 5 }, optional: true, ifPrevious: 'previousSelectedAny' },
+        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // ST13-015 — [Activate: Main][OPT] this Character +2000 until start of next turn, then if 1+ Life draw 1.
   //   PARTIAL: the "trash 1 from top of your Life" drawback needs a controller-Life-to-trash op (deferred).

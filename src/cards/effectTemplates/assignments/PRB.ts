@@ -11,10 +11,15 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'PRB02-003', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { category: 'character', minPower: 6000 }, optional: true }, { fn: 'draw', amount: 2, ifPrevious: 'previousSelectedAny' }] } },
 
   // PRB01-001 (leader) Sanji —
-  //   [Activate: Main] [Once Per Turn] Up to 1 of your Characters without an [On Play] effect and with a
-  //   cost of 8 or less gains [Rush] during this turn. (This card can attack on the turn in which it is
-  //   played.)
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'PRB01-001',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { noBaseEffect: true, maxCost: 8 } }, keyword: 'rush', duration: 'duringThisTurn', optional: true, maxTargets: 1 }],
+    },
+  },
 
 
 

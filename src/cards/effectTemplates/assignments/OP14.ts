@@ -32,10 +32,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-006 — [When Attacking] If 5000+ power: give up to 1 opp Character −2000 this turn.
   { cardNumber: 'OP14-006', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfInstancePowerAtLeast', power: 5000 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP14-009 (character) Trafalgar Law —
-  //   [Rush][On Your Opponent's Attack] [Once Per Turn] You may trash 2 cards from your hand: Select your
-  //   Leader and 1 Character. Swap the base power of the selected cards with each other during this battle.
-  // NOTE: not yet implemented (needs template).
+  // OP14-009 — PARTIAL: base-power swap deferred; mapped [Rush] + optional trash-2 on opponent's attack.
+  {
+    cardNumber: 'OP14-009',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [{ fn: 'trashFromHand', count: 2, optional: true }] } },
+    ],
+  },
 
   // OP14-010 (character) Basil Hawkins —
   //   [On K.O.] Look at 5 cards from the top of your deck; play up to 1 {Supernovas} type Character card
@@ -87,11 +91,18 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-022 — [End of Your Turn] If Leader {FILM} or {Straw Hat Crew}, set up to 2 DON!! active.
   { cardNumber: 'OP14-022', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'FILM' }, { kind: 'leaderType', type: 'Straw Hat Crew' }] }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
 
-  // OP14-020 (leader) Dracule Mihawk —
-  //   If your opponent's Leader has the <Slash> attribute, this Leader gains +1000 power.[Activate: Main]
-  //   [Once Per Turn] You may rest 1 of your cards: If there is a Character with a cost of 5 or more, set
-  //   up to 3 of your DON!! cards as active. Then, you cannot play Character cards during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP14-020 — PARTIAL: opp-Leader <Slash> +1000 and cannot-play-Characters deferred; mapped rest-self → set 3 DON active when cost-5+ Character present.
+  {
+    cardNumber: 'OP14-020',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      cost: [{ kind: 'restThis' }],
+      gate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 5 }],
+      functions: [{ fn: 'setActiveControllerDon', maxTargets: 3 }],
+    },
+  },
 
   // OP14-021 (character) Issho —
   //   [Your Turn] When this Character becomes rested, you may add 1 card from the top of your Life cards to
@@ -471,12 +482,20 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP14-079 (leader) Crocodile —
-  //   All of your opponent's Characters cannot be removed from the field by your effects.[Activate: Main]
-  //   [Once Per Turn] You may K.O. 1 of your Characters with a type including "Baroque Works": Give up to 1
-  //   of your opponent's Characters −10 cost during this turn. Then, you may trash 2 cards from the top of
-  //   your deck.
-  // NOTE: not yet implemented (needs template).
+  // OP14-079 — PARTIAL: "opp Characters cannot be removed by your effects" static rule deferred; mapped activate KO Baroque Works → opp −10 cost + trash 2 deck.
+  {
+    cardNumber: 'OP14-079',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      functions: [
+        { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Baroque Works' } }, optional: true, maxTargets: 1 },
+        { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -10, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+        { fn: 'trashTopDeck', count: 2, optional: true, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // OP14-080 (leader) Gecko Moria —
   //   [Activate: Main] [Once Per Turn] You may K.O. 1 of your {Thriller Bark Pirates} type Characters: Your
@@ -687,9 +706,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP14-115 (character) Rindo —
-  //   [Opponent's Turn] [On K.O.] Add up to 1 card from the top of your deck to the top of your Life cards.
-  //   Then, you take 1 damage. [Trigger] If your Leader has the {Kuja Pirates} type, play this card.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: "you take 1 damage" on K.O. deferred; mapped life ramp + Kuja trigger play.
+  {
+    cardNumber: 'OP14-115',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onKO', condition: { turn: 'opponent' }, functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP14-116',

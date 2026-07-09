@@ -174,10 +174,21 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-026 — [Once Per Turn] When you play a vanilla Character from hand, if ≤3 Characters, set up to 2 DON!! active.
   { cardNumber: 'OP02-026', templateId: 'ability', params: { timing: 'onCharacterPlayedFromHand', oncePerTurn: true, gate: [{ kind: 'playedCharacterNoBaseEffect' }, { kind: 'selfCharacterCount', atMost: 3 }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
 
-  // OP02-027 (character) Inuarashi —
-  //   If all of your DON!! cards are rested, this Character cannot be removed from the field by your
-  //   opponent's effects.
-  // NOTE: not yet implemented (needs template).
+  // OP02-027 — PARTIAL: "all DON!! rested" gate deferred; mapped effect-source K.O. immunity behind rested-DON count proxy.
+  {
+    cardNumber: 'OP02-027',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'koImmunitySelf',
+        scope: 'effect',
+        duration: 'permanent',
+        effectSourceController: 'opponent',
+        condition: { gate: [{ kind: 'selfRestedDonCount', atLeast: 10 }] },
+      }],
+    },
+  },
 
   // OP02-029 — [End of Your Turn] Set up to 1 DON!! active.
   { cardNumber: 'OP02-029', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
@@ -631,11 +642,30 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP02-118 (event) Yasakani Sacred Jewel —
-  //   [Counter] You may trash 1 card from your hand: Select up to 1 of your Characters. The selected
-  //   Character cannot be K.O.'d during this battle. [Trigger] K.O. up to 1 of your opponent's Stages with
-  //   a cost of 3 or less.
-  // NOTE: not yet implemented (needs template).
+  // OP02-118 (event) Yasakani Sacred Jewel — PARTIAL: counter uses +0 power as target picker for koImmunityChosen.
+  {
+    cardNumber: 'OP02-118',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            { fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 0, duration: 'duringThisBattle', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+            { fn: 'koImmunityChosen', scope: 'battle', duration: 'duringThisBattle', ifPrevious: 'previousSelectedAny' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'lifeTrigger',
+          functions: [{ fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'trash', player: 'owner' }, optional: true }],
+        },
+      },
+    ],
+  },
 
   // OP02-119 - [Main] K.O. cost 1 or less. [Trigger] Draw 2, trash 1.
   {

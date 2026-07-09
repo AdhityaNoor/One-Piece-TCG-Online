@@ -9,13 +9,25 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // --- Batch: OP07 cards expressible with existing primitives (no new capability) ---
   // OP07-001 (leader) Monkey.D.Dragon —
-  //   [Activate: Main] [Once Per Turn] Give up to 2 total of your currently given DON!! cards to 1 of your
-  //   Characters.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP07-001',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      functions: [{ fn: 'giveGivenDon', count: 2, optional: true }],
+    },
+  },
 
   // OP07-002 (character) Ain —
-  //   [On Play] Set the power of up to 1 of your opponent's Characters to 0 during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP07-002',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [{ fn: 'setBasePower', target: { group: 'characters', player: 'opponent' }, value: 0, duration: 'duringThisTurn', optional: true, maxTargets: 1 }],
+    },
+  },
 
   // OP07-003 — [Activate: Main] Trash this: give up to 2 opp Characters −2000 during this turn.
   { cardNumber: 'OP07-003', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, maxTargets: 2 }] } },
@@ -134,9 +146,15 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP07-025', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Caribou', maxCost: 4 } }] } },
 
   // OP07-026 (character) Jewelry Bonney —
-  //   [On Play] Up to 1 of your opponent's rested Character or DON!! cards will not become active in your
-  //   opponent's next Refresh Phase.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: rested DON!! cards not included in preventRefresh target.
+  {
+    cardNumber: 'OP07-026',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 }],
+    },
+  },
 
   // OP07-029 (character) Basil Hawkins —
   //   If your Leader has the {Supernovas} type, this Character gains [Blocker].(After your opponent
@@ -326,11 +344,20 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP07-058', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { anyOfTypes: ['Amazon Lily', 'Kuja Pirates'] } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 
   // OP07-059 (leader) Foxy —
-  //   [When Attacking] DON!! −3 (You may return the specified number of DON!! cards from your field to your
-  //   DON!! deck.): If you have 3 or more {Foxy Pirates} type Characters, select your opponent's rested
-  //   Leader and up to 1 Character card. The selected cards will not become active in your opponent's next
-  //   Refresh Phase.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: rested DON!! preventRefresh not modeled; mapped rested Leader + Character only.
+  {
+    cardNumber: 'OP07-059',
+    templateId: 'ability',
+    params: {
+      timing: 'whenAttacking',
+      cost: [{ kind: 'donMinus', count: 3 }],
+      gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Foxy Pirates', atLeast: 3 }],
+      functions: [
+        { fn: 'preventRefresh', target: { group: 'leader', player: 'opponent', filter: { rested: true } }, optional: true },
+        { fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 },
+      ],
+    },
+  },
 
   // OP07-060 — PARTIAL: "no other [Itomimizu]" gate not modeled.
   { cardNumber: 'OP07-060', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
@@ -427,10 +454,14 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP07-078 (event) Megaton Nine-Tails Rush —
-  //   [Main] If the number of DON!! cards on your field is equal to or less than the number on your
-  //   opponent's field, set up to 1 of your [Foxy] cards as active. [Trigger] Add up to 1 DON!! card from
-  //   your DON!! deck and set it as active.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: [Foxy] Leader not covered by setActiveControllerCharacter.
+  {
+    cardNumber: 'OP07-078',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'setActiveControllerCharacter', filter: { name: 'Foxy' }, maxTargets: 1, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+    ],
+  },
 
   // OP07-079 (leader) — [When Attacking] trash 2 from top of deck: give up to 1 opp Character −1 cost this turn.
   { cardNumber: 'OP07-079', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'trashTopDeck', count: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -1, duration: 'duringThisTurn', optional: true }] } },
@@ -567,9 +598,15 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP07-102', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
   // OP07-103 (character) Tony Tony.Chopper —
-  //   [Trigger] Up to 1 of your {Egghead} type Characters gains [Blocker] during this turn. Then, add this
-  //   card to your hand.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: "add this card to your hand" on Trigger deferred.
+  {
+    cardNumber: 'OP07-103',
+    templateId: 'ability',
+    params: {
+      timing: 'lifeTrigger',
+      functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Egghead' } }, keyword: 'blocker', duration: 'duringThisTurn', optional: true, maxTargets: 1 }],
+    },
+  },
 
   // OP07-104 — [Trigger] If your Leader has the {Egghead} type, draw 2 cards.
   { cardNumber: 'OP07-104', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Egghead' }], functions: [{ fn: 'draw', amount: 2 }] } },

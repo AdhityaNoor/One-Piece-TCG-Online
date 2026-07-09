@@ -22,10 +22,20 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   ] } },
 
   // OP01-003 (leader) Monkey.D.Luffy —
-  //   [Activate: Main] [Once Per Turn] ➃ (You may rest the specified number of DON!! cards in your cost
-  //   area.): Set up to 1 of your {Supernovas} or {Straw Hat Crew} type Character cards with a cost of 5 or
-  //   less as active. It gains +1000 power during this turn.
-  // NOTE: not yet implemented (needs template).
+  //   [Activate: Main] [Once Per Turn] ➃: Set up to 1 {Supernovas}/{Straw Hat Crew} Character cost≤5 active; +1000 this turn.
+  {
+    cardNumber: 'OP01-003',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      cost: [{ kind: 'restDon', count: 4 }],
+      functions: [
+        { fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { anyOfTypes: ['Supernovas', 'Straw Hat Crew'], maxCost: 5 } },
+        { fn: 'addPower', target: { ref: 'previous' }, amount: 1000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // OP01-004 — [DON!! x1] [Your Turn] [Once Per Turn] Draw 1 when opponent activates an Event.
   { cardNumber: 'OP01-004', templateId: 'ability', params: { timing: 'onOpponentEventActivated', oncePerTurn: true, condition: { donAttachedAtLeast: 1, turn: 'your' }, functions: [{ fn: 'draw', amount: 1 }] } },
@@ -169,10 +179,20 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP01-037', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP01-038 (character) Kanjuro —
-  //   [DON!! x1] [When Attacking] K.O. up to 1 of your opponent's rested Characters with a cost of 2 or
-  //   less. [On K.O.] Your opponent chooses 1 card from your hand; trash that card.
-  // NOTE: not yet implemented (needs template).
+  // OP01-038 (character) Kanjuro — PARTIAL: [On K.O.] opponent chooses 1 from your hand to trash deferred.
+  {
+    cardNumber: 'OP01-038',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'whenAttacking',
+          condition: { donAttachedAtLeast: 1 },
+          functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 2 } }, optional: true }],
+        },
+      },
+    ],
+  },
 
   // OP01-039 — [DON!! x1] [On Block] If you have 3 or more Characters, draw 1.
   { cardNumber: 'OP01-039', templateId: 'ability', params: { timing: 'onBlock', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfCharacterCount', atLeast: 3 }], functions: [{ fn: 'draw', amount: 1 }] } },
@@ -299,11 +319,26 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-062 — [DON!! x1] When you activate an Event, draw 1 if ≤4 cards in hand (once per turn).
   { cardNumber: 'OP01-062', templateId: 'ability', params: { timing: 'onYouEventActivated', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfHand', atMost: 4 }], functions: [{ fn: 'draw', amount: 1, optional: true }] } },
 
-  // OP01-063 (character) Arlong —
-  //   [DON!! x1] [Activate: Main] You may rest this Character: Choose 1 card from your opponent's hand;
-  //   your opponent reveals that card. If the revealed card is an Event, place up to 1 card from your
-  //   opponent's Life area at the bottom of the owner's deck.
-  // NOTE: not yet implemented (needs template).
+  // OP01-063 — PARTIAL: Event-branch gate after hand reveal deferred; mapped rest → choose opp hand → optional opp Life to deck bottom.
+  {
+    cardNumber: 'OP01-063',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'restThis' }],
+      condition: { donAttachedAtLeast: 1 },
+      functions: [
+        { fn: 'trashFromOpponentHandChosenByOpponent', count: 1 },
+        {
+          fn: 'moveCards',
+          from: { zone: 'life', player: 'opponent', position: 'top' },
+          to: { zone: 'deck', player: 'owner', position: 'bottom' },
+          optional: true,
+          ifPrevious: 'previousSelectedAny',
+        },
+      ],
+    },
+  },
 
   // OP01-064 — [DON!! x1] [When Attacking] You may trash 1 from hand: return up to 1 opp Character cost<=3 to hand.
   { cardNumber: 'OP01-064', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [
@@ -340,10 +375,15 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-072 — [DON!! x1] [Your Turn] +1000 power for every card in your hand.
   { cardNumber: 'OP01-072', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelfScaling', per: 'controllerHand', step: 1, amountPer: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
 
-  // OP01-120 (character) Shanks —
-  //   [Rush] (This card can attack on the turn in which it is played.) [When Attacking] Your opponent
-  //   cannot activate a [Blocker] Character that has 2000 or less power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // OP01-120 (character) Shanks — [Rush] is a normalized keyword flag. [When Attacking] suppress low-power Blockers.
+  {
+    cardNumber: 'OP01-120',
+    templateId: 'ability',
+    params: {
+      timing: 'whenAttacking',
+      functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle', blockerPowerAtMost: 2000 }],
+    },
+  },
 
   // OP01-121 (character) Yamato —
   //   Also treat this card's name as [Kouzuki Oden] according to the rules. [Double Attack] (This card
@@ -468,8 +508,20 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP01-098', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchDeck', pick: 1, reveal: true, destination: 'hand', filter: { name: 'Artificial Devil Fruit SMILE' } }] } },
 
   // OP01-099 (character) Kurozumi Semimaru —
-  //   {Kurozumi Clan} type Characters other than your [Kurozumi Semimaru] cannot be K.O.'d in battle.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP01-099',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'koImmunityAuraControllerCharacters',
+        scope: 'battle',
+        duration: 'permanent',
+        anyOfTypes: ['Kurozumi Clan'],
+        excludeSource: true,
+      }],
+    },
+  },
 
   // OP01-101 — [DON!! x1] [When Attacking] You may trash 1 from hand: add 1 DON!! from deck rested.
   { cardNumber: 'OP01-101', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [

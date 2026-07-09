@@ -33,6 +33,7 @@ export type NavigationTarget =
   | { screen: 'main-menu' }
   | { screen: 'settings' }
   | { screen: 'debug-tools' }
+  | { screen: 'coverage-monitor' }
   | { screen: 'card-library' }
   | { screen: 'deck-builder'; deckIdToEdit?: string }
   | { screen: 'saved-decks' }

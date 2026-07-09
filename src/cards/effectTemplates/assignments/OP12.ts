@@ -480,10 +480,8 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP12-099 (character) Kalgara —
-  //   [Your Turn] When a card is removed from your or your opponent's Life cards, draw 1 card. Then, you
-  //   cannot draw cards using your own effects during this turn.
-  // NOTE: not yet implemented (needs template).
+  // OP12-099 — PARTIAL: general Life-removal trigger + "cannot draw" rider deferred; mapped draw on Life damage dealt.
+  { cardNumber: 'OP12-099', templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { turn: 'your' }, functions: [{ fn: 'draw', amount: 1 }] } },
 
   // OP12-100 — [On Play] add 1 top Life to hand → Draw 2, trash 1. PARTIAL: static [Blocker]/+3 cost clause deferred.
   { cardNumber: 'OP12-100', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'drawAndTrash', drawCount: 2, trashCount: 1, ifPrevious: 'previousMovedAny' }] } },

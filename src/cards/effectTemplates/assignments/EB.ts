@@ -16,11 +16,17 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // --- Batch: EB02 expressible ---
   // --- Batch: EB03 expressible ---
   // --- Batch: EB04 expressible ---
-  // EB01-001 (leader) Kouzuki Oden —
-  //   All of your {Land of Wano} type Character cards without a Counter have a +1000 Counter, according to
-  //   the rules.[DON!! x1] [When Attacking] If you have a {Land of Wano} type Character with a cost of 5 or
-  //   more, this Leader gains +1000 power until the start of your next turn.
-  // NOTE: not yet implemented (needs template).
+  // EB01-001 (leader) Kouzuki Oden — PARTIAL: +1000 Counter aura for Land of Wano without Counter deferred; cost≥5 gate approximated.
+  {
+    cardNumber: 'EB01-001',
+    templateId: 'ability',
+    params: {
+      timing: 'whenAttacking',
+      condition: { donAttachedAtLeast: 1 },
+      gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Land of Wano', atLeast: 1 }],
+      functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'untilStartOfNextTurn' }],
+    },
+  },
 
   {
     cardNumber: 'EB01-002',
@@ -152,10 +158,34 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // EB01-020 (event) Chambres —
-  //   [Main] If your Leader has the {Supernovas} type, return 1 of your Characters to the owner's hand, and
-  //   play up to 1 Character card with a cost of 2 or less from your hand that is a different color than
-  //   the returned Character. [Trigger] Activate this card's [Main] effect.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: "different color than the returned Character" play filter deferred.
+  {
+    cardNumber: 'EB01-020',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          gate: [{ kind: 'leaderType', type: 'Supernovas' }],
+          functions: [
+            { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+            { fn: 'playFromHand', filter: { category: 'character', maxCost: 2 }, optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'lifeTrigger',
+          gate: [{ kind: 'leaderType', type: 'Supernovas' }],
+          functions: [
+            { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+            { fn: 'playFromHand', filter: { category: 'character', maxCost: 2 }, optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   {
     cardNumber: 'EB01-021',
@@ -201,10 +231,22 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // NOTE: not yet implemented (needs template).
 
   // EB01-029 (event) Sorry. I'm a Goner. —
-  //   [Counter] Reveal 1 card from the top of your deck. If the revealed card has a cost of 4 or more,
-  //   return up to 1 of your Characters to the owner's hand. Then, place the revealed card at the bottom of
-  //   your deck. [Trigger] Return up to 1 Character with a cost of 8 or less to the owner's hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB01-029',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [
+            { fn: 'revealTopThen', filter: { minCost: 4 }, then: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 }] },
+            { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'deck', player: 'owner', position: 'bottom' } },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 8 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+    ],
+  },
 
   // EB01-030 — PARTIAL: stage-to-deck uses any controller Stage, not only this card.
   {
@@ -270,10 +312,13 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'EB01-037', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
 
   // EB01-038 (event) Oh Come My Way —
-  //   [Counter] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): If your Leader's type includes "Baroque Works", select 1 of your Characters. Change the
-  //   attack target to the selected Character. [Trigger] DON!! −1: Draw 2 cards.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: Counter attack-redirect deferred; mapped Trigger draw 2 with DON!! −1.
+  {
+    cardNumber: 'EB01-038',
+    templates: [
+      { templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 2 }] } },
+    ],
+  },
 
   // EB01-039 - [Main] DON!! -1: K.O. cost <=8. [Trigger] add 1 active DON!!.
   {
@@ -712,10 +757,18 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'EB02-033', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Merry Go' }] } }] } },
 
   // EB02-032 (character) Iceburg —
-  //   [On Play] If you have 3 or more DON!! cards on your field, look at 7 cards from the top of your deck;
-  //   reveal up to 1 [Galley-La Company] and add it to your hand. Then, place the rest at the bottom of
-  //   your deck in any order and play up to 1 [Galley-La Company] from your hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB02-032',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'selfDonFieldCount', atLeast: 3 }],
+      functions: [
+        { fn: 'searchTopDeck', look: 7, pick: 1, reveal: true, destination: 'hand', filter: { name: 'Galley-La Company' }, remainder: 'bottom' },
+        { fn: 'playFromHand', filter: { name: 'Galley-La Company' } },
+      ],
+    },
+  },
 
   // EB02-033 (character) Klabautermann —
   //   If you have [Merry Go] on your field, this Character gains [Blocker].
@@ -968,11 +1021,25 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
   // EB02-061 (character) Monkey.D.Luffy —
-  //   If your Leader is multicolored and your opponent has 5 or more DON!! cards on their field, this
-  //   Character gains [Rush].[When Attacking] [Once Per Turn] You may return 2 of your active DON!! cards
-  //   to your DON!! deck: Set this Character as active. Then, add 1 card from the top of your Life cards to
-  //   your hand.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: "active DON!!" restriction on the DON!! −2 cost deferred.
+  {
+    cardNumber: 'EB02-061',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'leaderMulticolor' }, { kind: 'opponentDonFieldCount', atLeast: 5 }] } }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'whenAttacking',
+          oncePerTurn: true,
+          cost: [{ kind: 'donMinus', count: 2 }],
+          functions: [
+            { fn: 'setActiveSelf' },
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // EB03-001 (leader) Nefeltari Vivi —
   //   [Once Per Turn] If your Character with a base cost of 4 or more would be K.O.'d, you may trash 1 card
@@ -1162,11 +1229,23 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB03-020 (event) There You Are, Sore Loser! —
-  //   [Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. Then, if
-  //   you have 2 or more {FILM} type Characters, that card gains an additional +2000 power during this
-  //   battle. [Trigger] Set up to 1 of your Characters as active.
-  // NOTE: not yet implemented (needs template).
+  // EB03-020 (event) There You Are, Sore Loser! — PARTIAL: second +2000 requires same target as first pump (uses ref: previous).
+  {
+    cardNumber: 'EB03-020',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [
+            { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, maxTargets: 1 },
+            { fn: 'addPower', target: { ref: 'previous' }, amount: 2000, duration: 'duringThisBattle', ifPrevious: 'previousSelectedAny', ifGate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'FILM', atLeast: 2 }] },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'setActiveControllerCharacter', maxTargets: 1 }] } },
+    ],
+  },
 
   // EB03-021 — [On Play] trash 1 from hand: place up to 1 opp Character (4000 base power or less) and up to 1 Character (base cost 3 or less) at bottom of deck.
   { cardNumber: 'EB03-021', templateId: 'ability', params: { timing: 'onPlay', functions: [
@@ -1179,10 +1258,26 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'EB03-022', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 4 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
   // EB04-054 (character) Bartholomew Kuma —
-  //   [On Play] If you have 2 or less Life cards, add up to 1 card from the top of your deck to the top of
-  //   your Life cards.[On K.O.] Add up to 1 card from the top of your opponent's Life cards to the owner's
-  //   hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB04-054',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          gate: [{ kind: 'selfLife', atMost: 2 }],
+          functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onKO',
+          functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' }, optional: true }],
+        },
+      },
+    ],
+  },
 
   // EB04-055 — [On K.O.] play Rev Army cost≤4 from hand. [Trigger] if Leader {Revolutionary Army} and combined Life ≤5, play this card.
   {
@@ -1284,10 +1379,15 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // --- codegen batch ---
   { cardNumber: 'EB03-023', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
 
-  // EB03-024 (character) Nefeltari Vivi —
-  //   [Blocker][On Play] Play up to 1 {Alabasta} or {Straw Hat Crew} type Character card with a cost of 5
-  //   or less from your hand. Then, you cannot play any Character cards on your field during this turn.
-  // NOTE: not yet implemented (needs template).
+  // EB03-024 (character) Nefeltari Vivi — PARTIAL: "cannot play Character cards this turn" restriction deferred. [Blocker] is a keyword flag.
+  {
+    cardNumber: 'EB03-024',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 5, anyOf: [{ typeIncludes: 'Alabasta' }, { typeIncludes: 'Straw Hat Crew' }] } }],
+    },
+  },
 
   // EB03-025 — [On Play] trash 1 from hand: return up to 1 Character with 6000 base power to hand.
   { cardNumber: 'EB03-025', templateId: 'ability', params: { timing: 'onPlay', functions: [
@@ -1476,10 +1576,22 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // NOTE: not yet implemented (needs template).
 
   // EB03-044 (character) Black Maria —
-  //   If your Leader is multicolored, this Character gains [Blocker].[On Play] Look at 5 cards from the top
-  //   of your deck; reveal up to 1 [Onigashima Island] and add it to your hand. Then, place the rest at the
-  //   bottom of your deck in any order and play up to 1 [Onigashima Island] from your hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB03-044',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'leaderMulticolor' }] } }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { name: 'Onigashima Island' }, remainder: 'bottom' },
+            { fn: 'playFromHand', filter: { name: 'Onigashima Island' }, optional: true },
+          ],
+        },
+      },
+    ],
+  },
 
   // EB03-045 — [On Play] give 1 rested DON!!; if 10+ trash, play 1 {Thriller Bark Pirates} cost ≤2 from trash rested. [Blocker] is card data.
   {
@@ -1610,10 +1722,18 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // EB03-055 (character) Nico Robin —
-  //   [On Play] You may trash 1 card from the top of your Life cards: If your Leader has the {Straw Hat
-  //   Crew} type, add up to 2 cards from the top of your deck to the top of your Life cards.[Opponent's
-  //   Turn] [On K.O.] You may deal 1 damage to your opponent.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: [Opponent's Turn] [On K.O.] deal 1 damage deferred.
+  {
+    cardNumber: 'EB03-055',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true },
+        { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 2 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifGate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   // EB03-056 (character) Belo Betty —
   //   [On Play] You may turn 1 card from the top of your Life cards face-up: K.O. up to 1 of your
@@ -1687,10 +1807,29 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   ] } },
 
   // EB04-001 (leader) Jewelry Bonney —
-  //   [Opponent's Turn] If you have 1 or less Life cards, this Leader gains +2000 power.[Activate: Main]
-  //   [Once Per Turn] Give up to 1 of your opponent's Characters −1000 power during this turn. Then, if you
-  //   have 2 or more Life cards, you may add 1 card from the top of your Life cards to your hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'EB04-001',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'selfLife', atMost: 1 }] } }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          functions: [
+            { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' }, optional: true, ifGate: [{ kind: 'selfLife', atLeast: 2 }] },
+          ],
+        },
+      },
+    ],
+  },
 
   // EB04-002 - [On Play] Look at 4; add Egghead or Straw Hat Crew other than this card's name.
   {
@@ -2110,12 +2249,19 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Foxy Pirates' } }] },
   },
 
-  // EB04-038 (character) Rosinante & Law —
-  //   Under the rules of this game, also treat this card's name as [Trafalgar Law] and [Donquixote
-  //   Rosinante].[Blocker][On Play] If the number of DON!! cards on your field is equal to or less than the
-  //   number on your opponent's field, draw 1 card. Then, add up to 1 DON!! card from your DON!! deck and
-  //   set it as active.
-  // NOTE: not yet implemented (needs template).
+  // EB04-038 (character) Rosinante & Law — PARTIAL: alternate-name rules deferred. [Blocker] is a keyword flag.
+  {
+    cardNumber: 'EB04-038',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'selfDonAtMostOpponent' }],
+      functions: [
+        { fn: 'draw', amount: 1 },
+        { fn: 'addDonFromDeck', count: 1, rested: false },
+      ],
+    },
+  },
 
   // EB04-039 — [On Play] add 1 DON!! from deck active. [Activate: Main] trash this: play up to 1 {Kid Pirates} Character cost<=5 from hand.
   {

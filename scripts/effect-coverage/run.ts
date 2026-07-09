@@ -2,91 +2,20 @@
  * Effect runtime-template coverage tracker.
  *
  *   npm run coverage
- *
- * Complements `npm run worklist` (which reports what the inert parser sees).
- * This tool checks every card against the curated EffectProgram registry: the
- * source of truth for what the game engine can execute at runtime.
- *
- *   curated        reviewed JSON IR exists in curatedPrograms.ts, or the card
- *                  is static keyword-only and covered by normalized flags
- *   needsTemplate  has effect logic, but no curated runtime template yet
- *   vanilla        no effect text at all
- *
- * Outputs (repo root):
- *   effect-coverage.csv  one row per non-vanilla card
- *   effect-coverage.md   human-readable summary + the needs-template backlog
- *
- * Nothing here executes game logic; it only reports whether reviewed IR exists.
  */
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseEffect } from '../../src/cards/effectParser';
-import { isStaticEngineKeywordOnly } from '../../src/cards/effectParser/staticKeywordOnly';
-import { CURATED_EFFECT_PROGRAMS } from '../../src/cards/effectTemplates';
+import { classifyCoverage, type CatalogCard, type CoverageRow } from '../../src/cards/devMetrics';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SETS_DIR = resolve(ROOT, 'public', 'cards', 'sets');
 const OUT_CSV = resolve(ROOT, 'effect-coverage.csv');
 const OUT_MD = resolve(ROOT, 'effect-coverage.md');
 
-interface LocalCard {
-  cardNumber: string;
-  setCode: string;
-  category: string;
-  en: { name: string | null; effectText: string };
-}
-
-type Status = 'curated' | 'needsTemplate' | 'vanilla';
-
-interface Row {
-  set: string;
-  cardNumber: string;
-  name: string;
-  category: string;
-  status: Status;
-  curatedAbilities: number;
-  effectAbilities: number;
-  runtimeTriggers: string;
-  parserReview: boolean;
-  effectText: string;
-}
-
 function csv(value: unknown): string {
   const s = value == null ? '' : String(value);
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
-function effectActionCount(ability: { actions: { op: string }[] }): number {
-  return ability.actions.filter((a) => a.op !== 'grantKeyword').length;
-}
-
-function classify(card: LocalCard): Row {
-  const text = card.en?.effectText ?? '';
-  const base = {
-    set: card.setCode,
-    cardNumber: card.cardNumber,
-    name: card.en?.name ?? '',
-    category: card.category,
-    effectText: text,
-  };
-
-  if (!text.trim()) {
-    return { ...base, status: 'vanilla', curatedAbilities: 0, effectAbilities: 0, runtimeTriggers: '', parserReview: false };
-  }
-
-  const parsed = parseEffect(card.cardNumber, text);
-  const effectAbilities = parsed.abilities.filter((a) => effectActionCount(a) > 0).length;
-  const program = CURATED_EFFECT_PROGRAMS[card.cardNumber];
-  const curatedAbilities = program ? program.abilities.length : 0;
-  const runtimeTriggers = program ? [...new Set(program.abilities.map((a) => a.timing))].sort().join('|') : '';
-
-  let status: Status;
-  if (program) status = 'curated';
-  else if (isStaticEngineKeywordOnly(text)) status = 'curated';
-  else status = 'needsTemplate';
-
-  return { ...base, status, curatedAbilities, effectAbilities, runtimeTriggers: runtimeTriggers || (isStaticEngineKeywordOnly(text) ? 'staticKeyword' : ''), parserReview: parsed.needsReview };
 }
 
 function main(): void {
@@ -96,81 +25,57 @@ function main(): void {
     return;
   }
 
-  const cards: LocalCard[] = [];
+  const cards: CatalogCard[] = [];
   for (const f of readdirSync(SETS_DIR)) {
-    if (f.endsWith('.json')) cards.push(...(JSON.parse(readFileSync(join(SETS_DIR, f), 'utf8')) as LocalCard[]));
+    if (f.endsWith('.json')) cards.push(...(JSON.parse(readFileSync(join(SETS_DIR, f), 'utf8')) as CatalogCard[]));
   }
   cards.sort((a, b) => a.cardNumber.localeCompare(b.cardNumber));
 
-  const rows = cards.map(classify);
+  const rows: CoverageRow[] = cards.map(classifyCoverage);
 
-  const header = 'set,cardNumber,name,category,status,curatedAbilities,effectAbilities,runtimeTriggers,parserReview,effectText';
-  const csvLines = [header];
+  const curated = rows.filter((r) => r.status === 'curated').length;
+  const needsTemplate = rows.filter((r) => r.status === 'needsTemplate').length;
+  const vanilla = rows.filter((r) => r.status === 'vanilla').length;
+  const withText = rows.filter((r) => r.effectText.trim()).length;
+
+  const csvRows = ['set,cardNumber,name,category,status,curatedAbilities,effectAbilities,runtimeTriggers,parserReview,effectText'];
   for (const r of rows) {
     if (r.status === 'vanilla') continue;
-    csvLines.push(
-      [r.set, r.cardNumber, r.name, r.category, r.status, r.curatedAbilities, r.effectAbilities, r.runtimeTriggers, r.parserReview ? 'yes' : '', r.effectText]
+    csvRows.push(
+      [r.setCode, r.cardNumber, r.name, r.category, r.status, r.curatedAbilities, r.effectAbilities, r.runtimeTriggers, r.parserReview, r.effectText]
         .map(csv)
         .join(','),
     );
   }
-  writeFileSync(OUT_CSV, csvLines.join('\n') + '\n', 'utf8');
-
-  const byStatus = new Map<Status, number>();
-  const byTrigger = new Map<string, number>();
-  for (const r of rows) {
-    byStatus.set(r.status, (byStatus.get(r.status) ?? 0) + 1);
-    if (r.status === 'curated') {
-      for (const t of r.runtimeTriggers.split('|').filter(Boolean)) byTrigger.set(t, (byTrigger.get(t) ?? 0) + 1);
-    }
-  }
-
-  const order: Status[] = ['curated', 'needsTemplate', 'vanilla'];
-  const withEffect = rows.filter((r) => r.status !== 'vanilla').length;
-  const curated = byStatus.get('curated') ?? 0;
+  writeFileSync(OUT_CSV, csvRows.join('\n') + '\n', 'utf8');
 
   const md: string[] = [];
-  md.push('# Effect runtime-template coverage', '');
-  md.push(`_Generated by \`npm run coverage\`. ${cards.length} cards total._`, '');
-  md.push('## Summary', '');
-  md.push('| Status | Cards | Meaning |');
-  md.push('| --- | ---: | --- |');
-  const meaning: Record<Status, string> = {
-    curated: 'reviewed runtime EffectProgram exists, or static keyword-only card is covered by normalized flags',
-    needsTemplate: 'has effect logic; needs reviewed template IR',
-    vanilla: 'no effect text',
-  };
-  for (const s of order) md.push(`| ${s} | ${byStatus.get(s) ?? 0} | ${meaning[s]} |`);
+  md.push('# Effect coverage', '');
+  md.push(`_Generated by \`npm run coverage\`. ${rows.length} cards; ${withText} with effect text._`, '');
+  md.push('| Status | Count |', '| --- | ---: |');
+  md.push(`| curated | ${curated} |`);
+  md.push(`| needsTemplate | ${needsTemplate} |`);
+  md.push(`| vanilla | ${vanilla} |`);
   md.push('');
-  md.push(`**Effect-bearing cards: ${withEffect}. Curated runtime templates: ${curated} (${withEffect ? Math.round((curated / withEffect) * 100) : 0}%).**`, '');
-
-  md.push('## Curated abilities by trigger', '');
-  md.push('| Trigger | Cards |');
-  md.push('| --- | ---: |');
-  for (const [t, n] of [...byTrigger.entries()].sort((a, b) => b[1] - a[1])) md.push(`| ${t} | ${n} |`);
-  if (byTrigger.size === 0) md.push('| none | 0 |');
-  md.push('');
-
+  md.push(`**Curated rate:** ${withText > 0 ? Math.round((curated / withText) * 1000) / 10 : 0}% of cards with effect text`, '');
+  md.push('## Needs template', '');
   const backlog = rows.filter((r) => r.status === 'needsTemplate');
-  md.push(`## Needs reviewed template (${backlog.length})`, '');
-  if (backlog.length === 0) md.push('_None._', '');
-  else {
-    md.push('| Card | Name | Parsed effect abilities | Text |');
-    md.push('| --- | --- | :-: | --- |');
-    for (const r of backlog.slice(0, 120)) {
-      md.push(`| ${r.cardNumber} | ${r.name} | ${r.effectAbilities} | ${r.effectText.replace(/\|/g, '\\|').slice(0, 120)} |`);
+  if (backlog.length === 0) {
+    md.push('_None._', '');
+  } else {
+    md.push('| Card | Set | Effect |', '| --- | --- | --- |');
+    for (const r of backlog) {
+      const short = r.effectText.length > 120 ? r.effectText.slice(0, 117) + '…' : r.effectText;
+      md.push(`| ${r.cardNumber} | ${r.setCode} | ${short.replace(/\|/g, '\\|')} |`);
     }
-    if (backlog.length > 120) md.push('', `...and ${backlog.length - 120} more (see effect-coverage.csv).`);
+    md.push('');
   }
-  md.push('');
+
+  if (!existsSync(dirname(OUT_MD))) mkdirSync(dirname(OUT_MD), { recursive: true });
   writeFileSync(OUT_MD, md.join('\n'), 'utf8');
 
-  console.log('[coverage] curated runtime-template coverage:');
-  for (const s of order) console.log(`  ${s.padEnd(14)} ${byStatus.get(s) ?? 0}`);
-  console.log(`  ${'-'.repeat(20)}`);
-  console.log(`  effect-bearing ${withEffect}, curated ${curated} (${withEffect ? Math.round((curated / withEffect) * 100) : 0}%)`);
-  console.log(`[coverage] wrote ${OUT_CSV}`);
-  console.log(`[coverage] wrote ${OUT_MD}`);
+  console.log(`[coverage] ${rows.length} cards — curated ${curated}, needsTemplate ${needsTemplate}, vanilla ${vanilla}`);
+  console.log(`[coverage] wrote ${OUT_CSV} and ${OUT_MD}`);
 }
 
 main();

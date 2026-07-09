@@ -40,7 +40,12 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-012 — if opponent has a Leader/Character with 6000+ base power, cannot be K.O.'d in battle
   { cardNumber: 'OP06-012', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { gate: [{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 6000 }] } }] } },
 
-  // OP06-009 — PARTIAL: "becomes the same power as opponent's Leader" needs dynamic set-power (deferred).
+  // OP06-009 — PARTIAL: dynamic same-power-as-opp-Leader on attack/block deferred; mapped [Blocker] only.
+  {
+    cardNumber: 'OP06-009',
+    templateId: 'ability',
+    params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent' }] },
+  },
   // OP06-011 — [Activate: Main] [Once Per Turn] rest 1 [Uta] Character: this +5000 this turn.
   // PARTIAL: Leader/Stage [Uta] rest cost deferred; mapped Character [Uta] rest only.
   { cardNumber: 'OP06-011', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
@@ -323,10 +328,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-046 — [On Play] Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.
   { cardNumber: 'OP06-046', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
-  // OP06-047 (character) Charlotte Pudding —
-  //   [On Play] Your opponent returns all cards in their hand to their deck and shuffles their deck. Then,
-  //   your opponent draws 5 cards.
-  // NOTE: not yet implemented (needs template).
+  // OP06-047 — PARTIAL: opp hand→deck shuffle deferred; mapped opponent draw 5 on play.
+  { cardNumber: 'OP06-047', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 5, player: 'opponent' }] } },
 
   // OP06-048 — [Your Turn] When opponent activates Blocker or Event, if Leader {East Blue}, trash 4 from deck.
   {
@@ -621,17 +624,61 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   }] } },
 
   // OP06-095 (event) Shadows Asgard —
-  //   [Main]/[Counter] Your Leader gains +1000 power during this turn. Then, you may K.O. any number of
-  //   your {Thriller Bark Pirates} type Characters with a cost of 2 or less. Your Leader gains an
-  //   additional +1000 power during this turn for every Character K.O.'d. [Trigger] Draw 2 cards and trash
-  //   1 card from your hand.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: per-K.O. Leader power scaling and "any number" K.O. deferred; mapped +1000, optional 1 K.O., Trigger draw/trash.
+  {
+    cardNumber: 'OP06-095',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [
+            { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'duringThisTurn' },
+            { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates', maxCost: 2 } }, optional: true, maxTargets: 1 },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [
+            { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'duringThisTurn' },
+            { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates', maxCost: 2 } }, optional: true, maxTargets: 1 },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+    ],
+  },
 
   // OP06-096 (event) ...Nothing...at All!!! —
-  //   [Counter] You may add 1 card from the top of your Life cards to your hand: Your Characters with a
-  //   cost of 7 or less cannot be K.O.'d in battle during this turn. [Trigger] Activate this card's
-  //   [Counter] effect.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: cost ≤7 filter on K.O. immunity deferred; mapped all Characters battle immunity.
+  {
+    cardNumber: 'OP06-096',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+            { fn: 'koImmunityControllerCharactersAll', scope: 'battle', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'lifeTrigger',
+          functions: [
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+            { fn: 'koImmunityControllerCharactersAll', scope: 'battle', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP06-097 — [Main] Trash 1 card from your opponent's hand. [Trigger] same.
   {
@@ -777,10 +824,28 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP06-116 (event) Reject —
-  //   [Main] Choose one:• K.O. up to 1 of your opponent's Characters with a cost of 5 or less.• If your
-  //   opponent has 1 Life card, deal 1 damage to your opponent. Then, add 1 card from the top of your Life
-  //   cards to your hand. [Trigger] Draw 1 card.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: "deal 1 damage" when opponent has 1 Life deferred; mapped choose-one KO vs life-to-hand.
+  {
+    cardNumber: 'OP06-116',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [{
+            fn: 'chooseOne',
+            chooser: 'controller',
+            prompt: 'Choose one:',
+            options: [
+              { label: 'ko', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] },
+              { label: 'life', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true, ifGate: [{ kind: 'opponentLife', atMost: 1 }] }] },
+            ],
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
 
   // OP06-117 — [Activate: Main] [Once Per Turn] rest this + rest 1 [Enel]: K.O. all opp Characters cost<=2.
   // PARTIAL: koAllCharacters hits both players; mapped with opponent-only intent via registry example.

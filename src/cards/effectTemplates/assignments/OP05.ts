@@ -210,10 +210,23 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP05-040 (stage) Birdcage —
-  //   If your Leader is [Donquixote Doflamingo], all Characters with a cost of 5 or less do not become
-  //   active in your and your opponent's Refresh Phases.[End of Your Turn] If you have 10 DON!! cards on
-  //   your field, K.O. all rested Characters with a cost of 5 or less. Then, trash this Stage.
-  // NOTE: not yet implemented (needs template).
+  //   PARTIAL: Refresh-Phase lock on both players deferred; mapped EOT mass-K.O. + trash Stage.
+  {
+    cardNumber: 'OP05-040',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'endOfTurn',
+          gate: [{ kind: 'leaderName', name: 'Donquixote Doflamingo' }, { kind: 'selfDonFieldCount', atLeast: 10 }],
+          functions: [
+            { fn: 'koAllCharacters', filter: { rested: true, maxCost: 5 } },
+            { fn: 'trashSelf' },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP05-041 (leader) — [Activate: Main][OPT] trash 1 → draw 1. [When Attacking] give up to 1 opp Char −1 cost this turn.
   {
@@ -473,10 +486,19 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP05-097 (stage) Mary Geoise —
-  //   [Your Turn] The cost of playing {Celestial Dragons} type Character cards with a cost of 2 or more
-  //   from your hand will be reduced by 1.
-  // NOTE: not yet implemented (needs template).
+  // OP05-097 — PARTIAL: continuous hand-play discount aura deferred; mapped one-shot next-play discount on enter.
+  {
+    cardNumber: 'OP05-097',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'addNextPlayFromHandCostDiscount',
+        amount: -1,
+        filter: { typeIncludes: 'Celestial Dragons', minBaseCost: 2 },
+      }],
+    },
+  },
 
   // OP05-098 (leader) Enel —
   //   [Opponent's Turn] [Once Per Turn] When your number of Life cards becomes 0, add 1 card from the top

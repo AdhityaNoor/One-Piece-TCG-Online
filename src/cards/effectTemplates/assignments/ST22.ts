@@ -68,10 +68,23 @@ export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // ST22-015 (event) I Am Whitebeard!! —
-  //   [Main] If your Leader's type includes "Whitebeard Pirates", play up to 1 [Edward.Newgate] from your
-  //   hand. Then, you may add 1 card from the top or bottom of your Life cards to your hand. If you do, up
-  //   to 1 of your Leader gains +2000 power until the end of your opponent's next turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'ST22-015',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }],
+          functions: [
+            { fn: 'playFromHand', filter: { name: 'Edward.Newgate' }, optional: true },
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+            { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn', optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // ST22-016 — [Trigger] Draw 1. PARTIAL: the reveal-conditional [Counter] buff is deferred.
   { cardNumber: 'ST22-016', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
