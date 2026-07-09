@@ -20,7 +20,7 @@ import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/def
 import { computeCurrentCost, consumablePlayFromHandCostDiscountIds, withConsumedPlayFromHandCostDiscounts } from '../../rules/shared/power';
 import { mintRuntimeInstanceId } from '../../rules/shared/mintInstance';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { fireOnPlay, fireCharacterPlayedFromHandReactions, type EffectTemplateRegistry } from '../../effects';
+import { fireOnPlay, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, type EffectTemplateRegistry } from '../../effects';
 
 function hasCuratedConditionalRushGrant(registry: EffectTemplateRegistry, cardDefinitionId: string): boolean {
   return !!registry[cardDefinitionId]?.abilities.some((ability) =>
@@ -179,9 +179,25 @@ export function executePlayCharacter(
     };
   }
   const reactive = fireCharacterPlayedFromHandReactions(fired.state, action.playerId, newInstanceId, registry, defs, action.actionId);
+  if (reactive.pendingChoices.length > 0) {
+    return {
+      state: withConsumedPlayFromHandCostDiscounts(reactive.state, consumedDiscountIds),
+      log: [...logger.log, ...fired.log, ...reactive.log],
+      pendingChoices: [...pendingChoices, ...reactive.pendingChoices],
+    };
+  }
+  const opponentReactive = fireOpponentCharacterPlayedFromHandReactions(
+    reactive.state,
+    action.playerId,
+    newInstanceId,
+    false,
+    registry,
+    defs,
+    action.actionId,
+  );
   return {
-    state: withConsumedPlayFromHandCostDiscounts(reactive.state, consumedDiscountIds),
-    log: [...logger.log, ...fired.log, ...reactive.log],
-    pendingChoices: [...pendingChoices, ...reactive.pendingChoices],
+    state: withConsumedPlayFromHandCostDiscounts(opponentReactive.state, consumedDiscountIds),
+    log: [...logger.log, ...fired.log, ...reactive.log, ...opponentReactive.log],
+    pendingChoices: [...pendingChoices, ...opponentReactive.pendingChoices],
   };
 }

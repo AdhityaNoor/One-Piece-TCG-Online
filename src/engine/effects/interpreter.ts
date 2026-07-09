@@ -19,7 +19,7 @@ import type { KoReplacementTrigger } from '../state/game';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates, countSelfTypedCharacters } from './gates';
 import { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
-import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions, fireHandTrashedReactions } from './fireTiming';
+import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, fireHandTrashedReactions } from './fireTiming';
 import { isAbilityNegated } from './effectNegation';
 import type { GateEvalContext } from './gates';
 import type { EffectTemplateRegistry } from './effectTemplate';
@@ -159,6 +159,28 @@ function finishWithCascade(
     if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
   }
 
+  const playedCharacterQueue = ctx.takePlayedCharacters();
+  guard = 0;
+  while (playedCharacterQueue.length > 0 && guard++ < 200) {
+    const event = playedCharacterQueue.shift()!;
+    const samePlayer = fireCharacterPlayedFromHandReactions(working, event.controllerId, event.instanceId, registry, defs, actionId);
+    working = samePlayer.state;
+    log = [...log, ...samePlayer.log];
+    if (samePlayer.pendingChoices.length > 0) return { state: working, log, pendingChoices: samePlayer.pendingChoices };
+    const opponent = fireOpponentCharacterPlayedFromHandReactions(
+      working,
+      event.controllerId,
+      event.instanceId,
+      event.fromCharacterEffect,
+      registry,
+      defs,
+      actionId,
+    );
+    working = opponent.state;
+    log = [...log, ...opponent.log];
+    if (opponent.pendingChoices.length > 0) return { state: working, log, pendingChoices: opponent.pendingChoices };
+  }
+
   return { state: working, log, pendingChoices: [] };
 }
 
@@ -229,8 +251,14 @@ function applyBaseFilters(ids: string[], sel: BaseFilterFields, ctx: EffectConte
   return out;
 }
 
-function lifePositionOptions(ctx: EffectContextImpl, position: 'top' | 'topOrBottom', optional: boolean): { label: string; position: 'decline' | 'top' | 'bottom' }[] {
-  const life = ctx.state().players[ctx.controllerId]?.lifeArea.cardIds ?? [];
+function lifePositionOptions(
+  ctx: EffectContextImpl,
+  position: 'top' | 'topOrBottom',
+  optional: boolean,
+  player: 'controller' | 'opponent' = 'controller',
+): { label: string; position: 'decline' | 'top' | 'bottom' }[] {
+  const playerId = player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+  const life = ctx.state().players[playerId]?.lifeArea.cardIds ?? [];
   if (life.length === 0) return optional ? [{ label: 'Do not add a Life card.', position: 'decline' }] : [];
   const options: { label: string; position: 'decline' | 'top' | 'bottom' }[] = [];
   if (optional) options.push({ label: 'Do not add a Life card.', position: 'decline' });
@@ -239,22 +267,36 @@ function lifePositionOptions(ctx: EffectContextImpl, position: 'top' | 'topOrBot
   return options;
 }
 
-function resolveLifePositionToHand(ctx: EffectContextImpl, position: 'top' | 'topOrBottom', optional: boolean, selectedIndex: number): OpResult {
-  const options = lifePositionOptions(ctx, position, optional);
+function resolveLifePositionToHand(
+  ctx: EffectContextImpl,
+  position: 'top' | 'topOrBottom',
+  optional: boolean,
+  selectedIndex: number,
+  player: 'controller' | 'opponent' = 'controller',
+): OpResult {
+  const options = lifePositionOptions(ctx, position, optional, player);
   const selected = options[selectedIndex];
   if (!selected || selected.position === 'decline') return EMPTY_RESULT;
-  const life = ctx.state().players[ctx.controllerId]?.lifeArea.cardIds ?? [];
+  const playerId = player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+  const life = ctx.state().players[playerId]?.lifeArea.cardIds ?? [];
   const id = selected.position === 'top' ? life[0] : life[life.length - 1];
   if (!id) return EMPTY_RESULT;
   ctx.moveToHand(id);
   return { selectedIds: [id], movedIds: [id] };
 }
 
-function resolveLifePositionToTrash(ctx: EffectContextImpl, position: 'top' | 'topOrBottom', optional: boolean, selectedIndex: number): OpResult {
-  const options = lifePositionOptions(ctx, position, optional);
+function resolveLifePositionToTrash(
+  ctx: EffectContextImpl,
+  position: 'top' | 'topOrBottom',
+  optional: boolean,
+  selectedIndex: number,
+  player: 'controller' | 'opponent' = 'controller',
+): OpResult {
+  const options = lifePositionOptions(ctx, position, optional, player);
   const selected = options[selectedIndex];
   if (!selected || selected.position === 'decline') return EMPTY_RESULT;
-  const life = ctx.state().players[ctx.controllerId]?.lifeArea.cardIds ?? [];
+  const playerId = player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+  const life = ctx.state().players[playerId]?.lifeArea.cardIds ?? [];
   const id = selected.position === 'top' ? life[0] : life[life.length - 1];
   if (!id) return EMPTY_RESULT;
   ctx.trashCard(id);
@@ -536,10 +578,14 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     }
     case 'addPower': {
       const ids = resolveSelector(op.target, ctx, bindings);
+      const scaledAmount =
+        op.amountPerVar && op.amountPer
+          ? op.amountPer * (bindings[op.amountPerVar]?.length ?? 0)
+          : op.amount;
       for (const id of ids) {
-        ctx.addContinuousPower({ appliesToInstanceId: id, amount: op.amount, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}), ...(op.scale ? { scale: op.scale } : {}) });
+        ctx.addContinuousPower({ appliesToInstanceId: id, amount: scaledAmount, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}), ...(op.scale ? { scale: op.scale } : {}) });
       }
-      return { selectedIds: ids, movedIds: [] };
+      return { selectedIds: ids, movedIds: scaledAmount !== 0 ? ids : [] };
     }
     case 'addPowerAura': {
       ctx.addContinuousPowerAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}) });
@@ -924,6 +970,19 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       ctx.trashLife(playerId, n);
       return { selectedIds: [], movedIds: n > 0 ? ['__trashLife'] : [] };
     }
+    case 'moveLifeTopToHand': {
+      const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      const life = ctx.state().players[playerId]?.lifeArea.cardIds ?? [];
+      const n = Math.min(op.count ?? 1, life.length);
+      const moved: string[] = [];
+      for (let i = 0; i < n; i++) {
+        const id = life[i];
+        if (!id) break;
+        ctx.moveToHand(id);
+        moved.push(id);
+      }
+      return { selectedIds: moved, movedIds: moved };
+    }
     case 'addDonFromDeck':
       ctx.addDonFromDeck(ctx.controllerId, op.count, op.rested);
       return { selectedIds: [], movedIds: op.count > 0 ? ['__addDonFromDeck'] : [] };
@@ -995,6 +1054,7 @@ function runOpList(
     }
     if (op.op === 'chooseTargets') {
       const candidates = resolveSelector(op.from, ctx, workingBindings);
+      const max = op.max < 0 ? candidates.length : op.max;
       const chooserId = op.chooser === 'opponent' ? ctx.opponentId : ctx.controllerId;
       ctx.emitChoice({
         id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
@@ -1003,7 +1063,7 @@ function runOpList(
         prompt: op.prompt,
         constraints: {
           min: op.min,
-          max: op.max,
+          max,
           candidateInstanceIds: candidates,
           ...(op.maxCombinedPower !== undefined ? { maxCombinedPower: op.maxCombinedPower } : {}),
         },
@@ -1507,6 +1567,11 @@ export function runTimings(
     if (!evalCondition(ability.condition, ctx)) continue;
     // "If …" board-state gate: an unmet precondition means the ability does nothing.
     if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId, eventContext)) continue;
+    if (ability.battleTargetIsOpponentLeader) {
+      const battle = ctx.state().currentBattle;
+      const target = battle ? ctx.state().cardsById[battle.targetInstanceId] : undefined;
+      if (!target || target.currentZone !== 'leaderArea' || target.ownerId !== ctx.opponentId) continue;
+    }
     if (payCosts && suspendOrPayAbilityCost(ability, index, ctx, actionId, defs, registry)) break;
     const suspended = runOps(ability, index, 0, initialBindings(eventContext), ctx, defs, registry, actionId);
     if (suspended) break; // wait for the choice before any further ability runs

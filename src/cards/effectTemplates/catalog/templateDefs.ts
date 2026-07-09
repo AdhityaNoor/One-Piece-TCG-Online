@@ -137,7 +137,7 @@ export type AbilityFunction =
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
   | { fn: 'drawAndTrashByTypedCharacterCount'; typeIncludes: string }
   | { fn: 'trashFromHand'; count: number }
-  | { fn: 'optionalTrashFromHand'; count: number }
+  | { fn: 'optionalTrashFromHand'; count?: number; anyNumber?: true; filter?: SearchFilter }
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
   | { fn: 'revealOpponentHand'; count?: number }
   | { fn: 'trashTopDeck'; count: number; optional?: boolean }
@@ -165,6 +165,7 @@ export type AbilityFunction =
   // Reveal (look at) the top card of the opponent's deck; optional unconditional `then` branch.
   | { fn: 'revealOpponentDeckTop' }
   | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition }
+  | { fn: 'addPowerSelfPerPreviousTrashed'; amountPer: number; duration: IrDuration; countVar?: string; ifPrevious?: SequenceCondition }
   // Continuous self-buff that scales: +amountPer power for every `step` of `per` (e.g. cards in hand, Events in trash).
   | { fn: 'addPowerSelfScaling'; per: PowerScaleSource; step: number; amountPer: number; duration: IrDuration; condition?: IrCondition }
   | { fn: 'restSelf' }
@@ -248,8 +249,10 @@ export interface AbilityTemplateParams {
   oncePerTurn?: boolean;
   /** onStartOfTurn only: player may decline before the ability resolves. */
   optionalActivate?: boolean;
-  /** onBattle only: the battled Character must carry this attribute (e.g. 'strike'). */
+  /** Attacker attribute filter for onBattle / onOpponentsAttack (e.g. 'slash'). */
   battlingOpponentAttribute?: string;
+  /** whenAttacking only: battle target must be the opponent's Leader. */
+  battleTargetIsOpponentLeader?: boolean;
   /** onBattle only: fire after K.O.'ing an opponent Character in this battle (not at battle start). */
   requiresOpponentKoed?: boolean;
 }

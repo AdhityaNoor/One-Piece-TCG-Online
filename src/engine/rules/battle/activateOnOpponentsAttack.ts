@@ -13,7 +13,7 @@ import type { ActivateOnOpponentsAttackAction, ValidationResult } from '../../ac
 import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import type { CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
-import { fireOnOpponentsAttack, evaluateGates, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, type EffectTemplateRegistry } from '../../effects';
+import { fireOnOpponentsAttack, evaluateGates, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, battleAttackerIsCharacterWithAttribute, type EffectTemplateRegistry } from '../../effects';
 import type { Ability } from '../../effects/effectIr';
 import type { CardInstance } from '../../state/card';
 
@@ -69,6 +69,9 @@ export function validateActivateOnOpponentsAttack(
   }
   if (ability?.gate && !evaluateGates(ability.gate, state, defs, action.playerId)) {
     reasons.push(`'${source.cardDefinitionId}' can't be activated — its "If …" condition isn't met.`);
+  }
+  if (ability?.battlingOpponentAttribute && !battleAttackerIsCharacterWithAttribute(state, defs, ability.battlingOpponentAttribute)) {
+    reasons.push(`'${source.cardDefinitionId}' can't be activated — the attacking Character does not have the required attribute.`);
   }
   if (ability && !abilityConditionMet(ability, source, state, defs)) {
     reasons.push(`'${source.cardDefinitionId}' can't be activated — its activation condition isn't met.`);

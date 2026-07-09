@@ -7,17 +7,31 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // OP03-001 — PARTIAL: attack-or-defended variable Event/Stage trash → scaling battle power deferred; mapped whenAttacking trash-1 → +1000 this battle.
+  // OP03-001 (leader) King — When this Leader attacks or is attacked, trash any number of Event/Stage from hand → +1000 power per card this battle.
   {
     cardNumber: 'OP03-001',
-    templateId: 'ability',
-    params: {
-      timing: 'whenAttacking',
-      functions: [
-        { fn: 'optionalTrashFromHand', count: 1 },
-        { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
-      ],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'whenAttacking',
+          functions: [
+            { fn: 'optionalTrashFromHand', anyNumber: true, filter: { anyOf: [{ category: 'event' }, { category: 'stage' }] } },
+            { fn: 'addPowerSelfPerPreviousTrashed', amountPer: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentsAttack',
+          functions: [
+            { fn: 'optionalTrashFromHand', anyNumber: true, filter: { anyOf: [{ category: 'event' }, { category: 'stage' }] } },
+            { fn: 'addPowerSelfPerPreviousTrashed', amountPer: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
   },
   // OP03-002 — [DON!! x1] [When Attacking] opp cannot activate [Blocker] Characters with 2000 or less power.
   { cardNumber: 'OP03-002', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle', blockerPowerAtMost: 2000 }] } },

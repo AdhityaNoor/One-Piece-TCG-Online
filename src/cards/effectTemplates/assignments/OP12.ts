@@ -434,20 +434,29 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP12-081 (leader) Koala —
-  //   When this Leader attacks your opponent's Leader, if you have 2 or more Characters with a cost of 8 or
-  //   more, draw 1 card.[Once Per Turn] This effect can be activated when your opponent plays a Character
-  //   with a base cost of 8 or more, or when your opponent plays a Character using a Character's effect.
-  //   Your opponent adds 1 card from the top of their Life cards to their hand.
-  // PARTIAL: "2+ Characters cost 8+" gate approximated; opponent-play Life trigger deferred.
+  // OP12-081 (leader) Koala — attack opponent's Leader with 2+ cost-8+ Characters → draw 1; [Once Per Turn] on opponent Character play (cost 8+ or via Character effect) → opp top Life to hand.
   {
     cardNumber: 'OP12-081',
-    templateId: 'ability',
-    params: {
-      timing: 'whenAttacking',
-      gate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }],
-      functions: [{ fn: 'draw', amount: 1 }],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'whenAttacking',
+          battleTargetIsOpponentLeader: true,
+          gate: [{ kind: 'selfCharacterCostCount', minCost: 8, atLeast: 2 }],
+          functions: [{ fn: 'draw', amount: 1 }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentCharacterPlayedFromHand',
+          oncePerTurn: true,
+          gate: [{ kind: 'anyOf', gates: [{ kind: 'playedCharacterBaseCostAtLeast', atLeast: 8 }, { kind: 'playedFromCharacterEffect' }] }],
+          functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' } }],
+        },
+      },
+    ],
   },
 
   // OP12-084 — [Blocker][On Play] If Leader {Revolutionary Army}, trash 3 from top of deck.

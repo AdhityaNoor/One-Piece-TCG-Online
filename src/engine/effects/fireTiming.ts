@@ -7,6 +7,7 @@
 import type { GameState } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
+import { getOpponentId } from '../rules/shared/players';
 import { runTimings, resumeProgram } from './interpreter';
 import { evaluateGates, type GateEvalContext } from './gates';
 import { autoSelectDonMinusIds, canPayAbilityCost, payAbilityCost } from './abilityCost';
@@ -184,6 +185,56 @@ export function fireCharacterPlayedFromHandReactions(
     const program = registry[inst.cardDefinitionId];
     if (!program?.abilities.some((a) => a.timing === 'onCharacterPlayedFromHand')) continue;
     const fired = runTimings(program, ['onCharacterPlayedFromHand'], working, id, defs, actionId, registry, false, eventContext);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
+/** True when the current battle's attacker is an opponent Character with the given attribute. */
+export function battleAttackerIsCharacterWithAttribute(
+  state: GameState,
+  defs: CardDefinitionLookup,
+  attribute: string,
+): boolean {
+  const battle = state.currentBattle;
+  if (!battle) return false;
+  const attacker = state.cardsById[battle.attackerInstanceId];
+  const def = attacker ? defs[attacker.cardDefinitionId] : undefined;
+  if (!attacker || attacker.currentZone !== 'characterArea' || def?.category !== 'character') return false;
+  const needle = attribute.toLowerCase();
+  return (def.attributes ?? []).some((a) => a.toLowerCase() === needle);
+}
+
+/** Fires leader/field reactions when the opponent plays a Character from hand/effect. */
+export function fireOpponentCharacterPlayedFromHandReactions(
+  state: GameState,
+  playingPlayerId: string,
+  playedInstanceId: string,
+  fromCharacterEffect: boolean,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  let defendingPlayerId: string;
+  try {
+    defendingPlayerId = getOpponentId(state, playingPlayerId);
+  } catch {
+    return noop(state);
+  }
+  const eventContext: GateEvalContext = {
+    playedCharacterInstanceId: playedInstanceId,
+    playedFromCharacterEffect: fromCharacterEffect,
+  };
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const id of fieldInstanceIds(working, defendingPlayerId)) {
+    const inst = working.cardsById[id];
+    if (!inst) continue;
+    const program = registry[inst.cardDefinitionId];
+    if (!program?.abilities.some((a) => a.timing === 'onOpponentCharacterPlayedFromHand')) continue;
+    const fired = runTimings(program, ['onOpponentCharacterPlayedFromHand'], working, id, defs, actionId, registry, false, eventContext);
     working = fired.state;
     log = [...log, ...fired.log];
     if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
@@ -416,6 +467,10 @@ export function fireOnOpponentsAttack(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
+  const ability = program.abilities.find((a) => a.timing === 'onOpponentsAttack');
+  if (ability?.battlingOpponentAttribute && !battleAttackerIsCharacterWithAttribute(state, defs, ability.battlingOpponentAttribute)) {
+    return noop(state);
+  }
   return runTimings(program, ['onOpponentsAttack'], state, instanceId, defs, actionId, registry, false);
 }
 

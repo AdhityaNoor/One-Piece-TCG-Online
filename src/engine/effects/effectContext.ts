@@ -47,6 +47,8 @@ export class EffectContextImpl implements EffectContext {
   private readonly pendingEventActivations: string[] = [];
   /** New Character instance ids played from trash by this resolution; drained for onCharacterPlayedFromTrash reactions. */
   private readonly playedFromTrash: string[] = [];
+  /** Characters played by this resolution; drained for played-character reactive windows. */
+  private readonly playedCharacters: { instanceId: string; controllerId: string; fromCharacterEffect: boolean }[] = [];
   /** Hand cards trashed by this resolution's effects; drained for onHandTrashed cascade. */
   private readonly handTrashed: { ownerId: string; count: number; effectSourceInstanceId: string }[] = [];
 
@@ -1158,6 +1160,21 @@ export class EffectContextImpl implements EffectContext {
     return drained;
   }
 
+  takePlayedCharacters(): { instanceId: string; controllerId: string; fromCharacterEffect: boolean }[] {
+    const drained = [...this.playedCharacters];
+    this.playedCharacters.length = 0;
+    return drained;
+  }
+
+  private recordPlayedCharacter(instanceId: string): void {
+    const inst = this.working.cardsById[instanceId];
+    if (!inst || inst.currentZone !== 'characterArea') return;
+    const sourceInst = this.working.cardsById[this.sourceInstanceId];
+    const sourceDef = sourceInst ? this.defs[sourceInst.cardDefinitionId] : undefined;
+    const fromCharacterEffect = sourceInst?.currentZone === 'characterArea' && sourceDef?.category === 'character';
+    this.playedCharacters.push({ instanceId, controllerId: inst.controllerId, fromCharacterEffect });
+  }
+
   takeHandTrashed(): { ownerId: string; count: number; effectSourceInstanceId: string }[] {
     const drained = [...this.handTrashed];
     this.handTrashed.length = 0;
@@ -1605,6 +1622,7 @@ export class EffectContextImpl implements EffectContext {
         sourceEffectId: 'rule:characterAreaOverflow',
       });
     }
+    this.recordPlayedCharacter(newId);
   }
 
   playCharacterFromTrash(trashInstanceId: string, rested = false): void {
@@ -1666,6 +1684,7 @@ export class EffectContextImpl implements EffectContext {
         sourceEffectId: 'rule:characterAreaOverflow',
       });
     }
+    this.recordPlayedCharacter(newId);
   }
 
   playCharacterFromDeck(deckInstanceId: string, rested = false): void {
@@ -1726,6 +1745,7 @@ export class EffectContextImpl implements EffectContext {
         sourceEffectId: 'rule:characterAreaOverflow',
       });
     }
+    this.recordPlayedCharacter(newId);
   }
 
   shuffleDeck(playerId: string): void {

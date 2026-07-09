@@ -14,7 +14,8 @@ function card(effectText: string): CatalogCard {
 
 function program(timing: EffectProgram['abilities'][number]['timing']): EffectProgram {
   return {
-    abilities: [{ timing, functions: [{ op: 'draw', amount: 1, player: 'controller' }] }],
+    cardNumber: 'TEST-001',
+    abilities: [{ timing, ops: [{ op: 'draw', amount: 1 }] }],
   };
 }
 

@@ -495,17 +495,14 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP11-088 (character) Shu —
-  //   [Blocker] (After your opponent declares an attack, you may rest this card to make it the new target
-  //   of the attack.)[Once Per Turn] This effect can be activated when your opponent's Character attacks.
-  //   If that Character has the <Slash> attribute, this Character gains +5000 power during this battle.
-  // PARTIAL: [Blocker] is printed; <Slash> attacker-attribute gate deferred; onOpponentsAttack +5000 battle power mapped.
+  // OP11-088 (character) Shu — [Blocker]; [Once Per Turn] when opponent's Slash Character attacks, +5000 power this battle.
   {
     cardNumber: 'OP11-088',
     templateId: 'ability',
     params: {
       timing: 'onOpponentsAttack',
       oncePerTurn: true,
+      battlingOpponentAttribute: 'slash',
       functions: [{ fn: 'addPowerSelf', amount: 5000, duration: 'duringThisBattle' }],
     },
   },

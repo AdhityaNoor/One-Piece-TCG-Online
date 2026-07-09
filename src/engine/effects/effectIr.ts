@@ -140,7 +140,7 @@ export interface EffectOpSequenceGate {
 export type EffectOp =
   | ({ op: 'draw'; amount: number; player?: 'controller' | 'opponent' } & EffectOpSequenceGate)
   | ({ op: 'drawUntilHandCount'; targetCount: number; player?: 'controller' | 'opponent' } & EffectOpSequenceGate)
-  | ({ op: 'addPower'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition; scale?: PowerScale } & EffectOpSequenceGate)
+  | ({ op: 'addPower'; target: Selector; amount: number; duration: IrDuration; condition?: IrCondition; scale?: PowerScale; amountPerVar?: string; amountPer?: number } & EffectOpSequenceGate)
   // Register an "aura"/anthem power modifier over a dynamic target group (e.g. "your
   // {Supernovas} Leaders and Characters gain +1000"), optionally gated on source state.
   | ({ op: 'addPowerAura'; group: PowerAuraGroup; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
@@ -205,7 +205,8 @@ export type EffectOp =
   | ({ op: 'turnAllLifeFace'; player: 'controller' | 'opponent'; faceUp: boolean } & EffectOpSequenceGate)
   | ({ op: 'lookLifeAndReorder'; player: 'controller' | 'opponent'; moveOneToDeckTop?: boolean; prompt: string } & EffectOpSequenceGate)
   | ({ op: 'peekLifeThenPlace'; from: Extract<Selector, { sel: 'controllerOrOpponentLifeTop' }>; prompt: string } & EffectOpSequenceGate) // privately look at a top Life card, then optionally place it at bottom
-  | ({ op: 'chooseLifeToHand'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then add it to hand
+  | ({ op: 'chooseLifeToHand'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string; player?: 'controller' | 'opponent' } & EffectOpSequenceGate) // choose hidden Life by position, then add it to hand
+  | ({ op: 'moveLifeTopToHand'; player: 'controller' | 'opponent'; count?: number } & EffectOpSequenceGate) // mandatory top Life → hand (no choice)
   | ({ op: 'chooseLifeToTrash'; position: 'top' | 'topOrBottom'; optional: boolean; prompt: string } & EffectOpSequenceGate) // choose hidden Life by position, then trash it
   | ({ op: 'playSelf' } & EffectOpSequenceGate) // play the source Character itself, e.g. "[Trigger] Play this card"
   | ({ op: 'playFromHand'; target: Selector; rested?: boolean } & EffectOpSequenceGate) // put a chosen card from hand into play (no cost); Character or Stage
@@ -292,6 +293,7 @@ export type IrTiming =
   | 'onLifeToHand'
   | 'onTriggerActivated'
   | 'onCharacterPlayedFromHand'
+  | 'onOpponentCharacterPlayedFromHand'
   | 'onCharacterPlayedFromTrash'
   | 'onStartOfTurn'
   | 'onHandTrashed'
@@ -333,6 +335,7 @@ export type AbilityGate =
   | { kind: 'selfHand'; atLeast?: number; atMost?: number } // "If you have N or less cards in your hand"
   | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
   | { kind: 'selfHasCharacterCostAtLeast'; atLeast: number } // "If you have a Character with a cost of N or more"
+  | { kind: 'selfCharacterCostCount'; minCost: number; atLeast: number } // "If you have N or more Characters with a cost of M or more"
   | { kind: 'selfHasCharacterBasePowerAtLeast'; power: number } // "If you have a Character with a base power of N or more"
   | { kind: 'opponentDonMoreThanSelf' } // "If your opponent has more DON!! cards on their field than you"
   | { kind: 'opponentDonFieldCount'; atLeast?: number; atMost?: number } // "If your opponent has N or more/less DON!! cards on their field"
@@ -374,6 +377,8 @@ export type AbilityGate =
   | { kind: 'selfDonGivenThisAction'; atLeast?: number; atMost?: number } // onDonGiven: N+ DON!! were given to this card this event
   | { kind: 'playedCharacterNoBaseEffect' } // onCharacterPlayedFromHand: the just-played Character has no base effect
   | { kind: 'playedCharacterTypeIncludes'; typeIncludes: string } // onCharacterPlayed*: the just-played Character carries this type
+  | { kind: 'playedCharacterBaseCostAtLeast'; atLeast: number } // reactive: just-played Character base cost >= N
+  | { kind: 'playedFromCharacterEffect' } // reactive: Character was played via another Character's effect
   // onCharacterKoed only: filter the reactive window by whose Character was K.O.'d.
   // 'opponent' = "When your opponent's Character is K.O.'d"; 'controller' = "When your Character is K.O.'d".
   | { kind: 'koedCharacterController'; player: 'opponent' | 'controller' }
@@ -397,11 +402,13 @@ export interface Ability {
   /** Activation cost(s) paid on use (8-3-1-5); [Activate: Main] and [Counter] handlers pay these before resolution. */
   cost?: AbilityCost[];
   /**
-   * [When this Character battles ...] attribute filter (onBattle only): the card
-   * this one is battling (attacker<->defender) must be a Character whose attributes
-   * include this value, e.g. ST05-010 Zephyr ("battles ＜Strike＞ Characters"). Checked in fireOnBattle.
+   * [When this Character battles ...] / [On Your Opponent's Attack] attribute filter:
+   * the opposing attacker must be a Character whose attributes include this value.
+   * Checked in fireOnBattle / fireOnOpponentsAttack / runTimings.
    */
   battlingOpponentAttribute?: string;
+  /** whenAttacking only: battle target must be the opponent's Leader. */
+  battleTargetIsOpponentLeader?: boolean;
   /**
    * onBattle only: defer firing until the Damage Step after this card K.O.'s an
    * opponent Character in battle (OP02-094 Isuka). Checked in fireOnBattleKoedOpponent.

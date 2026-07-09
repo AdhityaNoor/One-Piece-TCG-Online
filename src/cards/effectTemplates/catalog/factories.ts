@@ -206,6 +206,9 @@ function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>)
       },
     ];
   }
+  if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'opponent' && f.to.zone === 'hand' && f.to.player === 'owner') {
+    return [{ op: 'moveLifeTopToHand', player: 'opponent', count }];
+  }
   if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'opponent' && f.to.zone === 'trash' && f.to.player === 'owner') {
     return [{ op: 'trashLife', player: 'opponent', count }];
   }
@@ -570,18 +573,30 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
         { op: 'trashCards', target: { sel: 'var', name: 't' } },
       ];
-    case 'optionalTrashFromHand':
+    case 'optionalTrashFromHand': {
+      const anyNumber = f.anyNumber === true;
+      const count = f.count ?? 1;
+      const filterLabel = f.filter?.anyOf
+        ? 'Event or Stage'
+        : f.filter?.category === 'event'
+          ? 'Event'
+          : f.filter?.category === 'stage'
+            ? 'Stage'
+            : '';
       return [
         {
           op: 'chooseTargets',
           var: 't',
-          from: { sel: 'controllerHand' },
+          from: { sel: 'controllerHand', ...(f.filter ? { filter: f.filter } : {}) },
           min: 0,
-          max: f.count,
-          prompt: `You may trash ${f.count} card${f.count === 1 ? '' : 's'} from your hand.`,
+          max: anyNumber ? -1 : count,
+          prompt: anyNumber
+            ? `You may trash any number of ${filterLabel || ''} cards from your hand.`.replace(/\s+/g, ' ').trim()
+            : `You may trash ${count} card${count === 1 ? '' : 's'} from your hand.`,
         },
         { op: 'trashCards', target: { sel: 'var', name: 't' } },
       ];
+    }
     case 'trashFromOpponentHandChosenByOpponent':
       return [
         {
@@ -741,6 +756,18 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'addPowerSelf':
       return targetOps({ ref: 'self' }, (target) => ({ op: 'addPower', target, amount: f.amount, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }));
+    case 'addPowerSelfPerPreviousTrashed':
+      return [
+        {
+          op: 'addPower',
+          target: { sel: 'self' },
+          amount: 0,
+          amountPerVar: f.countVar ?? 't',
+          amountPer: f.amountPer,
+          duration: f.duration,
+          ...(f.ifPrevious ? { ifPrevious: f.ifPrevious } : {}),
+        },
+      ];
     case 'addPowerSelfScaling':
       return [{ op: 'addPower', target: { sel: 'self' }, amount: 0, duration: f.duration, scale: { per: f.per, step: f.step, amountPer: f.amountPer }, ...(f.condition ? { condition: f.condition } : {}) }];
     case 'restSelf':
@@ -1080,6 +1107,7 @@ const FACTORY_MAP: {
         ...(p.oncePerTurn ? { oncePerTurn: true } : {}),
         ...(p.optionalActivate ? { optionalActivate: true } : {}),
         ...(p.battlingOpponentAttribute ? { battlingOpponentAttribute: p.battlingOpponentAttribute } : {}),
+        ...(p.battleTargetIsOpponentLeader ? { battleTargetIsOpponentLeader: true } : {}),
         ...(p.requiresOpponentKoed ? { requiresOpponentKoed: true } : {}),
         ops: p.functions.flatMap(functionOps),
       },

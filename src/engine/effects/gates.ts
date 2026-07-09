@@ -67,6 +67,8 @@ export interface GateEvalContext {
   removedByEffectControllerId?: string;
   /** Character just played from hand/trash (played-character reactive windows). */
   playedCharacterInstanceId?: string;
+  /** True when the just-played Character entered play via another Character's effect. */
+  playedFromCharacterEffect?: boolean;
   /** Controller (pre-K.O.) of the Character that was K.O.'d (onCharacterKoed reactive window). */
   koedCharacterControllerId?: string;
   /** Cards trashed from hand by an effect this event (onHandTrashed reactive window). */
@@ -243,6 +245,11 @@ function evaluateGate(
 
     case 'selfHasCharacterCostAtLeast': {
       return player.characterArea.cardIds.some((id) => currentCostForGate(state, defs, id) >= gate.atLeast);
+    }
+
+    case 'selfCharacterCostCount': {
+      const count = player.characterArea.cardIds.filter((id) => currentCostForGate(state, defs, id) >= gate.minCost).length;
+      return count >= gate.atLeast;
     }
 
     case 'selfHasCharacterBasePowerAtLeast': {
@@ -506,6 +513,18 @@ function evaluateGate(
       const def = defs[state.cardsById[playedId]?.cardDefinitionId ?? ''];
       if (!def) return false;
       return typeMatches(def.types, gate.typeIncludes);
+    }
+
+    case 'playedCharacterBaseCostAtLeast': {
+      const playedId = eventContext?.playedCharacterInstanceId;
+      if (!playedId) return false;
+      const def = defs[state.cardsById[playedId]?.cardDefinitionId ?? ''];
+      if (!def || def.category !== 'character') return false;
+      return (def.baseCost ?? -1) >= gate.atLeast;
+    }
+
+    case 'playedFromCharacterEffect': {
+      return eventContext?.playedFromCharacterEffect === true;
     }
 
     case 'koedCharacterController': {
