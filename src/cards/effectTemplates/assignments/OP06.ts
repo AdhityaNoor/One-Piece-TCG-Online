@@ -28,8 +28,11 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-004 — [On Play] Play up to 1 [Lily Carnation] from your hand.
   { cardNumber: 'OP06-004', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Lily Carnation' } }] } },
 
-  // OP06-006 — [DON!! x1] [When Attacking] +1000 until start of next turn. PARTIAL: end-of-turn FILM trash deferred.
-  { cardNumber: 'OP06-006', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'untilStartOfNextTurn' }] } },
+  // OP06-006 — [DON!! x1] [When Attacking] +1000 until start of next turn; trash 1 {FILM} Character at end of turn.
+  { cardNumber: 'OP06-006', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [
+    { fn: 'addPowerSelf', amount: 1000, duration: 'untilStartOfNextTurn' },
+    { fn: 'trashControllerCharacterAtEndOfTurn', filter: { typeIncludes: 'FILM' } },
+  ] } },
 
   // OP06-007 — [On Play] K.O. up to 1 of your opponent's Characters with 10000 power or less.
   { cardNumber: 'OP06-007', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 10000 } }, optional: true }] } },

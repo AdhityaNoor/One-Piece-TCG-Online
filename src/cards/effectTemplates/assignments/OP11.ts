@@ -529,11 +529,11 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] You may trash 1 card from your hand: Draw 1 card and play up to 1 {SWORD} type Character
   //   card with a cost of 8 or less other than [Helmeppo] from your trash. Then, place the 1 Character
   //   played by this effect at the bottom of the owner's deck at the end of this turn.
-  // PARTIAL: delayed end-of-turn bottom-deck clause for the played Character deferred.
   { cardNumber: 'OP11-092', templateId: 'ability', params: { timing: 'onPlay', functions: [
     { fn: 'optionalTrashFromHand', count: 1 },
     { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
     { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'SWORD', maxCost: 8, excludeSelfName: true }, ifPrevious: 'previousMovedAny' },
+    { fn: 'movePreviousMovedToBottomDeckAtEndOfTurn', ifPrevious: 'previousMovedAny' },
   ] } },
 
   // OP11-095 (character) Monkey.D.Garp —

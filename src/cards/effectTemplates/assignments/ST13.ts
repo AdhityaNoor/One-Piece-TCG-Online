@@ -23,24 +23,30 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // ST13-002 — PARTIAL: face-up Life + EOT trash face-up Life deferred; mapped search cost-5 Character to Life top.
+  // ST13-002 — [DON!! x2] [Activate: Main] [Once Per Turn] search cost-5 Character to Life top face-up.
+  //   [End of Your Turn] trash all face-up Life cards.
   {
     cardNumber: 'ST13-002',
-    templateId: 'ability',
-    params: {
-      timing: 'activateMain',
-      oncePerTurn: true,
-      condition: { donAttachedAtLeast: 2 },
-      functions: [{
-        fn: 'searchTopDeck',
-        look: 5,
-        pick: 1,
-        reveal: true,
-        destination: 'lifeTop',
-        filter: { category: 'character', exactCost: 5 },
-        remainder: 'bottom',
-      }],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          condition: { donAttachedAtLeast: 2 },
+          functions: [{
+            fn: 'searchTopDeck',
+            look: 5,
+            pick: 1,
+            reveal: true,
+            destination: 'lifeTop',
+            filter: { category: 'character', exactCost: 5 },
+            remainder: 'bottom',
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'trashFaceUpLife' }] } },
+    ],
   },
 
   // ST13-003 (leader) Monkey.D.Luffy —

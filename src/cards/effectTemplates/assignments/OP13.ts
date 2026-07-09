@@ -187,8 +187,14 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
 
-  // OP13-027 — [On Play] Set up to 2 DON!! active. PARTIAL: OR-type [End of Your Turn] ramp deferred.
-  { cardNumber: 'OP13-027', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
+  // OP13-027 — [On Play] set up to 2 DON!! active. [End of Your Turn] if Leader {FILM} or {Straw Hat Crew}, set up to 1 DON!! active.
+  {
+    cardNumber: 'OP13-027',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
+      { templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'FILM' }, { kind: 'leaderType', type: 'Straw Hat Crew' }] }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
+    ],
+  },
 
   // OP13-028 — [On Play] Set all DON active, then cannot play cards from hand this turn.
   {

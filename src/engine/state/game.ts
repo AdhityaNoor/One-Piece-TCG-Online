@@ -511,6 +511,51 @@ export type DelayedEffectRecord =
       triggerPlayerId: string;
       maxTargets: number;
       triggerTurnNumber: number;
+    }
+  | {
+      id: string;
+      kind: 'trashSourceAtEndOfTurn';
+      sourceInstanceId: string;
+      ownerId: string;
+      triggerPlayerId: string;
+    }
+  | {
+      id: string;
+      kind: 'moveSourceToBottomDeckAtEndOfBattle';
+      sourceInstanceId: string;
+      ownerId: string;
+      battleAttackerInstanceId: string;
+    }
+  | {
+      id: string;
+      kind: 'moveInstanceToBottomDeckAtEndOfTurn';
+      sourceInstanceId: string;
+      ownerId: string;
+      triggerPlayerId: string;
+      targetInstanceId: string;
+    }
+  | {
+      id: string;
+      kind: 'trashControllerCharacterAtEndOfTurn';
+      sourceInstanceId: string;
+      ownerId: string;
+      triggerPlayerId: string;
+      typeIncludes?: string;
+    }
+  | {
+      id: string;
+      kind: 'returnDonToMatchOpponentAtEndOfTurn';
+      sourceInstanceId: string;
+      ownerId: string;
+      triggerPlayerId: string;
+    }
+  | {
+      id: string;
+      kind: 'moveDeckTopToLifeAtEndOfTurn';
+      sourceInstanceId: string;
+      ownerId: string;
+      triggerPlayerId: string;
+      requiresLeaderType?: string;
     };
 
 export interface EventActivationRecord {

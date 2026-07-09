@@ -438,8 +438,15 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP16-070', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 2 }], gate: [{ kind: 'leaderType', type: 'Navy' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
 
-  // PARTIAL: end-of-turn DON−2 setActiveSelf + Blocker deferred.
-  { cardNumber: 'OP16-073', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }, { fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  // OP16-073 — [On Play] add 1 active + 1 rested DON!!.
+  //   [End of Your Turn] DON!! −2: set this active; gains [Blocker] until end of opponent's next End Phase.
+  {
+    cardNumber: 'OP16-073',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }, { fn: 'addDonFromDeck', count: 1, rested: true }] } },
+      { templateId: 'ability', params: { timing: 'endOfTurn', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'setActiveSelf' }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'endOfOpponentsTurn' }] } },
+    ],
+  },
 
 
   { cardNumber: 'OP16-075', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Navy' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }, { fn: 'addDonFromDeck', count: 1, rested: true }] } },

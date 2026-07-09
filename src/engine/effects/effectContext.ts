@@ -1805,11 +1805,11 @@ export class EffectContextImpl implements EffectContext {
     this.recordPlayedCharacter(newId);
   }
 
-  playCharacterFromTrash(trashInstanceId: string, rested = false): void {
+  playCharacterFromTrash(trashInstanceId: string, rested = false): string | null {
     const trashInst = this.working.cardsById[trashInstanceId];
-    if (!trashInst || trashInst.currentZone !== 'trash') return;
+    if (!trashInst || trashInst.currentZone !== 'trash') return null;
     const def = this.defs[trashInst.cardDefinitionId];
-    if (!def || def.category !== 'character') return; // only Characters can be played to the field
+    if (!def || def.category !== 'character') return null; // only Characters can be played to the field
     const controllerId = trashInst.controllerId;
     if (isControllerCharacterPlayPrevented(this.working, controllerId, this.defs, trashInst.cardDefinitionId)) {
       this.logger.push({
@@ -1820,10 +1820,10 @@ export class EffectContextImpl implements EffectContext {
         relatedCardInstanceIds: [trashInstanceId],
         visibility: 'public',
       });
-      return;
+      return null;
     }
     const player = this.working.players[controllerId];
-    if (!player) return;
+    if (!player) return null;
 
     const minted = mintRuntimeInstanceId(this.working); // 3-1-6: fresh instance entering play
     const newId = minted.id;
@@ -1876,6 +1876,7 @@ export class EffectContextImpl implements EffectContext {
       });
     }
     this.recordPlayedCharacter(newId);
+    return newId;
   }
 
   playCharacterFromDeck(deckInstanceId: string, rested = false): void {
@@ -2238,6 +2239,24 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: moving,
       visibility: 'public',
     });
+  }
+
+  trashHandDownTo(handSize: number): void {
+    const player = this.working.players[this.controllerId];
+    if (!player) return;
+    while (this.working.players[this.controllerId].hand.cardIds.length > handSize) {
+      const handIds = this.working.players[this.controllerId].hand.cardIds;
+      const toTrash = handIds[handIds.length - 1];
+      if (!toTrash) break;
+      this.trashCard(toTrash);
+    }
+  }
+
+  trashFaceUpLife(): void {
+    const player = this.working.players[this.controllerId];
+    if (!player) return;
+    const faceUpIds = player.lifeArea.cardIds.filter((id) => this.working.cardsById[id]?.faceState === 'faceUp');
+    for (const id of faceUpIds) this.trashCard(id);
   }
 
   trashTopOfDeck(playerId: string, n: number): void {

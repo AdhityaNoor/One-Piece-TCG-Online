@@ -56,8 +56,8 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP03-005 — [Activate: Main] [Once Per Turn] this +2000 this turn. PARTIAL: end-of-turn trash deferred.
-  { cardNumber: 'OP03-005', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }] } },
+  // OP03-005 — [Activate: Main] [Once Per Turn] this +2000 this turn; trash this Character at end of turn.
+  { cardNumber: 'OP03-005', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }, { fn: 'trashSelfAtEndOfTurn' }] } },
 
   // OP03-008 — PARTIAL: slash-attribute battle K.O. immunity deferred; mapped [On Play] red Event search.
   { cardNumber: 'OP03-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'event', color: 'red' }, remainder: 'bottom' }] } },

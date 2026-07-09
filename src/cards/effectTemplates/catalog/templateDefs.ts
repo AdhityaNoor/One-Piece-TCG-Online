@@ -186,6 +186,14 @@ export type AbilityFunction =
   | { fn: 'setActiveControllerDon'; maxTargets: number }
   | { fn: 'setActiveControllerDonAtEndOfTurn'; maxTargets: number }
   | { fn: 'restOpponentDonAtStartOfNextMain'; maxTargets?: number }
+  | { fn: 'trashSelfAtEndOfTurn' }
+  | { fn: 'moveSelfToBottomDeckAtEndOfBattle' }
+  | { fn: 'movePreviousMovedToBottomDeckAtEndOfTurn'; ifPrevious?: SequenceCondition }
+  | { fn: 'trashControllerCharacterAtEndOfTurn'; filter?: { typeIncludes?: string } }
+  | { fn: 'returnDonToMatchOpponentAtEndOfTurn' }
+  | { fn: 'moveDeckTopToLifeAtEndOfTurn'; gates?: AbilityGate[]; ifPrevious?: SequenceCondition }
+  | { fn: 'trashHandDownTo'; handSize: number }
+  | { fn: 'trashFaceUpLife' }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
   | { fn: 'restOpponentDon'; maxTargets?: number; optional?: boolean }
   // Rest up to N of the controller's active DON!! cards (optional effect-chain payment).

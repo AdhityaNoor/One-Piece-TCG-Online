@@ -402,7 +402,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP08-073', templateId: 'ability', params: { timing: 'onKO', condition: { turn: 'opponent' }, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'playFromDeck', filter: { category: 'character', name: 'Count Niwatori', maxCost: 6 } }] } },
 
   // OP08-074 (character) Black Maria —
-  //   PARTIAL: end-of-turn DON!! return-to-match-opponent deferred.
+  //   [Activate: Main] [Once Per Turn] If no other [Black Maria], add up to 5 DON!! rested.
+  //   Then at end of turn return DON!! until field count matches opponent.
   {
     cardNumber: 'OP08-074',
     templateId: 'ability',
@@ -410,7 +411,10 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'activateMain',
       oncePerTurn: true,
       gate: [{ kind: 'selfOtherNamedCharacterCount', name: 'Black Maria', atMost: 0 }],
-      functions: [{ fn: 'addDonFromDeck', count: 5, rested: true }],
+      functions: [
+        { fn: 'addDonFromDeck', count: 5, rested: true },
+        { fn: 'returnDonToMatchOpponentAtEndOfTurn' },
+      ],
     },
   },
 
@@ -571,13 +575,18 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'playFromHand', filter: { category: 'character', name: 'Upper Yard' } },
   ] } },
 
-  // OP08-101 — PARTIAL: end-of-turn deck→life not linked to the life-trash cost; fires every end of turn.
+  // OP08-101 — [Activate: Main] [Once Per Turn] may trash top Life: if Leader {Big Mom Pirates}, add deck top to Life at end of turn.
   {
     cardNumber: 'OP08-101',
-    templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true }] } },
-      { templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'leaderType', type: 'Big Mom Pirates' }], functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
-    ],
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      functions: [
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true },
+        { fn: 'moveDeckTopToLifeAtEndOfTurn', gates: [{ kind: 'leaderType', type: 'Big Mom Pirates' }], ifPrevious: 'previousMovedAny' },
+      ],
+    },
   },
 
   // OP08-102 — PARTIAL: maxCost should scale with your Life count (maxCostFromSelfLife not modeled); mapped maxCost 5.

@@ -343,10 +343,10 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [DON!! x1] [When Attacking] You may trash 1 card from your hand: Place up to 1 Character with a cost
   //   of 2 or less at the bottom of the owner's deck. Then, at the end of this battle, place this Character
   //   at the bottom of the owner's deck.
-  // PARTIAL: delayed end-of-battle self bottom-deck clause deferred.
   { cardNumber: 'OP02-064', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [
     { fn: 'optionalTrashFromHand', count: 1 },
     { fn: 'moveCards', ifPrevious: 'previousMovedAny', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true },
+    { fn: 'moveSelfToBottomDeckAtEndOfBattle' },
   ] } },
 
   // OP02-065 — [Blocker] [End of Your Turn] trash 1 from hand: set this active.

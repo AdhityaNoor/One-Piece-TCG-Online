@@ -887,6 +887,24 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
     }
     case 'restOpponentDonAtStartOfNextMain':
       return [{ op: 'scheduleRestOpponentDonAtStartOfNextMain', maxTargets: f.maxTargets ?? 1 }];
+    case 'trashSelfAtEndOfTurn':
+      return [{ op: 'scheduleTrashSourceAtEndOfTurn' }];
+    case 'moveSelfToBottomDeckAtEndOfBattle':
+      return [{ op: 'scheduleMoveSourceToBottomDeckAtEndOfBattle' }];
+    case 'movePreviousMovedToBottomDeckAtEndOfTurn':
+      return [{ op: 'scheduleMoveInstanceToBottomDeckAtEndOfTurn', fromVar: '__lastMovedIds', index: 0 }];
+    case 'trashControllerCharacterAtEndOfTurn':
+      return [{ op: 'scheduleTrashControllerCharacterAtEndOfTurn', ...(f.filter?.typeIncludes ? { typeIncludes: f.filter.typeIncludes } : {}) }];
+    case 'returnDonToMatchOpponentAtEndOfTurn':
+      return [{ op: 'scheduleReturnDonToMatchOpponentAtEndOfTurn' }];
+    case 'moveDeckTopToLifeAtEndOfTurn': {
+      const leaderGate = f.gates?.find((gate): gate is { kind: 'leaderType'; type: string } => gate.kind === 'leaderType');
+      return [{ op: 'scheduleMoveDeckTopToLifeAtEndOfTurn', ...(leaderGate ? { requiresLeaderType: leaderGate.type } : {}) }];
+    }
+    case 'trashHandDownTo':
+      return [{ op: 'trashHandDownTo', handSize: f.handSize }];
+    case 'trashFaceUpLife':
+      return [{ op: 'trashFaceUpLife' }];
     case 'returnOpponentDon':
       return [
         {

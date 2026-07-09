@@ -927,6 +927,83 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       });
       return EMPTY_RESULT;
     }
+    case 'scheduleTrashSourceAtEndOfTurn': {
+      ctx.scheduleDelayedEffect({
+        id: `${ctx.sourceInstanceId}:trash-self:eot:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
+        kind: 'trashSourceAtEndOfTurn',
+        sourceInstanceId: ctx.sourceInstanceId,
+        ownerId: ctx.controllerId,
+        triggerPlayerId: ctx.controllerId,
+      });
+      return EMPTY_RESULT;
+    }
+    case 'scheduleMoveSourceToBottomDeckAtEndOfBattle': {
+      ctx.scheduleDelayedEffect({
+        id: `${ctx.sourceInstanceId}:bottom-deck:eob:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
+        kind: 'moveSourceToBottomDeckAtEndOfBattle',
+        sourceInstanceId: ctx.sourceInstanceId,
+        ownerId: ctx.controllerId,
+        battleAttackerInstanceId: ctx.sourceInstanceId,
+      });
+      return EMPTY_RESULT;
+    }
+    case 'scheduleMoveInstanceToBottomDeckAtEndOfTurn': {
+      const varName = op.fromVar ?? '__lastMovedIds';
+      const ids = bindings[varName] ?? [];
+      const targetId = ids[op.index ?? 0];
+      if (!targetId) return EMPTY_RESULT;
+      ctx.scheduleDelayedEffect({
+        id: `${ctx.sourceInstanceId}:bottom-deck:eot:${targetId}:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
+        kind: 'moveInstanceToBottomDeckAtEndOfTurn',
+        sourceInstanceId: ctx.sourceInstanceId,
+        ownerId: ctx.controllerId,
+        triggerPlayerId: ctx.controllerId,
+        targetInstanceId: targetId,
+      });
+      return EMPTY_RESULT;
+    }
+    case 'scheduleTrashControllerCharacterAtEndOfTurn': {
+      ctx.scheduleDelayedEffect({
+        id: `${ctx.sourceInstanceId}:trash-char:eot:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
+        kind: 'trashControllerCharacterAtEndOfTurn',
+        sourceInstanceId: ctx.sourceInstanceId,
+        ownerId: ctx.controllerId,
+        triggerPlayerId: ctx.controllerId,
+        ...(op.typeIncludes ? { typeIncludes: op.typeIncludes } : {}),
+      });
+      return EMPTY_RESULT;
+    }
+    case 'scheduleReturnDonToMatchOpponentAtEndOfTurn': {
+      ctx.scheduleDelayedEffect({
+        id: `${ctx.sourceInstanceId}:return-don-match:eot:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
+        kind: 'returnDonToMatchOpponentAtEndOfTurn',
+        sourceInstanceId: ctx.sourceInstanceId,
+        ownerId: ctx.controllerId,
+        triggerPlayerId: ctx.controllerId,
+      });
+      return EMPTY_RESULT;
+    }
+    case 'scheduleMoveDeckTopToLifeAtEndOfTurn': {
+      ctx.scheduleDelayedEffect({
+        id: `${ctx.sourceInstanceId}:deck-to-life:eot:${ctx.state().turnNumber}:${ctx.state().delayedEffects?.length ?? 0}`,
+        kind: 'moveDeckTopToLifeAtEndOfTurn',
+        sourceInstanceId: ctx.sourceInstanceId,
+        ownerId: ctx.controllerId,
+        triggerPlayerId: ctx.controllerId,
+        ...(op.requiresLeaderType ? { requiresLeaderType: op.requiresLeaderType } : {}),
+      });
+      return EMPTY_RESULT;
+    }
+    case 'trashHandDownTo': {
+      ctx.trashHandDownTo(op.handSize);
+      return { selectedIds: [], movedIds: ['__trashHandDownTo'] };
+    }
+    case 'trashFaceUpLife': {
+      const player = ctx.state().players[ctx.controllerId];
+      const faceUpIds = player?.lifeArea.cardIds.filter((id) => ctx.state().cardsById[id]?.faceState === 'faceUp') ?? [];
+      ctx.trashFaceUpLife();
+      return { selectedIds: faceUpIds, movedIds: faceUpIds };
+    }
     case 'returnDonToDonDeck': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.returnDonToDonDeck(id);
@@ -987,8 +1064,12 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     }
     case 'playFromTrash': {
       const ids = resolveSelector(op.target, ctx, bindings);
-      for (const id of ids) ctx.playCharacterFromTrash(id, op.rested === true);
-      return { selectedIds: ids, movedIds: ids };
+      const movedIds: string[] = [];
+      for (const id of ids) {
+        const playedId = ctx.playCharacterFromTrash(id, op.rested === true);
+        if (playedId) movedIds.push(playedId);
+      }
+      return { selectedIds: ids, movedIds };
     }
     case 'moveToHand': {
       const ids = resolveSelector(op.target, ctx, bindings);

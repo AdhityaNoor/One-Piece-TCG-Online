@@ -505,8 +505,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP14-054 — [On Play] If Leader {Fish-Man}, draw 3. PARTIAL: the [End of Your Turn] trash-to-5 is deferred.
-  { cardNumber: 'OP14-054', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Fish-Man' }], functions: [{ fn: 'draw', amount: 3 }] } },
+  // OP14-054 — [On Play] if Leader {Fish-Man}, draw 3. [End of Your Turn] trash hand down to 5.
+  {
+    cardNumber: 'OP14-054',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Fish-Man' }], functions: [{ fn: 'draw', amount: 3 }] } },
+      { templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'trashHandDownTo', handSize: 5 }] } },
+    ],
+  },
 
   // OP14-056 (character) Wadatsumi —
   //   This Character cannot attack.When a card is trashed from your hand by an effect, this Character's

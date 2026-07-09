@@ -37,7 +37,7 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
   // [End of Your Turn] triggers (10-2-x) fire before "until end of turn" effects
   // expire and before the turn passes, with each of the ending player's cards as source.
   const eot = fireEndOfTurn(state, endingPlayerId, registry, defs, null);
-  const delayed = consumeEndOfTurnDelayedEffects(eot.state, endingPlayerId);
+  const delayed = consumeEndOfTurnDelayedEffects(eot.state, endingPlayerId, defs);
   const working = delayed.state;
 
   const logger = createActionLogger(working, null);

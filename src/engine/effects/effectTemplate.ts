@@ -207,7 +207,7 @@ export interface EffectContext {
   /** Play a Character from the controller's deck into the Character Area for free (3-7); `rested` plays it rested. Then the caller should shuffle the deck if card text instructs it. */
   playCharacterFromDeck(deckInstanceId: string, rested?: boolean): void;
   /** Play a Character from the controller's trash into the Character Area for free (3-7); `rested` plays it rested. Raises the 3-7-6-1 overflow choice if it makes a 6th. */
-  playCharacterFromTrash(trashInstanceId: string, rested?: boolean): void;
+  playCharacterFromTrash(trashInstanceId: string, rested?: boolean): string | null;
   /** Shuffle a player's deck using the serialized seedable RNG state. */
   shuffleDeck(playerId: string): void;
   /** Move a card (e.g. from the trash) to its owner's hand. */
@@ -228,6 +228,8 @@ export interface EffectContext {
   trashTopOfDeck(playerId: string, n: number): void;
   /** Trash the top `n` Life cards of a player (e.g. opponent Life removal); fewer if Life is short. */
   trashLife(playerId: string, n: number): void;
+  trashHandDownTo(handSize: number): void;
+  trashFaceUpLife(): void;
   /** Add `n` DON!! from the player's DON!! deck to their cost area, active or rested (DON!! ramp); fewer if the DON!! deck is short. */
   addDonFromDeck(playerId: string, n: number, rested: boolean): void;
   /**

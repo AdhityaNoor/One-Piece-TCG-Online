@@ -41,6 +41,7 @@ import { computeCurrentPower, hasContinuousKeyword, isKoImmune } from '../shared
 import { getOpponentId } from '../shared/players';
 import { buildKoReplacementConfirmChoice, findKoReplacementRecord } from '../shared/koAttempt';
 import { fireOnKO, fireOnBattle, fireOnBattleKoedOpponent, fireLifeDamageDealtReactions, fireLifeToHandReactions, type EffectTemplateRegistry } from '../../effects';
+import { consumeEndOfBattleDelayedEffects } from '../phases/delayedEffects';
 import type { KoReplacementResumeState } from '../../events/pendingChoice';
 
 export interface DamageStepResult {
@@ -345,14 +346,16 @@ export function resolveDamageAndEndOfBattle(
   // effects (duration 'duringThisBattle') expire — mirrors how nulling
   // currentBattle drops battlePowerBonuses. "Until end of turn" effects are
   // expired later, in runEndPhaseAndHandoff.ts.
+  const endBattleDelayed = consumeEndOfBattleDelayedEffects(nextState, attackerId);
+  nextState = endBattleDelayed.state;
   nextState = {
     ...nextState,
     currentBattle: null,
     continuousEffects: nextState.continuousEffects.filter((ce) => ce.duration !== 'duringThisBattle'),
-    log: [...state.log, ...logger.log, ...koLog, ...onBattleLog],
+    log: [...state.log, ...logger.log, ...koLog, ...onBattleLog, ...endBattleDelayed.log],
   };
 
-  return { state: { ...nextState, pendingChoices: [...nextState.pendingChoices, ...triggerPending] }, log: [...logger.log, ...koLog, ...onBattleLog], pendingChoices: [...koPending, ...triggerPending, ...onBattlePending] };
+  return { state: { ...nextState, pendingChoices: [...nextState.pendingChoices, ...triggerPending] }, log: [...logger.log, ...koLog, ...onBattleLog, ...endBattleDelayed.log], pendingChoices: [...koPending, ...triggerPending, ...onBattlePending] };
 }
 
 /** Complete a battle after a K.O. replacement prompt resolved during the Damage Step. */
@@ -413,6 +416,10 @@ export function finishBattleAfterKoDecision(
     });
     koLog = [...koLog, ...logger.log];
   }
+
+  const endBattleDelayed = consumeEndOfBattleDelayedEffects(nextState, kr.battle?.attackerId ?? null);
+  nextState = endBattleDelayed.state;
+  koLog = [...koLog, ...endBattleDelayed.log];
 
   nextState = {
     ...nextState,

@@ -202,6 +202,14 @@ export type EffectOp =
   | ({ op: 'setActive'; target: Selector } & EffectOpSequenceGate) // set a card as active — the inverse of `rest` (2-4-3 active/rested). Works on Leader/Character (orientation) and DON!! (donRested).
   | ({ op: 'scheduleSetActiveControllerDonAtEndOfTurn'; maxTargets: number } & EffectOpSequenceGate)
   | ({ op: 'scheduleRestOpponentDonAtStartOfNextMain'; maxTargets: number } & EffectOpSequenceGate)
+  | ({ op: 'scheduleTrashSourceAtEndOfTurn' } & EffectOpSequenceGate)
+  | ({ op: 'scheduleMoveSourceToBottomDeckAtEndOfBattle' } & EffectOpSequenceGate)
+  | ({ op: 'scheduleMoveInstanceToBottomDeckAtEndOfTurn'; fromVar?: string; index?: number } & EffectOpSequenceGate)
+  | ({ op: 'scheduleTrashControllerCharacterAtEndOfTurn'; typeIncludes?: string } & EffectOpSequenceGate)
+  | ({ op: 'scheduleReturnDonToMatchOpponentAtEndOfTurn' } & EffectOpSequenceGate)
+  | ({ op: 'scheduleMoveDeckTopToLifeAtEndOfTurn'; requiresLeaderType?: string } & EffectOpSequenceGate)
+  | ({ op: 'trashHandDownTo'; handSize: number } & EffectOpSequenceGate)
+  | ({ op: 'trashFaceUpLife' } & EffectOpSequenceGate)
   | ({ op: 'returnDonToDonDeck'; target: Selector } & EffectOpSequenceGate) // return DON!! on field to its owner's DON!! deck
   | ({ op: 'preventRefresh'; target: Selector } & EffectOpSequenceGate) // "will not become active in its controller's next Refresh Phase"
   | ({ op: 'returnToHand'; target: Selector } & EffectOpSequenceGate) // bounce a Character to its owner's hand
