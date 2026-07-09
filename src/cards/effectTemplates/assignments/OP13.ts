@@ -566,23 +566,7 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // PARTIAL: onOpponentsAttack −2000 only; damage/KO draw trigger deferred.
   { cardNumber: 'OP13-002', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' }] } },
 
-  { cardNumber: 'OP13-007', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn', ifGate: [{ kind: 'selfGivenDonCount', atLeast: 2 }] }] } },
-
   { cardNumber: 'OP13-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
-
-  // PARTIAL: trash ally for [Banish] deferred; mapped onPlay draw.
-  { cardNumber: 'OP13-053', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
-
-  // OP13-079 (leader) Imu — see stub above; [Main] cost is a choice (trash a {Celestial Dragons}
-  // Character OR a hand card), which no cost kind expresses yet. Deferred, not curated.
-
-  { cardNumber: 'OP13-080', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Roger Pirates' }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Roger Pirates', maxCost: 3 }, rested: true }] } },
-
-  { cardNumber: 'OP13-081', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'draw', amount: 1, ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] }] } },
-
-  { cardNumber: 'OP13-082', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
-
-  { cardNumber: 'OP13-084', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
 
   // OP13-120 — [Activate: Main] [OPT] Character +2 cost until end of opp next turn, then give 1 rested DON!!.
   { cardNumber: 'OP13-120', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [

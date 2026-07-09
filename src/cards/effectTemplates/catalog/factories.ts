@@ -167,6 +167,7 @@ function moveOpForDestination(to: MoveCardDestination, target: Extract<EffectOp,
 function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>): EffectOp[] {
   const optional = f.optional ?? false;
   const count = ('count' in f.from ? f.from.count : undefined) ?? f.maxTargets ?? 1;
+  const minTargets = f.minTargets ?? (optional ? 0 : Math.min(1, count));
   if (f.from.zone === 'life' && f.from.position === 'topOrBottom' && f.from.player === 'controller' && f.to.zone === 'hand' && f.to.player === 'owner') {
     return [
       {
@@ -218,7 +219,7 @@ function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>)
       op: 'chooseTargets',
       var: 't',
       from,
-      min: optional ? 0 : Math.min(1, count),
+      min: minTargets,
       max: count,
       prompt: f.prompt ?? `${optional ? 'Choose up to' : 'Choose'} ${count} card${count === 1 ? '' : 's'} to move.`,
       ...(f.chooser ? { chooser: f.chooser } : {}),

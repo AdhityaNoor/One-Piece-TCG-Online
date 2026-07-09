@@ -277,8 +277,16 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP14-086', templateId: 'ability', params: { timing: 'onEnterPlay', gate: [{ kind: 'selfTrashCount', atLeast: 7 }], functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent' }, { fn: 'addCostAuraControllerCharacters', amount: 2, duration: 'permanent', anyOfTypes: ['Baroque Works'] }] } },
 
-
-  { cardNumber: 'OP14-093', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'anyCharacterExactCost', exactCost: 0 }, { kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'trashFromHand', count: 1 }] } },
+  // OP14-093 (character) Mr.4(Babe) —
+  //   [Blocker][On K.O.] Add up to 1 Character card with a type including "Baroque Works" and a cost of 8 or less from your trash to your hand.
+  {
+    cardNumber: 'OP14-093',
+    templateId: 'ability',
+    params: {
+      timing: 'onKO',
+      functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 8 } }, to: { zone: 'hand', player: 'owner' }, optional: true }],
+    },
+  },
 
 
   {
@@ -294,30 +302,12 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  { cardNumber: 'OP14-069', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 4 } }] } },
-
-
-  { cardNumber: 'OP14-077', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
-
-
-  { cardNumber: 'OP14-078', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
-
-
-  { cardNumber: 'OP14-080', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
-
-
-  // PARTIAL: play from hand OR trash deferred; mapped hand only.
-  { cardNumber: 'OP14-091', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 3 } }] } },
-
-
   { cardNumber: 'OP14-094', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
 
   // PARTIAL: combined-Life reorder deferred; mapped draw on lifeTrigger.
   { cardNumber: 'OP14-103', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
 
-
-  { cardNumber: 'OP14-105', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
 
   // --- codegen batch ---
   { cardNumber: 'OP14-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] }] } },
@@ -443,13 +433,35 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, if
   //   your opponent has a Character with 6000 power or more, add up to 1 DON!! card from your DON!! deck
   //   and rest it.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP14-077',
+    templateId: 'ability',
+    params: {
+      timing: 'counter',
+      functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true, maxTargets: 1 },
+        { fn: 'addDonFromDeck', count: 1, rested: true, ifGate: [{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 6000 }], ifPrevious: 'previousSelectedAny' },
+      ],
+    },
+  },
 
   // OP14-078 (event) Bullet String —
   //   [Counter] DON!! −1: If your Leader has the {Donquixote Pirates} type, up to 1 of your Leader or
   //   Character cards gains +2000 power during this battle. Then, that card gains an additional +2000 power
   //   during this turn.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP14-078',
+    templateId: 'ability',
+    params: {
+      timing: 'counter',
+      cost: [{ kind: 'donMinus', count: 1 }],
+      gate: [{ kind: 'leaderType', type: 'Donquixote Pirates' }],
+      functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, maxTargets: 1 },
+        { fn: 'addPower', target: { ref: 'previous' }, amount: 2000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousSelectedAny' },
+      ],
+    },
+  },
 
   // OP14-079 (leader) Crocodile —
   //   All of your opponent's Characters cannot be removed from the field by your effects.[Activate: Main]
@@ -506,7 +518,18 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP14-091 (character) Mr.2.Bon.Kurei(Bentham) —
   //   [On K.O.] Play up to 1 Character card with a type including "Baroque Works" and a cost of 5 or less
   //   other than [Mr.2.Bon.Kurei(Bentham)] from your hand or trash.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: hand OR trash is mapped as two independent optional plays.
+  {
+    cardNumber: 'OP14-091',
+    templateId: 'ability',
+    params: {
+      timing: 'onKO',
+      functions: [
+        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 5, excludeSelfName: true }, maxTargets: 1 },
+        { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Baroque Works', maxCost: 5, excludeSelfName: true }, maxTargets: 1 },
+      ],
+    },
+  },
 
   // OP14-092 (character) Mr.3(Galdino) —
   //   [Opponent's Turn] [Once Per Turn] If this Character would be K.O.'d, you may place 3 cards from your

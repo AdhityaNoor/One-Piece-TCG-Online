@@ -14,7 +14,19 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] [Once Per Turn] Up to 1 of your [Monkey.D.Luffy] Characters or up to 1 of your
   //   Characters with a type including "Whitebeard Pirates", with 8000 power or more, gains [Rush] during
   //   this turn.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: "up to 1 from either pool" mapped as two independent optional [Rush] grants.
+  {
+    cardNumber: 'OP16-001',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      functions: [
+        { fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy', minBasePower: 8000 } }, keyword: 'rush', duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+        { fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Whitebeard Pirates', minBasePower: 8000 } }, keyword: 'rush', duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+      ],
+    },
+  },
 
 
   // OP16-003 — [Your Turn] your Leader gains [Double Attack] and +2000 power.
@@ -107,7 +119,31 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Main] You may rest 1 of your DON!! cards and reveal 1 Character card with 8000 power from your hand:
   //   Draw 1 card.[Counter] You may trash 1 card from your hand: Up to 1 of your Leader or Character cards
   //   gains +3000 power during this battle.
-  // NOTE: not yet implemented (needs template).
+  // PARTIAL: reveal-from-hand cost is a selfHandMatching gate proxy.
+  {
+    cardNumber: 'OP16-020',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          cost: [{ kind: 'restDon', count: 1 }],
+          gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }],
+          functions: [{ fn: 'draw', amount: 1 }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP16-021 (stage) — [On Play] If Leader {Whitebeard Pirates}, Look 3, add up to 1, rest to bottom. PARTIAL: trash-self give-DON activate deferred.
   { cardNumber: 'OP16-021', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: false, destination: 'hand', remainder: 'bottom' }] } },
@@ -197,7 +233,18 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-050 (character) Miss Olive —
   //   [Blocker][On Play] You may return 1 of your Characters with a cost of 2 or more to the owner's hand:
   //   Draw 2 cards and trash 1 card from your hand.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP16-050',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { minCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+        { fn: 'draw', amount: 2, ifPrevious: 'previousMovedAny' },
+        { fn: 'trashFromHand', count: 1, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
   { cardNumber: 'OP16-051', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHand', atMost: 5 }], functions: [{ fn: 'draw', amount: 2 }] } },
 
@@ -251,7 +298,29 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] DON!! −1: Give up to 1 of your opponent's Characters −6000 power until the end of your
   //   opponent's next End Phase.[Activate: Main] [Once Per Turn] You may rest 1 of your DON!! cards: If
   //   your Leader has the {Navy} type, add up to 2 DON!! cards from your DON!! deck and set them as active.
-  // NOTE: not yet implemented (needs template).
+  {
+    cardNumber: 'OP16-065',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          cost: [{ kind: 'donMinus', count: 1 }],
+          functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -6000, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 1 }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          cost: [{ kind: 'restDon', count: 1 }],
+          gate: [{ kind: 'leaderType', type: 'Navy' }],
+          functions: [{ fn: 'addDonFromDeck', count: 2, rested: false }],
+        },
+      },
+    ],
+  },
 
   { cardNumber: 'OP16-066', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Navy' }], functions: [{ fn: 'addDonFromDeck', count: 2, rested: true }, { fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
 
@@ -309,13 +378,6 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
   // PARTIAL: 8000-power reveal cost → selfHandMatching gate.
-  { cardNumber: 'OP16-001', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
-
-
-  // PARTIAL: 8000-power reveal → selfHandMatching gate.
-  { cardNumber: 'OP16-005', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
-
-
   { cardNumber: 'OP16-007', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
 
 
@@ -335,36 +397,10 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP16-012', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'giveDon', count: 1 }] } },
 
 
-  // PARTIAL: base-power swap deferred; mapped −1000 on gate.
-  { cardNumber: 'OP16-015', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
-
-
   { cardNumber: 'OP16-017', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfHand', atMost: 3 }] } }] } },
 
 
-  { cardNumber: 'OP16-020', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Whitebeard Pirates', maxCost: 5 } }] } },
-
-
   { cardNumber: 'OP16-045', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
-
-
-  { cardNumber: 'OP16-047', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifGate: [{ kind: 'opponentHand', atLeast: 5 }] }] } },
-
-
-  { cardNumber: 'OP16-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Navy' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
-
-
-  { cardNumber: 'OP16-060', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }, { fn: 'trashFromHand', count: 1 }] } },
-
-
-  { cardNumber: 'OP16-065', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Land of Wano', maxCost: 4 } }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Land of Wano', maxCost: 4 } }] } },
-
-
-  { cardNumber: 'OP16-079', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Navy' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
-
-
-  // PARTIAL: trash-self play cost deferred; mapped onKO draw.
-  { cardNumber: 'OP16-084', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 2 }] } },
 
 
   // PARTIAL: cost-20 trash-self play deferred; mapped playFromHand maxCost 5.

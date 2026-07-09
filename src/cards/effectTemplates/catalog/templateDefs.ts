@@ -134,7 +134,7 @@ export type AbilityFunction =
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
   | { fn: 'revealOpponentHand'; count?: number }
   | { fn: 'trashTopDeck'; count: number; optional?: boolean }
-  | { fn: 'moveCards'; from: MoveCardSource; to: MoveCardDestination; optional?: boolean; maxTargets?: number; prompt?: string; chooser?: 'controller' | 'opponent' }
+  | { fn: 'moveCards'; from: MoveCardSource; to: MoveCardDestination; optional?: boolean; minTargets?: number; maxTargets?: number; prompt?: string; chooser?: 'controller' | 'opponent' }
   | { fn: 'moveAllCharactersToBottomDeck'; filter?: { maxCost?: number; maxPower?: number; maxBaseCost?: number; maxBasePower?: number } }
   | { fn: 'peekLifeAndPlace'; from: 'controllerOrOpponentTop'; placement: 'topOrBottom' }
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
