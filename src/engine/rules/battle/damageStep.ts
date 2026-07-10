@@ -43,6 +43,7 @@ import { buildKoReplacementConfirmChoice, findKoReplacementRecord } from '../sha
 import { fireOnKO, fireOnBattle, fireOnBattleKoedOpponent, fireLifeDamageDealtReactions, fireLifeToHandReactions, type EffectTemplateRegistry } from '../../effects';
 import { consumeEndOfBattleDelayedEffects } from '../phases/delayedEffects';
 import type { KoReplacementResumeState } from '../../events/pendingChoice';
+import { effectLogDataForSource } from '../../logs/effectLogData';
 
 export interface DamageStepResult {
   state: GameState;
@@ -194,7 +195,7 @@ export function resolveDamageAndEndOfBattle(
               actorPlayerId: defendingPlayerId,
               type: 'TRIGGER_REVEALED',
               message: `${defendingPlayerId}'s revealed Life card has a [Trigger] — activation offered (10-1-5-2).`,
-              data: { lifeCardInstanceId: lifeCardId },
+              data: { ...effectLogDataForSource(nextState, defs, lifeCardId), lifeCardInstanceId: lifeCardId },
               relatedCardInstanceIds: [lifeCardId],
               visibility: { visibleTo: [defendingPlayerId] },
             });
@@ -203,7 +204,7 @@ export function resolveDamageAndEndOfBattle(
               actorPlayerId: defendingPlayerId,
               type: 'TRIGGER_REVEALED',
               message: `${defendingPlayerId}'s revealed Life card has [Trigger] — not yet implemented; added to hand.`,
-              data: { lifeCardInstanceId: lifeCardId, effectStubbed: true },
+              data: { ...effectLogDataForSource(nextState, defs, lifeCardId), lifeCardInstanceId: lifeCardId, effectStubbed: true },
               relatedCardInstanceIds: [lifeCardId],
               visibility: { visibleTo: [defendingPlayerId] },
             });

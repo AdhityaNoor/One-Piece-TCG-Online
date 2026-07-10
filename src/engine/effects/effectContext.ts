@@ -21,6 +21,7 @@ import { isControllerCharacterSetActiveDonPrevented } from '../rules/shared/char
 import { koReplacementDescription, restReplacementDescription } from '../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { createSeededRng } from '../rng/seededRng';
+import { effectLogDataForSource } from '../logs/effectLogData';
 import type { EffectContext } from './effectTemplate';
 import type { SearchPickDestination, SearchRemainderDestination } from './effectIr';
 
@@ -2609,11 +2610,18 @@ export class EffectContextImpl implements EffectContext {
   }
 
   finish(): ActionExecuteResult {
+    const sourceEffectData = effectLogDataForSource(this.working, this.defs, this.sourceInstanceId);
+    const decoratedLog = this.logger.log.map((entry) => {
+      if (entry.type !== 'EFFECT_ACTIVATED' && entry.type !== 'EFFECT_RESOLVED' && entry.type !== 'CHOICE_REQUESTED') {
+        return entry;
+      }
+      return { ...entry, data: { ...sourceEffectData, ...entry.data } };
+    });
     const state: GameState = {
       ...this.working,
-      log: [...this.working.log, ...this.logger.log],
+      log: [...this.working.log, ...decoratedLog],
       pendingChoices: [...this.working.pendingChoices, ...this.pending],
     };
-    return { state, log: [...this.externalLog, ...this.logger.log], pendingChoices: this.pending };
+    return { state, log: [...this.externalLog, ...decoratedLog], pendingChoices: this.pending };
   }
 }

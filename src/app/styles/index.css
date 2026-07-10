@@ -1083,6 +1083,38 @@
     line-height: 1.25;
   }
 
+  .op-mobile-log-toast-effect {
+    margin-top: 0.45rem;
+    max-height: 4.4rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 211, 74, 0.2);
+    background: rgba(0, 0, 0, 0.28);
+    padding: 0.42rem 0.48rem;
+  }
+
+  .op-mobile-log-toast-effect strong {
+    display: block;
+    overflow: hidden;
+    color: rgba(255, 211, 74, 0.82);
+    font-size: 0.55rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    line-height: 1.05;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .op-mobile-log-toast-effect span {
+    display: block;
+    margin-top: 0.25rem;
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: pre-wrap;
+  }
+
   @media (max-width: 1279px) {
     .op-mobile-log-toast-stack {
       display: flex;

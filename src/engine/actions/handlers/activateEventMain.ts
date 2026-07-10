@@ -19,6 +19,7 @@ import type { ActionExecuteResult } from '../actionExecuteResult';
 import { evaluateGates, fireActivate, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, type EffectTemplateRegistry } from '../../effects';
 import { isControllerHandPlayPrevented } from '../../rules/shared/handPlayRestriction';
 import { recordEventActivation } from '../../effects/eventActivationHistory';
+import { effectLogDataForSource } from '../../logs/effectLogData';
 
 export function validateActivateEventMain(
   state: GameState,
@@ -121,7 +122,13 @@ export function executeActivateEventMain(
     actorPlayerId: action.playerId,
     type: 'EFFECT_ACTIVATED',
     message: `${action.playerId} activated [Main] Event ${def.name} (cost ${action.donInstanceIds.length}).`,
-    data: { from: 'hand', to: 'trash', cost: action.donInstanceIds.length, donInstanceIds: action.donInstanceIds },
+    data: {
+      ...effectLogDataForSource(state, defs, action.handCardInstanceId),
+      from: 'hand',
+      to: 'trash',
+      cost: action.donInstanceIds.length,
+      donInstanceIds: action.donInstanceIds,
+    },
     relatedCardInstanceIds: [action.handCardInstanceId],
     visibility: 'public',
   });

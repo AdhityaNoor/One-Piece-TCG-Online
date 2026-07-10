@@ -22,6 +22,7 @@ import { getOpponentId } from '../../rules/shared/players';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { fireCounter, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, type EffectTemplateRegistry } from '../../effects';
 import { recordEventActivation } from '../../effects/eventActivationHistory';
+import { effectLogDataForSource } from '../../logs/effectLogData';
 
 export function validateActivateCounterEvent(
   state: GameState,
@@ -127,7 +128,13 @@ export function executeActivateCounterEvent(
     actorPlayerId: action.playerId,
     type: 'EFFECT_ACTIVATED',
     message: `${action.playerId} played Counter Event ${def.name} (cost ${action.donInstanceIds.length}) during the Counter Step (7-1-3-2-2).`,
-    data: { from: 'hand', to: 'trash', cost: action.donInstanceIds.length, donInstanceIds: action.donInstanceIds },
+    data: {
+      ...effectLogDataForSource(state, defs, action.handCardInstanceId),
+      from: 'hand',
+      to: 'trash',
+      cost: action.donInstanceIds.length,
+      donInstanceIds: action.donInstanceIds,
+    },
     relatedCardInstanceIds: [action.handCardInstanceId],
     visibility: 'public',
   });

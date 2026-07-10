@@ -72,7 +72,7 @@ describe('validateActivateEventMain', () => {
 describe('executeActivateEventMain', () => {
   it('rests the paid DON!!, moves the Event to trash, and fires its curated [Main] effect', () => {
     const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
-    const def = makeEventDef({ baseCost: 1 });
+    const def = makeEventDef({ baseCost: 1, name: 'Humanized Event', cardNumber: 'TEST-001', text: '[Main] Draw 1 card.' });
     const { rig, instanceId: handInstanceId } = putInHand(base, 'p1', def);
     const { rig: withDeck } = putDeckCards(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'DRAWN' }), 1);
     const { rig: withDon, donIds } = putDon(withDeck, 'p1', 1);
@@ -89,6 +89,11 @@ describe('executeActivateEventMain', () => {
     const entry = result.log.find((e) => e.type === 'EFFECT_ACTIVATED');
     expect(entry).toBeDefined();
     expect(entry?.data).not.toHaveProperty('effectStubbed');
+    expect(entry?.data).toMatchObject({
+      sourceCardName: 'Humanized Event',
+      sourceCardNumber: 'TEST-001',
+      effectText: '[Main] Draw 1 card.',
+    });
     expect(result.pendingChoices).toHaveLength(0);
   });
 });

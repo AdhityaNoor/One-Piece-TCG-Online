@@ -34,6 +34,7 @@ import { useSavedDecksStore } from '../store/savedDecksStore';
 import { useMatchStore } from '../store/matchStore';
 import { useSettingsStore } from '../store/settingsStore';
 import type { CardView } from '../../board/projection';
+import { logEffectText, logSourceCardLabel } from '../lib/logDisplay';
 
 export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNode } = {}) {
   const current = useCurrentScreen();
@@ -1012,6 +1013,8 @@ function MobileBattleLogNotifications({
       {entries.map((entry) => {
         const actorName = entry.actorPlayerId ? (playerNames[entry.actorPlayerId] ?? entry.actorPlayerId) : 'System';
         const own = entry.actorPlayerId === viewerPlayerId;
+        const sourceCardLabel = logSourceCardLabel(entry);
+        const effectText = logEffectText(entry);
         return (
           <article key={entry.id} className={['op-mobile-log-toast', own ? 'is-own' : ''].join(' ')}>
             <div className="op-mobile-log-toast-meta">
@@ -1020,6 +1023,12 @@ function MobileBattleLogNotifications({
               <span>{actorName}</span>
             </div>
             <p>{entry.message}</p>
+            {effectText && (
+              <div className="op-mobile-log-toast-effect">
+                {sourceCardLabel && <strong>{sourceCardLabel}</strong>}
+                <span>{effectText}</span>
+              </div>
+            )}
           </article>
         );
       })}

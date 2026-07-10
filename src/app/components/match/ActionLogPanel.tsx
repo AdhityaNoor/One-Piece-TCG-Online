@@ -23,6 +23,7 @@ import type { GameLogEntry } from '../../../engine/logs/logEntry';
 import { Modal } from '../Modal';
 import { Pill } from '../Pill';
 import { Button } from '../Button';
+import { logEffectText, logSourceCardLabel } from '../../lib/logDisplay';
 
 /** engine playerId -> display username. Absent/empty labels fall back to the raw id (hotseat shows p1/p2). */
 export type PlayerNameMap = Record<string, string>;
@@ -98,6 +99,8 @@ function ActionLogEntry({
 }) {
   const own = isOwnAction(entry, viewerPlayerId);
   const opponent = viewerPlayerId !== null && entry.actorPlayerId !== null && entry.actorPlayerId !== viewerPlayerId;
+  const sourceCardLabel = logSourceCardLabel(entry);
+  const effectText = logEffectText(entry);
 
   if (variant === 'dock') {
     return (
@@ -127,6 +130,18 @@ function ActionLogEntry({
             </span>
           </div>
           <p className="min-w-0 break-words text-[11px] font-semibold leading-snug text-white/82">{entry.message}</p>
+          {effectText && (
+            <div className={['mt-2 border border-gold/20 bg-black/24 px-2 py-1.5 text-left', own ? 'text-right' : ''].join(' ')}>
+              {sourceCardLabel && (
+                <p className="mb-1 truncate text-[9px] font-black uppercase tracking-[0.14em] text-gold/82" title={sourceCardLabel}>
+                  {sourceCardLabel}
+                </p>
+              )}
+              <p className="max-h-16 min-w-0 overflow-hidden whitespace-pre-wrap text-[10px] font-semibold leading-snug text-white/66">
+                {effectText}
+              </p>
+            </div>
+          )}
         </div>
       </li>
     );
@@ -162,6 +177,16 @@ function ActionLogEntry({
           </span>
         </div>
         <p className="text-xs text-white/85">{entry.message}</p>
+        {effectText && (
+          <div className={['mt-1 border border-gold/20 bg-black/24 px-2.5 py-2 text-left', own ? 'self-end text-right' : ''].join(' ')}>
+            {sourceCardLabel && (
+              <p className="mb-1 text-[10px] font-black uppercase tracking-[0.14em] text-gold/82">
+                {sourceCardLabel}
+              </p>
+            )}
+            <p className="whitespace-pre-wrap text-[11px] font-semibold leading-snug text-white/68">{effectText}</p>
+          </div>
+        )}
       </div>
     </li>
   );
