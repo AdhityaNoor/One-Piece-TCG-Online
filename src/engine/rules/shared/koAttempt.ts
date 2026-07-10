@@ -67,9 +67,32 @@ function eligibleHandCards(
   return hand.filter((id) => handMatchesFilter(defs, state, id, filter));
 }
 
-function eligibleRestCharacters(state: GameState, ownerId: string, excludeInstanceId?: string): string[] {
+function eligibleRestCharacters(
+  state: GameState,
+  ownerId: string,
+  defs: CardDefinitionLookup,
+  options: {
+    excludeInstanceId?: string;
+    sourceInstanceId?: string;
+    filter?: { minCost?: number; excludeSourceName?: boolean };
+  } = {},
+): string[] {
+  const { excludeInstanceId, sourceInstanceId, filter } = options;
+  let sourceName: string | undefined;
+  if (filter?.excludeSourceName && sourceInstanceId) {
+    const src = state.cardsById[sourceInstanceId];
+    sourceName = src ? getDefinition(defs, src).name : undefined;
+  }
   const charArea = state.players[ownerId]?.characterArea.cardIds ?? [];
-  return charArea.filter((id) => id !== excludeInstanceId && state.cardsById[id]?.currentZone === 'characterArea');
+  return charArea.filter((id) => {
+    if (id === excludeInstanceId) return false;
+    const inst = state.cardsById[id];
+    if (!inst || inst.currentZone !== 'characterArea') return false;
+    const def = getDefinition(defs, inst);
+    if (filter?.minCost !== undefined && (def.baseCost ?? 0) < filter.minCost) return false;
+    if (sourceName !== undefined && def.name === sourceName) return false;
+    return true;
+  });
 }
 
 function restCardInState(state: GameState, instanceId: string): GameState {
@@ -194,7 +217,11 @@ function replacementCostAvailable(
     return source?.currentZone === 'characterArea';
   }
   if (mod.action.kind === 'restCharacter') {
-    const eligible = eligibleRestCharacters(state, target.ownerId, targetInstanceId);
+    const eligible = eligibleRestCharacters(state, target.ownerId, defs, {
+      excludeInstanceId: targetInstanceId,
+      sourceInstanceId: record.sourceInstanceId,
+      filter: mod.action.filter,
+    });
     return eligible.length >= mod.action.count;
   }
   if (mod.action.kind === 'payAbilityCosts') {
@@ -326,7 +353,11 @@ export function buildKoReplacementPayChoice(
   if (mod.action.kind === 'chooseLifeToHand' && mod.action.position === 'top') return null;
   if (mod.action.kind === 'trashLife' && mod.action.position === 'top') return null;
   if (mod.action.kind === 'restCharacter') {
-    const eligible = eligibleRestCharacters(state, target.ownerId, targetInstanceId);
+    const eligible = eligibleRestCharacters(state, target.ownerId, defs, {
+      excludeInstanceId: targetInstanceId,
+      sourceInstanceId: record.sourceInstanceId,
+      filter: mod.action.filter,
+    });
     return {
       id: choiceId,
       playerId: target.ownerId,
@@ -826,7 +857,7 @@ export function resolveKoReplacementStep(
         }
         return { state: working, log: [], pendingChoices: [], resumeKr: kr };
       }
-      const payChoice = buildRestReplacementPayChoice(working, kr.targetInstanceId, record, `${choice.id}__pay`, choice.resumeState!);
+      const payChoice = buildRestReplacementPayChoice(working, kr.targetInstanceId, record, `${choice.id}__pay`, choice.resumeState!, defs);
       if (!payChoice) return { state: working, log: [], pendingChoices: [], resumeKr: kr };
       return { state: working, log: [], pendingChoices: [payChoice] };
     }
@@ -956,7 +987,7 @@ export function findRestReplacementRecord(
     if (!restReplacementEffectSourceMatches(mod, record, state, defs, effectSourceInstanceId)) continue;
     const source = state.cardsById[record.sourceInstanceId];
     if (mod.oncePerTurn && source?.oncePerTurnUsed.includes(REST_REPLACEMENT_OPT_KEY(record.id))) continue;
-    const eligible = eligibleRestCharacters(state, target.ownerId, targetInstanceId);
+    const eligible = eligibleRestCharacters(state, target.ownerId, defs, { excludeInstanceId: targetInstanceId });
     if (eligible.length < mod.action.count) continue;
     return record;
   }
@@ -993,11 +1024,12 @@ export function buildRestReplacementPayChoice(
   record: ContinuousEffectRecord,
   choiceId: string,
   resumeState: PendingChoice['resumeState'],
+  defs: CardDefinitionLookup,
 ): PendingChoice | null {
   const mod = record.restReplacementModifier!;
   const target = state.cardsById[targetInstanceId];
   if (!target) return null;
-  const eligible = eligibleRestCharacters(state, target.ownerId, targetInstanceId);
+  const eligible = eligibleRestCharacters(state, target.ownerId, defs, { excludeInstanceId: targetInstanceId });
   return {
     id: choiceId,
     playerId: target.ownerId,

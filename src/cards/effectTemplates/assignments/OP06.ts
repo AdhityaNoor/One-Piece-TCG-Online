@@ -331,8 +331,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-046 — [On Play] Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.
   { cardNumber: 'OP06-046', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
-  // OP06-047 — PARTIAL: opp hand→deck shuffle deferred; mapped opponent draw 5 on play.
-  { cardNumber: 'OP06-047', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 5, player: 'opponent' }] } },
+  // OP06-047 — [On Play] Opponent returns all hand to deck, shuffles, draws 5.
+  { cardNumber: 'OP06-047', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'returnHandShuffleDraw', player: 'opponent', drawAmount: 5 }] } },
 
   // OP06-048 — [Your Turn] When opponent activates Blocker or Event, if Leader {East Blue}, trash 4 from deck.
   {

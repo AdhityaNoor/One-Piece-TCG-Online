@@ -210,6 +210,8 @@ export interface EffectContext {
   playCharacterFromTrash(trashInstanceId: string, rested?: boolean): string | null;
   /** Shuffle a player's deck using the serialized seedable RNG state. */
   shuffleDeck(playerId: string): void;
+  /** Return all hand cards to deck, shuffle, then draw equal count (or `drawAmount` when set). */
+  returnHandShuffleDraw(playerId: string, drawAmount?: number): number;
   /** Move a card (e.g. from the trash) to its owner's hand. */
   moveToHand(instanceId: string): void;
   /** Move a card (e.g. from the hand) to its owner's trash. */

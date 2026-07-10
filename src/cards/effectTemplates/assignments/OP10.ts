@@ -601,8 +601,29 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP10-002', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'Punk Hazard', minBaseCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 
   // OP10-003 — [End of Your Turn] if {Donquixote Pirates} Character 6000+ power, set up to 1 DON!! active.
-  // PARTIAL: [Opponent's Turn] Event → add DON!! deferred.
-  { cardNumber: 'OP10-003', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfTypedCharacterPowerAtLeast', typeIncludes: 'Donquixote Pirates', power: 6000 }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
+  //   [Opponent's Turn] [Once Per Turn] When you activate an Event, add up to 1 DON!! from deck and set active.
+  {
+    cardNumber: 'OP10-003',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'endOfTurn',
+          gate: [{ kind: 'selfTypedCharacterPowerAtLeast', typeIncludes: 'Donquixote Pirates', power: 6000 }],
+          functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onYouEventActivated',
+          oncePerTurn: true,
+          condition: { turn: 'opponent' },
+          functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }],
+        },
+      },
+    ],
+  },
 
   { cardNumber: 'OP10-010', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfCharacterCurrentPowerCount', power: 6000, atMost: 1 }], functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' }] } },
 

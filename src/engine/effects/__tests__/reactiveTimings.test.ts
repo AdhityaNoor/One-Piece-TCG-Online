@@ -16,6 +16,7 @@ import {
   putCharacterInPlay,
   putDeckCards,
   putDon,
+  putDonDeckCards,
   putInHand,
 } from '../../rules/shared/__tests__/testRig';
 
@@ -43,6 +44,31 @@ describe('reactive timings', () => {
     const handBefore = withUsopp.rig.state.players.p2.hand.cardIds.length;
     const result = fireEventActivatedReactions(withUsopp.rig.state, 'p1', registry, withUsopp.rig.defs, 'test');
     expect(result.state.players.p2.hand.cardIds.length).toBe(handBefore + 1);
+  });
+
+  it('onYouEventActivated adds DON!! during opponent turn for Sugar leader (OP10-003)', () => {
+    const sugarLeader = makeLeaderDef({ cardDefinitionId: 'OP10-003-DEF', cardNumber: 'OP10-003' });
+    const base = buildBaseRig({ activePlayerId: 'p2', leaderOverridesP1: sugarLeader });
+    const withDonDeck = putDonDeckCards(base, 'p1', 3);
+    const fieldBefore = withDonDeck.rig.state.players.p1.costArea.cardIds.length;
+
+    const registry = {
+      [sugarLeader.cardDefinitionId]: {
+        cardNumber: 'OP10-003',
+        abilities: [{
+          timing: 'onYouEventActivated',
+          oncePerTurn: true,
+          condition: { turn: 'opponent' },
+          ops: [{ op: 'addDonFromDeck', count: 1, rested: false }],
+        }],
+      } satisfies EffectProgram,
+    };
+
+    const result = fireEventActivatedReactions(withDonDeck.rig.state, 'p1', registry, withDonDeck.rig.defs, 'test');
+    expect(result.state.players.p1.costArea.cardIds.length).toBe(fieldBefore + 1);
+    expect(result.state.players.p1.donDeck.cardIds.length).toBe(2);
+    const addedId = result.state.players.p1.costArea.cardIds.at(-1)!;
+    expect(result.state.cardsById[addedId].donRested).toBe(false);
   });
 
   it('drawUntilHandCount only draws the missing cards to reach the target hand size', () => {

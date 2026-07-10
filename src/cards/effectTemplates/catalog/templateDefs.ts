@@ -41,7 +41,7 @@ export type MoveCardSource =
 export type MoveCardDestination =
   | { zone: 'hand'; player: 'owner' }
   | { zone: 'life'; player: 'owner' | 'controller'; position: 'top' | 'topOrBottom'; faceUp?: boolean }
-  | { zone: 'deck'; player: 'owner'; position: 'bottom' }
+  | { zone: 'deck'; player: 'owner'; position: 'bottom' | 'top' }
   | { zone: 'trash'; player: 'owner' };
 
 export interface TargetFilter {
@@ -106,7 +106,7 @@ export type AbilityFunction =
   | { fn: 'giveGivenDon'; count?: number; optional?: boolean; targetTypeIncludes?: string }
   | { fn: 'ko'; target: TargetSpec; optional?: boolean; maxTargets?: number; maxCombinedPower?: number; prompt?: string }
   | { fn: 'rest'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
-  | { fn: 'preventRefresh'; target: TargetSpec; duration?: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string }
+  | { fn: 'preventRefresh'; target: TargetSpec; duration?: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string; maxCost?: number }
   // "This/these Character(s) cannot attack" for the given duration (e.g. "until the end of your opponent's next turn" -> duration: 'endOfOpponentsTurn').
   | { fn: 'preventAttack'; target: TargetSpec; duration: IrDuration; forbiddenTarget?: 'leader'; forbiddenTargetFilter?: { zone?: 'leader' | 'character'; maxBaseCost?: number; minBaseCost?: number; maxCost?: number; minCost?: number; excludeName?: string }; attackUnlessGate?: AbilityGate[]; condition?: IrCondition; optional?: boolean; maxTargets?: number; prompt?: string }
   // Player-wide attack restriction without a target choice (e.g. "you cannot attack a Leader during this turn").
@@ -197,6 +197,9 @@ export type AbilityFunction =
   | { fn: 'trashFaceUpLife' }
   | { fn: 'returnSelfToHandAtEndOfTurn'; ifPrevious?: SequenceCondition }
   | { fn: 'preventRefreshOnGivenCharacterAtEndOfTurn'; minDonAttached: number; requireRested?: boolean; ifPrevious?: SequenceCondition }
+  | { fn: 'preventRefreshOnCharactersCostAtMost'; maxCost: number; activationGate?: AbilityGate[] }
+  // Optional reveal-from-hand payment (card stays in hand; gates subsequent steps via ifPrevious).
+  | { fn: 'optionalRevealTypeFromHand'; filter?: SearchFilter; prompt?: string }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
   | { fn: 'restOpponentDon'; maxTargets?: number; optional?: boolean }
   // Rest up to N of the controller's active DON!! cards (optional effect-chain payment).
@@ -233,11 +236,13 @@ export type AbilityFunction =
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
   | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
   // Register optional K.O. replacement on this card ("would be K.O.'d … instead").
-  | { fn: 'registerKoReplacementSelf'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; replacementTriggers?: ('ko' | 'returnToHand' | 'bottomDeck')[]; effectSourceController?: 'opponent' | 'controller'; activationGate?: AbilityGate[]; sourceCondition?: SourceStateCondition; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; trashSelf?: true; trashLife?: { position?: 'top' | 'bottom' | 'topOrBottom' }; trashTrashToDeckBottom?: { count: number }; turnTopLifeFace?: { faceUp: boolean }; bottomDeckCharacter?: true; restCharacter?: true; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
+  | { fn: 'registerKoReplacementSelf'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; replacementTriggers?: ('ko' | 'returnToHand' | 'bottomDeck')[]; effectSourceController?: 'opponent' | 'controller'; activationGate?: AbilityGate[]; sourceCondition?: SourceStateCondition; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; trashSelf?: true; trashLife?: { position?: 'top' | 'bottom' | 'topOrBottom' }; trashTrashToDeckBottom?: { count: number }; turnTopLifeFace?: { faceUp: boolean }; bottomDeckCharacter?: true; restCharacter?: true; restCharacterFilter?: { minCost?: number; excludeSourceName?: boolean }; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
   | { fn: 'registerKoReplacementAura'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; replacementTriggers?: ('ko' | 'returnToHand' | 'bottomDeck')[]; effectSourceController?: 'opponent' | 'controller'; effectSourceCategory?: 'leader' | 'character'; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfAttributes?: string[]; charactersOnly?: boolean; excludeSource?: boolean; targetCondition?: IrCondition; sourceCondition?: SourceStateCondition; trashSource?: true; returnSourceToHand?: true; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; restSource?: true; restCharacter?: true; bottomDeckCharacter?: true; trashSelfAndDraw?: { amount: number }; giveSelfPowerPenalty?: { amount: number; duration: IrDuration }; giveLeaderPowerPenalty?: { amount: number; duration: IrDuration }; moveTargetToLifeFaceDown?: true; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; trashTrashToDeckBottom?: { count: number }; turnTopLifeFace?: { faceUp: boolean }; duration: IrDuration }
   | { fn: 'registerRestReplacementSelf'; oncePerTurn?: boolean; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller'; effectSourceCategory?: 'leader' | 'character'; duration: IrDuration }
   | { fn: 'setBasePowerFromLeader'; target: TargetSpec; duration: IrDuration; condition?: IrCondition; sourceCondition?: SourceStateCondition }
   | { fn: 'drawByEventCount'; countField: 'handTrashedCount' }
+  // Return all hand cards to deck, shuffle, then draw equal count (or fixed drawAmount).
+  | { fn: 'returnHandShuffleDraw'; player?: 'controller' | 'opponent'; drawAmount?: number }
   // Trash exactly `count` cards of a given type from your hand (used to pay a typed hand cost).
   | { fn: 'trashTypeFromHand'; count: number; filter: SearchFilter; optional?: boolean }
   // K.O. ALL Characters (both players) matching a cost/power filter, no target choice

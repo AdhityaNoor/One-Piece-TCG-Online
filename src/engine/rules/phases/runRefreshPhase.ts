@@ -42,9 +42,11 @@
  */
 import type { GameState } from '../../state/game';
 import { createActionLogger } from '../shared/actionLogger';
+import type { CardDefinitionLookup } from '../shared/definitions';
+import { isCharacterRefreshCostBlocked } from '../shared/refreshCostRestriction';
 import type { PhaseStepResult } from './phaseStepResult';
 
-export function runRefreshPhase(state: GameState): PhaseStepResult {
+export function runRefreshPhase(state: GameState, defs: CardDefinitionLookup = {}): PhaseStepResult {
   const player = state.players[state.activePlayerId];
   const logger = createActionLogger(state, null);
 
@@ -64,6 +66,15 @@ export function runRefreshPhase(state: GameState): PhaseStepResult {
   setActiveUnlessFlagged(player.leaderInstanceId, { donAttached: [] });
 
   for (const id of player.characterArea.cardIds) {
+    const inst = cardsById[id];
+    const refreshBlocked = isCharacterRefreshCostBlocked(defs, { ...state, cardsById }, id);
+    if (refreshBlocked) {
+      cardsById[id] = { ...inst, donAttached: [], summoningSick: false };
+      if (inst.oncePerTurnUsed.length > 0) {
+        cardsById[id] = { ...cardsById[id], oncePerTurnUsed: [] };
+      }
+      continue;
+    }
     setActiveUnlessFlagged(id, { donAttached: [], summoningSick: false });
   }
 

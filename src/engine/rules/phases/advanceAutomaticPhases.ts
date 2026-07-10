@@ -38,7 +38,7 @@ export function advanceAutomaticPhases(state: GameState, defs: CardDefinitionLoo
     iterations += 1;
     switch (current.currentPhase) {
       case 'refresh': {
-        const result = runRefreshPhase(current);
+        const result = runRefreshPhase(current, defs);
         current = result.state;
         log.push(...result.log);
         break;

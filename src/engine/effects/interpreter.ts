@@ -568,6 +568,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     case 'var':
       return bindings[sel.name] ?? [];
   }
+  return [];
 }
 
 function initialBindings(eventContext?: GateEvalContext): Record<string, string[]> {
@@ -1057,8 +1058,19 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     }
     case 'preventRefresh': {
       const ids = resolveSelector(op.target, ctx, bindings);
-      for (const id of ids) ctx.preventNextRefresh(id);
+      for (const id of ids) {
+        if (op.maxCost !== undefined && ctx.costOf(id) > op.maxCost) continue;
+        ctx.preventNextRefresh(id);
+      }
       return { selectedIds: ids, movedIds: [] };
+    }
+    case 'addRefreshCostRestriction': {
+      ctx.addRefreshCostRestriction({
+        maxCost: op.maxCost,
+        scope: op.scope,
+        ...(op.activationGate?.length ? { activationGate: op.activationGate } : {}),
+      });
+      return EMPTY_RESULT;
     }
     case 'returnToHand': {
       const ids = resolveSelector(op.target, ctx, bindings);
@@ -1161,7 +1173,12 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       // Handled specially in runOps (it records the cost-match binding);
       // this branch keeps the switch exhaustive and is never reached at runtime.
       return { selectedIds: [], movedIds: [] };
+    case 'returnHandShuffleDraw':
+      // Handled specially in runOpList (draw-outside-draw-phase reactions need registry);
+      // this branch keeps the switch exhaustive and is never reached at runtime.
+      return { selectedIds: [], movedIds: [] };
   }
+  return EMPTY_RESULT;
 }
 
 /** Coordinates for resuming a suspended op list (main ability ops or a chooseOption branch). */
@@ -1547,6 +1564,24 @@ function runOpList(
         ctx.replaceState(reactive.state, reactive.log);
       }
       workingBindings = withResultBindings(workingBindings, { selectedIds: [], movedIds: count > 0 ? ['__draw'] : [] });
+      continue;
+    }
+    if (op.op === 'returnHandShuffleDraw') {
+      const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      const returned = ctx.returnHandShuffleDraw(playerId, op.drawAmount);
+      const drawCount = op.drawAmount ?? returned;
+      if (drawCount > 0 && ctx.state().currentPhase !== 'draw') {
+        const reactive = fireDrawOutsideDrawPhaseReactions(ctx.state(), playerId, registry, defs, actionId);
+        if (reactive.pendingChoices.length > 0) {
+          ctx.absorbActionResult(reactive);
+          return { suspended: true, bindings: workingBindings };
+        }
+        ctx.replaceState(reactive.state, reactive.log);
+      }
+      workingBindings = withResultBindings(workingBindings, {
+        selectedIds: [],
+        movedIds: returned > 0 || drawCount > 0 ? ['__returnHandShuffleDraw'] : [],
+      });
       continue;
     }
     if (op.op === 'drawByTypedCharacterCount') {

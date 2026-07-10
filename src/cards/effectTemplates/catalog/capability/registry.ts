@@ -241,9 +241,24 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'target', type: 'TargetSpec', required: true },
       { name: 'optional', type: 'boolean', required: false },
       { name: 'maxTargets', type: 'number', required: false },
+      { name: 'maxCost', type: 'number', required: false },
     ],
     covers: ['up to {N} of your opponent\'s rested Characters will not become active in ... next Refresh Phase'],
     examples: [{ cardNumber: 'OP15-023', snippet: "{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true }" }],
+  },
+  preventRefreshOnCharactersCostAtMost: {
+    id: 'preventRefreshOnCharactersCostAtMost',
+    summary: 'While the source Stage is in play, Characters at or below maxCost do not become active during any Refresh Phase.',
+    params: [{ name: 'maxCost', type: 'number', required: true }, { name: 'activationGate', type: 'AbilityGate[]', required: false }],
+    covers: ['all Characters with a cost of N or less do not become active in your and your opponent\'s Refresh Phases'],
+    examples: [{ cardNumber: 'OP05-040', snippet: "{ fn: 'preventRefreshOnCharactersCostAtMost', maxCost: 5 }" }],
+  },
+  optionalRevealTypeFromHand: {
+    id: 'optionalRevealTypeFromHand',
+    summary: 'Optionally reveal 1 matching card from hand (stays in hand); gates subsequent steps via ifPrevious.',
+    params: [{ name: 'filter', type: 'SearchFilter', required: false }, { name: 'prompt', type: 'string', required: false }],
+    covers: ['you may reveal 1 {type} card from your hand'],
+    examples: [{ cardNumber: 'OP13-024', snippet: "{ fn: 'optionalRevealTypeFromHand', filter: { anyOf: [{ typeIncludes: 'Music' }, { typeIncludes: 'FILM' }] } }" }],
   },
   preventAttack: {
     id: 'preventAttack',
@@ -549,6 +564,22 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     params: [{ name: 'countField', type: "'handTrashedCount'", required: true }],
     covers: ['draw cards equal to the number of cards trashed'],
     examples: [{ cardNumber: 'OP12-040', snippet: "{ fn: 'drawByEventCount', countField: 'handTrashedCount' }" }],
+  },
+  returnHandShuffleDraw: {
+    id: 'returnHandShuffleDraw',
+    summary: 'Return all hand cards to deck, shuffle, then draw equal count (or fixed drawAmount).',
+    params: [
+      { name: 'player', type: "'controller' | 'opponent'", required: false },
+      { name: 'drawAmount', type: 'number', required: false },
+    ],
+    covers: [
+      'Return all cards in your hand to your deck and shuffle your deck. Then, draw cards equal to the number you returned to your deck.',
+      'Your opponent returns all cards in their hand to their deck and shuffles their deck. Then, your opponent draws N cards.',
+    ],
+    examples: [
+      { cardNumber: 'OP04-048', snippet: "{ fn: 'returnHandShuffleDraw' }" },
+      { cardNumber: 'OP06-047', snippet: "{ fn: 'returnHandShuffleDraw', player: 'opponent', drawAmount: 5 }" },
+    ],
   },
   registerRestReplacementSelf: {
     id: 'registerRestReplacementSelf',

@@ -1,4 +1,4 @@
-import type { GameState } from '../../state/game';
+import type { DelayedEffectRecord, GameState } from '../../state/game';
 import { createActionLogger } from '../shared/actionLogger';
 import { applyKoToTrash } from '../shared/koAttempt';
 import type { CardDefinitionLookup } from '../shared/definitions';
@@ -159,9 +159,13 @@ function returnInstanceToHandState(state: GameState, instanceId: string): GameSt
   };
 }
 
-function stripDue<T extends { id: string }>(delayed: T[], due: T[]): GameState['delayedEffects'] {
+function stripDue(delayed: DelayedEffectRecord[], due: DelayedEffectRecord[]): DelayedEffectRecord[] {
   const dueIds = new Set(due.map((effect) => effect.id));
   return delayed.filter((effect) => !dueIds.has(effect.id));
+}
+
+function hasTriggerPlayerId(effect: DelayedEffectRecord): effect is DelayedEffectRecord & { triggerPlayerId: string } {
+  return 'triggerPlayerId' in effect;
 }
 
 export function consumeEndOfTurnDelayedEffects(
@@ -170,7 +174,10 @@ export function consumeEndOfTurnDelayedEffects(
   defs: CardDefinitionLookup = {},
 ): PhaseStepResult {
   const delayed = state.delayedEffects ?? [];
-  const due = delayed.filter((effect) => effect.triggerPlayerId === endingPlayerId);
+  const due = delayed.filter(
+    (effect): effect is DelayedEffectRecord & { triggerPlayerId: string } =>
+      hasTriggerPlayerId(effect) && effect.triggerPlayerId === endingPlayerId,
+  );
   if (due.length === 0) return { state, log: [] };
 
   let working = state;
@@ -337,10 +344,10 @@ export function consumeEndOfTurnDelayedEffects(
 export function consumeStartOfMainDelayedEffects(state: GameState): PhaseStepResult {
   const delayed = state.delayedEffects ?? [];
   const due = delayed.filter(
-    (effect) =>
-      effect.kind === 'restOpponentDonAtStartOfMain' &&
-      effect.triggerPlayerId === state.activePlayerId &&
-      effect.triggerTurnNumber <= state.turnNumber,
+    (effect): effect is Extract<DelayedEffectRecord, { kind: 'restOpponentDonAtStartOfMain' }> =>
+      effect.kind === 'restOpponentDonAtStartOfMain'
+      && effect.triggerPlayerId === state.activePlayerId
+      && effect.triggerTurnNumber <= state.turnNumber,
   );
   if (due.length === 0) return { state, log: [] };
 

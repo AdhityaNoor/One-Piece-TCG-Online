@@ -321,8 +321,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP04-048 — PARTIAL: return-all-hand shuffle + draw-equal-to-returned deferred; no matching primitive.
-  { cardNumber: 'OP04-048', templateId: 'noRuntime', params: {} },
+  // OP04-048 — [On Play] Return all hand to deck, shuffle, draw equal count.
+  { cardNumber: 'OP04-048', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'returnHandShuffleDraw' }] } },
 
   // OP04-049 — [On K.O.] Draw 1 card.
   { cardNumber: 'OP04-049', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },

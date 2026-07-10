@@ -341,4 +341,42 @@ describe('findKoReplacementRecord', () => {
     expect(result.state.cardsById[life.lifeIds[0]].currentZone).toBe('hand');
     expect(result.state.players.p1.lifeArea.cardIds).not.toContain(life.lifeIds[0]);
   });
+
+  it('restCharacter replacement requires cost 3+ and excludes source name (OP05-032 Pica)', () => {
+    const picaDef = makeCharacterDef({ cardNumber: 'OP05-032', name: 'Pica', baseCost: 4 });
+    const allyHighDef = makeCharacterDef({ cardNumber: 'ALLY-HIGH', name: 'Ally High', baseCost: 3 });
+    const allyLowDef = makeCharacterDef({ cardNumber: 'ALLY-LOW', name: 'Ally Low', baseCost: 2 });
+    const picaCopyDef = makeCharacterDef({ cardNumber: 'OP05-032-B', name: 'Pica', baseCost: 5 });
+    let rig = buildBaseRig();
+    const pica = putCharacterInPlay(rig, 'p1', picaDef);
+    rig = { ...pica.rig, defs: { ...pica.rig.defs, [picaDef.cardDefinitionId]: picaDef, [allyHighDef.cardDefinitionId]: allyHighDef, [allyLowDef.cardDefinitionId]: allyLowDef, [picaCopyDef.cardDefinitionId]: picaCopyDef } };
+    const allyHigh = putCharacterInPlay(rig, 'p1', allyHighDef);
+    rig = allyHigh.rig;
+    putCharacterInPlay(rig, 'p1', allyLowDef);
+    putCharacterInPlay(rig, 'p1', picaCopyDef);
+
+    const record: ContinuousEffectRecord = {
+      id: 'kr-pica',
+      sourceInstanceId: pica.instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'rest ally',
+      koReplacementModifier: {
+        appliesToInstanceId: pica.instanceId,
+        scope: 'any',
+        oncePerTurn: true,
+        action: {
+          kind: 'restCharacter',
+          count: 1,
+          filter: { minCost: 3, excludeSourceName: true },
+        },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    expect(findKoReplacementRecord(state, pica.instanceId, 'effect', rig.defs)).not.toBeNull();
+
+    const result = applyKoReplacementCost(state, pica.instanceId, record, [allyHigh.instanceId], rig.defs, null);
+    expect(result.state.cardsById[pica.instanceId].currentZone).toBe('characterArea');
+    expect(result.state.cardsById[allyHigh.instanceId].orientation).toBe('rested');
+  });
 });

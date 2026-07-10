@@ -333,6 +333,13 @@ export interface ContinuousKoImmunityModifier {
   effectSourceWithoutAttribute?: string;
 }
 
+/** Field Character filter for a K.O. replacement that rests Characters. */
+export interface KoReplacementCharacterFilter {
+  minCost?: number;
+  /** Exclude Characters sharing the aura source's printed name (e.g. "other than [Pica]"). */
+  excludeSourceName?: boolean;
+}
+
 /** Hand filter for a K.O. replacement that trashes from hand. */
 export interface KoReplacementHandFilter {
   category?: Exclude<CardCategory, 'don' | 'leader'>;
@@ -355,7 +362,7 @@ export type KoReplacementAction =
   /** Rest the aura source character instead of the K.O. */
   | { kind: 'restSource' }
   /** Rest one or more of your Characters instead of the K.O. */
-  | { kind: 'restCharacter'; count: number }
+  | { kind: 'restCharacter'; count: number; filter?: KoReplacementCharacterFilter }
   /** Place one or more of your Characters at the bottom of the owner's deck instead. */
   | { kind: 'bottomDeckCharacter'; count: number }
   /** Trash this Character and draw N (ally field-removal replacement on aura source). */
@@ -440,6 +447,13 @@ export interface ContinuousCharacterSetActiveDonRestriction {
   appliesToControllerId: string;
 }
 
+/** While the source Stage is in play, Characters at or below maxCost do not become active during Refresh Phases. */
+export interface ContinuousRefreshCostRestriction {
+  maxCost: number;
+  scope: 'bothPlayers';
+  activationGate?: AbilityGate[];
+}
+
 /** "Negate the effect(s)" on one instance or all cards controlled by a player. */
 export interface ContinuousEffectNegation {
   /** Negate abilities on this Leader/Character/Stage instance. */
@@ -487,6 +501,8 @@ export interface ContinuousEffectRecord {
   handPlayRestriction?: ContinuousHandPlayRestriction;
   /** Blocks Character-sourced DON!! set-active effects for a controller. Omitted for unrelated continuous effects. */
   characterSetActiveDonRestriction?: ContinuousCharacterSetActiveDonRestriction;
+  /** Blocks Characters at or below a cost threshold from becoming active during Refresh Phases. Omitted otherwise. */
+  refreshCostRestriction?: ContinuousRefreshCostRestriction;
   /**
    * One-shot counter for cost discounts that expire after N matching plays from hand.
    * Omitted = unlimited until duration expiry.

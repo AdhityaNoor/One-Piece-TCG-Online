@@ -19,6 +19,7 @@ function koReplacementAction(f: {
   returnSourceToHand?: true;
   restSource?: true;
   restCharacter?: true;
+  restCharacterFilter?: { minCost?: number; excludeSourceName?: boolean };
   bottomDeckCharacter?: true;
   trashSelfAndDraw?: { amount: number };
   trashTrashToDeckBottom?: { count: number };
@@ -32,7 +33,13 @@ function koReplacementAction(f: {
   if (f.lifeToHand) return { kind: 'chooseLifeToHand', position: f.lifeToHand.position ?? 'top' };
   if (f.trashLife) return { kind: 'trashLife', position: f.trashLife.position ?? 'topOrBottom' };
   if (f.restSource) return { kind: 'restSource' };
-  if (f.restCharacter) return { kind: 'restCharacter', count: 1 };
+  if (f.restCharacter) {
+    return {
+      kind: 'restCharacter',
+      count: 1,
+      ...(f.restCharacterFilter ? { filter: f.restCharacterFilter } : {}),
+    };
+  }
   if (f.bottomDeckCharacter) return { kind: 'bottomDeckCharacter', count: 1 };
   if (f.trashSelfAndDraw) return { kind: 'trashSelfAndDraw', drawAmount: f.trashSelfAndDraw.amount };
   if (f.trashTrashToDeckBottom) return { kind: 'trashTrashToDeckBottom', count: f.trashTrashToDeckBottom.count };
@@ -355,7 +362,15 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
     case 'rest':
       return targetOps(f.target, (target) => ({ op: 'rest', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
     case 'preventRefresh':
-      return targetOps(f.target, (target) => ({ op: 'preventRefresh', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
+      return targetOps(
+        f.target,
+        (target) => ({
+          op: 'preventRefresh',
+          target,
+          ...(f.maxCost !== undefined ? { maxCost: f.maxCost } : {}),
+        }),
+        { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
+      );
     case 'preventAttack':
       return targetOps(
         f.target,
@@ -604,6 +619,18 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           prompt: `Trash ${f.count} ${f.filter.typeIncludes ? `{${f.filter.typeIncludes}} ` : ''}card${f.count === 1 ? '' : 's'} from your hand.`,
         },
         { op: 'trashCards', target: { sel: 'var', name: 't' } },
+      ];
+    case 'optionalRevealTypeFromHand':
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerHand', ...(f.filter ? { filter: f.filter } : {}) },
+          min: 0,
+          max: 1,
+          prompt: f.prompt ?? 'You may reveal 1 card from your hand.',
+        },
+        { op: 'revealCards', target: { sel: 'var', name: 't' }, ifPrevious: 'previousSelectedAny' },
       ];
     case 'optionalTrashFromHand': {
       const anyNumber = f.anyNumber === true;
@@ -928,6 +955,13 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         minDonAttached: f.minDonAttached,
         requireRested: f.requireRested !== false,
       }];
+    case 'preventRefreshOnCharactersCostAtMost':
+      return [{
+        op: 'addRefreshCostRestriction',
+        maxCost: f.maxCost,
+        scope: 'bothPlayers',
+        ...(f.activationGate?.length ? { activationGate: f.activationGate } : {}),
+      }];
     case 'returnOpponentDon':
       return [
         {
@@ -1125,6 +1159,12 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'drawByEventCount':
       return [{ op: 'drawByEventCount', countField: f.countField }];
+    case 'returnHandShuffleDraw':
+      return [{
+        op: 'returnHandShuffleDraw',
+        ...(f.player ? { player: f.player } : {}),
+        ...(f.drawAmount !== undefined ? { drawAmount: f.drawAmount } : {}),
+      }];
     case 'koAllCharacters':
       return [
         {

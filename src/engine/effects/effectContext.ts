@@ -1087,6 +1087,35 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  addRefreshCostRestriction(spec: {
+    maxCost: number;
+    scope?: 'bothPlayers';
+    activationGate?: import('./effectIr').AbilityGate[];
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: 'permanent',
+      description: spec.description ?? `Characters with a cost of ${spec.maxCost} or less do not become active during Refresh Phases`,
+      refreshCostRestriction: {
+        maxCost: spec.maxCost,
+        scope: spec.scope ?? 'bothPlayers',
+        ...(spec.activationGate?.length ? { activationGate: spec.activationGate } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: record.description,
+      data: { continuousEffectId: record.id, maxCost: spec.maxCost },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
   giveDon(targetInstanceId: string, count: number): void {
     this.giveDonFromCostArea(targetInstanceId, count, this.controllerId, { restedOnly: true });
   }
@@ -1973,6 +2002,45 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [],
       visibility: 'public',
     });
+  }
+
+  returnHandShuffleDraw(playerId: string, drawAmount?: number): number {
+    const player = this.working.players[playerId];
+    if (!player) return 0;
+    const returnedIds = [...player.hand.cardIds];
+    const returnedCount = returnedIds.length;
+    const combined = [...player.deck.cardIds, ...returnedIds];
+    const seededRng = createSeededRng(this.working.rng.seed);
+    const shuffled = seededRng.shuffle(this.working.rng, combined);
+    const cardsById = { ...this.working.cardsById };
+    for (const id of shuffled.result) {
+      const card = cardsById[id];
+      if (card) cardsById[id] = { ...card, currentZone: 'deck', revealedTo: [] };
+    }
+    this.working = {
+      ...this.working,
+      rng: shuffled.nextState,
+      players: {
+        ...this.working.players,
+        [playerId]: {
+          ...player,
+          hand: { ...player.hand, cardIds: [] },
+          deck: { ...player.deck, cardIds: shuffled.result },
+        },
+      },
+      cardsById,
+    };
+    this.logger.push({
+      actorPlayerId: playerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${playerId} returned ${returnedCount} card${returnedCount === 1 ? '' : 's'} from hand to deck and shuffled.`,
+      data: { returnedCount, returnedInstanceIds: returnedIds },
+      relatedCardInstanceIds: returnedIds,
+      visibility: 'public',
+    });
+    const toDraw = drawAmount ?? returnedCount;
+    if (toDraw > 0) this.draw(playerId, toDraw);
+    return returnedCount;
   }
 
   moveToHand(instanceId: string): void {

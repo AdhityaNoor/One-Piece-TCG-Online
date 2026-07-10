@@ -215,7 +215,8 @@ export type EffectOp =
   | ({ op: 'scheduleReturnSourceToHandAtEndOfTurn' } & EffectOpSequenceGate)
   | ({ op: 'schedulePreventRefreshOnCharacterAtEndOfTurn'; fromVar?: string; minDonAttached: number; requireRested?: boolean } & EffectOpSequenceGate)
   | ({ op: 'returnDonToDonDeck'; target: Selector } & EffectOpSequenceGate) // return DON!! on field to its owner's DON!! deck
-  | ({ op: 'preventRefresh'; target: Selector } & EffectOpSequenceGate) // "will not become active in its controller's next Refresh Phase"
+  | ({ op: 'preventRefresh'; target: Selector; maxCost?: number } & EffectOpSequenceGate) // "will not become active in its controller's next Refresh Phase"
+  | ({ op: 'addRefreshCostRestriction'; maxCost: number; scope?: 'bothPlayers'; activationGate?: AbilityGate[] } & EffectOpSequenceGate)
   | ({ op: 'returnToHand'; target: Selector } & EffectOpSequenceGate) // bounce a Character to its owner's hand
   | ({ op: 'moveToBottomDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the bottom of their owner's deck
   | ({ op: 'moveToTopDeck'; target: Selector } & EffectOpSequenceGate) // move chosen cards to the top of their owner's deck
@@ -265,6 +266,8 @@ export type EffectOp =
   // Draw N where N = count of controller's in-play Characters with a matching type.
   | ({ op: 'drawByTypedCharacterCount'; typeIncludes: string } & EffectOpSequenceGate)
   | ({ op: 'drawByEventCount'; countField: 'handTrashedCount' } & EffectOpSequenceGate)
+  // Return all hand cards to deck, shuffle, then draw (equal to returned count unless drawAmount is set).
+  | ({ op: 'returnHandShuffleDraw'; player?: 'controller' | 'opponent'; drawAmount?: number } & EffectOpSequenceGate)
   // Suspending: trash N from hand where N is read from bindings[countVar] (set by drawByTypedCharacterCount).
   | ({ op: 'trashFromHandByCountVar'; countVar: string; prompt?: string } & EffectOpSequenceGate);
 

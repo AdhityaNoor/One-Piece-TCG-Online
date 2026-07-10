@@ -172,8 +172,34 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP05-032 — [End of Your Turn] ①: set this Character active. PARTIAL: K.O. replacement via rest ally deferred.
-  { cardNumber: 'OP05-032', templateId: 'ability', params: { timing: 'endOfTurn', cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'setActiveSelf' }] } },
+  // OP05-032 — [End of Your Turn] ①: set this Character active.
+  //   [Once Per Turn] If this Character would be K.O.'d, you may rest 1 of your Characters with a cost of 3 or more other than [Pica].
+  {
+    cardNumber: 'OP05-032',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'endOfTurn',
+          cost: [{ kind: 'restDon', count: 1 }],
+          functions: [{ fn: 'setActiveSelf' }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementSelf',
+            oncePerTurn: true,
+            restCharacter: true,
+            restCharacterFilter: { minCost: 3, excludeSourceName: true },
+            duration: 'permanent',
+          }],
+        },
+      },
+    ],
+  },
 
   // OP05-033 — [Activate: Main] rest 1 DON!! + rest this: play up to 1 {Donquixote Pirates} Character cost ≤2 from hand.
   { cardNumber: 'OP05-033', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Donquixote Pirates', maxCost: 2 } }] } },
@@ -213,15 +239,24 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP05-040 (stage) Birdcage —
-  //   PARTIAL: Refresh-Phase lock on both players deferred; mapped EOT mass-K.O. + trash Stage.
+  //   Static: if Leader [Donquixote Doflamingo], cost ≤5 Characters do not refresh (both players).
+  //   [End of Your Turn] if 10+ field DON!!: K.O. all rested cost ≤5, trash this Stage.
   {
     cardNumber: 'OP05-040',
     templates: [
       {
         templateId: 'ability',
         params: {
+          timing: 'onEnterPlay',
+          gate: [{ kind: 'leaderName', name: 'Donquixote Doflamingo' }],
+          functions: [{ fn: 'preventRefreshOnCharactersCostAtMost', maxCost: 5 }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
           timing: 'endOfTurn',
-          gate: [{ kind: 'leaderName', name: 'Donquixote Doflamingo' }, { kind: 'selfDonFieldCount', atLeast: 10 }],
+          gate: [{ kind: 'selfDonFieldCount', atLeast: 10 }],
           functions: [
             { fn: 'koAllCharacters', filter: { rested: true, maxCost: 5 } },
             { fn: 'trashSelf' },
@@ -457,12 +492,20 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true },
   ] } },
 
-  // OP05-094 Overheat — [Main] give up to 1 opp Character −3 cost this turn. [Trigger] Draw 2, trash 1.
-  //   PARTIAL: the "cost-0 opp Character won't become active next Refresh" rider (preventRefresh) is deferred.
+  // OP05-094 Overheat — [Main] −3 cost; if cost 0, won't refresh next turn. [Trigger] Draw 2, trash 1.
   {
     cardNumber: 'OP05-094',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [
+            { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true },
+            { fn: 'preventRefresh', target: { ref: 'previous' }, maxCost: 0, ifPrevious: 'previousSelectedAny' },
+          ],
+        },
+      },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
     ],
   },

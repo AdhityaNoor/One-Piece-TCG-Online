@@ -180,10 +180,22 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP13-024 (character) Gordon —
-  //   [On Play] You may reveal 1 {Music} or {FILM} type card from your hand: Set up to 2 of your DON!!
-  //   cards as active at the end of this turn.
-  // PARTIAL: reveal-from-hand cost is represented as an availability gate; no reveal choice is emitted yet.
-  { cardNumber: 'OP13-024', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'selfHandMatching', atLeast: 1, typeIncludes: 'Music' }, { kind: 'selfHandMatching', atLeast: 1, typeIncludes: 'FILM' }] }], functions: [{ fn: 'setActiveControllerDonAtEndOfTurn', maxTargets: 2 }] } },
+  //   [On Play] You may reveal 1 {Music} or {FILM} from hand: set up to 2 DON!! active at end of turn.
+  {
+    cardNumber: 'OP13-024',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        {
+          fn: 'optionalRevealTypeFromHand',
+          filter: { anyOf: [{ typeIncludes: 'Music' }, { typeIncludes: 'FILM' }] },
+          prompt: 'You may reveal 1 {Music} or {FILM} type card from your hand.',
+        },
+        { fn: 'setActiveControllerDonAtEndOfTurn', maxTargets: 2, ifPrevious: 'previousSelectedAny' },
+      ],
+    },
+  },
 
 
 

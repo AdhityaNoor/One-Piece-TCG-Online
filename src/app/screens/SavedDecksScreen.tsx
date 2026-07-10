@@ -94,18 +94,28 @@ const SEAM_BG = 'linear-gradient(180deg,rgba(0,0,0,0.75) 0%,rgba(255,255,255,0.1
 interface DeckBox3DProps {
   entry: DeckStoreListEntry;
   deck: DeckLoadResult;
+  compact?: boolean;
 }
 
 const BASE_RX = -15;
 const BASE_RY = -25;
 
-function DeckBox3D({ entry, deck }: DeckBox3DProps) {
+function DeckBox3D({ entry, deck, compact = false }: DeckBox3DProps) {
   const loadedDeck = deck.ok ? deck.deck : null;
   const leader     = loadedDeck?.leader;
   const imageUrl   = leader?.imageUrl ?? null;
   const leaderName = leader?.definition.name ?? 'Unavailable';
   const colors     = leader?.definition.colors;
   const surf       = buildDeckBoxSurfaceStyles(colors);
+  const scale      = compact ? 0.58 : 1;
+  const bh         = BH * scale;
+  const bw         = BW * scale;
+  const bd         = BD * scale;
+  const hw         = bw / 2;
+  const hh         = bh / 2;
+  const hd         = bd / 2;
+  const lid        = LID * scale;
+  const frame      = Math.max(0.26, FRAME * scale);
 
   // ── Drag-to-tilt ──────────────────────────────────────────────────────────
   const [tilt, setTilt] = useState({ rx: BASE_RX, ry: BASE_RY });
@@ -142,7 +152,7 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
      */
     <div
       className={`relative overflow-visible select-none ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-      style={{ width: `${BW + 7}rem`, height: `${BH + 6}rem`, perspective: '1400px', perspectiveOrigin: '55% 45%' }}
+      style={{ width: `${bw + 7 * scale}rem`, height: `${bh + 6 * scale}rem`, perspective: compact ? '900px' : '1400px', perspectiveOrigin: '55% 45%' }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -156,8 +166,8 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
           bottom: '1rem',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: `${BW * 1.3}rem`,
-          height: '2rem',
+          width: `${bw * 1.3}rem`,
+          height: `${2 * scale}rem`,
           background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.65) 0%, transparent 68%)',
           filter: 'blur(10px)',
         }}
@@ -171,8 +181,8 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
       <div
         className={`absolute [transform-style:preserve-3d] ${dragging ? '' : 'transition-[transform] duration-300'}`}
         style={{
-          left: '1.5rem', top: '1.5rem',
-          width: `${BW}rem`, height: `${BH}rem`,
+          left: `${1.5 * scale}rem`, top: `${1.5 * scale}rem`,
+          width: `${bw}rem`, height: `${bh}rem`,
           transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
         }}
       >
@@ -185,7 +195,7 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
           className="absolute inset-0 overflow-hidden [backface-visibility:hidden]"
           style={{
             ...surf.front,
-            transform: `translateZ(${HD}rem)`,
+            transform: `translateZ(${hd}rem)`,
             borderRadius: '3px',
             boxShadow: '0 8px 32px rgba(0,0,0,0.55)',
           }}
@@ -194,7 +204,7 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
               reads as a bezel/frame around the card. Face and card share the
               63:88 ratio, so object-cover shows the whole card, centred, with
               only the thin bezel cropped. */}
-          <div className="absolute overflow-hidden rounded-[2px]" style={{ top: `${LID}rem`, left: `${FRAME}rem`, right: `${FRAME}rem`, bottom: `${FRAME}rem` }}>
+          <div className="absolute overflow-hidden rounded-[2px]" style={{ top: `${lid}rem`, left: `${frame}rem`, right: `${frame}rem`, bottom: `${frame}rem` }}>
             {imageUrl ? (
               <img src={resolveAssetUrl(imageUrl) ?? undefined} alt={leaderName} className="absolute inset-0 h-full w-full object-cover object-center" />
             ) : (
@@ -206,7 +216,7 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
           </div>
 
           {/* Lid — opaque box-material band covering the top of the card */}
-          <div className="absolute left-0 right-0 top-0 overflow-hidden" style={{ ...surf.top, height: `${LID}rem`, borderRadius: '3px 3px 0 0' }}>
+          <div className="absolute left-0 right-0 top-0 overflow-hidden" style={{ ...surf.top, height: `${lid}rem`, borderRadius: '3px 3px 0 0' }}>
             {colors && colors.length > 0 && (
               <div className="absolute bottom-1 right-2 flex gap-1">
                 {colors.map((c) => (
@@ -217,10 +227,10 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
           </div>
 
           {/* Seam crease under the lid */}
-          <div className="absolute left-0 right-0" style={{ top: `${LID}rem`, height: '3px', background: SEAM_BG }} />
+          <div className="absolute left-0 right-0" style={{ top: `${lid}rem`, height: '3px', background: SEAM_BG }} />
 
           {/* Name label — overlays the bottom edge of the card, inside the bezel */}
-          <div className="absolute flex items-end px-2 pb-1" style={{ left: `${FRAME}rem`, right: `${FRAME}rem`, bottom: `${FRAME}rem`, height: '2.4rem' }}>
+          <div className="absolute flex items-end px-2 pb-1" style={{ left: `${frame}rem`, right: `${frame}rem`, bottom: `${frame}rem`, height: `${2.4 * scale}rem` }}>
             <div className="pointer-events-none absolute inset-0 rounded-b-[2px] bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
             <p className="relative min-w-0 flex-1 truncate text-[7.5px] font-black uppercase tracking-[0.16em] text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
               {entry.name}
@@ -240,18 +250,18 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
           style={{
             ...surf.side,
             top: 0,
-            left: `${HW - HD}rem`,
-            width: `${BD}rem`,
-            height: `${BH}rem`,
-            transform: `rotateY(90deg) translateZ(${HW}rem)`,
+            left: `${hw - hd}rem`,
+            width: `${bd}rem`,
+            height: `${bh}rem`,
+            transform: `rotateY(90deg) translateZ(${hw}rem)`,
             borderRadius: '0 3px 3px 0',
             boxShadow: 'inset 22px 0 32px rgba(255,255,255,0.06), inset -18px 0 28px rgba(0,0,0,0.70)',
           }}
         >
           {/* Lid sheen on side */}
-          <div className="absolute left-0 right-0 top-0 bg-gradient-to-b from-white/28 via-white/08 to-transparent" style={{ height: `${LID}rem` }} />
+          <div className="absolute left-0 right-0 top-0 bg-gradient-to-b from-white/28 via-white/08 to-transparent" style={{ height: `${lid}rem` }} />
           {/* Seam on side — same position as front seam */}
-          <div className="absolute left-0 right-0" style={{ top: `${LID}rem`, height: '3px', background: SEAM_BG }} />
+          <div className="absolute left-0 right-0" style={{ top: `${lid}rem`, height: '3px', background: SEAM_BG }} />
         </div>
 
         {/* ══════════════ TOP FACE (lid surface) ══════════════
@@ -269,10 +279,10 @@ function DeckBox3D({ entry, deck }: DeckBox3DProps) {
           style={{
             ...surf.top,
             left: 0,
-            top: `${HH - HD}rem`,
-            width: `${BW}rem`,
-            height: `${BD}rem`,
-            transform: `rotateX(90deg) translateZ(${HH}rem)`,
+            top: `${hh - hd}rem`,
+            width: `${bw}rem`,
+            height: `${bd}rem`,
+            transform: `rotateX(90deg) translateZ(${hh}rem)`,
             borderRadius: '3px 3px 0 0',
             boxShadow: 'inset 0 18px 28px rgba(255,255,255,0.22), inset 0 -14px 20px rgba(0,0,0,0.55)',
           }}
@@ -321,6 +331,9 @@ export function SavedDecksScreen() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [openDeleteId, setOpenDeleteId] = useState<string | null>(null);
+  const swipeStart = useRef<{ deckId: string; x: number; y: number } | null>(null);
+  const suppressRowClick = useRef(false);
 
   const rows = useMemo(
     () => entries.map((entry) => ({ entry, deck: load(entry.deckId) })),
@@ -329,7 +342,7 @@ export function SavedDecksScreen() {
 
   // Clamp index so it stays valid after deletions
   const clampedIndex = rows.length === 0 ? 0 : Math.max(0, Math.min(currentIndex, rows.length - 1));
-  const current = rows[clampedIndex] ?? null;
+  const current = (rows[clampedIndex] ?? null) as any;
 
   const goLeft = useCallback(
     () => setCurrentIndex((i) => (i > 0 ? i - 1 : rows.length - 1)),
@@ -339,6 +352,28 @@ export function SavedDecksScreen() {
     () => setCurrentIndex((i) => (i < rows.length - 1 ? i + 1 : 0)),
     [rows.length],
   );
+
+  const startDeckSwipe = useCallback((deckId: string, x: number, y: number) => {
+    swipeStart.current = { deckId, x, y };
+    suppressRowClick.current = false;
+  }, []);
+
+  const moveDeckSwipe = useCallback((deckId: string, x: number, y: number) => {
+    const start = swipeStart.current;
+    if (!start || start.deckId !== deckId) return;
+    const dx = x - start.x;
+    const dy = y - start.y;
+    if (Math.abs(dx) < 28 || Math.abs(dx) < Math.abs(dy)) return;
+    suppressRowClick.current = true;
+    setOpenDeleteId(dx < 0 ? deckId : null);
+  }, []);
+
+  const endDeckSwipe = useCallback(() => {
+    swipeStart.current = null;
+    window.setTimeout(() => {
+      suppressRowClick.current = false;
+    }, 0);
+  }, []);
 
   // Keyboard navigation
   useEffect(() => {
@@ -369,7 +404,7 @@ export function SavedDecksScreen() {
 
   const cardCount = useMemo(() => {
     if (!current?.deck.ok) return 0;
-    return current.deck.deck.cards.reduce((s, c) => s + c.quantity, 0);
+    return current.deck.deck.cards.reduce((s: number, c: CardRowSnapshot) => s + c.quantity, 0);
   }, [current]);
 
   const updatedAt = useMemo(() => {
@@ -382,19 +417,22 @@ export function SavedDecksScreen() {
     if (!current?.deck.ok) return null;
     return evaluateSavedDeckFormatStatus(current.deck.deck).status;
   }, [current]);
+  const currentDeck = current?.deck.ok === true ? current.deck.deck : null;
 
   return (
     <GameCanvasScreen
       kicker="Deck Rack"
       status={`${entries.length} saved`}
-      title="Decks"
       onBack={goBack}
+      headerTitle="Decks"
+      dense
       topRight={
         <CanvasMenuButton
           label="New Deck"
           size="sm"
           onClick={() => navigateTo({ screen: 'deck-builder' })}
-          className="max-w-[10rem]"
+          expandOnHover={false}
+          className="h-10 w-[6.5rem] max-w-none px-2 text-[11px]"
         />
       }
     >
@@ -413,19 +451,82 @@ export function SavedDecksScreen() {
           />
         </div>
       ) : (
-        <div className="flex h-full min-h-0">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden xl:flex-row">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[rgba(1,5,16,0.55)] sm:hidden">
+            <p className="flex-shrink-0 border-y border-white/10 bg-[#050b18] px-3 py-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-white/55">
+              Tap to edit, swipe left to delete
+            </p>
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-0 pb-0 pt-1">
+              {rows.map((row) => {
+                const loadedDeck = row.deck.ok ? row.deck.deck : null;
+                const leader = loadedDeck?.leader;
+                const formatStatus = loadedDeck ? evaluateSavedDeckFormatStatus(loadedDeck).status : null;
+
+                return (
+                  <div key={row.entry.deckId} className="relative h-[6.25rem] min-w-0 overflow-hidden rounded bg-transparent">
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 flex w-20 items-center justify-center bg-red-600 font-heading text-xs font-black uppercase tracking-[0.08em] text-white"
+                      onClick={() => setPendingDeleteId(row.entry.deckId)}
+                    >
+                      Delete
+                    </button>
+                    <button
+                      type="button"
+                      className={[
+                        'relative z-10 flex h-full w-full min-w-0 items-center gap-2 border border-white/10 bg-[#08101f] px-2 py-2 text-left transition-transform duration-200',
+                        openDeleteId === row.entry.deckId ? '-translate-x-20' : 'translate-x-0',
+                        row.deck.ok ? 'cursor-pointer' : 'cursor-default',
+                      ].join(' ')}
+                      onPointerDown={(event) => startDeckSwipe(row.entry.deckId, event.clientX, event.clientY)}
+                      onPointerMove={(event) => moveDeckSwipe(row.entry.deckId, event.clientX, event.clientY)}
+                      onPointerUp={endDeckSwipe}
+                      onPointerCancel={endDeckSwipe}
+                      onClick={() => {
+                        if (suppressRowClick.current) return;
+                        if (!row.deck.ok) return;
+                        if (openDeleteId === row.entry.deckId) {
+                          setOpenDeleteId(null);
+                          return;
+                        }
+                        navigateTo({ screen: 'deck-builder', deckIdToEdit: row.entry.deckId });
+                      }}
+                    >
+                      <div className="h-[5.25rem] w-[3.75rem] flex-shrink-0 overflow-hidden rounded-sm border border-white/15 bg-slate-900">
+                        {leader?.imageUrl && (
+                          <img src={resolveAssetUrl(leader.imageUrl) ?? undefined} alt="" className="h-full w-full object-cover object-top" />
+                        )}
+                      </div>
+                      <div className="flex min-w-0 flex-1 flex-col justify-center">
+                        <div className="min-w-0">
+                          <p className="truncate font-heading text-sm font-black uppercase leading-tight tracking-[0.07em] text-white">
+                            {row.entry.name}
+                          </p>
+                        </div>
+                        {formatStatus && <DeckFormatBadge status={formatStatus} size="sm" className="mt-1 w-fit" />}
+                        <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.09em] text-gold/65">
+                          {leader?.definition.name ?? 'Unavailable'}
+                        </p>
+                        {!row.deck.ok && <p className="mt-1 text-[10px] font-bold text-red-400">Load error - data may be corrupted</p>}
+                      </div>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
           {/* ── Main column: carousel + card list ── */}
-          <div className="flex min-h-0 flex-1 flex-col">
+          <div className="hidden min-h-0 flex-1 flex-col sm:flex">
           {/* ── Gallery area ── */}
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-hidden py-4">
+          <div className="hidden flex-shrink-0 flex-col items-center justify-center gap-2 overflow-hidden py-1 sm:flex sm:min-h-0 sm:flex-1 sm:gap-4 sm:py-4">
             {/* Navigation row — arrows are absolute so the box is always the true centre */}
-            <div className="relative flex w-full items-center justify-center px-16">
+            <div className="relative flex w-full items-center justify-center px-10 sm:px-16">
               {/* Left arrow */}
               <button
                 type="button"
                 onClick={goLeft}
                 disabled={rows.length <= 1}
-                className="absolute left-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/18 bg-white/6 text-white/50 transition-all hover:border-gold/50 hover:bg-white/12 hover:text-gold active:scale-95 disabled:pointer-events-none disabled:opacity-0"
+                className="absolute left-0 flex h-10 w-10 items-center justify-center rounded-full border border-white/18 bg-white/6 text-white/50 transition-all hover:border-gold/50 hover:bg-white/12 hover:text-gold active:scale-95 disabled:pointer-events-none disabled:opacity-0 sm:left-4 sm:h-11 sm:w-11"
                 aria-label="Previous deck"
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -434,19 +535,28 @@ export function SavedDecksScreen() {
               </button>
 
               {/* Deck box + meta — centred */}
-              <div className="flex flex-col items-center gap-2">
-                {current && <DeckBox3D entry={current.entry} deck={current.deck} />}
+              <div className="flex min-w-0 flex-col items-center gap-2">
+                {current && (
+                  <>
+                    <div className="sm:hidden">
+                      <DeckBox3D entry={current.entry} deck={current.deck} compact />
+                    </div>
+                    <div className="hidden sm:block">
+                      <DeckBox3D entry={current.entry} deck={current.deck} />
+                    </div>
+                  </>
+                )}
 
                 {/* Deck name & stats */}
                 <div className="text-center">
                   <div className="flex flex-col items-center gap-0.5">
-                    <p className="font-heading text-base font-black uppercase leading-tight tracking-[0.10em] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.7)]">
+                    <p className="max-w-[min(18rem,72vw)] truncate font-heading text-sm font-black uppercase leading-tight tracking-[0.10em] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.7)] sm:text-base">
                       {current?.entry.name}
                     </p>
                     {currentFormatStatus && <DeckFormatBadge status={currentFormatStatus} />}
                   </div>
                   {current?.deck.ok && (
-                    <p className="mt-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-gold/65">
+                    <p className="mt-0.5 max-w-[min(20rem,78vw)] truncate text-[10px] font-bold uppercase tracking-[0.12em] text-gold/65 sm:text-[11px]">
                       {current.deck.deck.leader.definition.name}
                       {' · '}
                       {cardCount}/50
@@ -482,7 +592,7 @@ export function SavedDecksScreen() {
                 type="button"
                 onClick={goRight}
                 disabled={rows.length <= 1}
-                className="absolute right-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/18 bg-white/6 text-white/50 transition-all hover:border-gold/50 hover:bg-white/12 hover:text-gold active:scale-95 disabled:pointer-events-none disabled:opacity-0"
+                className="absolute right-0 flex h-10 w-10 items-center justify-center rounded-full border border-white/18 bg-white/6 text-white/50 transition-all hover:border-gold/50 hover:bg-white/12 hover:text-gold active:scale-95 disabled:pointer-events-none disabled:opacity-0 sm:right-4 sm:h-11 sm:w-11"
                 aria-label="Next deck"
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -493,7 +603,7 @@ export function SavedDecksScreen() {
 
             {/* Dot indicators */}
             {rows.length > 1 && (
-              <div className="flex gap-2">
+              <div className="flex max-w-full gap-2 overflow-x-auto px-2 pb-1">
                 {rows.map((_, i) => (
                   <button
                     key={i}
@@ -511,15 +621,108 @@ export function SavedDecksScreen() {
           </div>
 
           {/* ── Card list ── */}
-          <div className="flex min-h-0 flex-shrink-0 flex-col border-t border-white/8 bg-[rgba(1,5,16,0.55)]" style={{ maxHeight: '38%' }}>
+          {false && (
+          <div className="hidden">
+            <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded-sm border border-white/15 bg-slate-900">
+              {false && (
+                <img
+                  src={undefined}
+                  alt=""
+                  className="h-full w-full object-cover object-top"
+                />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <p className="truncate font-heading text-sm font-black uppercase leading-tight tracking-[0.08em] text-white">
+                  {current?.entry.name}
+                </p>
+                {false && <DeckFormatBadge status="legal" size="sm" className="flex-shrink-0" />}
+              </div>
+              {false && (
+                <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.1em] text-gold/65">
+                  {current.deck.deck.leader.definition.name} · {cardCount}/50{updatedAt && ` · ${updatedAt}`}
+                </p>
+              )}
+              {false && (
+                <p className="mt-1 text-[10px] font-bold text-red-400">Load error - data may be corrupted</p>
+              )}
+            </div>
+            <div className="flex flex-shrink-0 gap-1.5">
+              {false && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => navigateTo({ screen: 'deck-builder' })}
+                >
+                  Edit
+                </Button>
+              )}
+              {false && (
+                <Button variant="danger" size="sm" onClick={() => setPendingDeleteId('')}>
+                  Delete
+                </Button>
+              )}
+            </div>
+          </div>
+          )}
+
+          <div className="flex flex-shrink-0 gap-2 overflow-x-auto border-y border-white/8 bg-[rgba(1,5,16,0.55)] px-2 py-1.5 xl:hidden">
+            {rows.map((row, i) => {
+              const active = i === clampedIndex;
+              const leaderImg = row.deck.ok ? row.deck.deck.leader.imageUrl : null;
+              const formatStatus = row.deck.ok ? evaluateSavedDeckFormatStatus(row.deck.deck).status : null;
+              return (
+                <button
+                  key={row.entry.deckId}
+                  type="button"
+                  onClick={() => setCurrentIndex(i)}
+                  className={[
+                    'flex min-w-[10.5rem] max-w-[12.5rem] items-center gap-2 rounded border px-2 py-1.5 text-left transition-colors',
+                    active ? 'border-gold/60 bg-gold/12' : 'border-white/8 bg-white/4',
+                  ].join(' ')}
+                >
+                  <div className="h-9 w-6 flex-shrink-0 overflow-hidden rounded-sm border border-white/15 bg-slate-900">
+                    {leaderImg && (
+                      <img src={resolveAssetUrl(leaderImg) ?? undefined} alt="" className="h-full w-full object-cover object-top" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className={['truncate text-[11px] font-bold uppercase leading-tight tracking-[0.04em]', active ? 'text-white' : 'text-white/80'].join(' ')}>
+                      {row.entry.name}
+                    </p>
+                    {formatStatus && <DeckFormatBadge status={formatStatus} size="sm" className="mt-1 w-fit" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col border-t border-white/8 bg-[rgba(1,5,16,0.55)] sm:max-h-[38%] sm:flex-shrink-0">
             {/* Section header */}
-            <div className="flex flex-shrink-0 items-center justify-between px-4 py-2">
+            <div className="flex flex-shrink-0 items-center justify-between gap-3 px-4 py-2">
               <p className="text-[10px] font-black uppercase tracking-[0.20em] text-gold">Card List</p>
-              <p className="text-[10px] text-white/35">{cardListItems.length} entr{cardListItems.length === 1 ? 'y' : 'ies'}</p>
+              <div className="flex min-w-0 items-center gap-2">
+                {current?.deck.ok && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => navigateTo({ screen: 'deck-builder', deckIdToEdit: current.entry.deckId })}
+                  >
+                    Edit
+                  </Button>
+                )}
+                {current && (
+                  <Button variant="danger" size="sm" onClick={() => setPendingDeleteId(current.entry.deckId)}>
+                    Delete
+                  </Button>
+                )}
+                <p className="hidden text-[10px] text-white/35 sm:block">{cardListItems.length} entr{cardListItems.length === 1 ? 'y' : 'ies'}</p>
+              </div>
             </div>
 
             {/* Scrollable cards */}
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3">
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 sm:px-4">
               {cardListItems.length === 0 ? (
                 <p className="py-4 text-center text-xs text-white/25">No cards to display</p>
               ) : (
@@ -534,7 +737,7 @@ export function SavedDecksScreen() {
           </div>
 
           {/* ── Deck list sidebar — stays in sync with the carousel ── */}
-          <aside className="flex w-60 flex-shrink-0 flex-col border-l border-white/8 bg-[rgba(1,5,16,0.55)]">
+          <aside className="hidden w-60 flex-shrink-0 flex-col border-l border-white/8 bg-[rgba(1,5,16,0.55)] xl:flex">
             <div className="flex flex-shrink-0 items-center justify-between border-b border-white/8 px-4 py-2">
               <p className="text-[10px] font-black uppercase tracking-[0.20em] text-gold">All Decks</p>
               <p className="text-[10px] text-white/35">{rows.length}</p>
