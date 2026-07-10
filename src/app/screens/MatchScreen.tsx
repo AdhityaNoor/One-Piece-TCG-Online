@@ -24,8 +24,8 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } f
 import type { CardDefinition } from '../../engine/state/card';
 import { getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
-import { Button, CardDetailModal, Modal, ScaleToFit } from '../components';
-import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, useBoardSelection } from '../components/match';
+import { Button, CardDetailModal, CardImage, Modal, ScaleToFit } from '../components';
+import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, TrashGalleryModal, useBoardSelection } from '../components/match';
 import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -117,6 +117,26 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       setMobilePanel('actions');
     }
   }, [selection.mode.kind]);
+
+  const previousMobileActionModeRef = useRef(selection.mode.kind);
+  const previousLogLengthRef = useRef(matchState?.log.length ?? 0);
+
+  useEffect(() => {
+    const previousMode = previousMobileActionModeRef.current;
+    previousMobileActionModeRef.current = selection.mode.kind;
+    if (mobilePanel === 'actions' && previousMode !== 'idle' && selection.mode.kind === 'idle') {
+      setMobilePanel(null);
+    }
+  }, [mobilePanel, selection.mode.kind]);
+
+  useEffect(() => {
+    const logLength = matchState?.log.length ?? 0;
+    const previousLogLength = previousLogLengthRef.current;
+    previousLogLengthRef.current = logLength;
+    if (mobilePanel === 'actions' && logLength > previousLogLength) {
+      setMobilePanel(null);
+    }
+  }, [matchState?.log.length, mobilePanel]);
 
   if (!isMatchScreen) {
     return null;
@@ -223,6 +243,42 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     if (!canUseLocalActions) return;
     setMobilePanel('actions');
   };
+  const actionContent = matchState.gameOver ? (
+    <p className="text-xs text-white/50">Match complete.</p>
+  ) : !canUseLocalActions ? (
+    <WaitingForOpponent opponentName={nameFor(topPlayerId)} />
+  ) : (
+    <ActionBar
+      phase={matchState.currentPhase}
+      turnNumber={matchState.turnNumber}
+      battle={matchState.currentBattle}
+      actingBoard={actingBoard}
+      selection={selection}
+    />
+  );
+  const mobileActionsPanel = (
+    <aside className="op-mobile-fullscreen-dock flex h-full min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
+      <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{isCasual ? 'Casual Match' : 'Local Hotseat'}</p>
+            <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
+            <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">
+              Turn {matchState.turnNumber} · {nameFor(matchState.activePlayerId)} · {matchState.currentPhase}
+              {battleLabel}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+        <div className="mb-3 flex flex-col gap-2">
+          <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} />
+          <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} />
+        </div>
+        {actionContent}
+      </div>
+    </aside>
+  );
 
   return (
     <MatchGameShell title="Match">
@@ -291,22 +347,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           mobilePanel={mobilePanel}
           handTabsVisible={matchState.pendingChoices.length === 0}
           attackArrow={attackArrow}
-          actionsPanel={
-            matchState.gameOver ? (
-              <p className="text-xs text-white/50">Match complete.</p>
-            ) : !canUseLocalActions ? (
-              <WaitingForOpponent opponentName={nameFor(topPlayerId)} />
-            ) : (
-              <ActionBar
-                phase={matchState.currentPhase}
-                turnNumber={matchState.turnNumber}
-                battle={matchState.currentBattle}
-                actingBoard={actingBoard}
-                selection={selection}
-              />
-            )
-          }
-          logPanel={<ActionLogDock log={matchState.log} playerNames={playerNames} viewerPlayerId={bottomPlayerId} />}
+          actionsPanel={mobileActionsPanel}
+          logPanel={<ActionLogDock log={matchState.log} playerNames={playerNames} viewerPlayerId={bottomPlayerId} className="op-mobile-fullscreen-dock h-full max-h-none" />}
           onClosePanel={() => setMobilePanel(null)}
         />
 
@@ -330,19 +372,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                 <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} />
                 <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} />
               </div>
-              {matchState.gameOver ? (
-                <p className="text-xs text-white/50">Match complete.</p>
-              ) : isCasual && actingPlayerId !== localPlayerId ? (
-                <WaitingForOpponent opponentName={nameFor(topPlayerId)} />
-              ) : (
-                <ActionBar
-                  phase={matchState.currentPhase}
-                  turnNumber={matchState.turnNumber}
-                  battle={matchState.currentBattle}
-                  actingBoard={actingBoard}
-                  selection={selection}
-                />
-              )}
+              {actionContent}
             </div>
             <div className="border-t border-gold/25 bg-black/18 p-3">
               <button
@@ -607,6 +637,10 @@ function MobileMatchLayout({
     return () => window.clearTimeout(timer);
   }, [openHand]);
 
+  useEffect(() => {
+    if (mobilePanel) setOpenHand(null);
+  }, [mobilePanel]);
+
   return (
     <div className="op-mobile-match xl:hidden">
       <div className="op-mobile-match-center">
@@ -820,6 +854,7 @@ function MobilePlayerBoard({
   onReturnGivenDon: (card: CardView) => void;
   allowReturnGivenDon: boolean;
 }) {
+  const [trashGalleryOpen, setTrashGalleryOpen] = useState(false);
   const stage = board.stageArea[0] ?? null;
   const activeDon = mobileCostAreaCards(board, false);
   const restedDon = mobileCostAreaCards(board, true);
@@ -827,80 +862,89 @@ function MobilePlayerBoard({
   const firstRestedDon = restedDon[0] ?? null;
 
   return (
-    <section className={['op-mobile-player-board', inverted ? 'is-inverted' : ''].join(' ')}>
-      <MobileCharacterZone
-        cards={board.characterArea}
-        board={board}
-        playerId={playerId}
-        isOwn={isOwn}
-        isOpponent={isOpponent}
-        mode={mode}
-        battlePowerInstanceIds={battlePowerInstanceIds}
-        onMatCardTap={onMatCardTap}
-        onMatCardAttack={onMatCardAttack}
-        onCardZoom={onCardZoom}
-        onAttachedDonLabelTap={onAttachedDonLabelTap}
-        canAttackCard={canAttackCard}
-        canActivateCard={canActivateCard}
-        canOnOppAttackCard={canOnOppAttackCard}
-        canGiveDonOnCard={canGiveDonOnCard}
-        onGiveDon={onGiveDon}
-        onReturnGivenDon={onReturnGivenDon}
-        allowReturnGivenDon={allowReturnGivenDon}
-      />
+    <>
+      <section className={['op-mobile-player-board', inverted ? 'is-inverted' : ''].join(' ')}>
+        <MobileCharacterZone
+          cards={board.characterArea}
+          board={board}
+          playerId={playerId}
+          isOwn={isOwn}
+          isOpponent={isOpponent}
+          mode={mode}
+          battlePowerInstanceIds={battlePowerInstanceIds}
+          onMatCardTap={onMatCardTap}
+          onMatCardAttack={onMatCardAttack}
+          onCardZoom={onCardZoom}
+          onAttachedDonLabelTap={onAttachedDonLabelTap}
+          canAttackCard={canAttackCard}
+          canActivateCard={canActivateCard}
+          canOnOppAttackCard={canOnOppAttackCard}
+          canGiveDonOnCard={canGiveDonOnCard}
+          onGiveDon={onGiveDon}
+          onReturnGivenDon={onReturnGivenDon}
+          allowReturnGivenDon={allowReturnGivenDon}
+        />
 
-      <div className="op-mobile-support-grid">
-        <MobileLifeStack count={board.lifeAreaCount} />
-        <MobileCardZone
-          label="Leader"
-          card={board.leader}
-          zone="leaderArea"
-          board={board}
-          playerId={playerId}
-          isOwn={isOwn}
-          isOpponent={isOpponent}
-          mode={mode}
-          battlePowerInstanceIds={battlePowerInstanceIds}
-          onMatCardTap={onMatCardTap}
-          onMatCardAttack={onMatCardAttack}
-          onCardZoom={onCardZoom}
-          onAttachedDonLabelTap={onAttachedDonLabelTap}
-          canAttackCard={canAttackCard}
-          canActivateCard={canActivateCard}
-          canOnOppAttackCard={canOnOppAttackCard}
-          canGiveDonOnCard={canGiveDonOnCard}
-          onGiveDon={onGiveDon}
-          onReturnGivenDon={onReturnGivenDon}
-          allowReturnGivenDon={allowReturnGivenDon}
-        />
-        <MobileCardZone
-          label="Stage"
-          card={stage}
-          zone="stageArea"
-          board={board}
-          playerId={playerId}
-          isOwn={isOwn}
-          isOpponent={isOpponent}
-          mode={mode}
-          battlePowerInstanceIds={battlePowerInstanceIds}
-          onMatCardTap={onMatCardTap}
-          onMatCardAttack={onMatCardAttack}
-          onCardZoom={onCardZoom}
-          onAttachedDonLabelTap={onAttachedDonLabelTap}
-          canAttackCard={canAttackCard}
-          canActivateCard={canActivateCard}
-          canOnOppAttackCard={canOnOppAttackCard}
-          canGiveDonOnCard={canGiveDonOnCard}
-          onGiveDon={onGiveDon}
-          onReturnGivenDon={onReturnGivenDon}
-          allowReturnGivenDon={allowReturnGivenDon}
-        />
-        <MobileDeckBox count={board.deckCount} />
-        <MobileCountBox label="Active DON!!" count={activeDon.length} className="op-mobile-active-don-zone" onClick={firstActiveDon ? () => onMatCardTap(playerId, 'costArea', firstActiveDon) : undefined} />
-        <MobileCountBox label="Rested DON!!" count={restedDon.length} className="op-mobile-rested-don-zone" onClick={firstRestedDon ? () => onMatCardTap(playerId, 'costArea', firstRestedDon) : undefined} />
-        <MobileCountBox label="Trash" count={board.trash.length} className="op-mobile-trash-zone" />
-      </div>
-    </section>
+        <div className="op-mobile-support-grid">
+          <MobileLifeStack count={board.lifeAreaCount} />
+          <MobileCardZone
+            label="Leader"
+            card={board.leader}
+            zone="leaderArea"
+            board={board}
+            playerId={playerId}
+            isOwn={isOwn}
+            isOpponent={isOpponent}
+            mode={mode}
+            battlePowerInstanceIds={battlePowerInstanceIds}
+            onMatCardTap={onMatCardTap}
+            onMatCardAttack={onMatCardAttack}
+            onCardZoom={onCardZoom}
+            onAttachedDonLabelTap={onAttachedDonLabelTap}
+            canAttackCard={canAttackCard}
+            canActivateCard={canActivateCard}
+            canOnOppAttackCard={canOnOppAttackCard}
+            canGiveDonOnCard={canGiveDonOnCard}
+            onGiveDon={onGiveDon}
+            onReturnGivenDon={onReturnGivenDon}
+            allowReturnGivenDon={allowReturnGivenDon}
+          />
+          <MobileCardZone
+            label="Stage"
+            card={stage}
+            zone="stageArea"
+            board={board}
+            playerId={playerId}
+            isOwn={isOwn}
+            isOpponent={isOpponent}
+            mode={mode}
+            battlePowerInstanceIds={battlePowerInstanceIds}
+            onMatCardTap={onMatCardTap}
+            onMatCardAttack={onMatCardAttack}
+            onCardZoom={onCardZoom}
+            onAttachedDonLabelTap={onAttachedDonLabelTap}
+            canAttackCard={canAttackCard}
+            canActivateCard={canActivateCard}
+            canOnOppAttackCard={canOnOppAttackCard}
+            canGiveDonOnCard={canGiveDonOnCard}
+            onGiveDon={onGiveDon}
+            onReturnGivenDon={onReturnGivenDon}
+            allowReturnGivenDon={allowReturnGivenDon}
+          />
+          <MobileDeckBox count={board.deckCount} />
+          <MobileCountBox label="Active DON!!" count={activeDon.length} className="op-mobile-active-don-zone" onClick={firstActiveDon ? () => onMatCardTap(playerId, 'costArea', firstActiveDon) : undefined} />
+          <MobileCountBox label="Rested DON!!" count={restedDon.length} className="op-mobile-rested-don-zone" onClick={firstRestedDon ? () => onMatCardTap(playerId, 'costArea', firstRestedDon) : undefined} />
+          <MobileTrashPile cards={board.trash} playerId={playerId} onClick={() => setTrashGalleryOpen(true)} />
+        </div>
+      </section>
+      <TrashGalleryModal
+        open={trashGalleryOpen}
+        onClose={() => setTrashGalleryOpen(false)}
+        playerId={playerId}
+        cards={board.trash}
+        onCardZoom={onCardZoom}
+      />
+    </>
   );
 }
 
@@ -1048,7 +1092,11 @@ function MobileCardZone({
 
   return (
     <div
-      className="op-mobile-zone op-mobile-card-zone"
+      className={[
+        'op-mobile-zone op-mobile-card-zone',
+        zone === 'characterArea' ? 'op-mobile-character-card-zone' : '',
+        card.orientation === 'rested' ? 'is-rested' : 'is-active',
+      ].filter(Boolean).join(' ')}
       data-card-instance-id={card.instanceId}
       onClick={(event) => {
         if (mode.kind !== 'idle') return;
@@ -1167,24 +1215,54 @@ function MobileDeckBox({ count }: { count: number }) {
   );
 }
 
+function MobileTrashPile({ cards, playerId, onClick }: { cards: CardView[]; playerId: string; onClick: () => void }) {
+  const topCard = cards[0] ?? null;
+  return (
+    <button
+      type="button"
+      className={['op-mobile-trash-zone op-mobile-trash-pile', topCard ? 'has-card' : 'is-empty'].join(' ')}
+      onClick={onClick}
+      disabled={!topCard}
+      data-board-zone="trash"
+      data-board-player={playerId}
+      aria-label={topCard ? `Trash, ${cards.length} cards, top card ${topCard.name} - open gallery` : 'Trash, empty'}
+    >
+      {topCard ? (
+        <>
+          <CardImage src={topCard.imageUrl} alt={topCard.name} className="h-full w-full" />
+          <span className="op-mobile-trash-count">{cards.length}</span>
+        </>
+      ) : null}
+    </button>
+  );
+}
+
 function MobileCountBox({ label, count, className, onClick }: { label: string; count: number; className?: string; onClick?: () => void }) {
   const showLabel = label.includes('DON');
+  const isDon = label.includes('DON');
   const contents = (
     <>
-      {showLabel && <strong>{label}</strong>}
-      <span>{count}</span>
+      {isDon && (
+        <span className="op-mobile-don-count-art" aria-hidden="true">
+          <img src="/ui/don-token.png" alt="" draggable={false} />
+        </span>
+      )}
+      <span className="op-mobile-count-content">
+        {showLabel && <strong>{label}</strong>}
+        <span>{count}</span>
+      </span>
     </>
   );
 
   if (onClick) {
     return (
-      <button type="button" className={['op-mobile-count-zone', className ?? ''].join(' ')} onClick={onClick}>
+      <button type="button" className={['op-mobile-count-zone', isDon ? 'op-mobile-don-count-zone' : '', className ?? ''].join(' ')} onClick={onClick}>
         {contents}
       </button>
     );
   }
 
-  return <div className={['op-mobile-count-zone', className ?? ''].join(' ')}>{contents}</div>;
+  return <div className={['op-mobile-count-zone', isDon ? 'op-mobile-don-count-zone' : '', className ?? ''].join(' ')}>{contents}</div>;
 }
 
 function mobileAttachedDonIds(board: PlayerBoardViewForMatch): Set<string> {

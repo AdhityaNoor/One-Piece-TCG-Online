@@ -121,6 +121,13 @@ function GiveDonStepper({
   );
 }
 
+function compactPowerLabel(value: number): string {
+  const abs = Math.abs(value);
+  if (abs < 1000) return value.toLocaleString();
+  const thousands = value / 1000;
+  return `${Number.isInteger(thousands) ? thousands.toFixed(0) : thousands.toFixed(1).replace(/\.0$/, '')}K`;
+}
+
 /** Card art aspect ratio (width/height) — the tile root is square, the art is narrower. */
 const CARD_ASPECT = 63 / 88;
 
@@ -272,6 +279,30 @@ export function BoardCardTile({
   const [rootRef, tileWidth] = useElementWidth<HTMLDivElement>();
   const attachedDonSelected = attachedDonSelectedCount > 0;
   const hiddenDuringFlight = useCardFlightHidden(card.instanceId);
+  const compactCardWidth = Math.max(0, tileWidth * CARD_ASPECT);
+  const compactCardSideInset = Math.max(0, (tileWidth - compactCardWidth) / 2);
+  const compactCostMaxWidth = Math.max(0, compactCardWidth * 0.5);
+  const compactPowerMaxWidth = Math.max(0, compactCardWidth * 0.7);
+  const compactCostValue = compactBadges && !showBattlePower ? card.cost : null;
+  const compactPowerValue = compactBadges && !showBattlePower ? card.power : null;
+  const compactPowerText = compactPowerValue !== null ? compactPowerLabel(compactPowerValue) : null;
+  const compactTopBadgeStyle = (side: 'left' | 'right', maxWidth: number) => ({
+    [side]: compactCardSideInset,
+    top: 0,
+    maxWidth,
+    transform: side === 'left' ? 'translate(-30%, -30%)' : 'translate(30%, -30%)',
+  });
+  const compactDonBadgeStyle = {
+    left: compactCardSideInset,
+    top: 'calc(100% + 0.16rem)',
+    width: compactCardWidth,
+  };
+  const compactModifierTone = (delta: number | null) => {
+    if (delta === null || delta === 0) return 'border-white/35 bg-black/45 text-white shadow-[0_8px_18px_rgba(0,0,0,0.42)]';
+    return delta > 0
+      ? 'border-[#00ff47] bg-[#003d16]/86 text-[#00ff47] shadow-[0_8px_18px_rgba(0,0,0,0.5),0_0_16px_rgba(0,255,71,0.36)]'
+      : 'border-[#ff1f1f] bg-[#4a0000]/86 text-[#ff1f1f] shadow-[0_8px_18px_rgba(0,0,0,0.5),0_0_16px_rgba(255,31,31,0.36)]';
+  };
 
   return (
     <div
@@ -312,7 +343,59 @@ export function BoardCardTile({
         </div>
       </div>
 
-      {(visiblePowerDelta !== null || visibleCostDelta !== null || hasAttachedDon || keywordLabels.length > 0) && (
+      {compactCostValue !== null && (
+        <div
+          className={[
+            'pointer-events-none absolute z-30 truncate rounded-md border px-1 py-[1px] text-center text-[0.52rem] font-black leading-none',
+            compactModifierTone(card.costDelta),
+          ].join(' ')}
+          style={compactTopBadgeStyle('left', compactCostMaxWidth)}
+          title={`Cost ${compactCostValue}`}
+        >
+          {compactCostValue}
+        </div>
+      )}
+
+      {compactPowerValue !== null && compactPowerText !== null && (
+        <div
+          className={[
+            'pointer-events-none absolute z-30 truncate rounded-md border px-1 py-[1px] text-center text-[0.52rem] font-black leading-none',
+            compactModifierTone(card.powerDelta),
+          ].join(' ')}
+          style={compactTopBadgeStyle('right', compactPowerMaxWidth)}
+          title={`Power ${compactPowerValue.toLocaleString()}`}
+        >
+          {compactPowerText}
+        </div>
+      )}
+
+      {compactBadges && hasAttachedDon && (
+        <button
+          type="button"
+          disabled={!attachedDonSelectable}
+          onClick={(event) => { event.stopPropagation(); onAttachedDonSelect?.(); }}
+          className={[
+            'absolute z-30 truncate rounded-md border px-1.5 py-0.5 text-center text-[0.58rem] font-black uppercase leading-none text-white shadow-[0_8px_18px_rgba(0,0,0,0.5)] transition',
+            attachedDonSelectable ? 'cursor-pointer hover:border-white hover:bg-black' : 'cursor-default',
+            attachedDonSelected
+              ? 'border-white bg-black ring-2 ring-white/70'
+              : 'border-white/45 bg-black',
+          ].join(' ')}
+          style={compactDonBadgeStyle}
+          aria-label={`${card.donAttachedCount} attached DON on ${card.name}`}
+          title={attachedDonSelectable ? 'Select attached DON!!' : `${card.donAttachedCount} attached DON!!`}
+        >
+          DON <span className="align-[0.08em] text-[0.4rem]">x</span> {card.donAttachedCount}
+        </button>
+      )}
+
+      {compactBadges && keywordLabels.length > 0 && (
+        <div className="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2">
+          <KeywordRow labels={keywordLabels} maxWidth={Math.max(0, compactCardWidth - 6)} compact />
+        </div>
+      )}
+
+      {!compactBadges && (visiblePowerDelta !== null || visibleCostDelta !== null || hasAttachedDon || keywordLabels.length > 0) && (
         <div className={['absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center', compactBadges ? 'gap-1' : 'gap-1.5'].join(' ')}>
           {visiblePowerDelta !== null && (
             <div

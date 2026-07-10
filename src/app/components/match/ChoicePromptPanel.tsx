@@ -24,15 +24,15 @@ export interface ChoicePromptShellProps {
 export function ChoicePromptShell({ title, children, maxWidthClassName = 'max-w-md' }: ChoicePromptShellProps) {
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 font-body text-white"
+      className="op-choice-prompt-root fixed inset-0 z-50 flex items-center justify-center p-4 font-body text-white"
       role="dialog"
       aria-modal="true"
       aria-label={title}
     >
-      <div className={`absolute inset-0 ${SETTINGS_PANEL_SCRIM}`} aria-hidden="true" />
+      <div className={`op-choice-prompt-scrim absolute inset-0 ${SETTINGS_PANEL_SCRIM}`} aria-hidden="true" />
       <div
         className={[
-          'relative z-10 flex w-full max-h-[min(88vh,920px)] flex-col overflow-y-auto p-3',
+          'op-choice-prompt-panel relative z-10 flex w-full max-h-[min(88vh,920px)] flex-col overflow-y-auto p-3',
           maxWidthClassName,
           SETTINGS_PANEL_SHELL,
         ].join(' ')}

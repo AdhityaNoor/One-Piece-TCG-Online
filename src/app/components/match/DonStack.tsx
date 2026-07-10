@@ -163,11 +163,13 @@ export function DonStack({ label, playerId, cards, direction, selectable, select
         if (!portalEl) return null;
         return createPortal(
           <div
+            className="op-don-popup-root"
             style={{ position: 'absolute', inset: 0, pointerEvents: 'auto' }}
             onClick={() => setExpanded(false)}
           >
             {/* Backdrop — click anywhere outside popup to close. */}
             <div
+              className="op-don-popup-panel"
               style={{
                 position: 'absolute',
                 inset: 0,
