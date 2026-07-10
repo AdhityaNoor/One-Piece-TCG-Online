@@ -22,7 +22,9 @@
  */
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { CardDefinition } from '../../engine/state/card';
-import { getActingPlayerId, projectPlayerBoard } from '../../board/projection';
+import type { GameState } from '../../engine/state/game';
+import type { GameLogEntry } from '../../engine/logs/logEntry';
+import { countAvailableDon, getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
 import { Button, CardDetailModal, CardImage, Modal, ScaleToFit } from '../components';
 import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, TrashGalleryModal, useBoardSelection } from '../components/match';
@@ -58,9 +60,12 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const [zoomDefinitionId, setZoomDefinitionId] = useState<string | null>(null);
   const [hoveredAttackTargetId, setHoveredAttackTargetId] = useState<string | null>(null);
   const [mobilePanel, setMobilePanel] = useState<'actions' | 'log' | null>(null);
+  const [battleLinePromptOpen, setBattleLinePromptOpen] = useState(false);
+  const [mobileLogNotifications, setMobileLogNotifications] = useState<GameLogEntry[]>([]);
   // True while the mouse is over the playmat — forces both dock hands shut.
   const [boardHovered, setBoardHovered] = useState(false);
   const tableShellRef = useRef<HTMLDivElement | null>(null);
+  const mobileLogNotificationCursorRef = useRef<number | null>(null);
   const navyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
 
   const isMatchScreen = current.screen === 'match' || current.screen === 'play-test';
@@ -127,7 +132,10 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     if (mobilePanel === 'actions' && previousMode !== 'idle' && selection.mode.kind === 'idle') {
       setMobilePanel(null);
     }
-  }, [mobilePanel, selection.mode.kind]);
+    if (battleLinePromptOpen && previousMode !== 'idle' && selection.mode.kind === 'idle') {
+      setBattleLinePromptOpen(false);
+    }
+  }, [battleLinePromptOpen, mobilePanel, selection.mode.kind]);
 
   useEffect(() => {
     const logLength = matchState?.log.length ?? 0;
@@ -136,7 +144,34 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     if (mobilePanel === 'actions' && logLength > previousLogLength) {
       setMobilePanel(null);
     }
-  }, [matchState?.log.length, mobilePanel]);
+    if (battleLinePromptOpen && logLength > previousLogLength) {
+      setBattleLinePromptOpen(false);
+    }
+  }, [battleLinePromptOpen, matchState?.log.length, mobilePanel]);
+
+  useEffect(() => {
+    if (!matchState) {
+      mobileLogNotificationCursorRef.current = null;
+      setMobileLogNotifications([]);
+      return;
+    }
+
+    const previousLength = mobileLogNotificationCursorRef.current;
+    const currentLength = matchState.log.length;
+    mobileLogNotificationCursorRef.current = currentLength;
+    if (previousLength === null || currentLength <= previousLength) return;
+
+    const added = matchState.log.slice(previousLength);
+    setMobileLogNotifications((current) => [...added, ...current].slice(0, 3));
+
+    const timers = added.map((entry) =>
+      window.setTimeout(() => {
+        setMobileLogNotifications((current) => current.filter((item) => item.id !== entry.id));
+      }, 3600),
+    );
+
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [matchState]);
 
   if (!isMatchScreen) {
     return null;
@@ -234,15 +269,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     ? new Set([matchState.currentBattle.attackerInstanceId, matchState.currentBattle.targetInstanceId])
     : new Set<string>();
   const canUseLocalActions = !isCasual || actingPlayerId === localPlayerId;
-  const mobilePrimaryActionLabel = matchState.currentBattle
-    ? 'Resolve Action'
-    : matchState.currentPhase === 'main'
-      ? 'End Phase'
-      : matchState.currentPhase;
-  const runMobilePrimaryAction = (): void => {
-    if (!canUseLocalActions) return;
-    setMobilePanel('actions');
-  };
+  const mobileBattleLineLabel = `${nameFor(matchState.activePlayerId)}:${matchState.currentPhase}`;
   const actionContent = matchState.gameOver ? (
     <p className="text-xs text-white/50">Match complete.</p>
   ) : !canUseLocalActions ? (
@@ -256,6 +283,20 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       selection={selection}
     />
   );
+  const battleLineActions = buildMobileBattleLineActions({
+    phase: matchState.currentPhase,
+    turnNumber: matchState.turnNumber,
+    battle: matchState.currentBattle,
+    actingBoard,
+    hasActivateMain: selection.hasActivateMain,
+    hasUnusedActivateMain: selection.hasUnusedActivateMain,
+    hasCounter: selection.hasCounter,
+  });
+  const handleBattleLineEndPhase = (): void => {
+    if (!canUseLocalActions || matchState.currentPhase !== 'main' || matchState.currentBattle) return;
+    selection.endMainPhase();
+    setBattleLinePromptOpen(false);
+  };
   const mobileActionsPanel = (
     <aside className="op-mobile-fullscreen-dock flex h-full min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
       <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
@@ -312,9 +353,6 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
 
         <div className="xl:hidden">
           <MobileActionHeader
-            label={mobilePrimaryActionLabel}
-            disabled={!canUseLocalActions}
-            onPrimaryAction={runMobilePrimaryAction}
             onOpenActions={() => setMobilePanel((panel) => (panel === 'actions' ? null : 'actions'))}
             onOpenLog={() => setMobilePanel((panel) => (panel === 'log' ? null : 'log'))}
           />
@@ -344,12 +382,19 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           onReturnGivenDon={selection.returnGivenDonFromCard}
           allowReturnGivenDon={!isCasual}
           handSelectable={(playerId, card) => handSelectable(selection.mode, actingPlayerId === playerId, card, selection.hasCounter)}
+          battleLineLabel={mobileBattleLineLabel}
           mobilePanel={mobilePanel}
           handTabsVisible={matchState.pendingChoices.length === 0}
           attackArrow={attackArrow}
           actionsPanel={mobileActionsPanel}
           logPanel={<ActionLogDock log={matchState.log} playerNames={playerNames} viewerPlayerId={bottomPlayerId} className="op-mobile-fullscreen-dock h-full max-h-none" />}
+          onOpenBattleActions={() => setBattleLinePromptOpen(true)}
           onClosePanel={() => setMobilePanel(null)}
+        />
+        <MobileBattleLogNotifications
+          entries={mobileLogNotifications}
+          playerNames={playerNames}
+          viewerPlayerId={bottomPlayerId}
         />
 
         <div className="hidden min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid xl:grid-cols-[330px_minmax(0,1fr)_330px]">
@@ -529,6 +574,42 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       {(!isCasual || actingPlayerId === localPlayerId) && <PendingChoicePrompt state={matchState} defs={defs} images={images} />}
       <CardDetailModal open={zoomDefinitionId !== null} onClose={() => setZoomDefinitionId(null)} definition={zoomDefinition} imageUrl={zoomImageUrl} mobileImageOnly />
 
+      <Modal open={battleLinePromptOpen} onClose={() => setBattleLinePromptOpen(false)} title={mobileBattleLineLabel} rootClassName="op-mobile-battle-actions-modal" maxWidthClassName="max-w-md">
+        <div className="op-mobile-battle-actions-content p-4">
+          <p className="mb-3 border-l-4 border-gold/60 bg-black/18 py-2 pl-3 pr-2 text-sm font-semibold leading-relaxed text-white/78">
+            Current legal-looking actions before passing priority.
+          </p>
+          {battleLineActions.length === 0 ? (
+            <p className="border border-white/12 bg-black/18 px-3 py-4 text-sm font-semibold text-white/58">No obvious actions remain.</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {battleLineActions.map((action) => (
+                <li key={action.id} className="relative overflow-hidden border border-white/14 bg-black/18 shadow-[0_18px_40px_rgba(0,0,0,0.22)] backdrop-blur-[3px]">
+                  <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-white/[0.03] px-3 py-2">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-gold">{action.title}</p>
+                    {action.count !== undefined && (
+                      <span className="border border-white/12 bg-black/18 px-2 py-0.5 text-[0.6rem] font-black uppercase tracking-[0.16em] text-white/60">
+                        {action.count}
+                      </span>
+                    )}
+                  </div>
+                  <p className="px-3 py-3 text-sm text-white/72">{action.detail}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-4 flex justify-end border-t border-gold/25 pt-4">
+            <Button
+              variant="primary"
+              disabled={!canUseLocalActions || matchState.currentPhase !== 'main' || !!matchState.currentBattle}
+              onClick={handleBattleLineEndPhase}
+            >
+              End Phase
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       <Modal open={pauseOpen} onClose={() => setPauseOpen(false)} title="Paused">
         <div className="flex flex-col gap-4 p-5">
           <p className="text-sm text-slate-200/75">
@@ -556,6 +637,109 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
 type PlayerBoardViewForMatch = ReturnType<typeof projectPlayerBoard>;
 type MatchBoardZone = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea';
 
+interface MobileBattleLineActionSummary {
+  id: string;
+  title: string;
+  detail: string;
+  count?: number;
+}
+
+function isMobileCardView(card: CardView | null): card is CardView {
+  return card !== null;
+}
+
+function formatMobileActionCardNames(cards: CardView[]): string {
+  const names = cards.slice(0, 3).map((card) => card.name);
+  const rest = cards.length - names.length;
+  return rest > 0 ? `${names.join(', ')} +${rest} more` : names.join(', ');
+}
+
+function buildMobileBattleLineActions({
+  phase,
+  turnNumber,
+  battle,
+  actingBoard,
+  hasActivateMain,
+  hasUnusedActivateMain,
+  hasCounter,
+}: {
+  phase: GameState['currentPhase'];
+  turnNumber: number;
+  battle: GameState['currentBattle'];
+  actingBoard: PlayerBoardViewForMatch;
+  hasActivateMain: (card: CardView) => boolean;
+  hasUnusedActivateMain: (card: CardView) => boolean;
+  hasCounter: (card: CardView) => boolean;
+}): MobileBattleLineActionSummary[] {
+  if (battle?.step === 'block') {
+    const blockers = actingBoard.characterArea.filter((card) => card.orientation === 'active' && card.hasBlocker);
+    return blockers.length > 0
+      ? [{
+          id: 'blockers',
+          title: 'Blockers available',
+          detail: `${formatMobileActionCardNames(blockers)} ${blockers.length === 1 ? 'can' : 'can'} block this attack.`,
+          count: blockers.length,
+        }]
+      : [];
+  }
+
+  if (battle?.step === 'counter') {
+    const counters = actingBoard.hand.filter((card) => (card.category === 'character' && !!card.counter && card.counter > 0) || (card.category === 'event' && hasCounter(card)));
+    return counters.length > 0
+      ? [{
+          id: 'counters',
+          title: 'Counters available',
+          detail: `${formatMobileActionCardNames(counters)} ${counters.length === 1 ? 'is' : 'are'} available for the Counter Step.`,
+          count: counters.length,
+        }]
+      : [];
+  }
+
+  if (phase !== 'main') {
+    return [{
+      id: 'phase',
+      title: `${phase} phase`,
+      detail: `The game is resolving the ${phase} phase.`,
+    }];
+  }
+
+  const summaries: MobileBattleLineActionSummary[] = [];
+  const availableDon = countAvailableDon(actingBoard);
+  const attackers = turnNumber > 2
+    ? [actingBoard.leader, ...actingBoard.characterArea].filter(isMobileCardView).filter((card) => card.orientation === 'active' && !card.summoningSick)
+    : [];
+  const activatable = [actingBoard.leader, ...actingBoard.characterArea, ...actingBoard.stageArea].filter(isMobileCardView).filter(hasActivateMain);
+  const unusedActivatable = [actingBoard.leader, ...actingBoard.characterArea, ...actingBoard.stageArea].filter(isMobileCardView).filter(hasUnusedActivateMain);
+
+  if (availableDon > 0) {
+    summaries.push({
+      id: 'active-don',
+      title: 'Unused active DON!!',
+      detail: `${availableDon} active DON!! still available in your cost area.`,
+      count: availableDon,
+    });
+  }
+  if (attackers.length > 0) {
+    summaries.push({
+      id: 'attackers',
+      title: 'Cards can still attack',
+      detail: `${formatMobileActionCardNames(attackers)} ${attackers.length === 1 ? 'is' : 'are'} still active and eligible to attack.`,
+      count: attackers.length,
+    });
+  }
+  if (activatable.length > 0) {
+    const namedCards = unusedActivatable.length > 0 ? unusedActivatable : activatable;
+    summaries.push({
+      id: 'effects',
+      title: 'Activatable effects remain',
+      detail: `${formatMobileActionCardNames(namedCards)} still ${namedCards.length === 1 ? 'has' : 'have'} an [Activate: Main] effect available.`,
+      count: namedCards.length,
+    });
+  }
+
+  return summaries;
+}
+
 interface MobileMatchLayoutProps {
   topBoard: PlayerBoardViewForMatch;
   bottomBoard: PlayerBoardViewForMatch;
@@ -580,11 +764,13 @@ interface MobileMatchLayoutProps {
   onReturnGivenDon: (card: CardView) => void;
   allowReturnGivenDon: boolean;
   handSelectable: (playerId: string, card: CardView) => boolean;
+  battleLineLabel: string;
   mobilePanel: 'actions' | 'log' | null;
   handTabsVisible: boolean;
   attackArrow: MobileAttackArrowState | null;
   actionsPanel: ReactNode;
   logPanel: ReactNode;
+  onOpenBattleActions: () => void;
   onClosePanel: () => void;
 }
 
@@ -618,11 +804,13 @@ function MobileMatchLayout({
   onReturnGivenDon,
   allowReturnGivenDon,
   handSelectable,
+  battleLineLabel,
   mobilePanel,
   handTabsVisible,
   attackArrow,
   actionsPanel,
   logPanel,
+  onOpenBattleActions,
   onClosePanel,
 }: MobileMatchLayoutProps) {
   const [openHand, setOpenHand] = useState<'top' | 'bottom' | null>(null);
@@ -666,11 +854,11 @@ function MobileMatchLayout({
             allowReturnGivenDon={allowReturnGivenDon}
           />
 
-          <div className="op-mobile-battle-line" aria-hidden="true">
+          <button type="button" className="op-mobile-battle-line" onClick={onOpenBattleActions} aria-label={`Open actions for ${battleLineLabel}`}>
             <span />
-            <strong>Battle Line</strong>
+            <strong>{battleLineLabel}</strong>
             <span />
-          </div>
+          </button>
 
           <MobilePlayerBoard
             board={bottomBoard}
@@ -784,15 +972,9 @@ function MobileMatchLayout({
 }
 
 function MobileActionHeader({
-  label,
-  disabled,
-  onPrimaryAction,
   onOpenActions,
   onOpenLog,
 }: {
-  label: string;
-  disabled: boolean;
-  onPrimaryAction: () => void;
   onOpenActions: () => void;
   onOpenLog: () => void;
 }) {
@@ -802,15 +984,45 @@ function MobileActionHeader({
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path d="M10 3L5 8l5 5" />
         </svg>
-      </button>
-      <button type="button" className="op-mobile-header-primary-button" disabled={disabled} onClick={onPrimaryAction}>
-        {label}
+        <span>Actions</span>
       </button>
       <button type="button" className="op-mobile-header-icon-button" onClick={onOpenLog} aria-label="Open log">
+        <span>Battle Logs</span>
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path d="M6 3l5 5-5 5" />
         </svg>
       </button>
+    </div>
+  );
+}
+
+function MobileBattleLogNotifications({
+  entries,
+  playerNames,
+  viewerPlayerId,
+}: {
+  entries: GameLogEntry[];
+  playerNames: Record<string, string>;
+  viewerPlayerId: string;
+}) {
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="op-mobile-log-toast-stack" aria-live="polite" aria-atomic="false">
+      {entries.map((entry) => {
+        const actorName = entry.actorPlayerId ? (playerNames[entry.actorPlayerId] ?? entry.actorPlayerId) : 'System';
+        const own = entry.actorPlayerId === viewerPlayerId;
+        return (
+          <article key={entry.id} className={['op-mobile-log-toast', own ? 'is-own' : ''].join(' ')}>
+            <div className="op-mobile-log-toast-meta">
+              <span>#{entry.sequence}</span>
+              <span>{entry.type}</span>
+              <span>{actorName}</span>
+            </div>
+            <p>{entry.message}</p>
+          </article>
+        );
+      })}
     </div>
   );
 }

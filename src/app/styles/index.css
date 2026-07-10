@@ -434,7 +434,7 @@
 
   .op-mobile-action-header {
     display: grid;
-    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.4rem;
     flex: 0 0 auto;
     position: relative;
@@ -473,9 +473,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-color: transparent;
-    background: transparent;
-    box-shadow: none;
+    gap: 0.45rem;
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(0, 0, 0, 0.24);
+  }
+
+  .op-mobile-header-icon-button span {
+    min-width: 0;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .op-mobile-header-icon-button svg {
@@ -493,7 +504,7 @@
     animation: op-mobile-chevron-left 1.05s ease-in-out infinite;
   }
 
-  .op-mobile-header-icon-button:nth-child(3) svg {
+  .op-mobile-header-icon-button:nth-child(2) svg {
     animation: op-mobile-chevron-right 1.05s ease-in-out infinite;
   }
 
@@ -506,6 +517,10 @@
   .op-mobile-header-icon-button:hover,
   .op-mobile-header-primary-button:hover {
     border-color: rgba(217, 164, 65, 0.55);
+    color: #ffd34a;
+  }
+
+  .op-mobile-header-icon-button:hover span {
     color: #ffd34a;
   }
 
@@ -991,6 +1006,9 @@
     display: flex;
     align-items: center;
     gap: 0.45rem;
+    width: 100%;
+    border: 0;
+    background: transparent;
     padding: clamp(0.45rem, 2vw, 0.7rem) 0;
   }
 
@@ -1007,6 +1025,68 @@
     font-weight: 900;
     letter-spacing: 0.16em;
     text-transform: uppercase;
+  }
+
+  .op-mobile-battle-actions-content {
+    min-height: 0;
+    color: #fff;
+  }
+
+  .op-mobile-log-toast-stack {
+    pointer-events: none;
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 3.7rem);
+    left: 0.65rem;
+    right: 0.65rem;
+    z-index: 118;
+    display: none;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .op-mobile-log-toast {
+    align-self: flex-start;
+    width: min(100%, 21rem);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(0, 0, 0, 0.58);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
+    padding: 0.55rem 0.65rem;
+    color: #fff;
+    backdrop-filter: blur(12px);
+    animation: op-mobile-log-toast-life 3.6s ease forwards;
+  }
+
+  .op-mobile-log-toast.is-own {
+    align-self: flex-end;
+    border-color: rgba(255, 211, 74, 0.24);
+  }
+
+  .op-mobile-log-toast-meta {
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    color: rgba(255, 211, 74, 0.72);
+    font-size: 0.55rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .op-mobile-log-toast p {
+    margin-top: 0.35rem;
+    color: rgba(255, 255, 255, 0.84);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  @media (max-width: 1279px) {
+    .op-mobile-log-toast-stack {
+      display: flex;
+    }
   }
 
   .op-mobile-panel-backdrop {
@@ -1212,6 +1292,25 @@
   }
   50% {
     transform: translateY(0.28rem);
+  }
+}
+
+@keyframes op-mobile-log-toast-life {
+  0% {
+    opacity: 0;
+    transform: translateY(-0.45rem) scale(0.98);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  76% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-0.35rem) scale(0.985);
   }
 }
 
