@@ -69,24 +69,31 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
       reasons.push('A card-effect choice expects an array of selected instance ids.');
     } else {
       const { min, max, candidateInstanceIds, maxCombinedPower } = choice.constraints;
-      if (sel.length < min || sel.length > max) {
-        reasons.push(`Select between ${min} and ${max} target(s) (got ${sel.length}) (8-4-4-1).`);
-      }
-      const candidates = new Set(candidateInstanceIds ?? []);
-      const seen = new Set<string>();
-      for (const id of sel) {
-        if (typeof id !== 'string' || !candidates.has(id)) {
-          reasons.push(`'${String(id)}' is not an eligible target for this effect.`);
-        } else if (seen.has(id)) {
-          reasons.push(`'${id}' was selected more than once.`);
-        } else {
-          seen.add(id);
+      const candidates = candidateInstanceIds ?? [];
+      const candidateSet = new Set(candidates);
+      // Softlock escape: fewer eligible targets than min → allow selecting all remaining (or none).
+      const effectiveMin = Math.min(min, candidates.length);
+      const effectiveMax = Math.min(max, Math.max(candidates.length, 0));
+      if (candidates.length === 0 && sel.length === 0) {
+        // legal — nothing to pick
+      } else if (sel.length < effectiveMin || sel.length > effectiveMax) {
+        reasons.push(`Select between ${effectiveMin} and ${effectiveMax} target(s) (got ${sel.length}) (8-4-4-1).`);
+      } else {
+        const seen = new Set<string>();
+        for (const id of sel) {
+          if (typeof id !== 'string' || !candidateSet.has(id)) {
+            reasons.push(`'${String(id)}' is not an eligible target for this effect.`);
+          } else if (seen.has(id)) {
+            reasons.push(`'${id}' was selected more than once.`);
+          } else {
+            seen.add(id);
+          }
         }
-      }
-      if (maxCombinedPower !== undefined && sel.length > 0) {
-        const combined = sel.reduce((sum, id) => sum + computeCurrentPower(defs, state, id), 0);
-        if (combined > maxCombinedPower) {
-          reasons.push(`Selected cards' combined power is ${combined}, which exceeds ${maxCombinedPower}.`);
+        if (maxCombinedPower !== undefined && sel.length > 0) {
+          const combined = sel.reduce((sum, id) => sum + computeCurrentPower(defs, state, id), 0);
+          if (combined > maxCombinedPower) {
+            reasons.push(`Selected cards' combined power is ${combined}, which exceeds ${maxCombinedPower}.`);
+          }
         }
       }
     }

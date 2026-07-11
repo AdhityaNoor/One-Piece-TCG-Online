@@ -14,6 +14,7 @@
  * store is just the synchronous local transport for now.
  */
 import { create } from 'zustand';
+import type { CpuDifficulty } from '../../ai';
 import { GENERIC_DON_CARD_DEFINITION } from '../../cards/decks/genericDonCard';
 import type { SavedDeck } from '../../cards/decks/savedDeck';
 import type { GameAction } from '../../engine/actions';
@@ -27,7 +28,7 @@ import { createPreGameState, type PlayerSetupInput } from '../../engine/setup';
 import type { CardDefinition, CardInstance } from '../../engine/state/card';
 import type { GameState } from '../../engine/state';
 import type { GameLogEntry } from '../../engine/logs/logEntry';
-import { buildCardDefinitionLookup, buildCardImageLookup, savedDeckToPlayerSetupInput } from '../lib/savedDeckToSetupInput';
+import { buildCardDefinitionLookup, buildCardImageLookup, resolveLeaderDonDeckSize, savedDeckToPlayerSetupInput } from '../lib/savedDeckToSetupInput';
 import { parseMovementSpecs } from '../../animations/cardMovement/parseLogEntries';
 import { applyMovementPresentation } from '../../animations/cardMovement/presentationHints';
 import { useSettingsStore } from './settingsStore';
@@ -150,21 +151,24 @@ function buildPlayTestSetup(entries: PlayTestCatalogEntry[]): { p1Input: PlayerS
   if (leaders.length < 2) reasons.push('Play Test needs at least 2 Leader definitions in the catalog.');
   if (deckPool.length === 0) reasons.push('Play Test needs at least 1 main-deck definition in the catalog.');
 
+  const p1Leader = leaders[0] ?? fallbackLeader('PLAYTEST-P1');
+  const p2Leader = leaders[1] ?? fallbackLeader('PLAYTEST-P2');
+
   return {
     reasons,
     p1Input: {
       playerId: PLAYER_A_ID,
-      leader: leaders[0] ?? fallbackLeader('PLAYTEST-P1'),
+      leader: p1Leader,
       deck: pickDeckCards(deckPool, 50, 11),
       donCard: GENERIC_DON_CARD_DEFINITION,
-      donDeckSize: 10,
+      donDeckSize: resolveLeaderDonDeckSize(p1Leader, 10),
     },
     p2Input: {
       playerId: PLAYER_B_ID,
-      leader: leaders[1] ?? fallbackLeader('PLAYTEST-P2'),
+      leader: p2Leader,
       deck: pickDeckCards(deckPool, 50, 101),
       donCard: GENERIC_DON_CARD_DEFINITION,
-      donDeckSize: 10,
+      donDeckSize: resolveLeaderDonDeckSize(p2Leader, 10),
     },
   };
 }
@@ -254,6 +258,45 @@ function attachedDonIds(state: GameState, playerId: string): Set<string> {
   return ids;
 }
 
+function capPlayTestDonPool(state: GameState, playerId: string, maxDon: number): GameState {
+  const player = state.players[playerId];
+  if (!player) return state;
+  const attached = attachedDonIds(state, playerId);
+  const costIds = [...player.costArea.cardIds];
+  const donDeckIds = [...player.donDeck.cardIds];
+  const totalDon = costIds.length + donDeckIds.length;
+  let excess = Math.max(0, totalDon - maxDon);
+  if (excess === 0) return state;
+
+  const cardsById = { ...state.cardsById };
+  while (excess > 0 && donDeckIds.length > 0) {
+    const id = donDeckIds.pop() as string;
+    delete cardsById[id];
+    excess -= 1;
+  }
+
+  for (let i = costIds.length - 1; i >= 0 && excess > 0; i -= 1) {
+    const id = costIds[i];
+    if (attached.has(id)) continue;
+    costIds.splice(i, 1);
+    delete cardsById[id];
+    excess -= 1;
+  }
+
+  return {
+    ...state,
+    cardsById,
+    players: {
+      ...state.players,
+      [playerId]: {
+        ...player,
+        donDeck: { ...player.donDeck, cardIds: donDeckIds },
+        costArea: { ...player.costArea, cardIds: costIds },
+      },
+    },
+  };
+}
+
 interface MatchStoreState {
   state: GameState | null;
   defs: CardDefinitionLookup;
@@ -261,8 +304,8 @@ interface MatchStoreState {
   registry: EffectTemplateRegistry;
   /** cardDefinitionId -> cosmetic image URL, for board/zoom UI only — never read by the engine. See savedDeckToSetupInput.ts. */
   cardImagesByDefinitionId: Record<string, string | null>;
-  /** Which two SavedDeck ids the live match was started with, so the Match screen can tell "still the requested match" apart from "navigated here with different decks" without restarting on every re-render. */
-  startedWithDeckIds: { a: string; b: string } | null;
+  /** Which two SavedDeck ids the live match was started with (+ presentation fingerprint), so the Match screen can tell "still the requested match" apart from "navigated here with different decks/mode" without restarting on every re-render. */
+  startedWithDeckIds: { a: string; b: string; presentationKey: string } | null;
   /** Reasons the most recent startMatch() call failed, for the Match screen to display. Cleared on the next successful start. */
   startError: string[] | null;
   /**
@@ -276,6 +319,10 @@ interface MatchStoreState {
   localPlayerId: string | null;
   /** engine playerId -> display username, for board/log/banner labels. Empty == label by id. Never read by the engine. */
   playerNames: Record<string, string>;
+  /** CPU-controlled seat ids for vs CPU mode. Never read by the engine. */
+  cpuPlayerIds: string[];
+  cpuDifficulty: CpuDifficulty;
+  cpuDebug: boolean;
   playTestMode: boolean;
   playTestErrors: PlayTestErrorLogEntry[];
 
@@ -291,11 +338,7 @@ interface MatchStoreState {
   reset(): void;
 }
 
-/** Optional UI seat/label config for a match (see MatchStoreState.localPlayerId). */
-export interface MatchPresentation {
-  localPlayerId?: string;
-  playerNames?: Record<string, string>;
-}
+import type { MatchPresentation } from './navigationStore';
 
 /** Label a seat: its username if one was provided, else the raw engine id (hotseat shows p1/p2). */
 export function resolvePlayerName(playerId: string, playerNames: Record<string, string>): string {
@@ -311,6 +354,9 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   startError: null,
   localPlayerId: null,
   playerNames: {},
+  cpuPlayerIds: [],
+  cpuDifficulty: 'normal',
+  cpuDebug: false,
   playTestMode: false,
   playTestErrors: readPersistedPlayTestErrors(),
 
@@ -318,8 +364,12 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     const p1Input = savedDeckToPlayerSetupInput(deckA, PLAYER_A_ID);
     const p2Input = savedDeckToPlayerSetupInput(deckB, PLAYER_B_ID);
 
-    const localPlayerId = presentation?.localPlayerId ?? null;
+    const isCpu = presentation?.mode === 'cpu';
+    const localPlayerId = presentation?.localPlayerId ?? (isCpu ? PLAYER_A_ID : null);
     const playerNames = presentation?.playerNames ?? {};
+    const cpuPlayerIds = isCpu ? presentation.cpuPlayerIds : [];
+    const cpuDifficulty = isCpu ? presentation.difficulty : 'normal';
+    const cpuDebug = isCpu ? (presentation.cpuDebug ?? false) : false;
 
     // The seed is the root of randomness for this match — it does not itself
     // need to be deterministic (cf. shuffling a real deck before play), only
@@ -343,7 +393,20 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     });
 
     if (!result.ok) {
-      set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: result.reasons, localPlayerId: null, playerNames: {}, playTestMode: false });
+      set({
+        state: null,
+        defs: {},
+        registry: {},
+        cardImagesByDefinitionId: {},
+        startedWithDeckIds: null,
+        startError: result.reasons,
+        localPlayerId: null,
+        playerNames: {},
+        cpuPlayerIds: [],
+        cpuDifficulty: 'normal',
+        cpuDebug: false,
+        playTestMode: false,
+      });
       return { ok: false, reasons: result.reasons };
     }
 
@@ -353,10 +416,13 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       defs,
       registry: buildRegistryFromDefs(defs),
       cardImagesByDefinitionId: buildCardImageLookup([deckA, deckB]),
-      startedWithDeckIds: { a: deckA.deckId, b: deckB.deckId },
+      startedWithDeckIds: { a: deckA.deckId, b: deckB.deckId, presentationKey: presentation ? JSON.stringify(presentation) : '' },
       startError: null,
       localPlayerId,
       playerNames,
+      cpuPlayerIds,
+      cpuDifficulty,
+      cpuDebug,
       playTestMode: false,
     });
     return { ok: true };
@@ -463,15 +529,17 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       faceState: 'faceUp',
       revealedTo: 'all',
     };
-    const next = appendGameLog(
-      {
-        ...state,
-        cardsById: { ...state.cardsById, [leader.instanceId]: updatedLeader },
-        players: {
-          ...state.players,
-          [playerId]: { ...player, leaderLifeValue: definition.life ?? player.leaderLifeValue },
-        },
+    const withLeader = {
+      ...state,
+      cardsById: { ...state.cardsById, [leader.instanceId]: updatedLeader },
+      players: {
+        ...state.players,
+        [playerId]: { ...player, leaderLifeValue: definition.life ?? player.leaderLifeValue },
       },
+    };
+    const withDonLimit = capPlayTestDonPool(withLeader, playerId, resolveLeaderDonDeckSize(definition, 10));
+    const next = appendGameLog(
+      withDonLimit,
       `Play Test set ${playerId}'s Leader to ${definition.cardNumber} ${definition.name}.`,
       playerId,
     );
@@ -563,7 +631,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     if (!state) {
       return { ok: false, reasons: ['No match is in progress.'] };
     }
-    if (action.type === 'RETURN_GIVEN_DON' && localPlayerId !== null) {
+    if (action.type === 'RETURN_GIVEN_DON' && localPlayerId !== null && get().cpuPlayerIds.length === 0) {
       return { ok: false, reasons: ['Returning given DON!! is not allowed in Casual matches.'] };
     }
     const validation = validateAction(state, action, defs, registry);
@@ -599,6 +667,6 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
 
   reset() {
     useCardAnimationStore.getState().clear();
-    set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {}, playTestMode: false });
+    set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {}, cpuPlayerIds: [], cpuDifficulty: 'normal', cpuDebug: false, playTestMode: false });
   },
 }));

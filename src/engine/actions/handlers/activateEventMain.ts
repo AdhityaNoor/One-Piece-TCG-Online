@@ -155,11 +155,11 @@ export function executeActivateEventMain(
     }
   }
 
+  working = recordEventActivation(working, action.playerId, action.handCardInstanceId, defs);
+
   const fired = fireActivate(working, action.handCardInstanceId, registry, defs, action.actionId);
 
-  let resultState = fired.pendingChoices.length === 0
-    ? recordEventActivation(fired.state, action.playerId, action.handCardInstanceId, defs)
-    : fired.state;
+  let resultState = fired.state;
   let resultLog = [...logger.log, ...paidLog, ...fired.log];
   if (fired.pendingChoices.length === 0) {
     const reactive = fireEventActivatedReactions(resultState, action.playerId, registry, defs, action.actionId);

@@ -84,6 +84,10 @@ export function validateActivateOnOpponentsAttack(
   if (ability?.oncePerTurn && source.oncePerTurnUsed.includes(action.effectId)) {
     reasons.push(`This [Once Per Turn] ability of '${source.cardDefinitionId}' was already used this turn (10-2-13).`);
   }
+  const usedOnOppAttack = battle.onOpponentsAttackUsedInstanceIds ?? [];
+  if (usedOnOppAttack.includes(action.sourceInstanceId)) {
+    reasons.push(`'${source.cardDefinitionId}' already activated [On Your Opponent's Attack] during this battle.`);
+  }
 
   return { legal: reasons.length === 0, reasons };
 }
@@ -117,6 +121,16 @@ export function executeActivateOnOpponentsAttack(
   const fired = fireOnOpponentsAttack(working, action.sourceInstanceId, registry, defs, action.actionId);
 
   let nextState = fired.state;
+  const battle = nextState.currentBattle;
+  if (battle) {
+    nextState = {
+      ...nextState,
+      currentBattle: {
+        ...battle,
+        onOpponentsAttackUsedInstanceIds: [...(battle.onOpponentsAttackUsedInstanceIds ?? []), action.sourceInstanceId],
+      },
+    };
+  }
   if (ability?.oncePerTurn) {
     const s = nextState.cardsById[action.sourceInstanceId];
     nextState = {

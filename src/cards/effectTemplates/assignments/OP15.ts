@@ -536,17 +536,18 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-058 — PARTIAL: 6-card DON deck rule + second-turn gate deferred; mapped add 1 active + 4 rested DON then give up to 4 DON.
+  // OP15-058 — Enel leader: 6-card DON deck rule is applied in setup; activate from second own turn onward.
   {
     cardNumber: 'OP15-058',
     templateId: 'ability',
     params: {
       timing: 'activateMain',
       oncePerTurn: true,
+      gate: [{ kind: 'selfTurnCount', atLeast: 2 }],
       functions: [
         { fn: 'addDonFromDeck', count: 1, rested: false },
         { fn: 'addDonFromDeck', count: 4, rested: true },
-        { fn: 'giveDon', count: 4, ifPrevious: 'previousSelectedAny' },
+        { fn: 'giveDon', count: 4, charactersOnly: true, skipRestedDonGate: true, ifPrevious: 'previousMovedAny' },
       ],
     },
   },

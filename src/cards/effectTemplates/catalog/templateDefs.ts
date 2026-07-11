@@ -100,7 +100,7 @@ export type AbilityFunction =
   | { fn: 'draw'; amount: number; optional?: boolean; player?: 'controller' | 'opponent' }
   | { fn: 'drawUntilHandCount'; targetCount: number; player?: 'controller' | 'opponent' }
   | { fn: 'addDonFromDeck'; count: number; rested: boolean }
-  | { fn: 'giveDon'; count: number; optional?: boolean; targetTypeIncludes?: string; anyOfTypes?: string[]; charactersOnly?: boolean; targetName?: string; activeDonOnly?: boolean }
+  | { fn: 'giveDon'; count: number; optional?: boolean; targetTypeIncludes?: string; anyOfTypes?: string[]; charactersOnly?: boolean; targetName?: string; activeDonOnly?: boolean; skipRestedDonGate?: boolean }
   | { fn: 'preventBlockersOnPreviousTarget'; duration: IrDuration }
   | { fn: 'preventAttackLeaderWhileSummoningSick'; duration: IrDuration }
   | { fn: 'giveGivenDon'; count?: number; optional?: boolean; targetTypeIncludes?: string }

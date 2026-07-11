@@ -1223,13 +1223,19 @@ function runOpList(
       const count = Number(workingBindings[op.countVar]?.[0] ?? '0');
       if (count <= 0) continue;
       const candidates = resolveSelector({ sel: 'controllerHand' }, ctx, workingBindings);
-      const prompt = op.prompt ?? `Trash ${count} card${count === 1 ? '' : 's'} from your hand.`;
+      // Softlock guard: never emit a hand-trash choice the player cannot satisfy.
+      if (candidates.length === 0) {
+        workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
+        continue;
+      }
+      const trashCount = Math.min(count, candidates.length);
+      const prompt = op.prompt ?? `Trash ${trashCount} card${trashCount === 1 ? '' : 's'} from your hand.`;
       ctx.emitChoice({
         id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
         playerId: ctx.controllerId,
         kind: 'SELECT_CARDS',
         prompt,
-        constraints: { min: count, max: count, candidateInstanceIds: candidates },
+        constraints: { min: trashCount, max: trashCount, candidateInstanceIds: candidates },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
         resumeState: resumeStateForSuspend(coords, i, workingBindings),
@@ -1238,7 +1244,28 @@ function runOpList(
     }
     if (op.op === 'chooseTargets') {
       const candidates = resolveSelector(op.from, ctx, workingBindings);
-      const max = op.max < 0 ? candidates.length : op.max;
+      // Softlock guard: required targets with zero eligible cards → bind empty and continue.
+      if (candidates.length === 0 && op.min > 0) {
+        workingBindings = {
+          ...workingBindings,
+          [op.var]: [],
+          __lastSelected: boolBinding(false),
+        };
+        workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
+        continue;
+      }
+      const clampedMax = op.max < 0 ? candidates.length : Math.min(op.max, candidates.length);
+      const clampedMin = Math.min(op.min, candidates.length);
+      // If nothing can be chosen and the choice is optional, skip the prompt.
+      if (candidates.length === 0 && clampedMin === 0 && clampedMax === 0) {
+        workingBindings = {
+          ...workingBindings,
+          [op.var]: [],
+          __lastSelected: boolBinding(false),
+        };
+        workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
+        continue;
+      }
       const chooserId = op.chooser === 'opponent' ? ctx.opponentId : ctx.controllerId;
       ctx.emitChoice({
         id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
@@ -1246,8 +1273,8 @@ function runOpList(
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
         constraints: {
-          min: op.min,
-          max,
+          min: clampedMin,
+          max: clampedMax,
           candidateInstanceIds: candidates,
           ...(op.maxCombinedPower !== undefined ? { maxCombinedPower: op.maxCombinedPower } : {}),
         },

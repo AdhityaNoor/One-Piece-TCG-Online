@@ -1248,7 +1248,7 @@ const FACTORY_MAP: {
 } = {
   noRuntime: (cn) => program(cn, []),
   ability: (cn, p) => {
-    const implicitGates = p.functions.some((f) => (f.fn === 'giveDon' && !f.activeDonOnly) || f.fn === 'giveGivenDon')
+    const implicitGates = p.functions.some((f) => (f.fn === 'giveDon' && !f.activeDonOnly && !f.skipRestedDonGate) || f.fn === 'giveGivenDon')
       ? ([{ kind: 'selfRestedDonCount', atLeast: 1 }] as const)
       : [];
     const gates = [...(p.gate ?? []), ...implicitGates];

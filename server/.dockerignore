@@ -1,0 +1,17 @@
+# Build context is the repo root — keep the image lean and the build fast.
+**/node_modules
+**/dist
+**/.git
+**/.history
+**/.vercel
+**/*.log
+# Large frontend-only assets never needed by the backend bundle.
+public/card-images
+public/audio
+dist
+incoming-assets
+scrape
+docs
+effect-*.csv
+effect-*.md
+test-results.txt

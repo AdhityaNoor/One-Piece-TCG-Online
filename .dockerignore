@@ -1,0 +1,45 @@
+# Docker reads THIS file (at the build-context root) — the build context for the
+# backend image is the repo root (`docker build -f server/Dockerfile ... .`), so
+# the ignore file must live here, NOT in server/. Without it Docker ships the
+# whole 2.5 GB repo (dist, public assets, scrape, node_modules, .git) to the
+# daemon and the build appears to hang on "transferring context".
+#
+# The backend bundle only needs: server/, src/ (the reused engine), shared/.
+# Everything below is excluded from the context.
+
+# Dependencies (reinstalled inside the image)
+**/node_modules
+
+# Build outputs / caches
+dist
+build
+server/dist
+.vite
+*.tsbuildinfo
+
+# Large frontend-only assets & data — the backend never needs these
+public
+incoming-assets
+scrape
+effect-coverage.csv
+effect-coverage.md
+effect-review-worklist.csv
+test-results.txt
+
+# VCS, history, editor, deploy metadata
+.git
+.gitignore
+.history
+.vercel
+.vercelignore
+.idea
+.vscode
+
+# Docs
+docs
+
+# Local env / secrets — never bake these into an image
+.env
+.env.*
+**/.env
+**/.env.*

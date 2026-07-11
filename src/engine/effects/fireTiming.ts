@@ -329,10 +329,10 @@ export function fireNestedEventActivation(
     }
   }
 
+  working = recordEventActivation(working, activatorPlayerId, eventInstanceId, defs);
+
   const fired = fireActivate(working, eventInstanceId, registry, defs, actionId);
-  working = fired.pendingChoices.length === 0
-    ? recordEventActivation(fired.state, activatorPlayerId, eventInstanceId, defs)
-    : fired.state;
+  working = fired.state;
   log = [...log, ...fired.log];
   if (fired.pendingChoices.length > 0) {
     return { state: working, log, pendingChoices: fired.pendingChoices };

@@ -1,0 +1,42 @@
+# Controls what `gcloud builds submit .` uploads to Cloud Build. Mirrors
+# .dockerignore so the huge frontend-only assets aren't uploaded (otherwise the
+# upload — like the local "transferring context" step — ships ~2.5 GB).
+#
+# NOTE: when this file exists, gcloud ignores .gitignore, so this list must be
+# self-contained. It must NOT exclude server/, src/, shared/, the Dockerfile, or
+# cloudbuild.yaml — those are needed to build the image.
+
+# Dependencies (reinstalled inside the image)
+**/node_modules
+
+# Build outputs / caches
+dist
+build
+server/dist
+.vite
+*.tsbuildinfo
+
+# Large frontend-only assets & data — the backend never needs these
+public
+incoming-assets
+scrape
+effect-coverage.csv
+effect-coverage.md
+effect-review-worklist.csv
+test-results.txt
+
+# VCS, history, editor, deploy metadata
+.git
+.history
+.vercel
+.idea
+.vscode
+
+# Docs
+docs
+
+# Local env / secrets — never upload these
+.env
+.env.*
+**/.env
+**/.env.*

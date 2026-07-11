@@ -33,11 +33,11 @@ export function MainMenuScreen() {
           ))}
         </div>
       </div>
-      <div aria-hidden="true" className="op-home-character pointer-events-none fixed bottom-0 left-0 -z-[9] h-dvh opacity-55 sm:opacity-70">
+      <div aria-hidden="true" className="op-home-character pointer-events-none fixed inset-x-0 bottom-0 -z-[9] h-dvh overflow-hidden opacity-55 sm:opacity-70">
         <img
           src="/ui/footer_illust_chara.webp"
           alt=""
-          className="h-full w-auto max-w-none select-none object-contain object-left-bottom drop-shadow-[0_24px_42px_rgba(0,0,0,0.5)]"
+          className="absolute bottom-0 left-0 h-auto w-screen max-w-none select-none object-contain object-left-bottom drop-shadow-[0_24px_42px_rgba(0,0,0,0.5)] xl:h-full xl:w-auto"
           draggable={false}
         />
       </div>

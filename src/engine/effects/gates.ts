@@ -376,6 +376,13 @@ function evaluateGate(
       return computeCurrentPower(defs, state, leaderId) <= gate.power;
     }
 
+    case 'selfTurnCount': {
+      const currentTurnCount = player.hasGoneFirst ? Math.ceil(state.turnNumber / 2) : Math.floor(state.turnNumber / 2);
+      if (gate.atLeast !== undefined && currentTurnCount < gate.atLeast) return false;
+      if (gate.atMost !== undefined && currentTurnCount > gate.atMost) return false;
+      return true;
+    }
+
     case 'selfControlsNamedWithPowerAtLeast': {
       const ids = [player.leaderInstanceId, ...player.characterArea.cardIds].filter((id): id is string => id != null);
       return ids.some((id) => {

@@ -57,6 +57,43 @@ describe('OP15-002 Lucy battle effects', () => {
     expect(result.legal).toBe(true);
   });
 
+  it('cannot activate [On Your Opponent\'s Attack] twice during the same battle', () => {
+    const lucy = makeLeaderDef({ cardDefinitionId: 'OP15-002', cardNumber: 'OP15-002' });
+    const attacker = makeCharacterDef({ cardDefinitionId: 'OP15-LUCY-ATTACKER', cardNumber: 'OP15-LUCY-ATTACKER' });
+    let rig = buildBaseRig({ activePlayerId: 'p2', phase: 'main', turnNumber: 6, leaderOverridesP1: lucy });
+    const attackerPlay = putCharacterInPlay(rig, 'p2', attacker);
+    rig = attackerPlay.rig;
+    const lucyId = rig.state.players.p1.leaderInstanceId;
+    const state = {
+      ...rig.state,
+      currentBattle: {
+        attackerInstanceId: attackerPlay.instanceId,
+        targetInstanceId: lucyId,
+        originalTargetInstanceId: lucyId,
+        step: 'block' as const,
+        blockerUsed: false,
+        onOpponentsAttackUsedInstanceIds: [lucyId],
+        battlePowerBonuses: {},
+      },
+    };
+
+    const result = validateActivateOnOpponentsAttack(
+      state,
+      {
+        type: 'ACTIVATE_ON_OPPONENTS_ATTACK',
+        actionId: 'lucy-repeat',
+        playerId: 'p1',
+        sourceInstanceId: lucyId,
+        effectId: 'onOpponentsAttack',
+        donInstanceIds: [],
+      },
+      registry,
+      rig.defs,
+    );
+
+    expect(result.legal).toBe(false);
+  });
+
   it('gains +1000 for each Event or Stage trashed from hand', () => {
     const lucy = makeLeaderDef({ cardDefinitionId: 'OP15-002', cardNumber: 'OP15-002' });
     const eventA = makeEventDef({ cardDefinitionId: 'OP15-LUCY-EVENT-A', cardNumber: 'OP15-LUCY-EVENT-A' });

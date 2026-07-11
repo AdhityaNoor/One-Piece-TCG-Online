@@ -13,6 +13,10 @@ import type { CardDefinition } from '../../engine/state/card';
 import type { PlayerSetupInput } from '../../engine/setup';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 
+const LEADER_DON_DECK_SIZE_OVERRIDES: Record<string, number> = {
+  'OP15-058': 6,
+};
+
 function normalizeSnapshotDefinition(definition: CardDefinition): CardDefinition {
   if (definition.types.some((type) => /[\/,]/.test(type))) {
     return {
@@ -21,6 +25,10 @@ function normalizeSnapshotDefinition(definition: CardDefinition): CardDefinition
     };
   }
   return definition;
+}
+
+export function resolveLeaderDonDeckSize(leader: CardDefinition, fallback: number): number {
+  return LEADER_DON_DECK_SIZE_OVERRIDES[leader.cardNumber] ?? fallback;
 }
 
 /**
@@ -43,12 +51,13 @@ function expandMainDeck(deck: SavedDeck): CardDefinition[] {
 }
 
 export function savedDeckToPlayerSetupInput(deck: SavedDeck, playerId: string): PlayerSetupInput {
+  const leader = normalizeSnapshotDefinition(deck.leader.definition);
   return {
     playerId,
-    leader: normalizeSnapshotDefinition(deck.leader.definition),
+    leader,
     deck: expandMainDeck(deck),
     donCard: GENERIC_DON_CARD_DEFINITION,
-    donDeckSize: deck.donDeckSize,
+    donDeckSize: resolveLeaderDonDeckSize(leader, deck.donDeckSize),
   };
 }
 

@@ -10,6 +10,7 @@
  * store/slice, referenced here only by id (see `match.deckIdA`/`deckIdB`).
  */
 import { create } from 'zustand';
+import type { CpuDifficulty } from '../../ai';
 
 /**
  * Presentation-only match config layered on top of the pure {deckIdA,
@@ -29,6 +30,17 @@ export interface CasualMatchPresentation {
   playerNames: Record<string, string>;
 }
 
+export interface CpuMatchPresentation {
+  mode: 'cpu';
+  localPlayerId: string;
+  cpuPlayerIds: string[];
+  difficulty: CpuDifficulty;
+  playerNames: Record<string, string>;
+  cpuDebug?: boolean;
+}
+
+export type MatchPresentation = CasualMatchPresentation | CpuMatchPresentation;
+
 export type NavigationTarget =
   | { screen: 'main-menu' }
   | { screen: 'settings' }
@@ -40,9 +52,10 @@ export type NavigationTarget =
   | { screen: 'saved-decks' }
   | { screen: 'play-menu' }
   | { screen: 'deck-select' }
+  | { screen: 'cpu-deck-select' }
   | { screen: 'casual-lobby' }
   | { screen: 'credits' }
-  | { screen: 'match'; deckIdA: string; deckIdB: string; presentation?: CasualMatchPresentation };
+  | { screen: 'match'; deckIdA: string; deckIdB: string; presentation?: MatchPresentation };
 
 interface NavigationState {
   /** Last entry is the current screen. Always non-empty. */

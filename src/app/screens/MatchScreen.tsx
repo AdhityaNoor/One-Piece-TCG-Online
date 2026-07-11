@@ -28,10 +28,11 @@ import { countAvailableDon, getActingPlayerId, projectPlayerBoard } from '../../
 import { getOpponentId } from '../../engine/rules/shared';
 import { Button, CardDetailModal, CardImage, Modal, ScaleToFit } from '../components';
 import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, TrashGalleryModal, useBoardSelection } from '../components/match';
-import { useMatchSetupStore } from '../store/matchSetupStore';
+import { useCpuTurnController } from '../hooks/useCpuTurnController';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
 import { useMatchStore } from '../store/matchStore';
+import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useSettingsStore } from '../store/settingsStore';
 import type { CardView } from '../../board/projection';
 import { logEffectText, logSourceCardLabel } from '../lib/logDisplay';
@@ -53,7 +54,12 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // username labelling for Casual matches; never touches GameState.
   const localPlayerId = useMatchStore((s) => s.localPlayerId);
   const playerNames = useMatchStore((s) => s.playerNames);
-  const isCasual = localPlayerId !== null;
+  const cpuPlayerIds = useMatchStore((s) => s.cpuPlayerIds);
+  const isCasual = localPlayerId !== null && cpuPlayerIds.length === 0;
+  const isCpuMatch = cpuPlayerIds.length > 0;
+  /** Casual + VS CPU: board stays on the local seat; never hotseat-flip by turn. */
+  const isPinnedPerspective = localPlayerId !== null;
+  const matchModeLabel = isCpuMatch ? 'VS CPU' : isCasual ? 'Casual Match' : 'Local Hotseat';
   const playTestMode = useMatchStore((s) => s.playTestMode);
   const nameFor = (id: string): string => playerNames[id] ?? id;
 
@@ -87,7 +93,10 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // on every render (startMatch mints a fresh GameState + RNG seed).
   useEffect(() => {
     if (!deckIdA || !deckIdB) return;
-    const alreadyStarted = startedWithDeckIds?.a === deckIdA && startedWithDeckIds?.b === deckIdB;
+    const alreadyStarted =
+      startedWithDeckIds?.a === deckIdA &&
+      startedWithDeckIds?.b === deckIdB &&
+      startedWithDeckIds?.presentationKey === presentationKey;
     if (alreadyStarted) return;
     const deckAResult = load(deckIdA);
     const deckBResult = load(deckIdB);
@@ -95,7 +104,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       startMatch(
         deckAResult.deck,
         deckBResult.deck,
-        presentation ? { localPlayerId: presentation.localPlayerId, playerNames: presentation.playerNames } : undefined,
+        presentation,
       );
     }
     // presentationKey stands in for the presentation object (stable string).
@@ -108,6 +117,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // early returns below, even though its result is only used once we know
   // we're actually on the match screen with a live GameState.
   const selection = useBoardSelection(matchState ? getActingPlayerId(matchState) : null);
+  const { thinking: cpuThinking } = useCpuTurnController(isCpuMatch && !!matchState && !matchState.gameOver);
 
   useEffect(() => {
     if (selection.mode.kind !== 'selectAttackTarget') setHoveredAttackTargetId(null);
@@ -251,6 +261,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // only the panels' on-screen position was the bug, not this.
   const actingPlayerId = getActingPlayerId(matchState);
   const actingBoard = actingPlayerId === bottomPlayerId ? bottomPlayerBoard : topPlayerBoard;
+  const isCpuTurn = cpuPlayerIds.includes(actingPlayerId);
+  const canUseLocalActions = !isCpuTurn && (!isPinnedPerspective || actingPlayerId === localPlayerId);
 
   const battleLabel = matchState.currentBattle ? ` · Battle: ${matchState.currentBattle.step}` : '';
   const attackArrow = matchState.currentBattle
@@ -269,10 +281,11 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const battlePowerInstanceIds = matchState.currentBattle
     ? new Set([matchState.currentBattle.attackerInstanceId, matchState.currentBattle.targetInstanceId])
     : new Set<string>();
-  const canUseLocalActions = !isCasual || actingPlayerId === localPlayerId;
   const mobileBattleLineLabel = `${nameFor(matchState.activePlayerId)}:${matchState.currentPhase}`;
   const actionContent = matchState.gameOver ? (
     <p className="text-xs text-white/50">Match complete.</p>
+  ) : isCpuTurn ? (
+    <CpuThinking opponentName={nameFor(actingPlayerId)} />
   ) : !canUseLocalActions ? (
     <WaitingForOpponent opponentName={nameFor(topPlayerId)} />
   ) : (
@@ -303,7 +316,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{isCasual ? 'Casual Match' : 'Local Hotseat'}</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{matchModeLabel}</p>
             <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
             <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">
               Turn {matchState.turnNumber} · {nameFor(matchState.activePlayerId)} · {matchState.currentPhase}
@@ -365,7 +378,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           topPlayerId={topPlayerId}
           bottomPlayerId={bottomPlayerId}
           actingPlayerId={actingPlayerId}
-          isCasual={isCasual}
+          isPinnedPerspective={isPinnedPerspective}
           mode={selection.mode}
           selectedHandIds={selectedHandIds(selection.mode)}
           battlePowerInstanceIds={battlePowerInstanceIds}
@@ -391,6 +404,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           logPanel={<ActionLogDock log={matchState.log} playerNames={playerNames} viewerPlayerId={bottomPlayerId} className="op-mobile-fullscreen-dock h-full max-h-none" />}
           onOpenBattleActions={() => setBattleLinePromptOpen(true)}
           onClosePanel={() => setMobilePanel(null)}
+          cpuThinking={cpuThinking}
+          cpuThinkingLabel={nameFor(actingPlayerId)}
         />
         <MobileBattleLogNotifications
           entries={mobileLogNotifications}
@@ -404,7 +419,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
             <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{isCasual ? 'Casual Match' : 'Local Hotseat'}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{matchModeLabel}</p>
                   <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
                   <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">
                     Turn {matchState.turnNumber} · {nameFor(matchState.activePlayerId)} · {matchState.currentPhase}
@@ -467,8 +482,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                   // never controls it, so it is never "own" regardless of
                   // whose authority it is. Hotseat keeps the both-sides-local
                   // behaviour.
-                  isOwn={isCasual ? false : actingPlayerId === topPlayerId}
-                  isOpponent={isCasual ? true : actingPlayerId !== topPlayerId}
+                  isOwn={isPinnedPerspective ? false : actingPlayerId === topPlayerId}
+                  isOpponent={isPinnedPerspective ? true : actingPlayerId !== topPlayerId}
                   reverseRows={true}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
@@ -495,8 +510,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
 
                 <PlayerSideRow
                   board={bottomPlayerBoard}
-                  isOwn={actingPlayerId === bottomPlayerId}
-                  isOpponent={actingPlayerId !== bottomPlayerId}
+                  isOwn={isPinnedPerspective ? true : actingPlayerId === bottomPlayerId}
+                  isOpponent={isPinnedPerspective ? false : actingPlayerId !== bottomPlayerId}
                   reverseRows={false}
                   mode={selection.mode}
                   canActivateCard={selection.hasActivateMain}
@@ -516,17 +531,20 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                 />
               </div>
             </ScaleToFit>
+            {cpuThinking && (
+              <CpuThinkingOverlay opponentName={nameFor(actingPlayerId)} />
+            )}
             {/* ── Dock hands ── rendered outside ScaleToFit so they aren't
                 affected by cqh sizing; positioned absolute relative to
                 op-match-table-shell (position:relative; overflow:hidden). */}
             <DockHand
               playerId={topPlayerId}
               cards={topPlayerBoard.hand}
-              isOwn={isCasual ? false : actingPlayerId === topPlayerId}
+              isOwn={isPinnedPerspective ? false : actingPlayerId === topPlayerId}
               position="top"
               selectedIds={selectedHandIds(selection.mode)}
-              selectable={(card) => (isCasual ? false : handSelectable(selection.mode, actingPlayerId === topPlayerId, card, selection.hasCounter))}
-              canPlay={(card) => (isCasual ? false : actingPlayerId === topPlayerId && selection.canPlayHandCard(card))}
+              selectable={(card) => (isPinnedPerspective ? false : handSelectable(selection.mode, actingPlayerId === topPlayerId, card, selection.hasCounter))}
+              canPlay={(card) => (isPinnedPerspective ? false : actingPlayerId === topPlayerId && selection.canPlayHandCard(card))}
               onCardTap={(card) => selection.handleCardTap(topPlayerId, 'hand', card)}
               onPlayCard={selection.playHandCard}
               onCardZoom={openZoom}
@@ -535,7 +553,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
             <DockHand
               playerId={bottomPlayerId}
               cards={bottomPlayerBoard.hand}
-              isOwn={actingPlayerId === bottomPlayerId}
+              isOwn={isPinnedPerspective ? true : actingPlayerId === bottomPlayerId}
               position="bottom"
               selectedIds={selectedHandIds(selection.mode)}
               selectable={(card) => handSelectable(selection.mode, actingPlayerId === bottomPlayerId, card, selection.hasCounter)}
@@ -572,7 +590,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           resolve over the network, not this client's — suppress the prompt so
           the local human can't answer for the opponent (the WaitingForOpponent
           panel covers this state instead). */}
-      {(!isCasual || actingPlayerId === localPlayerId) && <PendingChoicePrompt state={matchState} defs={defs} images={images} />}
+      {(!isPinnedPerspective || actingPlayerId === localPlayerId) && <PendingChoicePrompt state={matchState} defs={defs} images={images} />}
       <CardDetailModal open={zoomDefinitionId !== null} onClose={() => setZoomDefinitionId(null)} definition={zoomDefinition} imageUrl={zoomImageUrl} mobileImageOnly />
 
       <Modal open={battleLinePromptOpen} onClose={() => setBattleLinePromptOpen(false)} title={mobileBattleLineLabel} rootClassName="op-mobile-battle-actions-modal" maxWidthClassName="max-w-md">
@@ -747,7 +765,7 @@ interface MobileMatchLayoutProps {
   topPlayerId: string;
   bottomPlayerId: string;
   actingPlayerId: string;
-  isCasual: boolean;
+  isPinnedPerspective: boolean;
   mode: MatchSelectionMode;
   selectedHandIds: Set<string>;
   battlePowerInstanceIds: Set<string>;
@@ -773,6 +791,8 @@ interface MobileMatchLayoutProps {
   logPanel: ReactNode;
   onOpenBattleActions: () => void;
   onClosePanel: () => void;
+  cpuThinking?: boolean;
+  cpuThinkingLabel?: string;
 }
 
 interface MobileAttackArrowState {
@@ -787,7 +807,7 @@ function MobileMatchLayout({
   topPlayerId,
   bottomPlayerId,
   actingPlayerId,
-  isCasual,
+  isPinnedPerspective,
   mode,
   selectedHandIds,
   battlePowerInstanceIds,
@@ -813,12 +833,14 @@ function MobileMatchLayout({
   logPanel,
   onOpenBattleActions,
   onClosePanel,
+  cpuThinking = false,
+  cpuThinkingLabel = 'CPU',
 }: MobileMatchLayoutProps) {
   const [openHand, setOpenHand] = useState<'top' | 'bottom' | null>(null);
-  const topHandIsOwn = isCasual ? false : actingPlayerId === topPlayerId;
-  const bottomHandIsOwn = actingPlayerId === bottomPlayerId;
-  const topIsOwn = isCasual ? false : actingPlayerId === topPlayerId;
-  const bottomIsOwn = actingPlayerId === bottomPlayerId;
+  const topHandIsOwn = isPinnedPerspective ? false : actingPlayerId === topPlayerId;
+  const bottomHandIsOwn = isPinnedPerspective ? true : actingPlayerId === bottomPlayerId;
+  const topIsOwn = isPinnedPerspective ? false : actingPlayerId === topPlayerId;
+  const bottomIsOwn = isPinnedPerspective ? true : actingPlayerId === bottomPlayerId;
 
   useEffect(() => {
     if (!openHand) return;
@@ -838,7 +860,7 @@ function MobileMatchLayout({
             board={topBoard}
             playerId={topPlayerId}
             isOwn={topIsOwn}
-            isOpponent={isCasual ? true : actingPlayerId !== topPlayerId}
+            isOpponent={isPinnedPerspective ? true : actingPlayerId !== topPlayerId}
             inverted
             mode={mode}
             battlePowerInstanceIds={battlePowerInstanceIds}
@@ -865,7 +887,7 @@ function MobileMatchLayout({
             board={bottomBoard}
             playerId={bottomPlayerId}
             isOwn={bottomIsOwn}
-            isOpponent={actingPlayerId !== bottomPlayerId}
+            isOpponent={isPinnedPerspective ? false : actingPlayerId !== bottomPlayerId}
             inverted={false}
             mode={mode}
             battlePowerInstanceIds={battlePowerInstanceIds}
@@ -882,6 +904,8 @@ function MobileMatchLayout({
             allowReturnGivenDon={allowReturnGivenDon}
           />
         </div>
+
+        {cpuThinking && <CpuThinkingOverlay opponentName={cpuThinkingLabel} />}
 
         {handTabsVisible && (
           <>
@@ -1522,6 +1546,44 @@ function formatGameOverReason(reason: string): string {
     draw: 'Draw',
   };
   return labels[reason] ?? reason;
+}
+
+function CpuSpinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+  const dim = size === 'sm' ? 'h-6 w-6' : size === 'lg' ? 'h-12 w-12' : 'h-9 w-9';
+  return (
+    <span
+      className={`op-cpu-spinner inline-block rounded-full border-2 border-cyan-200/25 border-t-cyan-300 ${dim}`}
+      role="status"
+      aria-label="CPU is thinking"
+    />
+  );
+}
+
+function CpuThinking({ opponentName }: { opponentName: string }) {
+  return (
+    <div className="flex flex-col items-center gap-3 border border-white/10 bg-black/24 px-4 py-8 text-center">
+      <CpuSpinner />
+      <p className="text-sm font-black uppercase tracking-[0.16em] text-white/80">{opponentName} is thinking…</p>
+      <p className="max-w-[16rem] text-[11px] leading-relaxed text-white/45">
+        The CPU opponent is evaluating legal moves through the same rules engine as a human player.
+      </p>
+    </div>
+  );
+}
+
+function CpuThinkingOverlay({ opponentName }: { opponentName: string }) {
+  return (
+    <div
+      className="absolute inset-0 z-[105] flex items-center justify-center bg-[rgba(2,8,22,0.42)] backdrop-blur-[2px]"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="flex flex-col items-center gap-3 border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(8,24,58,0.92),_rgba(3,9,24,0.96))] px-6 py-5 shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
+        <CpuSpinner size="lg" />
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-100/90">{opponentName} is thinking…</p>
+      </div>
+    </div>
+  );
 }
 
 /**

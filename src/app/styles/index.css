@@ -275,6 +275,7 @@
     --op-speed-bg-step: calc(var(--op-speed-bg-width) - var(--op-speed-bg-overlap));
     left: calc(0px - var(--op-speed-bg-step));
     display: flex;
+    align-items: flex-end;
     width: max-content;
     opacity: 0.72;
     filter: saturate(1.18) brightness(1.08);
@@ -290,17 +291,28 @@
   .op-home-speed-bg-panel {
     display: block;
     flex: 0 0 var(--op-speed-bg-width);
-    height: 100dvh;
+    height: auto;
     width: var(--op-speed-bg-width);
     margin-left: calc(0px - var(--op-speed-bg-overlap));
-    object-fit: cover;
-    object-position: center bottom;
+    max-width: none;
     mask-image: linear-gradient(90deg, transparent 0, #000 var(--op-speed-bg-overlap), #000 calc(100% - var(--op-speed-bg-overlap)), transparent 100%);
     -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--op-speed-bg-overlap), #000 calc(100% - var(--op-speed-bg-overlap)), transparent 100%);
   }
 
   .op-home-speed-bg-panel:first-child {
     margin-left: 0;
+  }
+
+  @media (min-width: 1280px) {
+    .op-home-speed-bg {
+      align-items: stretch;
+    }
+
+    .op-home-speed-bg-panel {
+      height: 100dvh;
+      object-fit: cover;
+      object-position: center bottom;
+    }
   }
 
   .op-home-character {
@@ -322,6 +334,22 @@
     opacity: 0.72;
     transform: skewX(-18deg);
     animation: op-home-character-streak 1.9s ease-in-out 900ms infinite;
+  }
+
+  .op-credits-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  @media (min-width: 640px) {
+    .op-credits-panel {
+      grid-template-columns: minmax(10rem, 0.78fr) minmax(0, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .op-credits-panel {
+      grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+    }
   }
 
   .op-panel {
@@ -1380,10 +1408,21 @@
   }
 }
 
+@keyframes op-cpu-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.op-cpu-spinner {
+  animation: op-cpu-spin 0.85s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .op-home-speed-bg,
   .op-home-character,
-  .op-home-character::before {
+  .op-home-character::before,
+  .op-cpu-spinner {
     animation: none;
   }
 }

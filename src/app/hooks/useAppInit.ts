@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fetchAllSets, fetchSetCards } from '../../cards/api/client';
 import { withCache, type CardPrintingDto } from '../../cards/api';
 import { browserFetch, cardLibraryCache, CARD_LIBRARY_CACHE_TTL_MS } from '../lib/runtime';
+import { useAuthStore } from '../store/authStore';
 
 // Give the global a proper type so TypeScript doesn't complain.
 declare global {
@@ -40,6 +41,8 @@ export function useAppInit(): { ready: boolean; progress: number } {
     // StrictMode double-fires effects in dev — guard against running twice.
     if (ran.current) return;
     ran.current = true;
+
+    void useAuthStore.getState().init();
 
     void (async () => {
       // 5 → 10 %: fetch the index to learn how many sets exist

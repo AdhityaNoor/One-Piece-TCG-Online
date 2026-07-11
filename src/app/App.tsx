@@ -9,8 +9,10 @@
  */
 import { BacksoundControl } from './components';
 import {
+  AuthScreen,
   CardLibraryScreen,
   CreditsScreen,
+  CpuDeckSelectScreen,
   CasualLobbyScreen,
   CoverageMonitorScreen,
   DebugToolsScreen,
@@ -26,12 +28,24 @@ import {
 } from './screens';
 import { useCurrentScreen } from './store/navigationStore';
 import { useAppInit } from './hooks/useAppInit';
+import { useAuthStore } from './store/authStore';
 
 export function App() {
   const { ready, progress } = useAppInit();
   const current = useCurrentScreen();
+  const authStatus = useAuthStore((state) => state.status);
+  const offlineMode = useAuthStore((state) => state.offlineMode);
 
   if (!ready) return <SplashScreen progress={progress} />;
+  if (authStatus === 'unknown') return <SplashScreen progress={100} />;
+  if (authStatus !== 'authenticated' && !offlineMode) {
+    return (
+      <>
+        <AuthScreen />
+        <BacksoundControl />
+      </>
+    );
+  }
 
   const screen = (() => {
     switch (current.screen) {
@@ -55,6 +69,8 @@ export function App() {
         return <PlayMenuScreen />;
       case 'deck-select':
         return <DeckSelectScreen />;
+      case 'cpu-deck-select':
+        return <CpuDeckSelectScreen />;
       case 'casual-lobby':
         return <CasualLobbyScreen />;
       case 'credits':

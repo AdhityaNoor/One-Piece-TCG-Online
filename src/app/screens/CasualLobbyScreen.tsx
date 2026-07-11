@@ -14,6 +14,7 @@
 import { useEffect, useMemo } from 'react';
 import { evaluateSavedDeckFormatStatus } from '../../cards/format';
 import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
+import { isBackendConfigured } from '../../multiplayer/net/backendConfig';
 import type { Room } from '../../multiplayer/rooms';
 import { CanvasMenuButton, DeckListSummary, GameCanvasScreen } from '../components';
 import { useCasualStore } from '../store/casualStore';
@@ -21,6 +22,7 @@ import { PLAYER_A_ID, PLAYER_B_ID } from '../store/matchStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { OnlineMatchPanel } from './online/OnlineMatchPanel';
 
 export function CasualLobbyScreen() {
   const goBack = useNavigationStore((state) => state.goBack);
@@ -30,6 +32,7 @@ export function CasualLobbyScreen() {
 
   const entries = useSavedDecksStore((state) => state.entries);
   const load = useSavedDecksStore((state) => state.load);
+  const online = isBackendConfigured();
 
   const rooms = useCasualStore((state) => state.rooms);
   const loadingRooms = useCasualStore((state) => state.loadingRooms);
@@ -42,8 +45,8 @@ export function CasualLobbyScreen() {
 
   // Load the room list once on entry.
   useEffect(() => {
-    void refreshRooms();
-  }, [refreshRooms]);
+    if (!online) void refreshRooms();
+  }, [online, refreshRooms]);
 
   const rows = useMemo(() => entries.map((entry) => ({ entry, deck: load(entry.deckId) })), [entries, load]);
 
@@ -66,18 +69,24 @@ export function CasualLobbyScreen() {
   }
 
   return (
-    <GameCanvasScreen kicker="Casual" status={`Playing as ${username}`} title="Lobby" onBack={goBack}>
-      <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[22rem_minmax(0,1fr)]">
+    <GameCanvasScreen kicker="Casual" status={`Playing as ${username}`} headerTitle="Lobby" onBack={goBack} dense>
+      <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto sm:gap-4 xl:grid xl:grid-cols-[22rem_minmax(0,1fr)] xl:overflow-hidden">
         <DeckColumn rows={rows} selectedDeckId={selectedDeckId} onSelect={selectDeck} />
-        <RoomColumn
-          rooms={rooms}
-          loading={loadingRooms}
-          busy={busy}
-          error={error}
-          canJoin={selectedDeckId !== null}
-          onRefresh={() => void refreshRooms()}
-          onJoin={(room) => void handleJoin(room)}
-        />
+        {online ? (
+          <div className="min-h-[16rem] flex-shrink-0 overflow-y-auto pr-0 sm:pr-1 xl:flex-shrink">
+            <OnlineMatchPanel selectedDeck={selectedDeckId ? load(selectedDeckId) : null} />
+          </div>
+        ) : (
+          <RoomColumn
+            rooms={rooms}
+            loading={loadingRooms}
+            busy={busy}
+            error={error}
+            canJoin={selectedDeckId !== null}
+            onRefresh={() => void refreshRooms()}
+            onJoin={(room) => void handleJoin(room)}
+          />
+        )}
       </div>
     </GameCanvasScreen>
   );
@@ -93,10 +102,10 @@ function DeckColumn({
   onSelect: (deckId: string) => void;
 }) {
   return (
-    <section className="flex min-h-0 flex-col border-2 border-gold/35 bg-black/26 p-4 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)] backdrop-blur-sm">
+    <section className="flex min-h-[14rem] flex-shrink-0 flex-col border border-gold/25 bg-black/45 p-3 backdrop-blur-sm sm:min-h-0 sm:border-2 sm:border-gold/35 sm:bg-black/26 sm:p-4 sm:shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
       <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Your Deck</p>
-      <p className="mt-2 text-sm leading-6 text-slate-200/72">Pick the deck you'll bring, then join an open room.</p>
-      <div className="mt-4 flex min-h-0 flex-col gap-2 overflow-y-auto pr-1">
+      <p className="mt-2 text-xs leading-5 text-slate-200/72 sm:text-sm sm:leading-6">Pick the deck you'll bring, then join an open room.</p>
+      <div className="mt-3 flex min-h-0 flex-col gap-2 overflow-y-auto pr-0 sm:mt-4 sm:pr-1">
         {rows.length === 0 ? (
           <p className="border border-white/10 bg-black/24 p-3 text-sm text-slate-200/60">No saved decks yet.</p>
         ) : (
@@ -142,7 +151,7 @@ function RoomColumn({
   onJoin: (room: Room) => void;
 }) {
   return (
-    <section className="flex min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] p-4 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
+    <section className="flex min-h-[16rem] flex-shrink-0 flex-col border border-white/10 bg-[#08101f] p-3 sm:min-h-0 sm:border-2 sm:border-cyan-200/20 sm:bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] sm:p-4 sm:shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)] xl:flex-shrink">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xs font-black uppercase tracking-[0.2em] text-gold">Open Rooms</h2>
@@ -160,7 +169,7 @@ function RoomColumn({
         <p className="mt-3 border border-gold/20 bg-gold/5 p-2 text-xs text-amber-100/80">Choose your deck on the left to enable joining.</p>
       )}
 
-      <div className="mt-3 flex min-h-0 flex-col gap-2 overflow-y-auto pr-1">
+      <div className="mt-3 flex min-h-0 flex-col gap-2 overflow-y-auto pr-0 sm:pr-1">
         {rooms.length === 0 && !loading ? (
           <p className="border border-dashed border-white/10 px-3 py-8 text-center text-sm text-white/40">
             No open rooms right now. Hit Refresh to look again.
@@ -180,6 +189,8 @@ function RoomColumn({
                   prominence="primary"
                   size="sm"
                   disabled={!canJoin || busy || room.status !== 'open'}
+                  expandOnHover={false}
+                  className="h-10 w-[6rem] max-w-none px-2 text-[11px] sm:h-11"
                   onClick={() => onJoin(room)}
                 />
               }

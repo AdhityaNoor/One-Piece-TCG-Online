@@ -15,4 +15,14 @@ interface ImportMetaEnv {
    * Unset in local dev: paths resolve against /public unchanged.
    */
   readonly VITE_ASSET_BASE_URL?: string;
+  /**
+   * Origin of the backend REST API, e.g. "http://localhost:8080" or a Cloud
+   * Run HTTPS URL. Unset means online multiplayer is disabled.
+   */
+  readonly VITE_API_BASE_URL?: string;
+  /**
+   * WebSocket origin for Colyseus. Falls back to VITE_API_BASE_URL with
+   * http(s) replaced by ws(s) when unset.
+   */
+  readonly VITE_COLYSEUS_URL?: string;
 }

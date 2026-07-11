@@ -387,6 +387,7 @@ export type AbilityGate =
   | { kind: 'selfTypedCharacterPowerAtLeast'; typeIncludes: string; power: number } // "If you have a {type} Character with N power or more"
   | { kind: 'selfCharacterCurrentPowerCount'; power: number; atLeast?: number; atMost?: number } // "if you have N Characters with M power or more"
   | { kind: 'selfLeaderPowerAtMost'; power: number } // "If your Leader has N power or less"
+  | { kind: 'selfTurnCount'; atLeast?: number; atMost?: number } // "If it is your Nth turn or later" for the controller
   | { kind: 'selfInstancePowerAtLeast'; power: number } // "If this Character/Leader has N power or more" (needs sourceInstanceId)
   | { kind: 'selfOtherNamedCharacterCount'; name: string; atMost?: number; atLeast?: number } // "no other [X] Characters" (excludes source)
   | { kind: 'selfTrashMatching'; atLeast?: number; atMost?: number; category?: Exclude<CardCategory, 'don'>; typeIncludes?: string } // "N or more Events/{type} cards in your trash"

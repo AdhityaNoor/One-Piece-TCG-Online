@@ -65,6 +65,12 @@ export interface BattleState {
   /** [Blocker] used this battle? Capped at one activation (7-1-2-1). */
   blockerUsed: boolean;
   /**
+   * Leader/Character/Stage instance ids that already resolved [On Your Opponent's
+   * Attack] during this battle's Block Step (10-2). Each source may activate at
+   * most once per attack declaration.
+   */
+  onOpponentsAttackUsedInstanceIds?: string[];
+  /**
    * Power granted "during this battle" by ACTIVATE_COUNTER_CHARACTER
    * (7-1-3-2-1), keyed by the boosted CardInstance id. A Counter Character's
    * boost target ("1 of your Leader or Character cards") is not necessarily

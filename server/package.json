@@ -1,0 +1,38 @@
+{
+  "name": "optcg-online-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Authoritative backend for OPTCG Online: Express REST (JWT auth) + Colyseus realtime GameRoom + MongoDB persistence. Deployed as a container to Google Cloud Run. Reuses the frontend's deterministic engine from ../src/engine.",
+  "type": "commonjs",
+  "main": "dist/index.cjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --packages=external --outfile=dist/index.cjs",
+    "start": "node dist/index.cjs"
+  },
+  "dependencies": {
+    "@colyseus/core": "^0.17.42",
+    "@colyseus/schema": "^4.0.7",
+    "@colyseus/ws-transport": "^0.17.13",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.8.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^22.5.0",
+    "esbuild": "^0.23.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.5.4"
+  }
+}

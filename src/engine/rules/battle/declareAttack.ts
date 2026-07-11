@@ -128,6 +128,7 @@ export function executeDeclareAttack(
       originalTargetInstanceId: action.targetInstanceId,
       step: attackerDef.isUnblockable ? 'counter' : 'block',
       blockerUsed: false,
+      onOpponentsAttackUsedInstanceIds: [],
       battlePowerBonuses: {},
     },
     log: [...state.log, ...logger.log],
