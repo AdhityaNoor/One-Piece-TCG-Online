@@ -29,6 +29,8 @@ import {
   type OpenRoomInfo,
 } from '../../multiplayer/net/gameClient';
 import { useAuthStore } from './authStore';
+import { useMatchStore, PLAYER_A_ID, PLAYER_B_ID } from './matchStore';
+import { useNavigationStore } from './navigationStore';
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error';
 
@@ -192,10 +194,12 @@ function wireRoom(room: Room, set: SetFn): void {
   });
 
   room.onMessage(ServerMessage.State, (payload: StatePayload) => {
+    const gameState = payload?.json ? (JSON.parse(payload.json) as GameState) : null;
     set({
-      gameState: payload?.json ? (JSON.parse(payload.json) as GameState) : null,
+      gameState,
       defs: (payload?.defs ?? {}) as CardDefinitionLookup,
     });
+    if (gameState) hydrateMatchBoard(room, gameState, (payload?.defs ?? {}) as CardDefinitionLookup);
   });
 
   room.onMessage(ServerMessage.Log, (payload: { entries: unknown[] }) => {
@@ -211,9 +215,37 @@ function wireRoom(room: Room, set: SetFn): void {
     set({ endResult: { winnerId: payload.winnerId, reason: payload.reason } });
   });
 
+  room.onMessage(ServerMessage.MatchStarted, () => {
+    useNavigationStore.getState().navigateTo({ screen: 'online-match' });
+  });
+
   room.onError(() => set({ status: 'error', error: 'Connection error.' }));
   room.onLeave(() => {
     activeRoom = null;
     set({ status: 'idle' });
   });
+}
+
+function hydrateMatchBoard(room: Room, gameState: GameState, defs: CardDefinitionLookup): void {
+  const store = useOnlineStore.getState();
+  const localPlayerId = store.localSeatId ?? PLAYER_A_ID;
+  const playerNames: Record<string, string> = {
+    [PLAYER_A_ID]: PLAYER_A_ID,
+    [PLAYER_B_ID]: PLAYER_B_ID,
+  };
+  for (const seat of store.seats) {
+    if (seat.seatId) playerNames[seat.seatId] = seat.username || seat.seatId;
+  }
+  useMatchStore.getState().hydrateOnlineMatch({
+    state: gameState,
+    defs,
+    localPlayerId,
+    playerNames,
+    sendIntent: (action) => {
+      if (activeRoom === room) activeRoom.send(ClientMessage.Intent, { action });
+    },
+  });
+  if (useNavigationStore.getState().stack.at(-1)?.screen !== 'online-match') {
+    useNavigationStore.getState().navigateTo({ screen: 'online-match' });
+  }
 }

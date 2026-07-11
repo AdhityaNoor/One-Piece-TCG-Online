@@ -34,6 +34,7 @@ import { useSavedDecksStore } from '../store/savedDecksStore';
 import { useMatchStore } from '../store/matchStore';
 import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { useOnlineStore } from '../store/onlineStore';
 import type { CardView } from '../../board/projection';
 import { logEffectText, logSourceCardLabel } from '../lib/logDisplay';
 
@@ -55,11 +56,13 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const localPlayerId = useMatchStore((s) => s.localPlayerId);
   const playerNames = useMatchStore((s) => s.playerNames);
   const cpuPlayerIds = useMatchStore((s) => s.cpuPlayerIds);
+  const onlineMode = useMatchStore((s) => s.onlineMode);
+  const leaveOnlineRoom = useOnlineStore((s) => s.leave);
   const isCasual = localPlayerId !== null && cpuPlayerIds.length === 0;
   const isCpuMatch = cpuPlayerIds.length > 0;
   /** Casual + VS CPU: board stays on the local seat; never hotseat-flip by turn. */
   const isPinnedPerspective = localPlayerId !== null;
-  const matchModeLabel = isCpuMatch ? 'VS CPU' : isCasual ? 'Casual Match' : 'Local Hotseat';
+  const matchModeLabel = onlineMode ? 'Online Match' : isCpuMatch ? 'VS CPU' : isCasual ? 'Casual Match' : 'Local Hotseat';
   const playTestMode = useMatchStore((s) => s.playTestMode);
   const nameFor = (id: string): string => playerNames[id] ?? id;
 
@@ -75,7 +78,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const mobileLogNotificationCursorRef = useRef<number | null>(null);
   const navyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
 
-  const isMatchScreen = current.screen === 'match' || current.screen === 'play-test';
+  const isMatchScreen = current.screen === 'match' || current.screen === 'online-match' || current.screen === 'play-test';
   const deckIdA = current.screen === 'match' ? current.deckIdA : null;
   const deckIdB = current.screen === 'match' ? current.deckIdB : null;
   // Casual presentation config off the nav target (undefined == hotseat).
@@ -196,9 +199,10 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const openZoom = (card: CardView) => setZoomDefinitionId(card.cardDefinitionId);
 
   function handleQuit(): void {
+    if (onlineMode) leaveOnlineRoom();
     resetMatch();
     resetMatchSetup();
-    resetTo(playTestMode ? { screen: 'debug-tools' } : { screen: 'main-menu' });
+    resetTo(playTestMode ? { screen: 'debug-tools' } : onlineMode ? { screen: 'play-menu' } : { screen: 'main-menu' });
   }
 
   // --- Deck load failure: nothing to play, surface the reason and bail out. ---
@@ -217,7 +221,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   if (!matchState) {
     return (
       <MatchGameShell title="Match">
-        <p className="p-6 text-sm text-white/50">Starting match…</p>
+        {current.screen === 'online-match' ? <OnlineSyncLoading onCancel={handleQuit} /> : <p className="p-6 text-sm text-white/50">Starting match...</p>}
       </MatchGameShell>
     );
   }
@@ -1534,6 +1538,24 @@ function DeckLoadErrorScreen({ reason, onBack }: { reason: string; onBack: () =>
         <Button variant="secondary" onClick={onBack}>Back to Main Menu</Button>
       </div>
     </MatchGameShell>
+  );
+}
+
+function OnlineSyncLoading({ onCancel }: { onCancel: () => void }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-5 p-8 text-center">
+      <CpuSpinner size="lg" />
+      <div>
+        <p className="text-[11px] font-black uppercase tracking-[0.28em] text-gold">Online Match</p>
+        <h2 className="mt-2 font-display text-3xl font-black uppercase tracking-[0.12em] text-white">Syncing Board</h2>
+        <p className="mt-3 max-w-md text-sm leading-6 text-white/60">
+          Waiting for both players to receive their redacted server state. Your board will stay locked to your seat at the bottom.
+        </p>
+      </div>
+      <Button variant="secondary" size="sm" onClick={onCancel}>
+        Leave Room
+      </Button>
+    </div>
   );
 }
 

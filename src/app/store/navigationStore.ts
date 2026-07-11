@@ -54,6 +54,7 @@ export type NavigationTarget =
   | { screen: 'deck-select' }
   | { screen: 'cpu-deck-select' }
   | { screen: 'casual-lobby' }
+  | { screen: 'online-match' }
   | { screen: 'credits' }
   | { screen: 'match'; deckIdA: string; deckIdB: string; presentation?: MatchPresentation };
 

@@ -325,8 +325,18 @@ interface MatchStoreState {
   cpuDebug: boolean;
   playTestMode: boolean;
   playTestErrors: PlayTestErrorLogEntry[];
+  onlineMode: boolean;
+  onlineSendIntent: ((action: GameAction) => void) | null;
 
   startMatch(deckA: SavedDeck, deckB: SavedDeck, presentation?: MatchPresentation): MatchStartResult;
+  hydrateOnlineMatch(params: {
+    state: GameState;
+    defs: CardDefinitionLookup;
+    images?: Record<string, string | null>;
+    localPlayerId: string;
+    playerNames: Record<string, string>;
+    sendIntent: (action: GameAction) => void;
+  }): void;
   startPlayTest(entries: PlayTestCatalogEntry[]): MatchStartResult;
   playTestAddCardToHand(playerId: string, cardDefinitionId: string): MatchDispatchResult;
   playTestSetLeader(playerId: string, cardDefinitionId: string): MatchDispatchResult;
@@ -359,6 +369,8 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   cpuDebug: false,
   playTestMode: false,
   playTestErrors: readPersistedPlayTestErrors(),
+  onlineMode: false,
+  onlineSendIntent: null,
 
   startMatch(deckA, deckB, presentation) {
     const p1Input = savedDeckToPlayerSetupInput(deckA, PLAYER_A_ID);
@@ -406,6 +418,8 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
         cpuDifficulty: 'normal',
         cpuDebug: false,
         playTestMode: false,
+        onlineMode: false,
+        onlineSendIntent: null,
       });
       return { ok: false, reasons: result.reasons };
     }
@@ -424,8 +438,30 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       cpuDifficulty,
       cpuDebug,
       playTestMode: false,
+      onlineMode: false,
+      onlineSendIntent: null,
     });
     return { ok: true };
+  },
+
+  hydrateOnlineMatch({ state, defs, images = {}, localPlayerId, playerNames, sendIntent }) {
+    useCardAnimationStore.getState().clear();
+    set({
+      state,
+      defs,
+      registry: buildRegistryFromDefs(defs),
+      cardImagesByDefinitionId: images,
+      startedWithDeckIds: null,
+      startError: null,
+      localPlayerId,
+      playerNames,
+      cpuPlayerIds: [],
+      cpuDifficulty: 'normal',
+      cpuDebug: false,
+      playTestMode: false,
+      onlineMode: true,
+      onlineSendIntent: sendIntent,
+    });
   },
 
   startPlayTest(entries) {
@@ -434,7 +470,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       const error = createPlayTestError('Could not start Play Test.', { reasons: setup.reasons });
       const errors = [...get().playTestErrors, error];
       persistPlayTestErrors(errors);
-      set({ state: null, startError: setup.reasons, playTestMode: true, playTestErrors: errors });
+      set({ state: null, startError: setup.reasons, playTestMode: true, playTestErrors: errors, onlineMode: false, onlineSendIntent: null });
       return { ok: false, reasons: setup.reasons };
     }
 
@@ -447,7 +483,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       const error = createPlayTestError('Engine rejected generated Play Test setup.', { reasons: result.reasons });
       const errors = [...get().playTestErrors, error];
       persistPlayTestErrors(errors);
-      set({ state: null, startError: result.reasons, playTestMode: true, playTestErrors: errors });
+      set({ state: null, startError: result.reasons, playTestMode: true, playTestErrors: errors, onlineMode: false, onlineSendIntent: null });
       return { ok: false, reasons: result.reasons };
     }
 
@@ -462,6 +498,8 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       localPlayerId: null,
       playerNames: { [PLAYER_A_ID]: 'Play Test P1', [PLAYER_B_ID]: 'Play Test P2' },
       playTestMode: true,
+      onlineMode: false,
+      onlineSendIntent: null,
     });
     return { ok: true };
   },
@@ -627,9 +665,14 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   },
 
   dispatch(action) {
-    const { state, defs, registry, localPlayerId, playTestMode } = get();
+    const { state, defs, registry, localPlayerId, playTestMode, onlineMode, onlineSendIntent } = get();
     if (!state) {
       return { ok: false, reasons: ['No match is in progress.'] };
+    }
+    if (onlineMode) {
+      if (!onlineSendIntent) return { ok: false, reasons: ['Online transport is not connected.'] };
+      onlineSendIntent(action);
+      return { ok: true };
     }
     if (action.type === 'RETURN_GIVEN_DON' && localPlayerId !== null && get().cpuPlayerIds.length === 0) {
       return { ok: false, reasons: ['Returning given DON!! is not allowed in Casual matches.'] };
@@ -667,6 +710,6 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
 
   reset() {
     useCardAnimationStore.getState().clear();
-    set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {}, cpuPlayerIds: [], cpuDifficulty: 'normal', cpuDebug: false, playTestMode: false });
+    set({ state: null, defs: {}, registry: {}, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {}, cpuPlayerIds: [], cpuDifficulty: 'normal', cpuDebug: false, playTestMode: false, onlineMode: false, onlineSendIntent: null });
   },
 }));

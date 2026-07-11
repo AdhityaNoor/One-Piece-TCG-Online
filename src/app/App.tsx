@@ -73,6 +73,8 @@ export function App() {
         return <CpuDeckSelectScreen />;
       case 'casual-lobby':
         return <CasualLobbyScreen />;
+      case 'online-match':
+        return <MatchScreen />;
       case 'credits':
         return <CreditsScreen />;
       case 'match':

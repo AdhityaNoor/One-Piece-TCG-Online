@@ -196,12 +196,6 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
             </p>
           )}
 
-          {phase === 'in-game' && gameState && (
-            <p className="border border-amber-300/25 bg-amber-500/10 p-2 text-xs text-amber-100">
-              Online board rendering is not wired yet. VS Self and VS CPU stay available from the Play menu.
-            </p>
-          )}
-
           {phase === 'lobby' && (
             <p className="text-xs text-white/45">
               Both players must be ready with a valid deck; the server starts the match automatically.
