@@ -12,9 +12,9 @@
 import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
-import { Server } from '@colyseus/core';
+import { Server, matchMaker } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
-import { env } from './config/env';
+import { env, isAllowedClientOrigin } from './config/env';
 import { connectMongo, closeMongo } from './db/mongo';
 import { authRouter } from './auth/routes';
 import { GameRoom } from './rooms/GameRoom';
@@ -30,7 +30,13 @@ async function main(): Promise<void> {
   // WebSocket transport via `verifyClient` below.
   app.use(
     cors({
-      origin: env.clientOrigins,
+      origin: (origin, callback) => {
+        if (isAllowedClientOrigin(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(new Error(`Origin not allowed by CORS: ${origin ?? '<none>'}`));
+      },
       credentials: true,
     }),
   );
@@ -38,6 +44,25 @@ async function main(): Promise<void> {
   // Cloud Run health check — must be fast and dependency-light.
   app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok', env: env.nodeEnv });
+  });
+
+  app.get('/rooms/open', async (_req, res, next) => {
+    try {
+      const rooms = await matchMaker.query({ name: GAME_ROOM_NAME });
+      res.json(
+        rooms
+          .filter((room) => !room.locked && !room.private && !room.unlisted)
+          .map((room) => ({
+            roomId: room.roomId,
+            clients: room.clients,
+            maxClients: room.maxClients,
+            metadata: room.metadata ?? {},
+            createdAt: room.createdAt,
+          })),
+      );
+    } catch (err) {
+      next(err);
+    }
   });
 
   app.use('/auth', authRouter());
@@ -49,16 +74,14 @@ async function main(): Promise<void> {
       server: httpServer,
       // Reject WS handshakes from origins outside the allow-list.
       verifyClient: (info, next) => {
-        const origin = info.origin;
-        const allowed = !origin || env.clientOrigins.includes(origin);
-        next(allowed);
+        next(isAllowedClientOrigin(info.origin));
       },
     }),
   });
 
   gameServer.define(GAME_ROOM_NAME, GameRoom);
 
-  httpServer.listen(env.port, '0.0.0.0', () => {
+  await gameServer.listen(env.port, '0.0.0.0', undefined, () => {
     console.log(`[server] listening on 0.0.0.0:${env.port} (${env.nodeEnv})`);
     console.log(`[server] CORS/WS origins: ${env.clientOrigins.join(', ')}`);
   });

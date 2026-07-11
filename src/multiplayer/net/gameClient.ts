@@ -40,7 +40,7 @@ interface AvailableRoom {
 async function getAvailableRooms(): Promise<AvailableRoom[]> {
   const base = apiBaseUrl();
   if (!base) return [];
-  const response = await fetch(`${base}/matchmake/${GAME_ROOM_NAME}`);
+  const response = await fetch(`${base}/rooms/open`);
   if (!response.ok) return [];
   const payload = (await response.json()) as unknown;
   return Array.isArray(payload) ? (payload as AvailableRoom[]) : [];

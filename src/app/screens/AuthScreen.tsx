@@ -136,11 +136,13 @@ export function AuthScreen({ initialMode = 'login' }: { initialMode?: 'login' | 
           </button>
         )}
 
-        <div className="mt-1 border-t border-white/10 pt-4">
-          <Button variant="ghost" fullWidth onClick={() => continueOffline()}>
-            Continue offline (local play)
-          </Button>
-        </div>
+        {!configured && (
+          <div className="mt-1 border-t border-white/10 pt-4">
+            <Button variant="ghost" fullWidth onClick={() => continueOffline()}>
+              Continue offline (local play)
+            </Button>
+          </div>
+        )}
       </div>
     </GameCanvasScreen>
   );

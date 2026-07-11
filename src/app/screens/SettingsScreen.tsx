@@ -30,7 +30,7 @@ export function SettingsScreen() {
             <label className="flex flex-col gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] p-3">
               <span className="text-sm font-black uppercase tracking-[0.12em] text-white">Username</span>
               <span className="text-xs text-white/50">
-                Your display name in Casual matches and the online lobby. Presentation only — the engine keeps fixed player ids.
+                Your display name in online matches. Presentation only — the engine keeps fixed player ids.
               </span>
               <input
                 type="text"

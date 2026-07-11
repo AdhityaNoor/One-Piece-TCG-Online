@@ -113,7 +113,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout() {
     persistToken(null);
-    set({ status: 'anonymous', user: null, token: null, error: null });
+    set({ status: 'anonymous', user: null, token: null, busy: false, error: null, offlineMode: false });
     void get;
   },
 

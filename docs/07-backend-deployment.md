@@ -40,6 +40,10 @@ Required production variables:
 | `NODE_ENV` | no | Use `production` on Cloud Run. |
 | `JWT_EXPIRES_IN` | no | Defaults to `7d`. |
 
+Set `CLIENT_ORIGIN` to the browser origin only: scheme + host, no trailing
+slash and no path. Example: `https://one-piece-tcg-online.vercel.app`, not
+`https://one-piece-tcg-online.vercel.app/`.
+
 For local frontend-to-backend wiring, set these in the repo root `.env.local`:
 
 ```env
@@ -188,6 +192,27 @@ Auth endpoints:
 | `GET` | `/auth/me` | `Authorization: Bearer <jwt>` |
 | `GET` | `/health` | none |
 
+Open room list:
+
+```bash
+curl -i https://YOUR_SERVICE_URL/rooms/open
+```
+
+This endpoint should not be `404`.
+
+Colyseus matchmaker route:
+
+```bash
+curl -i -X POST \
+  -H "Content-Type: application/json" \
+  -d "{}" \
+  https://YOUR_SERVICE_URL/matchmake/create/game
+```
+
+Without a token this may reject, but it should not be `404`. A `404` means the
+backend image was built from code that did not let Colyseus bind its matchmaker
+routes; rebuild and redeploy the backend image.
+
 End-to-end check:
 
 1. Open the deployed frontend.
@@ -231,6 +256,15 @@ If the frontend domain changes, update `CLIENT_ORIGIN`:
 gcloud run services update optcg-server \
   --region YOUR_REGION \
   --update-env-vars CLIENT_ORIGIN="https://your-new-app.vercel.app"
+```
+
+For this project production domain in `asia-southeast2`:
+
+```bash
+gcloud run services update optcg-server \
+  --project optcgonb \
+  --region asia-southeast2 \
+  --update-env-vars CLIENT_ORIGIN="https://one-piece-tcg-online.vercel.app"
 ```
 
 `CLIENT_ORIGIN` can be comma-separated if you need both production and preview

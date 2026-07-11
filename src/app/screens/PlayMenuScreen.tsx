@@ -39,9 +39,9 @@ export function PlayMenuScreen() {
           disabled={deckCount < 1}
         />
         <ModeCard
-          label="Casual"
-          tag="Online-ready"
-          description="Bring one deck, pick a room from the lobby, and play from your own side of the table — the board stays put and every action is tagged with the players' usernames. The shape online multiplayer will use."
+          label="Online"
+          tag="Multiplayer"
+          description="Sign in, bring one saved deck, host a room, or join another player by room code through the live backend lobby."
           onClick={() => navigateTo({ screen: 'casual-lobby' })}
           disabled={deckCount < 1}
         />

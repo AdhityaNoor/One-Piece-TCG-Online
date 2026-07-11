@@ -26,15 +26,35 @@ function optional(name: string, fallback: string): string {
   return value && value.trim() !== '' ? value : fallback;
 }
 
+function normalizeOrigin(raw: string): string | null {
+  const value = raw.trim().replace(/\/+$/, '');
+  if (!value) return null;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return value;
+  }
+}
+
 /**
  * CLIENT_ORIGIN may be a comma-separated list so a single deploy can allow
  * both the Vercel production domain and a preview/localhost origin.
  */
 function parseOrigins(raw: string): string[] {
-  return raw
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
+  return Array.from(
+    new Set(
+      raw
+        .split(',')
+        .map((o) => normalizeOrigin(o))
+        .filter((o): o is string => Boolean(o)),
+    ),
+  );
+}
+
+export function isAllowedClientOrigin(origin: string | undefined): boolean {
+  if (!origin) return true;
+  const normalized = normalizeOrigin(origin);
+  return Boolean(normalized && env.clientOrigins.includes(normalized));
 }
 
 export interface AppEnv {
