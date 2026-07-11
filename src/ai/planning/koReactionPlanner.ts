@@ -35,9 +35,9 @@ function scoreOpsRough(ops: EffectOp[]): number {
     else if (op.op === 'playFromHand' || op.op === 'playFromTrash' || op.op === 'playFromDeck') total += 14;
     else if (op.op === 'addDonFromDeck' || op.op === 'giveDon') total += 11;
     else if (op.op === 'searchTopDeck' || op.op === 'searchDeck') total += 9;
-    else if (op.op === 'ko' || op.op === 'koAllCharacters') total += 12;
+    else if (op.op === 'ko') total += 12;
     else if (op.op === 'rest') total += 7;
-    else if (op.op === 'addPower' || op.op === 'addPowerSelf') {
+    else if (op.op === 'addPower') {
       const amount = 'amount' in op ? op.amount : 0;
       total += amount < 0 ? 8 : 6;
     } else if (op.op === 'addCost') total += 7;

@@ -8,7 +8,7 @@ import { env } from '../config/env';
 import type { JwtClaims } from '../../../shared/auth';
 
 export function signToken(claims: JwtClaims): string {
-  return jwt.sign(claims, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
+  return jwt.sign(claims, env.jwtSecret as jwt.Secret, { expiresIn: env.jwtExpiresIn as jwt.SignOptions['expiresIn'] });
 }
 
 /** Returns claims on a valid token, or null on any failure (expired/tampered). */

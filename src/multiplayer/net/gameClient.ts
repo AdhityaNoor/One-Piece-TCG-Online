@@ -15,7 +15,7 @@
  */
 import { Client, type Room } from '@colyseus/sdk';
 import { GAME_ROOM_NAME, type JoinOptions } from '../../../shared/multiplayer';
-import { colyseusUrl } from './backendConfig';
+import { apiBaseUrl, colyseusUrl } from './backendConfig';
 
 /** Display info for one open room in the lobby list. */
 export interface OpenRoomInfo {
@@ -28,6 +28,22 @@ export interface OpenRoomInfo {
 
 function client(): Client {
   return new Client(colyseusUrl());
+}
+
+interface AvailableRoom {
+  roomId: string;
+  clients: number;
+  maxClients: number;
+  metadata?: unknown;
+}
+
+async function getAvailableRooms(): Promise<AvailableRoom[]> {
+  const base = apiBaseUrl();
+  if (!base) return [];
+  const response = await fetch(`${base}/matchmake/${GAME_ROOM_NAME}`);
+  if (!response.ok) return [];
+  const payload = (await response.json()) as unknown;
+  return Array.isArray(payload) ? (payload as AvailableRoom[]) : [];
 }
 
 /** Host a new match room. The server mints the shareable roomCode. */
@@ -49,7 +65,7 @@ export async function joinRoomById(token: string, roomId: string): Promise<Room>
 export async function joinRoomByCode(token: string, roomCode: string): Promise<Room> {
   const c = client();
   const code = roomCode.trim().toUpperCase();
-  const available = await c.getAvailableRooms(GAME_ROOM_NAME).catch(() => []);
+  const available = await getAvailableRooms().catch(() => []);
   const match = available.find((r) => (r.metadata as { roomCode?: string } | undefined)?.roomCode === code);
   const options: JoinOptions = { token, roomCode: code };
   if (match) return c.joinById(match.roomId, options);
@@ -58,7 +74,7 @@ export async function joinRoomByCode(token: string, roomCode: string): Promise<R
 
 /** Real, currently-joinable rooms (phase 'lobby' with a free seat). */
 export async function listOpenRooms(): Promise<OpenRoomInfo[]> {
-  const rooms = await client().getAvailableRooms(GAME_ROOM_NAME).catch(() => []);
+  const rooms = await getAvailableRooms().catch(() => []);
   return rooms
     .map((r) => {
       const meta = (r.metadata ?? {}) as {

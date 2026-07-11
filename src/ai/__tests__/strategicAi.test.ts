@@ -15,7 +15,7 @@ describe('strategic AI layers', () => {
     rig = putCharacterInPlay(rig, 'p1', { ...leader, category: 'leader' }).rig;
     const state = {
       ...rig.state,
-      gameOver: { winnerId: 'p1', reason: 'life_depleted' as const },
+      gameOver: { winnerId: 'p1', reason: 'lifeDamageAtZero' as const },
     };
     expect(terminalStateScore(state, 'p1')).toBeGreaterThan(0);
     expect(terminalStateScore(state, 'p2')).toBeLessThan(0);

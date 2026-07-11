@@ -9,6 +9,7 @@ import { OP15_ASSIGNMENTS } from '../../cards/effectTemplates/assignments/OP15';
 import { createPreGameState } from '../../engine/setup';
 import { GENERIC_DON_CARD_DEFINITION } from '../../cards/decks/genericDonCard';
 import type { PlayerSetupInput } from '../../engine/setup';
+import type { GameState } from '../../engine/state/game';
 
 function makeDeckInput(playerId: 'p1' | 'p2', leader: ReturnType<typeof makeCharacterDef>, deck: ReturnType<typeof makeCharacterDef>[]): PlayerSetupInput {
   return {
@@ -30,7 +31,7 @@ describe('CPU player', () => {
     expect(created.ok).toBe(true);
     if (!created.ok) return;
 
-    let state = {
+    let state: GameState = {
       ...created.state,
       currentPhase: 'main' as const,
       activePlayerId: 'p2' as const,
@@ -38,7 +39,15 @@ describe('CPU player', () => {
       setupState: null,
       pendingChoices: [],
     };
-    const rig = buildBaseRig({ state });
+    const rig = {
+      state,
+      defs: {
+        [p1.leader.cardDefinitionId]: p1.leader,
+        [p2.leader.cardDefinitionId]: p2.leader,
+        [vanilla.cardDefinitionId]: vanilla,
+        [GENERIC_DON_CARD_DEFINITION.cardDefinitionId]: GENERIC_DON_CARD_DEFINITION,
+      },
+    };
     const withChar = putCharacterInPlay(rig, 'p2', vanilla);
     state = withChar.rig.state;
 
@@ -189,7 +198,7 @@ describe('CPU player', () => {
     const attackerPlay = putCharacterInPlay(rig, 'p1', attacker);
     rig = putInHand(attackerPlay.rig, 'p2', eventCard).rig;
     const lucyId = rig.state.players.p2.leaderInstanceId!;
-    let state = {
+    let state: GameState = {
       ...rig.state,
       currentBattle: {
         attackerInstanceId: attackerPlay.instanceId,

@@ -31,10 +31,10 @@ export interface AttackTriggerAnalysis {
 function scoreOpsRough(ops: EffectOp[]): number {
   let total = 0;
   for (const op of ops) {
-    if (op.op === 'ko' || op.op === 'koAllCharacters') total += 14;
+    if (op.op === 'ko') total += 14;
     else if (op.op === 'rest') total += 10;
     else if (op.op === 'addCost') total += 8;
-    else if (op.op === 'addPower' || op.op === 'addPowerSelf') total += 6;
+    else if (op.op === 'addPower') total += 6;
     else if (op.op === 'preventBlockers' || op.op === 'suppressBlockerActivation') total += 9;
     else if (op.op === 'chooseTargets') total += 3;
     else total += 2;
@@ -46,7 +46,6 @@ function isSetupOp(op: EffectOp): boolean {
   return (
     op.op === 'rest' ||
     op.op === 'ko' ||
-    op.op === 'koAllCharacters' ||
     op.op === 'addCost' ||
     op.op === 'preventBlockers' ||
     op.op === 'suppressBlockerActivation' ||
@@ -106,7 +105,7 @@ function abilityHasLiveSetupTarget(
     }
   }
   // Broad rest/ko without choose still counts if any opponent character exists.
-  if (ability.ops.some((op) => op.op === 'rest' || op.op === 'ko' || op.op === 'koAllCharacters')) {
+  if (ability.ops.some((op) => op.op === 'rest' || op.op === 'ko')) {
     return opponentPublicCardIds(state, playerId).some(
       (id) => state.cardsById[id]?.currentZone === 'characterArea',
     );

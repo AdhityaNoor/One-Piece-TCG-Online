@@ -49,7 +49,6 @@ export function accumulateOpProfile(profile: CardStrategicProfile, op: EffectOp,
       profile.offensiveValue += f * op.count * 4;
       break;
     case 'ko':
-    case 'koAllCharacters':
       profile.removalValue += f * 14;
       profile.tempoValue += f * 10;
       addTag(profile.payoffTags, 'interaction');
@@ -63,7 +62,6 @@ export function accumulateOpProfile(profile: CardStrategicProfile, op: EffectOp,
       profile.offensiveValue += f * 4;
       break;
     case 'addPower':
-    case 'addPowerSelf':
     case 'addPowerAura':
     case 'setBasePowerAura':
       profile.offensiveValue += f * 8;

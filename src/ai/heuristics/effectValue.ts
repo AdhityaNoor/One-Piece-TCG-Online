@@ -129,8 +129,6 @@ function scoreEffectOp(ctx: EffectScoreContext, op: EffectOp, factor = 1): numbe
       return factor * (6 * op.count + scoreSelectorImpact(ctx, op.target, 'help') * 0.5);
     case 'ko':
       return factor * (14 + scoreSelectorImpact(ctx, op.target, 'harm') * 2);
-    case 'koAllCharacters':
-      return factor * (10 + bestOpponentTargetValue(ctx) * 3);
     case 'rest':
       return factor * (8 + scoreSelectorImpact(ctx, op.target, 'harm') * 1.2);
     case 'setActive':
@@ -140,8 +138,6 @@ function scoreEffectOp(ctx: EffectScoreContext, op: EffectOp, factor = 1): numbe
       const magnitude = Math.abs(amount) / 450;
       return factor * magnitude * (amount >= 0 ? scoreSelectorImpact(ctx, op.target, 'help') || 1 : scoreSelectorImpact(ctx, op.target, 'harm') || 1);
     }
-    case 'addPowerSelf':
-      return factor * (Math.abs(op.amount) / 400 + 4);
     case 'addPowerAura':
     case 'addKeywordAura':
     case 'setBasePowerAura':
@@ -185,8 +181,6 @@ function scoreEffectOp(ctx: EffectScoreContext, op: EffectOp, factor = 1): numbe
     }
     case 'chooseTargets':
       return factor * 4;
-    case 'optionalTrashFromHand':
-      return 0;
     case 'registerKoReplacement':
     case 'addKoImmunity':
     case 'addKoImmunityAura':
@@ -390,7 +384,10 @@ export function optionalHandTrashCandidates(
   ctx: EffectScoreContext,
   ability: Ability | undefined,
 ): string[] {
-  const chooseOp = ability?.ops.find((op) => op.op === 'chooseTargets' && op.from?.sel === 'controllerHand' && op.min === 0);
+  const chooseOp = ability?.ops.find(
+    (op): op is Extract<EffectOp, { op: 'chooseTargets' }> & { from: Extract<Selector, { sel: 'controllerHand' }> } =>
+      op.op === 'chooseTargets' && op.from?.sel === 'controllerHand' && op.min === 0,
+  );
   if (!chooseOp || chooseOp.op !== 'chooseTargets') return [];
   const filter = chooseOp.from.filter;
   return ownHandIds(ctx.state, ctx.playerId).filter((id) => {

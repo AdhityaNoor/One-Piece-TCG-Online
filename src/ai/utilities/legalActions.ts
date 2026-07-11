@@ -91,7 +91,7 @@ function resolveSelectCardCandidates(state: GameState, playerId: string, choice:
   if (zoneId === 'characterArea') return [...player.characterArea.cardIds];
   if (zoneId === 'hand') return [...player.hand.cardIds];
   if (zoneId === 'trash') return [...player.trash.cardIds];
-  if (zoneId === 'stageArea' && player.stageInstanceId) return [player.stageInstanceId];
+  if (zoneId === 'stageArea') return [...player.stageArea.cardIds];
   if (zoneId === 'leaderArea' && player.leaderInstanceId) return [player.leaderInstanceId];
 
   if (choice.sourceEffectId === 'rule:characterAreaOverflow') {

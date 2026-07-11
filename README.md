@@ -106,8 +106,9 @@ npm run build
 - [Rules Engine Blueprint](docs/01-rules-engine-blueprint.md)
 - [Card Library and Deck Architecture](docs/02-card-library-and-deck-architecture.md)
 - [App Shell and UI](docs/03-app-shell-and-ui.md)
-- [Deployment](docs/04-deployment.md)
+- [Frontend Deployment](docs/04-deployment.md)
 - [Development Guide and Tech Stack](docs/05-development-guide-and-tech-stack.md)
+- [Backend Deployment](docs/07-backend-deployment.md)
 
 ## Contributing
 

@@ -16,10 +16,10 @@ import { ownFieldCardIds } from '../visibility/playerView';
 function scoreOpsRough(ops: EffectOp[]): number {
   let total = 0;
   for (const op of ops) {
-    if (op.op === 'ko' || op.op === 'koAllCharacters') total += 14;
+    if (op.op === 'ko') total += 14;
     else if (op.op === 'rest') total += 8;
     else if (op.op === 'addCost') total += 7;
-    else if (op.op === 'addPower' || op.op === 'addPowerSelf') total += 6;
+    else if (op.op === 'addPower') total += 6;
     else if (op.op === 'draw') total += 7;
     else if (op.op === 'returnToHand' || op.op === 'moveToHand') total += 9;
     else if (op.op === 'chooseTargets') total += 3;

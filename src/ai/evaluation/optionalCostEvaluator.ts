@@ -29,9 +29,9 @@ function scoreOpsRough(ops: EffectOp[]): number {
   let total = 0;
   for (const op of ops) {
     if (op.op === 'draw' || op.op === 'drawUntilHandCount') total += 10;
-    else if (op.op === 'ko' || op.op === 'koAllCharacters') total += 14;
+    else if (op.op === 'ko') total += 14;
     else if (op.op === 'rest') total += 8;
-    else if (op.op === 'addPower' || op.op === 'addPowerSelf') {
+    else if (op.op === 'addPower') {
       const amount = 'amount' in op ? Math.abs(op.amount) : 1000;
       const per = 'amountPer' in op && op.amountPer ? Math.abs(op.amountPer) : 0;
       total += Math.max(4, amount / 400) + (per > 0 ? per / 350 + 6 : 0);
@@ -174,7 +174,7 @@ export function analyzeOptionalYesNo(
   }
 
   let cost = abilityCostValue(ability);
-  if (op?.op === 'optionalTrashFromHand' || (op?.op === 'chooseTargets' && op.from?.sel === 'controllerHand')) {
+  if (op?.op === 'chooseTargets' && op.from?.sel === 'controllerHand') {
     // Approximate: will need to trash something — use average weak hand cost.
     const candidates = choice.constraints.candidateInstanceIds ?? [];
     if (candidates.length > 0) {

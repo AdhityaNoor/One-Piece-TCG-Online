@@ -31,7 +31,7 @@ describe('strategic selection decisions', () => {
     const source = putCharacterInPlay(rig, 'p1', sourceDef);
     rig = source.rig;
     const program: EffectProgram = {
-      cardDefinitionId: sourceDef.cardDefinitionId,
+      cardNumber: sourceDef.cardNumber,
       abilities: [
         {
           timing: 'onPlay',
@@ -191,7 +191,7 @@ describe('strategic selection decisions', () => {
     const src = putCharacterInPlay(rig, 'p1', sourceDef);
     rig = src.rig;
     const program: EffectProgram = {
-      cardDefinitionId: sourceDef.cardDefinitionId,
+      cardNumber: sourceDef.cardNumber,
       abilities: [
         {
           timing: 'activateMain',
@@ -284,7 +284,7 @@ describe('strategic selection decisions', () => {
     const sourceDef = makeCharacterDef({ cardNumber: 'SEARCH-SRC', baseCost: 1, basePower: 1000 });
     const src = putCharacterInPlay(rig, 'p1', sourceDef);
     const program: EffectProgram = {
-      cardDefinitionId: sourceDef.cardDefinitionId,
+      cardNumber: sourceDef.cardNumber,
       abilities: [
         {
           timing: 'onPlay',

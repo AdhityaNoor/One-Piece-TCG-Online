@@ -45,7 +45,6 @@ function abilityHasRemovalOps(ability: Ability | undefined): boolean {
   const hasDirectRemoval = ability.ops.some(
     (op) =>
       op.op === 'ko' ||
-      op.op === 'koAllCharacters' ||
       op.op === 'rest' ||
       op.op === 'returnToHand' ||
       op.op === 'moveToBottomDeck' ||
@@ -108,10 +107,9 @@ function abilityWantsBoardSetup(ability: Ability | undefined): boolean {
   return ability.gate.some(
     (g) =>
       g.kind === 'selfCharacterCount' ||
-      g.kind === 'selfCharacterTypeCount' ||
       g.kind === 'leaderType' ||
-      g.kind === 'controllerStage' ||
-      g.kind === 'selfDonAttachedTotal',
+      g.kind === 'selfTypedCharacterCount' ||
+      g.kind === 'selfGivenDonCount',
   );
 }
 

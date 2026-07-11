@@ -50,7 +50,7 @@ interface SeatBinding {
   deck: SavedDeck | null;
 }
 
-export class GameRoom extends Room<GameRoomState> {
+export class GameRoom extends Room<{ state: GameRoomState }> {
   maxClients = 2;
 
   private session: GameSession | null = null;
@@ -142,7 +142,7 @@ export class GameRoom extends Room<GameRoomState> {
     const started = GameSession.start(p1.deck, p2.deck);
     if (!started.ok) {
       this.broadcast(ServerMessage.Rejected, { of: 'ready', reasons: started.reasons } satisfies RejectedPayload);
-      this.state.seats.forEach((s) => (s.ready = false));
+      this.state.seats.forEach((s: SeatState) => (s.ready = false));
       bindings.forEach((b) => (b.deck = null));
       return;
     }
@@ -251,11 +251,11 @@ export class GameRoom extends Room<GameRoomState> {
     }
   }
 
-  async onLeave(client: Client, consented: boolean): Promise<void> {
+  async onDrop(client: Client, _code?: number): Promise<void> {
     const seat = this.state.seats.get(client.sessionId);
     if (seat) seat.connected = false;
 
-    if (!consented && this.state.phase !== 'ended') {
+    if (this.state.phase !== 'ended') {
       try {
         await this.allowReconnection(client, RECONNECT_WINDOW_SECONDS);
         const rejoined = this.state.seats.get(client.sessionId);
@@ -267,6 +267,14 @@ export class GameRoom extends Room<GameRoomState> {
       }
     }
 
+    this.removeClient(client);
+  }
+
+  onLeave(client: Client, _code?: number): void {
+    this.removeClient(client);
+  }
+
+  private removeClient(client: Client): void {
     this.bindings.delete(client.sessionId);
     this.state.seats.delete(client.sessionId);
     this.syncMetadata();

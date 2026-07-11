@@ -138,10 +138,6 @@ describe('DON attachment recipient selection', () => {
             ...withOne.rig.state.cardsById[char.instanceId],
             donAttached: [donIds[0]],
           },
-          [donIds[0]]: {
-            ...withOne.rig.state.cardsById[donIds[0]],
-            currentZone: 'attached',
-          },
         },
         players: {
           ...withOne.rig.state.players,
