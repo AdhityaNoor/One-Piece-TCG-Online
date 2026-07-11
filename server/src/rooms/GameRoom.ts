@@ -203,8 +203,8 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     if (!this.session) return;
     const binding = this.bindings.get(client.sessionId);
     if (!binding) return;
-    const { json, defs } = this.session.viewForSeat(binding.seatId);
-    client.send(ServerMessage.State, { json, defs } satisfies StatePayload);
+    const { json, defs, images } = this.session.viewForSeat(binding.seatId);
+    client.send(ServerMessage.State, { json, defs, images } satisfies StatePayload);
   }
 
   /** Send each client only the log lines its seat may see. */

@@ -26,6 +26,7 @@ import { migrateSavedDeck, type SavedDeck } from '../../../src/cards/decks/saved
 import {
   savedDeckToPlayerSetupInput,
   buildCardDefinitionLookup,
+  buildCardImageLookup,
 } from '../../../src/app/lib/savedDeckToSetupInput';
 
 /** Fixed engine seat ids, identical to the frontend's PLAYER_A_ID/PLAYER_B_ID. */
@@ -58,6 +59,7 @@ export class GameSession {
   private constructor(
     public state: GameState,
     private readonly defs: CardDefinitionLookup,
+    private readonly images: Record<string, string | null>,
     private readonly registry: EffectTemplateRegistry,
     public readonly seed: string,
   ) {}
@@ -82,8 +84,9 @@ export class GameSession {
     if (!result.ok) return { ok: false, reasons: result.reasons };
 
     const defs = buildCardDefinitionLookup([p1Deck, p2Deck]);
+    const images = buildCardImageLookup([p1Deck, p2Deck]);
     const registry = buildCuratedEffectRegistry(defs);
-    return { ok: true, session: new GameSession(result.state, defs, registry, seed) };
+    return { ok: true, session: new GameSession(result.state, defs, images, registry, seed) };
   }
 
   /**
@@ -126,13 +129,17 @@ export class GameSession {
    * definitions that seat is entitled to see. Never leaks the opponent's
    * hidden cards or full decklist (see redaction.ts).
    */
-  viewForSeat(seatId: string): { json: string; defs: Record<string, CardDefinition> } {
+  viewForSeat(seatId: string): { json: string; defs: Record<string, CardDefinition>; images: Record<string, string | null> } {
     const { json, definitionIds } = redactStateForSeat(this.state, seatId);
     const defs: Record<string, CardDefinition> = {};
+    const images: Record<string, string | null> = {};
     for (const id of definitionIds) {
       const def = this.defs[id];
-      if (def) defs[id] = def;
+      if (def) {
+        defs[id] = def;
+        images[id] = this.images[id] ?? null;
+      }
     }
-    return { json, defs };
+    return { json, defs, images };
   }
 }

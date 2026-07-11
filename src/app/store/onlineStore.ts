@@ -195,11 +195,13 @@ function wireRoom(room: Room, set: SetFn): void {
 
   room.onMessage(ServerMessage.State, (payload: StatePayload) => {
     const gameState = payload?.json ? (JSON.parse(payload.json) as GameState) : null;
+    const defs = (payload?.defs ?? {}) as CardDefinitionLookup;
+    const images = (payload?.images ?? {}) as Record<string, string | null>;
     set({
       gameState,
-      defs: (payload?.defs ?? {}) as CardDefinitionLookup,
+      defs,
     });
-    if (gameState) hydrateMatchBoard(room, gameState, (payload?.defs ?? {}) as CardDefinitionLookup);
+    if (gameState) hydrateMatchBoard(room, gameState, defs, images);
   });
 
   room.onMessage(ServerMessage.Log, (payload: { entries: unknown[] }) => {
@@ -226,7 +228,12 @@ function wireRoom(room: Room, set: SetFn): void {
   });
 }
 
-function hydrateMatchBoard(room: Room, gameState: GameState, defs: CardDefinitionLookup): void {
+function hydrateMatchBoard(
+  room: Room,
+  gameState: GameState,
+  defs: CardDefinitionLookup,
+  images: Record<string, string | null>,
+): void {
   const store = useOnlineStore.getState();
   const localPlayerId = store.localSeatId ?? PLAYER_A_ID;
   const playerNames: Record<string, string> = {
@@ -239,6 +246,7 @@ function hydrateMatchBoard(room: Room, gameState: GameState, defs: CardDefinitio
   useMatchStore.getState().hydrateOnlineMatch({
     state: gameState,
     defs,
+    images,
     localPlayerId,
     playerNames,
     sendIntent: (action) => {

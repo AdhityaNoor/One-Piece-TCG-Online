@@ -96,6 +96,12 @@ export interface StatePayload {
    * (`CardDefinition` lives in the engine); the client casts it.
    */
   defs: Record<string, unknown>;
+  /**
+   * Display-only image URLs for the same visible card definitions above,
+   * keyed by cardDefinitionId. These come from each player's SavedDeck
+   * snapshot, not from executable rules data.
+   */
+  images?: Record<string, string | null>;
 }
 
 export interface RejectedPayload {
