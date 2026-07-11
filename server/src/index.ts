@@ -72,6 +72,9 @@ async function main(): Promise<void> {
   const gameServer = new Server({
     transport: new WebSocketTransport({
       server: httpServer,
+      // Ready messages carry a full SavedDeck snapshot. The transport default
+      // is 4KB, which is too small for real deck JSON and closes the socket.
+      maxPayload: 1024 * 1024,
       // Reject WS handshakes from origins outside the allow-list.
       verifyClient: (info, next) => {
         next(isAllowedClientOrigin(info.origin));
