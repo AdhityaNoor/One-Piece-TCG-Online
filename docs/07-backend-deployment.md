@@ -228,18 +228,24 @@ Cloud Run supports WebSockets without an extra flag. This backend attaches
 Colyseus to the same HTTP server as Express, so REST and websocket traffic share
 one Cloud Run port.
 
-Use `--timeout 3600` for long matches. Consider `--min-instances=1` to reduce
-cold starts.
+Use `--timeout 3600` for long matches.
 
-This implementation stores live room state in memory. If you allow more than one
-Cloud Run instance, enable session affinity so both players in a room keep
-reaching the same instance:
+This implementation stores live Colyseus rooms in memory. Until a Redis
+presence/driver is added, keep Cloud Run on one warm instance. Otherwise one
+request may create/list a room on instance A while `joinById` is routed to
+instance B, which shows up as matchmaker `522` errors.
 
 ```bash
 gcloud run services update optcg-server \
-  --region YOUR_REGION \
+  --project optcgonb \
+  --region asia-southeast2 \
+  --min-instances 1 \
+  --max-instances 1 \
   --session-affinity
 ```
+
+If you later scale past one instance, replace the local Colyseus driver with a
+shared Redis driver/presence first.
 
 ## MongoDB Atlas
 

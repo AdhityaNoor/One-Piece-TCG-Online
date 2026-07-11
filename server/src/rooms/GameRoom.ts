@@ -60,6 +60,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   private historyPersisted = false;
 
   onCreate(options: { roomCode?: string }): void {
+    this.seatReservationTimeout = 5;
     this.setState(new GameRoomState());
     this.state.roomCode = options.roomCode?.trim() || shortCode();
 

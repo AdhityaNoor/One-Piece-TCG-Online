@@ -58,6 +58,8 @@ interface OnlineState {
   hostRoom(deck: SavedDeck): Promise<boolean>;
   joinById(roomId: string, deck: SavedDeck): Promise<boolean>;
   joinByCode(code: string, deck: SavedDeck): Promise<boolean>;
+  ready(deck: SavedDeck): void;
+  unready(): void;
   sendIntent(action: GameAction): void;
   leave(): void;
 }
@@ -88,15 +90,28 @@ export const useOnlineStore = create<OnlineState>((set, get) => ({
   },
 
   async hostRoom(deck) {
-    return connect(set, 'host', deck, () => createRoom(requireToken()));
+    void deck;
+    return connect(set, 'host', () => createRoom(requireToken()));
   },
 
   async joinById(roomId, deck) {
-    return connect(set, 'guest', deck, () => joinRoomById(requireToken(), roomId));
+    void deck;
+    return connect(set, 'guest', () => joinRoomById(requireToken(), roomId));
   },
 
   async joinByCode(code, deck) {
-    return connect(set, 'guest', deck, () => joinRoomByCode(requireToken(), code));
+    void deck;
+    return connect(set, 'guest', () => joinRoomByCode(requireToken(), code));
+  },
+
+  ready(deck) {
+    if (!activeRoom) return;
+    activeRoom.send(ClientMessage.Ready, { deck });
+  },
+
+  unready() {
+    if (!activeRoom) return;
+    activeRoom.send(ClientMessage.Unready);
   },
 
   sendIntent(action) {
@@ -137,7 +152,6 @@ type SetFn = (partial: Partial<OnlineState>) => void;
 async function connect(
   set: SetFn,
   role: 'host' | 'guest',
-  deck: SavedDeck,
   open: () => Promise<Room>,
 ): Promise<boolean> {
   set({ status: 'connecting', role, error: null, logs: [], endResult: null, gameState: null, defs: {} });
@@ -146,7 +160,6 @@ async function connect(
     activeRoom = room;
     wireRoom(room, set);
     set({ status: 'connected' });
-    room.send(ClientMessage.Ready, { deck });
     return true;
   } catch (cause) {
     activeRoom = null;

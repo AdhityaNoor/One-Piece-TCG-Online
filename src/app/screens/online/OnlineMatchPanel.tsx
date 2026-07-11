@@ -33,12 +33,15 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
   const hostRoom = useOnlineStore((s) => s.hostRoom);
   const joinById = useOnlineStore((s) => s.joinById);
   const joinByCode = useOnlineStore((s) => s.joinByCode);
+  const ready = useOnlineStore((s) => s.ready);
+  const unready = useOnlineStore((s) => s.unready);
   const leave = useOnlineStore((s) => s.leave);
 
   const [joinCode, setJoinCode] = useState('');
 
   const deckReady = selectedDeck?.ok ? selectedDeck.deck : null;
   const connected = status === 'connected' || status === 'connecting';
+  const localSeat = seats.find((seat) => seat.seatId === localSeatId);
 
   // Load the real room list once when idle.
   useEffect(() => {
@@ -170,6 +173,21 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
               ))
             )}
           </div>
+
+          {phase === 'lobby' && (
+            <div className="flex flex-wrap items-center gap-2">
+              {localSeat?.ready ? (
+                <Button variant="secondary" size="sm" onClick={() => unready()}>
+                  Unready
+                </Button>
+              ) : (
+                <Button variant="primary" size="sm" disabled={!deckReady} onClick={() => deckReady && ready(deckReady)}>
+                  Ready
+                </Button>
+              )}
+              {!deckReady && <span className="text-xs text-amber-100/70">Pick a valid deck before readying.</span>}
+            </div>
+          )}
 
           {phase === 'in-game' && gameState && (
             <p className="border border-emerald-300/25 bg-emerald-500/10 p-2 text-xs text-emerald-100">
