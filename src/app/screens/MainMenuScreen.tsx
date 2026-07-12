@@ -20,7 +20,7 @@ export function MainMenuScreen() {
     <GameCanvasScreen
       kicker="One Piece TCG"
       status={`Alpha · v${__APP_VERSION__}`}
-      topRight={<ProfileMenu user={user} onDebug={() => navigateTo({ screen: 'debug-tools' })} onLogout={logout} />}
+      topRight={<ProfileMenu user={user} onProfile={() => navigateTo({ screen: 'profile' })} onDebug={() => navigateTo({ screen: 'debug-tools' })} onLogout={logout} />}
     >
       <LandingBackdrop />
 
@@ -43,10 +43,12 @@ export function MainMenuScreen() {
 
 function ProfileMenu({
   user,
+  onProfile,
   onDebug,
   onLogout,
 }: {
   user: PublicUser | null;
+  onProfile: () => void;
   onDebug: () => void;
   onLogout: () => void;
 }) {
@@ -70,6 +72,16 @@ function ProfileMenu({
           {user?.email && <p className="mt-1 truncate text-xs text-white/55">{user.email}</p>}
 
           <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onProfile();
+              }}
+              className="col-span-2 border border-gold/25 bg-gold/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-gold hover:border-gold/60"
+            >
+              Pirate Profile
+            </button>
             <button
               type="button"
               onClick={() => {

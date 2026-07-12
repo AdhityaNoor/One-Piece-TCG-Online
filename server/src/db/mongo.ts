@@ -19,6 +19,14 @@ import type {
   RankedQueueEntryDocument,
   RankedSeasonDocument,
 } from '../models/ranked';
+import type {
+  CosmeticInventoryDocument,
+  ModerationAuditDocument,
+  PlayerReportDocument,
+  ProfileDocument,
+  SocialGraphDocument,
+  UsernameHistoryDocument,
+} from '../models/profile';
 
 let client: MongoClient | null = null;
 let db: Db | null = null;
@@ -79,11 +87,48 @@ export function rankedLeaderboardSnapshots(): Collection<RankedLeaderboardSnapsh
   return getDb().collection<RankedLeaderboardSnapshotDocument>('rankedLeaderboardSnapshots');
 }
 
+export function profiles(): Collection<ProfileDocument> {
+  return getDb().collection<ProfileDocument>('profiles');
+}
+
+export function usernameHistory(): Collection<UsernameHistoryDocument> {
+  return getDb().collection<UsernameHistoryDocument>('usernameHistory');
+}
+
+export function cosmeticInventories(): Collection<CosmeticInventoryDocument> {
+  return getDb().collection<CosmeticInventoryDocument>('cosmeticInventories');
+}
+
+export function socialGraphs(): Collection<SocialGraphDocument> {
+  return getDb().collection<SocialGraphDocument>('socialGraphs');
+}
+
+export function moderationAuditEvents(): Collection<ModerationAuditDocument> {
+  return getDb().collection<ModerationAuditDocument>('moderationAuditEvents');
+}
+
+export function playerReports(): Collection<PlayerReportDocument> {
+  return getDb().collection<PlayerReportDocument>('playerReports');
+}
+
 async function ensureIndexes(database: Db): Promise<void> {
   // Case-insensitive unique email so signup can't create duplicates by case.
   await database
     .collection('users')
     .createIndex({ email: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+
+  // Case-insensitive unique username — this doubles as the public profile
+  // handle (/profile/:username). Wrapped in try/catch: if any pre-existing
+  // dev/seed data already has duplicate usernames this index creation would
+  // otherwise fail and take the whole boot down with it. See docs on the
+  // migration step this implies for any such environment.
+  try {
+    await database
+      .collection('users')
+      .createIndex({ username: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+  } catch (err) {
+    console.warn('[mongo] could not create unique username index (likely pre-existing duplicates) — profile username changes will not be race-safe until this is resolved:', err);
+  }
 
   await database.collection('rankedProfiles').createIndex({ playerId: 1, seasonId: 1 }, { unique: true });
   await database.collection('rankedProfiles').createIndex({ seasonId: 1, hiddenMmr: -1 });
@@ -102,6 +147,26 @@ async function ensureIndexes(database: Db): Promise<void> {
   await database.collection('rankedAuditEvents').createIndex({ playerId: 1, at: -1 });
   await database.collection('rankedAuditEvents').createIndex({ matchId: 1, type: 1 });
   await database.collection('rankedLeaderboardSnapshots').createIndex({ seasonId: 1, createdAt: -1 });
+
+  // Profile system — see server/src/models/profile.ts.
+  await database.collection('profiles').createIndex({ userId: 1 }, { unique: true });
+  await database.collection('profiles').createIndex({ 'privacy.profileVisibility': 1 });
+  await database.collection('profiles').createIndex({ lastActiveAt: -1 });
+  await database.collection('profiles').createIndex({ region: 1 });
+  await database.collection('profiles').createIndex({ favoriteLeaderCardNumber: 1 });
+  await database.collection('profiles').createIndex({ updatedAt: -1 });
+
+  await database.collection('usernameHistory').createIndex({ userId: 1, changedAt: -1 });
+
+  await database.collection('cosmeticInventories').createIndex({ userId: 1 }, { unique: true });
+
+  await database.collection('socialGraphs').createIndex({ userId: 1 }, { unique: true });
+
+  await database.collection('moderationAuditEvents').createIndex({ targetUserId: 1, at: -1 });
+  await database.collection('moderationAuditEvents').createIndex({ action: 1, at: -1 });
+
+  await database.collection('playerReports').createIndex({ targetUserId: 1, createdAt: -1 });
+  await database.collection('playerReports').createIndex({ reporterUserId: 1, createdAt: -1 });
 }
 
 /** For graceful shutdown / tests. */

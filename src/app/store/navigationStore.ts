@@ -51,6 +51,7 @@ export type NavigationTarget =
   | { screen: 'deck-builder'; deckIdToEdit?: string }
   | { screen: 'saved-decks' }
   | { screen: 'play-menu' }
+  | { screen: 'profile'; username?: string }
   | { screen: 'ranked' }
   | { screen: 'deck-select' }
   | { screen: 'cpu-deck-select' }

@@ -10,6 +10,7 @@ export * from './CardLibraryScreen';
 export * from './deckBuilder';
 export * from './SavedDecksScreen';
 export * from './PlayMenuScreen';
+export * from './ProfileScreen';
 export * from './RankedScreen';
 export * from './DeckSelectScreen';
 export * from './CpuDeckSelectScreen';

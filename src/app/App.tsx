@@ -22,6 +22,7 @@ import {
   MatchScreen,
   PlayTestScreen,
   PlayMenuScreen,
+  ProfileScreen,
   RankedScreen,
   SavedDecksScreen,
   SettingsScreen,
@@ -68,6 +69,8 @@ export function App() {
         return <SavedDecksScreen />;
       case 'play-menu':
         return <PlayMenuScreen />;
+      case 'profile':
+        return <ProfileScreen />;
       case 'ranked':
         return <RankedScreen />;
       case 'deck-select':

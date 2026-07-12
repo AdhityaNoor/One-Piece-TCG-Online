@@ -69,6 +69,14 @@ export interface AppEnv {
   jwtExpiresIn: string;
   /** Ranked remains opt-in until production ops have created seasons/indexes. */
   rankedEnabled: boolean;
+  /**
+   * Player Profile system feature flag. Off by default (project rule:
+   * "Place the new profile system behind a feature flag until database
+   * migration, privacy filtering, and profile routes are stable") — flip on
+   * once the unique-username backfill/index and profile collections have
+   * been verified in the target environment.
+   */
+  profileEnabled: boolean;
 }
 
 export function loadEnv(): AppEnv {
@@ -83,6 +91,7 @@ export function loadEnv(): AppEnv {
     clientOrigins: parseOrigins(optional('CLIENT_ORIGIN', 'http://localhost:5173')),
     jwtExpiresIn: optional('JWT_EXPIRES_IN', '7d'),
     rankedEnabled: optional('RANKED_ENABLED', 'false').toLowerCase() === 'true',
+    profileEnabled: optional('PROFILE_ENABLED', 'false').toLowerCase() === 'true',
   };
 }
 

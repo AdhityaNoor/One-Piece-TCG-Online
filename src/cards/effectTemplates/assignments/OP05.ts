@@ -20,13 +20,18 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-003 — if another Character has 7000+ power, [Rush]. PARTIAL: uses base-power gate, not current power / self exclusion.
   { cardNumber: 'OP05-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfHasCharacterBasePowerAtLeast', power: 7000 }] } }] } },
 
-  // OP05-004 — [Activate: Main] [OPT] if 7000+ power, play Rev Army ≤5000 other than self from hand. PARTIAL: self 7000+ gate deferred.
-  { cardNumber: 'OP05-004', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Revolutionary Army', maxPower: 5000, excludeSelfName: true } }] } },
+  // OP05-004 — [Activate: Main] [OPT] if this has 7000+ power, play Rev Army ≤5000 other than self from hand.
+  { cardNumber: 'OP05-004', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfInstancePowerAtLeast', power: 7000 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Revolutionary Army', maxPower: 5000, excludeSelfName: true } }] } },
 
   // ── Triage batch (OP05 expressible): Revolutionary Army / Donquixote / Kid / DON!!-ramp lines. ──
-  // OP05-005 Belo Betty — [On Play] If Leader {Revolutionary Army}: give up to 1 opp Leader/Char −1000 this turn.
-  //   PARTIAL: the [When Attacking] "if this Character has 7000+ power" rider needs a self-power gate (deferred).
-  { cardNumber: 'OP05-005', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
+  // OP05-005 Belo Betty — [On Play] If Leader {Revolutionary Army}: −1000; [When Attacking] if this has 7000+ power: −1000.
+  {
+    cardNumber: 'OP05-005',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfInstancePowerAtLeast', power: 7000 }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
 
   // OP05-006 — [On Play] If Leader {Revolutionary Army}: give up to 1 opp Character −3000 this turn.
   { cardNumber: 'OP05-006', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
@@ -60,12 +65,12 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Revolutionary Army', excludeSelfName: true } }] },
   },
 
-  // OP05-016 — [When Attacking] prevent Blockers this battle. PARTIAL: 7000+ self-power gate deferred.
+  // OP05-016 — [When Attacking] if this has 7000+ power, prevent Blockers this battle.
   // [Trigger] trash 1 from hand: if Leader multicolored, play this.
   {
     cardNumber: 'OP05-016',
     templates: [
-      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle' }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfInstancePowerAtLeast', power: 7000 }], functions: [{ fn: 'preventBlockers', duration: 'duringThisBattle' }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderMulticolor' }], functions: [
         { fn: 'optionalTrashFromHand', count: 1 },
         { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' },
@@ -73,12 +78,12 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP05-017 — [When Attacking] K.O. power<=3000. PARTIAL: 7000+ self-power gate deferred.
+  // OP05-017 — [When Attacking] if this has 7000+ power, K.O. power<=3000.
   // [Trigger] trash 1 from hand: if Leader multicolored, play this.
   {
     cardNumber: 'OP05-017',
     templates: [
-      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfInstancePowerAtLeast', power: 7000 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderMulticolor' }], functions: [
         { fn: 'optionalTrashFromHand', count: 1 },
         { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' },

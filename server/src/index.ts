@@ -1,7 +1,7 @@
 /**
  * Backend entrypoint. Wires together, on ONE http server (so WebSocket
  * upgrades and REST share a port — required for Cloud Run):
- *   - Express REST: /health + /auth/*
+ *   - Express REST: /health + /auth/* + /ranked/* + /profile/*
  *   - Colyseus realtime: the GameRoom, registered under GAME_ROOM_NAME
  *   - MongoDB Atlas connection (opened before listen)
  *
@@ -18,6 +18,7 @@ import { env, isAllowedClientOrigin } from './config/env';
 import { connectMongo, closeMongo } from './db/mongo';
 import { authRouter } from './auth/routes';
 import { rankedRouter } from './ranked/routes';
+import { profileRouter } from './profile/routes';
 import { GameRoom } from './rooms/GameRoom';
 import { GAME_ROOM_NAME } from '../../shared/multiplayer';
 
@@ -68,6 +69,7 @@ async function main(): Promise<void> {
 
   app.use('/auth', authRouter());
   app.use('/ranked', rankedRouter());
+  app.use('/profile', profileRouter());
 
   const httpServer = createServer(app);
 
