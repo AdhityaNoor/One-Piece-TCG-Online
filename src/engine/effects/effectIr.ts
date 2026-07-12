@@ -37,7 +37,7 @@ export type Selector =
   | { sel: 'controllerLifeTopBottom' } // top and bottom Life cards, de-duplicated for 1-card Life
   | { sel: 'controllerOrOpponentLifeTop' } // top Life card from either player, de-duplicated only by absent zones
   | { sel: 'controllerDeckTop' }
-  | { sel: 'allCharacters'; minCost?: number; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean } // any player's Characters
+  | { sel: 'allCharacters'; minCost?: number; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; excludeSelf?: boolean } // any player's Characters
   | { sel: 'opponentCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; minDonAttached?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; noBaseEffect?: boolean; excludeName?: string } // optional cost/power (current) + base cost/power + rested/blocker/given-DON!! filters
   | { sel: 'controllerAttachedDon' } // DON!! instance ids currently given to the controller's Leader/Characters/Stages
   | { sel: 'controllerHand'; filter?: SearchFilter; excludeSelf?: boolean } // controller's hand cards matching a filter (for play-from-hand); excludeSelf matters when the source card itself is sitting in hand at resolution time (e.g. a Life [Trigger] "trash 1 -> play this" ability — the source shouldn't be a legal cost for its own "play this" clause)
@@ -46,8 +46,8 @@ export type Selector =
   | { sel: 'opponentTrash'; filter?: SearchFilter } // opponent's trash cards matching a filter
   | { sel: 'controllerDeck'; filter?: SearchFilter } // controller's deck cards matching a filter (for play-from-deck)
   | { sel: 'allStages' } // any player's Stage in the stage area
-  | { sel: 'controllerStages'; maxCost?: number } // controller's Stage in the stage area
-  | { sel: 'opponentStages'; maxCost?: number } // opponent's Stage in the stage area
+  | { sel: 'controllerStages'; maxCost?: number; exactCost?: number } // controller's Stage in the stage area
+  | { sel: 'opponentStages'; maxCost?: number; exactCost?: number } // opponent's Stage in the stage area
   | { sel: 'var'; name: string } // ids bound by a prior chooseTargets op
   // Order-preserving union of member selectors, de-duplicated. Lets "X or Y" targets
   // (e.g. "opponent's DON!! or Characters cost ≤3") compose already-filtered primitives
@@ -349,6 +349,7 @@ export type AbilityGate =
   | { kind: 'leaderRested' } // "If your Leader is rested"
   | { kind: 'selfCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more/less Characters"
   | { kind: 'selfRestedCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more rested Characters"
+  | { kind: 'selfRestedCardCount'; atLeast?: number; atMost?: number } // "If you have N or more rested cards" (Leader/Characters/Stage/rested cost-area DON!!)
   | { kind: 'opponentCharacterCount'; atLeast?: number; atMost?: number } // "If your opponent has N or less Characters"
   | { kind: 'selfDonFieldCount'; atLeast?: number; atMost?: number } // "If you have N or less DON!! cards on your field"
   | { kind: 'selfActiveDonCount'; atLeast?: number; atMost?: number } // "If you have N or more active DON!! cards" (unattached in cost area)
@@ -358,6 +359,7 @@ export type AbilityGate =
   | { kind: 'opponentLife'; atLeast?: number; atMost?: number } // "If your opponent has N or less Life cards"
   | { kind: 'combinedLifeTotal'; atLeast?: number; atMost?: number } // "you and your opponent have a total of N or less Life cards"
   | { kind: 'selfLifeLessThanOpponent' } // "If you have less Life cards than your opponent"
+  | { kind: 'selfLifeAtMostOpponent' } // "If your Life cards are equal to or less than your opponent's"
   | { kind: 'selfHand'; atLeast?: number; atMost?: number } // "If you have N or less cards in your hand"
   | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
   | { kind: 'selfHasCharacterCostAtLeast'; atLeast: number } // "If you have a Character with a cost of N or more"
@@ -366,6 +368,7 @@ export type AbilityGate =
   | { kind: 'opponentDonMoreThanSelf' } // "If your opponent has more DON!! cards on their field than you"
   | { kind: 'opponentDonFieldCount'; atLeast?: number; atMost?: number } // "If your opponent has N or more/less DON!! cards on their field"
   | { kind: 'selfDonAtMostOpponent' } // "If the number of DON!! on your field is equal to or less than your opponent's"
+  | { kind: 'selfDonAtLeastLessThanOpponent'; count: number } // "If your DON!! is at least N less than your opponent's"
   | { kind: 'selfControlsNamed'; name: string } // "If you have [X]" — you control a Character named X
   | { kind: 'selfDoesNotControlNamed'; name: string } // "If you don't have [X]"
   | { kind: 'selfHandMatching'; atLeast: number; typeIncludes?: string; category?: Exclude<CardCategory, 'don'>; exactPower?: number; minPower?: number } // "reveal N {type}/Event/power cards from your hand"
@@ -386,6 +389,7 @@ export type AbilityGate =
   | { kind: 'selfControlsNamedWithPowerAtLeast'; name: string; power: number } // "If you have [X] with N power or more"
   | { kind: 'selfTypedCharacterPowerAtLeast'; typeIncludes: string; power: number } // "If you have a {type} Character with N power or more"
   | { kind: 'selfCharacterCurrentPowerCount'; power: number; atLeast?: number; atMost?: number } // "if you have N Characters with M power or more"
+  | { kind: 'selfOtherCharacterPowerAtLeast'; power: number } // "If you have another Character with N power or more" (excludes source)
   | { kind: 'selfLeaderPowerAtMost'; power: number } // "If your Leader has N power or less"
   | { kind: 'selfTurnCount'; atLeast?: number; atMost?: number } // "If it is your Nth turn or later" for the controller
   | { kind: 'selfInstancePowerAtLeast'; power: number } // "If this Character/Leader has N power or more" (needs sourceInstanceId)

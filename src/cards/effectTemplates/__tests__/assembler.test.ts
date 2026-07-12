@@ -124,6 +124,15 @@ describe('template factories - structural correctness', () => {
     expect(choose.from).toMatchObject({ sel: 'allCharacters', maxCost: 7 });
   });
 
+  it('moveCards can move opponent Stages filtered by exactCost to trash', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { exactCost: 7 } }, to: { zone: 'trash', player: 'owner' }, optional: true }] });
+    const choose = p.abilities[0].ops[0];
+    expect(choose.op).toBe('chooseTargets');
+    // @ts-expect-error - narrow to chooseTargets shape
+    expect(choose.from).toMatchObject({ sel: 'opponentStages', exactCost: 7 });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'trashCards' });
+  });
+
   it('ability condition carries DON!! attachment requirements', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'whenAttacking',
@@ -448,6 +457,14 @@ describe('template factories - structural correctness', () => {
       max: 1,
     });
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'moveToHand', target: { sel: 'var', name: 't' } });
+  });
+
+  it('returnSelfToHand moves the source instance to owner hand without target selection', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'activateMain',
+      functions: [{ fn: 'returnSelfToHand' }],
+    });
+    expect(p.abilities[0].ops).toEqual([{ op: 'moveToHand', target: { sel: 'self' } }]);
   });
 
   it('playFromDeck produces a deck-play search op with a filter', () => {

@@ -36,7 +36,7 @@ export type MoveCardSource =
   | { zone: 'hand'; player: 'controller' | 'opponent'; filter?: SearchFilter }
   | { zone: 'trash'; player: 'controller' | 'opponent'; filter?: SearchFilter }
   | { zone: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: CharacterMoveFilter }
-  | { zone: 'stages'; player: 'controller' | 'opponent' | 'any'; filter?: { maxCost?: number } };
+  | { zone: 'stages'; player: 'controller' | 'opponent' | 'any'; filter?: { maxCost?: number; exactCost?: number } };
 
 export type MoveCardDestination =
   | { zone: 'hand'; player: 'owner' }
@@ -146,6 +146,7 @@ export type AbilityFunction =
   | { fn: 'revealOpponentHand'; count?: number }
   | { fn: 'trashTopDeck'; count: number; optional?: boolean }
   | { fn: 'trashSelf' }
+  | { fn: 'returnSelfToHand' }
   | { fn: 'moveCards'; from: MoveCardSource; to: MoveCardDestination; optional?: boolean; minTargets?: number; maxTargets?: number; prompt?: string; chooser?: 'controller' | 'opponent' }
   | { fn: 'moveAllCards'; from: Extract<MoveCardSource, { zone: 'characters' | 'stages' }>; to: MoveCardDestination }
   | { fn: 'moveAllCharactersToBottomDeck'; filter?: { maxCost?: number; maxPower?: number; maxBaseCost?: number; maxBasePower?: number } }
@@ -247,7 +248,7 @@ export type AbilityFunction =
   | { fn: 'trashTypeFromHand'; count: number; filter: SearchFilter; optional?: boolean }
   // K.O. ALL Characters (both players) matching a cost/power filter, no target choice
   // ("K.O. all Characters with a cost of 1 or less").
-  | { fn: 'koAllCharacters'; filter?: { maxCost?: number; maxPower?: number; rested?: boolean } }
+  | { fn: 'koAllCharacters'; player?: 'any' | 'controller' | 'opponent'; filter?: { maxCost?: number; maxPower?: number; rested?: boolean }; excludeSource?: boolean }
   // Give up to `count` rested DON!! to the controller's Leader (no target choice) — "give ... to this Leader".
   | { fn: 'giveDonControllerLeader'; count: number }
   | { fn: 'giveDonLeaderAndCharacter'; count: number }

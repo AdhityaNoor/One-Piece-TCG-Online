@@ -504,6 +504,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       ids = applyBaseFilters(ids, sel, ctx);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
+      if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
       return ids;
     }
     case 'opponentCharacters': {
@@ -548,11 +549,13 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     case 'controllerStages': {
       let ids = ctx.state().players[ctx.controllerId]?.stageArea.cardIds ?? [];
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
       return ids;
     }
     case 'opponentStages': {
       let ids = ctx.state().players[ctx.opponentId]?.stageArea.cardIds ?? [];
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
       return ids;
     }
     case 'controllerHand': {

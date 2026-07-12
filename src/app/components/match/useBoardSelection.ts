@@ -15,12 +15,12 @@
  * Tap-to-select is the ONLY interaction model implemented this milestone —
  * drag-and-drop is a documented known limitation (see MatchScreen.tsx).
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { validateAction, type GameAction } from '../../../engine/actions';
 import { createActionId, useMatchStore } from '../../store/matchStore';
 import type { CardView, PlayerBoardView } from '../../../board/projection';
 import { findFirstAvailableDonId } from '../../../board/projection';
-import { computeCurrentCost } from '../../../engine/rules/shared/power';
+import { computeCurrentCost, computeCurrentPower } from '../../../engine/rules/shared/power';
 import { getOpponentId } from '../../../engine/rules/shared';
 import { canPayAbilityCost, evaluateGates, fieldDonIds, requiredDonMinusCount } from '../../../engine/effects';
 import type { Ability } from '../../../engine/effects/effectIr';
@@ -34,9 +34,22 @@ export type BoardSelectionMode =
   | { kind: 'selectAttacker' }
   | { kind: 'selectAttackTarget'; attackerInstanceId: string }
   | { kind: 'selectBlocker' }
+  /**
+   * Counter Step, defending player. Entered automatically the moment
+   * battle.step becomes 'counter' (see the useEffect below) rather than via
+   * an explicit "Activate Counter" button — every eligible hand card is
+   * directly tappable, any number of times in a row (7-1-3-2-1 places no
+   * cap on successive Counter activations), so the player can stack up
+   * several counters before deciding to PASS_STEP. Character counters
+   * always boost the card currently under attack (battle.targetInstanceId)
+   * — boosting a DIFFERENT own Leader/Character is technically legal per
+   * 7-1-3-2-1 but is a rare enough tech play that it's out of scope for
+   * this streamlined flow (documented limitation). Counter Events have
+   * their DON!! cost auto-selected (first N active cost-area DON!!, see
+   * autoSelectCounterEventDon) rather than making the player click
+   * individual DON!! cards, matching how playHandCard already auto-selects.
+   */
   | { kind: 'selectCounterCard' }
-  | { kind: 'selectCounterBoostTarget'; handCardInstanceId: string }
-  | { kind: 'payingCounterEventCost'; handCardInstanceId: string; cost: number; selectedDonIds: string[] }
   | { kind: 'selectActivateSource' }
   | { kind: 'payingActivateEffectCost'; sourceInstanceId: string; cost: number; selectedDonIds: string[] }
   | { kind: 'selectOnOppAttackSource' }
@@ -71,6 +84,16 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const [lastError, setLastError] = useState<string[] | null>(null);
 
   const reset = (): void => setMode({ kind: 'idle' });
+
+  // Auto-enter the Counter Step's multi-select mode the instant the battle
+  // reaches it — no "Activate Counter" button to click through first (see
+  // BoardSelectionMode's 'selectCounterCard' doc comment). Only fires from
+  // 'idle' so it never clobbers an unrelated in-progress selection.
+  useEffect(() => {
+    if (state?.currentBattle?.step === 'counter' && mode.kind === 'idle') {
+      setMode({ kind: 'selectCounterCard' });
+    }
+  }, [state?.currentBattle?.step, mode.kind]);
 
   /** True if the card's curated program exposes an [Activate: Main] ability (8-1-3-2). */
   const hasActivateMain = (card: CardView): boolean => {
@@ -189,12 +212,129 @@ export function useBoardSelection(actingPlayerId: string | null) {
     });
   };
 
+  // --- Counter Step (7-1-3) — multi-select, see BoardSelectionMode's
+  // 'selectCounterCard' doc comment above for the overall UX. ---
+
+  /**
+   * A Counter Event's DON!! picture: its own play cost (base cost, from
+   * currentCostOf) plus any curated [Counter] ability DON!! -N cost
+   * ("returned to the DON!! deck", tracked separately — see AbilityCost's
+   * 'donMinus' kind), against how much active DON!! the player currently
+   * has. Returns null for non-Counter-Event cards.
+   */
+  const counterEventDonInfo = (card: CardView): { cost: number; donMinus: number; available: number } | null => {
+    if (!state || !actingPlayerId) return null;
+    if (card.category !== 'event' || !hasCounter(card)) return null;
+    const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'counter');
+    const donMinus = ability?.cost?.filter((cost) => cost.kind === 'donMinus').reduce((sum, cost) => sum + cost.count, 0) ?? 0;
+    return { cost: currentCostOf(card), donMinus, available: activeCostAreaDonIds(actingPlayerId).length };
+  };
+
+  /**
+   * Auto-picks active cost-area DON!! for a Counter Event's base cost and,
+   * if present, its [Counter] ability's DON!! -N cost — mirrors how
+   * playHandCard already auto-selects rather than making the player click
+   * individual DON!! cards. Both pools are drawn from the same active
+   * cost-area DON!!; a 'donMinus' cost that specifically returns DON!!
+   * attached elsewhere on the field (activeOnly: false) is a rarer curated
+   * shape not covered by this auto-pick (documented limitation — such a
+   * card is treated as inapplicable/dimmed here rather than silently
+   * picking the wrong DON!!). Returns null if there isn't enough.
+   */
+  const autoSelectCounterEventDon = (card: CardView): { donInstanceIds: string[]; abilityCostDonInstanceIds: string[] } | null => {
+    if (!state || !actingPlayerId) return null;
+    const info = counterEventDonInfo(card);
+    if (!info) return null;
+    const pool = activeCostAreaDonIds(actingPlayerId);
+    if (pool.length < info.cost + info.donMinus) return null;
+    return { donInstanceIds: pool.slice(0, info.cost), abilityCostDonInstanceIds: pool.slice(info.cost, info.cost + info.donMinus) };
+  };
+
+  /**
+   * True if the card is a usable Counter option right now — a Character
+   * with a printed Counter value, or a [Counter] Event the player can
+   * currently afford (base cost + any DON!! -N ability cost). Drives both
+   * DockHand's `selectable` gate and its dimmed styling for cards that
+   * aren't Counter options at all (project rule: dim, don't hide).
+   */
+  const isCounterCardApplicable = (card: CardView): boolean => {
+    if (!state || !actingPlayerId || state.currentBattle?.step !== 'counter') return false;
+    if (card.category === 'character') return !!card.counter && card.counter > 0;
+    if (card.category === 'event' && hasCounter(card)) return autoSelectCounterEventDon(card) !== null;
+    return false;
+  };
+
+  // Snapshot of attacker/target power the instant the Counter Step began,
+  // so the running total shown in the UI ("3000/5000") reflects counters
+  // added THIS step, not the target's full power. Recomputed only when the
+  // battle identity changes (new attacker/target pair) — mutating a ref
+  // during render is safe here since the recomputation is idempotent for a
+  // given battleKey (same inputs -> same outputs every time).
+  const counterBaselineRef = useRef<{ battleKey: string; attackerPower: number; targetPowerAtStart: number } | null>(null);
+  if (state?.currentBattle?.step === 'counter') {
+    const battle = state.currentBattle;
+    const battleKey = `${battle.attackerInstanceId}:${battle.targetInstanceId}`;
+    if (counterBaselineRef.current?.battleKey !== battleKey) {
+      counterBaselineRef.current = {
+        battleKey,
+        attackerPower: computeCurrentPower(defs, state, battle.attackerInstanceId),
+        targetPowerAtStart: computeCurrentPower(defs, state, battle.targetInstanceId),
+      };
+    }
+  } else {
+    counterBaselineRef.current = null;
+  }
+
+  /**
+   * `needed` (7-1-4): how much MORE power the defender needs, on top of
+   * their power when the Counter Step began, to survive — the Damage Step
+   * deals damage when attackerPower >= targetPower, so surviving requires
+   * targetPower > attackerPower, i.e. at least (attackerPower - startPower
+   * + 1) more. `selected` is how much has already been added this step
+   * (the live delta since the snapshot above) — together these render as
+   * the "3000/5000" progress readout.
+   */
+  const counterProgress: { selected: number; needed: number } | null = (() => {
+    if (!state || !counterBaselineRef.current || state.currentBattle?.step !== 'counter') return null;
+    const baseline = counterBaselineRef.current;
+    const targetPowerNow = computeCurrentPower(defs, state, state.currentBattle.targetInstanceId);
+    return {
+      selected: Math.max(0, targetPowerNow - baseline.targetPowerAtStart),
+      needed: Math.max(0, baseline.attackerPower - baseline.targetPowerAtStart + 1),
+    };
+  })();
+
   function runDispatch(action: GameAction): void {
     const result = dispatch(action);
     if (!result.ok) {
       setLastError(result.reasons);
     } else {
       setLastError(null);
+      reset();
+    }
+  }
+
+  /**
+   * Like runDispatch, but for Counter Step actions specifically: on success,
+   * stays in 'selectCounterCard' (instead of resetting to 'idle') as long as
+   * the battle is still in the Counter Step and nothing else needs the
+   * player's attention — so tapping one counter card leaves the rest of the
+   * hand immediately tappable for the next one, satisfying "select several
+   * before passing" without a re-click through an "Activate Counter" button.
+   * Reads the store directly (not the `state` closed over by this render)
+   * because dispatch() already applied the mutation synchronously.
+   */
+  function runCounterDispatch(action: GameAction): void {
+    const result = dispatch(action);
+    if (!result.ok) {
+      setLastError(result.reasons);
+      return;
+    }
+    setLastError(null);
+    const latest = useMatchStore.getState().state;
+    if (latest?.currentBattle?.step === 'counter' && latest.pendingChoices.length === 0) {
+      setMode({ kind: 'selectCounterCard' });
+    } else {
       reset();
     }
   }
@@ -259,7 +399,6 @@ export function useBoardSelection(actingPlayerId: string | null) {
   // --- Mode entry points, called from ActionBar's mode-switch buttons ---
   const beginDeclareAttack = (): void => { setMode({ kind: 'selectAttacker' }); setLastError(null); };
   const beginActivateBlocker = (): void => { setMode({ kind: 'selectBlocker' }); setLastError(null); };
-  const beginActivateCounter = (): void => { setMode({ kind: 'selectCounterCard' }); setLastError(null); };
   const beginActivateMain = (): void => { setMode({ kind: 'selectActivateSource' }); setLastError(null); };
   const cancel = (): void => { reset(); setLastError(null); };
 
@@ -273,18 +412,6 @@ export function useBoardSelection(actingPlayerId: string | null) {
       handCardInstanceId: mode.handCardInstanceId,
       donInstanceIds: mode.donInstanceIds,
     }) as GameAction);
-  }
-
-  /** Confirm a Counter Event after its DON!! cost is fully selected. */
-  function confirmCounterEvent(): void {
-    if (mode.kind !== 'payingCounterEventCost' || mode.selectedDonIds.length !== mode.cost) return;
-    withActingPlayer((playerId) => ({
-      type: 'ACTIVATE_COUNTER_EVENT',
-      actionId: createActionId(),
-      playerId,
-      handCardInstanceId: mode.handCardInstanceId,
-      donInstanceIds: mode.selectedDonIds,
-    }));
   }
 
   /** Confirm an [Activate: Main] effect after selecting its DON!! -N payment. */
@@ -474,32 +601,38 @@ export function useBoardSelection(actingPlayerId: string | null) {
       }
 
       case 'selectCounterCard': {
+        if (!actingPlayerId || !state?.currentBattle) return;
         if (!isOwnCard || zone !== 'hand') return;
-        // A Character with a printed Counter value -> boost-target flow.
+        if (!isCounterCardApplicable(card)) return; // dimmed/inapplicable — no-op, mirrors DockHand's `selectable` gate
+        const targetInstanceId = state.currentBattle.targetInstanceId;
+
+        // A Character with a printed Counter value: always boosts the card
+        // currently under attack (see BoardSelectionMode doc comment for why
+        // an explicit boost-target step was dropped from this flow).
         if (card.category === 'character' && card.counter && card.counter > 0) {
-          setMode({ kind: 'selectCounterBoostTarget', handCardInstanceId: card.instanceId });
+          runCounterDispatch({
+            type: 'ACTIVATE_COUNTER_CHARACTER',
+            actionId: createActionId(),
+            playerId: actingPlayerId,
+            handCardInstanceId: card.instanceId,
+            boostTargetInstanceId: targetInstanceId,
+          });
           return;
         }
-        // A Counter Event (curated [Counter] ability) -> pay its cost, then play.
-        if (card.category === 'event' && hasCounter(card)) {
-          const cost = currentCostOf(card);
-          if (cost === 0) {
-            withActingPlayer((playerId) => ({ type: 'ACTIVATE_COUNTER_EVENT', actionId: createActionId(), playerId, handCardInstanceId: card.instanceId, donInstanceIds: [] }));
-            return;
-          }
-          setMode({ kind: 'payingCounterEventCost', handCardInstanceId: card.instanceId, cost, selectedDonIds: [] });
-          setLastError(null);
-        }
-        return;
-      }
 
-      case 'payingCounterEventCost': {
-        if (!isOwnCard || zone !== 'costArea' || card.donRested) return;
-        const already = mode.selectedDonIds.includes(card.instanceId);
-        if (already) {
-          setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => id !== card.instanceId) });
-        } else if (mode.selectedDonIds.length < mode.cost) {
-          setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, card.instanceId] });
+        // A Counter Event (curated [Counter] ability): DON!! is auto-picked
+        // (isCounterCardApplicable already confirmed enough is available).
+        if (card.category === 'event' && hasCounter(card)) {
+          const picked = autoSelectCounterEventDon(card);
+          if (!picked) return; // shouldn't happen — isCounterCardApplicable already checked this
+          runCounterDispatch({
+            type: 'ACTIVATE_COUNTER_EVENT',
+            actionId: createActionId(),
+            playerId: actingPlayerId,
+            handCardInstanceId: card.instanceId,
+            donInstanceIds: picked.donInstanceIds,
+            abilityCostDonInstanceIds: picked.abilityCostDonInstanceIds,
+          });
         }
         return;
       }
@@ -512,18 +645,6 @@ export function useBoardSelection(actingPlayerId: string | null) {
         } else if (mode.selectedDonIds.length < mode.cost) {
           setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, card.instanceId] });
         }
-        return;
-      }
-
-      case 'selectCounterBoostTarget': {
-        if (!isOwnCard || (zone !== 'leaderArea' && zone !== 'characterArea')) return;
-        withActingPlayer((playerId) => ({
-          type: 'ACTIVATE_COUNTER_CHARACTER',
-          actionId: createActionId(),
-          playerId,
-          handCardInstanceId: mode.handCardInstanceId,
-          boostTargetInstanceId: card.instanceId,
-        }));
         return;
       }
 
@@ -589,19 +710,20 @@ export function useBoardSelection(actingPlayerId: string | null) {
     cancel,
     beginDeclareAttack,
     beginActivateBlocker,
-    beginActivateCounter,
     beginActivateMain,
     beginActivateOnOppAttack,
     hasActivateMain,
     hasOnOpponentsAttack,
     hasUnusedActivateMain,
     hasCounter,
+    isCounterCardApplicable,
+    counterEventDonInfo,
+    counterProgress,
     canDeclareAttackWith,
     canGiveDonOnCard,
     giveDonToCard,
     returnGivenDonFromCard,
     confirmPlayCard,
-    confirmCounterEvent,
     confirmActivateMainCost,
     confirmOnOppAttackCost,
     beginAttackWithCard,

@@ -14,7 +14,6 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] [Once Per Turn] Up to 1 of your [Monkey.D.Luffy] Characters or up to 1 of your
   //   Characters with a type including "Whitebeard Pirates", with 8000 power or more, gains [Rush] during
   //   this turn.
-  // PARTIAL: "up to 1 from either pool" mapped as two independent optional [Rush] grants.
   {
     cardNumber: 'OP16-001',
     templateId: 'ability',
@@ -22,8 +21,16 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'activateMain',
       oncePerTurn: true,
       functions: [
-        { fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy', minBasePower: 8000 } }, keyword: 'rush', duration: 'duringThisTurn', optional: true, maxTargets: 1 },
-        { fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Whitebeard Pirates', minBasePower: 8000 } }, keyword: 'rush', duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+        {
+          fn: 'chooseOne',
+          chooser: 'controller',
+          prompt: 'Choose a Character to gain Rush.',
+          options: [
+            { label: 'skip', functions: [] },
+            { label: 'luffy', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy', minBasePower: 8000 } }, keyword: 'rush', duration: 'duringThisTurn', optional: true, maxTargets: 1 }] },
+            { label: 'whitebeardPirates', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Whitebeard Pirates', minBasePower: 8000 } }, keyword: 'rush', duration: 'duringThisTurn', optional: true, maxTargets: 1 }] },
+          ],
+        },
       ],
     },
   },
@@ -278,8 +285,15 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   they place 2 cards from their hand at the bottom of their deck in any order.
   { cardNumber: 'OP16-047', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'opponentHand', atLeast: 8 }], functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, minTargets: 2, maxTargets: 2, chooser: 'opponent' }] } },
 
-  // OP16-048 — [On Play] If Leader {Impel Down}, draw 1, play [Prisoner of Impel Down] from hand. PARTIAL: opp-attack Blocker grant deferred.
-  { cardNumber: 'OP16-048', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { category: 'character', name: 'Prisoner of Impel Down' } }] } },
+  // OP16-048 — [On Play] If Leader {Impel Down}, draw 1, play [Prisoner of Impel Down] from hand.
+  //   [On Your Opponent's Attack] Once per turn, 1 [Prisoner of Impel Down] gains [Blocker] this turn.
+  {
+    cardNumber: 'OP16-048',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { category: 'character', name: 'Prisoner of Impel Down' } }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { name: 'Prisoner of Impel Down' } }, keyword: 'blocker', duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   { cardNumber: 'OP16-049', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'draw', amount: 1 }] } },
 
@@ -345,8 +359,14 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // PARTIAL: "different card names" across the selected cards is not enforced yet.
   { cardNumber: 'OP16-060', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 8, activeOnly: true }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Admiral' }, maxTargets: 3 }] } },
 
-  // OP16-063 — [On Play] Add up to 2 DON!! (rested). PARTIAL: DON!! −1 disable-opp-Blocker activate deferred.
-  { cardNumber: 'OP16-063', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 2, rested: true }] } },
+  // OP16-063 — [On Play] Add up to 2 DON!! (rested). [Activate: Main] DON!! -1: 1 opponent Character loses [Blocker] access this turn.
+  {
+    cardNumber: 'OP16-063',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 2, rested: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'suppressBlockerOnTarget', target: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   // OP16-064 — [On Play] Look at 5; add up to 1 Navy (excl. same name).
   {
@@ -481,12 +501,10 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // PARTIAL: 8000-power reveal cost → selfHandMatching gate.
-  { cardNumber: 'OP16-007', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
+  { cardNumber: 'OP16-007', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalRevealTypeFromHand', filter: { category: 'character', exactPower: 8000 } }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousSelectedAny' }] } },
 
 
-  // PARTIAL: trash 10000 base Character cost deferred; mapped KO on gate only.
-  { cardNumber: 'OP16-008', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 5000 } }, optional: true }] } },
+  { cardNumber: 'OP16-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { exactBasePower: 10000 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 8000 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 
 
   { cardNumber: 'OP16-009', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
@@ -507,8 +525,30 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP16-045', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
 
-  // PARTIAL: cost-20 trash-self play deferred; mapped playFromHand maxCost 5.
-  { cardNumber: 'OP16-087', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 5 } }] } },
+  {
+    cardNumber: 'OP16-087',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      gate: [{ kind: 'leaderType', type: 'Land of Wano' }],
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Trash this Character to draw and give [Kouzuki Momonosuke] +20 cost?',
+        options: [
+          { label: 'skip', functions: [] },
+          {
+            label: 'trashThis',
+            functions: [
+              { fn: 'trashSelf' },
+              { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
+              { fn: 'addCost', target: { group: 'characters', player: 'controller', filter: { name: 'Kouzuki Momonosuke' } }, amount: 20, duration: 'duringThisTurn', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+            ],
+          },
+        ],
+      }],
+    },
+  },
 
   // --- codegen batch ---
   {
@@ -548,8 +588,14 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP16-076 — [Main] rest 3 DON!!: up to 3 {Admiral} Characters +2000 this turn. PARTIAL: [Counter] typed-present buff deferred.
-  { cardNumber: 'OP16-076', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 3 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Admiral' } }, amount: 2000, duration: 'duringThisTurn', optional: true, maxTargets: 3 }] } },
+  // OP16-076 — [Main] rest 3 DON!!: up to 3 {Admiral} Characters +2000 this turn. [Counter] If you have an {Admiral}, +4000.
+  {
+    cardNumber: 'OP16-076',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 3 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Admiral' } }, amount: 2000, duration: 'duringThisTurn', optional: true, maxTargets: 3 }] } },
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Admiral', atLeast: 1 }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
+    ],
+  },
 
   { cardNumber: 'OP16-077', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'hand', filter: { typeIncludes: 'Navy' }, remainder: 'bottom' }, { fn: 'trashFromHand', count: 1 }] } },
 
@@ -667,11 +713,11 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP16-100', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
 
-  // OP16-101 — [Main] up to 1 Leader/Char +3000 this turn. [Trigger] add [Yamato] from trash to hand. PARTIAL: trash-count-gated K.O. deferred.
+  // OP16-101 — [Main] up to 1 Leader/Char +3000 this turn; if trash has 10+, K.O. cost 2 or less. [Trigger] add [Yamato] from trash to hand.
   {
     cardNumber: 'OP16-101',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { name: 'Yamato' } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
     ],
   },
@@ -692,12 +738,12 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-105 — [Trigger] If ≤1 Life, play up to 1 each of [Absalom]/[Dr. Hogback]/[Perona] cost ≤4 from trash.
   { cardNumber: 'OP16-105', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 1 }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', name: 'Absalom', maxCost: 4 } }, { fn: 'playFromTrash', filter: { category: 'character', name: 'Dr. Hogback', maxCost: 4 } }, { fn: 'playFromTrash', filter: { category: 'character', name: 'Perona', maxCost: 4 } }] } },
 
-  // OP16-106 — [On K.O.]/[Trigger] If Leader {Blackbeard Pirates}, draw 1. PARTIAL: base-power-set rider deferred.
+  // OP16-106 — [On K.O.]/[Trigger] If Leader {Blackbeard Pirates}, draw 1 and set 1 own Leader/Character base power to 7000 this turn.
   {
     cardNumber: 'OP16-106',
     templates: [
-      { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'draw', amount: 1 }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'setBasePower', target: { group: 'leaderOrCharacters', player: 'controller' }, value: 7000, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'setBasePower', target: { group: 'leaderOrCharacters', player: 'controller' }, value: 7000, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
     ],
   },
 
@@ -747,8 +793,14 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP16-111', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP16-113 — [Trigger] If Leader {Kuja Pirates}, play this. PARTIAL: conditional [Blocker] deferred.
-  { cardNumber: 'OP16-113', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'triggerPlaySelf' }] } },
+  // OP16-113 — Has [Blocker] while at 2 or less Life. [Trigger] If Leader {Kuja Pirates}, play this.
+  {
+    cardNumber: 'OP16-113',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfLife', atMost: 2 }] } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP16-114',
@@ -758,11 +810,10 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // PARTIAL: [Main] trash pick should exclude [Black Vortex] by name.
   {
     cardNumber: 'OP16-115',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { hasTrigger: true } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { hasTrigger: true, excludeSelfName: true } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
     ],
   },
@@ -794,12 +845,11 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // PARTIAL: [Main] hand trash should filter for cards with a [Trigger].
   {
     cardNumber: 'OP16-117',
     templates: [
       { templateId: 'ability', params: { timing: 'activateMain', functions: [
-        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'optionalTrashFromHand', count: 1, filter: { hasTrigger: true } },
         { fn: 'negateEffect', target: { group: 'characters', player: 'opponent', filter: { maxCost: 8 } }, duration: 'duringThisTurn', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
       ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Blackbeard Pirates' } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 }] } },

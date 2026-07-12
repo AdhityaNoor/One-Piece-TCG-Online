@@ -17,8 +17,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'addPower', ifPrevious: 'previousSelectedAny', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Revolutionary Army' } }, amount: 3000, duration: 'duringThisTurn', optional: true, maxTargets: 3 },
   ] } },
 
-  // OP05-003 — if another Character has 7000+ power, [Rush]. PARTIAL: uses base-power gate, not current power / self exclusion.
-  { cardNumber: 'OP05-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfHasCharacterBasePowerAtLeast', power: 7000 }] } }] } },
+  // OP05-003 — if another Character has 7000+ current power, [Rush].
+  { cardNumber: 'OP05-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfOtherCharacterPowerAtLeast', power: 7000 }] } }] } },
 
   // OP05-004 — [Activate: Main] [OPT] if this has 7000+ power, play Rev Army ≤5000 other than self from hand.
   { cardNumber: 'OP05-004', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfInstancePowerAtLeast', power: 7000 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Revolutionary Army', maxPower: 5000, excludeSelfName: true } }] } },

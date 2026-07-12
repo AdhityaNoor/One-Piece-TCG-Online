@@ -123,7 +123,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
   return (
     <aside className="grid grid-cols-2 gap-3 xl:flex xl:flex-col">
       <div className="col-span-2">
-        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Set Library</label>
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">Set Library</label>
         {setsStatus === 'loading' && <p className="mt-1 text-xs text-slate-200/60">Loading sets...</p>}
         {setsStatus === 'error' && (
           <div className="mt-1 flex items-center gap-2">
@@ -145,7 +145,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
       </div>
 
       <div className="col-span-2">
-        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Search</label>
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">Search</label>
         <input
           type="search"
           value={filter.query ?? ''}
@@ -156,7 +156,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
       </div>
 
       <div>
-        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Type / Crew</label>
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">Type / Crew</label>
         <OpSelect
           value={filter.type ?? ''}
           options={[{ value: '', label: 'All types' }, ...knownTypes.map((type) => ({ value: type, label: type }))]}
@@ -166,7 +166,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
       </div>
 
       <div>
-        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Has Trigger</label>
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">Has Trigger</label>
         <OpSelect
           value={filter.timing ?? 'any'}
           options={[...TRIGGER_FILTER_OPTIONS]}
@@ -178,7 +178,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
       </div>
 
       <div>
-        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Format Legality</label>
+        <label className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">Format Legality</label>
         <OpSelect
           value={filter.formatLegality ?? 'any'}
           options={[...FORMAT_LEGALITY_FILTER_OPTIONS]}
@@ -191,7 +191,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
 
       <div>
         <div className="flex items-center justify-between gap-2">
-          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Cost</p>
+          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">Cost</p>
           <p className="font-heading text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">
             {costFilterIsActive ? `${costMin}–${costMax}` : 'Any'}
           </p>
@@ -222,7 +222,7 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
 
       <div className="col-span-2">
         <div className="flex items-center justify-between gap-2">
-          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Power</p>
+          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">Power</p>
           <p className="font-heading text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">
             {powerFilterIsActive ? `${powerMin}–${powerMax}` : 'Any'}
           </p>
@@ -253,8 +253,8 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
 
       <div>
         <div className="flex items-center justify-between gap-2">
-          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Color</p>
-          {colorFilterIsLocked && <p className="font-heading text-[10px] font-semibold uppercase tracking-[0.12em] text-gold/65">Locked</p>}
+          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">Color</p>
+          {colorFilterIsLocked && <p className="font-heading text-[10px] font-semibold uppercase tracking-[0.12em] text-[rgb(var(--op-gold-rgb)/0.65)]">Locked</p>}
         </div>
         <div className="mt-1.5 grid grid-cols-6 gap-1.5">
           {visibleColors.map((color) => {
@@ -270,7 +270,9 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
                 onClick={() => toggleColor(color)}
                 className={[
                   'flex h-8 items-center justify-center border transition',
-                  selected ? 'border-gold bg-gold/18 shadow-[0_0_0_2px_rgba(255,211,74,0.12)]' : 'border-gold/15 bg-black/35 hover:bg-white/10',
+                  selected
+                    ? 'border-[rgb(var(--op-gold-rgb))] bg-[rgb(var(--op-gold-rgb)/0.18)] shadow-[0_0_0_2px_rgb(var(--op-gold-rgb)/0.12)]'
+                    : 'border-[rgb(var(--op-gold-rgb)/0.15)] bg-black/35 hover:bg-white/10',
                   colorFilterIsLocked ? 'cursor-not-allowed opacity-80' : '',
                 ].join(' ')}
               >
@@ -284,8 +286,8 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
 
       <div>
         <div className="flex items-center justify-between gap-2">
-          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-gold">Card Type</p>
-          {categoryFilterIsLocked && <p className="font-heading text-[10px] font-semibold uppercase tracking-[0.12em] text-gold/65">Locked</p>}
+          <p className="font-heading text-[10px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">Card Type</p>
+          {categoryFilterIsLocked && <p className="font-heading text-[10px] font-semibold uppercase tracking-[0.12em] text-[rgb(var(--op-gold-rgb)/0.65)]">Locked</p>}
         </div>
         <div className="mt-1.5 grid grid-cols-2 gap-1.5">
           {categories.map((category) => {
@@ -300,7 +302,9 @@ export function CardSetBrowserControls({ categories = DEFAULT_CATEGORIES, locked
                 onClick={() => toggleCategory(category)}
                 className={[
                   'h-8 border px-2 font-heading text-[11px] font-black uppercase tracking-[0.08em] transition',
-                  selected ? 'border-gold bg-gold text-black shadow-[0_4px_0_rgba(68,39,0,0.75)]' : 'border-gold/15 bg-black/35 text-slate-100/80 hover:bg-white/10',
+                  selected
+                    ? 'border-[rgb(var(--op-gold-rgb))] bg-[rgb(var(--op-gold-rgb))] text-black shadow-[0_4px_0_rgba(68,39,0,0.75)]'
+                    : 'border-[rgb(var(--op-gold-rgb)/0.15)] bg-black/35 text-slate-100/80 hover:bg-white/10',
                   categoryFilterIsLocked ? 'cursor-not-allowed opacity-70' : '',
                 ].join(' ')}
               >
@@ -344,9 +348,9 @@ export function CardSetBrowserResults({ renderEntry, gridClassName, gridStyle }:
   return (
     <section className="op-card-well min-h-0 min-w-0 p-3">
       {selectedSetId === null ? (
-        <p className="border border-gold/15 bg-black/30 p-3 text-center text-sm text-slate-200/60">Choose a set above to browse its cards.</p>
+        <p className="border border-[rgb(var(--op-gold-rgb)/0.15)] bg-black/30 p-3 text-center text-sm text-slate-200/60">Choose a set above to browse its cards.</p>
       ) : selectedSetStatus === 'loading' ? (
-        <p className="border border-gold/15 bg-black/30 p-3 text-center text-sm text-slate-200/60">Loading cards...</p>
+        <p className="border border-[rgb(var(--op-gold-rgb)/0.15)] bg-black/30 p-3 text-center text-sm text-slate-200/60">Loading cards...</p>
       ) : selectedSetStatus === 'error' ? (
         <div className="flex flex-col items-center gap-2 border border-red-400/35 bg-red-950/40 p-3 text-center">
           <p className="text-sm text-red-200">{selectedSetError ? formatCardApiError(selectedSetError) : 'Failed to load this set.'}</p>
@@ -355,7 +359,7 @@ export function CardSetBrowserResults({ renderEntry, gridClassName, gridStyle }:
           </Button>
         </div>
       ) : visibleEntries.length === 0 ? (
-        <p className="border border-gold/15 bg-black/30 p-3 text-center text-sm text-slate-200/60">No cards match your filters.</p>
+        <p className="border border-[rgb(var(--op-gold-rgb)/0.15)] bg-black/30 p-3 text-center text-sm text-slate-200/60">No cards match your filters.</p>
       ) : (
         <>
           <div className="pr-1">

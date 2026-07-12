@@ -45,4 +45,48 @@ describe('family: K.O. all Characters up to a cost (ST08-005 shape)', () => {
     expect(state.players.p1.characterArea.cardIds).not.toContain(p1c0);
     expect(state.players.p2.characterArea.cardIds).not.toContain(p2c1);
   });
+
+  it('can exclude the source from an all-Characters wipe', () => {
+    const registry = buildRegistryFromAssignments([{
+      cardNumber: 'SYN-WIPE',
+      templateId: 'ability',
+      params: { timing: 'activateMain', functions: [{ fn: 'koAllCharacters', excludeSource: true }] },
+    }]);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let srcId: string;
+    let allyId: string;
+    let oppId: string;
+    ({ rig, instanceId: srcId } = putCharacterInPlay(rig, 'p1', SRC));
+    ({ rig, instanceId: allyId } = putCharacterInPlay(rig, 'p1', C1));
+    ({ rig, instanceId: oppId } = putCharacterInPlay(rig, 'p2', C1));
+
+    const state = runTimings(registry['SYN-WIPE'], ['activateMain'], rig.state, srcId, rig.defs, null, registry).state;
+
+    expect(state.cardsById[srcId].currentZone).toBe('characterArea');
+    expect(state.cardsById[allyId].currentZone).toBe('trash');
+    expect(state.cardsById[oppId].currentZone).toBe('trash');
+  });
+
+  it('can restrict a mass K.O. to opponent Characters', () => {
+    const registry = buildRegistryFromAssignments([{
+      cardNumber: 'SYN-WIPE',
+      templateId: 'ability',
+      params: { timing: 'activateMain', functions: [{ fn: 'koAllCharacters', player: 'opponent', filter: { maxCost: 1 } }] },
+    }]);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let allyId: string;
+    let oppLowId: string;
+    let oppHighId: string;
+    ({ rig } = putCharacterInPlay(rig, 'p1', SRC));
+    ({ rig, instanceId: allyId } = putCharacterInPlay(rig, 'p1', C1));
+    ({ rig, instanceId: oppLowId } = putCharacterInPlay(rig, 'p2', C1));
+    ({ rig, instanceId: oppHighId } = putCharacterInPlay(rig, 'p2', C2));
+
+    const sourceId = rig.state.players.p1.characterArea.cardIds[0];
+    const state = runTimings(registry['SYN-WIPE'], ['activateMain'], rig.state, sourceId, rig.defs, null, registry).state;
+
+    expect(state.cardsById[allyId].currentZone).toBe('characterArea');
+    expect(state.cardsById[oppLowId].currentZone).toBe('trash');
+    expect(state.cardsById[oppHighId].currentZone).toBe('characterArea');
+  });
 });

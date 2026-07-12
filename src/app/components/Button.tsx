@@ -17,7 +17,7 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'border-gold/60 text-white hover:border-gold hover:bg-gold/10 disabled:text-white/40',
+  primary: 'border-[rgb(var(--op-gold-rgb)/0.6)] text-white hover:border-[rgb(var(--op-gold-rgb))] hover:bg-[rgb(var(--op-gold-rgb)/0.1)] disabled:text-white/40',
   secondary: 'border-white/30 text-white/85 hover:border-white/60 hover:bg-white/8 disabled:text-white/40',
   ghost: 'border-transparent text-white/75 hover:border-white/25 hover:bg-white/6 disabled:text-white/40',
   danger: 'border-white/80 bg-red-600/55 text-white hover:border-white hover:bg-red-600/70 disabled:text-white/40',

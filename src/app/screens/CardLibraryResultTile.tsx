@@ -45,13 +45,13 @@ export function CardLibraryResultTile({ entry, setName }: CardLibraryResultTileP
           <CardImage src={imageUrl} alt={entry.definition.name} className="rounded-none" />
 
           {printCount > 1 && (
-            <span className="absolute right-1 top-1 z-10 border border-gold/50 bg-black/80 px-1.5 py-0.5 font-heading text-[9px] font-black uppercase tracking-[0.08em] text-gold shadow-[2px_2px_0_rgba(0,0,0,0.45)]">
+            <span className="absolute right-1 top-1 z-10 border border-[rgb(var(--op-gold-rgb)/0.5)] bg-black/80 px-1.5 py-0.5 font-heading text-[9px] font-black uppercase tracking-[0.08em] text-[rgb(var(--op-gold-rgb))] shadow-[2px_2px_0_rgba(0,0,0,0.45)]">
               {printCount} arts
             </span>
           )}
 
           <div className="absolute inset-0 flex items-center justify-center bg-black/28 opacity-100 transition sm:bg-black/0 sm:opacity-0 sm:group-hover:bg-black/45 sm:group-hover:opacity-100">
-            <span className="border border-gold/50 bg-white px-2.5 py-1 font-heading text-[10px] font-black uppercase tracking-[0.08em] text-navy-950 shadow-[0_5px_0_rgba(0,0,0,0.45)]">
+            <span className="border border-[rgb(var(--op-gold-rgb)/0.5)] bg-white px-2.5 py-1 font-heading text-[10px] font-black uppercase tracking-[0.08em] text-navy-950 shadow-[0_5px_0_rgba(0,0,0,0.45)]">
               View
             </span>
           </div>
@@ -65,7 +65,7 @@ export function CardLibraryResultTile({ entry, setName }: CardLibraryResultTileP
             />
           </div>
 
-          <span className="pointer-events-none absolute inset-0 ring-0 ring-gold transition group-hover:ring-2" />
+          <span className="pointer-events-none absolute inset-0 ring-0 ring-[rgb(var(--op-gold-rgb))] transition group-hover:ring-2" />
         </div>
 
         <div className="mt-1 min-h-0">
@@ -82,6 +82,7 @@ export function CardLibraryResultTile({ entry, setName }: CardLibraryResultTileP
         definition={entry.definition}
         imageUrl={imageUrl}
         setName={selectedPrinting?.setName ?? setName}
+        accentClassName="op-theme-blue"
       />
     </>
   );

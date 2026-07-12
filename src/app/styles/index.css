@@ -7,6 +7,20 @@
 @layer base {
   :root {
     color-scheme: dark;
+    /* Base RGB triplet (space-separated, no unit) for the app's "gold"
+       accent. Referenced directly via Tailwind arbitrary values everywhere
+       the accent is used (e.g. text-[rgb(var(--op-gold-rgb))],
+       border-[rgb(var(--op-gold-rgb)/0.35)]) rather than through the
+       Tailwind "gold" theme color in tailwind.config.js — an earlier attempt
+       sourced the "gold" theme color itself from this variable so every
+       gold-* utility would retint automatically, but that relies on
+       Tailwind recompiling its generated utility CSS after the config edit,
+       which didn't reliably happen against a running dev server (stale
+       "gold" utilities kept rendering the old color). Arbitrary-value
+       references don't have that dependency — each one embeds the var()
+       lookup directly in its own compiled rule, so it always reflects the
+       current value. 217 164 65 = #d9a441, the app's default gold. */
+    --op-gold-rgb: 217 164 65;
   }
 
   html,
@@ -378,6 +392,65 @@
   .op-panel > * {
     position: relative;
     z-index: 1;
+  }
+
+  /* Flat, textureless variant of .op-panel — plain transparent black, no
+     gradient sheen and no grid-line overlay. Opt-in via an extra class
+     (kept alongside .op-panel for the border/shadow/z-index plumbing) so it
+     only affects screens that explicitly use it (Card Library, Deck
+     Builder) and leaves every other .op-panel consumer unchanged. */
+  .op-panel.op-panel-plain {
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .op-panel.op-panel-plain::before {
+    display: none;
+  }
+
+  /* Scoped accent-color override: everything inside .op-theme-blue re-reads
+     --op-gold-rgb as blue. Every accent usage in the Card Library / Deck
+     Builder component tree (CardSetBrowser, OpSelect, result tiles,
+     PrintingVariantPicker, CardDetailModal, the shared Button/CardImage/
+     CanvasMenuButton components, etc.) was rewritten to reference
+     rgb(var(--op-gold-rgb)/alpha) directly via Tailwind arbitrary values
+     instead of the "gold" theme color, so they all repaint blue here with
+     no build step involved — see the long comment on --op-gold-rgb above
+     for why the theme-color-based version was dropped. .op-panel/
+     .op-section-title/.op-card-well/.op-input carry their accent as a
+     hardcoded value in this stylesheet rather than a utility class, so
+     those four get an explicit override here too. Currently applied to the
+     Card Library and Deck Builder screen shells only (plus their portaled
+     CardDetailModal instances, which take an explicit accentClassName prop
+     since portals render outside this element's DOM subtree) — every other
+     screen keeps the default gold. */
+  .op-theme-blue {
+    --op-gold-rgb: 56 189 248;
+  }
+
+  .op-theme-blue .op-panel {
+    border-color: rgb(var(--op-gold-rgb) / 0.22);
+  }
+
+  .op-theme-blue .op-section-title {
+    color: rgb(var(--op-gold-rgb));
+  }
+
+  .op-theme-blue .op-section-title::before {
+    border-color: rgb(var(--op-gold-rgb));
+    box-shadow: inset 0 0 0 2px rgb(var(--op-gold-rgb) / 0.22);
+  }
+
+  .op-theme-blue .op-card-well {
+    border-color: rgb(var(--op-gold-rgb) / 0.18);
+  }
+
+  .op-theme-blue .op-input {
+    border-color: rgb(var(--op-gold-rgb) / 0.2);
+  }
+
+  .op-theme-blue .op-input:focus {
+    border-color: rgb(var(--op-gold-rgb) / 0.62);
+    box-shadow: 0 0 0 2px rgb(var(--op-gold-rgb) / 0.12);
   }
 
   .op-section-title {

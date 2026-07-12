@@ -47,7 +47,7 @@ export function CanvasMenuButton({ label, onClick, disabled, badge, prominence =
       className={[
         'group relative w-full select-none text-center font-heading font-black uppercase transition-transform duration-200 [transform-origin:center]',
         contained ? 'overflow-hidden' : 'overflow-visible',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-[#061024]',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--op-gold-rgb))] focus-visible:ring-offset-2 focus-visible:ring-offset-[#061024]',
         size === 'sm' ? 'h-11 max-w-[15rem] px-5 text-xs tracking-[0.1em]' : 'h-14 max-w-[21rem] px-7 text-base tracking-[0.12em]',
         disabled ? 'cursor-not-allowed opacity-40' : expandOnHover ? 'hover:scale-x-150' : '',
         className ?? '',
@@ -62,7 +62,7 @@ export function CanvasMenuButton({ label, onClick, disabled, badge, prominence =
       <span className={['relative z-10 flex h-full items-center justify-center gap-3 transition-transform duration-200', expandOnHover ? 'group-hover:scale-x-[0.6667]' : '', textClass].join(' ')}>
         {label}
         {badge !== undefined && (
-          <span className="min-w-7 border border-gold/70 bg-black/35 px-2 py-0.5 text-xs text-gold shadow-inner shadow-black/40">
+          <span className="min-w-7 border border-[rgb(var(--op-gold-rgb)/0.7)] bg-black/35 px-2 py-0.5 text-xs text-[rgb(var(--op-gold-rgb))] shadow-inner shadow-black/40">
             {badge}
           </span>
         )}

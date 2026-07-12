@@ -217,9 +217,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP08-040', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifGate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 2 }, { kind: 'leaderType', type: 'Whitebeard Pirates' }] }] } },
 
   // OP08-041 — [Activate: Main] return this to hand + Leader {Kuja Pirates}: place up to 1 opp Character cost<=1 at bottom of deck.
-  //   PARTIAL: self-return approximated as optional return 1 of your Characters (instance exclusion not modeled).
   { cardNumber: 'OP08-041', templateId: 'ability', params: { timing: 'activateMain', functions: [
-    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'returnSelfToHand' },
     { fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'leaderType', type: 'Kuja Pirates' }] },
   ] } },
 
@@ -725,9 +724,9 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true },
   ] } },
 
-  // OP08-119 — PARTIAL: koAllCharacters cannot exclude self; DON!!−10 + life add/trash mapped.
+  // OP08-119 — DON!!−10: K.O. all Characters other than this Character, then Life add/trash.
   { cardNumber: 'OP08-119', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 10 }], functions: [
-    { fn: 'koAllCharacters' },
+    { fn: 'koAllCharacters', excludeSource: true },
     { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true },
     { fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true },
   ] } },

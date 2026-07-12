@@ -258,9 +258,9 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-053 — [Blocker] [On Play] Draw 2 and place 2 from hand at the bottom of your deck.
   { cardNumber: 'OP07-053', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 2 }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 2 }] } },
 
-  // OP07-047 — PARTIAL: self-return not instance-locked; opponent hand discard approximates bottom-deck placement.
+  // OP07-047 — PARTIAL: opponent hand bottom-deck placement is approximated as discard.
   { cardNumber: 'OP07-047', templateId: 'ability', params: { timing: 'activateMain', functions: [
-    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'returnSelfToHand' },
     { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'opponentHand', atLeast: 6 }] },
   ] } },
 
@@ -368,8 +368,8 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   //   of 6 or less cannot attack until the end of your opponent's next turn.
   { cardNumber: 'OP07-063', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }], functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
-  // OP07-064 — PARTIAL: "at least 2 less DON!!" approximated as selfDonAtMostOpponent (not deficit-of-2).
-  { cardNumber: 'OP07-064', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'selfDonAtMostOpponent' }] }] } },
+  // OP07-064 — If your DON!! is at least 2 less than opponent's, give this card in your hand -3 cost.
+  { cardNumber: 'OP07-064', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'selfDonAtLeastLessThanOpponent', count: 2 }] }] } },
 
   // OP07-065 — [On Play] If Leader {Foxy Pirates} and DON!! ≤ opponent's, add 1 DON!! from deck and set it active.
   { cardNumber: 'OP07-065', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }, { kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
@@ -592,18 +592,22 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-101 — [Blocker] [Trigger] If Leader is [Vegapunk], play this card.
   { cardNumber: 'OP07-101', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Vegapunk' }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP07-102 — [Trigger] Return up to 1 opp Character cost ≤4 to hand.
-  //   PARTIAL: the "and add this card to your hand" self-return clause is deferred (trigger-returns-to-hand family).
-  { cardNumber: 'OP07-102', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  // OP07-102 — [Trigger] Return up to 1 opp Character cost ≤4 to hand, then add this card to hand.
+  { cardNumber: 'OP07-102', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'returnSelfToHand' },
+  ] } },
 
-  // OP07-103 (character) Tony Tony.Chopper —
-  //   PARTIAL: "add this card to your hand" on Trigger deferred.
+  // OP07-103 (character) Tony Tony.Chopper — [Trigger] grant [Blocker], then add this card to hand.
   {
     cardNumber: 'OP07-103',
     templateId: 'ability',
     params: {
       timing: 'lifeTrigger',
-      functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Egghead' } }, keyword: 'blocker', duration: 'duringThisTurn', optional: true, maxTargets: 1 }],
+      functions: [
+        { fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Egghead' } }, keyword: 'blocker', duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+        { fn: 'returnSelfToHand' },
+      ],
     },
   },
 

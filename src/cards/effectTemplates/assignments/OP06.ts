@@ -245,13 +245,12 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP06-038 — [Counter] +2000 battle; +2000 more if 8+ rested cards. [Trigger] K.O. rested cost<=3.
-  // PARTIAL: "8 or more rested cards" approximated with selfRestedCharacterCount atLeast 8 (Characters only).
   {
     cardNumber: 'OP06-038',
     templates: [
       { templateId: 'ability', params: { timing: 'counter', functions: [
         { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true },
-        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifGate: [{ kind: 'selfRestedCharacterCount', atLeast: 8 }] },
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifGate: [{ kind: 'selfRestedCardCount', atLeast: 8 }] },
       ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 3 } }, optional: true }] } },
     ],
@@ -502,8 +501,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'FILM', maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 2 },
   ] } },
 
-  // OP06-072 — PARTIAL: "DON!! at least 2 less than opponent" deferred; mapped Leader {GERMA 66} + [Blocker] when selfDonAtMostOpponent.
-  { cardNumber: 'OP06-072', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'GERMA 66' }, { kind: 'selfDonAtMostOpponent' }] } }] } },
+  // OP06-072 — If Leader {GERMA 66} and your DON!! is at least 2 less than opponent's, this gains [Blocker].
+  { cardNumber: 'OP06-072', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'GERMA 66' }, { kind: 'selfDonAtLeastLessThanOpponent', count: 2 }] } }] } },
 
   // OP06-073 — [Blocker] [On Play] If you have 8+ DON!! on field, draw 1 and trash 1 from hand.
   { cardNumber: 'OP06-073', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
@@ -851,10 +850,9 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP06-117 — [Activate: Main] [Once Per Turn] rest this + rest 1 [Enel]: K.O. all opp Characters cost<=2.
-  // PARTIAL: koAllCharacters hits both players; mapped with opponent-only intent via registry example.
   { cardNumber: 'OP06-117', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restThis' }], functions: [
     { fn: 'rest', target: { group: 'characters', player: 'controller', filter: { name: 'Enel' } }, optional: true, maxTargets: 1 },
-    { fn: 'koAllCharacters', filter: { maxCost: 2 }, ifPrevious: 'previousSelectedAny' },
+    { fn: 'koAllCharacters', player: 'opponent', filter: { maxCost: 2 }, ifPrevious: 'previousSelectedAny' },
   ] } },
 
   // OP06-118 — [When Attacking] [Once Per Turn] rest 1 DON!!: set this active. [Activate: Main] [Once Per Turn] rest 2 DON!!: set this active.

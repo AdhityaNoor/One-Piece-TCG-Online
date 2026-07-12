@@ -5,8 +5,8 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST24_ASSIGNMENTS: CardEffectAssignment[] = [
-  // ST24-001 — PARTIAL: "6+ rested cards" → selfRestedCharacterCount; [On Play] draw 1 trash 1 mapped.
-  { cardNumber: 'ST24-001', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 6 }], functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
+  // ST24-001 — [On Play] If 6+ rested cards, draw 1 and trash 1.
+  { cardNumber: 'ST24-001', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCardCount', atLeast: 6 }], functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
 
   // ST24-002 — [On Play] Look 5, reveal up to 1 {Supernovas} to hand, rest to bottom.
   //   [On Your Opponent's Attack] You may trash this Character: set up to 1 of your DON!! cards as active.

@@ -122,8 +122,17 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP15-010', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
 
-  // OP15-011 — [On K.O.] If Leader {East Blue}, K.O. up to 1 opp Character base power ≤6000. PARTIAL: conditional [Blocker]/+2000 deferred.
-  { cardNumber: 'OP15-011', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'East Blue' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }, optional: true }] } },
+  // OP15-011 — [Opponent's Turn] If Leader {East Blue}, this gains [Blocker]/+2000. [On K.O.] K.O. opp base power <=6000.
+  {
+    cardNumber: 'OP15-011',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'East Blue' }] } },
+        { fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'East Blue' }] } },
+      ] } },
+      { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'East Blue' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }, optional: true }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP15-012',
@@ -222,10 +231,11 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       ],
     },
   },
-  // OP15-021 — [Main]/[Counter] give up to 1 opp Character −3000. PARTIAL: static Events-in-trash −cost is deferred.
+  // OP15-021 — Events-in-trash in-hand cost reduction plus [Main]/[Counter] opp Character −3000.
   {
     cardNumber: 'OP15-021',
     templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'selfTrashMatching', filter: { category: 'event' }, atLeast: 4 }] }] } },
       { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
       { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
     ],
@@ -389,8 +399,14 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-042 — [On Play] trash 1 → if Leader [Rebecca], this gains [Rush]. PARTIAL: [On K.O.] self-recur deferred.
-  { cardNumber: 'OP15-042', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Rebecca' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' }] } },
+  // OP15-042 — [On Play] trash 1 → if Leader [Rebecca], this gains [Rush]. [On K.O.] return this to hand.
+  {
+    cardNumber: 'OP15-042',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Rebecca' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'returnSelfToHand' }] } },
+    ],
+  },
 
   { cardNumber: 'OP15-043', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Bobby Funk' } }] } },
 
@@ -454,7 +470,6 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-028 — [On Play] If Leader {East Blue}, give up to 1 DON!! from opponent cost area to opp Character. PARTIAL: opponent-cost-area DON deferred.
   // OP15-054 — [Main] If Leader [Lucy], choose one: draw/trash/play Dressrosa OR return Stage.
   {
     cardNumber: 'OP15-054',
@@ -637,27 +652,33 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP15-038', templates: [{ templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 8, minDonAttached: 2 } }, optional: true }] } }, { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Krieg' } }, amount: 4000, duration: 'duringThisBattle', optional: true }] } }] },
 
 
-  // PARTIAL: [On K.O.] opp hand→deck-bottom deferred.
-  { cardNumber: 'OP15-048', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { category: 'event' }, optional: true }, { fn: 'draw', amount: 2, ifPrevious: 'previousSelectedAny' }] } },
+  // OP15-048 — [On Play] trash Event from hand to draw 2. [On K.O.] opponent places 1 hand card on deck bottom.
+  {
+    cardNumber: 'OP15-048',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { category: 'event' }, optional: true }, { fn: 'draw', amount: 2, ifPrevious: 'previousSelectedAny' }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1, chooser: 'opponent' }] } },
+    ],
+  },
 
 
-  // PARTIAL: "7000 base power or less" target filter dropped (no maxBasePower on targetCondition).
-  { cardNumber: 'OP15-069', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', returnDon: { count: 1 }, duration: 'permanent' }] } },
+  // OP15-069 — effect-K.O. replacement for target with base power 7000 or less: return 1 DON.
+  { cardNumber: 'OP15-069', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', targetCondition: { maxBasePower: 7000 }, returnDon: { count: 1 }, duration: 'permanent' }] } },
 
 
   { cardNumber: 'OP15-079', templates: [{ templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates' } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates' } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } }] },
 
 
-  // PARTIAL: "7000 base power or less" target filter dropped.
-  { cardNumber: 'OP15-090', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', trashFromHand: { count: 1 }, duration: 'permanent' }] } },
+  // OP15-090 — effect-K.O. replacement for target with base power 7000 or less: trash 1 from hand.
+  { cardNumber: 'OP15-090', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', targetCondition: { maxBasePower: 7000 }, trashFromHand: { count: 1 }, duration: 'permanent' }] } },
 
 
-  // PARTIAL: "7000 base power or less" target filter dropped.
-  { cardNumber: 'OP15-098', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', anyOfTypes: ['Sky Island'], lifeToHand: { position: 'top' }, duration: 'permanent' }] } },
+  // OP15-098 — effect-K.O. replacement for Sky Island Character with base power 6000 or more: add top Life to hand.
+  { cardNumber: 'OP15-098', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', anyOfTypes: ['Sky Island'], targetCondition: { minBasePower: 6000 }, lifeToHand: { position: 'top' }, duration: 'permanent' }] } },
 
 
-  // PARTIAL: "7000 base power or less" target filter dropped.
-  { cardNumber: 'OP15-105', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', lifeToHand: { position: 'top' }, duration: 'permanent' }] } },
+  // OP15-105 — effect-K.O. replacement for target with base power 7000 or less: add top Life to hand.
+  { cardNumber: 'OP15-105', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', targetCondition: { maxBasePower: 7000 }, lifeToHand: { position: 'top' }, duration: 'permanent' }] } },
 
   // --- codegen batch ---
   { cardNumber: 'OP15-065', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { maxCost: 2 }, then: [{ fn: 'addDonFromDeck', count: 1, rested: true }] }] } },
@@ -726,14 +747,26 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Enel' } }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
     ],
   },
-  // OP15-075 — [Main] DON!! −1: If Leader [Enel], up to 1 Leader/Char +1000 this turn, K.O. opp ≤3000 power. PARTIAL: [Counter] [Enel] buff deferred.
-  { cardNumber: 'OP15-075', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderName', name: 'Enel' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
+  // OP15-075 — [Main] DON!! -1: If Leader [Enel], +1000 and K.O. opp <=3000. [Counter] [Enel] +2000.
+  {
+    cardNumber: 'OP15-075',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderName', name: 'Enel' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Enel' } }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
+    ],
+  },
 
-  // OP15-076 — [Main] DON!! −1: If Leader [Enel], draw 1, give up to 1 opp Character −1000. PARTIAL: [Counter] [Enel] buff deferred.
-  { cardNumber: 'OP15-076', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderName', name: 'Enel' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
+  // OP15-076 — [Main] DON!! -1: If Leader [Enel], draw 1 and -1000 opp Character. [Counter] [Enel] +2000.
+  {
+    cardNumber: 'OP15-076',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderName', name: 'Enel' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Enel' } }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
+    ],
+  },
 
-  // OP15-077 — [Main] DON!! −1: Draw 1. PARTIAL: the preventRefresh rider is deferred.
-  { cardNumber: 'OP15-077', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }] } },
+  // OP15-077 — [Main] DON!! -1: Draw 1, then rested opp Character with <=6000 power will not refresh.
+  { cardNumber: 'OP15-077', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxPower: 6000 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
   // OP15-078 - [Main] DON!! -2: draw 1, then rest power <=5000. [Counter] +1000, then if <=6 DON!! draw 1.
   {
@@ -799,8 +832,14 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-086 — [On Play] If Leader {Straw Hat Crew}, play {Straw Hat Crew} cost ≤7 from trash (granted [Rush] dropped).
   { cardNumber: 'OP15-086', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', maxCost: 7 } }] } },
 
-  // OP15-087 — [On Play] Draw 2, trash 2. PARTIAL: static 10-trash [Blocker] deferred.
-  { cardNumber: 'OP15-087', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
+  // OP15-087 — If you have 10+ trash, this gains [Blocker]. [On Play] Draw 2, trash 2.
+  {
+    cardNumber: 'OP15-087',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 10 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
+    ],
+  },
 
   // OP15-088 — static: this Character +6 cost. [On Play] trash 3 from top of deck → play {Straw Hat Crew} cost ≤2 from trash.
   {
@@ -839,7 +878,7 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy' } }, keyword: 'rush', duration: 'duringThisTurn', optional: true }],
     },
   },
-  // OP15-094 — PARTIAL: field-removal clause deferred; [Blocker] is engine keyword.
+  // OP15-094 — field-removal replacement; [Blocker] is engine keyword.
   {
     cardNumber: 'OP15-094',
     templateId: 'ability',
@@ -883,17 +922,22 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP15-099 — [On Play] may trash 1 {Supernovas} from hand → [Rush]. PARTIAL: activate Main Life-face + giveDon deferred.
+  // OP15-099 — [On Play] may trash 1 {Supernovas} from hand → [Rush]. [Activate: Main] turn top Life face-down → give DON.
   {
     cardNumber: 'OP15-099',
-    templateId: 'ability',
-    params: {
-      timing: 'onPlay',
-      functions: [
-        { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Supernovas' }, optional: true },
-        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
-      ],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Supernovas' }, optional: true },
+            { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'giveDon', count: 1, optional: true, ifPrevious: 'previousSelectedAny' }] } },
+    ],
   },
   // OP15-100 — PARTIAL: optional trash-self on onPlay deferred; mapped: Life to hand → K.O. opp cost ≤6.
   {
@@ -965,8 +1009,18 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP15-113', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 
-  // OP15-114 — [Activate: Main][OPT] give up to 1 rested DON!! to Leader/1 Char. PARTIAL: the turn-Life-face-up mass-debuff [On Play] is deferred.
-  { cardNumber: 'OP15-114', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
+  // OP15-114 — [On Play] turn top Life face-up: opp Characters -2000, then K.O. opp Characters with 0 or less power. [Activate: Main][OPT] give DON!!.
+  {
+    cardNumber: 'OP15-114',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [
+        { fn: 'turnTopLifeFace', faceUp: true },
+        { fn: 'addPowerAuraOpponentCharacters', amount: -2000, duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny' },
+        { fn: 'koAllCharacters', player: 'opponent', filter: { maxPower: 0 }, ifPrevious: 'previousSelectedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP15-115',
@@ -976,8 +1030,25 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-116 — [Counter] your Leader +4000 this battle. PARTIAL: the Straw-Hat [Main] Life-trash/refill is deferred.
-  { cardNumber: 'OP15-116', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 4000, duration: 'duringThisBattle' }] } },
+  // OP15-116 — [Main] Straw-Hat Life trash/refill + hand trash. [Counter] your Leader +4000 this battle.
+  {
+    cardNumber: 'OP15-116',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }],
+          functions: [
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', count: 1 }, to: { zone: 'trash', player: 'owner' }, optional: true },
+            { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' },
+            { fn: 'trashFromHand', count: 1, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 4000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP15-117',

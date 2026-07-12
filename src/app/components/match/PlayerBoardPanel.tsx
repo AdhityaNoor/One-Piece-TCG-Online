@@ -103,8 +103,6 @@ function leaderCharacterSelectable(
       if (!isOpponent) return false;
       if (zone === 'leaderArea') return true;
       return zone === 'characterArea' && card.orientation === 'rested';
-    case 'selectCounterBoostTarget':
-      return zone !== 'stageArea' && isOwn;
     case 'selectBlocker':
       return isOwn && zone === 'characterArea' && card.orientation === 'active' && card.hasBlocker;
     case 'selectActivateSource':
@@ -130,9 +128,6 @@ function selectedAttackerIds(mode: BoardSelectionMode): Set<string> {
 // rule, just relocated alongside leaderCharacterSelectable above.
 function donSelectable(mode: BoardSelectionMode, isOwn: boolean, card: CardView): boolean {
   if (!isOwn) return false;
-  if (mode.kind === 'payingCounterEventCost') {
-    return !card.donRested;
-  }
   if (mode.kind === 'payingActivateEffectCost' || mode.kind === 'payingOnOppAttackCost') {
     return true;
   }
@@ -140,7 +135,6 @@ function donSelectable(mode: BoardSelectionMode, isOwn: boolean, card: CardView)
 }
 
 function selectedDonInstanceIds(mode: BoardSelectionMode): Set<string> {
-  if (mode.kind === 'payingCounterEventCost') return new Set(mode.selectedDonIds);
   if (mode.kind === 'payingActivateEffectCost') return new Set(mode.selectedDonIds);
   if (mode.kind === 'payingOnOppAttackCost') return new Set(mode.selectedDonIds);
   return new Set();

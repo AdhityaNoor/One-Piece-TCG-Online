@@ -95,7 +95,7 @@ export function OpSelect({
         className={[
           'block w-full px-3 py-2 text-left font-heading text-sm transition hover:bg-white/8',
           indent ? 'pl-4' : '',
-          selected ? 'bg-gold/12 text-gold' : 'text-slate-100/88',
+          selected ? 'bg-[rgb(var(--op-gold-rgb)/0.12)] text-[rgb(var(--op-gold-rgb))]' : 'text-slate-100/88',
         ].join(' ')}
       >
         {option.label}
@@ -117,7 +117,7 @@ export function OpSelect({
         }}
         className={[
           'op-input mt-1.5 flex w-full items-center justify-between gap-2 px-3 py-2 text-left font-heading text-sm font-semibold',
-          disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:border-gold/35',
+          disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:border-[rgb(var(--op-gold-rgb)/0.35)]',
           buttonClassName,
         ]
           .filter(Boolean)
@@ -134,7 +134,7 @@ export function OpSelect({
           id={listboxId}
           role="listbox"
           className={[
-            'absolute z-30 mt-1 max-h-72 w-full overflow-y-auto rounded border border-gold/25 bg-[rgba(2,7,17,0.96)] py-1 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-sm',
+            'absolute z-30 mt-1 max-h-72 w-full overflow-y-auto rounded border border-[rgb(var(--op-gold-rgb)/0.25)] bg-[rgba(2,7,17,0.96)] py-1 shadow-[0_18px_40px_rgba(0,0,0,0.45)] backdrop-blur-sm',
             listClassName,
           ]
             .filter(Boolean)
@@ -146,7 +146,7 @@ export function OpSelect({
               <p
                 className={[
                   'sticky top-0 z-10 border-y border-white/8 bg-[rgba(2,7,17,0.98)] px-3 py-1.5 font-heading text-[10px] font-black uppercase tracking-[0.18em]',
-                  group.headerClassName ?? 'text-gold',
+                  group.headerClassName ?? 'text-[rgb(var(--op-gold-rgb))]',
                 ].join(' ')}
               >
                 {group.label}

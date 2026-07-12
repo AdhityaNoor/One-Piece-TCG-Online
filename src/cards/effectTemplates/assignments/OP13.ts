@@ -249,8 +249,14 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP13-040 — [Counter] Leader +3000. PARTIAL: the [Main] rest-2-DON preventRefresh is deferred.
-  { cardNumber: 'OP13-040', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+  // OP13-040 — [Main] Rest 2 DON!!: up to 2 rested opponent Characters cost <=7 do not refresh. [Counter] Leader +3000.
+  {
+    cardNumber: 'OP13-040',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 7 } }, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 2 }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   { cardNumber: 'OP13-041', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 2 }] } },
 
@@ -269,20 +275,25 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-045', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfHand', atMost: 4 }], functions: [{ fn: 'draw', amount: 1 }] } },
 
-  // OP13-046 — PARTIAL: field-removal clause and [Double Attack] keyword deferred.
+  // OP13-046 — PARTIAL: field-removal clause deferred.
   {
     cardNumber: 'OP13-046',
-    templateId: 'ability',
-    params: {
-      timing: 'onEnterPlay',
-      functions: [{
-        fn: 'registerKoReplacementSelf',
-        scope: 'effect',
-        oncePerTurn: true,
-        trashFromHand: { count: 1, filter: { typeIncludes: 'Whitebeard Pirates' } },
-        duration: 'permanent',
-      }],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent' }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementSelf',
+            scope: 'effect',
+            oncePerTurn: true,
+            trashFromHand: { count: 1, filter: { typeIncludes: 'Whitebeard Pirates' } },
+            duration: 'permanent',
+          }],
+        },
+      },
+    ],
   },
   // OP13-047 — aura K.O. replacement: trash this Character to save ally Whitebeard Pirates from opp effect K.O.
   {
@@ -371,8 +382,13 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP13-062 — [When Attacking] Return up to 1 opp Character base power ≤3000 to hand. PARTIAL: any-DON-given [On Play] ramp deferred.
-  { cardNumber: 'OP13-062', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxBasePower: 3000 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  {
+    cardNumber: 'OP13-062',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfGivenDonCount', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxBasePower: 3000 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+    ],
+  },
 
   // OP13-063 — [Blocker] [On Play] If you have any given DON!!, add up to 1 DON!! from deck rested.
   { cardNumber: 'OP13-063', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfGivenDonCount', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
@@ -419,11 +435,21 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-074', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Homies', maxPower: 3000 } }] } },
 
-  // OP13-075/077 — [Counter] Leader +3000. PARTIAL: any-DON-given [Main] payoffs deferred.
-  { cardNumber: 'OP13-075', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+  {
+    cardNumber: 'OP13-075',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }], gate: [{ kind: 'leaderName', name: 'Gol.D.Roger' }, { kind: 'selfGivenDonCount', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
-  // OP13-076 — [Counter] trash 1 → up to 1 Leader/Char +3000 this battle. PARTIAL: any-DON-given [Main] payoff deferred.
-  { cardNumber: 'OP13-076', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' }] } },
+  {
+    cardNumber: 'OP13-076',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 5 }], gate: [{ kind: 'selfGivenDonCount', atLeast: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -8000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
   { cardNumber: 'OP13-077', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisTurn' }] } },
 
@@ -545,11 +571,23 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-087', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 1 }] } },
 
-  // OP13-089 — [On K.O.] Draw 1. PARTIAL: static trash-count immunity/[Blocker] deferred.
-  { cardNumber: 'OP13-089', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+  // OP13-089 — [On K.O.] Draw 1. PARTIAL: static trash-count immunity deferred.
+  {
+    cardNumber: 'OP13-089',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
 
-  // OP13-091 — [On Play] trash 1 → K.O. up to 1 opp Character base cost ≤5. PARTIAL: static trash-count immunity/[Blocker] deferred.
-  { cardNumber: 'OP13-091', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 5 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+  // OP13-091 — [On Play] trash 1 → K.O. up to 1 opp Character base cost ≤5. PARTIAL: static trash-count immunity deferred.
+  {
+    cardNumber: 'OP13-091',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 5 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
 
   // OP13-093 - [Blocker] [On Play] Draw 2 cards, then trash 2 cards from hand.
@@ -567,11 +605,23 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP13-097 — [Counter] Leader +3000. PARTIAL: the only-CD-Characters [Main] K.O. gate is deferred.
-  { cardNumber: 'OP13-097', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+  // OP13-097 — [Main] Rest 5 DON!!: if only Celestial Dragons Characters, K.O. opp Character base cost <=6. [Counter] Leader +3000.
+  {
+    cardNumber: 'OP13-097',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 5 }], gate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'Celestial Dragons' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 6 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
-  // OP13-098 — [Counter] If Leader [Imu], up to 1 Leader/Char +4000 this battle. PARTIAL: the [Main] Stage K.O. is deferred.
-  { cardNumber: 'OP13-098', templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderName', name: 'Imu' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
+  // OP13-098 — [Main] Rest 1 DON!!: if Leader [Imu], trash opponent Stage cost 7. [Counter] If Leader [Imu], +4000.
+  {
+    cardNumber: 'OP13-098',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }], gate: [{ kind: 'leaderName', name: 'Imu' }], functions: [{ fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { exactCost: 7 } }, to: { zone: 'trash', player: 'owner' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderName', name: 'Imu' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
+    ],
+  },
 
   // OP13-099 — PARTIAL: play cost should scale with DON!! on field; mapped maxCost 10 proxy.
   {
@@ -597,14 +647,13 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP13-102 — [Trigger] Draw 1, rest up to 1 opp Character cost ≤3.
-  //   [Activate: Main] You may trash this Character: if your Life ≤ opponent's Life, draw 1, then rest up to 1 opp Character cost ≤3.
-  //   PARTIAL: "equal to or less than" approximated with selfLifeLessThanOpponent (strict <; no <= gate exists).
+  // OP13-102 — [Trigger] Draw 1, rest up to 1 opp Character cost <=3.
+  //   [Activate: Main] Trash this Character: if your Life <= opponent's Life, draw 1, then rest up to 1 opp Character cost <=3.
   {
     cardNumber: 'OP13-102',
     templates: [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
-      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'selfLifeLessThanOpponent' }], functions: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'selfLifeAtMostOpponent' }], functions: [
         { fn: 'draw', amount: 1 },
         { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true },
       ] } },
@@ -617,15 +666,22 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [On Play] Look at all of your Life cards and place them back in your Life area in any order.
   { cardNumber: 'OP13-105', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'lookLifeAndReorder' }] } },
 
-  // OP13-106 (character) Conney —
-  //   PARTIAL: [Opponent's Turn] Trigger-activated Blocker deferred; mapped [Trigger] play this card.
-  { cardNumber: 'OP13-106', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
+  {
+    cardNumber: 'OP13-106',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onTriggerActivated', condition: { turn: 'opponent' }, functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
-  // OP13-108 — [On Play] If Leader {Egghead}, this gains [Rush] this turn. [Trigger] if ≤1 Life rest opp cost ≤7. PARTIAL: opp-life drawback deferred.
+  // OP13-108 — [On Play] If Leader {Egghead}, this gains [Rush] and opponent adds top Life to hand. [Trigger] if ≤1 Life rest opp cost ≤7.
   {
     cardNumber: 'OP13-108',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Egghead' }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Egghead' }], functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' },
+        { fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' } },
+      ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 7 } }, optional: true }] } },
     ],
   },
@@ -649,8 +705,14 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP13-114 — [Trigger] trash 1 → play this. PARTIAL: the turn-Life-face-up main is deferred.
-  { cardNumber: 'OP13-114', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
+  {
+    cardNumber: 'OP13-114',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'turnTopLifeFace', faceUp: true }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousSelectedAny' }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'turnTopLifeFace', faceUp: true }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousSelectedAny' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
   // OP13-115 — [Counter] +3000 this battle, then if opp ≤2 Life +1000 this turn. [Trigger] Draw 1.
   {
@@ -669,8 +731,13 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP13-117 — [Trigger] Draw 1. PARTIAL: the turn-Life-face-up [Main] K.O. is deferred.
-  { cardNumber: 'OP13-117', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+  {
+    cardNumber: 'OP13-117',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'turnTopLifeFace', faceUp: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 6 } }, optional: true, ifPrevious: 'previousSelectedAny' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
 
   // OP13-118 — [Double Attack][On Play] If Leader multicolored, set up to 4 DON!! active, then cannot play base-cost-5+ Characters this turn.
   { cardNumber: 'OP13-118', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderMulticolor' }], functions: [

@@ -13,7 +13,7 @@
  * Touch: TODO — mouse-driven only for now.
  */
 
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import type { CardView } from '../../../board/projection';
 import { useCardAnimationStore } from '../../store/cardAnimationStore';
 import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
@@ -45,6 +45,17 @@ export interface DockHandProps {
   selectedIds: Set<string>;
   selectable: (card: CardView) => boolean;
   canPlay?: (card: CardView) => boolean;
+  /**
+   * Cards this returns true for render at reduced opacity and skip the
+   * hover-magnify "Play"/"View" affordance treatment for selectability —
+   * used by the Counter Step to visually de-emphasize hand cards that
+   * aren't usable Counter options (no Counter value, or an unaffordable
+   * Counter Event) without hiding them outright (project rule: dim, don't
+   * hide, since the player may still want to inspect them).
+   */
+  dimmed?: (card: CardView) => boolean;
+  /** Small overlay badge (e.g. a DON!! cost readout) rendered top-left of the card. */
+  cardBadge?: (card: CardView) => ReactNode | null;
   onCardTap: (card: CardView) => void;
   onPlayCard?: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
@@ -134,6 +145,8 @@ function DockHandCard({
   isSelected,
   canSelect,
   canPlay,
+  isDimmed,
+  badge,
   showFaces,
   overlapPx,
   cardWidth,
@@ -151,6 +164,8 @@ function DockHandCard({
   isSelected: boolean;
   canSelect: boolean;
   canPlay: boolean;
+  isDimmed: boolean;
+  badge: ReactNode | null;
   showFaces: boolean;
   overlapPx: number;
   cardWidth: number;
@@ -178,8 +193,9 @@ function DockHandCard({
         marginLeft: index === 0 ? 0 : `-${overlapPx}px`,
         transform: `scale(${scale})`,
         transformOrigin: isTop ? 'top center' : 'bottom center',
-        transition: 'transform 0.18s ease-out',
+        transition: 'transform 0.18s ease-out, opacity 0.15s ease-out',
         zIndex: isHoveredCard ? 50 : index + 1,
+        opacity: isDimmed ? 0.4 : 1,
       }}
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
@@ -233,6 +249,12 @@ function DockHandCard({
           className="pointer-events-none absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border border-navy-950 bg-gold shadow-[0_0_6px_rgba(217,164,65,0.7)]"
         />
       )}
+
+      {badge && showFaces && (
+        <div className="pointer-events-none absolute left-0.5 top-0.5 z-10">
+          {badge}
+        </div>
+      )}
     </div>
   );
 }
@@ -246,6 +268,8 @@ export function DockHand({
   selectedIds,
   selectable,
   canPlay,
+  dimmed,
+  cardBadge,
   onCardTap,
   onPlayCard,
   onCardZoom,
@@ -478,6 +502,8 @@ export function DockHand({
                 isSelected={selectedIds.has(card.instanceId)}
                 canSelect={selectable(card)}
                 canPlay={canPlay?.(card) ?? false}
+                isDimmed={dimmed?.(card) ?? false}
+                badge={cardBadge?.(card) ?? null}
                 showFaces={showFaces}
                 overlapPx={cardWidth * OVERLAP}
                 cardWidth={cardWidth}

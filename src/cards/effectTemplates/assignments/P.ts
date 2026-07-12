@@ -6,12 +6,12 @@ import type { CardEffectAssignment } from '../assembler';
 export const P_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
-  // PARTIAL: "return this Character" not instance-locked; mapped optional char→hand then reorder.
-  { cardNumber: 'P-074', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 }, { fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom', ifPrevious: 'previousMovedAny' }] } },
+  // P-074 — return this Character to hand, then look at 5 and place them top or bottom.
+  { cardNumber: 'P-074', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'returnSelfToHand' }, { fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom', ifPrevious: 'previousMovedAny' }] } },
 
 
-  // PARTIAL: return-self + leader gate + play Cross Guild cost 5 deferred; mapped playFromHand only.
-  { cardNumber: 'P-081', templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', atLeast: 3 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Cross Guild', maxCost: 5 } }] } },
+  // PARTIAL: "blue {Cross Guild}" character-count gate lacks color+type field-count support.
+  { cardNumber: 'P-081', templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', atLeast: 3 }], functions: [{ fn: 'returnSelfToHand' }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Cross Guild', maxCost: 5 }, ifPrevious: 'previousMovedAny' }] } },
 
   // --- codegen batch ---
   { cardNumber: 'P-014', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },

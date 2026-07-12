@@ -153,8 +153,8 @@ function selectorFromMoveSource(from: MoveCardSource): Extract<EffectOp, { op: '
       if (from.player === 'opponent') return { sel: 'opponentTrash', ...(from.filter ? { filter: from.filter } : {}) };
       break;
     case 'stages':
-      if (from.player === 'controller') return { sel: 'controllerStages', ...(from.filter?.maxCost !== undefined ? { maxCost: from.filter.maxCost } : {}) };
-      if (from.player === 'opponent') return { sel: 'opponentStages', ...(from.filter?.maxCost !== undefined ? { maxCost: from.filter.maxCost } : {}) };
+      if (from.player === 'controller') return { sel: 'controllerStages', ...(from.filter?.maxCost !== undefined ? { maxCost: from.filter.maxCost } : {}), ...(from.filter?.exactCost !== undefined ? { exactCost: from.filter.exactCost } : {}) };
+      if (from.player === 'opponent') return { sel: 'opponentStages', ...(from.filter?.maxCost !== undefined ? { maxCost: from.filter.maxCost } : {}), ...(from.filter?.exactCost !== undefined ? { exactCost: from.filter.exactCost } : {}) };
       if (from.player === 'any') return { sel: 'allStages' };
       break;
     case 'characters':
@@ -695,6 +695,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'trashTopDeck', count: f.count }];
     case 'trashSelf':
       return [{ op: 'trashCards', target: { sel: 'self' } }];
+    case 'returnSelfToHand':
+      return [{ op: 'moveToHand', target: { sel: 'self' } }];
     case 'moveCards':
       return moveCardsOps(f);
     case 'moveAllCards':
@@ -1173,12 +1175,14 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         ...(f.drawAmount !== undefined ? { drawAmount: f.drawAmount } : {}),
       }];
     case 'koAllCharacters':
-      return [
-        {
-          op: 'ko',
-          target: { sel: 'allCharacters', ...(f.filter?.maxCost !== undefined ? { maxCost: f.filter.maxCost } : {}), ...(f.filter?.maxPower !== undefined ? { maxPower: f.filter.maxPower } : {}), ...(f.filter?.rested !== undefined ? { rested: f.filter.rested } : {}) },
-        },
-      ];
+      {
+        const filter = { ...(f.filter?.maxCost !== undefined ? { maxCost: f.filter.maxCost } : {}), ...(f.filter?.maxPower !== undefined ? { maxPower: f.filter.maxPower } : {}), ...(f.filter?.rested !== undefined ? { rested: f.filter.rested } : {}) };
+        const target =
+          f.player === 'controller' ? { sel: 'controllerCharacters' as const, ...filter, ...(f.excludeSource ? { excludeSelf: true } : {}) }
+          : f.player === 'opponent' ? { sel: 'opponentCharacters' as const, ...filter }
+          : { sel: 'allCharacters' as const, ...filter, ...(f.excludeSource ? { excludeSelf: true } : {}) };
+        return [{ op: 'ko', target }];
+      }
     case 'giveDonControllerLeader':
       return [{ op: 'giveDon', target: { sel: 'controllerLeader' }, count: f.count }];
     case 'giveDonLeaderAndCharacter':

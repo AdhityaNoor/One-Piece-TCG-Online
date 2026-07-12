@@ -19,3 +19,4 @@ export * from './GameCanvasScreen';
 export * from './BacksoundControl';
 export * from './BrandLogo';
 export * from './LandingBackdrop';
+export * from './GlitterWrap';

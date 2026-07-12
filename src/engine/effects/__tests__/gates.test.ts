@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { makeCharacterDef, buildBaseRig, putCharacterInPlay, putDon, putLifeCards } from '../../rules/shared/__tests__/testRig';
+import { makeCharacterDef, makeStageDef, buildBaseRig, putCharacterInPlay, putStageInPlay, putDon, putLifeCards } from '../../rules/shared/__tests__/testRig';
 import { evaluateGates } from '../gates';
 
 describe('evaluateGates', () => {
@@ -201,6 +201,30 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], rested: true, atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(false);
   });
 
+  it('checks selfRestedCardCount across Leader, Characters, Stage, and cost-area DON!!', () => {
+    let rig = buildBaseRig();
+    const leaderId = rig.state.players.p1.leaderInstanceId;
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef(), { orientation: 'rested' }));
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef(), { orientation: 'active' }));
+    ({ rig } = putStageInPlay(rig, 'p1', makeStageDef(), { orientation: 'rested' }));
+    ({ rig } = putDon(rig, 'p1', 1, { rested: true }));
+    ({ rig } = putDon(rig, 'p1', 1, { rested: false }));
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        cardsById: {
+          ...rig.state.cardsById,
+          [leaderId]: { ...rig.state.cardsById[leaderId], orientation: 'rested' },
+        },
+      },
+    };
+
+    expect(evaluateGates([{ kind: 'selfRestedCardCount', atLeast: 4 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfRestedCardCount', atLeast: 5 }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'selfRestedCardCount', atMost: 4 }], rig.state, rig.defs, 'p1')).toBe(true);
+  });
+
   it('checks combinedLifeTotal as the sum of both players Life counts', () => {
     let rig = buildBaseRig();
     const lifeCard = makeCharacterDef({ cardDefinitionId: 'LIFE', cardNumber: 'LIFE' });
@@ -230,6 +254,32 @@ describe('evaluateGates', () => {
       },
     };
     expect(evaluateGates([{ kind: 'selfInstancePowerAtLeast', power: 7000 }], rig.state, rig.defs, 'p1', charId)).toBe(true);
+  });
+
+  it('checks selfOtherCharacterPowerAtLeast against current power while excluding the source', () => {
+    let rig = buildBaseRig();
+    let sourceId: string;
+    let otherId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ basePower: 7000 })));
+    ({ rig, instanceId: otherId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ basePower: 6000 })));
+
+    expect(evaluateGates([{ kind: 'selfOtherCharacterPowerAtLeast', power: 7000 }], rig.state, rig.defs, 'p1', sourceId)).toBe(false);
+
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        continuousEffects: [{
+          id: 'boost-other',
+          sourceInstanceId: sourceId,
+          ownerId: 'p1',
+          duration: 'permanent',
+          description: '+1000',
+          powerModifier: { appliesToInstanceId: otherId, amount: 1000 },
+        }],
+      },
+    };
+    expect(evaluateGates([{ kind: 'selfOtherCharacterPowerAtLeast', power: 7000 }], rig.state, rig.defs, 'p1', sourceId)).toBe(true);
   });
 
   it('checks leaderActive and leaderRested from Leader orientation', () => {
@@ -287,5 +337,28 @@ describe('evaluateGates', () => {
     ({ rig } = putDon(rig, 'p1', 1, { rested: true }));
     expect(evaluateGates([{ kind: 'selfActiveDonCount', atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(true);
     expect(evaluateGates([{ kind: 'selfActiveDonCount', atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks selfLifeAtMostOpponent including equality', () => {
+    let rig = buildBaseRig();
+    const lifeCard = makeCharacterDef({ cardDefinitionId: 'LIFE-COMPARE', cardNumber: 'LIFE-COMPARE' });
+    ({ rig } = putLifeCards(rig, 'p1', [lifeCard, lifeCard]));
+    ({ rig } = putLifeCards(rig, 'p2', [lifeCard, lifeCard]));
+
+    expect(evaluateGates([{ kind: 'selfLifeAtMostOpponent' }], rig.state, rig.defs, 'p1')).toBe(true);
+
+    ({ rig } = putLifeCards(rig, 'p1', [lifeCard]));
+    expect(evaluateGates([{ kind: 'selfLifeAtMostOpponent' }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'selfLifeAtMostOpponent' }], rig.state, rig.defs, 'p2')).toBe(true);
+  });
+
+  it('checks selfDonAtLeastLessThanOpponent by exact DON!! field deficit', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putDon(rig, 'p1', 3));
+    ({ rig } = putDon(rig, 'p2', 5));
+
+    expect(evaluateGates([{ kind: 'selfDonAtLeastLessThanOpponent', count: 2 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfDonAtLeastLessThanOpponent', count: 3 }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'selfDonAtLeastLessThanOpponent', count: 1 }], rig.state, rig.defs, 'p2')).toBe(false);
   });
 });

@@ -419,12 +419,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   of your opponent's next End Phase. Then, if your opponent has a Character with a cost of 0 or with a
   //   cost of 8 or more, draw 1 card.[On K.O.] You may trash 1 card from your hand: Play this Character
   //   card from your trash.
-  //   PARTIAL: the on-play cost-9-or-less preventAttack is implemented below; the mixed opponent-cost draw gate and exact self-revival line remain deferred.
-  { cardNumber: 'OP14-120', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 9 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
+  //   PARTIAL: the exact self-revival line remains deferred.
+  { cardNumber: 'OP14-120', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 9 } }, duration: 'endOfOpponentsTurn', optional: true },
+    { fn: 'draw', amount: 1, ifGate: [{ kind: 'anyOf', gates: [{ kind: 'anyCharacterExactCost', exactCost: 0 }, { kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }] },
+  ] } },
 
 
-  // PARTIAL: trash-all-hand cost deferred; mapped return opp Character.
-  { cardNumber: 'OP14-048', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent' }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  { cardNumber: 'OP14-048', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'trashHandDownTo', handSize: 0 }] } },
 
 
   { cardNumber: 'OP14-062', templateId: 'ability', params: { timing: 'onKO', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'chooseOne', chooser: 'controller', prompt: 'Choose one:', options: [{ label: 'ko', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }, optional: true }] }, { label: 'rest', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }, optional: true }] }] }] } },
@@ -463,8 +465,16 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP14-094', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
 
-  // PARTIAL: combined-Life reorder deferred; mapped draw on lifeTrigger.
-  { cardNumber: 'OP14-103', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+  {
+    cardNumber: 'OP14-103',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
 
   // --- codegen batch ---
@@ -520,8 +530,13 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   PARTIAL: the static self attack lock is implemented below; the effect-negation trigger remains deferred.
   { cardNumber: 'OP14-056', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent' }] } },
 
-  // OP14-057 — [Trigger] Draw 2. PARTIAL: the OR-typed mass buff [Main] is deferred.
-  { cardNumber: 'OP14-057', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }] } },
+  {
+    cardNumber: 'OP14-057',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPowerAuraControllerTypes', amount: 1000, duration: 'duringThisTurn', anyOfTypes: ['Fish-Man', 'Merfolk'] }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }] } },
+    ],
+  },
 
   // OP14-058 — [Main] rest 3 DON!!: play {Fish-Man} ≤3 from hand, return 1 Char with 6000 base power. [Counter] draw 1 + Leader +3000.
   {
@@ -558,8 +573,13 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP14-061', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
 
-  // OP14-063 — [On Play] Add 1 DON!! (active). PARTIAL: opp-DON-gated [On K.O.] play is deferred.
-  { cardNumber: 'OP14-063', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+  {
+    cardNumber: 'OP14-063',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+      { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'opponentDonFieldCount', atLeast: 6 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Donquixote Pirates', maxCost: 5 } }] } },
+    ],
+  },
 
   { cardNumber: 'OP14-064', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 0 } }, optional: true }] } },
 
@@ -729,8 +749,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Baroque Works', excludeSelfName: true }, remainder: 'trash' }] },
   },
 
-  // OP14-088 — [On K.O.] If Leader "Baroque Works", draw 1. PARTIAL: the Stage K.O. is deferred.
-  { cardNumber: 'OP14-088', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'draw', amount: 1 }] } },
+  { cardNumber: 'OP14-088', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { exactCost: 1 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }] } },
 
   {
     cardNumber: 'OP14-089',
@@ -793,8 +812,13 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // PARTIAL: [Main] cost+aura for "Baroque Works" +3 cost until end of opponent's next End Phase deferred; mapped [Counter] only.
-  { cardNumber: 'OP14-098', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+  {
+    cardNumber: 'OP14-098',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'anyCharacterExactCost', exactCost: 0 }, { kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }], functions: [{ fn: 'addCostAuraControllerCharacters', amount: 3, duration: 'endOfOpponentsTurn', anyOfTypes: ['Baroque Works'] }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP14-099',
@@ -814,8 +838,21 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP14-102', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 4 }, rested: true }] } },
 
-  // OP14-104 — [Trigger] Play up to 1 Character cost ≤4 from trash. PARTIAL: the play-or-add-to-Life [On Play] choice is deferred.
-  { cardNumber: 'OP14-104', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', maxCost: 4 } }] } },
+  {
+    cardNumber: 'OP14-104',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Resolve Thriller Bark Pirates card from trash:',
+        options: [
+          { label: 'playFromTrash', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 4 } }] },
+          { label: 'addToLife', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 4 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 1 }] },
+        ],
+      }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', maxCost: 4 } }] } },
+    ],
+  },
 
   { cardNumber: 'OP14-106', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
@@ -844,8 +881,13 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP14-109', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 4 }, rested: true }] } },
 
-  // OP14-110 — [Trigger] Play up to 1 {Thriller Bark Pirates} cost ≤4 from trash rested. PARTIAL: the [On K.O.] trigger-filtered play is deferred.
-  { cardNumber: 'OP14-110', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 4 }, rested: true }] } },
+  {
+    cardNumber: 'OP14-110',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromTrash', filter: { category: 'character', maxCost: 4, hasTrigger: true, excludeSelfName: true } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Thriller Bark Pirates', maxCost: 4 }, rested: true }] } },
+    ],
+  },
 
   // OP14-111 (character) Perona —
   //   [On Play]/[On K.O.] Up to 1 of your opponent's Characters with a cost of 6 or less cannot attack
@@ -860,8 +902,16 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP14-112 — [On Play] If Leader {Warlords}, add top of deck to top of Life. PARTIAL: opp-Life-to-hand and trigger deferred.
-  { cardNumber: 'OP14-112', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'The Seven Warlords of the Sea' }], functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
+  {
+    cardNumber: 'OP14-112',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'The Seven Warlords of the Sea' }], functions: [
+        { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true },
+        { fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' }, optional: true },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', maxPower: 6000, hasTrigger: true } }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP14-113',

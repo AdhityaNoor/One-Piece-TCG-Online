@@ -46,7 +46,7 @@ export function ClipboardImportTab() {
 
           {clipboardImportSummary.issues.length > 0 && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-gold-600">Notes</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-[rgb(var(--op-gold-rgb))]">Notes</p>
               <ul className="list-disc pl-4 text-xs text-navy-900/70">
                 {clipboardImportSummary.issues.map((issue, index) => (
                   <li key={index}>

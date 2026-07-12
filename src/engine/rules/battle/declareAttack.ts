@@ -9,6 +9,11 @@
  *
  * 7-1-2: the Block Step is skipped entirely for [Unblockable] attackers —
  * currentBattle.step starts at 'counter' rather than 'block' in that case.
+ * It is also skipped whenever the defending player has no legal Blocker on
+ * the field at all (see hasAnyLegalBlocker in activateBlocker.ts) — with
+ * nothing to activate, forcing a Block Step just to immediately PASS_STEP
+ * through it is pure friction, in every game mode (hotseat, VS CPU, casual,
+ * ranked alike).
  */
 import type { GameState } from '../../state/game';
 import type { DeclareAttackAction, ValidationResult } from '../../actions/action';
@@ -18,6 +23,7 @@ import { getDefinition, type CardDefinitionLookup } from '../shared/definitions'
 import { getOpponentId } from '../shared/players';
 import { hasContinuousKeyword, cannotAttack, isAttackTargetForbidden, getForcedAttackTargetId } from '../shared/power';
 import { fireWhenAttacking, fireRestTransitions, type EffectTemplateRegistry } from '../../effects';
+import { hasAnyLegalBlocker } from './activateBlocker';
 
 export function validateDeclareAttack(state: GameState, action: DeclareAttackAction, defs: CardDefinitionLookup): ValidationResult {
   const reasons: string[] = [];
@@ -119,7 +125,7 @@ export function executeDeclareAttack(
     });
   }
 
-  const nextState: GameState = {
+  let nextState: GameState = {
     ...state,
     cardsById,
     currentBattle: {
@@ -133,6 +139,28 @@ export function executeDeclareAttack(
     },
     log: [...state.log, ...logger.log],
   };
+
+  // No [Unblockable] skip above, but the defending player has no legal
+  // Blocker anywhere on their field either — skip straight to the Counter
+  // Step (7-1-2) rather than making them PASS_STEP through an empty choice.
+  // hasAnyLegalBlocker needs currentBattle populated (attacker-scoped
+  // restrictions read battle.attackerInstanceId), so this check runs after
+  // nextState above, not before.
+  if (nextState.currentBattle!.step === 'block' && !hasAnyLegalBlocker(nextState, getOpponentId(nextState, action.playerId), defs)) {
+    logger.push({
+      actorPlayerId: action.playerId,
+      type: 'PHASE_CHANGED',
+      message: 'The defending player has no legal Blocker on the field — the Block Step is skipped (7-1-2).',
+      data: { step: 'counter' },
+      relatedCardInstanceIds: [],
+      visibility: 'public',
+    });
+    nextState = {
+      ...nextState,
+      currentBattle: { ...nextState.currentBattle!, step: 'counter' },
+      log: [...state.log, ...logger.log],
+    };
+  }
 
   // [When Attacking] (8-1-3) fires now that the Battle is set up, with the
   // attacker as source. No-op when the card has no curated whenAttacking

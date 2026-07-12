@@ -28,9 +28,6 @@ const INSTRUCTIONS: Record<string, string> = {
   selectAttacker: 'Tap your own active Leader or Character to attack with.',
   selectAttackTarget: "Tap the opponent's Leader, or a RESTED Character, to attack.",
   selectBlocker: 'Tap your own active [Blocker] Character.',
-  selectCounterCard: 'Tap a hand Character with a Counter value, or a [Counter] Event, to use.',
-  selectCounterBoostTarget: 'Tap your own Leader or Character to receive the power boost.',
-  payingCounterEventCost: 'Tap active DON!! to pay the Counter Event cost, then Confirm.',
   selectActivateSource: 'Tap your own Leader, Character, or Stage that has an [Activate: Main] effect.',
   payingActivateEffectCost: 'Tap DON!! in your Cost Area to return for the activation cost, then Confirm.',
   selectOnOppAttackSource: "Tap your own Leader, Character, or Stage with an [On Your Opponent's Attack] ability.",
@@ -91,13 +88,11 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
     lastError,
     cancel,
     beginActivateBlocker,
-    beginActivateCounter,
     beginActivateOnOppAttack,
     hasActivateMain,
     hasUnusedActivateMain,
-    hasCounter,
     hasOnOpponentsAttack,
-    confirmCounterEvent,
+    counterProgress,
     confirmActivateMainCost,
     confirmOnOppAttackCost,
     confirmPlayCard,
@@ -112,38 +107,11 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
     </div>
   );
 
-  if (mode.kind !== 'idle') {
-    return (
-      <div className="flex flex-col gap-2">
-        {errorBanner}
-        <p className="text-xs text-white/60">{INSTRUCTIONS[mode.kind]}</p>
-        <div className="flex flex-wrap gap-2">
-          {mode.kind === 'confirmPlayCost' && (
-            <Button variant="primary" size="sm" onClick={confirmPlayCard}>
-              Play {mode.cardName} ({mode.cost} DON!!)
-            </Button>
-          )}
-          {mode.kind === 'payingCounterEventCost' && (
-            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmCounterEvent}>
-              Play Counter ({mode.selectedDonIds.length}/{mode.cost} DON!!)
-            </Button>
-          )}
-          {mode.kind === 'payingActivateEffectCost' && (
-            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmActivateMainCost}>
-              Activate ({mode.selectedDonIds.length}/{mode.cost} DON!!)
-            </Button>
-          )}
-          {mode.kind === 'payingOnOppAttackCost' && (
-            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmOnOppAttackCost}>
-              Activate ({mode.selectedDonIds.length}/{mode.cost} DON!!)
-            </Button>
-          )}
-          <Button variant="ghost" size="sm" onClick={cancel}>Cancel</Button>
-        </div>
-      </div>
-    );
-  }
-
+  // Battle-step branches are checked ahead of the generic `mode.kind !==
+  // 'idle'` block below: the Counter Step auto-enters BoardSelectionMode's
+  // 'selectCounterCard' (see useBoardSelection.ts) the instant it starts, so
+  // if the generic block ran first it would intercept that mode and hide the
+  // real Pass button behind a stale instruction line.
   if (battle && battle.step === 'block') {
     const hasEligibleBlocker = actingBoard.characterArea.some((card) => card.orientation === 'active' && card.hasBlocker);
     const hasEligibleOnOppAttack = [actingBoard.leader, ...actingBoard.characterArea, ...actingBoard.stageArea].filter(isCardView).some((card) => hasOnOpponentsAttack(card));
@@ -160,16 +128,56 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
   }
 
   if (battle && battle.step === 'counter') {
-    const hasEligibleCounter = actingBoard.hand.some((card) =>
-      (card.category === 'character' && !!card.counter && card.counter > 0) ||
-      (card.category === 'event' && hasCounter(card))
-    );
+    // No "Activate Counter" button to click through first — every eligible
+    // hand card is directly tappable (see DockHand's dimmed/selectable
+    // props), any number of times in a row, so the progress readout below
+    // is the only thing this branch needs to render besides Pass.
+    const progressTone = !counterProgress || counterProgress.selected === 0
+      ? 'text-white'
+      : counterProgress.selected >= counterProgress.needed
+        ? 'text-emerald-300'
+        : 'text-red-300';
     return (
       <div className="flex flex-col gap-2">
         {errorBanner}
+        {counterProgress && (
+          <div className="flex items-center gap-2">
+            <span className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/50">Counter Power</span>
+            <span className={`text-base font-black tabular-nums tracking-[0.04em] ${progressTone}`}>
+              {counterProgress.selected.toLocaleString()}/{counterProgress.needed.toLocaleString()}
+            </span>
+          </div>
+        )}
+        <p className="text-xs text-white/60">Tap a hand Character with a Counter value, or a [Counter] Event, to add power. Tap as many as you like, then Pass.</p>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" size="sm" disabled={!hasEligibleCounter} onClick={beginActivateCounter}>Activate Counter</Button>
           <Button variant="ghost" size="sm" onClick={passStep}>Pass (end Counter Step)</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode.kind !== 'idle') {
+    return (
+      <div className="flex flex-col gap-2">
+        {errorBanner}
+        <p className="text-xs text-white/60">{INSTRUCTIONS[mode.kind]}</p>
+        <div className="flex flex-wrap gap-2">
+          {mode.kind === 'confirmPlayCost' && (
+            <Button variant="primary" size="sm" onClick={confirmPlayCard}>
+              Play {mode.cardName} ({mode.cost} DON!!)
+            </Button>
+          )}
+          {mode.kind === 'payingActivateEffectCost' && (
+            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmActivateMainCost}>
+              Activate ({mode.selectedDonIds.length}/{mode.cost} DON!!)
+            </Button>
+          )}
+          {mode.kind === 'payingOnOppAttackCost' && (
+            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmOnOppAttackCost}>
+              Activate ({mode.selectedDonIds.length}/{mode.cost} DON!!)
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={cancel}>Cancel</Button>
         </div>
       </div>
     );

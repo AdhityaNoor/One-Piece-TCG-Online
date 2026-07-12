@@ -77,12 +77,12 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
         >
           <CardImage src={imageUrl} alt={entry.definition.name} className="rounded-none" />
           {totalQuantityForCardNumber > 0 && (
-            <span className="absolute bottom-1 right-1 border border-gold/40 bg-black/80 px-1.5 py-0.5 font-heading text-[10px] font-bold text-white">
+            <span className="absolute bottom-1 right-1 border border-[rgb(var(--op-gold-rgb)/0.4)] bg-black/80 px-1.5 py-0.5 font-heading text-[10px] font-bold text-white">
               {totalQuantityForCardNumber}x
             </span>
           )}
           {isLeaderCard && (
-            <span className="absolute left-1 top-1 border border-black/40 bg-gold px-1.5 py-0.5 font-heading text-[9px] font-black uppercase tracking-[0.08em] text-black shadow-[2px_2px_0_rgba(0,0,0,0.45)]">
+            <span className="absolute left-1 top-1 border border-black/40 bg-[rgb(var(--op-gold-rgb))] px-1.5 py-0.5 font-heading text-[9px] font-black uppercase tracking-[0.08em] text-black shadow-[2px_2px_0_rgba(0,0,0,0.45)]">
               {isCurrentLeader ? 'Leader' : 'Set'}
             </span>
           )}
@@ -93,7 +93,7 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
                 event.stopPropagation();
                 setZoomOpen(true);
               }}
-              className="border border-gold/50 bg-white px-2.5 py-1 font-heading text-[10px] font-black uppercase tracking-[0.08em] text-navy-950 shadow-[0_5px_0_rgba(0,0,0,0.45)] transition hover:bg-gold active:translate-y-[2px]"
+              className="border border-[rgb(var(--op-gold-rgb)/0.5)] bg-white px-2.5 py-1 font-heading text-[10px] font-black uppercase tracking-[0.08em] text-navy-950 shadow-[0_5px_0_rgba(0,0,0,0.45)] transition hover:bg-[rgb(var(--op-gold-rgb))] active:translate-y-[2px]"
             >
               View
             </button>
@@ -108,7 +108,7 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
                 handleSelect();
               }}
               disabled={isLeaderCard ? isCurrentLeader && leaderSelection?.chosenPrintingImageId === selectedPrintingImageId : !hasLeader || atCopyLimit}
-              className="flex h-7 min-w-7 items-center justify-center border border-gold/70 bg-gold px-2 font-heading text-sm font-black text-black shadow-[0_5px_0_rgba(68,39,0,0.75)] transition hover:bg-yellow-200 active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-45"
+              className="flex h-7 min-w-7 items-center justify-center border border-[rgb(var(--op-gold-rgb)/0.7)] bg-[rgb(var(--op-gold-rgb))] px-2 font-heading text-sm font-black text-black shadow-[0_5px_0_rgba(68,39,0,0.75)] transition hover:brightness-125 active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-45"
               title={isLeaderCard ? (isCurrentLeader ? 'Current leader' : 'Set leader') : 'Add one copy'}
             >
               {isLeaderCard ? 'Set' : '+'}
@@ -125,10 +125,10 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
               }}
             />
           </div>
-          <span className="pointer-events-none absolute inset-0 ring-0 ring-gold transition group-hover:ring-2" />
+          <span className="pointer-events-none absolute inset-0 ring-0 ring-[rgb(var(--op-gold-rgb))] transition group-hover:ring-2" />
         </div>
       </div>
-      <CardDetailModal open={zoomOpen} onClose={() => setZoomOpen(false)} definition={entry.definition} imageUrl={imageUrl} setName={selectedPrinting?.setName} />
+      <CardDetailModal open={zoomOpen} onClose={() => setZoomOpen(false)} definition={entry.definition} imageUrl={imageUrl} setName={selectedPrinting?.setName} accentClassName="op-theme-blue" />
     </>
   );
 }

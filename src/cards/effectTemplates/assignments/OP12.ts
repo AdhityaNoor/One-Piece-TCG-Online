@@ -347,8 +347,14 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP12-059 — [Main] If Leader [Sanji], draw 1. PARTIAL: the [Counter] Events-in-trash buff is deferred.
-  { cardNumber: 'OP12-059', templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderName', name: 'Sanji' }], functions: [{ fn: 'draw', amount: 1 }] } },
+  // OP12-059 — [Main] If Leader [Sanji], draw 1. [Counter] If 4+ Events in trash, Leader +4000.
+  {
+    cardNumber: 'OP12-059',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderName', name: 'Sanji' }], functions: [{ fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }], functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 4000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
 
   // OP12-061 — [Once Per Turn] [Trafalgar Law] K.O. replacement (top Life → hand). PARTIAL: activate Main deferred.
@@ -377,9 +383,14 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Blocker] is an unconditional printed keyword (handled by card keyword metadata, not templated here).
   { cardNumber: 'OP12-063', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }, { fn: 'addCost', target: { ref: 'self' }, amount: 5, duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }] } },
 
-  // OP12-065 — if 4+ Events in trash, this Character gains [Blocker].
-  //   PARTIAL: the [On K.O.] "add up to 1 Event from trash to hand" is deferred.
-  { cardNumber: 'OP12-065', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }] } },
+  // OP12-065 — if 4+ Events in trash, this Character gains [Blocker]. [On K.O.] add up to 1 Event from trash to hand.
+  {
+    cardNumber: 'OP12-065',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'event' } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
 
   // OP12-069 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: If Leader {Baroque Works}, up to 1 Leader/Character +2000 battle.
@@ -481,11 +492,29 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
       remainder: 'trash' }] },
   },
 
-  // OP12-087 — [On Play] trash 1 → if opp 5+ hand, opp trashes 2. PARTIAL: static [Blocker]/+3 cost clause deferred.
-  { cardNumber: 'OP12-087', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentHand', atLeast: 5 }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'trashFromOpponentHandChosenByOpponent', count: 2, ifPrevious: 'previousMovedAny' }] } },
+  // OP12-087 — If Leader [Koala]/[Luffy], gains [Blocker]/+3 cost. [On Play] trash 1 → if opp 5+ hand, opp trashes 2.
+  {
+    cardNumber: 'OP12-087',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderName', name: 'Koala' }, { kind: 'leaderName', name: 'Monkey.D.Luffy' }] }] } },
+        { fn: 'addCost', target: { ref: 'self' }, amount: 3, duration: 'permanent', condition: { gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderName', name: 'Koala' }, { kind: 'leaderName', name: 'Monkey.D.Luffy' }] }] } },
+      ] } },
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentHand', atLeast: 5 }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'trashFromOpponentHandChosenByOpponent', count: 2, ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
-  // OP12-089 — [On K.O.] If Leader {Revolutionary Army}, K.O. up to 1 opp Character base cost ≤4. PARTIAL: static [Blocker]/+4 cost deferred.
-  { cardNumber: 'OP12-089', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 4 } }, optional: true }] } },
+  // OP12-089 — If Leader {Revolutionary Army}, gains [Blocker]/+4 cost. [On K.O.] K.O. up to 1 opp Character base cost ≤4.
+  {
+    cardNumber: 'OP12-089',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }] } },
+        { fn: 'addCost', target: { ref: 'self' }, amount: 4, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }] } },
+      ] } },
+      { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 4 } }, optional: true }] } },
+    ],
+  },
 
   // OP12-090 — [When Attacking] trash 2 from top of deck: give up to 1 opp Character −2 cost this turn.
   { cardNumber: 'OP12-090', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'trashTopDeck', count: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true }] } },
@@ -505,14 +534,23 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
 
-  // OP12-095 — [On Play] Draw 1, trash 1. PARTIAL: static +4 cost clause deferred.
-  { cardNumber: 'OP12-095', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
+  // OP12-095 — If Leader {Revolutionary Army}, +4 cost. [On Play] Draw 1, trash 1.
+  {
+    cardNumber: 'OP12-095',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCost', target: { ref: 'self' }, amount: 4, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }] } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
+    ],
+  },
 
-  // OP12-096 — [Main] K.O. up to 1 opp Character cost ≤4. [Trigger] Draw 1, trash 1 from top of deck. PARTIAL: the 8-cost upgrade is deferred.
+  // OP12-096 — [Main] K.O. cost≤4, or cost≤6 if you have an 8+ cost Character. [Trigger] Draw 1, trash top deck.
   {
     cardNumber: 'OP12-096',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'chooseOne', chooser: 'controller', prompt: 'Choose a K.O. target range.', options: [
+        { label: 'cost4', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] },
+        { label: 'cost6', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, ifGate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }] }] },
+      ] }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'trashTopDeck', count: 1 }] } },
     ],
   },
@@ -530,8 +568,17 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-099 — PARTIAL: general Life-removal trigger + "cannot draw" rider deferred; mapped draw on Life damage dealt.
   { cardNumber: 'OP12-099', templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { turn: 'your' }, functions: [{ fn: 'draw', amount: 1 }] } },
 
-  // OP12-100 — [On Play] add 1 top Life to hand → Draw 2, trash 1. PARTIAL: static [Blocker]/+3 cost clause deferred.
-  { cardNumber: 'OP12-100', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'drawAndTrash', drawCount: 2, trashCount: 1, ifPrevious: 'previousMovedAny' }] } },
+  // OP12-100 — If 3 or less Life, gains [Blocker]/+3 cost. [On Play] add top Life to hand → Draw 2, trash 1.
+  {
+    cardNumber: 'OP12-100',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfLife', atMost: 3 }] } },
+        { fn: 'addCost', target: { ref: 'self' }, amount: 3, duration: 'permanent', condition: { gate: [{ kind: 'selfLife', atMost: 3 }] } },
+      ] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'drawAndTrash', drawCount: 2, trashCount: 1, ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
 
   // OP12-102 (character) Shirahoshi —
@@ -565,17 +612,29 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { name: 'Trafalgar Law' } }] },
   },
 
-  // OP12-109 — [Trigger] K.O. up to 1 opp Character cost ≤1. PARTIAL: "add this card to your hand" self-return deferred.
-  { cardNumber: 'OP12-109', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
+  // OP12-109 — [Trigger] K.O. up to 1 opp Character cost ≤1, then add this card to hand.
+  { cardNumber: 'OP12-109', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true },
+    { fn: 'returnSelfToHand' },
+  ] } },
 
   // OP12-112 — [Trigger] If Leader multicolored, draw 2.
   { cardNumber: 'OP12-112', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderMulticolor' }], functions: [{ fn: 'draw', amount: 2 }] } },
 
-  // OP12-113 — [Trigger] K.O. up to 1 opp Character cost ≤1. PARTIAL: [On K.O.] play-rested and self-return are deferred.
-  { cardNumber: 'OP12-113', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
+  // OP12-113 — [On K.O.] If Leader {Supernovas}, play Supernovas cost≤4 from hand rested. [Trigger] K.O. cost≤1, then add this card to hand.
+  {
+    cardNumber: 'OP12-113',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Supernovas' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Supernovas', maxCost: 4 }, rested: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true },
+        { fn: 'returnSelfToHand' },
+      ] } },
+    ],
+  },
 
-  // OP12-115 — [Counter] up to 1 Leader/Char +2000 this battle. PARTIAL: the "≤2 Life → recur [Law]" rider is deferred.
-  { cardNumber: 'OP12-115', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
+  // OP12-115 — [Counter] up to 1 Leader/Char +2000 this battle. If ≤2 Life, add [Trafalgar Law] from trash to hand.
+  { cardNumber: 'OP12-115', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }, { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { name: 'Trafalgar Law' } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1, ifGate: [{ kind: 'selfLife', atMost: 2 }] }] } },
 
   // OP12-116 — [Main] Look 5, reveal up to 2 {Shandian Warrior}/[Mont Blanc Noland] to hand, rest to bottom. [Trigger] Draw 1.
   {
@@ -594,8 +653,13 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP12-015', templates: [{ templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'selfGivenDonCount', atLeast: 2 }] } }] } }, { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'event', atLeast: 2 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'red', maxPower: 3000 } }, { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' }] } }] },
 
-  // PARTIAL: optional rest-DON −1000 aura deferred.
-  { cardNumber: 'OP12-018', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Silvers Rayleigh' } }, amount: 2000, duration: 'duringThisBattle', optional: true }, { fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { excludeSelf: true } }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
+  { cardNumber: 'OP12-018', templateId: 'ability', params: { timing: 'counter', functions: [
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { name: 'Silvers Rayleigh' } }, amount: 2000, duration: 'duringThisBattle', optional: true },
+    { fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { excludeSelf: true } }, amount: 2000, duration: 'duringThisBattle', optional: true },
+    { fn: 'restControllerDon', maxTargets: 1, optional: true },
+    { fn: 'addPower', target: { group: 'leader', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny' },
+    { fn: 'addPowerAuraOpponentCharacters', amount: -1000, duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny' },
+  ] } },
 
   { cardNumber: 'OP12-022', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 5 } }, optional: true }] } },
 
@@ -615,7 +679,6 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP12-074', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Sanji' }], functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { category: 'event' }, optional: true }, { fn: 'addDonFromDeck', count: 1, rested: false, ifPrevious: 'previousSelectedAny' }] } },
 
-  // PARTIAL: static +3 cost deferred.
   { cardNumber: 'OP12-085', templates: [{ templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCost', target: { ref: 'self' }, amount: 3, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }] } }] } }, { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }, { kind: 'opponentHand', atLeast: 5 }], functions: [{ fn: 'trashFromOpponentHandChosenByOpponent', count: 1 }] } }] },
 
   { cardNumber: 'OP12-098', templates: [{ templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifGate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }] }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'trashTopDeck', count: 1 }] } }] },
@@ -624,8 +687,7 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP12-117', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
 
-  // PARTIAL: "8+ rested cards" → selfRestedCharacterCount proxy.
-  { cardNumber: 'OP12-118', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 8 }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }, { fn: 'setActiveControllerDon', maxTargets: 1 }] } },
+  { cardNumber: 'OP12-118', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCardCount', atLeast: 8 }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }, { fn: 'setActiveControllerDon', maxTargets: 1 }] } },
 
   { cardNumber: 'OP12-119', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' }, { fn: 'addCost', target: { ref: 'self' }, amount: 2, duration: 'endOfOpponentsTurn', ifPrevious: 'previousMovedAny' }] } }, { templateId: 'ability', params: { timing: 'onKO', condition: { turn: 'opponent' }, functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } }] },
 

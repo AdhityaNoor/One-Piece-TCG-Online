@@ -470,8 +470,8 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-093 — [On Play] rest 1 DON!!: add 1 DON!! from deck rested.
   { cardNumber: 'OP01-093', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
-  // OP01-094 — PARTIAL: koAllCharacters hits both players and cannot exclude this Character.
-  { cardNumber: 'OP01-094', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 6 }], gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }], functions: [{ fn: 'koAllCharacters' }] } },
+  // OP01-094 — K.O. all Characters other than this Character.
+  { cardNumber: 'OP01-094', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 6 }], gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }], functions: [{ fn: 'koAllCharacters', excludeSource: true }] } },
 
   { cardNumber: 'OP01-095', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'draw', amount: 1 }] } },
 

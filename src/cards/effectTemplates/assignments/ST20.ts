@@ -14,8 +14,11 @@ export const ST20_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST20-002 — [Trigger] trash 1 → play this card. PARTIAL: the K.O.-replacement is deferred.
   { cardNumber: 'ST20-002', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
 
-  // ST20-003 — [Trigger] peek 1 of your/opp's top Life, place top or bottom. PARTIAL: "add this card to your hand" deferred.
-  { cardNumber: 'ST20-003', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'peekLifeAndPlace', from: 'controllerOrOpponentTop', placement: 'topOrBottom' }] } },
+  // ST20-003 — [Trigger] peek 1 of your/opp's top Life, place top or bottom, then add this card to hand.
+  { cardNumber: 'ST20-003', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+    { fn: 'peekLifeAndPlace', from: 'controllerOrOpponentTop', placement: 'topOrBottom' },
+    { fn: 'returnSelfToHand' },
+  ] } },
 
   // ST20-004 — [On Play] add 1 top Life to hand → set up to 1 {Big Mom Pirates} cost ≤3 active. [Trigger] rest up to 1 opp Character cost ≤3.
   {

@@ -26,7 +26,7 @@ import type { GameState } from '../../engine/state/game';
 import type { GameLogEntry } from '../../engine/logs/logEntry';
 import { countAvailableDon, getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
-import { Button, CardDetailModal, CardImage, Modal, ScaleToFit } from '../components';
+import { Button, CardDetailModal, CardImage, GlitterWrap, Modal, ScaleToFit } from '../components';
 import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, TrashGalleryModal, useBoardSelection } from '../components/match';
 import { useCpuTurnController } from '../hooks/useCpuTurnController';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
@@ -131,7 +131,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   useEffect(() => {
     if (
       selection.mode.kind === 'confirmPlayCost' ||
-      selection.mode.kind === 'payingCounterEventCost' ||
+      selection.mode.kind === 'selectCounterCard' ||
       selection.mode.kind === 'payingActivateEffectCost' ||
       selection.mode.kind === 'payingOnOppAttackCost'
     ) {
@@ -269,6 +269,14 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const actingBoard = actingPlayerId === bottomPlayerId ? bottomPlayerBoard : topPlayerBoard;
   const isCpuTurn = cpuPlayerIds.includes(actingPlayerId);
   const canUseLocalActions = !isCpuTurn && (!isPinnedPerspective || actingPlayerId === localPlayerId);
+  // Online-only (casual queue and ranked alike — both hydrate through the
+  // same onlineMode/hydrateOnlineMatch path, see onlineStore.ts) loader
+  // popup: the remote opponent currently holds action authority (their turn,
+  // or a Block/Counter/pending-choice window that's theirs) and their move
+  // hasn't arrived over the network yet. Deliberately NOT gated on the older
+  // single-client isPinnedPerspective mock (that has no real opponent to
+  // wait on) — see WaitingForOpponent's doc comment for that seam.
+  const opponentDeciding = onlineMode && !matchState.gameOver && !canUseLocalActions;
 
   const battleLabel = matchState.currentBattle ? ` · Battle: ${matchState.currentBattle.step}` : '';
   const attackArrow = matchState.currentBattle
@@ -401,7 +409,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           onGiveDon={(board, card) => selection.giveDonToCard(board, card)}
           onReturnGivenDon={selection.returnGivenDonFromCard}
           allowReturnGivenDon={!isCasual}
-          handSelectable={(playerId, card) => handSelectable(selection.mode, actingPlayerId === playerId, card, selection.hasCounter)}
+          handSelectable={(playerId, card) => handSelectable(selection.mode, actingPlayerId === playerId, card, selection.isCounterCardApplicable)}
+          counterEventDonInfo={selection.counterEventDonInfo}
           battleLineLabel={mobileBattleLineLabel}
           mobilePanel={mobilePanel}
           handTabsVisible={matchState.pendingChoices.length === 0}
@@ -412,6 +421,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           onClosePanel={() => setMobilePanel(null)}
           cpuThinking={cpuThinking}
           cpuThinkingLabel={nameFor(actingPlayerId)}
+          opponentDeciding={opponentDeciding}
+          opponentDecidingLabel={nameFor(topPlayerId)}
         />
         <MobileBattleLogNotifications
           entries={mobileLogNotifications}
@@ -540,6 +551,9 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
             {cpuThinking && (
               <CpuThinkingOverlay opponentName={nameFor(actingPlayerId)} />
             )}
+            {!cpuThinking && opponentDeciding && (
+              <OnlineOpponentTurnOverlay opponentName={nameFor(topPlayerId)} />
+            )}
             {/* ── Dock hands ── rendered outside ScaleToFit so they aren't
                 affected by cqh sizing; positioned absolute relative to
                 op-match-table-shell (position:relative; overflow:hidden). */}
@@ -575,8 +589,10 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               isOwn={isPinnedPerspective ? false : actingPlayerId === topPlayerId}
               position="top"
               selectedIds={selectedHandIds(selection.mode)}
-              selectable={(card) => (isPinnedPerspective ? false : handSelectable(selection.mode, actingPlayerId === topPlayerId, card, selection.hasCounter))}
+              selectable={(card) => (isPinnedPerspective ? false : handSelectable(selection.mode, actingPlayerId === topPlayerId, card, selection.isCounterCardApplicable))}
               canPlay={(card) => (isPinnedPerspective ? false : actingPlayerId === topPlayerId && selection.canPlayHandCard(card))}
+              dimmed={(card) => !isPinnedPerspective && actingPlayerId === topPlayerId && selection.mode.kind === 'selectCounterCard' && !selection.isCounterCardApplicable(card)}
+              cardBadge={(card) => (isPinnedPerspective || actingPlayerId !== topPlayerId ? null : counterEventBadge(selection.mode, selection.counterEventDonInfo, card))}
               onCardTap={(card) => selection.handleCardTap(topPlayerId, 'hand', card)}
               onPlayCard={selection.playHandCard}
               onCardZoom={openZoom}
@@ -589,8 +605,10 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               isOwn={isPinnedPerspective ? true : actingPlayerId === bottomPlayerId}
               position="bottom"
               selectedIds={selectedHandIds(selection.mode)}
-              selectable={(card) => handSelectable(selection.mode, actingPlayerId === bottomPlayerId, card, selection.hasCounter)}
+              selectable={(card) => handSelectable(selection.mode, actingPlayerId === bottomPlayerId, card, selection.isCounterCardApplicable)}
               canPlay={(card) => actingPlayerId === bottomPlayerId && selection.canPlayHandCard(card)}
+              dimmed={(card) => actingPlayerId === bottomPlayerId && selection.mode.kind === 'selectCounterCard' && !selection.isCounterCardApplicable(card)}
+              cardBadge={(card) => (actingPlayerId !== bottomPlayerId ? null : counterEventBadge(selection.mode, selection.counterEventDonInfo, card))}
               onCardTap={(card) => selection.handleCardTap(bottomPlayerId, 'hand', card)}
               onPlayCard={selection.playHandCard}
               onCardZoom={openZoom}
@@ -817,6 +835,7 @@ interface MobileMatchLayoutProps {
   onReturnGivenDon: (card: CardView) => void;
   allowReturnGivenDon: boolean;
   handSelectable: (playerId: string, card: CardView) => boolean;
+  counterEventDonInfo: (card: CardView) => { cost: number; donMinus: number; available: number } | null;
   battleLineLabel: string;
   mobilePanel: 'actions' | 'log' | null;
   handTabsVisible: boolean;
@@ -827,6 +846,8 @@ interface MobileMatchLayoutProps {
   onClosePanel: () => void;
   cpuThinking?: boolean;
   cpuThinkingLabel?: string;
+  opponentDeciding?: boolean;
+  opponentDecidingLabel?: string;
 }
 
 interface MobileAttackArrowState {
@@ -859,6 +880,7 @@ function MobileMatchLayout({
   onReturnGivenDon,
   allowReturnGivenDon,
   handSelectable,
+  counterEventDonInfo,
   battleLineLabel,
   mobilePanel,
   handTabsVisible,
@@ -869,6 +891,8 @@ function MobileMatchLayout({
   onClosePanel,
   cpuThinking = false,
   cpuThinkingLabel = 'CPU',
+  opponentDeciding = false,
+  opponentDecidingLabel = 'Opponent',
 }: MobileMatchLayoutProps) {
   const [openHand, setOpenHand] = useState<'top' | 'bottom' | null>(null);
   const topHandIsOwn = isPinnedPerspective ? false : actingPlayerId === topPlayerId;
@@ -940,6 +964,7 @@ function MobileMatchLayout({
         </div>
 
         {cpuThinking && <CpuThinkingOverlay opponentName={cpuThinkingLabel} />}
+        {!cpuThinking && opponentDeciding && <OnlineOpponentTurnOverlay opponentName={opponentDecidingLabel} />}
 
         {handTabsVisible && (
           <>
@@ -974,6 +999,8 @@ function MobileMatchLayout({
           selectedIds={selectedHandIds}
           selectable={(card) => handSelectable(topPlayerId, card)}
           canPlay={(card) => topHandIsOwn && canPlayHandCard(card)}
+          dimmed={(card) => topHandIsOwn && mode.kind === 'selectCounterCard' && !handSelectable(topPlayerId, card)}
+          cardBadge={(card) => (topHandIsOwn ? counterEventBadge(mode, counterEventDonInfo, card) : null)}
           onCardTap={(card) => onMatCardTap(topPlayerId, 'hand', card)}
           onPlayCard={onPlayHandCard}
           onCardZoom={onCardZoom}
@@ -993,6 +1020,8 @@ function MobileMatchLayout({
           selectedIds={selectedHandIds}
           selectable={(card) => handSelectable(bottomPlayerId, card)}
           canPlay={(card) => bottomHandIsOwn && canPlayHandCard(card)}
+          dimmed={(card) => bottomHandIsOwn && mode.kind === 'selectCounterCard' && !handSelectable(bottomPlayerId, card)}
+          cardBadge={(card) => (bottomHandIsOwn ? counterEventBadge(mode, counterEventDonInfo, card) : null)}
           onCardTap={(card) => onMatCardTap(bottomPlayerId, 'hand', card)}
           onPlayCard={onPlayHandCard}
           onCardZoom={onCardZoom}
@@ -1449,8 +1478,6 @@ function mobileLeaderCharacterSelectable(
       if (!isOpponent) return false;
       if (zone === 'leaderArea') return true;
       return zone === 'characterArea' && card.orientation === 'rested';
-    case 'selectCounterBoostTarget':
-      return zone !== 'stageArea' && isOwn;
     case 'selectBlocker':
       return isOwn && zone === 'characterArea' && card.orientation === 'active' && card.hasBlocker;
     case 'selectActivateSource':
@@ -1465,7 +1492,6 @@ function mobileLeaderCharacterSelectable(
 }
 
 function mobileSelectedDonInstanceIds(mode: MatchSelectionMode): Set<string> {
-  if (mode.kind === 'payingCounterEventCost') return new Set(mode.selectedDonIds);
   if (mode.kind === 'payingActivateEffectCost') return new Set(mode.selectedDonIds);
   if (mode.kind === 'payingOnOppAttackCost') return new Set(mode.selectedDonIds);
   return new Set();
@@ -1633,6 +1659,38 @@ function CpuThinkingOverlay({ opponentName }: { opponentName: string }) {
       <div className="flex flex-col items-center gap-3 border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(8,24,58,0.92),_rgba(3,9,24,0.96))] px-6 py-5 shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
         <CpuSpinner size="lg" />
         <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-100/90">{opponentName} is thinking…</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Online (casual queue + ranked) loader popup: a full-board overlay telling
+ * the local player their opponent currently holds action authority — turn,
+ * a Block/Counter Step, or a pending choice — and their move is in flight
+ * over the network. Mirrors CpuThinkingOverlay's board-level treatment (the
+ * WaitingForOpponent panel text alone was too easy to miss buried in the
+ * side Actions panel / mobile actions sheet). Gold spinner (vs. CPU's cyan)
+ * keeps the two "not my turn" states visually distinct at a glance.
+ */
+function OnlineOpponentTurnOverlay({ opponentName }: { opponentName: string }) {
+  return (
+    <div
+      className="absolute inset-0 z-[105] flex items-center justify-center bg-[rgba(2,8,22,0.42)] backdrop-blur-[2px]"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="flex flex-col items-center gap-3 border border-gold/25 bg-[linear-gradient(180deg,_rgba(8,24,58,0.92),_rgba(3,9,24,0.96))] px-6 py-5 shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
+        <span className="inline-flex gap-1.5" aria-hidden="true">
+          {[0, 1, 2].map((index) => (
+            <span
+              key={index}
+              className="h-2.5 w-2.5 animate-pulse rounded-full bg-gold/80"
+              style={{ animationDelay: `${index * 160}ms` }}
+            />
+          ))}
+        </span>
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-gold/90">{opponentName} is deciding…</p>
       </div>
     </div>
   );
@@ -1865,6 +1923,10 @@ function MatchGameShell({ title, headerRight, children }: { title: string; heade
     <main className="relative h-dvh w-full overflow-hidden bg-[#071126] font-body text-white">
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,211,74,0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
+      {/* Layer 5 (animation/visual polish) — decorative starfield warp on top
+          of the static background image/gradient above, below the actual
+          board content (z-10 section). Reads/writes nothing in GameState. */}
+      <GlitterWrap />
       <h1 className="sr-only">{title}</h1>
       <section className="absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden p-0 xl:p-2">{children}</section>
     </main>
@@ -1999,22 +2061,50 @@ function AttackArrowOverlay({ attackerInstanceId, targetInstanceId, committed }:
   );
 }
 
-function handSelectable(mode: MatchSelectionMode, isOwn: boolean, card: CardView, hasCounter: (card: CardView) => boolean): boolean {
+function handSelectable(mode: MatchSelectionMode, isOwn: boolean, card: CardView, isCounterCardApplicable: (card: CardView) => boolean): boolean {
   if (!isOwn) return false;
   if (mode.kind === 'idle') {
     return card.category === 'character' || card.category === 'stage' || card.category === 'event';
   }
   if (mode.kind === 'selectCounterCard') {
-    return (card.category === 'character' && !!card.counter && card.counter > 0) || (card.category === 'event' && hasCounter(card));
+    return isCounterCardApplicable(card);
   }
   return false;
 }
 
 function selectedHandIds(mode: MatchSelectionMode): Set<string> {
   if (mode.kind === 'confirmPlayCost') return new Set([mode.handCardInstanceId]);
-  if (mode.kind === 'payingCounterEventCost') return new Set([mode.handCardInstanceId]);
-  if (mode.kind === 'selectCounterBoostTarget') return new Set([mode.handCardInstanceId]);
   return new Set();
+}
+
+/**
+ * Counter Step DON!! warning badge (7-1-3-2): shown on Counter Event hand
+ * cards only, reading "{cost}/{available} DON" plus a "-N" suffix when the
+ * card's [Counter] ability also returns DON!! to the DON!! deck (donMinus,
+ * see AbilityCost) — the "2/5 don" / "-1 don" / both-at-once warning called
+ * for in the design. Green when currently affordable, red otherwise (mirrors
+ * DockHand's dimming of the same card, which already gates on affordability).
+ */
+function counterEventBadge(
+  mode: MatchSelectionMode,
+  counterEventDonInfo: (card: CardView) => { cost: number; donMinus: number; available: number } | null,
+  card: CardView,
+): ReactNode | null {
+  if (mode.kind !== 'selectCounterCard') return null;
+  const info = counterEventDonInfo(card);
+  if (!info) return null;
+  const affordable = info.available >= info.cost + info.donMinus;
+  const label = info.donMinus > 0 ? `${info.cost}/${info.available} DON −${info.donMinus}` : `${info.cost}/${info.available} DON`;
+  return (
+    <span
+      className={[
+        'block rounded-sm border px-1 py-0.5 text-[0.5rem] font-black uppercase tracking-[0.04em] shadow-[0_2px_6px_rgba(0,0,0,0.55)]',
+        affordable ? 'border-emerald-300/50 bg-emerald-950/85 text-emerald-200' : 'border-red-300/50 bg-red-950/85 text-red-200',
+      ].join(' ')}
+    >
+      {label}
+    </span>
+  );
 }
 
 function PlayerSideRow({

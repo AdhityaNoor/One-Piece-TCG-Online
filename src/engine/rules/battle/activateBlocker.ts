@@ -34,6 +34,30 @@ function isBlockedByRestriction(state: GameState, blockerInstanceId: string, def
   return false;
 }
 
+/**
+ * True if `defendingPlayerId` has at least one Character on the field that
+ * could legally ACTIVATE_BLOCKER right now (active, has [Blocker] — printed
+ * or continuous-keyword-granted — and not shut down by a blocker
+ * restriction). Used by declareAttack.ts to auto-skip an empty Block Step
+ * (mirrors the existing [Unblockable] skip, generalized to "no legal
+ * blocker exists" so the defending player is never stuck staring at an
+ * Activate Blocker / Pass choice with nothing to activate). `state` must
+ * already have `currentBattle` populated — isBlockedByRestriction reads
+ * battle.attackerInstanceId for attacker-scoped restrictions.
+ */
+export function hasAnyLegalBlocker(state: GameState, defendingPlayerId: string, defs: CardDefinitionLookup): boolean {
+  const characterIds = state.players[defendingPlayerId]?.characterArea.cardIds ?? [];
+  for (const id of characterIds) {
+    const inst = state.cardsById[id];
+    if (!inst || inst.orientation !== 'active') continue;
+    const def = defs[inst.cardDefinitionId];
+    if (!def || (!def.hasBlocker && !hasContinuousKeyword(defs, state, id, 'blocker'))) continue;
+    if (isBlockedByRestriction(state, id, defs)) continue;
+    return true;
+  }
+  return false;
+}
+
 export function validateActivateBlocker(state: GameState, action: ActivateBlockerAction, defs: CardDefinitionLookup): ValidationResult {
   const reasons: string[] = [];
   const battle = state.currentBattle;

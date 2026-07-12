@@ -153,7 +153,7 @@ export function DeckBuilderScreen() {
     <DeckBuilderGameShell onBack={goBack}>
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-visible xl:grid xl:h-full xl:overflow-hidden xl:grid-cols-[420px_minmax(0,1fr)]">
         <aside className="min-h-0 flex-shrink-0 xl:h-full xl:shrink xl:overflow-hidden">
-          <section className="op-panel flex min-h-0 flex-col overflow-hidden p-3 xl:h-full">
+          <section className="op-panel op-panel-plain flex min-h-0 flex-col overflow-hidden p-3 xl:h-full">
             <p className="op-section-title">Browser Controls</p>
             <div className="mt-2 flex flex-col gap-1.5">
               <Button variant={tab === 'browse' ? 'primary' : 'secondary'} size="sm" onClick={() => setTab('browse')} fullWidth>
@@ -204,7 +204,7 @@ export function DeckBuilderScreen() {
         </aside>
 
         <div className="flex min-h-0 flex-col gap-3 overflow-visible xl:grid xl:h-full xl:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] xl:overflow-hidden">
-          <section className="op-panel flex min-h-[26rem] flex-shrink-0 flex-col overflow-hidden p-2 xl:min-h-0 xl:shrink">
+          <section className="op-panel op-panel-plain flex min-h-[26rem] flex-shrink-0 flex-col overflow-hidden p-2 xl:min-h-0 xl:shrink">
             <p className="op-section-title">Deck Gallery</p>
             <div className="mt-1.5 grid min-h-0 flex-1 grid-cols-1 gap-2 overflow-hidden sm:grid-cols-[auto_minmax(0,1fr)]">
               <div className="op-card-well group relative flex min-h-[10rem] justify-center overflow-hidden sm:min-h-0 sm:w-fit">
@@ -237,7 +237,7 @@ export function DeckBuilderScreen() {
               <div
                 className={[
                   'op-card-well min-h-0 overflow-hidden p-1.5 transition',
-                  deckDropActive ? 'border-gold bg-gold/10 shadow-[0_0_0_2px_rgba(255,211,74,0.22)]' : '',
+                  deckDropActive ? 'border-[rgb(var(--op-gold-rgb))] bg-[rgb(var(--op-gold-rgb)/0.1)] shadow-[0_0_0_2px_rgb(var(--op-gold-rgb)/0.22)]' : '',
                 ].join(' ')}
                 onDragEnter={(event) => {
                   if (hasDeckBuilderDragData(event)) setDeckDropActive(true);
@@ -247,12 +247,12 @@ export function DeckBuilderScreen() {
                 onDrop={handleDeckListDrop}
               >
                 <div className="flex items-center justify-between">
-                  <p className="font-heading text-[11px] font-bold uppercase tracking-[0.18em] text-gold">Selected Cards</p>
+                  <p className="font-heading text-[11px] font-bold uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">Selected Cards</p>
                   <p className="text-xs text-slate-200/55">{mainDeckCount} selected</p>
                 </div>
                 <div className="mt-1.5 h-[calc(100%-1.25rem)] min-h-0 overflow-y-auto overflow-x-hidden">
                   {selectedCards.length === 0 ? (
-                    <p className="border border-gold/15 bg-black/30 p-2 text-sm text-slate-200/60">No cards selected yet. Drag a result here to add it.</p>
+                    <p className="border border-[rgb(var(--op-gold-rgb)/0.15)] bg-black/30 p-2 text-sm text-slate-200/60">No cards selected yet. Drag a result here to add it.</p>
                   ) : (
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] content-start gap-x-2.5 gap-y-4 sm:grid-cols-[repeat(auto-fill,8.5rem)] sm:gap-x-3 sm:gap-y-5">
                       {selectedCards.map((selection) => {
@@ -262,12 +262,12 @@ export function DeckBuilderScreen() {
                           <div key={selection.chosenPrintingImageId} className="w-full sm:w-[8.5rem]">
                             <div className="group relative block w-full transition hover:-translate-y-0.5">
                               <CardImage src={selectedPrinting?.imageUrl ?? null} alt={selection.libraryEntry.definition.name} className="rounded-none" />
-                              <span className="absolute bottom-1 right-1 border border-gold/40 bg-black/80 px-1.5 py-0.5 font-heading text-[10px] font-bold text-white">{selection.quantity}x</span>
+                              <span className="absolute bottom-1 right-1 border border-[rgb(var(--op-gold-rgb)/0.4)] bg-black/80 px-1.5 py-0.5 font-heading text-[10px] font-bold text-white">{selection.quantity}x</span>
                               <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-100 transition sm:bg-black/0 sm:opacity-0 sm:group-hover:bg-black/55 sm:group-hover:opacity-100">
                                 <button
                                   type="button"
                                   onClick={() => setPreviewPrintingId(selection.chosenPrintingImageId)}
-                                  className="border border-gold/50 bg-white px-2.5 py-1 font-heading text-[10px] font-black uppercase tracking-[0.08em] text-navy-950 shadow-[0_5px_0_rgba(0,0,0,0.45)] transition hover:bg-gold active:translate-y-[2px]"
+                                  className="border border-[rgb(var(--op-gold-rgb)/0.5)] bg-white px-2.5 py-1 font-heading text-[10px] font-black uppercase tracking-[0.08em] text-navy-950 shadow-[0_5px_0_rgba(0,0,0,0.45)] transition hover:bg-[rgb(var(--op-gold-rgb))] active:translate-y-[2px]"
                                 >
                                   View
                                 </button>
@@ -300,7 +300,7 @@ export function DeckBuilderScreen() {
             </div>
           </section>
 
-          <section className="op-panel flex min-h-[30rem] flex-shrink-0 flex-col overflow-hidden p-3 xl:min-h-0 xl:shrink">
+          <section className="op-panel op-panel-plain flex min-h-[30rem] flex-shrink-0 flex-col overflow-hidden p-3 xl:min-h-0 xl:shrink">
             <p className="op-section-title">Browsing Results</p>
             <p className="mt-1 text-sm leading-6 text-slate-200/70">Browse, search, or paste a decklist below.</p>
             <div className="mt-2 min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
@@ -321,6 +321,7 @@ export function DeckBuilderScreen() {
         definition={previewSelection?.libraryEntry.definition ?? null}
         imageUrl={previewPrinting?.imageUrl ?? null}
         setName={previewPrinting?.setName}
+        accentClassName="op-theme-blue"
       />
     </DeckBuilderGameShell>
   );
@@ -336,9 +337,9 @@ function DeckBuilderGameShell({
   children: ReactNode;
 }) {
   return (
-    <main className="relative flex h-dvh w-full flex-col overflow-y-auto overflow-x-hidden bg-[#071126] font-body text-white xl:overflow-hidden">
+    <main className="op-theme-blue relative flex h-dvh w-full flex-col overflow-y-auto overflow-x-hidden bg-[#071126] font-body text-white xl:overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,211,74,0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgb(var(--op-gold-rgb)/0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
       <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 px-3 py-3 sm:px-4">
         {onBack && <CanvasMenuButton label="Back" onClick={onBack} size="sm" className="max-w-[7rem]" />}
         {headerRight && <div className="flex flex-shrink-0 items-center gap-2">{headerRight}</div>}

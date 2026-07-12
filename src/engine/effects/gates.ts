@@ -52,6 +52,15 @@ function currentCostForGate(state: GameState, defs: CardDefinitionLookup, instan
   return Math.max(0, base + delta);
 }
 
+function countControllerRestedCards(state: GameState, controllerId: string): number {
+  const player = state.players[controllerId];
+  if (!player) return 0;
+  const orientedIds = [player.leaderInstanceId, ...player.characterArea.cardIds, ...player.stageArea.cardIds].filter((id): id is string => id != null);
+  const restedOriented = orientedIds.filter((id) => state.cardsById[id]?.orientation === 'rested').length;
+  const restedDon = player.costArea.cardIds.filter((id) => state.cardsById[id]?.donRested === true).length;
+  return restedOriented + restedDon;
+}
+
 export interface GateEvalContext {
   /** DON!! returned to the DON!! deck during the current cost-payment batch. */
   donReturnedCount?: number;
@@ -184,6 +193,13 @@ function evaluateGate(
       return true;
     }
 
+    case 'selfRestedCardCount': {
+      const count = countControllerRestedCards(state, ownerId);
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
     case 'opponentCharacterCount': {
       const opponentId = getOpponentId(state, ownerId);
       const opponent = state.players[opponentId];
@@ -263,6 +279,13 @@ function evaluateGate(
       return player.lifeArea.cardIds.length < opponent.lifeArea.cardIds.length;
     }
 
+    case 'selfLifeAtMostOpponent': {
+      const opponentId = getOpponentId(state, ownerId);
+      const opponent = state.players[opponentId];
+      if (!opponent) return false;
+      return player.lifeArea.cardIds.length <= opponent.lifeArea.cardIds.length;
+    }
+
     case 'selfHand': {
       const count = player.hand.cardIds.length;
       if (gate.atLeast !== undefined && count < gate.atLeast) return false;
@@ -305,6 +328,11 @@ function evaluateGate(
     case 'selfDonAtMostOpponent': {
       const opponentId = getOpponentId(state, ownerId);
       return fieldDonIds(state, ownerId).length <= fieldDonIds(state, opponentId).length;
+    }
+
+    case 'selfDonAtLeastLessThanOpponent': {
+      const opponentId = getOpponentId(state, ownerId);
+      return fieldDonIds(state, ownerId).length + gate.count <= fieldDonIds(state, opponentId).length;
     }
 
     case 'selfControlsNamed': {
@@ -405,6 +433,10 @@ function evaluateGate(
       if (gate.atLeast !== undefined && c < gate.atLeast) return false;
       if (gate.atMost !== undefined && c > gate.atMost) return false;
       return true;
+    }
+
+    case 'selfOtherCharacterPowerAtLeast': {
+      return player.characterArea.cardIds.some((id) => id !== sourceInstanceId && computeCurrentPower(defs, state, id) >= gate.power);
     }
 
     case 'selfOtherNamedCharacterCount': {

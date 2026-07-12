@@ -18,7 +18,7 @@ export function CardImage({ src, alt, className, eager }: CardImageProps) {
   return (
     <div
       className={[
-        'relative aspect-[63/88] w-full overflow-hidden border border-gold/20 bg-[linear-gradient(180deg,_rgba(255,255,255,0.14),_rgba(255,255,255,0.05))] shadow-[0_12px_26px_rgba(0,0,0,0.24)]',
+        'relative aspect-[63/88] w-full overflow-hidden border border-[rgb(var(--op-gold-rgb)/0.2)] bg-[linear-gradient(180deg,_rgba(255,255,255,0.14),_rgba(255,255,255,0.05))] shadow-[0_12px_26px_rgba(0,0,0,0.24)]',
         className ?? '',
       ]
         .filter(Boolean)

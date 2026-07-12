@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildCardView } from '../../../board/projection/cardView';
 import { executeActivateOnOpponentsAttack, validateActivateOnOpponentsAttack } from '../../../engine/rules/battle/activateOnOpponentsAttack';
 import { computeCurrentPower, hasContinuousKeyword } from '../../../engine/rules/shared/power';
 import {
@@ -208,5 +209,37 @@ describe('OP15-056 Flame-Flame Fruit event', () => {
     expect(activated.players.p1.hand.cardIds).toHaveLength(2);
     expect(hasContinuousKeyword(withEvent.rig.defs, activated, lucyId, 'doubleAttack')).toBe(true);
     expect(computeCurrentPower(withEvent.rig.defs, activated, lucyId)).toBe(8000);
+  });
+});
+
+describe('OP15-071 Holly Double Attack aura', () => {
+  it('projects [Double Attack] on OP15-061 Ohm after Holly enters play', () => {
+    const holly = makeCharacterDef({
+      cardDefinitionId: 'OP15-071',
+      cardNumber: 'OP15-071',
+      name: 'Holly',
+      basePower: 2000,
+      hasDoubleAttack: false,
+    });
+    const ohm = makeCharacterDef({
+      cardDefinitionId: 'OP15-061',
+      cardNumber: 'OP15-061',
+      name: 'Ohm',
+      basePower: 5000,
+      hasDoubleAttack: false,
+    });
+
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 5 });
+    const hollyPlay = putCharacterInPlay(rig, 'p1', holly);
+    rig = hollyPlay.rig;
+    const ohmPlay = putCharacterInPlay(rig, 'p1', ohm);
+    rig = ohmPlay.rig;
+
+    const state = runTimings(registry['OP15-071'], ['onEnterPlay'], rig.state, hollyPlay.instanceId, rig.defs, 'test', registry).state;
+
+    expect(hasContinuousKeyword(rig.defs, state, hollyPlay.instanceId, 'doubleAttack')).toBe(true);
+    expect(hasContinuousKeyword(rig.defs, state, ohmPlay.instanceId, 'doubleAttack')).toBe(true);
+    expect(buildCardView(rig.defs, state, {}, hollyPlay.instanceId).hasDoubleAttack).toBe(true);
+    expect(buildCardView(rig.defs, state, {}, ohmPlay.instanceId).hasDoubleAttack).toBe(true);
   });
 });
