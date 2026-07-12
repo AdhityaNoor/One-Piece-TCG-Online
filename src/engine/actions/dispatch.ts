@@ -45,6 +45,7 @@ import type { ActionExecuteResult } from './actionExecuteResult';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { fireCharacterKoedReactions, type EffectTemplateRegistry } from '../effects';
 import { advanceAutomaticPhases } from '../rules/phases';
+import { settleLifeTriggerTrash } from '../rules/shared/settleLifeTriggerTrash';
 import {
   validatePlayCharacter,
   executePlayCharacter,
@@ -235,9 +236,16 @@ export function executeAction(
   // Reactive [When a Character is K.O.'d] abilities (e.g. ST08-001): a single choke point
   // that catches K.O.s from any source this action (battle or effect), by diffing play->trash.
   const reactive = fireCharacterKoedReactions(state, cascade.state, registry, defs, action.actionId);
+  // Life [Trigger] (10-1-5-2): once every PendingChoice belonging to an activated
+  // Trigger's own ability chain has cleared, trash the card if it's still in hand.
+  // See settleLifeTriggerTrash.ts for why this can't happen synchronously.
+  // reactive.state.pendingChoices is already the fully-accumulated list (same
+  // convention as every other handler here — the sibling `pendingChoices` field
+  // on the result is a delta for the caller, not something to re-merge into state).
+  const settled = settleLifeTriggerTrash(reactive.state, action.actionId);
   return {
-    state: reactive.state,
-    log: [...result.log, ...cascade.log, ...reactive.log],
+    state: settled.state,
+    log: [...result.log, ...cascade.log, ...reactive.log, ...settled.log],
     pendingChoices: [...result.pendingChoices, ...reactive.pendingChoices],
   };
 }

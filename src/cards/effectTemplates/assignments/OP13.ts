@@ -597,8 +597,19 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP13-102 — [Trigger] Draw 1, rest up to 1 opp Character cost ≤3. PARTIAL: the trash-self [Main] is deferred.
-  { cardNumber: 'OP13-102', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+  // OP13-102 — [Trigger] Draw 1, rest up to 1 opp Character cost ≤3.
+  //   [Activate: Main] You may trash this Character: if your Life ≤ opponent's Life, draw 1, then rest up to 1 opp Character cost ≤3.
+  //   PARTIAL: "equal to or less than" approximated with selfLifeLessThanOpponent (strict <; no <= gate exists).
+  {
+    cardNumber: 'OP13-102',
+    templates: [
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'selfLifeLessThanOpponent' }], functions: [
+        { fn: 'draw', amount: 1 },
+        { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true },
+      ] } },
+    ],
+  },
 
   { cardNumber: 'OP13-104', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderMulticolor' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 

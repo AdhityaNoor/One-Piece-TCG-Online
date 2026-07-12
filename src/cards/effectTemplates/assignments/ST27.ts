@@ -17,8 +17,17 @@ export const ST27_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST27-002 — [On K.O.] Draw 1. PARTIAL: the trash-self −cost activate is deferred.
-  { cardNumber: 'ST27-002', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+  // ST27-002 — [On K.O.] Draw 1.
+  //   [Activate: Main] You may trash this Character: if Leader {Blackbeard Pirates}, give up to 1 opp Character −1 cost this turn.
+  {
+    cardNumber: 'ST27-002',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [
+        { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -1, duration: 'duringThisTurn', optional: true },
+      ] } },
+    ],
+  },
 
   // ST27-003 — [Blocker][On K.O.] Play up to 1 {Blackbeard Pirates} cost ≤5 from trash rested.
   { cardNumber: 'ST27-003', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Blackbeard Pirates', maxCost: 5 }, rested: true }] } },

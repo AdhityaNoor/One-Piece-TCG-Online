@@ -1,17 +1,7 @@
 /**
- * Online multiplayer control surface, embedded in the Casual lobby (per the
- * "online play integrates with Casual" design — no separate menu). By the time
- * this renders, the app's auth gate guarantees the player is signed in, so
- * there is no sign-in step here.
- *
- * Real rooms: the list comes from the backend via Colyseus matchmaking
- * (onlineStore.refreshRooms → getAvailableRooms), NOT a local generator. You
- * can host (server mints a shareable code), join a listed room, or join by
- * code.
- *
- * Hidden info: the authoritative GameState shown here is already redacted for
- * this seat on the server (opponent hand/deck blanked, secret log lines
- * dropped), so nothing secret is ever in `onlineStore.gameState`.
+ * Online multiplayer control surface. The parent screen owns deck selection;
+ * this panel owns room creation, room joining, ready state, and live-match
+ * status from the Colyseus backend.
  */
 import { useEffect, useState } from 'react';
 import type { DeckLoadResult } from '../../../cards/decks';
@@ -43,14 +33,13 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
   const connected = status === 'connected' || status === 'connecting';
   const localSeat = seats.find((seat) => seat.seatId === localSeatId);
 
-  // Load the real room list once when idle.
   useEffect(() => {
     if (status === 'idle') void refreshRooms();
   }, [status, refreshRooms]);
 
   return (
-    <section className="border-2 border-cyan-200/25 bg-[linear-gradient(180deg,_rgba(9,26,60,0.9),_rgba(3,9,24,0.92))] p-4 shadow-[0_10px_0_rgba(1,5,16,0.5)]">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section className="flex min-h-full flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
         <div>
           <h2 className="text-xs font-black uppercase tracking-[0.2em] text-gold">Online Match</h2>
           <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">
@@ -60,7 +49,7 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
         <div className="flex gap-2">
           {!connected && (
             <CanvasMenuButton
-              label={loadingRooms ? 'Refreshing…' : 'Refresh'}
+              label={loadingRooms ? 'Refreshing...' : 'Refresh'}
               size="sm"
               disabled={loadingRooms}
               onClick={() => void refreshRooms()}
@@ -77,25 +66,31 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
       {error && <p className="mt-3 border border-red-400/25 bg-red-500/10 p-2 text-xs text-red-100">{error}</p>}
       {!deckReady && !connected && (
         <p className="mt-3 border border-gold/20 bg-gold/5 p-2 text-xs text-amber-100/80">
-          Pick your deck below to host or join.
+          Pick your deck above to host or join.
         </p>
       )}
 
       {!connected ? (
-        <div className="mt-3 flex flex-col gap-4">
-          <div className="flex flex-wrap items-end gap-3">
+        <div className="mt-4 grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(18rem,0.85fr)_minmax(0,1.15fr)]">
+          <div className="flex flex-col gap-3 border border-white/10 bg-black/20 p-3 sm:p-4">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-gold">Start Room</p>
+              <p className="mt-1 text-xs leading-5 text-white/50">Host a new table, or enter a room code from another player.</p>
+            </div>
+
             <Button variant="primary" size="sm" disabled={!deckReady} onClick={() => deckReady && void hostRoom(deckReady)}>
               Create room
             </Button>
-            <div className="flex items-end gap-2">
-              <label className="flex flex-col gap-1">
+
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <label className="flex min-w-0 flex-col gap-1">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gold">Room code</span>
                 <input
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                   maxLength={12}
                   placeholder="ABC123"
-                  className="w-32 border border-white/25 bg-black/30 px-3 py-2 text-sm tracking-[0.2em] text-white outline-none focus:border-gold/70"
+                  className="h-10 w-full border border-white/25 bg-black/30 px-3 text-sm tracking-[0.2em] text-white outline-none focus:border-gold/70"
                 />
               </label>
               <Button
@@ -104,19 +99,19 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
                 disabled={!deckReady || joinCode.trim().length < 4}
                 onClick={() => deckReady && void joinByCode(joinCode, deckReady)}
               >
-                Join by code
+                Join
               </Button>
             </div>
           </div>
 
-          <div>
+          <div className="min-h-0 border border-white/10 bg-black/20 p-3 sm:p-4">
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">
-              {loadingRooms ? 'Searching…' : `${rooms.length} open room${rooms.length === 1 ? '' : 's'}`}
+              {loadingRooms ? 'Searching...' : `${rooms.length} open room${rooms.length === 1 ? '' : 's'}`}
             </p>
-            <div className="mt-2 flex flex-col gap-2">
+            <div className="mt-2 flex max-h-[min(36vh,22rem)] flex-col gap-2 overflow-y-auto pr-1">
               {rooms.length === 0 && !loadingRooms ? (
                 <p className="border border-dashed border-white/10 px-3 py-6 text-center text-sm text-white/40">
-                  No open rooms right now. Create one, or Refresh.
+                  No open rooms right now. Create one, or refresh.
                 </p>
               ) : (
                 rooms.map((room) => (
@@ -127,7 +122,7 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold text-white">{room.hostName}</p>
                       <p className="text-[11px] text-white/45">
-                        Code {room.roomCode} · {room.players}/{room.maxPlayers}
+                        Code {room.roomCode} - {room.players}/{room.maxPlayers}
                       </p>
                     </div>
                     <CanvasMenuButton
@@ -144,9 +139,9 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
           </div>
         </div>
       ) : (
-        <div className="mt-3 flex flex-col gap-3">
+        <div className="mt-4 flex flex-col gap-4">
           {roomCode && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 border border-gold/25 bg-black/25 p-3">
               <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/50">Share this code:</span>
               <span className="select-all border border-gold/40 bg-black/40 px-3 py-1 font-heading text-lg font-black tracking-[0.3em] text-gold">
                 {roomCode}
@@ -154,21 +149,21 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {seats.length === 0 ? (
-              <p className="text-xs text-white/45">Waiting for players to join…</p>
+              <p className="text-xs text-white/45">Waiting for players to join...</p>
             ) : (
               seats.map((seat) => (
                 <span
                   key={seat.seatId}
                   className={[
-                    'border px-3 py-1 text-xs',
+                    'border bg-black/20 px-3 py-2 text-xs',
                     seat.ready ? 'border-emerald-300/40 text-emerald-200' : 'border-white/20 text-white/60',
                   ].join(' ')}
                 >
                   {seat.username}
-                  {seat.seatId === localSeatId ? ' (you)' : ''} — {seat.ready ? 'ready' : 'not ready'}
-                  {seat.connected ? '' : ' • disconnected'}
+                  {seat.seatId === localSeatId ? ' (you)' : ''} - {seat.ready ? 'ready' : 'not ready'}
+                  {seat.connected ? '' : ' - disconnected'}
                 </span>
               ))
             )}
@@ -191,7 +186,7 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
 
           {phase === 'in-game' && gameState && (
             <p className="border border-emerald-300/25 bg-emerald-500/10 p-2 text-xs text-emerald-100">
-              Match live · turn {gameState.turnNumber} · active seat {gameState.activePlayerId}. State is streaming from
+              Match live - turn {gameState.turnNumber} - active seat {gameState.activePlayerId}. State is streaming from
               the server, redacted for your seat.
             </p>
           )}
@@ -204,7 +199,7 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
 
           {endResult && (
             <p className="border border-gold/30 bg-gold/10 p-2 text-xs text-amber-100">
-              Match ended — {endResult.winnerId ? `winner: ${endResult.winnerId}` : 'draw'} ({endResult.reason}).
+              Match ended - {endResult.winnerId ? `winner: ${endResult.winnerId}` : 'draw'} ({endResult.reason}).
             </p>
           )}
         </div>
@@ -215,7 +210,7 @@ export function OnlineMatchPanel({ selectedDeck }: { selectedDeck: DeckLoadResul
 
 function connectionLabel(status: string, phase: string | null): string {
   if (status === 'idle') return 'Not connected';
-  if (status === 'connecting') return 'Connecting…';
+  if (status === 'connecting') return 'Connecting...';
   if (status === 'error') return 'Connection error';
   if (status === 'connected') return phase === 'in-game' ? 'In match' : 'In room';
   return status;

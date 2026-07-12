@@ -276,7 +276,7 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-042 — [On Play] Add up to 1 blue [Usopp] from trash to hand.
   { cardNumber: 'OP03-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { color: 'blue', name: 'Usopp' } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
-  // OP03-043 — PARTIAL: trash-self requires player to select this Character (no self-only trash fn).
+  // OP03-043 — [When you deal damage to opponent's Life] you may trash 3 from top of deck. If you do, trash this Character.
   {
     cardNumber: 'OP03-043',
     templateId: 'ability',
@@ -284,7 +284,7 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'onLifeDamageDealt',
       functions: [
         { fn: 'trashTopDeck', count: 3, optional: true },
-        { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+        { fn: 'trashSelf', ifPrevious: 'previousMovedAny' },
       ],
     },
   },

@@ -269,8 +269,15 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-026 — [On Play] Look 3, reveal up to 1 {East Blue} to hand, rest to bottom. PARTIAL: trash-self opp-DON activate deferred.
-  { cardNumber: 'OP15-026', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'East Blue' }, remainder: 'bottom' }] } },
+  // OP15-026 — [On Play] Look 3, reveal up to 1 {East Blue} to hand, rest to bottom.
+  //   [Activate: Main] You may trash this Character: give up to 1 of opp's rested DON!! to 1 of opp's Characters.
+  {
+    cardNumber: 'OP15-026',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'East Blue' }, remainder: 'bottom' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'giveDonFromOpponentCostArea', count: 1, restedOnly: true, optional: true }] } },
+    ],
+  },
 
   // OP15-027 — [On Play] Rest up to 1 opp Character with a DON!! card given.
   { cardNumber: 'OP15-027', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { minDonAttached: 1 } }, optional: true }] } },
@@ -296,8 +303,16 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // PARTIAL: cost-equals-given-DON K.O. gate deferred; mapped K.O. rested Character with any given DON.
   { cardNumber: 'OP15-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, minDonAttached: 1 } }, optional: true }] } },
 
-  // OP15-032 — [On Play] Rest up to 1 opp Character. PARTIAL: trash-self activate deferred.
-  { cardNumber: 'OP15-032', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
+  // OP15-032 — [On Play] Rest up to 1 opp Character.
+  //   [Activate: Main] You may trash this Character: if Leader {Straw Hat Crew}, set up to 1 of your Characters base cost ≤8 as active.
+  //   PARTIAL: setActiveControllerCharacter only filters current cost, not base cost.
+  {
+    cardNumber: 'OP15-032',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'setActiveControllerCharacter', filter: { maxCost: 8 }, optional: true }] } },
+    ],
+  },
 
   // OP15-034 — [Your Turn] [On Play] up to 1 [Brook] +2000 this turn.
   { cardNumber: 'OP15-034', templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Brook' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
@@ -751,8 +766,15 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-083 — [On Play] Trash 3 from top of deck. PARTIAL: trash-self 15-trash activate deferred.
-  { cardNumber: 'OP15-083', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 3 }] } },
+  // OP15-083 — [On Play] Trash 3 from top of deck.
+  //   [Activate: Main] You may trash this Character: if 15+ cards in trash, give up to 1 rested DON!! to your Leader or 1 Character.
+  {
+    cardNumber: 'OP15-083',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 3 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'selfTrashCount', atLeast: 15 }], functions: [{ fn: 'giveDon', count: 1, optional: true }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP15-084',
@@ -762,8 +784,17 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-085 — [On Play] Trash 3 from top of deck. PARTIAL: trash-self recur activate deferred.
-  { cardNumber: 'OP15-085', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 3 }] } },
+  // OP15-085 — [On Play] Trash 3 from top of deck.
+  //   [Activate: Main] You may trash this Character: if Leader {Straw Hat Crew}, add up to 1 {Straw Hat Crew} Character other than [Tony Tony.Chopper] from trash to hand.
+  {
+    cardNumber: 'OP15-085',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 3 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [
+        { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', excludeSelfName: true } }, to: { zone: 'hand', player: 'owner' }, optional: true },
+      ] } },
+    ],
+  },
 
   // OP15-086 — [On Play] If Leader {Straw Hat Crew}, play {Straw Hat Crew} cost ≤7 from trash (granted [Rush] dropped).
   { cardNumber: 'OP15-086', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', maxCost: 7 } }] } },

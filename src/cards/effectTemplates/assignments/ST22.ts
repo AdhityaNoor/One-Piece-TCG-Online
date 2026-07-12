@@ -11,8 +11,18 @@ export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST22-001 — PARTIAL: reveal-from-hand cost deferred; mapped draw 1 on activateMain oncePerTurn.
   { cardNumber: 'ST22-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 1 }], functions: [{ fn: 'draw', amount: 1 }] } },
 
-  // ST22-002 — [On Play] Look 5, reveal up to 1 {Whitebeard Pirates} to hand, rest to bottom (exclude-[Izo] dropped). PARTIAL: opp-attack trash-self deferred.
-  { cardNumber: 'ST22-002', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Whitebeard Pirates' }, remainder: 'bottom' }] } },
+  // ST22-002 — [On Play] Look 5, reveal up to 1 {Whitebeard Pirates} to hand, rest to bottom (other than [Izo]).
+  //   [On Your Opponent's Attack] You may trash this Character: draw 1, place 1 card from hand at bottom of deck.
+  {
+    cardNumber: 'ST22-002',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Whitebeard Pirates', excludeSelfName: true }, remainder: 'bottom' }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'trashThis' }], functions: [
+        { fn: 'draw', amount: 1 },
+        { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1 },
+      ] } },
+    ],
+  },
 
   // --- codegen batch ---
   { cardNumber: 'ST22-003', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'draw', amount: 2 }] }] } },

@@ -107,6 +107,10 @@ export class GameSession {
     return { ok: true, log: result.log };
   }
 
+  forceConcede(playerId: string, actionId: string): ApplyResult {
+    return this.apply({ type: 'CONCEDE', actionId, playerId });
+  }
+
   isOver(): boolean {
     return this.state.gameOver !== null;
   }

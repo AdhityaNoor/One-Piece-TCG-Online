@@ -37,13 +37,26 @@ function isRevealedTo(card: CardInstance, seatId: string): boolean {
   return Array.isArray(card.revealedTo) && card.revealedTo.includes(seatId);
 }
 
+function pendingChoiceVisibleInstanceIds(state: GameState, seatId: string): Set<string> {
+  const visible = new Set<string>();
+  for (const choice of state.pendingChoices) {
+    if (choice.playerId !== seatId) continue;
+    for (const id of choice.constraints.visibleInstanceIds ?? choice.constraints.candidateInstanceIds ?? []) {
+      visible.add(id);
+    }
+  }
+  return visible;
+}
+
 /** May `seatId` know the identity of `card` sitting in `zoneField` owned by `ownerId`? */
 function cardVisibleToSeat(
   card: CardInstance,
   ownerId: string,
   zoneField: (typeof SECRET_ZONE_FIELDS)[number],
   seatId: string,
+  pendingVisibleIds: Set<string>,
 ): boolean {
+  if (pendingVisibleIds.has(card.instanceId)) return true;
   if (isRevealedTo(card, seatId)) return true;
   switch (zoneField) {
     case 'hand':
@@ -75,6 +88,7 @@ export interface RedactedView {
  */
 export function redactStateForSeat(state: GameState, seatId: string): RedactedView {
   const clone = JSON.parse(JSON.stringify(state)) as GameState;
+  const pendingVisibleIds = pendingChoiceVisibleInstanceIds(state, seatId);
 
   for (const player of Object.values(clone.players)) {
     const ownerId = player.playerId;
@@ -84,7 +98,7 @@ export function redactStateForSeat(state: GameState, seatId: string): RedactedVi
       for (const instanceId of zone.cardIds) {
         const card = clone.cardsById[instanceId];
         if (!card) continue;
-        if (!cardVisibleToSeat(card, ownerId, zoneField, seatId)) {
+        if (!cardVisibleToSeat(card, ownerId, zoneField, seatId, pendingVisibleIds)) {
           card.cardDefinitionId = HIDDEN_CARD_DEF_ID;
           // Strip any resolved/derived identity hints; a hidden card shows nothing.
           card.currentPower = undefined;

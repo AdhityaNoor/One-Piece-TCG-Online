@@ -268,11 +268,31 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
       }
     }
 
+    await this.endMatchByDeparture(client);
     this.removeClient(client);
   }
 
-  onLeave(client: Client, _code?: number): void {
+  async onLeave(client: Client, _code?: number): Promise<void> {
+    await this.endMatchByDeparture(client);
     this.removeClient(client);
+  }
+
+  private async endMatchByDeparture(client: Client): Promise<boolean> {
+    if (this.state.phase !== 'in-game' || !this.session || this.session.isOver()) return false;
+    const binding = this.bindings.get(client.sessionId);
+    if (!binding) return false;
+
+    const result = this.session.forceConcede(binding.seatId, `server-departure-${client.sessionId}-${Date.now()}`);
+    if (!result.ok) {
+      console.error('[GameRoom] failed to end match after player departure:', result.reasons);
+      return false;
+    }
+
+    this.actionCount += 1;
+    this.broadcastStatePerSeat();
+    this.broadcastLogPerSeat(result.log);
+    await this.endMatch();
+    return true;
   }
 
   private removeClient(client: Client): void {

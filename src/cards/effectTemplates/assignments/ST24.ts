@@ -8,8 +8,15 @@ export const ST24_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST24-001 — PARTIAL: "6+ rested cards" → selfRestedCharacterCount; [On Play] draw 1 trash 1 mapped.
   { cardNumber: 'ST24-001', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 6 }], functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
 
-  // ST24-002 — [On Play] Look 5, reveal up to 1 {Supernovas} to hand, rest to bottom. PARTIAL: opp-attack trash-self ramp deferred.
-  { cardNumber: 'ST24-002', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Supernovas' }, remainder: 'bottom' }] } },
+  // ST24-002 — [On Play] Look 5, reveal up to 1 {Supernovas} to hand, rest to bottom.
+  //   [On Your Opponent's Attack] You may trash this Character: set up to 1 of your DON!! cards as active.
+  {
+    cardNumber: 'ST24-002',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Supernovas' }, remainder: 'bottom' }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
+    ],
+  },
 
   // ST24-003 — [End of Your Turn] Set up to 1 DON!! active.
   { cardNumber: 'ST24-003', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },

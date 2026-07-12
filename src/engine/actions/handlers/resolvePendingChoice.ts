@@ -140,8 +140,8 @@ export function executeResolvePendingChoice(
     return { state: step.state, log: step.log, pendingChoices: [] };
   }
 
-  // Life [Trigger] (10-1-5-2): activate → fire the trigger + trash the card;
-  // decline → keep it in hand.
+  // Life [Trigger] (10-1-5-2): activate → fire the trigger, then trash the card
+  // once its whole ability chain resolves; decline → keep it in hand.
   if (choice.sourceEffectId === 'rule:lifeTrigger') {
     const cardId = choice.sourceInstanceId;
     const remaining = state.pendingChoices.filter((c) => c.id !== action.choiceId);
@@ -149,7 +149,21 @@ export function executeResolvePendingChoice(
     if (!activate || !cardId) {
       return { state: { ...state, pendingChoices: remaining }, log: [], pendingChoices: [] };
     }
-    const fired = fireLifeTrigger({ ...state, pendingChoices: remaining }, cardId, registry, defs, action.actionId);
+    // Mark the card BEFORE firing anything: the triggered ability (or a
+    // reactive response to activating it, e.g. fireTriggerActivatedReactions
+    // below) may itself suspend on further player choices — chooseTargets,
+    // ko, addPower, chooseOne, playFromHand, etc. all resume through the
+    // generic interpreter path (resumeChoice), which has no notion of "this
+    // chain started from a Life Trigger." settleLifeTriggerTrash, called from
+    // dispatch.ts's executeAction after every subsequent action, is what
+    // actually moves it hand -> trash once no PendingChoice still references
+    // this instance — see that file's doc comment.
+    const marked: GameState = {
+      ...state,
+      pendingChoices: remaining,
+      pendingLifeTriggerTrash: [...(state.pendingLifeTriggerTrash ?? []), cardId],
+    };
+    const fired = fireLifeTrigger(marked, cardId, registry, defs, action.actionId);
     if (fired.pendingChoices.length > 0) {
       return { state: fired.state, log: fired.log, pendingChoices: fired.pendingChoices };
     }
@@ -165,17 +179,7 @@ export function executeResolvePendingChoice(
         return { state: working, log, pendingChoices: reactions.pendingChoices };
       }
     }
-    const instAfter = working.cardsById[cardId];
-    if (!instAfter || instAfter.currentZone !== 'hand') {
-      return { state: working, log, pendingChoices: [] };
-    }
-    const owner = working.players[instAfter.ownerId];
-    const finalState: GameState = {
-      ...working,
-      players: { ...working.players, [instAfter.ownerId]: { ...owner, hand: removeFromZone(owner.hand, cardId), trash: addToZoneTop(owner.trash, cardId) } },
-      cardsById: { ...working.cardsById, [cardId]: { ...instAfter, currentZone: 'trash' } },
-    };
-    return { state: finalState, log, pendingChoices: [] };
+    return { state: working, log, pendingChoices: [] };
   }
 
   const logger = createActionLogger(state, action.actionId);

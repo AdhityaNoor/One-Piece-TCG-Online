@@ -428,8 +428,18 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   ] } },
 
 
-  // OP10-082 — static: cannot be removed by opp effects (modeled as effect-K.O. immunity). PARTIAL: the trash-self activate ability is deferred.
-  { cardNumber: 'OP10-082', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent' }] } },
+  // OP10-082 — static: cannot be removed by opp effects (modeled as effect-K.O. immunity).
+  //   [Activate: Main] You may trash this Character: Draw 1. Then play up to 1 {Blackbeard Pirates} cost ≤5 other than [Kuzan] from trash.
+  {
+    cardNumber: 'OP10-082',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [
+        { fn: 'draw', amount: 1 },
+        { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Blackbeard Pirates', maxCost: 5, excludeSelfName: true } },
+      ] } },
+    ],
+  },
 
   // OP10-085 — [DON!! x1] if 8+ cards in trash, [Rush]
   { cardNumber: 'OP10-085', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfTrashCount', atLeast: 8 }] } }] } },

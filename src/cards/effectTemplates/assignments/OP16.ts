@@ -174,7 +174,10 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-021 (stage) — [On Play] If Leader {Whitebeard Pirates}, Look 3, add up to 1, rest to bottom. PARTIAL: trash-self give-DON activate deferred.
+  // OP16-021 (stage) — [On Play] If Leader {Whitebeard Pirates}, Look 3, add up to 1, rest to bottom.
+  // PARTIAL: trash-self give-DON activate deferred. Verified 2026-07-12: the `trashThis` ability cost
+  // (abilityCost.ts) is hardcoded to characterArea and cannot pay from stageArea — this needs an engine
+  // fix (generalize trashThis to the source's actual zone), not a data-only assignment fix.
   { cardNumber: 'OP16-021', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: false, destination: 'hand', remainder: 'bottom' }] } },
 
   // OP16-022 (leader) Monkey.D.Luffy —
@@ -452,7 +455,30 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP16-075', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Navy' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }, { fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
 
-  { cardNumber: 'OP16-102', templates: [{ templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { category: 'character', name: 'Fullalead' } }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { category: 'character', name: 'Fullalead' } }] } }] },
+  // OP16-102 — [On K.O.] Draw 1, then play up to 1 [Fullalead] (a Stage) from hand or trash. [Trigger] same.
+  // BUGFIX 2026-07-12: filter.category was 'character' — [Fullalead] (OP09-099) is a Stage, so the play
+  // step could never find it. Also added the "or trash" branch the card text requires (was hand-only).
+  {
+    cardNumber: 'OP16-102',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onKO', functions: [
+        { fn: 'draw', amount: 1 },
+        { fn: 'chooseOne', chooser: 'controller', prompt: 'Play [Fullalead] from:', options: [
+          { label: 'skip', functions: [] },
+          { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { category: 'stage', name: 'Fullalead' } }] },
+          { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { category: 'stage', name: 'Fullalead' } }] },
+        ] },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'draw', amount: 1 },
+        { fn: 'chooseOne', chooser: 'controller', prompt: 'Play [Fullalead] from:', options: [
+          { label: 'skip', functions: [] },
+          { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { category: 'stage', name: 'Fullalead' } }] },
+          { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { category: 'stage', name: 'Fullalead' } }] },
+        ] },
+      ] } },
+    ],
+  },
 
 
   // PARTIAL: 8000-power reveal cost → selfHandMatching gate.
@@ -619,8 +645,17 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP16-097', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Land of Wano', maxCost: 6 } }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'playFromHand', filter: { category: 'character', maxCost: 2 } }] } },
 
-  // OP16-098 — [On Play] Draw 1, trash 1. PARTIAL: trash-self play-[Yamato] activate deferred.
-  { cardNumber: 'OP16-098', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
+  // OP16-098 — [On Play] Draw 1, trash 1.
+  //   [Activate: Main] You may trash this Character: play up to 1 black [Yamato] cost 8 from trash.
+  {
+    cardNumber: 'OP16-098',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [
+        { fn: 'playFromTrash', filter: { category: 'character', color: 'black', name: 'Yamato', exactCost: 8 } },
+      ] } },
+    ],
+  },
 
   {
     cardNumber: 'OP16-099',

@@ -638,6 +638,18 @@ export interface GameState {
   /** Keyed by `${cardInstanceId}:${effectId}`; cleared on that instance's owner's Refresh Phase. */
   oncePerTurnUsage: Record<string, true>;
   pendingChoices: PendingChoice[];
+  /**
+   * Instance ids of Life cards whose [Trigger] the defending player chose to
+   * activate (10-1-5-2), awaiting the "trash instead of keeping in hand"
+   * cleanup once every PendingChoice belonging to that card's own ability
+   * chain has resolved. Needed because a triggered ability can itself
+   * suspend on further player choices (e.g. an optional target) — the
+   * cleanup can't run synchronously right after the initial YES/NO answer in
+   * that case. See settleLifeTriggerTrash.ts, called from dispatch.ts's
+   * executeAction after every action, mirroring fireCharacterKoedReactions'
+   * "diff at a single choke point" approach.
+   */
+  pendingLifeTriggerTrash?: string[];
   log: GameLogEntry[];
   gameOver: { winnerId: string | null; reason: GameOverReason } | null;
   /** Gates 6-3-1 (no draw), 6-4-1 (1 DON!!), 6-5-6-1 (no battle) first-turn exceptions. */

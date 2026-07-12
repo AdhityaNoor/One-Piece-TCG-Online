@@ -7,7 +7,7 @@ import { useMemo } from 'react';
 import { evaluateSavedDeckFormatStatus } from '../../cards/format';
 import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
 import { isBackendConfigured } from '../../multiplayer/net/backendConfig';
-import { CanvasMenuButton, DeckListSummary, GameCanvasScreen } from '../components';
+import { CanvasMenuButton, DeckListSummary, GameCanvasScreen, OpSelect } from '../components';
 import { useCasualStore } from '../store/casualStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -26,9 +26,9 @@ export function CasualLobbyScreen() {
 
   return (
     <GameCanvasScreen kicker="Online" status="Live multiplayer" headerTitle="Online Match" onBack={goBack} dense>
-      <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto sm:gap-4 xl:grid xl:grid-cols-[22rem_minmax(0,1fr)] xl:overflow-hidden">
-        <DeckColumn rows={rows} selectedDeckId={selectedDeckId} onSelect={selectDeck} />
-        <section className="min-h-[16rem] flex-shrink-0 overflow-y-auto border border-white/10 bg-[#08101f] p-3 sm:min-h-0 sm:border-2 sm:border-cyan-200/20 sm:bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] sm:p-4 sm:shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)] xl:flex-shrink xl:pr-4">
+      <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto px-3 py-2 sm:gap-4 sm:px-0">
+        <OnlineDeckRow rows={rows} selectedDeckId={selectedDeckId} onSelect={selectDeck} />
+        <section className="min-h-[22rem] flex-1 overflow-y-auto border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.92))] p-3 shadow-[0_14px_0_rgba(1,5,16,0.5),_0_24px_38px_rgba(0,0,0,0.28)] sm:p-4">
           {backendConfigured ? <OnlineMatchPanel selectedDeck={selectedDeck} /> : <OnlineUnavailablePanel />}
         </section>
       </div>
@@ -36,42 +36,64 @@ export function CasualLobbyScreen() {
   );
 }
 
-function DeckColumn({
+function deckSummaryProps(entry: DeckStoreListEntry, deck: DeckLoadResult) {
+  if (!deck.ok) return { name: entry.name, updatedAt: entry.updatedAt };
+
+  return {
+    name: deck.deck.name,
+    updatedAt: deck.deck.updatedAt,
+    leaderName: deck.deck.leader.definition.name,
+    leaderImageUrl: deck.deck.leader.imageUrl,
+    colors: deck.deck.leader.definition.colors,
+    cardCount: deck.deck.cards.reduce((sum, card) => sum + card.quantity, 0),
+    formatStatus: evaluateSavedDeckFormatStatus(deck.deck).status,
+  };
+}
+
+function OnlineDeckRow({
   rows,
   selectedDeckId,
   onSelect,
 }: {
   rows: { entry: DeckStoreListEntry; deck: DeckLoadResult }[];
   selectedDeckId: string | null;
-  onSelect: (deckId: string) => void;
+  onSelect: (deckId: string | null) => void;
 }) {
+  const selectedRow = rows.find(({ entry }) => entry.deckId === selectedDeckId) ?? null;
+
   return (
-    <section className="flex min-h-[14rem] flex-shrink-0 flex-col border border-gold/25 bg-black/45 p-3 backdrop-blur-sm sm:min-h-0 sm:border-2 sm:border-gold/35 sm:bg-black/26 sm:p-4 sm:shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
-      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Your Deck</p>
-      <p className="mt-2 text-xs leading-5 text-slate-200/72 sm:text-sm sm:leading-6">Pick the deck you will bring to the online room.</p>
-      <div className="mt-3 flex min-h-0 flex-col gap-2 overflow-y-auto pr-0 sm:mt-4 sm:pr-1">
-        {rows.length === 0 ? (
-          <p className="border border-white/10 bg-black/24 p-3 text-sm text-slate-200/60">No saved decks yet.</p>
-        ) : (
-          rows.map(({ entry, deck }) =>
-            deck.ok ? (
-              <DeckListSummary
-                key={entry.deckId}
-                name={deck.deck.name}
-                updatedAt={deck.deck.updatedAt}
-                leaderName={deck.deck.leader.definition.name}
-                leaderImageUrl={deck.deck.leader.imageUrl}
-                colors={deck.deck.leader.definition.colors}
-                cardCount={deck.deck.cards.reduce((sum, card) => sum + card.quantity, 0)}
-                formatStatus={evaluateSavedDeckFormatStatus(deck.deck).status}
-                selected={selectedDeckId === entry.deckId}
-                onSelect={() => onSelect(entry.deckId)}
-              />
-            ) : (
-              <DeckListSummary key={entry.deckId} name={entry.name} updatedAt={entry.updatedAt} />
-            ),
-          )
-        )}
+    <section className="border border-gold/30 bg-black/45 p-4 text-center shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)] backdrop-blur-sm sm:p-5">
+      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Your Online Deck</p>
+      <p className="mx-auto mt-2 max-w-2xl text-xs leading-5 text-slate-200/72 sm:text-sm sm:leading-6">
+        Choose the saved deck you will bring before creating or joining a room.
+      </p>
+
+      <div className="mx-auto mt-4 grid max-w-5xl items-start gap-3 lg:grid-cols-[minmax(18rem,0.9fr)_minmax(0,1.25fr)] lg:gap-5">
+        <div className="min-w-0 border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.92))] p-3 text-left shadow-[0_10px_0_rgba(1,5,16,0.45)] sm:p-4">
+          <label className="text-[11px] font-black uppercase tracking-[0.18em] text-gold sm:text-xs">Choose Deck</label>
+          <OpSelect
+            value={selectedDeckId ?? ''}
+            disabled={rows.length === 0}
+            leadingOptions={[{ value: '', label: rows.length === 0 ? 'No saved decks' : 'Choose deck' }]}
+            options={rows.map(({ entry, deck }) => ({
+              value: entry.deckId,
+              label: deck.ok ? `${deck.deck.name} - ${deck.deck.leader.definition.name}` : `${entry.name} - load error`,
+            }))}
+            onChange={(value) => onSelect(value.length > 0 ? value : null)}
+            buttonClassName="min-h-12 text-base"
+            listClassName="max-h-80"
+          />
+        </div>
+
+        <div className="min-h-[5.75rem] text-left">
+          {selectedRow ? (
+            <DeckListSummary {...deckSummaryProps(selectedRow.entry, selectedRow.deck)} selected />
+          ) : (
+            <div className="flex h-full min-h-[5.75rem] items-center justify-center border border-dashed border-white/15 bg-black/20 px-3 text-center text-xs font-bold uppercase tracking-[0.12em] text-white/45">
+              Choose deck
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

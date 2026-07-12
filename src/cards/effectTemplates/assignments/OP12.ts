@@ -279,8 +279,16 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP12-046 — [On Play] Trash 2 from hand. PARTIAL: the trash-self activate bounce is deferred.
-  { cardNumber: 'OP12-046', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromHand', count: 2 }] } },
+  // OP12-046 — [On Play] Trash 2 from hand. [Activate: Main] You may trash this Character: return up to 1 Character cost ≤5 to owner's hand.
+  {
+    cardNumber: 'OP12-046',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromHand', count: 2 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
+      ] } },
+    ],
+  },
 
   // OP12-047 — [On Play] trash 1 → Look 5, reveal up to 2 {Navy} to hand (exclude-[Sengoku] dropped), rest to bottom.
   { cardNumber: 'OP12-047', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'hand', filter: { typeIncludes: 'Navy' }, remainder: 'bottom', ifPrevious: 'previousMovedAny' }] } },
