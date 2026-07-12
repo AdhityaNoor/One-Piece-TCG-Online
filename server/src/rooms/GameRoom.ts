@@ -21,15 +21,20 @@
  *  - Persist final result to Mongo when the match ends.
  */
 import { Room, type Client } from '@colyseus/core';
+import { ObjectId } from 'mongodb';
 import { GameRoomState, SeatState } from './schema';
 import { verifyToken } from '../auth/jwt';
 import { GameSession, parseClientDeck, SEAT_P1, SEAT_P2 } from '../game/matchEngine';
 import { filterLogForSeat } from '../game/redaction';
-import { matchHistory } from '../db/mongo';
+import { matchHistory, rankedMatches } from '../db/mongo';
 import type { JwtClaims } from '../../../shared/auth';
 import type { SavedDeck } from '../../../src/cards/decks/savedDeck';
 import type { GameAction } from '../../../src/engine/actions';
 import type { GameLogEntry } from '../../../src/engine/logs/logEntry';
+import { RankedResultService } from '../ranked/resultService';
+import { RankedSeasonService } from '../ranked/seasonService';
+import type { RankedRoomOptions, RankedRoomParticipant } from '../ranked/roomOptions';
+import type { RankedResultType } from '../../../shared/ranked';
 import {
   ClientMessage,
   ServerMessage,
@@ -58,11 +63,17 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   private startedAt: Date | null = null;
   private actionCount = 0;
   private historyPersisted = false;
+  private rankedMatchId: string | null = null;
+  private rankedSeasonId: string | null = null;
+  private rankedParticipants: RankedRoomParticipant[] = [];
 
-  onCreate(options: { roomCode?: string }): void {
+  onCreate(options: { roomCode?: string } & RankedRoomOptions): void {
     this.seatReservationTimeout = 5;
     this.setState(new GameRoomState());
     this.state.roomCode = options.roomCode?.trim() || shortCode();
+    this.rankedMatchId = options.rankedMatchId ?? null;
+    this.rankedSeasonId = options.rankedSeasonId ?? null;
+    this.rankedParticipants = options.rankedParticipants ?? [];
 
     this.onMessage(ClientMessage.Ready, (client, payload: ReadyPayload) => this.handleReady(client, payload));
     this.onMessage(ClientMessage.Unready, (client) => this.handleUnready(client));
@@ -76,22 +87,34 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   async onAuth(_client: Client, options: { token?: string }): Promise<JwtClaims> {
     const claims = options.token ? verifyToken(options.token) : null;
     if (!claims) throw new Error('Unauthorized: a valid token is required to join a match.');
+    if (this.rankedParticipants.length > 0 && !this.rankedParticipants.some((participant) => participant.playerId === claims.sub)) {
+      throw new Error('Unauthorized: this ranked match was assigned to different players.');
+    }
     return claims;
   }
 
   onJoin(client: Client): void {
     const auth = client.auth as JwtClaims;
-    const seatId = this.nextFreeSeat();
+    const rankedParticipant = this.rankedParticipants.find((participant) => participant.playerId === auth.sub) ?? null;
+    const seatId = rankedParticipant?.seatId ?? this.nextFreeSeat();
     if (!seatId) throw new Error('Room is full.');
+    if (rankedParticipant && Array.from(this.bindings.values()).some((binding) => binding.userId === auth.sub)) {
+      throw new Error('This ranked player already occupies a seat.');
+    }
 
-    this.bindings.set(client.sessionId, { seatId, userId: auth.sub, username: auth.username, deck: null });
+    this.bindings.set(client.sessionId, {
+      seatId,
+      userId: auth.sub,
+      username: rankedParticipant?.displayName ?? auth.username,
+      deck: rankedParticipant?.deckSnapshot ?? null,
+    });
 
     const seat = new SeatState();
     seat.seatId = seatId;
     seat.userId = auth.sub;
-    seat.username = auth.username;
+    seat.username = rankedParticipant?.displayName ?? auth.username;
     seat.connected = true;
-    seat.ready = false;
+    seat.ready = Boolean(rankedParticipant);
     this.state.seats.set(client.sessionId, seat);
 
     // If a match is already running (e.g. a mid-match reconnect into a seat),
@@ -99,6 +122,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     if (this.session && this.state.phase === 'in-game') this.sendStateTo(client);
 
     this.syncMetadata();
+    if (rankedParticipant) this.maybeStartMatch();
   }
 
   private nextFreeSeat(): string | null {
@@ -109,6 +133,10 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   }
 
   private handleReady(client: Client, payload: ReadyPayload): void {
+    if (this.rankedMatchId) {
+      this.reject(client, 'ready', ['Ranked rooms use the immutable deck snapshot captured at queue time.']);
+      return;
+    }
     if (this.state.phase !== 'lobby') return;
     const binding = this.bindings.get(client.sessionId);
     const seat = this.state.seats.get(client.sessionId);
@@ -151,6 +179,12 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     this.session = started.session;
     this.startedAt = new Date();
     this.state.phase = 'in-game';
+    if (this.rankedMatchId) {
+      void rankedMatches().updateOne(
+        { _id: new ObjectId(this.rankedMatchId) },
+        { $set: { status: 'in_game', startedAt: this.startedAt?.toISOString() ?? new Date().toISOString(), roomCode: this.state.roomCode } },
+      );
+    }
     this.syncMetadata();
     this.broadcast(ServerMessage.MatchStarted, {});
     this.broadcastStatePerSeat();
@@ -247,6 +281,19 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         startedAt: this.startedAt,
         endedAt: new Date(),
       });
+      if (this.rankedMatchId && this.rankedSeasonId) {
+        const season = await new RankedSeasonService().getActiveSeason();
+        await new RankedResultService().finalizeMatch({
+          matchId: this.rankedMatchId,
+          winnerUserId,
+          resultType: rankedResultType(this.session.reason()),
+          resultReason: this.session.reason(),
+          actionCount: this.actionCount,
+          startedAt: this.startedAt,
+          endedAt: new Date(),
+          season,
+        });
+      }
     } catch (err) {
       console.error('[GameRoom] failed to persist match history:', err);
     }
@@ -324,4 +371,11 @@ function shortCode(): string {
   let code = '';
   for (let i = 0; i < 6; i += 1) code += alphabet[Math.floor(Math.random() * alphabet.length)];
   return code;
+}
+
+function rankedResultType(reason: string): RankedResultType {
+  if (reason.includes('server-departure')) return 'disconnect';
+  if (reason.includes('concede')) return 'concession';
+  if (reason.includes('timeout')) return 'timeout';
+  return 'normal';
 }

@@ -46,6 +46,7 @@ import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { BoardCardTile } from './BoardCardTile';
 import { CardBackArt } from './CardBackArt';
+import { CardImage } from '../CardImage';
 import { cqh } from './boardScale';
 import { CountBadge } from './CountBadge';
 import { DonStack } from './DonStack';
@@ -164,6 +165,16 @@ const BOARD_ZONE_TRACK_PX = 210;
 const FIELD_CARD_WIDTH = cqh(FIELD_CARD_WIDTH_PX);
 const FIELD_CARD_HEIGHT = cqh(FIELD_CARD_HEIGHT_PX);
 const BOARD_ZONE_TRACK = cqh(BOARD_ZONE_TRACK_PX);
+// A Life card lies sideways (90deg, same convention as a rested field card).
+// Rotating swaps its bounding box: what was FIELD_CARD_WIDTH_PX (150) tall
+// becomes the on-screen width, and what was FIELD_CARD_HEIGHT_PX (210) wide
+// becomes the on-screen height... i.e. a full-size rotated card's footprint
+// is FIELD_CARD_HEIGHT_PX wide x FIELD_CARD_WIDTH_PX tall. The card is kept
+// at its FULL/unscaled size — the Life column's own grid track
+// (LIFE_COLUMN_TRACK_PX below) is widened to fit that footprint instead of
+// shrinking the card down to the old upright-card column width.
+const LIFE_COLUMN_TRACK_PX = FIELD_CARD_HEIGHT_PX + 20;
+const LIFE_COLUMN_TRACK = cqh(LIFE_COLUMN_TRACK_PX);
 // DON!! Deck visual (inside LifeStack) reads 20% smaller than a Life/field
 // card — it's a sealed pile a player barely touches, so it doesn't need to
 // read at full card size the way Active/Rested DON!! chips now do.
@@ -180,31 +191,58 @@ function EmptySlot({ label }: { size: 'leader' | 'board'; label: string }) {
   );
 }
 
-function LifeStack({ playerId, count, donDeckCount, donDeckFirst = false }: { playerId: string; count: number; donDeckCount: number; donDeckFirst?: boolean }) {
+function LifeStack({ playerId, life, count, donDeckCount, donDeckFirst = false }: { playerId: string; life: CardView[]; count: number; donDeckCount: number; donDeckFirst?: boolean }) {
   const visibleCards = Math.max(0, Math.min(count, 5));
-  const cards = Array.from({ length: visibleCards });
+  const slots = Array.from({ length: visibleCards });
 
   return (
     <div
       className="relative h-full flex-shrink-0"
-      style={{ width: FIELD_CARD_WIDTH }}
+      style={{ width: FIELD_CARD_HEIGHT }}
       aria-label={`${count} Life cards`}
       data-board-zone="life"
       data-board-player={playerId}
     >
-      {cards.map((_, index) => (
-        <div
-          key={index}
-          className="absolute left-0 right-0 mx-auto aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.38)]"
-          style={{
-            [donDeckFirst ? 'bottom' : 'top']: cqh(index * 18),
-            width: FIELD_CARD_WIDTH,
-            zIndex: index,
-          }}
-        >
-          <CardBackArt tone="navy" />
-        </div>
-      ))}
+      {slots.map((_, index) => {
+        // life[index] lines up with this slot 1:1 (both walk top-of-stack
+        // first). A card turned face-up by an effect (e.g. "turn the top
+        // Life card face-up") shows its real art here instead of a sealed
+        // back — Life is otherwise secret (3-1-5), so every other slot stays
+        // CardBackArt regardless of debug "both hands visible" posture.
+        const card = life[index];
+        const faceUp = card?.faceState === 'faceUp';
+        // Life cards lie sideways now (same 90deg rotation as a rested field
+        // card), rendered at FULL size — the anchor is sized to the rotated
+        // card's actual footprint (FIELD_CARD_HEIGHT wide x FIELD_CARD_WIDTH
+        // tall, since rotating swaps the two) rather than shrinking the card
+        // to fit the old upright-card width. The Life column's own grid
+        // track (LIFE_COLUMN_TRACK) was widened to match, so this footprint
+        // fits without being clipped. The fan offset itself keeps stepping
+        // in the same direction as before (top/bottom, by index) — only the
+        // card's own orientation/size changed. Index 0 is the top of the
+        // Life stack (zone.ts "cardIds[0] = top of stack" convention) and
+        // gets the HIGHEST z-index so it renders as the frontmost card,
+        // matching a real fanned pile.
+        return (
+          <div
+            key={card?.instanceId ?? index}
+            className="absolute left-0 right-0 mx-auto flex items-center justify-center"
+            style={{
+              [donDeckFirst ? 'bottom' : 'top']: cqh(index * 18),
+              width: FIELD_CARD_HEIGHT,
+              height: FIELD_CARD_WIDTH,
+              zIndex: visibleCards - index,
+            }}
+            aria-label={faceUp ? card.name : undefined}
+          >
+            <div className="rotate-90" style={{ width: FIELD_CARD_WIDTH }}>
+              <div className="aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.38)]">
+                {faceUp ? <CardImage src={card.imageUrl} alt={card.name} className="h-full w-full" /> : <CardBackArt tone="navy" />}
+              </div>
+            </div>
+          </div>
+        );
+      })}
       {/* Single count overlay for the whole fan (same CountBadge used by
           PileStack/DonStack) — replaces the old "0"-only fallback, shown
           regardless of count so Life always reads a number. */}
@@ -540,20 +578,20 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
     <div className="flex min-h-0 flex-1 items-stretch justify-center overflow-hidden">
       <div
         className="grid h-full w-full max-w-full flex-1 grid-rows-2 gap-2 overflow-hidden rounded-xl border border-white/10 bg-[linear-gradient(135deg,_rgba(255,255,255,0.08),_rgba(255,255,255,0.02))] p-2 shadow-inner shadow-black/30"
-        style={{ gridTemplateColumns: reverseRows ? `minmax(0,1fr) ${cqh(170)}` : `${cqh(170)} minmax(0,1fr)` }}
+        style={{ gridTemplateColumns: reverseRows ? `minmax(0,1fr) ${LIFE_COLUMN_TRACK}` : `${LIFE_COLUMN_TRACK} minmax(0,1fr)` }}
       >
         {reverseRows ? (
           <>
             {boardRow}
-            <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only">
-              <LifeStack playerId={board.playerId} count={board.lifeAreaCount} donDeckCount={board.donDeckCount} donDeckFirst />
+            <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only" allowOverflow>
+              <LifeStack playerId={board.playerId} life={board.life} count={board.lifeAreaCount} donDeckCount={board.donDeckCount} donDeckFirst />
             </MatCell>
             <div className="min-h-0">{characterRow}</div>
           </>
         ) : (
           <>
-            <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only">
-              <LifeStack playerId={board.playerId} count={board.lifeAreaCount} donDeckCount={board.donDeckCount} />
+            <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only" allowOverflow>
+              <LifeStack playerId={board.playerId} life={board.life} count={board.lifeAreaCount} donDeckCount={board.donDeckCount} />
             </MatCell>
             {/* relative z-10: characterRow must paint above boardRow (which comes later in DOM
                 and would otherwise cover the deck ghost layers that extend downward into row 1) */}

@@ -1,81 +1,167 @@
-/**
- * The "Play" submenu. Splits the old single Play button into the two match
- * flavours:
- *   - "vs Self"  -> the existing local hotseat (Deck Select -> Match), where
- *                   one human drives both seats and the board follows whose
- *                   turn it is.
- *   - "Casual"   -> the online-shaped lobby (deck pick + room list). Same
- *                   engine, but the board is pinned to the local player's
- *                   perspective and seats are labelled by username — the shape
- *                   a networked client will use.
- *
- * Navigation-only; no game state. Reuses the shared menu chrome so it matches
- * the rest of the title flow.
- */
-import { CanvasMenuButton, GameCanvasScreen } from '../components';
+import { useMemo } from 'react';
+import { evaluateSavedDeckFormatStatus } from '../../cards/format';
+import { GameCanvasScreen } from '../components';
 import { useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
+
+type PlayModeItem = {
+  label: string;
+  eyebrow: string;
+  description: string;
+  disabled: boolean;
+  disabledReason?: string;
+  onClick: () => void;
+};
 
 export function PlayMenuScreen() {
   const goBack = useNavigationStore((state) => state.goBack);
   const navigateTo = useNavigationStore((state) => state.navigateTo);
-  const deckCount = useSavedDecksStore((state) => state.entries.length);
+  const entries = useSavedDecksStore((state) => state.entries);
+  const load = useSavedDecksStore((state) => state.load);
+
+  const deckCounts = useMemo(() => {
+    let local = 0;
+    let standard = 0;
+    let extra = 0;
+    let ranked = 0;
+
+    for (const entry of entries) {
+      const loaded = load(entry.deckId);
+      if (!loaded.ok) continue;
+      local += 1;
+      const status = evaluateSavedDeckFormatStatus(loaded.deck).status;
+      if (status === 'legal') {
+        standard += 1;
+        extra += 1;
+        ranked += 1;
+      } else if (status === 'extraLegal') {
+        extra += 1;
+      }
+    }
+
+    return { local, standard, extra, ranked };
+  }, [entries, load]);
+
+  const hasLocalDecks = deckCounts.local > 0;
+  const hasStandardDecks = deckCounts.standard > 0;
+  const hasExtraDecks = deckCounts.extra > 0;
+  const hasRankedDecks = deckCounts.ranked > 0;
 
   return (
     <GameCanvasScreen kicker="Play" status="Choose a mode" headerTitle="Play" onBack={goBack} dense>
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col gap-2 overflow-y-auto px-0 pb-0 pt-1 sm:justify-center sm:gap-4 sm:px-0 sm:pt-0">
-        <ModeCard
-          label="vs Self"
-          tag="Local Hotseat"
-          description="Local Hotseat. Best for testing decks and learning the rules. Latest Cards available"
-          onClick={() => navigateTo({ screen: 'deck-select' })}
-          disabled={deckCount < 1}
+      <div className="grid h-full min-h-0 gap-5 overflow-y-auto px-2 py-2 sm:px-3 lg:grid-cols-3 lg:gap-8 lg:overflow-hidden">
+        <PlaySection
+          title="Local"
+          deckHint={`${deckCounts.local} decks available`}
+          items={[
+            {
+              label: 'VS Self',
+              eyebrow: 'Local Hotseat',
+              description: 'Control both seats locally. Best for testing decks, effects, and board states.',
+              disabled: !hasLocalDecks,
+              disabledReason: 'Save at least one deck first.',
+              onClick: () => navigateTo({ screen: 'deck-select' }),
+            },
+            {
+              label: 'VS CPU',
+              eyebrow: 'Single Player',
+              description: 'Play against the local CPU using any saved deck for either side.',
+              disabled: !hasLocalDecks,
+              disabledReason: 'Save at least one deck first.',
+              onClick: () => navigateTo({ screen: 'cpu-deck-select' }),
+            },
+          ]}
         />
-        <ModeCard
-          label="vs CPU"
-          tag="Single Player"
-          description="Play against a local CPU opponent that uses the same rules engine — no hidden information, fully modular AI."
-          onClick={() => navigateTo({ screen: 'cpu-deck-select' })}
-          disabled={deckCount < 1}
+
+        <PlaySection
+          title="Casual"
+          deckHint={`${deckCounts.extra} eligible decks`}
+          items={[
+            {
+              label: 'Standard',
+              eyebrow: 'Online Casual',
+              description: 'Bring a Legal deck into the live casual lobby.',
+              disabled: !hasStandardDecks,
+              disabledReason: 'No Legal decks found.',
+              onClick: () => navigateTo({ screen: 'casual-lobby', regulation: 'casualStandard' }),
+            },
+            {
+              label: 'Extra Legal',
+              eyebrow: 'Online Casual',
+              description: 'Bring a Legal or Extra Legal deck into the live casual lobby.',
+              disabled: !hasExtraDecks,
+              disabledReason: 'No Legal or Extra Legal decks found.',
+              onClick: () => navigateTo({ screen: 'casual-lobby', regulation: 'casualExtra' }),
+            },
+          ]}
         />
-        <ModeCard
-          label="Online"
-          tag="Multiplayer"
-          description="Sign in, bring one saved deck, host a room, or join another player by room code through the live backend lobby."
-          onClick={() => navigateTo({ screen: 'casual-lobby' })}
-          disabled={deckCount < 1}
+
+        <PlaySection
+          title="Ranked"
+          deckHint={`${deckCounts.ranked} legal decks`}
+          items={[
+            {
+              label: 'Standard',
+              eyebrow: 'Ranked Queue',
+              description: 'Competitive seasonal ladder for Legal decks only.',
+              disabled: !hasRankedDecks,
+              disabledReason: 'No Standard-legal decks found.',
+              onClick: () => navigateTo({ screen: 'ranked' }),
+            },
+          ]}
         />
-        {deckCount < 1 && (
-          <p className="text-center text-xs text-white/50">Save at least one deck first to play.</p>
-        )}
       </div>
     </GameCanvasScreen>
   );
 }
 
-function ModeCard({
-  label,
-  tag,
-  description,
-  onClick,
-  disabled,
+function PlaySection({
+  title,
+  deckHint,
+  items,
 }: {
-  label: string;
-  tag: string;
-  description: string;
-  onClick: () => void;
-  disabled?: boolean;
+  title: string;
+  deckHint: string;
+  items: PlayModeItem[];
 }) {
   return (
-    <section className="flex flex-col gap-2 border border-white/10 bg-[#08101f] p-3 sm:gap-3 sm:border-2 sm:border-cyan-200/20 sm:bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] sm:p-5 sm:shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)] md:flex-row md:items-center md:justify-between">
-      <div className="min-w-0">
-        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gold sm:text-[10px] sm:tracking-[0.24em]">{tag}</p>
-        <h2 className="font-display text-base font-black uppercase tracking-[0.12em] text-white sm:text-lg">{label}</h2>
-        <p className="mt-1 max-w-xl text-xs leading-5 text-slate-200/72 sm:text-sm sm:leading-6">{description}</p>
+    <section className="relative flex min-h-[18rem] min-w-0 flex-col px-1 py-2 lg:min-h-0 lg:px-0 lg:[&:not(:first-child)]:before:absolute lg:[&:not(:first-child)]:before:-left-4 lg:[&:not(:first-child)]:before:top-14 lg:[&:not(:first-child)]:before:h-[calc(100%-4.5rem)] lg:[&:not(:first-child)]:before:w-px lg:[&:not(:first-child)]:before:bg-gradient-to-b lg:[&:not(:first-child)]:before:from-transparent lg:[&:not(:first-child)]:before:via-gold/28 lg:[&:not(:first-child)]:before:to-transparent">
+      <div className="pb-3 text-center">
+        <p className="text-[11px] font-black uppercase tracking-[0.24em] text-gold">{title}</p>
+        <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/38">{deckHint}</p>
       </div>
-      <div className="flex-shrink-0">
-        <CanvasMenuButton label={label} prominence="primary" size="sm" disabled={disabled} onClick={onClick} expandOnHover={false} className="h-10 max-w-none sm:h-11" />
+
+      <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
+        {items.map((item) => (
+          <ModeCard key={`${title}-${item.label}-${item.eyebrow}`} item={item} />
+        ))}
       </div>
     </section>
+  );
+}
+
+function ModeCard({ item }: { item: PlayModeItem }) {
+  return (
+    <button
+      type="button"
+      disabled={item.disabled}
+      onClick={item.onClick}
+      className={[
+        'group flex min-h-[9.5rem] w-full flex-col gap-2 border border-white/10 bg-[#08101f] p-3 text-left transition sm:gap-3 sm:border-2 sm:border-cyan-200/20 sm:bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] sm:p-5 sm:shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]',
+        item.disabled
+          ? 'cursor-not-allowed opacity-45'
+          : 'cursor-pointer hover:-translate-y-0.5 hover:border-gold/60 hover:bg-[linear-gradient(180deg,_rgba(18,45,94,0.86),_rgba(5,14,34,0.94))] hover:shadow-[0_18px_0_rgba(1,5,16,0.6),_0_30px_48px_rgba(0,0,0,0.36)]',
+      ].join(' ')}
+    >
+      <div className="min-w-0">
+        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gold sm:text-[10px] sm:tracking-[0.24em]">{item.eyebrow}</p>
+        <h2 className="font-display text-base font-black uppercase tracking-[0.12em] text-white sm:text-lg">{item.label}</h2>
+        <p className="mt-1 text-xs leading-5 text-slate-200/72 sm:text-sm sm:leading-6">{item.description}</p>
+      </div>
+
+      {item.disabled && item.disabledReason && (
+        <p className="mt-auto text-[10px] font-bold uppercase tracking-[0.12em] text-white/35">{item.disabledReason}</p>
+      )}
+    </button>
   );
 }

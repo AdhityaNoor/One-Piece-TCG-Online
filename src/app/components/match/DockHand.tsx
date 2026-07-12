@@ -29,7 +29,7 @@ const MAX_VISIBLE = 10;
 const ARROW_W = 44;
 
 // ── Magnification ──────────────────────────────────────────────────────────
-const SCALE_AT_DIST: Record<number, number> = { 0: 1.55, 1: 1.25, 2: 1.08 };
+const SCALE_AT_DIST: Record<number, number> = { 0: 2.35, 1: 1.5, 2: 1.18 };
 
 function cardScale(idx: number, hoveredIdx: number | null): number {
   if (hoveredIdx === null) return 1;
@@ -415,7 +415,7 @@ export function DockHand({
 
       <div
         aria-label={`${isOwn ? 'Your' : "Opponent's"} hand — ${cards.length} card${cards.length !== 1 ? 's' : ''}`}
-        className="pointer-events-none absolute left-0 right-0 z-[100] flex justify-center"
+        className={['pointer-events-none absolute left-0 right-0 flex justify-center', hoveredIdx !== null ? 'z-[220]' : 'z-[100]'].join(' ')}
         style={{ [isTop ? 'top' : 'bottom']: 0, height: `${cardHeight}px`, overflow: 'visible' }}
         data-board-zone="hand"
         data-board-player={playerId}

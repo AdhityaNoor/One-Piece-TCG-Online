@@ -9,7 +9,6 @@
  */
 import { BacksoundControl } from './components';
 import {
-  AuthScreen,
   CardLibraryScreen,
   CreditsScreen,
   CpuDeckSelectScreen,
@@ -18,10 +17,12 @@ import {
   DebugToolsScreen,
   DeckBuilderScreen,
   DeckSelectScreen,
+  LandingScreen,
   MainMenuScreen,
   MatchScreen,
   PlayTestScreen,
   PlayMenuScreen,
+  RankedScreen,
   SavedDecksScreen,
   SettingsScreen,
   SplashScreen,
@@ -41,7 +42,7 @@ export function App() {
   if (authStatus !== 'authenticated' && !offlineMode) {
     return (
       <>
-        <AuthScreen />
+        <LandingScreen />
         <BacksoundControl />
       </>
     );
@@ -67,6 +68,8 @@ export function App() {
         return <SavedDecksScreen />;
       case 'play-menu':
         return <PlayMenuScreen />;
+      case 'ranked':
+        return <RankedScreen />;
       case 'deck-select':
         return <DeckSelectScreen />;
       case 'cpu-deck-select':

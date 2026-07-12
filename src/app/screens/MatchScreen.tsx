@@ -74,6 +74,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const [mobileLogNotifications, setMobileLogNotifications] = useState<GameLogEntry[]>([]);
   // True while the mouse is over the playmat — forces both dock hands shut.
   const [boardHovered, setBoardHovered] = useState(false);
+  const [handsHidden, setHandsHidden] = useState(false);
+  const [handToggleHovered, setHandToggleHovered] = useState(false);
   const tableShellRef = useRef<HTMLDivElement | null>(null);
   const mobileLogNotificationCursorRef = useRef<number | null>(null);
   const navyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
@@ -541,6 +543,32 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
             {/* ── Dock hands ── rendered outside ScaleToFit so they aren't
                 affected by cqh sizing; positioned absolute relative to
                 op-match-table-shell (position:relative; overflow:hidden). */}
+            <button
+              type="button"
+              onClick={() => setHandsHidden((hidden) => !hidden)}
+              onMouseEnter={() => setHandToggleHovered(true)}
+              onMouseLeave={() => setHandToggleHovered(false)}
+              className="absolute bottom-0 left-1/2 z-[180] hidden h-11 w-[24rem] max-w-[72%] -translate-x-1/2 items-center justify-center gap-2 rounded-t-xl border border-b-0 border-white/15 bg-black/72 px-5 text-[10px] font-black uppercase tracking-[0.16em] text-white/78 shadow-[0_-10px_28px_rgba(0,0,0,0.48)] backdrop-blur transition hover:border-gold/60 hover:text-gold xl:flex"
+              aria-pressed={!handsHidden}
+              aria-label={handsHidden ? 'Show hands' : 'Hide hands'}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                {handsHidden ? (
+                  <>
+                    <path d="M3 3l18 18" strokeLinecap="round" />
+                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" strokeLinecap="round" />
+                    <path d="M9.2 5.4A9.6 9.6 0 0 1 12 5c5 0 8.5 4.4 9.5 7a10.5 10.5 0 0 1-2.1 3.2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M6.4 6.8A10.8 10.8 0 0 0 2.5 12c1 2.6 4.5 7 9.5 7a9.9 9.9 0 0 0 4.1-.9" strokeLinecap="round" strokeLinejoin="round" />
+                  </>
+                ) : (
+                  <>
+                    <path d="M2.5 12c1-2.6 4.5-7 9.5-7s8.5 4.4 9.5 7c-1 2.6-4.5 7-9.5 7s-8.5-4.4-9.5-7Z" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="12" cy="12" r="3" />
+                  </>
+                )}
+              </svg>
+              <span>{handsHidden ? 'Show Hands' : 'Hide Hands'}</span>
+            </button>
             <DockHand
               playerId={topPlayerId}
               cards={topPlayerBoard.hand}
@@ -552,7 +580,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               onCardTap={(card) => selection.handleCardTap(topPlayerId, 'hand', card)}
               onPlayCard={selection.playHandCard}
               onCardZoom={openZoom}
-              boardFocused={boardHovered}
+              boardFocused={handsHidden}
+              forceOpen={handToggleHovered && !handsHidden}
             />
             <DockHand
               playerId={bottomPlayerId}
@@ -565,7 +594,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               onCardTap={(card) => selection.handleCardTap(bottomPlayerId, 'hand', card)}
               onPlayCard={selection.playHandCard}
               onCardZoom={openZoom}
-              boardFocused={boardHovered}
+              boardFocused={handsHidden}
+              forceOpen={handToggleHovered && !handsHidden}
             />
             <AttackArrowOverlay
               attackerInstanceId={attackArrow?.attackerInstanceId ?? null}

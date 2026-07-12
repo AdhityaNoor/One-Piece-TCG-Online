@@ -40,7 +40,7 @@ export type Selector =
   | { sel: 'allCharacters'; minCost?: number; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean } // any player's Characters
   | { sel: 'opponentCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; minDonAttached?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; noBaseEffect?: boolean; excludeName?: string } // optional cost/power (current) + base cost/power + rested/blocker/given-DON!! filters
   | { sel: 'controllerAttachedDon' } // DON!! instance ids currently given to the controller's Leader/Characters/Stages
-  | { sel: 'controllerHand'; filter?: SearchFilter } // controller's hand cards matching a filter (for play-from-hand)
+  | { sel: 'controllerHand'; filter?: SearchFilter; excludeSelf?: boolean } // controller's hand cards matching a filter (for play-from-hand); excludeSelf matters when the source card itself is sitting in hand at resolution time (e.g. a Life [Trigger] "trash 1 -> play this" ability — the source shouldn't be a legal cost for its own "play this" clause)
   | { sel: 'opponentHand' } // opponent's hand cards, for effects where the opponent chooses/trashes
   | { sel: 'controllerTrash'; filter?: SearchFilter } // controller's trash cards matching a filter (for recover-to-hand)
   | { sel: 'opponentTrash'; filter?: SearchFilter } // opponent's trash cards matching a filter

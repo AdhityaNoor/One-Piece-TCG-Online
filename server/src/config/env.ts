@@ -67,6 +67,8 @@ export interface AppEnv {
   clientOrigins: string[];
   /** Token lifetime; short-ish by default, refreshed by re-login. */
   jwtExpiresIn: string;
+  /** Ranked remains opt-in until production ops have created seasons/indexes. */
+  rankedEnabled: boolean;
 }
 
 export function loadEnv(): AppEnv {
@@ -80,6 +82,7 @@ export function loadEnv(): AppEnv {
     jwtSecret: required('JWT_SECRET'),
     clientOrigins: parseOrigins(optional('CLIENT_ORIGIN', 'http://localhost:5173')),
     jwtExpiresIn: optional('JWT_EXPIRES_IN', '7d'),
+    rankedEnabled: optional('RANKED_ENABLED', 'false').toLowerCase() === 'true',
   };
 }
 

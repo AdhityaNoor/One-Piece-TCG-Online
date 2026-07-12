@@ -7,7 +7,7 @@
  * this module still only ever produces display data, never a verdict on
  * legality (project rule: only Layers 1-2 decide legality/outcome).
  */
-import type { CardCategory, Color, Orientation } from '../../engine/state/card';
+import type { CardCategory, Color, FaceState, Orientation } from '../../engine/state/card';
 import type { GameState } from '../../engine/state/game';
 import { computeCurrentCost, computeCurrentPower, hasContinuousKeyword, type CardDefinitionLookup } from '../../engine/rules/shared';
 
@@ -39,6 +39,14 @@ export interface CardView {
   /** Leader only. */
   life: number | null;
   orientation: Orientation | null;
+  /**
+   * 'faceUp' | 'faceDown'. Only meaningful for cards sitting in a Life area —
+   * a Life card turned face-up by an effect (e.g. "turn the top Life card
+   * face-up") should show its real art on the Life stack instead of a card
+   * back. Every other zone's cards are always face-up by construction (hand,
+   * field, trash are never face-down), so this is a no-op there.
+   */
+  faceState: FaceState;
   /** DON!! only — see card.ts CardInstance.donRested doc comment. */
   donRested: boolean;
   donAttachedCount: number;
@@ -85,6 +93,7 @@ export function buildCardView(
       counter: null,
       life: null,
       orientation: instance?.orientation ?? null,
+      faceState: instance?.faceState ?? 'faceUp',
       donRested: instance?.donRested ?? false,
       donAttachedCount: instance?.donAttached.length ?? 0,
       donAttachedIds: instance?.donAttached ?? [],
@@ -127,6 +136,7 @@ export function buildCardView(
     counter: def.category === 'character' ? def.counter ?? null : null,
     life: def.category === 'leader' ? def.life ?? null : null,
     orientation: instance.orientation,
+    faceState: instance.faceState,
     donRested: instance.donRested ?? false,
     donAttachedCount: instance.donAttached.length,
     donAttachedIds: instance.donAttached,

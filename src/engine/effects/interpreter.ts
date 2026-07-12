@@ -555,8 +555,11 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       return ids;
     }
-    case 'controllerHand':
-      return searchEligible(ctx.controllerHandIds(), sel.filter, ctx, bindings);
+    case 'controllerHand': {
+      let ids = searchEligible(ctx.controllerHandIds(), sel.filter, ctx, bindings);
+      if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
+      return ids;
+    }
     case 'opponentHand':
       return ctx.opponentHandIds();
     case 'controllerTrash':

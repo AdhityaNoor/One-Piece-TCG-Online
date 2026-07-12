@@ -17,6 +17,7 @@ import { WebSocketTransport } from '@colyseus/ws-transport';
 import { env, isAllowedClientOrigin } from './config/env';
 import { connectMongo, closeMongo } from './db/mongo';
 import { authRouter } from './auth/routes';
+import { rankedRouter } from './ranked/routes';
 import { GameRoom } from './rooms/GameRoom';
 import { GAME_ROOM_NAME } from '../../shared/multiplayer';
 
@@ -66,6 +67,7 @@ async function main(): Promise<void> {
   });
 
   app.use('/auth', authRouter());
+  app.use('/ranked', rankedRouter());
 
   const httpServer = createServer(app);
 

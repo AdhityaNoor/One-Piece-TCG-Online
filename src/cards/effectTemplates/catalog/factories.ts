@@ -646,7 +646,14 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         {
           op: 'chooseTargets',
           var: 't',
-          from: { sel: 'controllerHand', ...(f.filter ? { filter: f.filter } : {}) },
+          // excludeSelf: this cost sometimes pays for a "play this card" trigger
+          // (see triggerPlaySelf) while the source card is itself still sitting
+          // in hand (a Life [Trigger] card revealed into hand before its
+          // ability resolves) — without this, the card could trash itself as
+          // its own cost and silently forfeit its own "play this" clause.
+          // Harmless no-op for non-hand-timed uses (e.g. onPlay), since the
+          // source is already on the field by the time those fire.
+          from: { sel: 'controllerHand', excludeSelf: true, ...(f.filter ? { filter: f.filter } : {}) },
           min: 0,
           max: anyNumber ? -1 : count,
           prompt: anyNumber

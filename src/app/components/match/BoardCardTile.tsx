@@ -6,8 +6,10 @@
  * action dispatcher via the parent selection hook.
  */
 import { useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CardImage } from '../CardImage';
 import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
+import { resolveAssetUrl } from '../../lib/assetUrl';
 import { cqh } from './boardScale';
 import type { CardView } from '../../../board/projection';
 
@@ -279,6 +281,17 @@ export function BoardCardTile({
   const [rootRef, tileWidth] = useElementWidth<HTMLDivElement>();
   const attachedDonSelected = attachedDonSelectedCount > 0;
   const hiddenDuringFlight = useCardFlightHidden(card.instanceId);
+  const [previewPoint, setPreviewPoint] = useState<{ x: number; y: number } | null>(null);
+  const [actionsHovered, setActionsHovered] = useState(false);
+  const previewSrc = resolveAssetUrl(card.imageUrl);
+  const previewLeft =
+    previewPoint && typeof window !== 'undefined'
+      ? Math.max(16, Math.min(previewPoint.x - 434, window.innerWidth - 436))
+      : 0;
+  const previewTop =
+    previewPoint && typeof window !== 'undefined'
+      ? Math.max(16, Math.min(previewPoint.y - 304, window.innerHeight - 610))
+      : 0;
   const compactCardWidth = Math.max(0, tileWidth * CARD_ASPECT);
   const compactCardSideInset = Math.max(0, (tileWidth - compactCardWidth) / 2);
   const compactCostMaxWidth = Math.max(0, compactCardWidth * 0.5);
@@ -309,7 +322,13 @@ export function BoardCardTile({
       ref={rootRef}
       data-card-instance-id={card.instanceId}
       onPointerEnter={onHoverStart}
-      onPointerLeave={onHoverEnd}
+      onPointerLeave={() => {
+        onHoverEnd?.();
+        setPreviewPoint(null);
+      }}
+      onMouseEnter={(event) => previewSrc && setPreviewPoint({ x: event.clientX, y: event.clientY })}
+      onMouseMove={(event) => previewSrc && setPreviewPoint({ x: event.clientX, y: event.clientY })}
+      onMouseLeave={() => setPreviewPoint(null)}
       className={[
         'group relative flex-shrink-0',
         isField ? 'aspect-square h-full max-h-full max-w-full' : '',
@@ -456,7 +475,14 @@ export function BoardCardTile({
       )}
 
       {hasCardActions && (
-        <div className="absolute right-1 top-1/2 z-40 flex -translate-y-1/2 flex-col items-stretch gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+        <div
+          className="absolute right-1 top-1/2 z-40 flex -translate-y-1/2 flex-col items-stretch gap-1 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100"
+          onMouseEnter={() => {
+            setActionsHovered(true);
+            setPreviewPoint(null);
+          }}
+          onMouseLeave={() => setActionsHovered(false)}
+        >
           {onAttack && (
             <CardActionButton
               iconSrc="/ui-icons/action-attack.png"
@@ -494,6 +520,16 @@ export function BoardCardTile({
             />
           )}
         </div>
+      )}
+
+      {previewSrc && previewPoint && !actionsHovered && typeof document !== 'undefined' && createPortal(
+        <div
+          className="pointer-events-none fixed z-[230] hidden w-[26rem] max-w-[min(26rem,calc(100vw-2rem))] overflow-visible sm:block"
+          style={{ left: previewLeft, top: previewTop }}
+        >
+          <img src={previewSrc} alt="" className="h-auto w-full object-contain drop-shadow-[0_18px_44px_rgba(0,0,0,0.65)]" />
+        </div>,
+        document.body,
       )}
     </div>
   );

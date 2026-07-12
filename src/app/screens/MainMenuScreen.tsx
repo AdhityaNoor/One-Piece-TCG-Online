@@ -4,7 +4,7 @@
  * without touching navigation behavior.
  */
 import { useState } from 'react';
-import { CanvasMenuButton, GameCanvasScreen } from '../components';
+import { BrandLogo, CanvasMenuButton, GameCanvasScreen, LandingBackdrop } from '../components';
 import type { PublicUser } from '../../../shared/auth';
 import { useAuthStore } from '../store/authStore';
 import { useNavigationStore } from '../store/navigationStore';
@@ -22,47 +22,11 @@ export function MainMenuScreen() {
       status={`Alpha · v${__APP_VERSION__}`}
       topRight={<ProfileMenu user={user} onDebug={() => navigateTo({ screen: 'debug-tools' })} onLogout={logout} />}
     >
-      {/* Decorative backgrounds */}
-      <div aria-hidden="true" className="pointer-events-none fixed inset-y-0 left-0 -z-10 h-dvh w-screen overflow-hidden">
-        <div className="op-home-speed-bg absolute bottom-0 left-0 h-full">
-          {Array.from({ length: 5 }, (_, index) => (
-            <img key={index} src="/ui/footer_illust_bg.webp" alt="" className="op-home-speed-bg-panel" draggable={false} />
-          ))}
-        </div>
-      </div>
-      <div aria-hidden="true" className="op-home-character pointer-events-none fixed inset-x-0 bottom-0 -z-[9] h-dvh overflow-hidden opacity-55 sm:opacity-70">
-        <img
-          src="/ui/footer_illust_chara.webp"
-          alt=""
-          className="absolute bottom-0 left-0 h-auto w-screen max-w-none select-none object-contain object-left-bottom drop-shadow-[0_24px_42px_rgba(0,0,0,0.5)] xl:h-full xl:w-auto"
-          draggable={false}
-        />
-      </div>
+      <LandingBackdrop />
 
       {/* Centered content: logo + nav as one unit */}
       <div className="relative flex h-full flex-col items-center justify-center gap-8 overflow-hidden">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-4" aria-label="One Piece Online">
-          {/* Gold glow behind logo */}
-          <div className="absolute h-16 w-[min(72vw,44rem)] bg-brand/40 blur-3xl" aria-hidden="true" />
-          <span
-            aria-hidden="true"
-            className="relative block h-[4.7rem] w-[min(82vw,36rem)] bg-[linear-gradient(180deg,_#ffe17a_0%,_#d9a441_50%,_#8e5b12_100%)] drop-shadow-[0_7px_0_rgba(0,0,0,0.65)] sm:h-[6.6rem] sm:w-[min(76vw,48rem)] md:h-[8rem] md:w-[min(72vw,58rem)]"
-            style={{
-              WebkitMaskImage: 'url(/ui/logo_op.png)',
-              maskImage: 'url(/ui/logo_op.png)',
-              WebkitMaskPosition: 'center',
-              maskPosition: 'center',
-              WebkitMaskRepeat: 'no-repeat',
-              maskRepeat: 'no-repeat',
-              WebkitMaskSize: 'contain',
-              maskSize: 'contain',
-            }}
-          />
-          <span className="relative block font-heading text-[2rem] font-black uppercase tracking-[0.45em] text-gold drop-shadow-[0_5px_0_rgba(0,0,0,0.7)] sm:text-[2.6rem] md:text-[3rem]">
-            Online
-          </span>
-        </div>
+        <BrandLogo />
 
         {/* Nav */}
         <nav className="relative z-10 flex w-full flex-col items-center gap-3 sm:gap-3.5" aria-label="Main menu">

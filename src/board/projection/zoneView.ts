@@ -13,6 +13,16 @@ export interface PlayerBoardView {
   leader: CardView | null;
   leaderLifeValue: number;
   lifeAreaCount: number;
+  /**
+   * Life cards, top of stack first (matches player.lifeArea.cardIds order).
+   * Every entry's identity is exposed here regardless of faceState — this is
+   * the local-hotseat "both hands visible" debug posture the rest of this
+   * projection already takes (see zoneView.ts file header); it's on the
+   * renderer (LifeStack) to only actually show art for faceState==='faceUp'
+   * cards and keep the rest as a generic card back, matching 10-1-5-2's
+   * "Life cards are secret unless turned face-up" rule.
+   */
+  life: CardView[];
   deckCount: number;
   donDeckCount: number;
   hand: CardView[];
@@ -39,6 +49,7 @@ export function projectPlayerBoard(
     leader: player.leaderInstanceId ? view(player.leaderInstanceId) : null,
     leaderLifeValue: player.leaderLifeValue,
     lifeAreaCount: player.lifeArea.cardIds.length,
+    life: player.lifeArea.cardIds.map(view),
     deckCount: player.deck.cardIds.length,
     donDeckCount: player.donDeck.cardIds.length,
     hand: player.hand.cardIds.map(view),

@@ -51,9 +51,10 @@ export type NavigationTarget =
   | { screen: 'deck-builder'; deckIdToEdit?: string }
   | { screen: 'saved-decks' }
   | { screen: 'play-menu' }
+  | { screen: 'ranked' }
   | { screen: 'deck-select' }
   | { screen: 'cpu-deck-select' }
-  | { screen: 'casual-lobby' }
+  | { screen: 'casual-lobby'; regulation?: 'casualStandard' | 'casualExtra' | 'rankedStandard' }
   | { screen: 'online-match' }
   | { screen: 'credits' }
   | { screen: 'match'; deckIdA: string; deckIdB: string; presentation?: MatchPresentation };

@@ -1,5 +1,5 @@
 export * from './MainMenuScreen';
-export * from './AuthScreen';
+export * from './LandingScreen';
 export * from './SplashScreen';
 export * from './CreditsScreen';
 export * from './SettingsScreen';
@@ -10,6 +10,7 @@ export * from './CardLibraryScreen';
 export * from './deckBuilder';
 export * from './SavedDecksScreen';
 export * from './PlayMenuScreen';
+export * from './RankedScreen';
 export * from './DeckSelectScreen';
 export * from './CpuDeckSelectScreen';
 export * from './CasualLobbyScreen';
