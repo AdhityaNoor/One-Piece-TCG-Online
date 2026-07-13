@@ -10,9 +10,7 @@
  *
  * PARTIAL (the mid-ability "Then, if <board state>, …" second clause is board-gated separately and is
  *   deferred; the first clause is implemented):
- *   ST14-008 — "+2 cost … Then, if you have a cost-8+ Character, draw 1 and trash 1" (draw/trash deferred).
- *   ST14-015 — "[Main] +3000 … Then, if cost-8+, K.O. ≤2" (the gated K.O. deferred; [Trigger] is full).
- *   ST14-017 — its [On Play] draw IS implemented; the cost aura is deferred.
+*   ST14-017 — its [On Play] draw IS implemented; the cost aura is deferred.
  *
  * Vanilla: ST14-005 Chopper, ST14-010 Brook, ST14-013 Zoro. ST14-006's [Blocker] is card data.
  */
@@ -67,11 +65,18 @@ export const ST14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST14-008 Haredas — [Activate: Main] rest this: +2 cost to a black {Straw Hat Crew} Character. (Then-draw clause deferred.)
+  // ST14-008 Haredas — [Activate: Main] rest this: +2 cost to a black {Straw Hat Crew} Character; draw/trash if cost-8+ Character exists.
   {
     cardNumber: 'ST14-008',
     templateId: 'ability',
-    params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'controller', filter: { color: 'black', typeIncludes: 'Straw Hat Crew' } }, amount: 2, duration: 'endOfOpponentsTurn', optional: true }] },
+    params: {
+      timing: 'activateMain',
+      cost: [{ kind: 'restThis' }],
+      functions: [
+        { fn: 'addCost', target: { group: 'characters', player: 'controller', filter: { color: 'black', typeIncludes: 'Straw Hat Crew' } }, amount: 2, duration: 'endOfOpponentsTurn', optional: true },
+        { fn: 'drawAndTrash', drawCount: 1, trashCount: 1, ifGate: [BIG_COST_8] },
+      ],
+    },
   },
 
   // ST14-009 Franky — [DON!! x1] [Opponent's Turn] If you have a cost-6+ Character, this cannot be K.O.'d by effects and gains +2000 power.
@@ -111,12 +116,12 @@ export const ST14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST14-015 (event) — [Main] +3000 to your Leader/Character this turn. (mid-ability gated K.O. deferred)
+  // ST14-015 (event) — [Main] +3000 to your Leader/Character this turn, then gated K.O.
   //   [Trigger] If you have a cost-8+ Character, K.O. up to 1 opponent Character cost <=5.
   {
     cardNumber: 'ST14-015',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, ifGate: [BIG_COST_8] }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [BIG_COST_8], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
     ],
   },

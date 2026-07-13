@@ -30,6 +30,8 @@ const INSTRUCTIONS: Record<string, string> = {
   selectBlocker: 'Tap your own active [Blocker] Character.',
   selectActivateSource: 'Tap your own Leader, Character, or Stage that has an [Activate: Main] effect.',
   payingActivateEffectCost: 'Tap DON!! in your Cost Area to return for the activation cost, then Confirm.',
+  payingEventMainCost: 'Tap DON!! on your field to return for the Event cost, then Confirm.',
+  payingCounterEventCost: 'Tap DON!! on your field to return for the Counter Event cost, then Confirm.',
   selectOnOppAttackSource: "Tap your own Leader, Character, or Stage with an [On Your Opponent's Attack] ability.",
   payingOnOppAttackCost: 'Tap DON!! in your Cost Area to return for the ability cost, then Confirm.',
 };
@@ -93,6 +95,10 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
     hasUnusedActivateMain,
     hasOnOpponentsAttack,
     counterProgress,
+    donChoiceProgress,
+    confirmDonChoice,
+    confirmEventMainCost,
+    confirmCounterEventCost,
     confirmActivateMainCost,
     confirmOnOppAttackCost,
     confirmPlayCard,
@@ -106,6 +112,37 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
       {lastError.join(' ')}
     </div>
   );
+
+  // A donMinus pending choice takes priority over EVERYTHING below,
+  // including the battle-step branches — it can suspend mid-Block-Step (an
+  // onBlock-triggered ability with a DON!! -N cost, say), and the dispatch
+  // layer's pending-choice gate already blocks every other action until it
+  // resolves, so nothing else in this component is actionable while it's up
+  // anyway (see useBoardSelection.ts's 'resolvingDonChoice' doc comment).
+  if (donChoiceProgress) {
+    const { selected, min, max, prompt } = donChoiceProgress;
+    const met = selected >= min;
+    return (
+      <div className="flex flex-col gap-2">
+        {errorBanner}
+        <p className="text-xs text-white/60">{prompt}</p>
+        <div className="flex items-center gap-2">
+          <span className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/50">DON!! Selected</span>
+          <span className={`text-base font-black tabular-nums tracking-[0.04em] ${met ? 'text-emerald-300' : 'text-white'}`}>
+            {selected}/{min === max ? max : `${min}-${max}`}
+          </span>
+        </div>
+        <p className="text-xs text-white/60">Tap a DON!! on the field — a Cost Area chip, or hover a Leader/Character to reveal its attached DON!!.</p>
+        {min < max && (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="primary" size="sm" disabled={!met} onClick={confirmDonChoice}>
+              Confirm ({selected}/{max})
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // Battle-step branches are checked ahead of the generic `mode.kind !==
   // 'idle'` block below: the Counter Step auto-enters BoardSelectionMode's
@@ -170,6 +207,16 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
           {mode.kind === 'payingActivateEffectCost' && (
             <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmActivateMainCost}>
               Activate ({mode.selectedDonIds.length}/{mode.cost} DON!!)
+            </Button>
+          )}
+          {mode.kind === 'payingEventMainCost' && (
+            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.abilityCost} onClick={confirmEventMainCost}>
+              Play {mode.cardName} ({mode.selectedDonIds.length}/{mode.abilityCost} DON!! returned)
+            </Button>
+          )}
+          {mode.kind === 'payingCounterEventCost' && (
+            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.abilityCost} onClick={confirmCounterEventCost}>
+              Counter {mode.cardName} ({mode.selectedDonIds.length}/{mode.abilityCost} DON!! returned)
             </Button>
           )}
           {mode.kind === 'payingOnOppAttackCost' && (

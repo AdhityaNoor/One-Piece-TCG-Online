@@ -224,13 +224,12 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP05-038 — [Counter] +4000 battle, then trash 1 → set up to 3 DON!! active. [Trigger] Rest up to 1 opp Character cost ≤3.
-  //   PARTIAL: trigger narrowed to opp Characters (the "or Leader" option is dropped — opp-leaderOrCharacters has no cost filter).
+  // OP05-038 — [Counter] +4000 battle, then trash 1 → set up to 3 DON!! active. [Trigger] Rest up to 1 opp Leader/Character cost ≤3.
   {
     cardNumber: 'OP05-038',
     templates: [
       { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }, { fn: 'optionalTrashFromHand', count: 1 }, { fn: 'setActiveControllerDon', maxTargets: 3, ifPrevious: 'previousMovedAny' }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
     ],
   },
 
@@ -515,12 +514,13 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP05-095 — [Counter] up to 1 Leader/Char +4000 this battle.
-  //   PARTIAL: the "if 15+ trash, K.O. 1 opp Char cost ≤4" rider needs a trash-count gate (deferred).
-  { cardNumber: 'OP05-095', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
+  // OP05-095 — [Counter] +4000 battle, then if trash >=15, K.O. up to 1 opp Character cost <=4.
+  { cardNumber: 'OP05-095', templateId: 'ability', params: { timing: 'counter', functions: [
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true },
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, ifGate: [{ kind: 'selfTrashCount', atLeast: 15 }] },
+  ] } },
 
-  // OP05-096 — [Main] choose one on opp cost<=1 Character; draw 1 if you have Celestial Dragons. PARTIAL: add-to-Life branch omitted.
-  // [Trigger] K.O. or return opp cost<=6 — mapped as K.O. only.
+  // OP05-096 — [Main] choose one on opp cost<=1 Character; draw 1 if you have Celestial Dragons. [Trigger] K.O. or return opp cost<=6.
   {
     cardNumber: 'OP05-096',
     templates: [
@@ -531,9 +531,18 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
         options: [
           { label: 'koCost1', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] },
           { label: 'returnCost1', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] },
+          { label: 'lifeCost1', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] },
         ],
       }, { fn: 'draw', amount: 1, ifGate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Celestial Dragons', atLeast: 1 }] }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Choose one:',
+        options: [
+          { label: 'koCost6', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] },
+          { label: 'returnCost6', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 6 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] },
+        ],
+      }] } },
     ],
   },
 

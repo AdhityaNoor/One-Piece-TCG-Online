@@ -246,8 +246,14 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-041 (leader) — [When Attacking] If your DON!! ≤ opponent's, add 1 DON!! (rested). PARTIAL: the "activate Event from hand" main is deferred.
   { cardNumber: 'OP12-041', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
-  // OP12-042 — [On Play] Place up to 1 opp Character with base cost ≤1 at bottom of deck. PARTIAL: the static +1 cost clause is deferred.
-  { cardNumber: 'OP12-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxBaseCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
+  // OP12-042 — If you have 2+ Characters with base cost 5+, +1 cost. [On Play] Place opp base-cost≤1 Character at bottom.
+  {
+    cardNumber: 'OP12-042',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCost', target: { ref: 'self' }, amount: 1, duration: 'permanent', condition: { gate: [{ kind: 'selfCharacterCostCount', minCost: 5, atLeast: 2 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxBaseCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
+    ],
+  },
 
   // OP12-043 (character) Kuzan —
   //   If you have 5 or more cards in your hand, this Character gains +1 cost.[On Play] You may trash 1 card
@@ -327,9 +333,16 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP12-053 — [Opponent's Turn] if Leader {Navy}: this Character gains [Blocker] and +1000 power.
-  //   PARTIAL: the [Once Per Turn] "would be removed → trash 1 from hand instead" replacement is deferred.
-  { cardNumber: 'OP12-053', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'Navy' }] } }, { fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'Navy' }] } }] } },
+  // OP12-053 — [Once Per Turn] opponent-effect removal replacement; [Opponent's Turn] if Leader {Navy}: [Blocker] and +1000.
+  {
+    cardNumber: 'OP12-053',
+    templateId: 'ability',
+    params: { timing: 'onEnterPlay', functions: [
+      { fn: 'registerKoReplacementSelf', scope: 'effect', oncePerTurn: true, replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'], effectSourceController: 'opponent', trashFromHand: { count: 1 }, duration: 'permanent' },
+      { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'Navy' }] } },
+      { fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'Navy' }] } },
+    ] },
+  },
 
   // OP12-054 — [On Play] If Leader {The Seven Warlords of the Sea}: return up to 1 Character cost ≤1 to hand (exclude-self dropped).
   { cardNumber: 'OP12-054', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'The Seven Warlords of the Sea' }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 1 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -581,14 +594,15 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP12-102 (character) Shirahoshi —
-  //   If your Character with a base cost of 6 or less would be removed from the field by your opponent's
-  //   effect, you may turn 1 card from the top of your Life cards face-up instead.[Opponent's Turn] If you
-  //   have no other [Shirahoshi] with a base cost of 2, all of your {Neptunian} type Characters gain +2000
-  //   power.
-  //   PARTIAL: the removal-replacement clause is deferred; the "no other [Shirahoshi] base cost 2" gate
-  //   is approximated with selfDoesNotControlNamed (ignores base-cost filter).
-  { cardNumber: 'OP12-102', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 2000, duration: 'permanent', anyOfTypes: ['Neptunian'], gate: [{ kind: 'selfDoesNotControlNamed', name: 'Shirahoshi' }], sourceCondition: { turn: 'opponent' } }] } },
+  // OP12-102 — removal replacement mapped; the "no other [Shirahoshi] base cost 2" gate is approximated with selfDoesNotControlNamed.
+  {
+    cardNumber: 'OP12-102',
+    templateId: 'ability',
+    params: { timing: 'onEnterPlay', functions: [
+      { fn: 'registerKoReplacementAura', scope: 'effect', replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'], effectSourceController: 'opponent', targetCondition: { maxBaseCost: 6 }, turnTopLifeFace: { faceUp: true }, duration: 'permanent' },
+      { fn: 'addPowerAuraControllerCharacters', amount: 2000, duration: 'permanent', anyOfTypes: ['Neptunian'], gate: [{ kind: 'selfDoesNotControlNamed', name: 'Shirahoshi' }], sourceCondition: { turn: 'opponent' } },
+    ] },
+  },
 
   // OP12-104 — [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 4 or less.
   { cardNumber: 'OP12-104', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },

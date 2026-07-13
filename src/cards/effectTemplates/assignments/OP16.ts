@@ -228,15 +228,12 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-033 (character) Morley —
-  //   If this Character would be K.O.'d, you may rest 2 of your cards instead.[Unblockable] (This card
-  //   cannot be blocked.)
-  // PARTIAL: "rest 2 of your cards" → restDon proxy.
+  // OP16-033 (character) Morley — [Unblockable]. K.O. replacement rests 2 of your cards.
   {
     cardNumber: 'OP16-033',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'unblockable', duration: 'permanent' }] } },
-      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementSelf', scope: 'any', restDon: { count: 2 }, duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementSelf', scope: 'any', restCards: { count: 2 }, duration: 'permanent' }] } },
     ],
   },
 

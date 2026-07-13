@@ -280,8 +280,25 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Firetank Pirates' }, { typeIncludes: 'Straw Hat Crew' }], minCost: 2 } }] },
   },
 
-  // OP11-049 — [On Play] Look at 3, place at top or bottom of deck in any order. PARTIAL: [On Opponent's Attack] clause deferred.
-  { cardNumber: 'OP11-049', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 3, reveal: false, destination: 'deckTopOrBottom' }] } },
+  // OP11-049 — [On Play] Look at 3, place at top/bottom. [On Opponent's Attack] trash this: Leader +1000 battle.
+  {
+    cardNumber: 'OP11-049',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 3, reveal: false, destination: 'deckTopOrBottom' }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentsAttack', functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Trash this Character?',
+        options: [
+          { label: 'skip', functions: [] },
+          { label: 'trash', functions: [
+            { fn: 'trashSelf' },
+            { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+          ] },
+        ],
+      }] } },
+    ],
+  },
 
   // OP11-050 (character) Gotti —
   //   [When Attacking] You may trash 1 {Firetank Pirates} type card from your hand: Return up to 1
@@ -318,7 +335,7 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP11-057', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfHand', atMost: 4 }] } }] } },
 
 
-  // OP11-058 — If 5+ cards in hand, cannot attack. PARTIAL: [Blocker] is card data.
+  // OP11-058 — If 5+ cards in hand, cannot attack. [Blocker] is card data.
   { cardNumber: 'OP11-058', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent', condition: { gate: [{ kind: 'selfHand', atLeast: 5 }] } }] } },
 
   // OP11-060 — [Main] If Leader multicolored, search {Straw Hat Crew} (excl. self). [Trigger] same.
@@ -559,8 +576,11 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP11-097 — [Counter] up to 1 Leader/Char +1000 this battle. PARTIAL: the "10+ trash → recur black Char" rider needs a trash-count gate (deferred).
-  { cardNumber: 'OP11-097', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisBattle', optional: true }] } },
+  // OP11-097 — [Counter] up to 1 Leader/Char +1000 this battle; if 10+ trash, recur black Character cost<=3.
+  { cardNumber: 'OP11-097', templateId: 'ability', params: { timing: 'counter', functions: [
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisBattle', optional: true },
+    { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', color: 'black', maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1, ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] },
+  ] } },
 
   // OP11-098 — [Main] trash 3 from top of deck: K.O. up to 1 opp Character cost ≤2. [Trigger] up to 1 Leader/Char +1000 this turn.
   {
@@ -661,8 +681,14 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-112 — [Blocker][Opponent's Turn] If Leader [Shirahoshi], this Character +4000.
   { cardNumber: 'OP11-112', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 4000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderName', name: 'Shirahoshi' }] } }] } },
 
-  // OP11-114 — [Counter] your Leader +3000 this battle. PARTIAL: the [Main] combined-Life-gated K.O. is deferred.
-  { cardNumber: 'OP11-114', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+  // OP11-114 — [Main] rest 3 DON!!: if combined Life 5+, K.O. base-cost<=5. [Counter] Leader +3000 battle.
+  {
+    cardNumber: 'OP11-114',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 3 }], gate: [{ kind: 'combinedLifeTotal', atLeast: 5 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 5 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   // OP11-115 — [Counter] If Leader [Shirahoshi], up to 1 Leader/Char +4000 this battle. [Trigger] K.O. up to 1 opp Character cost ≤2.
   {
@@ -692,8 +718,17 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   ] } },
 
   // OP11-119 (character) Koby —
-  //   PARTIAL: the on-play canAttackActive grant is implemented below; the attack-triggered power buff remains deferred.
-  { cardNumber: 'OP11-119', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller' }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }] } },
+  //   [On Play] grant can-attack-active. [When Attacking] place 2 trash to deck bottom: +1000 until opponent turn end.
+  {
+    cardNumber: 'OP11-119',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller' }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+        { fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, minTargets: 2, maxTargets: 2 },
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'endOfOpponentsTurn', optional: true, ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
+  },
 
   { cardNumber: 'OP11-013', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', blockerPowerAtMost: 2000 }] } },
 
@@ -703,8 +738,11 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP11-043', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, gate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'GERMA' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisBattle', optional: true }, { fn: 'trashTopDeck', count: 2 }] } },
 
-  // PARTIAL: rest-immunity deferred; mapped effect-KO immunity when all chars are GERMA.
-  { cardNumber: 'OP11-046', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { gate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'GERMA' }] } }] } },
+  // OP11-046 — if all Characters are GERMA, this cannot be K.O.'d or rested by opponent effects.
+  { cardNumber: 'OP11-046', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+    { fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { gate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'GERMA' }] }, effectSourceController: 'opponent' },
+    { fn: 'preventRest', target: { ref: 'self' }, duration: 'permanent', condition: { gate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'GERMA' }] }, effectSourceController: 'opponent' },
+  ] } },
 
   { cardNumber: 'OP11-051', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxBasePower: 5000 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } }, { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'koByOpponentEffect' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', maxCost: 5 }, remainder: 'bottom' }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', maxCost: 5 }, ifPrevious: 'previousMovedAny' }] } }] },
 

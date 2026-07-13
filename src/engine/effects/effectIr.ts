@@ -18,6 +18,7 @@ export type Selector =
   | { sel: 'self' } // the source card
   | { sel: 'eventPlayedCharacter' } // the Character instance from the current played-character event
   | { sel: 'controllerLeader' }
+  | { sel: 'controllerActiveLeader' }
   | ({ sel: 'controllerCharacters' } & CharacterMoveFilter)
   | { sel: 'controllerLeaderOrCharacters'; typeIncludes?: string; anyOfTypes?: string[]; name?: string; excludeSelf?: boolean; minPower?: number; maxBasePower?: number; typeFilterCharactersOnly?: boolean }
   | { sel: 'opponentLeader'; rested?: boolean }
@@ -47,6 +48,7 @@ export type Selector =
   | { sel: 'controllerDeck'; filter?: SearchFilter } // controller's deck cards matching a filter (for play-from-deck)
   | { sel: 'allStages' } // any player's Stage in the stage area
   | { sel: 'controllerStages'; maxCost?: number; exactCost?: number } // controller's Stage in the stage area
+  | { sel: 'controllerActiveStages'; maxCost?: number; exactCost?: number } // active controller Stages in the stage area
   | { sel: 'opponentStages'; maxCost?: number; exactCost?: number } // opponent's Stage in the stage area
   | { sel: 'var'; name: string } // ids bound by a prior chooseTargets op
   // Order-preserving union of member selectors, de-duplicated. Lets "X or Y" targets

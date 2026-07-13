@@ -95,8 +95,37 @@ function eligibleRestCharacters(
   });
 }
 
+function activeUnattachedDonIds(state: GameState, ownerId: string): string[] {
+  const player = state.players[ownerId];
+  if (!player) return [];
+  const attached = new Set<string>();
+  for (const inst of Object.values(state.cardsById)) {
+    if (inst.controllerId !== ownerId) continue;
+    for (const donId of inst.donAttached) attached.add(donId);
+  }
+  return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === false);
+}
+
+function eligibleRestCards(state: GameState, ownerId: string): string[] {
+  const player = state.players[ownerId];
+  if (!player) return [];
+  const ids: string[] = [];
+  const leaderId = player.leaderInstanceId;
+  if (state.cardsById[leaderId]?.orientation === 'active') ids.push(leaderId);
+  ids.push(...player.characterArea.cardIds.filter((id) => state.cardsById[id]?.orientation === 'active'));
+  ids.push(...player.stageArea.cardIds.filter((id) => state.cardsById[id]?.orientation === 'active'));
+  ids.push(...activeUnattachedDonIds(state, ownerId));
+  return ids;
+}
+
 function restCardInState(state: GameState, instanceId: string): GameState {
   const inst = state.cardsById[instanceId];
+  if (inst?.currentZone === 'costArea' && inst.donRested === false) {
+    return {
+      ...state,
+      cardsById: { ...state.cardsById, [instanceId]: { ...inst, donRested: true } },
+    };
+  }
   if (!inst || inst.orientation === null || inst.orientation === 'rested') return state;
   return {
     ...state,
@@ -223,6 +252,9 @@ function replacementCostAvailable(
       filter: mod.action.filter,
     });
     return eligible.length >= mod.action.count;
+  }
+  if (mod.action.kind === 'restCards') {
+    return eligibleRestCards(state, target.ownerId).length >= mod.action.count;
   }
   if (mod.action.kind === 'payAbilityCosts') {
     const donRequired = requiredDonMinusCount(mod.action.costs);
@@ -363,6 +395,19 @@ export function buildKoReplacementPayChoice(
       playerId: target.ownerId,
       kind: 'SELECT_CARDS',
       prompt: `Choose ${mod.action.count} Character${mod.action.count === 1 ? '' : 's'} to rest to avoid the K.O.`,
+      constraints: { min: mod.action.count, max: mod.action.count, candidateInstanceIds: eligible },
+      sourceInstanceId: routing.sourceInstanceId,
+      sourceEffectId: routing.sourceEffectId,
+      resumeState,
+    };
+  }
+  if (mod.action.kind === 'restCards') {
+    const eligible = eligibleRestCards(state, target.ownerId);
+    return {
+      id: choiceId,
+      playerId: target.ownerId,
+      kind: 'SELECT_CARDS',
+      prompt: `Choose ${mod.action.count} card${mod.action.count === 1 ? '' : 's'} to rest to avoid the K.O.`,
       constraints: { min: mod.action.count, max: mod.action.count, candidateInstanceIds: eligible },
       sourceInstanceId: routing.sourceInstanceId,
       sourceEffectId: routing.sourceEffectId,
@@ -599,6 +644,19 @@ export function applyKoReplacementCost(
         visibility: 'public',
       });
     }
+  } else if (mod.action.kind === 'restCards') {
+    const selectedIds = Array.isArray(selection) ? selection : [];
+    for (const id of selectedIds) {
+      working = restCardInState(working, id);
+      logger.push({
+        actorPlayerId: target.ownerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${id} was rested as a K.O. replacement.`,
+        data: { restedInstanceId: id, targetInstanceId, koReplacement: true },
+        relatedCardInstanceIds: [id, targetInstanceId],
+        visibility: 'public',
+      });
+    }
   } else if (mod.action.kind === 'payAbilityCosts') {
     const selectedIds = Array.isArray(selection) ? selection : [];
     const paid = payAbilityCost(working, record.sourceInstanceId, target.ownerId, mod.action.costs, actionId, selectedIds);
@@ -770,6 +828,8 @@ export function koReplacementDescription(mod: ContinuousKoReplacementModifier): 
       return 'Use this Character\'s replacement to avoid the K.O. (rest this Character instead)?';
     case 'restCharacter':
       return `Rest ${mod.action.count} of your Character${mod.action.count === 1 ? '' : 's'} to avoid this K.O.?`;
+    case 'restCards':
+      return `Rest ${mod.action.count} of your card${mod.action.count === 1 ? '' : 's'} to avoid this K.O.?`;
     case 'payAbilityCosts': {
       const donCount = requiredDonMinusCount(mod.action.costs);
       const restDonCount = mod.action.costs

@@ -20,6 +20,7 @@ import { CardImage } from '../CardImage';
 import { ZoneSection } from './ZoneSection';
 import { CardChoiceGallery } from './CardChoiceGallery';
 import { StlCoinCanvas, COIN_FLIP_DURATION_MS } from './StlCoinCanvas';
+import { isDonReturnChoice } from './donChoiceUtils';
 import {
   ChoicePromptActionList,
   ChoicePromptActionRow,
@@ -519,6 +520,14 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
   // (their own search look, or visible target Characters), so we build a
   // CardView for each regardless of zone. Selection is bounded by [min, max].
   if (choice.sourceEffectId === 'ir') {
+    // donMinus ability-cost choice (every candidate is a DON!! card): handled
+    // entirely by the board (useBoardSelection's 'resolvingDonChoice' mode —
+    // hover a Leader/Character to reveal its attached DON!! stack, or tap a
+    // Cost Area chip directly) instead of this generic gallery. DON!! tokens
+    // have no distinguishing art, so a grid of identical chips here wouldn't
+    // tell the player WHICH field DON!! they're picking.
+    if (isDonReturnChoice(state, defs, choice)) return null;
+
     if (choice.kind === 'SELECT_OPTION') {
       const options = choice.constraints.options ?? [];
       return (

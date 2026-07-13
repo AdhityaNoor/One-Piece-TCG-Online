@@ -351,6 +351,10 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return bindings.__eventPlayedCharacter ?? [];
     case 'controllerLeader':
       return [ctx.controllerLeaderId()];
+    case 'controllerActiveLeader': {
+      const leaderId = ctx.controllerLeaderId();
+      return ctx.state().cardsById[leaderId]?.orientation === 'active' ? [leaderId] : [];
+    }
     case 'controllerCharacters': {
       let ids = ctx.controllerCharacterIds();
       if (sel.minCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) >= sel.minCost!);
@@ -551,6 +555,12 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
       return ids;
+    }
+    case 'controllerActiveStages': {
+      let ids = ctx.state().players[ctx.controllerId]?.stageArea.cardIds ?? [];
+      if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
+      return ids.filter((id) => ctx.state().cardsById[id]?.orientation === 'active');
     }
     case 'opponentStages': {
       let ids = ctx.state().players[ctx.opponentId]?.stageArea.cardIds ?? [];
@@ -1309,12 +1319,13 @@ function runOpList(
       const eligible = op.destination === 'deckTopOrBottom' ? looked : searchEligible(looked, op.filter, ctx);
       const remainder = op.remainder ?? 'bottom';
       const max = op.destination === 'deckTopOrBottom' ? looked.length : op.pick;
+      const min = op.destination === 'deckTopOrBottom' ? looked.length : 0;
       ctx.emitChoice({
         id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
         playerId: ctx.controllerId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
-        constraints: { min: 0, max, candidateInstanceIds: eligible, visibleInstanceIds: looked },
+        constraints: { min, max, candidateInstanceIds: eligible, visibleInstanceIds: looked },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
         resumeState: resumeStateForSuspend(coords, i, {
@@ -1918,29 +1929,24 @@ export function resumeProgram(
     const destination = (rs.bindings.__destination?.[0] ?? op.destination) as SearchPickDestination;
     const chosen = rs.bindings.__searchChosen ?? selection;
     if (destination === 'deckTopOrBottom') {
-      const topOrder = rs.bindings.__searchTopOrder ?? selection;
-      if (!rs.bindings.__searchTopOrder) {
-        const topSet = new Set(selection);
-        const rest = looked.filter((id) => !topSet.has(id));
-        if (rest.length > 1) {
-          const bottomOrderChoice: PendingChoice = {
-            id: `${choice.sourceInstanceId}__ir-${rs.abilityIndex}-${rs.opIndex}-bottom-order`,
-            playerId: ctx.controllerId,
-            kind: 'SELECT_CARDS',
-            prompt: 'Choose the order to place the remaining looked cards at the bottom of your deck. First selected is placed first; last selected becomes the bottom card.',
-            constraints: { min: rest.length, max: rest.length, candidateInstanceIds: rest },
-            sourceInstanceId: choice.sourceInstanceId,
-            sourceEffectId: 'ir',
-            resumeState: preserveBranch({ ...rs.bindings, __searchTopOrder: selection }),
-          };
-          ctx.emitChoice(bottomOrderChoice);
-          return ctx.finish();
-        }
-        ctx.searchResolveTopOrBottom(ctx.controllerId, looked, selection, rest);
-      } else {
-        ctx.searchResolveTopOrBottom(ctx.controllerId, looked, topOrder, selection);
+      const ordered = rs.bindings.__searchOrdered ?? selection;
+      if (!rs.bindings.__searchOrdered) {
+        const placementChoice: PendingChoice = {
+          id: `${choice.sourceInstanceId}__ir-${rs.abilityIndex}-${rs.opIndex}-top-or-bottom`,
+          playerId: ctx.controllerId,
+          kind: 'SELECT_OPTION',
+          prompt: 'Place the ordered looked cards on the top or bottom of your deck?',
+          constraints: { min: 1, max: 1, options: [{ label: 'Top of deck' }, { label: 'Bottom of deck' }] },
+          sourceInstanceId: choice.sourceInstanceId,
+          sourceEffectId: 'ir',
+          resumeState: preserveBranch({ ...rs.bindings, __searchOrdered: selection }),
+        };
+        ctx.emitChoice(placementChoice);
+        return ctx.finish();
       }
-      const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: topOrder, movedIds: looked });
+      const placeOnTop = typeof response === 'number' ? response === 0 : true;
+      ctx.searchResolveTopOrBottom(ctx.controllerId, looked, placeOnTop ? ordered : [], placeOnTop ? [] : ordered);
+      const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: ordered, movedIds: looked });
       return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
     }
     if (remainder === 'deckTopOrBottom' && destination === 'hand') {
@@ -1953,41 +1959,36 @@ export function resumeProgram(
           const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: handChosen, movedIds: handChosen });
           return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
         }
-        const topOrderChoice: PendingChoice = {
-          id: `${choice.sourceInstanceId}__ir-${rs.abilityIndex}-${rs.opIndex}-top-order`,
+        const orderChoice: PendingChoice = {
+          id: `${choice.sourceInstanceId}__ir-${rs.abilityIndex}-${rs.opIndex}-remainder-order`,
           playerId: ctx.controllerId,
           kind: 'SELECT_CARDS',
-          prompt: 'Choose cards to return to the top of your deck in selected order; unselected cards will go to the bottom.',
-          constraints: { min: 0, max: restAfterHand.length, candidateInstanceIds: restAfterHand },
+          prompt: 'Choose the order for the remaining looked card(s). You will choose top or bottom next.',
+          constraints: { min: restAfterHand.length, max: restAfterHand.length, candidateInstanceIds: restAfterHand },
           sourceInstanceId: choice.sourceInstanceId,
           sourceEffectId: 'ir',
           resumeState: preserveBranch({ ...rs.bindings, __searchHandChosen: handChosen }),
         };
-        ctx.emitChoice(topOrderChoice);
+        ctx.emitChoice(orderChoice);
         return ctx.finish();
       }
-      const topOrder = rs.bindings.__searchTopOrder ?? selection;
-      if (!rs.bindings.__searchTopOrder) {
-        const topSet = new Set(topOrder);
-        const bottomRest = restAfterHand.filter((id) => !topSet.has(id));
-        if (bottomRest.length > 1) {
-          const bottomOrderChoice: PendingChoice = {
-            id: `${choice.sourceInstanceId}__ir-${rs.abilityIndex}-${rs.opIndex}-bottom-order`,
-            playerId: ctx.controllerId,
-            kind: 'SELECT_CARDS',
-            prompt: 'Choose the order to place the remaining looked cards at the bottom of your deck. First selected is placed first; last selected becomes the bottom card.',
-            constraints: { min: bottomRest.length, max: bottomRest.length, candidateInstanceIds: bottomRest },
-            sourceInstanceId: choice.sourceInstanceId,
-            sourceEffectId: 'ir',
-            resumeState: preserveBranch({ ...rs.bindings, __searchTopOrder: topOrder }),
-          };
-          ctx.emitChoice(bottomOrderChoice);
-          return ctx.finish();
-        }
-        ctx.searchResolveHandWithTopOrBottomRemainder(ctx.controllerId, looked, handChosen, topOrder, bottomRest, reveal);
-      } else {
-        ctx.searchResolveHandWithTopOrBottomRemainder(ctx.controllerId, looked, handChosen, rs.bindings.__searchTopOrder, selection, reveal);
+      const orderedRest = rs.bindings.__searchOrderedRemainder ?? selection;
+      if (!rs.bindings.__searchOrderedRemainder) {
+        const placementChoice: PendingChoice = {
+          id: `${choice.sourceInstanceId}__ir-${rs.abilityIndex}-${rs.opIndex}-remainder-top-or-bottom`,
+          playerId: ctx.controllerId,
+          kind: 'SELECT_OPTION',
+          prompt: 'Place the ordered remaining looked card(s) on the top or bottom of your deck?',
+          constraints: { min: 1, max: 1, options: [{ label: 'Top of deck' }, { label: 'Bottom of deck' }] },
+          sourceInstanceId: choice.sourceInstanceId,
+          sourceEffectId: 'ir',
+          resumeState: preserveBranch({ ...rs.bindings, __searchOrderedRemainder: selection }),
+        };
+        ctx.emitChoice(placementChoice);
+        return ctx.finish();
       }
+      const placeOnTop = typeof response === 'number' ? response === 0 : true;
+      ctx.searchResolveHandWithTopOrBottomRemainder(ctx.controllerId, looked, handChosen, placeOnTop ? orderedRest : [], placeOnTop ? [] : orderedRest, reveal);
       const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: handChosen, movedIds: handChosen });
       return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
     }

@@ -228,17 +228,17 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   end of your opponent's next End Phase.
   { cardNumber: 'OP13-032', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 8 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
-  // OP13-033 — [On K.O.] Rest up to 2 opp Characters (the "or DON!!" option is dropped).
-  { cardNumber: 'OP13-033', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 2 }] } },
+  // OP13-033 — [On K.O.] Rest up to 2 opposing Characters or DON!! cards.
+  { cardNumber: 'OP13-033', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'chooseOne', chooser: 'controller', prompt: 'Choose cards to rest.', options: [{ label: 'characters', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 2 }] }, { label: 'don', functions: [{ fn: 'restOpponentDon', maxTargets: 2 }] }] }] } },
 
   // OP13-034 — [On Play] If Leader {FILM} or {Straw Hat Crew}, set up to 1 DON!! active.
   { cardNumber: 'OP13-034', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'FILM' }, { kind: 'leaderType', type: 'Straw Hat Crew' }] }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
 
 
-  // OP13-035/037 — [End of Your Turn] Set this Character active (the "or 1 DON!!" alternative is dropped).
-  { cardNumber: 'OP13-035', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveSelf' }] } },
+  // OP13-035/037 — [End of Your Turn] Set this Character or up to 1 DON!! active.
+  { cardNumber: 'OP13-035', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'chooseOne', chooser: 'controller', prompt: 'Choose a card to set active.', options: [{ label: 'thisCharacter', functions: [{ fn: 'setActiveSelf' }] }, { label: 'don', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] }] }] } },
 
-  { cardNumber: 'OP13-037', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveSelf' }] } },
+  { cardNumber: 'OP13-037', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'chooseOne', chooser: 'controller', prompt: 'Choose a card to set active.', options: [{ label: 'thisCharacter', functions: [{ fn: 'setActiveSelf' }] }, { label: 'don', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] }] }] } },
 
 
   {
@@ -275,7 +275,7 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-045', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfHand', atMost: 4 }], functions: [{ fn: 'draw', amount: 1 }] } },
 
-  // OP13-046 — PARTIAL: field-removal clause deferred.
+  // OP13-046 — [Double Attack]; [OPT] if K.O.'d or removed by opponent effect, trash Whitebeard Pirates from hand instead.
   {
     cardNumber: 'OP13-046',
     templates: [
@@ -288,6 +288,8 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
             fn: 'registerKoReplacementSelf',
             scope: 'effect',
             oncePerTurn: true,
+            replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+            effectSourceController: 'opponent',
             trashFromHand: { count: 1, filter: { typeIncludes: 'Whitebeard Pirates' } },
             duration: 'permanent',
           }],
@@ -686,8 +688,27 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP13-109 — [Trigger] Draw 2, trash 1. PARTIAL: the turn-Life-face-up replacement is deferred.
-  { cardNumber: 'OP13-109', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+  // OP13-109 — If removed by opponent effect, turn top Life face-up instead. [Trigger] Draw 2, trash 1.
+  {
+    cardNumber: 'OP13-109',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementSelf',
+            scope: 'effect',
+            replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+            effectSourceController: 'opponent',
+            turnTopLifeFace: { faceUp: true },
+            duration: 'permanent',
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+    ],
+  },
 
   // OP13-110 — [Blocker] [On Play] If Leader {Egghead}, play up to 1 Character cost<=5 with a [Trigger] from hand.
   { cardNumber: 'OP13-110', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Egghead' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 5, hasTrigger: true } }] } },

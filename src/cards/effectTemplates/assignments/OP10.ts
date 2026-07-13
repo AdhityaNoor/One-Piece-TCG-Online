@@ -134,8 +134,8 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP10-029 — [On Play] If 2+ rested Characters, set up to 1 rested {ODYSSEY} Character cost<=5 as active.
   { cardNumber: 'OP10-029', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'setActiveControllerCharacter', filter: { typeIncludes: 'ODYSSEY', rested: true, maxCost: 5 } }] } },
 
-  // OP10-030 — [Activate: Main] Set up to 1 DON!! active. PARTIAL: the "cannot set DON!! active via Character effects this turn" restriction is deferred.
-  { cardNumber: 'OP10-030', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
+  // OP10-030 — [Activate: Main] Set up to 1 DON!! active, then block Character-effect DON!! activation this turn.
+  { cardNumber: 'OP10-030', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }, { fn: 'preventControllerCharacterSetActiveDon', duration: 'duringThisTurn' }] } },
 
   // OP10-032 — rest this Character to save another green Character from opponent-effect removal.
   {
@@ -362,8 +362,14 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP10-071 — [On Play] DON!! −1: Play up to 1 {Donquixote Pirates} cost ≤5 from hand. PARTIAL: [On Opponent's Attack] ramp deferred.
   { cardNumber: 'OP10-071', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Donquixote Pirates', maxCost: 5 } }] } },
 
-  // OP10-072 — [End of Your Turn] If 7+ DON!!, set up to 2 DON!! active. PARTIAL: the [On Play] "trash 1 Event → draw 2" is deferred (Event-category hand filter).
-  { cardNumber: 'OP10-072', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfDonFieldCount', atLeast: 7 }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
+  // OP10-072 — [On Play] trash 1 Event → draw 2. [End of Your Turn] If 7+ DON!!, set up to 2 DON!! active.
+  {
+    cardNumber: 'OP10-072',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { category: 'event' }, optional: true }, { fn: 'draw', amount: 2, ifPrevious: 'previousSelectedAny' }] } },
+      { templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfDonFieldCount', atLeast: 7 }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
+    ],
+  },
 
   // OP10-074 — [Once Per Turn] K.O. replacement: rest 2 active DON!! (effect scope only).
   {
@@ -504,11 +510,14 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
 
-  // OP10-097 — [Main] up to 1 {Dressrosa} Character +2000 this turn. [Trigger] Draw 2, trash 1. PARTIAL: the trash-count-gated [Banish] rider is deferred.
+  // OP10-097 — [Main] up to 1 {Dressrosa} Character +2000 this turn; if 10+ trash, it gains [Banish]. [Trigger] Draw 2, trash 1.
   {
     cardNumber: 'OP10-097',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Dressrosa' } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Dressrosa' } }, amount: 2000, duration: 'duringThisTurn', optional: true },
+        { fn: 'addKeyword', target: { ref: 'previous' }, keyword: 'banish', duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny', ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] },
+      ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
     ],
   },
@@ -524,7 +533,7 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP10-100 — PARTIAL: [Blocker] is a printed keyword; [DON!! x1][When Attacking] rest + [Trigger] mapped.
+  // OP10-100 — [Blocker] is card data; [DON!! x1][When Attacking] rest + [Trigger] mapped.
   {
     cardNumber: 'OP10-100',
     templates: [
@@ -661,8 +670,14 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP10-108', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Supernovas', atLeast: 2 }] } }] } },
 
-  // PARTIAL: combined-Life Trigger play deferred.
-  { cardNumber: 'OP10-110', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCostFromOpponentLife: true } }, optional: true }] } },
+  // OP10-110 — [On Play] rest by opponent Life count. [Trigger] If you have 2 or less Life, play this card.
+  {
+    cardNumber: 'OP10-110',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCostFromOpponentLife: true } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   { cardNumber: 'OP10-114', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'selfLifeLessThanOpponent' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 

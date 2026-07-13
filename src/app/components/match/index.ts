@@ -5,6 +5,7 @@ export * from './ZoneSection';
 export * from './BoardCardTile';
 export * from './DonChip';
 export * from './DonStack';
+export * from './AttachedDonHoverStack';
 export * from './CardBackArt';
 export * from './CountBadge';
 export * from './PileStack';

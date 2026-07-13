@@ -4,8 +4,8 @@ import type { ActivateEventMainAction } from '../../action';
 import type { EffectTemplateRegistry } from '../../../effects';
 import { buildBaseRig, putInHand, putDon, putDeckCards, makeEventDef, makeCharacterDef, nextTestId } from '../../../rules/shared/__tests__/testRig';
 
-function activateEventAction(playerId: string, handCardInstanceId: string, donInstanceIds: string[]): ActivateEventMainAction {
-  return { type: 'ACTIVATE_EVENT_MAIN', actionId: nextTestId('action'), playerId, handCardInstanceId, donInstanceIds };
+function activateEventAction(playerId: string, handCardInstanceId: string, donInstanceIds: string[], abilityCostDonInstanceIds: string[] = []): ActivateEventMainAction {
+  return { type: 'ACTIVATE_EVENT_MAIN', actionId: nextTestId('action'), playerId, handCardInstanceId, donInstanceIds, abilityCostDonInstanceIds };
 }
 
 function mainRegistry(cardDefinitionId: string): EffectTemplateRegistry {
@@ -67,6 +67,25 @@ describe('validateActivateEventMain', () => {
     const result = validateActivateEventMain(withDon.state, activateEventAction('p1', instanceId, donIds), withDon.defs, mainRegistry(defId));
     expect(result.legal).toBe(true);
   });
+
+  it('validates structured DON!! -N [Main] ability costs separately from the Event play cost', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const { rig, instanceId } = putInHand(base, 'p1', makeEventDef({ cardDefinitionId: 'COSTED-MAIN', baseCost: 1 }));
+    const { rig: withDon, donIds } = putDon(rig, 'p1', 2);
+    const registry: EffectTemplateRegistry = {
+      'COSTED-MAIN': {
+        cardNumber: 'COSTED-MAIN',
+        abilities: [{ timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], ops: [{ op: 'draw', amount: 1 }] }],
+      },
+    };
+
+    const missingAbilityCost = validateActivateEventMain(withDon.state, activateEventAction('p1', instanceId, [donIds[0]]), withDon.defs, registry);
+    expect(missingAbilityCost.legal).toBe(false);
+    expect(missingAbilityCost.reasons.join(' ')).toContain('Cost requires selecting 1 DON!! to return, but 0 were supplied.');
+
+    const result = validateActivateEventMain(withDon.state, activateEventAction('p1', instanceId, [donIds[0]], [donIds[1]]), withDon.defs, registry);
+    expect(result.legal).toBe(true);
+  });
 });
 
 describe('executeActivateEventMain', () => {
@@ -94,6 +113,28 @@ describe('executeActivateEventMain', () => {
       sourceCardNumber: 'TEST-001',
       effectText: '[Main] Draw 1 card.',
     });
+    expect(result.pendingChoices).toHaveLength(0);
+  });
+
+  it('returns selected DON!! for a structured DON!! -N [Main] ability cost', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const def = makeEventDef({ cardDefinitionId: 'COSTED-MAIN-EXEC', baseCost: 1, name: 'Costed Main Event', text: '[Main] DON!! -1: Draw 1 card.' });
+    const { rig, instanceId: handInstanceId } = putInHand(base, 'p1', def);
+    const { rig: withDeck } = putDeckCards(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'DRAWN-COSTED' }), 1);
+    const { rig: withDon, donIds } = putDon(withDeck, 'p1', 2);
+    const registry: EffectTemplateRegistry = {
+      [def.cardDefinitionId]: {
+        cardNumber: def.cardDefinitionId,
+        abilities: [{ timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], ops: [{ op: 'draw', amount: 1 }] }],
+      },
+    };
+
+    const result = executeActivateEventMain(withDon.state, activateEventAction('p1', handInstanceId, [donIds[0]], [donIds[1]]), withDon.defs, registry);
+
+    expect(result.state.cardsById[donIds[0]].donRested).toBe(true);
+    expect(result.state.players.p1.costArea.cardIds).not.toContain(donIds[1]);
+    expect(result.state.players.p1.donDeck.cardIds).toContain(donIds[1]);
+    expect(result.state.players.p1.hand.cardIds).toHaveLength(1);
     expect(result.pendingChoices).toHaveLength(0);
   });
 });

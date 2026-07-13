@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ContinuousEffectRecord, GameState } from '../../../state/game';
 import { findKoReplacementRecord, applyKoReplacementCost } from '../koAttempt';
-import { buildBaseRig, makeCharacterDef, makeEventDef, makeStageDef, putCharacterInPlay, putDon, putInHand, putLifeCards } from './testRig';
+import { buildBaseRig, makeCharacterDef, makeEventDef, makeStageDef, putCharacterInPlay, putDon, putInHand, putLifeCards, putStageInPlay } from './testRig';
 
 describe('findKoReplacementRecord', () => {
   it('finds a trash-from-hand replacement when an eligible Event is in hand', () => {
@@ -212,6 +212,36 @@ describe('findKoReplacementRecord', () => {
     const result = applyKoReplacementCost(state, ally.instanceId, record, [payer.instanceId], rig.defs, null);
     expect(result.state.cardsById[ally.instanceId].currentZone).toBe('characterArea');
     expect(result.state.cardsById[payer.instanceId].orientation).toBe('rested');
+  });
+
+  it('applyKoReplacementCost rests chosen cards for restCards action', () => {
+    const sourceDef = makeCharacterDef({ cardNumber: 'OP16-033' });
+    const stageDef = makeStageDef({ cardNumber: 'REST-STAGE' });
+    let rig = buildBaseRig();
+    const source = putCharacterInPlay(rig, 'p1', sourceDef);
+    rig = { ...source.rig, defs: { ...source.rig.defs, [sourceDef.cardDefinitionId]: sourceDef, [stageDef.cardDefinitionId]: stageDef } };
+    const stage = putStageInPlay(rig, 'p1', stageDef);
+    rig = stage.rig;
+    const don = putDon(rig, 'p1', 1);
+    rig = don.rig;
+    const record: ContinuousEffectRecord = {
+      id: 'kr-rest-cards',
+      sourceInstanceId: source.instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'rest cards',
+      koReplacementModifier: {
+        appliesToInstanceId: source.instanceId,
+        scope: 'any',
+        action: { kind: 'restCards', count: 2 },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    expect(findKoReplacementRecord(state, source.instanceId, 'effect', rig.defs)).not.toBeNull();
+    const result = applyKoReplacementCost(state, source.instanceId, record, [stage.instanceId, don.donIds[0]], rig.defs, null);
+    expect(result.state.cardsById[source.instanceId].currentZone).toBe('characterArea');
+    expect(result.state.cardsById[stage.instanceId].orientation).toBe('rested');
+    expect(result.state.cardsById[don.donIds[0]].donRested).toBe(true);
   });
 
   it('finds returnDon replacement when field DON is available', () => {

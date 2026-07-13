@@ -151,12 +151,12 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-013', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'untilStartOfNextTurn' }] } }, { templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } }] },
 
 
-  // PARTIAL: "4000 power or less" [Blocker] filter dropped.
-  { cardNumber: 'OP09-014', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn' }] } },
+  // OP09-014 — [On Play] Characters with 4000 power or less cannot activate [Blocker] this turn.
+  { cardNumber: 'OP09-014', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', blockerPowerAtMost: 4000 }] } },
 
 
-  // PARTIAL: {ODYSSEY}/{Straw Hat Crew} type filter on KO immunity dropped.
-  { cardNumber: 'OP09-033', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'koImmunityControllerCharactersAll', scope: 'effect', duration: 'untilStartOfNextTurn' }] } },
+  // OP09-033 — if you have 2+ rested Characters, your {ODYSSEY}/{Straw Hat Crew} Characters cannot be K.O.'d by effects until your next turn.
+  { cardNumber: 'OP09-033', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'koImmunityAuraControllerCharacters', scope: 'effect', duration: 'untilStartOfNextTurn', anyOfTypes: ['ODYSSEY', 'Straw Hat Crew'] }] } },
 
 
   { cardNumber: 'OP09-036', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'chooseOne', chooser: 'controller', prompt: 'Choose one', options: [{ label: 'restDon', functions: [{ fn: 'restOpponentDon', maxTargets: 1 }] }, { label: 'restChar', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] }] }] } },
@@ -180,8 +180,8 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-117', templates: [{ templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'hand', filter: { hasTrigger: true }, remainder: 'bottom' }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } }] },
 
 
-  // PARTIAL: "5000+ base power" gate → opponentCharacterCount≥2 proxy. [Blocker] is printed.
-  { cardNumber: 'OP09-005', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentCharacterCount', atLeast: 2 }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+  // OP09-005 - [On Play] if opponent has 2+ Characters with 5000+ base power, draw 2 and trash 1. [Blocker] is printed.
+  { cardNumber: 'OP09-005', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentCharacterBasePowerCount', power: 5000, atLeast: 2 }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
 
 
   // PARTIAL: Leader 7000+ power gate dropped.
@@ -242,8 +242,14 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP09-039 — [Trigger] K.O. up to 1 opp rested Character cost ≤4. PARTIAL: the [Counter] buff needs a rested-Character-count gate (deferred).
-  { cardNumber: 'OP09-039', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 4 } }, optional: true }] } },
+  // OP09-039 - [Counter] ODYSSEY + 2 rested Characters: +2000 this turn. [Trigger] K.O. rested cost <=4.
+  {
+    cardNumber: 'OP09-039',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderType', type: 'ODYSSEY' }, { kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 4 } }, optional: true }] } },
+    ],
+  },
 
   // OP09-040 — [Main] If 2+ rested Characters, K.O. opp cost<=4. [Trigger] Rest opp cost<=4.
   {
@@ -635,8 +641,14 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-111', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Egghead' }, { kind: 'opponentHand', atLeast: 6 }], functions: [{ fn: 'trashFromOpponentHandChosenByOpponent', count: 2 }] } },
 
 
-  // OP09-112 — [On Play] If ≤2 Life, draw 1. PARTIAL: the [Trigger] needs a combined-Life gate (deferred).
-  { cardNumber: 'OP09-112', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'draw', amount: 1 }] } },
+  // OP09-112 - [On Play] If <=2 Life, draw 1. [Trigger] If Leader Revolutionary Army and combined Life <=5, play this.
+  {
+    cardNumber: 'OP09-112',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }, { kind: 'combinedLifeTotal', atMost: 5 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   // OP09-114 — [On Play]/[Trigger] if combined Life ≤5: K.O. opp char ≤2000 power / play this card.
   {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { executeAction, validateAction } from '../../../engine/actions';
+import { runTimings } from '../../../engine/effects/interpreter';
 import { makeCharacterDef, makeEventDef, buildBaseRig, putCharacterInPlay, putDeckCards, putDon, putInHand, putLifeCards, nextTestId } from '../../../engine/rules/shared/__tests__/testRig';
 import { computeCurrentCost } from '../../../engine/rules/shared';
 import { buildRegistryFromAssignments } from '../assembler';
@@ -606,41 +607,100 @@ describe('curated effect template integration with match engine dispatch', () =>
       rig.defs,
       registry,
     );
-    const topChoice = playResult.state.pendingChoices[0];
-    expect(topChoice).toMatchObject({
+    const orderChoice = playResult.state.pendingChoices[0];
+    expect(orderChoice.prompt).toContain('choose the order');
+    expect(orderChoice).toMatchObject({
       sourceEffectId: 'ir',
       constraints: {
-        min: 0,
+        min: 3,
         max: 3,
         candidateInstanceIds: [firstId, secondId, thirdId],
         visibleInstanceIds: [firstId, secondId, thirdId],
       },
     });
 
-    const afterTopChoice = executeAction(
+    const afterOrderChoice = executeAction(
       playResult.state,
-      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: topChoice.id, response: [secondId] },
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: orderChoice.id, response: [secondId, thirdId, firstId] },
       rig.defs,
       registry,
     );
-    const bottomChoice = afterTopChoice.state.pendingChoices[0];
-    expect(bottomChoice).toMatchObject({
+    const placementChoice = afterOrderChoice.state.pendingChoices[0];
+    expect(placementChoice.prompt).toContain('top or bottom');
+    expect(placementChoice).toMatchObject({
       sourceEffectId: 'ir',
-      constraints: { min: 2, max: 2, candidateInstanceIds: [firstId, thirdId] },
+      kind: 'SELECT_OPTION',
+      constraints: { options: [{ label: 'Top of deck' }, { label: 'Bottom of deck' }] },
     });
 
-    const afterBottomChoice = executeAction(
-      afterTopChoice.state,
-      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: bottomChoice.id, response: [thirdId, firstId] },
+    const afterPlacementChoice = executeAction(
+      afterOrderChoice.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: placementChoice.id, response: 1 },
       rig.defs,
       registry,
     );
 
-    expect(afterBottomChoice.state.pendingChoices).toEqual([]);
-    expect(afterBottomChoice.state.players.p1.deck.cardIds).toEqual([secondId, fourthId, thirdId, firstId]);
-    expect(afterBottomChoice.state.players.p1.hand.cardIds).not.toContain(firstId);
-    expect(afterBottomChoice.state.players.p1.hand.cardIds).not.toContain(secondId);
-    expect(afterBottomChoice.state.players.p1.hand.cardIds).not.toContain(thirdId);
+    expect(afterPlacementChoice.state.pendingChoices).toEqual([]);
+    expect(afterPlacementChoice.state.players.p1.deck.cardIds).toEqual([fourthId, secondId, thirdId, firstId]);
+    expect(afterPlacementChoice.state.players.p1.hand.cardIds).not.toContain(firstId);
+    expect(afterPlacementChoice.state.players.p1.hand.cardIds).not.toContain(secondId);
+    expect(afterPlacementChoice.state.players.p1.hand.cardIds).not.toContain(thirdId);
+  });
+
+  it('prompts for top or bottom placement after ordering looked cards', () => {
+    const source = makeCharacterDef({
+      cardDefinitionId: 'TEST-TOP-BOTTOM-ONE-REMAINDER',
+      cardNumber: 'TEST-TOP-BOTTOM-ONE-REMAINDER',
+      name: 'Top Bottom Source',
+      category: 'character',
+      baseCost: 0,
+    });
+    const first = makeCharacterDef({ cardDefinitionId: 'TEST-TOP-BOTTOM-FIRST', cardNumber: 'TEST-TOP-BOTTOM-FIRST', name: 'First' });
+    const second = makeCharacterDef({ cardDefinitionId: 'TEST-TOP-BOTTOM-SECOND', cardNumber: 'TEST-TOP-BOTTOM-SECOND', name: 'Second' });
+    const third = makeCharacterDef({ cardDefinitionId: 'TEST-TOP-BOTTOM-THIRD', cardNumber: 'TEST-TOP-BOTTOM-THIRD', name: 'Third' });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let sourceId: string;
+    let firstId: string;
+    let secondId: string;
+    let thirdId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', source));
+    ({ rig, deckIds: [firstId] } = putDeckCards(rig, 'p1', first, 1));
+    ({ rig, deckIds: [secondId] } = putDeckCards(rig, 'p1', second, 1));
+    ({ rig, deckIds: [thirdId] } = putDeckCards(rig, 'p1', third, 1));
+
+    const registry = buildRegistryFromAssignments([{
+      cardNumber: source.cardDefinitionId,
+      templateId: 'ability',
+      params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 2, pick: 2, reveal: false, destination: 'deckTopOrBottom' }] },
+    }]);
+
+    const fired = runTimings(registry[source.cardDefinitionId], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+    const orderChoice = fired.state.pendingChoices[0];
+    expect(orderChoice.prompt).toContain('choose the order');
+
+    const afterOrder = executeAction(
+      fired.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: orderChoice.id, response: [secondId, firstId] },
+      rig.defs,
+      registry,
+    );
+    const placementChoice = afterOrder.state.pendingChoices[0];
+    expect(placementChoice).toMatchObject({
+      sourceEffectId: 'ir',
+      kind: 'SELECT_OPTION',
+      constraints: { options: [{ label: 'Top of deck' }, { label: 'Bottom of deck' }] },
+    });
+
+    const resolved = executeAction(
+      afterOrder.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: placementChoice.id, response: 1 },
+      rig.defs,
+      registry,
+    );
+
+    expect(resolved.state.pendingChoices).toEqual([]);
+    expect(resolved.state.players.p1.deck.cardIds).toEqual([thirdId, secondId, firstId]);
   });
 
   it('wires ST06-002 optional trash from hand into exact-cost K.O.', () => {

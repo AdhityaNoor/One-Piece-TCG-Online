@@ -67,10 +67,16 @@ describe('family: searchTopDeck hand + deckTopOrBottom remainder', () => {
     expect(handChoice.constraints.candidateInstanceIds).toEqual([seeded.deckIds[1]]);
 
     const afterHand = resumeProgram(registry['SYN-SRC'], fired.state, handChoice, [seeded.deckIds[1]], rig.defs, null, registry);
-    const topChoice = afterHand.state.pendingChoices[0];
-    expect(topChoice.constraints.candidateInstanceIds).toEqual([seeded.deckIds[0]]);
+    const orderChoice = afterHand.state.pendingChoices[0];
+    expect(orderChoice.prompt).toContain('Choose the order');
+    expect(orderChoice.constraints.candidateInstanceIds).toEqual([seeded.deckIds[0]]);
 
-    const resolved = resumeProgram(registry['SYN-SRC'], afterHand.state, topChoice, [], rig.defs, null, registry).state;
+    const afterOrder = resumeProgram(registry['SYN-SRC'], afterHand.state, orderChoice, [seeded.deckIds[0]], rig.defs, null, registry);
+    const placementChoice = afterOrder.state.pendingChoices[0];
+    expect(placementChoice.prompt).toContain('top or bottom');
+    expect(placementChoice).toMatchObject({ kind: 'SELECT_OPTION', constraints: { options: [{ label: 'Top of deck' }, { label: 'Bottom of deck' }] } });
+
+    const resolved = resumeProgram(registry['SYN-SRC'], afterOrder.state, placementChoice, 1, rig.defs, null, registry).state;
     expect(resolved.players.p1.hand.cardIds).toContain(seeded.deckIds[1]);
     expect(resolved.players.p1.deck.cardIds).toEqual([seeded.deckIds[0]]);
     expect(resolved.cardsById[seeded.deckIds[0]].currentZone).toBe('deck');

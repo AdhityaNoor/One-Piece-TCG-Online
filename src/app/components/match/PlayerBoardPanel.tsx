@@ -42,8 +42,9 @@
  * piece of local-only UI state this component owns — opening/closing it
  * never touches game state, exactly like onCardZoom.
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { AttachedDonHoverStack } from './AttachedDonHoverStack';
 import { BoardCardTile } from './BoardCardTile';
 import { CardBackArt } from './CardBackArt';
 import { CardImage } from '../CardImage';
@@ -75,7 +76,7 @@ export interface PlayerBoardPanelProps {
   battlePowerInstanceIds?: Set<string>;
   /** Passed down to PileStack — hides ghost layers while board is active. */
   boardFocused?: boolean;
-  onCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea', card: CardView) => void;
+  onCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'attachedDon', card: CardView) => void;
   onCardAttack?: (card: CardView) => void;
   onAttachedDonLabelTap?: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
@@ -131,12 +132,23 @@ function donSelectable(mode: BoardSelectionMode, isOwn: boolean, card: CardView)
   if (mode.kind === 'payingActivateEffectCost' || mode.kind === 'payingOnOppAttackCost') {
     return true;
   }
+  if (mode.kind === 'payingEventMainCost') return mode.candidateInstanceIds.includes(card.instanceId);
+  if (mode.kind === 'payingCounterEventCost') return mode.candidateInstanceIds.includes(card.instanceId);
+  // donMinus pending choice: only the choice's own candidate DON!! are
+  // pickable — candidateInstanceIds already encodes activeOnly (see
+  // interpreter.ts's suspendOrPayAbilityCost / donMinusCandidateIds), so a
+  // rested Cost Area DON!! simply won't appear here when the cost requires
+  // active DON!! specifically.
+  if (mode.kind === 'resolvingDonChoice') return mode.candidateInstanceIds.includes(card.instanceId);
   return false;
 }
 
 function selectedDonInstanceIds(mode: BoardSelectionMode): Set<string> {
   if (mode.kind === 'payingActivateEffectCost') return new Set(mode.selectedDonIds);
   if (mode.kind === 'payingOnOppAttackCost') return new Set(mode.selectedDonIds);
+  if (mode.kind === 'payingEventMainCost') return new Set(mode.selectedDonIds);
+  if (mode.kind === 'payingCounterEventCost') return new Set(mode.selectedDonIds);
+  if (mode.kind === 'resolvingDonChoice') return new Set(mode.selectedDonIds);
   return new Set();
 }
 
@@ -173,6 +185,44 @@ const LIFE_COLUMN_TRACK = cqh(LIFE_COLUMN_TRACK_PX);
 // card — it's a sealed pile a player barely touches, so it doesn't need to
 // read at full card size the way Active/Rested DON!! chips now do.
 const DON_DECK_CARD_WIDTH = cqh(FIELD_CARD_WIDTH_PX * 0.8);
+
+/**
+ * Thin pass-through wrapper around a Leader/Character BoardCardTile that
+ * registers its own real DOM node (via registerEl) so PlayerBoardPanel can
+ * get an accurate getBoundingClientRect() for anchoring AttachedDonHoverStack
+ * — see registerCardEl/revealAttachedDonStack above. Same box-sizing
+ * classes BoardCardTile's own root already uses in this flex-row context
+ * (h-full so it fills the row's height, flex-shrink-0 so it doesn't get
+ * squeezed), so inserting it changes nothing visually; it only adds one
+ * more DOM node whose rect we can read directly instead of searching the
+ * document for it.
+ */
+function HoverableFieldCard({
+  instanceId,
+  registerEl,
+  active,
+  onEnter,
+  onLeave,
+  children,
+}: {
+  instanceId: string;
+  registerEl: (instanceId: string, el: HTMLDivElement | null) => void;
+  active: boolean;
+  onEnter: () => void;
+  onLeave: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      ref={(el) => registerEl(instanceId, el)}
+      className="h-full flex-shrink-0"
+      onMouseEnter={active ? onEnter : undefined}
+      onMouseLeave={active ? onLeave : undefined}
+    >
+      {children}
+    </div>
+  );
+}
 
 function EmptySlot({ label }: { size: 'leader' | 'board'; label: string }) {
   return (
@@ -333,30 +383,118 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   const selectedDon = selectedDonInstanceIds(mode);
   const [trashGalleryOpen, setTrashGalleryOpen] = useState(false);
   const attachedDonSelectable = (card: CardView): boolean =>
-    isOwn && (mode.kind === 'payingActivateEffectCost' || mode.kind === 'payingOnOppAttackCost') && card.donAttachedCount > 0;
+    isOwn && (mode.kind === 'payingActivateEffectCost' || mode.kind === 'payingOnOppAttackCost' || mode.kind === 'payingEventMainCost' || mode.kind === 'payingCounterEventCost' || mode.kind === 'resolvingDonChoice') && card.donAttachedCount > 0;
   const selectedAttachedDonCount = (card: CardView): number =>
     card.donAttachedIds.filter((id) => selectedDon.has(id)).length;
 
+  // Attached DON!! hover stack (see AttachedDonHoverStack.tsx doc comment):
+  // replaces the old "tap the DON!! x N badge to bulk-select" flow with
+  // per-DON!! chip selection, revealed by hovering the owning Leader/
+  // Character (desktop) or tapping its badge (touch — no hover to fire).
+  // Purely local UI state; never touches GameState, same as trashGalleryOpen
+  // above and onCardZoom throughout this file.
+  const [donStackCard, setDonStackCard] = useState<CardView | null>(null);
+  const [donStackAnchor, setDonStackAnchor] = useState<{ x: number; y: number } | null>(null);
+  // instanceId -> CardView for every DON!! this player owns, attached or
+  // not — board.costArea already includes attached DON!! (attachment is
+  // layered on top via CardInstance.donAttached, not a separate zone; see
+  // zoneView.ts), so this is a plain lookup, not a second projection.
+  const donCardById = new Map(board.costArea.map((don) => [don.instanceId, don]));
+  // Real DOM nodes for every Leader/Character card this panel renders,
+  // registered by HoverableFieldCard's ref callback below. Looking these up
+  // directly (instead of a global document.querySelector by
+  // data-card-instance-id) sidesteps any chance of a stale/duplicate DOM
+  // match and keeps the anchor calculation working even if this panel is
+  // portal-nested or re-parented later.
+  const cardElRefs = useRef(new Map<string, HTMLDivElement>());
+  function registerCardEl(instanceId: string, el: HTMLDivElement | null): void {
+    if (el) cardElRefs.current.set(instanceId, el);
+    else cardElRefs.current.delete(instanceId);
+  }
+  // The hover stack renders into a portal a few px below the card, so the
+  // pointer has to cross a small physical gap to reach it — without a grace
+  // window, leaving the card's own hitbox (even briefly, mid-transit toward
+  // the stack) would fire hideAttachedDonStack and the stack would vanish
+  // out from under the cursor before the click lands. Cleared by both
+  // revealAttachedDonStack (re-entering the card) and the stack's own
+  // onMouseEnter (successfully reaching it).
+  const donStackCloseTimerRef = useRef<number | null>(null);
+
+  function clearDonStackCloseTimer(): void {
+    if (donStackCloseTimerRef.current !== null) {
+      window.clearTimeout(donStackCloseTimerRef.current);
+      donStackCloseTimerRef.current = null;
+    }
+  }
+  function revealAttachedDonStack(card: CardView): void {
+    clearDonStackCloseTimer();
+    const portalEl = document.getElementById('board-overlay-root');
+    const cardEl = cardElRefs.current.get(card.instanceId);
+    if (!portalEl || !cardEl) return;
+    const pr = portalEl.getBoundingClientRect();
+    const cr = cardEl.getBoundingClientRect();
+    setDonStackAnchor({ x: cr.left + cr.width / 2 - pr.left, y: cr.bottom - pr.top });
+    setDonStackCard(card);
+  }
+  function hideAttachedDonStack(): void {
+    clearDonStackCloseTimer();
+    donStackCloseTimerRef.current = window.setTimeout(() => {
+      setDonStackCard(null);
+      setDonStackAnchor(null);
+      donStackCloseTimerRef.current = null;
+    }, 160);
+  }
+  function toggleAttachedDonStack(card: CardView): void {
+    if (donStackCard?.instanceId === card.instanceId) {
+      clearDonStackCloseTimer();
+      setDonStackCard(null);
+      setDonStackAnchor(null);
+    } else {
+      revealAttachedDonStack(card);
+    }
+  }
+  // Safety net: if the mode that made this card's DON!! selectable ends
+  // while the stack is still open (e.g. a donMinus choice auto-submits the
+  // instant its last DON!! is picked — see useBoardSelection.ts's
+  // toggleDonChoiceCard), close the now-stale stack instead of leaving it
+  // hovering over the board with nothing left to select.
+  useEffect(() => {
+    if (donStackCard && !attachedDonSelectable(donStackCard)) {
+      clearDonStackCloseTimer();
+      setDonStackCard(null);
+      setDonStackAnchor(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode.kind]);
+
   const leaderSlot = leaderCard ? (
-    <BoardCardTile
-      card={leaderCard}
-      size="field"
-      selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'leaderArea', leaderCard, canActivate(leaderCard), canOnOppAttack(leaderCard))}
-      selected={attackerSelected.has(leaderCard.instanceId)}
-      activatable={mode.kind === 'idle' && canActivate(leaderCard)}
-      attackable={mode.kind === 'idle' && canAttack(leaderCard)}
-      showBattlePower={battlePowerInstanceIds?.has(leaderCard.instanceId)}
-      attachedDonSelectable={attachedDonSelectable(leaderCard)}
-      attachedDonSelectedCount={selectedAttachedDonCount(leaderCard)}
-      onActivate={mode.kind === 'idle' && canActivate(leaderCard) ? () => onCardTap('leaderArea', leaderCard) : undefined}
-      onAttack={mode.kind === 'idle' && canAttack(leaderCard) ? () => onCardAttack?.(leaderCard) : undefined}
-      onAttachedDonSelect={attachedDonSelectable(leaderCard) ? () => onAttachedDonLabelTap?.(leaderCard) : undefined}
-      onSelect={() => onCardTap('leaderArea', leaderCard)}
-      onZoom={() => onCardZoom(leaderCard)}
-      onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(leaderCard) : undefined}
-      onHoverEnd={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(null) : undefined}
-      giveDonControls={giveDonControlsFor(leaderCard)}
-    />
+    <HoverableFieldCard
+      instanceId={leaderCard.instanceId}
+      registerEl={registerCardEl}
+      active={attachedDonSelectable(leaderCard)}
+      onEnter={() => revealAttachedDonStack(leaderCard)}
+      onLeave={hideAttachedDonStack}
+    >
+      <BoardCardTile
+        card={leaderCard}
+        size="field"
+        selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'leaderArea', leaderCard, canActivate(leaderCard), canOnOppAttack(leaderCard))}
+        selected={attackerSelected.has(leaderCard.instanceId)}
+        activatable={mode.kind === 'idle' && canActivate(leaderCard)}
+        attackable={mode.kind === 'idle' && canAttack(leaderCard)}
+        showBattlePower={battlePowerInstanceIds?.has(leaderCard.instanceId)}
+        attachedDonSelectable={attachedDonSelectable(leaderCard)}
+        attachedDonSelectedCount={selectedAttachedDonCount(leaderCard)}
+        onActivate={mode.kind === 'idle' && canActivate(leaderCard) ? () => onCardTap('leaderArea', leaderCard) : undefined}
+        onAttack={mode.kind === 'idle' && canAttack(leaderCard) ? () => onCardAttack?.(leaderCard) : undefined}
+        onAttachedDonSelect={attachedDonSelectable(leaderCard) ? () => toggleAttachedDonStack(leaderCard) : undefined}
+        onSelect={() => onCardTap('leaderArea', leaderCard)}
+        onZoom={() => onCardZoom(leaderCard)}
+        onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(leaderCard) : undefined}
+        onHoverEnd={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(null) : undefined}
+        giveDonControls={giveDonControlsFor(leaderCard)}
+      />
+    </HoverableFieldCard>
   ) : (
     <EmptySlot size="leader" label="Leader" />
   );
@@ -405,26 +543,34 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
         data-board-player={board.playerId}
       >
         {board.characterArea.map((card) => (
-          <BoardCardTile
+          <HoverableFieldCard
             key={card.instanceId}
-            card={card}
-            size="field"
-            selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'characterArea', card, canActivate(card), canOnOppAttack(card))}
-            selected={attackerSelected.has(card.instanceId)}
-            activatable={mode.kind === 'idle' && canActivate(card)}
-            attackable={mode.kind === 'idle' && canAttack(card)}
-            showBattlePower={battlePowerInstanceIds?.has(card.instanceId)}
-            attachedDonSelectable={attachedDonSelectable(card)}
-            attachedDonSelectedCount={selectedAttachedDonCount(card)}
-            onActivate={mode.kind === 'idle' && canActivate(card) ? () => onCardTap('characterArea', card) : undefined}
-            onAttack={mode.kind === 'idle' && canAttack(card) ? () => onCardAttack?.(card) : undefined}
-            onAttachedDonSelect={attachedDonSelectable(card) ? () => onAttachedDonLabelTap?.(card) : undefined}
-            onSelect={() => onCardTap('characterArea', card)}
-            onZoom={() => onCardZoom(card)}
-            onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(card) : undefined}
-            onHoverEnd={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(null) : undefined}
-            giveDonControls={giveDonControlsFor(card)}
-          />
+            instanceId={card.instanceId}
+            registerEl={registerCardEl}
+            active={attachedDonSelectable(card)}
+            onEnter={() => revealAttachedDonStack(card)}
+            onLeave={hideAttachedDonStack}
+          >
+            <BoardCardTile
+              card={card}
+              size="field"
+              selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'characterArea', card, canActivate(card), canOnOppAttack(card))}
+              selected={attackerSelected.has(card.instanceId)}
+              activatable={mode.kind === 'idle' && canActivate(card)}
+              attackable={mode.kind === 'idle' && canAttack(card)}
+              showBattlePower={battlePowerInstanceIds?.has(card.instanceId)}
+              attachedDonSelectable={attachedDonSelectable(card)}
+              attachedDonSelectedCount={selectedAttachedDonCount(card)}
+              onActivate={mode.kind === 'idle' && canActivate(card) ? () => onCardTap('characterArea', card) : undefined}
+              onAttack={mode.kind === 'idle' && canAttack(card) ? () => onCardAttack?.(card) : undefined}
+              onAttachedDonSelect={attachedDonSelectable(card) ? () => toggleAttachedDonStack(card) : undefined}
+              onSelect={() => onCardTap('characterArea', card)}
+              onZoom={() => onCardZoom(card)}
+              onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(card) : undefined}
+              onHoverEnd={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(null) : undefined}
+              giveDonControls={giveDonControlsFor(card)}
+            />
+          </HoverableFieldCard>
         ))}
         {board.characterArea.length === 0 && <span className="font-display text-xl font-black uppercase tracking-[0.08em] text-white/20">Character Area</span>}
       </div>
@@ -606,6 +752,15 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
         playerId={board.playerId}
         cards={board.trash}
         onCardZoom={onCardZoom}
+      />
+      <AttachedDonHoverStack
+        anchor={donStackAnchor}
+        cards={(donStackCard?.donAttachedIds ?? []).map((id) => donCardById.get(id)).filter((don): don is CardView => !!don)}
+        selectable={(don) => donSelectable(mode, isOwn, don)}
+        selectedIds={selectedDon}
+        onSelect={(don) => onCardTap('attachedDon', don)}
+        onMouseEnter={clearDonStackCloseTimer}
+        onMouseLeave={hideAttachedDonStack}
       />
     </div>
   );

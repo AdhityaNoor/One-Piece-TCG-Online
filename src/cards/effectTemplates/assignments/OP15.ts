@@ -235,7 +235,7 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'OP15-021',
     templates: [
-      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'selfTrashMatching', filter: { category: 'event' }, atLeast: 4 }] }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] }] } },
       { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
       { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
     ],
@@ -345,7 +345,6 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-035 (character) Laboon —
   //   If your Character with 7000 base power or less would be removed from the field by your opponent's
   //   effect, you may rest 2 of your cards instead.
-  // PARTIAL: "rest 2 of your cards" → restDon proxy; "7000 base power or less" target filter dropped.
   {
     cardNumber: 'OP15-035',
     templateId: 'ability',
@@ -354,7 +353,10 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [{
         fn: 'registerKoReplacementAura',
         scope: 'effect',
-        restDon: { count: 2 },
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+        effectSourceController: 'opponent',
+        targetCondition: { maxBasePower: 7000 },
+        restCards: { count: 2 },
         duration: 'permanent',
       }],
     },

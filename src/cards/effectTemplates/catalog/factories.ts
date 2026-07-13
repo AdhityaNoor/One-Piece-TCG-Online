@@ -19,6 +19,7 @@ function koReplacementAction(f: {
   returnSourceToHand?: true;
   restSource?: true;
   restCharacter?: true;
+  restCards?: { count?: number };
   restCharacterFilter?: { minCost?: number; excludeSourceName?: boolean };
   bottomDeckCharacter?: true;
   trashSelfAndDraw?: { amount: number };
@@ -40,6 +41,7 @@ function koReplacementAction(f: {
       ...(f.restCharacterFilter ? { filter: f.restCharacterFilter } : {}),
     };
   }
+  if (f.restCards) return { kind: 'restCards', count: f.restCards.count ?? 1 };
   if (f.bottomDeckCharacter) return { kind: 'bottomDeckCharacter', count: 1 };
   if (f.trashSelfAndDraw) return { kind: 'trashSelfAndDraw', drawAmount: f.trashSelfAndDraw.amount };
   if (f.trashTrashToDeckBottom) return { kind: 'trashTrashToDeckBottom', count: f.trashTrashToDeckBottom.count };
@@ -805,7 +807,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           ...(f.rested ? { rested: true } : {}),
           prompt:
             f.destination === 'deckTopOrBottom'
-              ? `Look at the top ${f.look}: choose cards to return to the top of your deck in selected order; the rest go to the bottom.`
+              ? `Look at the top ${f.look}: choose the order for the looked card${f.look === 1 ? '' : 's'}. You will choose top or bottom next.`
               : f.destination === 'play'
                 ? `Look at the top ${f.look}: play up to ${f.pick} matching card${f.pick === 1 ? '' : 's'}${f.rested ? ' rested' : ''}; the rest ${f.remainder === 'trash' ? 'go to your trash' : 'go to the bottom of your deck'}.`
                 : `Look at the top ${f.look}: add up to ${f.pick} matching card${f.pick === 1 ? '' : 's'} to ${f.destination === 'lifeTop' ? 'the top of your Life cards' : 'your hand'}; the rest ${f.remainder === 'trash' ? 'go to your trash' : f.remainder === 'deckTopOrBottom' ? 'are placed at the top or bottom of your deck in any order' : 'go to the bottom of your deck'}.`,
@@ -917,6 +919,29 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           min: 0,
           max: maxTargets,
           prompt: `Rest up to ${maxTargets} of your DON!! cards (or decline).`,
+        },
+        { op: 'rest', target: { sel: 'var', name: 't' } },
+      ];
+    }
+    case 'restControllerCards': {
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: {
+            sel: 'union',
+            members: [
+              { sel: 'controllerActiveLeader' },
+              { sel: 'controllerCharacters', rested: false },
+              { sel: 'controllerActiveStages' },
+              { sel: 'controllerActiveDon' },
+            ],
+          },
+          min: f.optional === false ? f.count : 0,
+          max: f.count,
+          prompt: f.optional === false
+            ? `Rest ${f.count} of your cards.`
+            : `You may rest up to ${f.count} of your cards.`,
         },
         { op: 'rest', target: { sel: 'var', name: 't' } },
       ];

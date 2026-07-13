@@ -109,6 +109,8 @@ export interface ContinuousPowerCondition {
   minBaseCost?: number;
   /** Printed base power of the modified card must be at most this value. */
   maxBasePower?: number;
+  /** Printed base power of the modified card must be at least this value. */
+  minBasePower?: number;
   /** Printed base power of the modified card must exactly equal this value. */
   exactBasePower?: number;
   /** The modified card must include this color. */
@@ -369,6 +371,8 @@ export type KoReplacementAction =
   | { kind: 'restSource' }
   /** Rest one or more of your Characters instead of the K.O. */
   | { kind: 'restCharacter'; count: number; filter?: KoReplacementCharacterFilter }
+  /** Rest one or more of your active cards instead of the K.O. (Leader/Characters/Stage/active DON!!). */
+  | { kind: 'restCards'; count: number }
   /** Place one or more of your Characters at the bottom of the owner's deck instead. */
   | { kind: 'bottomDeckCharacter'; count: number }
   /** Trash this Character and draw N (ally field-removal replacement on aura source). */

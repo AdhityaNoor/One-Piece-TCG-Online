@@ -133,6 +133,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       selection.mode.kind === 'confirmPlayCost' ||
       selection.mode.kind === 'selectCounterCard' ||
       selection.mode.kind === 'payingActivateEffectCost' ||
+      selection.mode.kind === 'payingEventMainCost' ||
+      selection.mode.kind === 'payingCounterEventCost' ||
       selection.mode.kind === 'payingOnOppAttackCost'
     ) {
       setMobilePanel('actions');
@@ -1166,8 +1168,12 @@ function MobilePlayerBoard({
   const stage = board.stageArea[0] ?? null;
   const activeDon = mobileCostAreaCards(board, false);
   const restedDon = mobileCostAreaCards(board, true);
-  const firstActiveDon = activeDon[0] ?? null;
-  const firstRestedDon = restedDon[0] ?? null;
+  const firstActiveDon = mode.kind === 'payingEventMainCost' || mode.kind === 'payingCounterEventCost' || mode.kind === 'resolvingDonChoice'
+    ? activeDon.find((don) => mode.candidateInstanceIds.includes(don.instanceId)) ?? null
+    : activeDon[0] ?? null;
+  const firstRestedDon = mode.kind === 'payingEventMainCost' || mode.kind === 'payingCounterEventCost' || mode.kind === 'resolvingDonChoice'
+    ? restedDon.find((don) => mode.candidateInstanceIds.includes(don.instanceId)) ?? null
+    : restedDon[0] ?? null;
 
   return (
     <>
@@ -1386,7 +1392,7 @@ function MobileCardZone({
   const canOnOppAttack = isOwn && canOnOppAttackCard(card);
   const canAttack = isOwn && canAttackCard(card);
   const selectedDon = mobileSelectedDonInstanceIds(mode);
-  const attachedDonSelectable = isOwn && (mode.kind === 'payingActivateEffectCost' || mode.kind === 'payingOnOppAttackCost') && card.donAttachedCount > 0;
+  const attachedDonSelectable = isOwn && (mode.kind === 'payingActivateEffectCost' || mode.kind === 'payingOnOppAttackCost' || mode.kind === 'payingEventMainCost' || mode.kind === 'payingCounterEventCost' || mode.kind === 'resolvingDonChoice') && card.donAttachedCount > 0;
   const selectedAttachedDonCount = card.donAttachedIds.filter((id) => selectedDon.has(id)).length;
   const selectable = mobileLeaderCharacterSelectable(mode, isOwn, isOpponent, zone, card, canActivate, canOnOppAttack);
   const attackerSelected = mode.kind === 'selectAttackTarget' && mode.attackerInstanceId === card.instanceId;
@@ -1494,6 +1500,9 @@ function mobileLeaderCharacterSelectable(
 function mobileSelectedDonInstanceIds(mode: MatchSelectionMode): Set<string> {
   if (mode.kind === 'payingActivateEffectCost') return new Set(mode.selectedDonIds);
   if (mode.kind === 'payingOnOppAttackCost') return new Set(mode.selectedDonIds);
+  if (mode.kind === 'payingEventMainCost') return new Set(mode.selectedDonIds);
+  if (mode.kind === 'payingCounterEventCost') return new Set(mode.selectedDonIds);
+  if (mode.kind === 'resolvingDonChoice') return new Set(mode.selectedDonIds);
   return new Set();
 }
 
@@ -2074,6 +2083,8 @@ function handSelectable(mode: MatchSelectionMode, isOwn: boolean, card: CardView
 
 function selectedHandIds(mode: MatchSelectionMode): Set<string> {
   if (mode.kind === 'confirmPlayCost') return new Set([mode.handCardInstanceId]);
+  if (mode.kind === 'payingEventMainCost') return new Set([mode.handCardInstanceId]);
+  if (mode.kind === 'payingCounterEventCost') return new Set([mode.handCardInstanceId]);
   return new Set();
 }
 
@@ -2133,7 +2144,7 @@ function PlayerSideRow({
   isOpponent: boolean;
   reverseRows: boolean;
   mode: MatchSelectionMode;
-  onMatCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea', card: CardView) => void;
+  onMatCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'attachedDon', card: CardView) => void;
   onMatCardAttack: (card: CardView) => void;
   onAttachedDonLabelTap: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;

@@ -18,8 +18,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-004 — [On Play] If you have [Chess], K.O. up to 1 opp Character with 3000 power or less.
   { cardNumber: 'OP08-004', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfControlsNamed', name: 'Chess' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
 
-  // OP08-005 — [On Play] Give up to 1 opp Character −2000 this turn. PARTIAL: "if you don't have [Kuromarimo], play it" needs a named-absence gate (deferred).
-  { cardNumber: 'OP08-005', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+  // OP08-005 — [On Play] Give up to 1 opp Character −2000 this turn. Then, if you don't have [Kuromarimo], play it.
+  { cardNumber: 'OP08-005', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }, { fn: 'playFromHand', filter: { category: 'character', name: 'Kuromarimo' }, ifGate: [{ kind: 'selfDoesNotControlNamed', name: 'Kuromarimo' }] }] } },
 
   // OP08-006 — PARTIAL: requires [Kuromarimo] and [Chess] in trash (named-trash AND gate not modeled).
   { cardNumber: 'OP08-006', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'your' } }] } },
@@ -354,8 +354,7 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP08-059', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }, { kind: 'selfDonFieldCount', atLeast: 10 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'King', maxCost: 7 } }] } },
 
   // OP08-060 — [On Play] DON!! −1: if opponent has 5+ DON!! on field, this Character gains [Rush] this turn.
-  //   PARTIAL: opponent DON>=5 field gate deferred; rush granted whenever DON!! −1 is paid.
-  { cardNumber: 'OP08-060', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
+  { cardNumber: 'OP08-060', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'opponentDonFieldCount', atLeast: 5 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
   // OP08-061 — [When Attacking] DON!! −1: K.O. up to 1 opp Character with a cost of 3 or less.
   { cardNumber: 'OP08-061', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
@@ -432,11 +431,11 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP08-075 — [Main] DON!! −1: Rest up to 1 opp Character cost ≤2. [Trigger] add 1 DON!! (active). PARTIAL: "turn all your Life face-down" deferred.
+  // OP08-075 — [Main] DON!! −1: Rest up to 1 opp Character cost ≤2, then turn all your Life face-down. [Trigger] add 1 DON!! active.
   {
     cardNumber: 'OP08-075',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }, { fn: 'turnAllLifeFace', faceUp: false }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
     ],
   },
@@ -565,13 +564,16 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP08-098 — [DON!! x1] [When Attacking] play up to 1 {Shandian Warrior} from hand cost <= DON count; if you do, add 1 top Life to hand.
-  //   PARTIAL: dynamic maxCost from DON count and life-to-hand rider deferred; mapped as flat maxCost play.
-  { cardNumber: 'OP08-098', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Shandian Warrior', maxCost: 10 } }] } },
+  //   PARTIAL: dynamic maxCost from DON count deferred; mapped as flat maxCost play.
+  { cardNumber: 'OP08-098', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [
+    { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Shandian Warrior', maxCost: 10 } },
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP08-100 — [On Play] Look 7, play up to 1 [Upper Yard], rest to bottom.
   { cardNumber: 'OP08-100', templateId: 'ability', params: { timing: 'onPlay', functions: [
-    { fn: 'searchTopDeck', look: 7, pick: 1, reveal: true, destination: 'hand', filter: { name: 'Upper Yard' }, remainder: 'bottom' },
-    { fn: 'playFromHand', filter: { category: 'character', name: 'Upper Yard' } },
+    { fn: 'searchTopDeck', look: 7, pick: 1, reveal: true, destination: 'hand', filter: { category: 'stage', name: 'Upper Yard' }, remainder: 'bottom' },
+    { fn: 'playFromHand', filter: { category: 'stage', name: 'Upper Yard' } },
   ] } },
 
   // OP08-101 — [Activate: Main] [Once Per Turn] may trash top Life: if Leader {Big Mom Pirates}, add deck top to Life at end of turn.
@@ -635,8 +637,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP08-110 — [On Play] Search {reveal [Upper Yard]} to hand, rest to bottom, then play up to 1 [Upper Yard] from hand.
   { cardNumber: 'OP08-110', templateId: 'ability', params: { timing: 'onPlay', functions: [
-    { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { name: 'Upper Yard' }, remainder: 'bottom' },
-    { fn: 'playFromHand', filter: { category: 'character', name: 'Upper Yard' } },
+    { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'stage', name: 'Upper Yard' }, remainder: 'bottom' },
+    { fn: 'playFromHand', filter: { category: 'stage', name: 'Upper Yard' } },
   ] } },
 
   // OP08-111 — [DON!! x1] [When Attacking] Opp can't Blocker this battle. [Trigger] trash 1: if <=2 Life, play this.
@@ -689,13 +691,12 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-115 — [Counter] If Leader {Shandian Warrior}: up to 1 Leader/Char +3000 this battle. [Trigger] Draw 2, trash 1.
-  //   PARTIAL: "then play [Upper Yard]" (a Stage) is deferred — playFromHand plays Characters only.
+  // OP08-115 — [Counter] If Leader {Shandian Warrior}: up to 1 Leader/Char +3000 this battle. [Trigger] Draw 2, trash 1; play [Upper Yard].
   {
     cardNumber: 'OP08-115',
     templates: [
       { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderType', type: 'Shandian Warrior' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }, { fn: 'playFromHand', filter: { category: 'stage', name: 'Upper Yard' } }] } },
     ],
   },
 

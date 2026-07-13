@@ -115,10 +115,7 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP06-020 (leader) Hody Jones —
   //   [Activate: Main] You may rest this Leader: Rest up to 1 of your opponent's DON!! cards or Characters
-  //   with a cost of 3 or less. Then, you cannot add Life cards to your hand using your own effects during
-  //   this turn.
-  //   PARTIAL: the "cannot add Life cards to your hand using your own effects" clause is now curated
-  //   via preventControllerLifeToHand.
+  //   with a cost of 3 or less. Then, prevent your own effects from adding Life cards to hand this turn.
   {
     cardNumber: 'OP06-020',
     templateId: 'ability',
@@ -230,7 +227,7 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } },
   ] } },
 
-  // OP06-035 — [On Play] Rest up to 2 opp Characters or DON!! → add top Life to hand. PARTIAL: [Rush] is card data.
+  // OP06-035 — [Rush] is card data. [On Play] Rest up to 2 opp Characters or DON!! → add top Life to hand.
   { cardNumber: 'OP06-035', templateId: 'ability', params: { timing: 'onPlay', functions: [
     { fn: 'rest', target: { group: 'charactersOrDon', player: 'opponent' }, optional: true, maxTargets: 2 },
     { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } },
@@ -582,8 +579,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'playFromTrash', filter: { category: 'character', maxCost: 2 }, rested: true, maxTargets: 1 },
   ] } },
 
-  // OP06-088 — PARTIAL: "Leader is active" gate deferred; mapped Leader {Dressrosa} +2000 static.
-  { cardNumber: 'OP06-088', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Dressrosa' }] } }] } },
+  // OP06-088 — if Leader {Dressrosa} is active, this Character gains +2000 power.
+  { cardNumber: 'OP06-088', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Dressrosa' }, { kind: 'leaderActive' }] } }] } },
 
   // OP06-089 — [On Play]/[On K.O.] Trash 3 cards from the top of your deck.
   {
@@ -655,7 +652,7 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP06-096 (event) ...Nothing...at All!!! —
-  //   PARTIAL: cost ≤7 filter on K.O. immunity deferred; mapped all Characters battle immunity.
+  //   [Counter] add top Life to hand: Characters cost <=7 cannot be K.O.'d in battle this turn.
   {
     cardNumber: 'OP06-096',
     templates: [
@@ -665,7 +662,7 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
           timing: 'counter',
           functions: [
             { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true },
-            { fn: 'koImmunityControllerCharactersAll', scope: 'battle', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+            { fn: 'koImmunityAuraControllerCharacters', scope: 'battle', duration: 'duringThisTurn', targetCondition: { maxCost: 7 }, ifPrevious: 'previousMovedAny' },
           ],
         },
       },
@@ -675,7 +672,7 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
           timing: 'lifeTrigger',
           functions: [
             { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true },
-            { fn: 'koImmunityControllerCharactersAll', scope: 'battle', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+            { fn: 'koImmunityAuraControllerCharacters', scope: 'battle', duration: 'duringThisTurn', targetCondition: { maxCost: 7 }, ifPrevious: 'previousMovedAny' },
           ],
         },
       },
@@ -718,12 +715,12 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-102 — [Activate: Main] [Once Per Turn] place Stage at deck bottom: K.O. opp cost<=2. PARTIAL: Stage cost-1 filter deferred. [Trigger] if <=2 Life, play this.
+  // OP06-102 — [Activate: Main] [Once Per Turn] place cost-1 Stage at deck bottom: K.O. opp cost<=2. [Trigger] if <=2 Life, play this.
   {
     cardNumber: 'OP06-102',
     templates: [
       { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
-        { fn: 'moveCards', from: { zone: 'stages', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+        { fn: 'moveCards', from: { zone: 'stages', player: 'controller', filter: { exactCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
         { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, maxTargets: 1 },
       ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'triggerPlaySelf' }] } },
@@ -783,12 +780,12 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-111 — [Activate: Main] [Once Per Turn] place Stage at deck bottom: rest opp cost<=4. PARTIAL: Stage cost-1 filter deferred. [Trigger] if <=2 Life, play this.
+  // OP06-111 — [Activate: Main] [Once Per Turn] place cost-1 Stage at deck bottom: rest opp cost<=4. [Trigger] if <=2 Life, play this.
   {
     cardNumber: 'OP06-111',
     templates: [
       { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
-        { fn: 'moveCards', from: { zone: 'stages', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+        { fn: 'moveCards', from: { zone: 'stages', player: 'controller', filter: { exactCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
         { fn: 'rest', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, maxTargets: 1 },
       ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 2 }], functions: [{ fn: 'triggerPlaySelf' }] } },
@@ -810,9 +807,9 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-113 — if another {Shandian Warrior} on field, [Blocker].
   { cardNumber: 'OP06-113', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Shandian Warrior', atLeast: 2 }] } }] } },
 
-  // OP06-114 — [On Play] place Stage at deck bottom: look 5, add up to 1 [Upper Yard] or {Shandian Warrior}. PARTIAL: Stage cost-1 filter deferred.
+  // OP06-114 — [On Play] place cost-1 Stage at deck bottom: look 5, add up to 1 [Upper Yard] or {Shandian Warrior}.
   { cardNumber: 'OP06-114', templateId: 'ability', params: { timing: 'onPlay', functions: [
-    { fn: 'moveCards', from: { zone: 'stages', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+    { fn: 'moveCards', from: { zone: 'stages', player: 'controller', filter: { exactCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
     { fn: 'searchTopDeck', ifPrevious: 'previousMovedAny', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ name: 'Upper Yard' }, { typeIncludes: 'Shandian Warrior' }] }, remainder: 'bottom' },
   ] } },
 

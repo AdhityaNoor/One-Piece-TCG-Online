@@ -23,4 +23,4 @@ export { EffectContextImpl } from './effectContext';
 export { runTimings, resumeProgram } from './interpreter';
 export { fireOnPlay, fireActivate, fireWhenAttacking, fireOnBlock, fireOnOpponentsAttack, fireOnKO, fireCounter, fireLifeTrigger, fireOnBattle, fireOnBattleKoedOpponent, fireEndOfTurn, fireCharacterKoedReactions, fireRestTransitions, fireDonReturnedReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, afterAbilityCostPaid, resumeChoice, fireEventActivatedReactions, fireOpponentBlockerActivatedReactions, fireLifeDamageDealtReactions, fireLifeToHandReactions, fireTriggerActivatedReactions, fireDrawOutsideDrawPhaseReactions, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, fireHandTrashedReactions, fireStartOfTurnReactions, battleAttackerIsCharacterWithAttribute } from './fireTiming';
 export { evaluateGates } from './gates';
-export { canPayAbilityCost, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
+export { canPayAbilityCost, donMinusCandidateIds, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';

@@ -22,15 +22,16 @@ import type { CardView, PlayerBoardView } from '../../../board/projection';
 import { findFirstAvailableDonId } from '../../../board/projection';
 import { computeCurrentCost, computeCurrentPower } from '../../../engine/rules/shared/power';
 import { getOpponentId } from '../../../engine/rules/shared';
-import { canPayAbilityCost, evaluateGates, fieldDonIds, requiredDonMinusCount } from '../../../engine/effects';
+import { canPayAbilityCost, donMinusCandidateIds, evaluateGates, requiredDonMinusCount } from '../../../engine/effects';
 import type { Ability } from '../../../engine/effects/effectIr';
 import type { CardInstance } from '../../../engine/state/card';
+import { isDonReturnChoice } from './donChoiceUtils';
 
 export type BoardZoneKind = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'attachedDon' | 'trash';
 
 export type BoardSelectionMode =
   | { kind: 'idle' }
-  | { kind: 'confirmPlayCost'; handCardInstanceId: string; cardCategory: 'character' | 'stage' | 'event'; cardName: string; cost: number; donInstanceIds: string[] }
+  | { kind: 'confirmPlayCost'; handCardInstanceId: string; cardCategory: 'character' | 'stage' | 'event'; cardName: string; cost: number; donInstanceIds: string[]; abilityCostDonInstanceIds?: string[] }
   | { kind: 'selectAttacker' }
   | { kind: 'selectAttackTarget'; attackerInstanceId: string }
   | { kind: 'selectBlocker' }
@@ -45,13 +46,26 @@ export type BoardSelectionMode =
    * — boosting a DIFFERENT own Leader/Character is technically legal per
    * 7-1-3-2-1 but is a rare enough tech play that it's out of scope for
    * this streamlined flow (documented limitation). Counter Events have
-   * their DON!! cost auto-selected (first N active cost-area DON!!, see
-   * autoSelectCounterEventDon) rather than making the player click
-   * individual DON!! cards, matching how playHandCard already auto-selects.
+   * their normal play-cost DON!! auto-selected; DON!! -N ability costs enter
+   * an explicit field-DON selection mode.
    */
   | { kind: 'selectCounterCard' }
+  | { kind: 'payingCounterEventCost'; handCardInstanceId: string; cardName: string; cost: number; donInstanceIds: string[]; abilityCost: number; candidateInstanceIds: string[]; selectedDonIds: string[] }
+  /**
+   * A donMinus ability cost is asking which DON!! on the field to return to
+   * the DON!! deck (see interpreter.ts's suspendOrPayAbilityCost — it always
+   * raises this as a pending choice rather than auto-picking, so the player
+   * chooses). Auto-entered the instant such a choice appears (see the
+   * useEffect below), same pattern as 'selectCounterCard'. DON!! tokens have
+   * no distinguishing art, so this is resolved by tapping the actual DON!!
+   * on the field (a Cost Area chip, or one in a hovered/revealed
+   * Leader/Character's attached-DON!! stack — see AttachedDonHoverStack)
+   * rather than the generic card-gallery pending-choice modal.
+   */
+  | { kind: 'resolvingDonChoice'; choiceId: string; prompt: string; min: number; max: number; candidateInstanceIds: string[]; selectedDonIds: string[] }
   | { kind: 'selectActivateSource' }
   | { kind: 'payingActivateEffectCost'; sourceInstanceId: string; cost: number; selectedDonIds: string[] }
+  | { kind: 'payingEventMainCost'; handCardInstanceId: string; cardName: string; cost: number; donInstanceIds: string[]; abilityCost: number; candidateInstanceIds: string[]; selectedDonIds: string[] }
   | { kind: 'selectOnOppAttackSource' }
   | { kind: 'payingOnOppAttackCost'; sourceInstanceId: string; cost: number; selectedDonIds: string[] };
 
@@ -95,6 +109,31 @@ export function useBoardSelection(actingPlayerId: string | null) {
     }
   }, [state?.currentBattle?.step, mode.kind]);
 
+  // Auto-enter (and auto-exit) 'resolvingDonChoice' the instant a donMinus
+  // pending choice belonging to this player appears/resolves — takes
+  // priority over whatever mode the UI was previously in (a pendingChoice
+  // means the last action already suspended; nothing else is actionable
+  // until it resolves, so overriding is always correct here, unlike the
+  // idle-only guard above for the Counter Step).
+  useEffect(() => {
+    const choice = state?.pendingChoices[0];
+    const isDonChoice = !!state && !!choice && choice.playerId === actingPlayerId && isDonReturnChoice(state, defs, choice);
+    if (isDonChoice && choice && mode.kind !== 'resolvingDonChoice') {
+      setMode({
+        kind: 'resolvingDonChoice',
+        choiceId: choice.id,
+        prompt: choice.prompt,
+        min: choice.constraints.min,
+        max: choice.constraints.max,
+        candidateInstanceIds: choice.constraints.candidateInstanceIds ?? [],
+        selectedDonIds: [],
+      });
+    } else if (!isDonChoice && mode.kind === 'resolvingDonChoice') {
+      reset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.pendingChoices, actingPlayerId, defs]);
+
   /** True if the card's curated program exposes an [Activate: Main] ability (8-1-3-2). */
   const hasActivateMain = (card: CardView): boolean => {
     if (!state) return false;
@@ -109,7 +148,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (!abilityConditionMet(ability, inst, card.instanceId, state, defs)) return false;
     if (ability.cost?.length) {
       const requiredDon = requiredDonMinusCount(ability.cost);
-      const selectedDon = requiredDon > 0 ? fieldDonIds(state, actingPlayerId).slice(0, requiredDon) : [];
+      const selectedDon = requiredDon > 0 ? donMinusCandidateIds(state, actingPlayerId, ability.cost).slice(0, requiredDon) : [];
       return canPayAbilityCost(state, card.instanceId, actingPlayerId, ability.cost, selectedDon).length === 0;
     }
     return validateAction(
@@ -160,7 +199,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (!abilityConditionMet(ability, inst, card.instanceId, state, defs)) return false;
     if (ability.cost?.length) {
       const requiredDon = requiredDonMinusCount(ability.cost);
-      const selectedDon = requiredDon > 0 ? fieldDonIds(state, actingPlayerId).slice(0, requiredDon) : [];
+      const selectedDon = requiredDon > 0 ? donMinusCandidateIds(state, actingPlayerId, ability.cost).slice(0, requiredDon) : [];
       return canPayAbilityCost(state, card.instanceId, actingPlayerId, ability.cost, selectedDon).length === 0;
     }
     return validateAction(
@@ -215,6 +254,40 @@ export function useBoardSelection(actingPlayerId: string | null) {
   // --- Counter Step (7-1-3) — multi-select, see BoardSelectionMode's
   // 'selectCounterCard' doc comment above for the overall UX. ---
 
+  const mainEventDonInfo = (card: CardView): { cost: number; donMinus: number; available: number } | null => {
+    if (!state || !actingPlayerId) return null;
+    if (card.category !== 'event') return null;
+    const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'activateMain');
+    if (!ability) return null;
+    const cost = currentCostOf(card);
+    const abilityCosts = ability.cost ?? [];
+    const playCostDon = new Set(activeCostAreaDonIds(actingPlayerId).slice(0, cost));
+    const abilityCostDon = donMinusCandidateIds(state, actingPlayerId, abilityCosts).filter((id) => !playCostDon.has(id));
+    return {
+      cost,
+      donMinus: requiredDonMinusCount(abilityCosts),
+      available: playCostDon.size + abilityCostDon.length,
+    };
+  };
+
+  const mainEventDonPayment = (card: CardView): { donInstanceIds: string[]; abilityCost: number; candidateInstanceIds: string[] } | null => {
+    if (!state || !actingPlayerId) return null;
+    const info = mainEventDonInfo(card);
+    if (!info) return null;
+    const donInstanceIds = activeCostAreaDonIds(actingPlayerId).slice(0, info.cost);
+    if (donInstanceIds.length < info.cost) return null;
+    const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'activateMain');
+    if (!ability) return null;
+    const abilityCosts = ability.cost ?? [];
+    const requiredDon = requiredDonMinusCount(abilityCosts);
+    const playCostDon = new Set(donInstanceIds);
+    const candidateInstanceIds = requiredDon > 0
+      ? donMinusCandidateIds(state, actingPlayerId, abilityCosts).filter((id) => !playCostDon.has(id))
+      : [];
+    if (candidateInstanceIds.length < requiredDon) return null;
+    return { donInstanceIds, abilityCost: requiredDon, candidateInstanceIds };
+  };
+
   /**
    * A Counter Event's DON!! picture: its own play cost (base cost, from
    * currentCostOf) plus any curated [Counter] ability DON!! -N cost
@@ -226,8 +299,16 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (!state || !actingPlayerId) return null;
     if (card.category !== 'event' || !hasCounter(card)) return null;
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'counter');
-    const donMinus = ability?.cost?.filter((cost) => cost.kind === 'donMinus').reduce((sum, cost) => sum + cost.count, 0) ?? 0;
-    return { cost: currentCostOf(card), donMinus, available: activeCostAreaDonIds(actingPlayerId).length };
+    if (!ability) return null;
+    const cost = currentCostOf(card);
+    const abilityCosts = ability.cost ?? [];
+    const playCostDon = new Set(activeCostAreaDonIds(actingPlayerId).slice(0, cost));
+    const abilityCostDon = donMinusCandidateIds(state, actingPlayerId, abilityCosts).filter((id) => !playCostDon.has(id));
+    return {
+      cost,
+      donMinus: requiredDonMinusCount(abilityCosts),
+      available: playCostDon.size + abilityCostDon.length,
+    };
   };
 
   /**
@@ -241,13 +322,22 @@ export function useBoardSelection(actingPlayerId: string | null) {
    * card is treated as inapplicable/dimmed here rather than silently
    * picking the wrong DON!!). Returns null if there isn't enough.
    */
-  const autoSelectCounterEventDon = (card: CardView): { donInstanceIds: string[]; abilityCostDonInstanceIds: string[] } | null => {
+  const counterEventDonPayment = (card: CardView): { donInstanceIds: string[]; abilityCost: number; candidateInstanceIds: string[] } | null => {
     if (!state || !actingPlayerId) return null;
     const info = counterEventDonInfo(card);
     if (!info) return null;
-    const pool = activeCostAreaDonIds(actingPlayerId);
-    if (pool.length < info.cost + info.donMinus) return null;
-    return { donInstanceIds: pool.slice(0, info.cost), abilityCostDonInstanceIds: pool.slice(info.cost, info.cost + info.donMinus) };
+    const donInstanceIds = activeCostAreaDonIds(actingPlayerId).slice(0, info.cost);
+    if (donInstanceIds.length < info.cost) return null;
+    const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'counter');
+    if (!ability) return null;
+    const abilityCosts = ability.cost ?? [];
+    const requiredDon = requiredDonMinusCount(abilityCosts);
+    const playCostDon = new Set(donInstanceIds);
+    const candidateInstanceIds = requiredDon > 0
+      ? donMinusCandidateIds(state, actingPlayerId, abilityCosts).filter((id) => !playCostDon.has(id))
+      : [];
+    if (candidateInstanceIds.length < requiredDon) return null;
+    return { donInstanceIds, abilityCost: requiredDon, candidateInstanceIds };
   };
 
   /**
@@ -260,7 +350,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const isCounterCardApplicable = (card: CardView): boolean => {
     if (!state || !actingPlayerId || state.currentBattle?.step !== 'counter') return false;
     if (card.category === 'character') return !!card.counter && card.counter > 0;
-    if (card.category === 'event' && hasCounter(card)) return autoSelectCounterEventDon(card) !== null;
+    if (card.category === 'event' && hasCounter(card)) return counterEventDonPayment(card) !== null;
     return false;
   };
 
@@ -289,18 +379,26 @@ export function useBoardSelection(actingPlayerId: string | null) {
    * `needed` (7-1-4): how much MORE power the defender needs, on top of
    * their power when the Counter Step began, to survive — the Damage Step
    * deals damage when attackerPower >= targetPower, so surviving requires
-   * targetPower > attackerPower, i.e. at least (attackerPower - startPower
-   * + 1) more. `selected` is how much has already been added this step
-   * (the live delta since the snapshot above) — together these render as
-   * the "3000/5000" progress readout.
+   * targetPower > attackerPower, i.e. strictly more than (attackerPower -
+   * startPower) more. That raw threshold is only ever 1 power short of a
+   * clean multiple of 1000 (attacker/target power, and every real Counter
+   * value, are always multiples of 1000 — 3-2-2), so showing it as-is read
+   * as "1 needed" when the true gap was a full 1000, or "1001" when it was
+   * really 2000 (the next Counter value that actually clears the raw
+   * threshold) — rounding up to the nearest 1000 shows the smallest
+   * genuinely achievable target instead of a threshold no real counter can
+   * land on exactly. `selected` is how much has already been added this
+   * step (the live delta since the snapshot above) — together these render
+   * as the "3000/5000" progress readout.
    */
   const counterProgress: { selected: number; needed: number } | null = (() => {
     if (!state || !counterBaselineRef.current || state.currentBattle?.step !== 'counter') return null;
     const baseline = counterBaselineRef.current;
     const targetPowerNow = computeCurrentPower(defs, state, state.currentBattle.targetInstanceId);
+    const rawNeeded = Math.max(0, baseline.attackerPower - baseline.targetPowerAtStart + 1);
     return {
       selected: Math.max(0, targetPowerNow - baseline.targetPowerAtStart),
-      needed: Math.max(0, baseline.attackerPower - baseline.targetPowerAtStart + 1),
+      needed: Math.ceil(rawNeeded / 1000) * 1000,
     };
   })();
 
@@ -339,6 +437,56 @@ export function useBoardSelection(actingPlayerId: string | null) {
     }
   }
 
+  // --- Donmax choice (interpreter-suspended donMinus ability cost) ---
+
+  /** True if `instanceId` is one of the current donMinus choice's candidates — gates both Cost Area chip taps and attached-DON!! stack taps. */
+  const isDonChoiceCandidate = (instanceId: string): boolean =>
+    mode.kind === 'resolvingDonChoice' && mode.candidateInstanceIds.includes(instanceId);
+
+  /** `{selected, min, max, prompt}` for ActionBar's progress banner, or null outside this mode. */
+  const donChoiceProgress: { selected: number; min: number; max: number; prompt: string } | null =
+    mode.kind === 'resolvingDonChoice'
+      ? { selected: mode.selectedDonIds.length, min: mode.min, max: mode.max, prompt: mode.prompt }
+      : null;
+
+  function submitDonChoice(response: string[]): void {
+    if (mode.kind !== 'resolvingDonChoice' || !actingPlayerId) return;
+    const result = dispatch({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: actingPlayerId, choiceId: mode.choiceId, response });
+    if (!result.ok) {
+      // Keep the in-progress selection so the player can adjust rather than
+      // losing their picks on a rejected response (shouldn't normally
+      // happen — the candidate/min/max gating already mirrors the engine's
+      // own validation — but a stale choiceId from a fast double-tap is
+      // possible).
+      setLastError(result.reasons);
+      return;
+    }
+    setLastError(null);
+    reset(); // the pendingChoice effect above re-enters if another donMinus choice is queued next
+  }
+
+  /** Tap a DON!! card (Cost Area or attached) while resolving a donMinus choice. Auto-submits the instant `max` is reached. */
+  function toggleDonChoiceCard(instanceId: string): void {
+    if (mode.kind !== 'resolvingDonChoice' || !mode.candidateInstanceIds.includes(instanceId)) return;
+    if (mode.selectedDonIds.includes(instanceId)) {
+      setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => id !== instanceId) });
+      return;
+    }
+    if (mode.selectedDonIds.length >= mode.max) return;
+    const next = [...mode.selectedDonIds, instanceId];
+    if (next.length === mode.max) {
+      submitDonChoice(next);
+    } else {
+      setMode({ ...mode, selectedDonIds: next });
+    }
+  }
+
+  /** Manual confirm for "select at least min, up to max" donMinus choices where the player wants to stop before reaching max. */
+  function confirmDonChoice(): void {
+    if (mode.kind !== 'resolvingDonChoice' || mode.selectedDonIds.length < mode.min) return;
+    submitDonChoice(mode.selectedDonIds);
+  }
+
   function withActingPlayer(build: (playerId: string) => GameAction): void {
     if (!actingPlayerId) return;
     runDispatch(build(actingPlayerId));
@@ -351,9 +499,33 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (!instance || instance.ownerId !== actingPlayerId || instance.currentZone !== 'hand') return;
 
     const cost = currentCostOf(card);
-    const donInstanceIds = activeCostAreaDonIds(actingPlayerId).slice(0, cost);
+    const eventPayment = card.category === 'event' ? mainEventDonPayment(card) : null;
+    const donInstanceIds = eventPayment?.donInstanceIds ?? activeCostAreaDonIds(actingPlayerId).slice(0, cost);
     if (donInstanceIds.length < cost) {
       setLastError([`${card.name} costs ${cost} DON!!, but only ${donInstanceIds.length} active DON!! are available.`]);
+      return;
+    }
+    if (card.category === 'event' && !eventPayment) {
+      const info = mainEventDonInfo(card);
+      if (info) {
+        const required = info.cost + info.donMinus;
+        setLastError([`${card.name} requires ${required} usable DON!! for its play cost and DON!! -N ability cost, but only ${info.available} are available.`]);
+        return;
+      }
+    }
+
+    if (card.category === 'event' && eventPayment && eventPayment.abilityCost > 0) {
+      setMode({
+        kind: 'payingEventMainCost',
+        handCardInstanceId: card.instanceId,
+        cardName: card.name,
+        cost,
+        donInstanceIds: eventPayment.donInstanceIds,
+        abilityCost: eventPayment.abilityCost,
+        candidateInstanceIds: eventPayment.candidateInstanceIds,
+        selectedDonIds: [],
+      });
+      setLastError(null);
       return;
     }
 
@@ -379,8 +551,11 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (!instance || instance.ownerId !== actingPlayerId || instance.currentZone !== 'hand') return false;
 
     const cost = currentCostOf(card);
-    const donInstanceIds = activeCostAreaDonIds(actingPlayerId).slice(0, cost);
+    const eventPayment = card.category === 'event' ? mainEventDonPayment(card) : null;
+    const donInstanceIds = eventPayment?.donInstanceIds ?? activeCostAreaDonIds(actingPlayerId).slice(0, cost);
     if (donInstanceIds.length < cost) return false;
+    if (card.category === 'event' && !eventPayment) return false;
+    const previewAbilityCostDon = eventPayment?.candidateInstanceIds.slice(0, eventPayment.abilityCost) ?? [];
 
     return validateAction(
       state,
@@ -390,6 +565,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
         playerId: actingPlayerId,
         handCardInstanceId: card.instanceId,
         donInstanceIds,
+        ...(card.category === 'event' ? { abilityCostDonInstanceIds: previewAbilityCostDon } : {}),
       } as GameAction,
       defs,
       registry,
@@ -412,6 +588,30 @@ export function useBoardSelection(actingPlayerId: string | null) {
       handCardInstanceId: mode.handCardInstanceId,
       donInstanceIds: mode.donInstanceIds,
     }) as GameAction);
+  }
+
+  function confirmEventMainCost(): void {
+    if (mode.kind !== 'payingEventMainCost' || mode.selectedDonIds.length !== mode.abilityCost) return;
+    withActingPlayer((playerId) => ({
+      type: 'ACTIVATE_EVENT_MAIN',
+      actionId: createActionId(),
+      playerId,
+      handCardInstanceId: mode.handCardInstanceId,
+      donInstanceIds: mode.donInstanceIds,
+      abilityCostDonInstanceIds: mode.selectedDonIds,
+    }));
+  }
+
+  function confirmCounterEventCost(): void {
+    if (mode.kind !== 'payingCounterEventCost' || mode.selectedDonIds.length !== mode.abilityCost || !actingPlayerId) return;
+    runCounterDispatch({
+      type: 'ACTIVATE_COUNTER_EVENT',
+      actionId: createActionId(),
+      playerId: actingPlayerId,
+      handCardInstanceId: mode.handCardInstanceId,
+      donInstanceIds: mode.donInstanceIds,
+      abilityCostDonInstanceIds: mode.selectedDonIds,
+    });
   }
 
   /** Confirm an [Activate: Main] effect after selecting its DON!! -N payment. */
@@ -540,7 +740,30 @@ export function useBoardSelection(actingPlayerId: string | null) {
         if (!isOwnCard || zone !== 'hand') return;
         if (card.category !== 'character' && card.category !== 'stage' && card.category !== 'event') return;
         const cost = currentCostOf(card);
+        const eventPayment = card.category === 'event' ? mainEventDonPayment(card) : null;
         if (cost === 0) {
+          if (card.category === 'event' && !eventPayment) {
+            const info = mainEventDonInfo(card);
+            if (info) {
+              const required = info.cost + info.donMinus;
+              setLastError([`${card.name} requires ${required} usable DON!! for its play cost and DON!! -N ability cost, but only ${info.available} are available.`]);
+              return;
+            }
+          }
+          if (card.category === 'event' && eventPayment && eventPayment.abilityCost > 0) {
+            setMode({
+              kind: 'payingEventMainCost',
+              handCardInstanceId: card.instanceId,
+              cardName: card.name,
+              cost,
+              donInstanceIds: eventPayment.donInstanceIds,
+              abilityCost: eventPayment.abilityCost,
+              candidateInstanceIds: eventPayment.candidateInstanceIds,
+              selectedDonIds: [],
+            });
+            setLastError(null);
+            return;
+          }
           withActingPlayer((playerId) => ({
             type: PLAY_ACTION_BY_CATEGORY[card.category as 'character' | 'stage' | 'event'],
             actionId: createActionId(),
@@ -550,9 +773,31 @@ export function useBoardSelection(actingPlayerId: string | null) {
           }) as GameAction);
           return;
         }
-        const donInstanceIds = activeCostAreaDonIds(actingPlayerId).slice(0, cost);
+        const donInstanceIds = eventPayment?.donInstanceIds ?? activeCostAreaDonIds(actingPlayerId).slice(0, cost);
         if (donInstanceIds.length < cost) {
           setLastError([`${card.name} costs ${cost} DON!!, but only ${donInstanceIds.length} active DON!! are available.`]);
+          return;
+        }
+        if (card.category === 'event' && !eventPayment) {
+          const info = mainEventDonInfo(card);
+          if (info) {
+            const required = info.cost + info.donMinus;
+            setLastError([`${card.name} requires ${required} usable DON!! for its play cost and DON!! -N ability cost, but only ${info.available} are available.`]);
+            return;
+          }
+        }
+        if (card.category === 'event' && eventPayment && eventPayment.abilityCost > 0) {
+          setMode({
+            kind: 'payingEventMainCost',
+            handCardInstanceId: card.instanceId,
+            cardName: card.name,
+            cost,
+            donInstanceIds: eventPayment.donInstanceIds,
+            abilityCost: eventPayment.abilityCost,
+            candidateInstanceIds: eventPayment.candidateInstanceIds,
+            selectedDonIds: [],
+          });
+          setLastError(null);
           return;
         }
         setMode({ kind: 'confirmPlayCost', handCardInstanceId: card.instanceId, cardCategory: card.category, cardName: card.name, cost, donInstanceIds });
@@ -623,16 +868,60 @@ export function useBoardSelection(actingPlayerId: string | null) {
         // A Counter Event (curated [Counter] ability): DON!! is auto-picked
         // (isCounterCardApplicable already confirmed enough is available).
         if (card.category === 'event' && hasCounter(card)) {
-          const picked = autoSelectCounterEventDon(card);
+          const picked = counterEventDonPayment(card);
           if (!picked) return; // shouldn't happen — isCounterCardApplicable already checked this
+          if (picked.abilityCost > 0) {
+            setMode({
+              kind: 'payingCounterEventCost',
+              handCardInstanceId: card.instanceId,
+              cardName: card.name,
+              cost: picked.donInstanceIds.length,
+              donInstanceIds: picked.donInstanceIds,
+              abilityCost: picked.abilityCost,
+              candidateInstanceIds: picked.candidateInstanceIds,
+              selectedDonIds: [],
+            });
+            setLastError(null);
+            return;
+          }
           runCounterDispatch({
             type: 'ACTIVATE_COUNTER_EVENT',
             actionId: createActionId(),
             playerId: actingPlayerId,
             handCardInstanceId: card.instanceId,
             donInstanceIds: picked.donInstanceIds,
-            abilityCostDonInstanceIds: picked.abilityCostDonInstanceIds,
+            abilityCostDonInstanceIds: [],
           });
+        }
+        return;
+      }
+
+      case 'resolvingDonChoice': {
+        if (!isOwnCard || (zone !== 'costArea' && zone !== 'attachedDon')) return;
+        toggleDonChoiceCard(card.instanceId);
+        return;
+      }
+
+      case 'payingEventMainCost': {
+        if (!isOwnCard || (zone !== 'costArea' && zone !== 'attachedDon')) return;
+        if (!mode.candidateInstanceIds.includes(card.instanceId)) return;
+        const already = mode.selectedDonIds.includes(card.instanceId);
+        if (already) {
+          setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => id !== card.instanceId) });
+        } else if (mode.selectedDonIds.length < mode.abilityCost) {
+          setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, card.instanceId] });
+        }
+        return;
+      }
+
+      case 'payingCounterEventCost': {
+        if (!isOwnCard || (zone !== 'costArea' && zone !== 'attachedDon')) return;
+        if (!mode.candidateInstanceIds.includes(card.instanceId)) return;
+        const already = mode.selectedDonIds.includes(card.instanceId);
+        if (already) {
+          setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => id !== card.instanceId) });
+        } else if (mode.selectedDonIds.length < mode.abilityCost) {
+          setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, card.instanceId] });
         }
         return;
       }
@@ -682,10 +971,66 @@ export function useBoardSelection(actingPlayerId: string | null) {
     }
   }
 
+  /**
+   * Bulk tap-to-select fallback for attached DON!! — no longer used by the
+   * desktop board (PlayerBoardPanel.tsx now reveals a per-DON!! hover stack
+   * for all three of these modes, see toggleAttachedDonStack/
+   * AttachedDonHoverStack.tsx), but kept as the mobile path (MatchScreen.tsx's
+   * MobileLeaderCharacterCard), which has no hover concept to reveal a stack
+   * with. One tap toggles every one of this card's ELIGIBLE attached DON!! at
+   * once, capped at the mode's DON!! budget.
+   */
   function handleAttachedDonLabelTap(ownerPlayerId: string, card: CardView): void {
     if (!actingPlayerId || ownerPlayerId !== actingPlayerId) return;
-    if (mode.kind !== 'payingActivateEffectCost' && mode.kind !== 'payingOnOppAttackCost') return;
+    if (mode.kind !== 'payingActivateEffectCost' && mode.kind !== 'payingOnOppAttackCost' && mode.kind !== 'payingEventMainCost' && mode.kind !== 'payingCounterEventCost' && mode.kind !== 'resolvingDonChoice') return;
     if (card.donAttachedIds.length === 0) return;
+
+    if (mode.kind === 'resolvingDonChoice') {
+      const eligibleIds = card.donAttachedIds.filter((id) => mode.candidateInstanceIds.includes(id));
+      if (eligibleIds.length === 0) return;
+      const alreadySelected = eligibleIds.filter((id) => mode.selectedDonIds.includes(id));
+      if (alreadySelected.length > 0) {
+        setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => !eligibleIds.includes(id)) });
+        return;
+      }
+      const remaining = mode.max - mode.selectedDonIds.length;
+      if (remaining <= 0) return;
+      const next = [...mode.selectedDonIds, ...eligibleIds.slice(0, remaining)];
+      if (next.length === mode.max) {
+        submitDonChoice(next);
+      } else {
+        setMode({ ...mode, selectedDonIds: next });
+      }
+      return;
+    }
+
+    if (mode.kind === 'payingEventMainCost') {
+      const eligibleIds = card.donAttachedIds.filter((id) => mode.candidateInstanceIds.includes(id));
+      if (eligibleIds.length === 0) return;
+      const alreadySelected = eligibleIds.filter((id) => mode.selectedDonIds.includes(id));
+      if (alreadySelected.length > 0) {
+        setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => !eligibleIds.includes(id)) });
+        return;
+      }
+      const remaining = mode.abilityCost - mode.selectedDonIds.length;
+      if (remaining <= 0) return;
+      setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, ...eligibleIds.slice(0, remaining)] });
+      return;
+    }
+
+    if (mode.kind === 'payingCounterEventCost') {
+      const eligibleIds = card.donAttachedIds.filter((id) => mode.candidateInstanceIds.includes(id));
+      if (eligibleIds.length === 0) return;
+      const alreadySelected = eligibleIds.filter((id) => mode.selectedDonIds.includes(id));
+      if (alreadySelected.length > 0) {
+        setMode({ ...mode, selectedDonIds: mode.selectedDonIds.filter((id) => !eligibleIds.includes(id)) });
+        return;
+      }
+      const remaining = mode.abilityCost - mode.selectedDonIds.length;
+      if (remaining <= 0) return;
+      setMode({ ...mode, selectedDonIds: [...mode.selectedDonIds, ...eligibleIds.slice(0, remaining)] });
+      return;
+    }
 
     const selectedAttachedIds = card.donAttachedIds.filter((id) => mode.selectedDonIds.includes(id));
     if (selectedAttachedIds.length > 0) {
@@ -719,11 +1064,16 @@ export function useBoardSelection(actingPlayerId: string | null) {
     isCounterCardApplicable,
     counterEventDonInfo,
     counterProgress,
+    isDonChoiceCandidate,
+    donChoiceProgress,
+    confirmDonChoice,
     canDeclareAttackWith,
     canGiveDonOnCard,
     giveDonToCard,
     returnGivenDonFromCard,
     confirmPlayCard,
+    confirmEventMainCost,
+    confirmCounterEventCost,
     confirmActivateMainCost,
     confirmOnOppAttackCost,
     beginAttackWithCard,

@@ -38,21 +38,21 @@ export const ST21_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST21-016 — [Main] up to 1 Leader/Char +1000 this turn. [Trigger] K.O. up to 1 opp Character 4000 power or less. PARTIAL: opp-Blocker-disable rider deferred.
+  // ST21-016 — [Main] Leader/Char +1000 and suppress an opponent low-power Blocker. [Trigger] K.O. up to 1 opp Character 4000 power or less.
   {
     cardNumber: 'ST21-016',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }, { fn: 'suppressBlockerOnTarget', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, duration: 'duringThisTurn', optional: true }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, optional: true }] } },
     ],
   },
 
-  // ST21-017 — [Main]/[Trigger] give up to 1 opp Character −5000 this turn. PARTIAL: the power-gated follow-up K.O. is deferred.
+  // ST21-017 — [Main]/[Trigger] give up to 1 opp Character −5000 this turn, then gated K.O.
   {
     cardNumber: 'ST21-017',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -5000, duration: 'duringThisTurn', optional: true }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -5000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -5000, duration: 'duringThisTurn', optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 2000 } }, optional: true, ifGate: [{ kind: 'selfCharacterCurrentPowerCount', power: 6000, atLeast: 1 }] }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -5000, duration: 'duringThisTurn', optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 2000 } }, optional: true, ifGate: [{ kind: 'selfCharacterCurrentPowerCount', power: 6000, atLeast: 1 }] }] } },
     ],
   },
 

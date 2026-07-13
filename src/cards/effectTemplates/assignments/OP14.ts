@@ -91,7 +91,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ── Triage batch (OP14 expressible). Self-power gates, "becomes rested" triggers, "rest N of your cards" cost, and choice/target-swap effects are deferred. ──
+  // ── Triage batch (OP14 expressible). Self-power gates, "becomes rested" triggers, and choice/target-swap effects are deferred. ──
   { cardNumber: 'OP14-014', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Supernovas' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'red', maxPower: 2000 } }] } },
 
   { cardNumber: 'OP14-015', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
@@ -114,8 +114,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
       }],
     },
   },
-  // OP14-018 — [Trigger] play up to 1 red Character ≤2000 power from hand. PARTIAL: the power-gated [Counter] buff is deferred.
-  { cardNumber: 'OP14-018', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'red', maxPower: 2000 } }] } },
+  // OP14-018 — [Counter] +4000 if any Character has 8000+ base power. [Trigger] play up to 1 red Character ≤2000 power from hand.
+  {
+    cardNumber: 'OP14-018',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'anyCharacterBasePowerAtLeast', power: 8000 }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'red', maxPower: 2000 } }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP14-019',
@@ -209,7 +215,6 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Opponent's Turn] If this Character would be removed from the field by your opponent's effect, you
   //   may rest 1 of your cards instead.[Activate: Main] [Once Per Turn] You may rest 2 of your cards: This
   //   Character gains +2000 power until the end of your opponent's next End Phase.
-  // PARTIAL: field-removal uses K.O.-replacement proxy; "rest N of your cards" → restDon cost.
   {
     cardNumber: 'OP14-029',
     templates: [
@@ -220,7 +225,9 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
           functions: [{
             fn: 'registerKoReplacementSelf',
             scope: 'effect',
-            restCharacter: true,
+            replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+            effectSourceController: 'opponent',
+            restCards: { count: 1 },
             duration: 'permanent',
             sourceCondition: { turn: 'opponent' },
           }],
@@ -231,8 +238,10 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'activateMain',
           oncePerTurn: true,
-          cost: [{ kind: 'restDon', count: 2 }],
-          functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'endOfOpponentsTurn' }],
+          functions: [
+            { fn: 'restControllerCards', count: 2, optional: true },
+            { fn: 'addPowerSelf', amount: 2000, duration: 'endOfOpponentsTurn', ifPrevious: 'previousSelectedAny' },
+          ],
         },
       },
     ],
@@ -309,17 +318,23 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   cost of 4 or less will not become active in your opponent's next Refresh Phase.
   { cardNumber: 'OP14-035', templateId: 'ability', params: { timing: 'onRested', condition: { turn: 'your' }, functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 4 } }, optional: true, maxTargets: 1 }] } },
 
-  // OP14-036 — PARTIAL: "rest 1 of your cards" cost deferred on both timings.
+  // OP14-036 — [Counter]/[Trigger] may rest 1 of your cards for the payoff.
   {
     cardNumber: 'OP14-036',
     templates: [
-      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 7000 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'restControllerCards', count: 1, optional: true }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousSelectedAny' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'restControllerCards', count: 1, optional: true }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 7000 } }, optional: true, ifPrevious: 'previousSelectedAny' }] } },
     ],
   },
 
-  // OP14-037/038 — [Counter] Leader +3000. PARTIAL: "rest N of your cards" [Main] payoffs deferred.
-  { cardNumber: 'OP14-037', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+  // OP14-037 — [Main] may rest 3 of your cards for a rested-character K.O.; [Counter] Leader +3000.
+  {
+    cardNumber: 'OP14-037',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'restControllerCards', count: 3, optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxBasePower: 7000 } }, optional: true, ifPrevious: 'previousSelectedAny' }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   { cardNumber: 'OP14-038', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
 
@@ -480,8 +495,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   // --- codegen batch ---
   { cardNumber: 'OP14-044', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] }] } },
 
-  // OP14-045 — [On K.O.] Draw 1. PARTIAL: the "when a card is trashed from hand → [Rush]" trigger is deferred.
-  { cardNumber: 'OP14-045', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+  // OP14-045 — when a card is trashed from hand by an effect, this gains [Rush]. [On K.O.] Draw 1.
+  {
+    cardNumber: 'OP14-045',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onHandTrashed', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
 
   // OP14-046 — [Activate: Main] trash this: up to 1 {Fish-Man}/{Merfolk} Leader/Character +2000 this turn.
   { cardNumber: 'OP14-046', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { anyOfTypes: ['Fish-Man', 'Merfolk'] } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
@@ -490,8 +511,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP14-047', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { category: 'character', anyOf: [{ typeIncludes: 'Fish-Man' }, { typeIncludes: 'Merfolk' }], maxCost: 3 } }] } },
 
 
-  // OP14-049 — [On Play] rest 2 DON!!: Draw 2, return up to 1 Character cost ≤7 to hand. PARTIAL: static [Rush] trigger deferred.
-  { cardNumber: 'OP14-049', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 7 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  // OP14-049 — hand-trash reaction grants [Rush]. [On Play] rest 2 DON!!: Draw 2, return cost<=7 Character.
+  {
+    cardNumber: 'OP14-049',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onHandTrashed', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 7 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+    ],
+  },
 
   { cardNumber: 'OP14-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Fish-Man' }], functions: [{ fn: 'draw', amount: 1 }] } },
 
@@ -759,8 +786,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP14-090 — [On Play] Rest up to 1 opp Character cost 0. PARTIAL: the static "can attack Characters" clause is deferred.
-  { cardNumber: 'OP14-090', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { exactCost: 0 } }, optional: true }] } },
+  // OP14-090 — if any Character costs 0 or 8+, can attack Characters when played. [On Play] rest opp cost 0.
+  {
+    cardNumber: 'OP14-090',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent', condition: { gate: [{ kind: 'anyOf', gates: [{ kind: 'anyCharacterExactCost', exactCost: 0 }, { kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }] } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { exactCost: 0 } }, optional: true }] } },
+    ],
+  },
 
   // OP14-091 — [On K.O.] Play up to 1 Baroque Works Character cost≤5 (other than Bentham) from hand or trash.
   {

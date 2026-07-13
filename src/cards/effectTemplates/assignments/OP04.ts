@@ -44,8 +44,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP04-005 — PARTIAL: "other than this Character" uses selfControlsNamed (counts self when alone).
-  { cardNumber: 'OP04-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Kung Fu Jugon' }] } }] } },
+  // OP04-005 — gains [Blocker] while you have another [Kung Fu Jugon].
+  { cardNumber: 'OP04-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfOtherNamedCharacterCount', name: 'Kung Fu Jugon', atLeast: 1 }] } }] } },
 
   // OP04-006 — [When Attacking] You may give your active Leader −5000: this Character +2000 until your next turn.
   { cardNumber: 'OP04-006', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
@@ -255,9 +255,14 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   in any order.
   // NOTE: not yet implemented (needs template).
 
-  // OP04-039 (leader) Rebecca —
-  //   PARTIAL: the static "cannot attack" lock is implemented below; the activated life-to-play ability remains deferred.
-  { cardNumber: 'OP04-039', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+  // OP04-039 (leader) Rebecca — cannot attack; [Activate: Main] rest 1 DON!!, if hand <=6, look 2 for Dressrosa and trash rest.
+  {
+    cardNumber: 'OP04-039',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], gate: [{ kind: 'selfHand', atMost: 6 }], functions: [{ fn: 'searchTopDeck', look: 2, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Dressrosa' }, remainder: 'trash' }] } },
+    ],
+  },
 
   // OP04-040 — PARTIAL: combined Life+hand ≤4 gate and optional deck→Life branch deferred; mapped draw 1 at hand ≤4.
   {
@@ -516,18 +521,24 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Dressrosa', excludeSelfName: true }, remainder: 'trash' }] },
   },
 
-  //   PARTIAL: the "if 15+ trash, that card gains [Double Attack]" rider needs a trash-count gate (deferred).
+  // OP04-093 — [Main] Dressrosa Character +6000, then if trash >=15, that card gains [Double Attack]. [Trigger] Draw 3, trash 2.
   {
     cardNumber: 'OP04-093',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Dressrosa' } }, amount: 6000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Dressrosa' } }, amount: 6000, duration: 'duringThisTurn', optional: true },
+        { fn: 'addKeyword', target: { ref: 'previous' }, keyword: 'doubleAttack', duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny', ifGate: [{ kind: 'selfTrashCount', atLeast: 15 }] },
+      ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 3, trashCount: 2 }] } },
     ],
   },
 
-  // OP04-094 Trueno Bastardo — [Main] K.O. up to 1 opp Character cost ≤4.
-  //   PARTIAL: the "if 15+ trash, cost ≤6 instead" upgrade (trash gate) and the [Trigger] "rest your Leader: K.O." (rest-leader cost) are deferred.
-  { cardNumber: 'OP04-094', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+  // OP04-094 Trueno Bastardo — [Main] K.O. cost <=4, upgraded to cost <=6 at trash >=15.
+  //   PARTIAL: the [Trigger] "rest your Leader: K.O." line is deferred (rest-leader trigger cost).
+  { cardNumber: 'OP04-094', templateId: 'ability', params: { timing: 'activateMain', functions: [
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, ifGate: [{ kind: 'selfTrashCount', atMost: 14 }] },
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, ifGate: [{ kind: 'selfTrashCount', atLeast: 15 }] },
+  ] } },
 
   // OP04-096 — If Leader {Dressrosa}, your {Dressrosa} Characters can attack Characters on the turn played.
   { cardNumber: 'OP04-096', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent', anyOfTypes: ['Dressrosa'], gate: [{ kind: 'leaderType', type: 'Dressrosa' }] }] } },
@@ -622,12 +633,14 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-116 Diable Jambe Joue Shot — [Counter] +6000 battle. [Trigger] draw 1.
-  //   PARTIAL: the "if combined Life ≤4, K.O. 1 opp Char cost ≤2" rider needs a combined-Life gate (deferred).
+  // OP04-116 Diable Jambe Joue Shot — [Counter] +6000 battle, then if combined Life <=4 K.O. cost <=2. [Trigger] draw 1.
   {
     cardNumber: 'OP04-116',
     templates: [
-      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 6000, duration: 'duringThisBattle', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 6000, duration: 'duringThisBattle', optional: true },
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, ifGate: [{ kind: 'combinedLifeTotal', atMost: 4 }] },
+      ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },
