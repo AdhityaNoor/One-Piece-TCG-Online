@@ -491,7 +491,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                 </div>
               </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+            <div className={['overflow-y-auto p-3', onlineMode ? 'max-h-[34dvh] flex-shrink-0' : 'min-h-0 flex-1'].join(' ')}>
               <div className="mb-3 flex flex-col gap-2">
                 <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} />
                 <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} />
@@ -499,7 +499,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               {actionContent}
             </div>
             {onlineMode && (
-              <div className="flex h-56 flex-shrink-0 flex-col border-t border-gold/25">
+              <div className="flex min-h-0 flex-1 flex-col border-t border-gold/25">
                 <p className="flex-shrink-0 border-b border-gold/15 bg-black/18 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-gold/80">
                   Chat
                 </p>
