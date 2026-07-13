@@ -1,8 +1,6 @@
-import { useMemo } from 'react';
-import { evaluateSavedDeckFormatStatus } from '../../cards/format';
+import { useDeckEligibility } from '../hooks/useDeckEligibility';
 import { GameCanvasScreen } from '../components';
 import { useNavigationStore } from '../store/navigationStore';
-import { useSavedDecksStore } from '../store/savedDecksStore';
 
 type PlayModeItem = {
   label: string;
@@ -13,34 +11,13 @@ type PlayModeItem = {
   onClick: () => void;
 };
 
+/**
+ * Play tab content, embedded under the universal header (see HubScreen) —
+ * no back button of its own since it isn't a pushed screen anymore.
+ */
 export function PlayMenuScreen() {
-  const goBack = useNavigationStore((state) => state.goBack);
   const navigateTo = useNavigationStore((state) => state.navigateTo);
-  const entries = useSavedDecksStore((state) => state.entries);
-  const load = useSavedDecksStore((state) => state.load);
-
-  const deckCounts = useMemo(() => {
-    let local = 0;
-    let standard = 0;
-    let extra = 0;
-    let ranked = 0;
-
-    for (const entry of entries) {
-      const loaded = load(entry.deckId);
-      if (!loaded.ok) continue;
-      local += 1;
-      const status = evaluateSavedDeckFormatStatus(loaded.deck).status;
-      if (status === 'legal') {
-        standard += 1;
-        extra += 1;
-        ranked += 1;
-      } else if (status === 'extraLegal') {
-        extra += 1;
-      }
-    }
-
-    return { local, standard, extra, ranked };
-  }, [entries, load]);
+  const deckCounts = useDeckEligibility();
 
   const hasLocalDecks = deckCounts.local > 0;
   const hasStandardDecks = deckCounts.standard > 0;
@@ -48,7 +25,7 @@ export function PlayMenuScreen() {
   const hasRankedDecks = deckCounts.ranked > 0;
 
   return (
-    <GameCanvasScreen kicker="Play" status="Choose a mode" headerTitle="Play" onBack={goBack} dense>
+    <GameCanvasScreen dense>
       <div className="grid h-full min-h-0 gap-5 overflow-y-auto px-2 py-2 sm:px-3 lg:grid-cols-3 lg:gap-8 lg:overflow-hidden">
         <PlaySection
           title="Local"

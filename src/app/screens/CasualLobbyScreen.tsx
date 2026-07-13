@@ -42,13 +42,7 @@ export function CasualLobbyScreen() {
   }, [selectDeck, selectedDeckAllowed]);
 
   return (
-    <GameCanvasScreen
-      kicker="Online"
-      status={regulation === 'rankedStandard' ? 'Ranked standard' : regulation === 'casualExtra' ? 'Casual extra legal' : 'Casual standard'}
-      headerTitle={regulation === 'rankedStandard' ? 'Ranked Match' : 'Casual Match'}
-      onBack={goBack}
-      dense
-    >
+    <GameCanvasScreen onBack={goBack} dense>
       <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto px-3 py-2 sm:gap-4 sm:px-0">
         <OnlineDeckRow rows={rows} selectedDeckId={selectedDeckAllowed ? selectedDeckId : null} onSelect={selectDeck} regulation={regulation} />
         <section className="min-h-[22rem] flex-1 overflow-y-auto border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.92))] p-3 shadow-[0_14px_0_rgba(1,5,16,0.5),_0_24px_38px_rgba(0,0,0,0.28)] sm:p-4">

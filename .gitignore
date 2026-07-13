@@ -60,6 +60,20 @@ CAPABILITY.md
 effect-partial-coverage.csv
 effect-partial-coverage.md
 
+effect-v2-output/
+effect-v2-curation.csv
+effect-v2-curation.md
+effect-v2-guide-coverage.json
+effect-v2-canonical-registry.json
+effect-v2-uncovered.csv
+effect-v2-uncovered.md
+effect-v2-uncovered.json
+effect-v2-curation-effects.csv
+effect-v2-guide-structure.json
+effect-v2-uncovered-*.csv
+effect-v2-uncovered-*.md
+effect-v2-uncovered-*.json
+
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -86,3 +100,9 @@ pnpm-debug.log*
 graphify-out/
 
 .history/
+
+# To be migrated V2 effect templates. These are local migration prep artifacts for now.
+*v2*
+*_V2*
+OPTCG_Canonical_Effect_Structure.md
+

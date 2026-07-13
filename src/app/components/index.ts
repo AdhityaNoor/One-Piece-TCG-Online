@@ -1,3 +1,4 @@
+export * from './AvatarPicker';
 export * from './Button';
 export * from './Toggle';
 export * from './MenuRow';
@@ -20,3 +21,5 @@ export * from './BacksoundControl';
 export * from './BrandLogo';
 export * from './LandingBackdrop';
 export * from './GlitterWrap';
+export * from './AppHeader';
+export * from './AppShell';

@@ -1,4 +1,4 @@
-export * from './MainMenuScreen';
+export * from './HubScreen';
 export * from './LandingScreen';
 export * from './SplashScreen';
 export * from './CreditsScreen';

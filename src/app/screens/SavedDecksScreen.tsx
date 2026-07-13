@@ -356,6 +356,31 @@ function DeckInfoStat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function TabButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={[
+        'relative flex-shrink-0 px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition-colors',
+        active ? 'text-gold' : 'text-white/45 hover:text-white/70',
+      ].join(' ')}
+    >
+      {label}
+      {active && <span aria-hidden="true" className="absolute inset-x-2 bottom-0 h-0.5 bg-gold" />}
+    </button>
+  );
+}
+
+/**
+ * Two-pane layout: a deck picker (the one, obvious way to switch decks) next
+ * to a detail panel. The detail panel shows exactly ONE dense view at a
+ * time — the 3D showcase, or the full card list — behind a tab switch,
+ * instead of stacking the box + stat grid + full card grid all at once.
+ * That stacking was the screen's core "too cluttered" problem; tabbing
+ * fixes it without giving up either view.
+ */
 function DecksRevampLayout({
   rows,
   current,
@@ -385,107 +410,23 @@ function DecksRevampLayout({
   onEditDeck: (deckId: string) => void;
   onDeleteDeck: (deckId: string) => void;
 }) {
+  const [tab, setTab] = useState<'overview' | 'cards'>('overview');
+
+  // Land back on the showcase whenever the selected deck changes, so you
+  // never end up staring at a stale/empty card-list tab after switching.
+  useEffect(() => {
+    setTab('overview');
+  }, [clampedIndex]);
+
   return (
-    <div className="grid h-full min-h-0 gap-3 overflow-y-auto p-2 sm:gap-4 sm:p-3 xl:grid-cols-[minmax(0,1fr)_21rem] xl:grid-rows-[minmax(24rem,1fr)_minmax(12rem,0.72fr)] xl:overflow-hidden">
-      <section className="relative min-h-[24rem] overflow-hidden p-4">
-        <div className="grid h-full min-h-0 items-center gap-4 lg:grid-cols-[minmax(18rem,0.82fr)_minmax(0,1fr)]">
-          <div className="flex min-h-[18rem] items-center justify-center overflow-visible">
-            {current && (
-              <>
-                <div className="sm:hidden">
-                  <DeckBox3D entry={current.entry} deck={current.deck} compact />
-                </div>
-                <div className="hidden sm:block">
-                  <DeckBox3D entry={current.entry} deck={current.deck} />
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="flex min-w-0 flex-col gap-4 text-center lg:text-left">
-            <div>
-              <h2 className="truncate font-heading text-2xl font-black uppercase tracking-[0.08em] text-white sm:text-4xl">
-                {current?.entry.name}
-              </h2>
-              <div className="mt-2 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-                {currentFormatStatus && <DeckFormatBadge status={currentFormatStatus} />}
-                <span className="border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/55">
-                  {cardCount}/50 cards
-                </span>
-                {updatedAt && (
-                  <span className="border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/55">
-                    {updatedAt}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {currentDeck ? (
-              <div className="grid gap-2 text-left sm:grid-cols-2">
-                <DeckInfoStat label="Leader" value={currentDeck.leader.definition.name} />
-                <DeckInfoStat label="Colors" value={currentDeck.leader.definition.colors.join(' / ') || 'None'} />
-                <DeckInfoStat label="Entries" value={`${currentDeck.cards.length}`} />
-                <DeckInfoStat label="DON!! Deck" value={`${currentDeck.donDeckSize}`} />
-              </div>
-            ) : (
-              <p className="border border-red-400/20 bg-red-500/10 p-3 text-sm font-bold text-red-100">
-                Load error - data may be corrupted.
-              </p>
-            )}
-
-            <div className="flex flex-wrap justify-center gap-2 lg:justify-start">
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={!current?.deck.ok}
-                onClick={() => current?.deck.ok && onEditDeck(current.entry.deckId)}
-              >
-                Edit Deck
-              </Button>
-              {current && (
-                <Button variant="danger" size="sm" onClick={() => onDeleteDeck(current.entry.deckId)}>
-                  Delete
-                </Button>
-              )}
-            </div>
-
-            <div className="flex items-center justify-center gap-3 lg:justify-start">
-              <button
-                type="button"
-                onClick={onPrevious}
-                disabled={rows.length <= 1}
-                className="flex h-10 w-10 items-center justify-center border border-white/18 bg-white/6 text-white/55 transition hover:border-gold/50 hover:bg-white/12 hover:text-gold disabled:pointer-events-none disabled:opacity-30"
-                aria-label="Previous deck"
-              >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <p className="min-w-20 text-center text-[10px] font-black uppercase tracking-[0.18em] text-white/45">
-                {clampedIndex + 1} / {rows.length}
-              </p>
-              <button
-                type="button"
-                onClick={onNext}
-                disabled={rows.length <= 1}
-                className="flex h-10 w-10 items-center justify-center border border-white/18 bg-white/6 text-white/55 transition hover:border-gold/50 hover:bg-white/12 hover:text-gold disabled:pointer-events-none disabled:opacity-30"
-                aria-label="Next deck"
-              >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <aside className="min-h-[13rem] border border-white/10 bg-[rgba(1,5,16,0.58)] xl:row-span-2 xl:min-h-0">
-        <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.20em] text-gold">All Decks</p>
+    <div className="grid h-full min-h-0 gap-3 overflow-hidden p-2 sm:gap-4 sm:p-3 xl:grid-cols-[19rem_minmax(0,1fr)]">
+      {/* Deck picker — the single, obvious way to switch decks. */}
+      <aside className="flex min-h-[9rem] max-h-[13rem] flex-col border border-white/10 bg-[rgba(1,5,16,0.58)] xl:max-h-none xl:min-h-0">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-white/8 px-4 py-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.20em] text-gold">Your Decks</p>
           <p className="text-[10px] text-white/35">{rows.length}</p>
         </div>
-        <div className="flex max-h-[15rem] gap-2 overflow-x-auto p-2 xl:max-h-none xl:min-h-0 xl:flex-col xl:overflow-y-auto xl:overflow-x-hidden">
+        <div className="flex min-h-0 flex-1 gap-2 overflow-x-auto p-2 xl:flex-col xl:overflow-x-hidden xl:overflow-y-auto">
           {rows.map((row, index) => {
             const active = index === clampedIndex;
             const loadedDeck = row.deck.ok ? row.deck.deck : null;
@@ -498,7 +439,7 @@ function DecksRevampLayout({
                 type="button"
                 onClick={() => onSelectDeck(index)}
                 className={[
-                  'flex min-w-[15rem] items-center gap-2.5 border px-2.5 py-2 text-left transition-colors xl:min-w-0',
+                  'flex min-w-[15rem] flex-shrink-0 items-center gap-2.5 border px-2.5 py-2 text-left transition-colors xl:min-w-0 xl:flex-shrink',
                   active ? 'border-gold/60 bg-gold/12' : 'border-white/8 bg-white/4 hover:bg-white/8',
                 ].join(' ')}
               >
@@ -521,30 +462,104 @@ function DecksRevampLayout({
         </div>
       </aside>
 
-      <section className="flex min-h-[16rem] flex-col border border-white/10 bg-[rgba(1,5,16,0.58)] xl:min-h-0">
-        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-white/8 px-4 py-3">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.20em] text-gold">Card List</p>
-            <p className="mt-1 text-[10px] text-white/35">{cardListItems.length} entries</p>
+      {/* Detail panel. */}
+      <section className="flex min-h-0 flex-col border border-white/10 bg-[rgba(1,5,16,0.58)]">
+        <div className="flex flex-shrink-0 flex-wrap items-start justify-between gap-3 border-b border-white/8 px-4 py-3 sm:px-5">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={onPrevious}
+              disabled={rows.length <= 1}
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center border border-white/18 bg-white/6 text-white/55 transition hover:border-gold/50 hover:bg-white/12 hover:text-gold disabled:pointer-events-none disabled:opacity-30"
+              aria-label="Previous deck"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            <div className="min-w-0">
+              <h2 className="truncate font-heading text-lg font-black uppercase tracking-[0.06em] text-white sm:text-2xl">
+                {current?.entry.name}
+              </h2>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {currentFormatStatus && <DeckFormatBadge status={currentFormatStatus} size="sm" />}
+                <span className="border border-white/10 bg-white/5 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-white/55">
+                  {cardCount}/50 cards
+                </span>
+                {updatedAt && (
+                  <span className="hidden border border-white/10 bg-white/5 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-white/55 sm:inline-flex">
+                    {updatedAt}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={rows.length <= 1}
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center border border-white/18 bg-white/6 text-white/55 transition hover:border-gold/50 hover:bg-white/12 hover:text-gold disabled:pointer-events-none disabled:opacity-30"
+              aria-label="Next deck"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
           </div>
-          <div className="hidden gap-1.5 sm:flex">
-            {rows.map((_, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => onSelectDeck(index)}
-                aria-label={`Go to deck ${index + 1}`}
-                className={[
-                  'h-2 rounded-full transition-all duration-200',
-                  index === clampedIndex ? 'w-6 bg-gold' : 'w-2 bg-white/50 hover:bg-white/70',
-                ].join(' ')}
-              />
-            ))}
+
+          <div className="flex flex-shrink-0 gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={!current?.deck.ok}
+              onClick={() => current?.deck.ok && onEditDeck(current.entry.deckId)}
+            >
+              Edit Deck
+            </Button>
+            {current && (
+              <Button variant="danger" size="sm" onClick={() => onDeleteDeck(current.entry.deckId)}>
+                Delete
+              </Button>
+            )}
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-4">
-          {cardListItems.length === 0 ? (
+        <div className="flex flex-shrink-0 gap-1 border-b border-white/8 px-3 sm:px-4">
+          <TabButton label="Overview" active={tab === 'overview'} onClick={() => setTab('overview')} />
+          <TabButton label={`Card List (${cardListItems.length})`} active={tab === 'cards'} onClick={() => setTab('cards')} />
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+          {tab === 'overview' ? (
+            <div className="flex h-full min-h-0 flex-col items-center justify-center gap-6 lg:flex-row lg:gap-10">
+              <div className="flex flex-shrink-0 items-center justify-center overflow-visible">
+                {current && (
+                  <>
+                    <div className="sm:hidden">
+                      <DeckBox3D entry={current.entry} deck={current.deck} compact />
+                    </div>
+                    <div className="hidden sm:block">
+                      <DeckBox3D entry={current.entry} deck={current.deck} />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {currentDeck ? (
+                <div className="grid w-full max-w-xs gap-2 text-left">
+                  <DeckInfoStat label="Leader" value={currentDeck.leader.definition.name} />
+                  <DeckInfoStat label="Colors" value={currentDeck.leader.definition.colors.join(' / ') || 'None'} />
+                  <DeckInfoStat label="Entries" value={`${currentDeck.cards.length}`} />
+                  <DeckInfoStat label="DON!! Deck" value={`${currentDeck.donDeckSize}`} />
+                </div>
+              ) : (
+                <p className="border border-red-400/20 bg-red-500/10 p-3 text-sm font-bold text-red-100">
+                  Load error - data may be corrupted.
+                </p>
+              )}
+            </div>
+          ) : cardListItems.length === 0 ? (
             <p className="py-4 text-center text-xs text-white/25">No cards to display</p>
           ) : (
             <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
@@ -559,8 +574,11 @@ function DecksRevampLayout({
   );
 }
 
+/**
+ * Decks tab content, embedded under the universal header (see HubScreen) —
+ * no back button of its own since it isn't a pushed screen anymore.
+ */
 export function SavedDecksScreen() {
-  const goBack = useNavigationStore((state) => state.goBack);
   const navigateTo = useNavigationStore((state) => state.navigateTo);
   const entries = useSavedDecksStore((state) => state.entries);
   const load = useSavedDecksStore((state) => state.load);
@@ -630,19 +648,24 @@ export function SavedDecksScreen() {
 
   return (
     <GameCanvasScreen
-      kicker="Deck Rack"
-      status={`${entries.length} saved`}
-      onBack={goBack}
-      headerTitle="Decks"
       dense
       topRight={
-        <CanvasMenuButton
-          label="New Deck"
-          size="sm"
-          onClick={() => navigateTo({ screen: 'deck-builder' })}
-          expandOnHover={false}
-          className="h-10 w-[6.5rem] max-w-none px-2 text-[11px]"
-        />
+        <div className="flex items-center gap-2">
+          <CanvasMenuButton
+            label="Card Library"
+            size="sm"
+            onClick={() => navigateTo({ screen: 'card-library' })}
+            expandOnHover={false}
+            className="h-10 w-[7.5rem] max-w-none px-2 text-[11px]"
+          />
+          <CanvasMenuButton
+            label="New Deck"
+            size="sm"
+            onClick={() => navigateTo({ screen: 'deck-builder' })}
+            expandOnHover={false}
+            className="h-10 w-[6.5rem] max-w-none px-2 text-[11px]"
+          />
+        </div>
       }
     >
       {rows.length === 0 ? (

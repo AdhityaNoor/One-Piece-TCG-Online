@@ -51,7 +51,7 @@ export function CreditsScreen() {
   const goBack = useNavigationStore((s) => s.goBack);
 
   return (
-    <GameCanvasScreen kicker="One Piece TCG Online" status="Credits" onBack={goBack}>
+    <GameCanvasScreen onBack={goBack}>
       <div className="flex h-full min-h-0 flex-col items-center justify-start gap-4 overflow-y-auto px-4 py-3 sm:justify-center sm:gap-6">
         <section
           className="op-credits-panel grid w-full max-w-5xl items-stretch gap-3 border border-gold/25 bg-black/45 p-3 text-center shadow-[0_14px_0_rgba(1,5,16,0.5),_0_24px_38px_rgba(0,0,0,0.28)] backdrop-blur-sm sm:gap-5 sm:p-5 lg:p-6"

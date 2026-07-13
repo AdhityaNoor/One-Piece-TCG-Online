@@ -61,11 +61,7 @@ export function LandingScreen() {
   }
 
   return (
-    <GameCanvasScreen
-      headerTitle={stage === 'start' ? undefined : 'One Piece TCG Online'}
-      onBack={stage !== 'start' ? () => goTo('start') : undefined}
-      title={stage === 'start' ? undefined : isSignup ? 'Sign Up' : 'Sign In'}
-    >
+    <GameCanvasScreen onBack={stage !== 'start' ? () => goTo('start') : undefined}>
       <LandingBackdrop />
 
       {stage === 'start' ? (
@@ -77,6 +73,9 @@ export function LandingScreen() {
         </div>
       ) : (
         <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-md flex-col justify-center gap-5">
+          <h1 className="text-center font-display text-3xl font-black uppercase tracking-[0.04em] text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.55)] sm:text-4xl">
+            {isSignup ? 'Sign Up' : 'Sign In'}
+          </h1>
           {configured ? (
             <p className="text-center text-sm text-slate-200/70">
               {isSignup

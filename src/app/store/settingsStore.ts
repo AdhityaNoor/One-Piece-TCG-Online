@@ -8,6 +8,7 @@
  */
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { DEFAULT_AVATAR_ID } from '../lib/avatars';
 import { browserStorage } from '../lib/runtime';
 import { useCardAnimationStore } from './cardAnimationStore';
 
@@ -31,6 +32,14 @@ export interface SettingsState {
    */
   username: string;
   /**
+   * Predefined avatar id (see lib/avatars.ts — AVATAR_OPTIONS) shown next to
+   * the username in the header profile preview and on the Pirate Profile
+   * screen. UI/presentation only, same as `username`. Local to this device,
+   * same persistence mechanism as everything else in this store — there is
+   * no per-account/server-synced avatar yet.
+   */
+  avatarId: string;
+  /**
    * Local hotseat debug aid: shows both players' hands at once instead of
    * hiding the off-turn player's hand. Project rule: card visibility must
    * be modeled properly even in this mode - this only affects what the UI
@@ -52,6 +61,7 @@ export interface SettingsState {
   /** Match screen navy backdrop preference. UI-only visual polish, never game state. */
   matchNavyBackgroundEnabled: boolean;
   setUsername(value: string): void;
+  setAvatarId(value: string): void;
   setDebugShowBothHands(value: boolean): void;
   setAnimationsEnabled(value: boolean): void;
   setThreeDEnabled(value: boolean): void;
@@ -65,6 +75,7 @@ export interface SettingsState {
 
 const DEFAULTS = {
   username: DEFAULT_USERNAME,
+  avatarId: DEFAULT_AVATAR_ID,
   debugShowBothHands: true,
   animationsEnabled: true,
   threeDEnabled: false,
@@ -76,6 +87,7 @@ const DEFAULTS = {
 } satisfies Pick<
   SettingsState,
   | 'username'
+  | 'avatarId'
   | 'debugShowBothHands'
   | 'animationsEnabled'
   | 'threeDEnabled'
@@ -91,6 +103,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       ...DEFAULTS,
       setUsername: (value) => set({ username: sanitizeUsername(value) }),
+      setAvatarId: (value) => set({ avatarId: value }),
       setDebugShowBothHands: (value) => set({ debugShowBothHands: value }),
       setAnimationsEnabled: (value) => {
         set({ animationsEnabled: value });

@@ -104,9 +104,6 @@ export function CoverageMonitorScreen() {
 
   return (
     <GameCanvasScreen
-      kicker="Debug"
-      status={statusLine}
-      title="Coverage"
       onBack={goBack}
       topRight={
         <CanvasMenuButton
@@ -122,6 +119,7 @@ export function CoverageMonitorScreen() {
         <aside className="min-h-0 overflow-hidden">
           <section className="op-panel flex h-full min-h-0 flex-col overflow-hidden p-3">
             <p className="op-section-title">Controls</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-gold/80">{statusLine}</p>
             <p className="mt-2 text-xs leading-5 text-slate-200/65">
               Live metrics from the curated registry. Mirrors{' '}
               <code className="rounded bg-black/35 px-1 py-0.5 text-[10px] text-gold/80">npm run coverage</code>,{' '}

@@ -75,7 +75,7 @@ export function DeckSelectScreen() {
   const rows = useMemo(() => entries.map((entry) => ({ entry, deck: load(entry.deckId) })), [entries, load]);
 
   return (
-    <GameCanvasScreen kicker="Play" status="Match setup" headerTitle="Choose Decks" onBack={goBack} dense>
+    <GameCanvasScreen onBack={goBack} dense>
       <div className="flex h-full min-h-0 flex-col justify-center gap-3 overflow-y-auto px-3 py-2 sm:gap-5 sm:px-0">
         <section className="border border-gold/30 bg-black/45 p-4 text-center shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)] backdrop-blur-sm sm:p-5">
           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">vs Self - Local Hotseat</p>

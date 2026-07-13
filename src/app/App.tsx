@@ -1,13 +1,20 @@
 /**
  * App root — a thin switch over the navigation stack's current screen
  * (navigationStore.ts). Holds no logic of its own: every actual screen is
- * its own component under /src/app/screens. The full nav graph (Main Menu ->
- * Deck Builder -> Save -> Saved Decks -> Play -> Deck Select -> Match) is
- * built and clickable end-to-end as of Task 11. ComingSoonScreen still exists
- * under /src/app/screens for any future NavigationTarget added before its
- * real screen is built, but nothing currently routes to it.
+ * its own component under /src/app/screens.
+ *
+ * Every screen except live gameplay (`match`, `online-match`, and
+ * `play-test` — which embeds MatchScreen directly for developer testing) is
+ * wrapped in AppShell, which renders the universal header (Home/Play/Decks/
+ * Social + Settings gear — see AppHeader.tsx) above the screen's own
+ * content. MatchScreen owns its own full-viewport chrome and is never
+ * touched here, by design.
+ *
+ * ComingSoonScreen still exists under /src/app/screens for any future
+ * NavigationTarget added before its real screen is built, but nothing
+ * currently routes to it.
  */
-import { BacksoundControl } from './components';
+import { AppShell, BacksoundControl } from './components';
 import {
   CardLibraryScreen,
   CreditsScreen,
@@ -17,20 +24,20 @@ import {
   DebugToolsScreen,
   DeckBuilderScreen,
   DeckSelectScreen,
+  HubScreen,
   LandingScreen,
-  MainMenuScreen,
   MatchScreen,
   PlayTestScreen,
-  PlayMenuScreen,
   ProfileScreen,
   RankedScreen,
-  SavedDecksScreen,
   SettingsScreen,
   SplashScreen,
 } from './screens';
 import { useCurrentScreen } from './store/navigationStore';
 import { useAppInit } from './hooks/useAppInit';
 import { useAuthStore } from './store/authStore';
+
+const BARE_SCREENS = new Set(['match', 'online-match', 'play-test']);
 
 export function App() {
   const { ready, progress } = useAppInit();
@@ -51,8 +58,14 @@ export function App() {
 
   const screen = (() => {
     switch (current.screen) {
+      case 'hub':
+        return <HubScreen tab={current.tab} />;
       case 'main-menu':
-        return <MainMenuScreen />;
+        return <HubScreen tab="home" />;
+      case 'play-menu':
+        return <HubScreen tab="play" />;
+      case 'saved-decks':
+        return <HubScreen tab="decks" />;
       case 'settings':
         return <SettingsScreen />;
       case 'debug-tools':
@@ -65,10 +78,6 @@ export function App() {
         return <CardLibraryScreen />;
       case 'deck-builder':
         return <DeckBuilderScreen />;
-      case 'saved-decks':
-        return <SavedDecksScreen />;
-      case 'play-menu':
-        return <PlayMenuScreen />;
       case 'profile':
         return <ProfileScreen />;
       case 'ranked':
@@ -86,13 +95,15 @@ export function App() {
       case 'match':
         return <MatchScreen />;
       default:
-        return <MainMenuScreen />;
+        return <HubScreen tab="home" />;
     }
   })();
 
+  const bare = BARE_SCREENS.has(current.screen);
+
   return (
     <>
-      {screen}
+      {bare ? screen : <AppShell>{screen}</AppShell>}
       <BacksoundControl />
     </>
   );

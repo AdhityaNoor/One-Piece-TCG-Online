@@ -54,7 +54,7 @@ export function ProfileScreen() {
   }, [section, visibleSections]);
 
   return (
-    <GameCanvasScreen kicker="Pirate Profile" status={profile.header?.profile.username ?? 'Identity Hub'} headerTitle="Player Profile" onBack={goBack} dense>
+    <GameCanvasScreen onBack={goBack} dense>
       <div className="grid h-full min-h-0 gap-4 overflow-y-auto px-3 py-2 lg:grid-cols-[17rem_minmax(0,1fr)] lg:overflow-hidden">
         <aside className="min-h-0 border border-gold/30 bg-black/45 p-4 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
           <ProfileHeader />

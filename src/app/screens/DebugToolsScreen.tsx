@@ -10,6 +10,7 @@ import { useSavedDecksStore } from '../store/savedDecksStore';
 export function DebugToolsScreen() {
   const goBack = useNavigationStore((state) => state.goBack);
   const navigateTo = useNavigationStore((state) => state.navigateTo);
+  const setHubTab = useNavigationStore((state) => state.setHubTab);
   const entries = useSavedDecksStore((state) => state.entries);
   const remove = useSavedDecksStore((state) => state.remove);
   const [confirmingClear, setConfirmingClear] = useState(false);
@@ -20,7 +21,7 @@ export function DebugToolsScreen() {
   }
 
   return (
-    <GameCanvasScreen kicker="Developer" status="Local diagnostics" title="Debug" onBack={goBack}>
+    <GameCanvasScreen onBack={goBack}>
       <div className="mx-auto flex h-full w-full max-w-2xl flex-col gap-4 overflow-y-auto pb-2">
         <section className="op-panel p-4">
           <p className="op-section-title">Effect Curation</p>
@@ -51,7 +52,7 @@ export function DebugToolsScreen() {
           <p className="op-section-title">Display Preferences</p>
           <p className="mt-2 text-sm leading-6 text-slate-200/70">Show-both-hands, animations, and 3D toggles.</p>
           <div className="mt-4 flex justify-center">
-            <CanvasMenuButton label="Open Settings" size="sm" onClick={() => navigateTo({ screen: 'settings' })} />
+            <CanvasMenuButton label="Open Settings" size="sm" onClick={() => setHubTab('settings')} />
           </div>
         </section>
 

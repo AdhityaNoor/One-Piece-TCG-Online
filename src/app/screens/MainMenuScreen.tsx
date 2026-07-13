@@ -1,7 +1,9 @@
 /**
- * Full-viewport title/menu screen. The button shapes are intentionally
- * isolated here so they can later be replaced with bitmap button assets
- * without touching navigation behavior.
+ * SUPERSEDED by the universal header + HubScreen (see AppHeader.tsx,
+ * HubScreen.tsx, hub/HomeTab.tsx). No longer imported/exported/routed —
+ * Home/Play/Decks/Settings/Credits/Debug Tools/Profile all moved to their
+ * new homes under the header. Left in place instead of deleted in case any
+ * of this markup is useful reference; safe to delete.
  */
 import { useState } from 'react';
 import { BrandLogo, CanvasMenuButton, GameCanvasScreen, LandingBackdrop } from '../components';
@@ -18,8 +20,6 @@ export function MainMenuScreen() {
 
   return (
     <GameCanvasScreen
-      kicker="One Piece TCG"
-      status={`Alpha · v${__APP_VERSION__}`}
       topRight={<ProfileMenu user={user} onProfile={() => navigateTo({ screen: 'profile' })} onDebug={() => navigateTo({ screen: 'debug-tools' })} onLogout={logout} />}
     >
       <LandingBackdrop />
