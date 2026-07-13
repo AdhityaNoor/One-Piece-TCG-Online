@@ -70,11 +70,11 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const nameFor = (id: string): string => playerNames[id] ?? id;
 
   const [pauseOpen, setPauseOpen] = useState(false);
-  // Left Actions aside: online matches (Casual + Ranked) get a second "Chat"
-  // tab alongside Actions (see MatchChatPanel doc). Hotseat/VS CPU never
-  // switch off 'actions' since the tab strip itself is only rendered when
-  // onlineMode.
-  const [asideTab, setAsideTab] = useState<'actions' | 'chat'>('actions');
+  // Left Actions aside: online matches (Casual + Ranked) get an always-visible
+  // Chat dock below the action content (see MatchChatPanel doc). Mobile still
+  // gates chat behind a bubble/fullscreen panel (mobilePanel === 'chat'),
+  // since there's no room for a permanent dock there — seenChatCount only
+  // drives that mobile unread badge now.
   const [seenChatCount, setSeenChatCount] = useState(0);
   const [zoomDefinitionId, setZoomDefinitionId] = useState<string | null>(null);
   const [hoveredAttackTargetId, setHoveredAttackTargetId] = useState<string | null>(null);
@@ -200,16 +200,17 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [matchState]);
 
-  // Keep the Chat tab/bubble's unread badge in sync: mark everything "seen"
-  // the moment chat is open on either surface (desktop aside tab or the
-  // mobile fullscreen panel), including as new messages stream in while
-  // already open. Reset when a new online match/room starts fresh.
+  // Keep the mobile chat bubble's unread badge in sync: mark everything
+  // "seen" the moment the fullscreen chat panel is open, including as new
+  // messages stream in while already open. The desktop dock (below) is
+  // always visible when onlineMode, so it never needs its own unread
+  // counter — only the mobile bubble hides chat behind a tap. Reset when a
+  // new online match/room starts fresh.
   useEffect(() => {
-    if (asideTab === 'chat' || mobilePanel === 'chat') setSeenChatCount(chatMessages.length);
-  }, [asideTab, mobilePanel, chatMessages.length]);
+    if (mobilePanel === 'chat') setSeenChatCount(chatMessages.length);
+  }, [mobilePanel, chatMessages.length]);
   useEffect(() => {
     if (!onlineMode) {
-      setAsideTab('actions');
       setSeenChatCount(0);
       setMobilePanel((panel) => (panel === 'chat' ? null : panel));
     }
@@ -297,12 +298,25 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const canUseLocalActions = !isCpuTurn && (!isPinnedPerspective || actingPlayerId === localPlayerId);
   // Online-only (casual queue and ranked alike — both hydrate through the
   // same onlineMode/hydrateOnlineMatch path, see onlineStore.ts) loader
-  // popup: the remote opponent currently holds action authority (their turn,
-  // or a Block/Counter/pending-choice window that's theirs) and their move
-  // hasn't arrived over the network yet. Deliberately NOT gated on the older
+  // popup. Scoped tightly to the pre-game "going first" coin-flip decision
+  // (Comprehensive Rules 5-2-1-4/5-2-1-5, engine: setupState.stage ===
+  // 'awaitingGoingFirstChoice') — NOT the rest of the opponent's turn.
+  // Originally this fired for the opponent's entire turn/Block/Counter
+  // window (any time !canUseLocalActions), which meant it sat over the
+  // board continuously while the opponent just played normally; the live
+  // per-seat state stream already shows their moves as they happen, so a
+  // "deciding" overlay for ordinary turns was redundant and blocked the
+  // view. Mulligan (the other setup sub-step) intentionally does NOT show
+  // this either — each seat's mulligan is its own private decision, not
+  // something to visually wait on. Deliberately NOT gated on the older
   // single-client isPinnedPerspective mock (that has no real opponent to
   // wait on) — see WaitingForOpponent's doc comment for that seam.
-  const opponentDeciding = onlineMode && !matchState.gameOver && !canUseLocalActions;
+  const opponentDeciding =
+    onlineMode &&
+    !matchState.gameOver &&
+    matchState.currentPhase === 'setup' &&
+    matchState.setupState?.stage === 'awaitingGoingFirstChoice' &&
+    !canUseLocalActions;
 
   const battleLabel = matchState.currentBattle ? ` · Battle: ${matchState.currentBattle.step}` : '';
   const attackArrow = matchState.currentBattle
@@ -469,14 +483,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{matchModeLabel}</p>
-                  {onlineMode ? (
-                    <div className="mt-1 flex gap-1.5">
-                      <AsideTabButton label="Actions" active={asideTab === 'actions'} onClick={() => setAsideTab('actions')} />
-                      <AsideTabButton label="Chat" active={asideTab === 'chat'} unreadCount={unreadChatCount} onClick={() => setAsideTab('chat')} />
-                    </div>
-                  ) : (
-                    <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
-                  )}
+                  <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
                   <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">
                     Turn {matchState.turnNumber} · {nameFor(matchState.activePlayerId)} · {matchState.currentPhase}
                     {battleLabel}
@@ -484,22 +491,26 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                 </div>
               </div>
             </div>
-            {onlineMode && asideTab === 'chat' ? (
-              <MatchChatPanel
-                messages={chatMessages}
-                localPlayerId={localPlayerId}
-                nameFor={nameFor}
-                onSend={sendChat}
-                disabled={chatDisconnected}
-                className="min-h-0 flex-1"
-              />
-            ) : (
-              <div className="min-h-0 flex-1 overflow-y-auto p-3">
-                <div className="mb-3 flex flex-col gap-2">
-                  <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} />
-                  <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} />
-                </div>
-                {actionContent}
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+              <div className="mb-3 flex flex-col gap-2">
+                <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} />
+                <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} />
+              </div>
+              {actionContent}
+            </div>
+            {onlineMode && (
+              <div className="flex h-56 flex-shrink-0 flex-col border-t border-gold/25">
+                <p className="flex-shrink-0 border-b border-gold/15 bg-black/18 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-gold/80">
+                  Chat
+                </p>
+                <MatchChatPanel
+                  messages={chatMessages}
+                  localPlayerId={localPlayerId}
+                  nameFor={nameFor}
+                  onSend={sendChat}
+                  disabled={chatDisconnected}
+                  className="min-h-0 flex-1"
+                />
               </div>
             )}
             <div className="border-t border-gold/25 bg-black/18 p-3">
@@ -1752,12 +1763,18 @@ function CpuThinkingOverlay({ opponentName }: { opponentName: string }) {
 
 /**
  * Online (casual queue + ranked) loader popup: a full-board overlay telling
- * the local player their opponent currently holds action authority — turn,
- * a Block/Counter Step, or a pending choice — and their move is in flight
- * over the network. Mirrors CpuThinkingOverlay's board-level treatment (the
- * WaitingForOpponent panel text alone was too easy to miss buried in the
- * side Actions panel / mobile actions sheet). Gold spinner (vs. CPU's cyan)
- * keeps the two "not my turn" states visually distinct at a glance.
+ * the local player the opponent is currently deciding who goes first (the
+ * pre-game coin-flip choice, setupState.stage === 'awaitingGoingFirstChoice'
+ * — see the `opponentDeciding` computation in MatchScreen for the exact
+ * gate). Deliberately narrow: this used to fire for the opponent's entire
+ * turn/Block/Counter window too, which meant it sat over the board the
+ * whole time the opponent was just playing normally — redundant with the
+ * live per-seat state stream and mostly just blocked the view. Ordinary
+ * "not my turn" states are covered by WaitingForOpponent in the side Actions
+ * panel instead; this overlay is reserved for the one genuinely blocking,
+ * un-observable moment (their coin-flip decision has no board state to
+ * watch happen). Gold spinner (vs. CPU's cyan) keeps this and
+ * CpuThinkingOverlay visually distinct at a glance.
  */
 function OnlineOpponentTurnOverlay({ opponentName }: { opponentName: string }) {
   return (
@@ -1807,37 +1824,6 @@ function WaitingForOpponent({ opponentName }: { opponentName: string }) {
         It's the opponent's turn. Their actions will arrive over the network once an online opponent is connected.
       </p>
     </div>
-  );
-}
-
-/** Actions/Chat toggle in the left aside header — online matches only (see MatchChatPanel doc). */
-function AsideTabButton({
-  label,
-  active,
-  unreadCount = 0,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  unreadCount?: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'relative font-display text-[11px] font-black uppercase tracking-[0.14em] transition-colors',
-        active ? 'text-white' : 'text-white/40 hover:text-white/70',
-      ].join(' ')}
-    >
-      {label}
-      {unreadCount > 0 && !active && (
-        <span className="absolute -right-2.5 -top-1.5 flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-gold px-1 text-[8px] font-black leading-none text-black">
-          {unreadCount > 9 ? '9+' : unreadCount}
-        </span>
-      )}
-    </button>
   );
 }
 
