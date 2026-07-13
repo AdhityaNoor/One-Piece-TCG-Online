@@ -629,6 +629,42 @@
     opacity: 0.45;
   }
 
+  /* Online matches only (Casual/Ranked) — a third icon-only column reserved
+     for the chat bubble, next to the Actions/Log pair. See MatchChatPanel. */
+  .op-mobile-action-header.has-chat {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) 2.75rem;
+  }
+
+  .op-mobile-chat-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .op-mobile-chat-button svg {
+    animation: none !important;
+  }
+
+  .op-mobile-chat-badge {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.35rem;
+    display: flex;
+    height: 1.1rem;
+    min-width: 1.1rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #ffd34a;
+    padding: 0 0.25rem;
+    color: #150c02;
+    font-size: 0.58rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
   .op-mobile-match-center {
     position: relative;
     display: flex;

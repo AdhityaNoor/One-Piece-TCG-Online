@@ -27,7 +27,7 @@ import type { GameLogEntry } from '../../engine/logs/logEntry';
 import { countAvailableDon, getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
 import { Button, CardDetailModal, CardImage, GlitterWrap, Modal, ScaleToFit } from '../components';
-import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, TrashGalleryModal, useBoardSelection } from '../components/match';
+import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, MatchChatPanel, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, TrashGalleryModal, useBoardSelection } from '../components/match';
 import { useCpuTurnController } from '../hooks/useCpuTurnController';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -58,6 +58,9 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const cpuPlayerIds = useMatchStore((s) => s.cpuPlayerIds);
   const onlineMode = useMatchStore((s) => s.onlineMode);
   const leaveOnlineRoom = useOnlineStore((s) => s.leave);
+  const chatMessages = useOnlineStore((s) => s.chatMessages);
+  const sendChat = useOnlineStore((s) => s.sendChat);
+  const onlineStatus = useOnlineStore((s) => s.status);
   const isCasual = localPlayerId !== null && cpuPlayerIds.length === 0;
   const isCpuMatch = cpuPlayerIds.length > 0;
   /** Casual + VS CPU: board stays on the local seat; never hotseat-flip by turn. */
@@ -67,9 +70,15 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const nameFor = (id: string): string => playerNames[id] ?? id;
 
   const [pauseOpen, setPauseOpen] = useState(false);
+  // Left Actions aside: online matches (Casual + Ranked) get a second "Chat"
+  // tab alongside Actions (see MatchChatPanel doc). Hotseat/VS CPU never
+  // switch off 'actions' since the tab strip itself is only rendered when
+  // onlineMode.
+  const [asideTab, setAsideTab] = useState<'actions' | 'chat'>('actions');
+  const [seenChatCount, setSeenChatCount] = useState(0);
   const [zoomDefinitionId, setZoomDefinitionId] = useState<string | null>(null);
   const [hoveredAttackTargetId, setHoveredAttackTargetId] = useState<string | null>(null);
-  const [mobilePanel, setMobilePanel] = useState<'actions' | 'log' | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<'actions' | 'log' | 'chat' | null>(null);
   const [battleLinePromptOpen, setBattleLinePromptOpen] = useState(false);
   const [mobileLogNotifications, setMobileLogNotifications] = useState<GameLogEntry[]>([]);
   // True while the mouse is over the playmat — forces both dock hands shut.
@@ -190,6 +199,21 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
 
     return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, [matchState]);
+
+  // Keep the Chat tab/bubble's unread badge in sync: mark everything "seen"
+  // the moment chat is open on either surface (desktop aside tab or the
+  // mobile fullscreen panel), including as new messages stream in while
+  // already open. Reset when a new online match/room starts fresh.
+  useEffect(() => {
+    if (asideTab === 'chat' || mobilePanel === 'chat') setSeenChatCount(chatMessages.length);
+  }, [asideTab, mobilePanel, chatMessages.length]);
+  useEffect(() => {
+    if (!onlineMode) {
+      setAsideTab('actions');
+      setSeenChatCount(0);
+      setMobilePanel((panel) => (panel === 'chat' ? null : panel));
+    }
+  }, [onlineMode]);
 
   if (!isMatchScreen) {
     return null;
@@ -350,6 +374,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       </div>
     </aside>
   );
+  const unreadChatCount = Math.max(0, chatMessages.length - seenChatCount);
+  const chatDisconnected = onlineMode && onlineStatus !== 'connected';
 
   return (
     <MatchGameShell title="Match">
@@ -385,6 +411,9 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           <MobileActionHeader
             onOpenActions={() => setMobilePanel((panel) => (panel === 'actions' ? null : 'actions'))}
             onOpenLog={() => setMobilePanel((panel) => (panel === 'log' ? null : 'log'))}
+            showChat={onlineMode}
+            unreadChatCount={unreadChatCount}
+            onOpenChat={() => setMobilePanel((panel) => (panel === 'chat' ? null : 'chat'))}
           />
         </div>
 
@@ -419,6 +448,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           attackArrow={attackArrow}
           actionsPanel={mobileActionsPanel}
           logPanel={<ActionLogDock log={matchState.log} playerNames={playerNames} viewerPlayerId={bottomPlayerId} className="op-mobile-fullscreen-dock h-full max-h-none" />}
+          chatPanel={<MatchChatPanel messages={chatMessages} localPlayerId={localPlayerId} nameFor={nameFor} onSend={sendChat} disabled={chatDisconnected} className="h-full" />}
           onOpenBattleActions={() => setBattleLinePromptOpen(true)}
           onClosePanel={() => setMobilePanel(null)}
           cpuThinking={cpuThinking}
@@ -439,7 +469,14 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{matchModeLabel}</p>
-                  <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
+                  {onlineMode ? (
+                    <div className="mt-1 flex gap-1.5">
+                      <AsideTabButton label="Actions" active={asideTab === 'actions'} onClick={() => setAsideTab('actions')} />
+                      <AsideTabButton label="Chat" active={asideTab === 'chat'} unreadCount={unreadChatCount} onClick={() => setAsideTab('chat')} />
+                    </div>
+                  ) : (
+                    <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
+                  )}
                   <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">
                     Turn {matchState.turnNumber} · {nameFor(matchState.activePlayerId)} · {matchState.currentPhase}
                     {battleLabel}
@@ -447,13 +484,24 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                 </div>
               </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-3">
-              <div className="mb-3 flex flex-col gap-2">
-                <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} />
-                <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} />
+            {onlineMode && asideTab === 'chat' ? (
+              <MatchChatPanel
+                messages={chatMessages}
+                localPlayerId={localPlayerId}
+                nameFor={nameFor}
+                onSend={sendChat}
+                disabled={chatDisconnected}
+                className="min-h-0 flex-1"
+              />
+            ) : (
+              <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                <div className="mb-3 flex flex-col gap-2">
+                  <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} />
+                  <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} />
+                </div>
+                {actionContent}
               </div>
-              {actionContent}
-            </div>
+            )}
             <div className="border-t border-gold/25 bg-black/18 p-3">
               <button
                 type="button"
@@ -839,11 +887,12 @@ interface MobileMatchLayoutProps {
   handSelectable: (playerId: string, card: CardView) => boolean;
   counterEventDonInfo: (card: CardView) => { cost: number; donMinus: number; available: number } | null;
   battleLineLabel: string;
-  mobilePanel: 'actions' | 'log' | null;
+  mobilePanel: 'actions' | 'log' | 'chat' | null;
   handTabsVisible: boolean;
   attackArrow: MobileAttackArrowState | null;
   actionsPanel: ReactNode;
   logPanel: ReactNode;
+  chatPanel: ReactNode;
   onOpenBattleActions: () => void;
   onClosePanel: () => void;
   cpuThinking?: boolean;
@@ -889,6 +938,7 @@ function MobileMatchLayout({
   attackArrow,
   actionsPanel,
   logPanel,
+  chatPanel,
   onOpenBattleActions,
   onClosePanel,
   cpuThinking = false,
@@ -1045,15 +1095,21 @@ function MobileMatchLayout({
 
       {mobilePanel && (
         <div className="op-mobile-panel-backdrop" role="presentation" onClick={onClosePanel}>
-          <section className="op-mobile-panel" role="dialog" aria-modal="true" aria-label={mobilePanel === 'actions' ? 'Actions' : 'Log'} onClick={(event) => event.stopPropagation()}>
+          <section
+            className="op-mobile-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label={mobilePanel === 'actions' ? 'Actions' : mobilePanel === 'chat' ? 'Chat' : 'Log'}
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="op-mobile-panel-title">
-              <strong>{mobilePanel === 'actions' ? 'Actions' : 'Log'}</strong>
+              <strong>{mobilePanel === 'actions' ? 'Actions' : mobilePanel === 'chat' ? 'Chat' : 'Log'}</strong>
               {mobilePanel === 'actions' && <div id="mobile-action-settings-slot" className="op-mobile-action-settings-slot" />}
               <button type="button" onClick={onClosePanel} aria-label="Close panel">
                 x
               </button>
             </div>
-            <div className="op-mobile-panel-body">{mobilePanel === 'actions' ? actionsPanel : logPanel}</div>
+            <div className="op-mobile-panel-body">{mobilePanel === 'actions' ? actionsPanel : mobilePanel === 'chat' ? chatPanel : logPanel}</div>
           </section>
         </div>
       )}
@@ -1064,12 +1120,18 @@ function MobileMatchLayout({
 function MobileActionHeader({
   onOpenActions,
   onOpenLog,
+  onOpenChat,
+  showChat = false,
+  unreadChatCount = 0,
 }: {
   onOpenActions: () => void;
   onOpenLog: () => void;
+  onOpenChat?: () => void;
+  showChat?: boolean;
+  unreadChatCount?: number;
 }) {
   return (
-    <div className="op-mobile-action-header">
+    <div className={['op-mobile-action-header', showChat ? 'has-chat' : ''].join(' ')}>
       <button type="button" className="op-mobile-header-icon-button" onClick={onOpenActions} aria-label="Open actions">
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path d="M10 3L5 8l5 5" />
@@ -1082,6 +1144,21 @@ function MobileActionHeader({
           <path d="M6 3l5 5-5 5" />
         </svg>
       </button>
+      {showChat && (
+        <button
+          type="button"
+          className="op-mobile-header-icon-button op-mobile-chat-button"
+          onClick={onOpenChat}
+          aria-label={unreadChatCount > 0 ? `Open chat, ${unreadChatCount} unread` : 'Open chat'}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h7A1.5 1.5 0 0 1 13 4.5v4A1.5 1.5 0 0 1 11.5 10H7l-2.5 2.5V10h-1A1.5 1.5 0 0 1 3 8.5v-4z" />
+          </svg>
+          {unreadChatCount > 0 && (
+            <span className="op-mobile-chat-badge">{unreadChatCount > 9 ? '9+' : unreadChatCount}</span>
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -1730,6 +1807,37 @@ function WaitingForOpponent({ opponentName }: { opponentName: string }) {
         It's the opponent's turn. Their actions will arrive over the network once an online opponent is connected.
       </p>
     </div>
+  );
+}
+
+/** Actions/Chat toggle in the left aside header — online matches only (see MatchChatPanel doc). */
+function AsideTabButton({
+  label,
+  active,
+  unreadCount = 0,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  unreadCount?: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'relative font-display text-[11px] font-black uppercase tracking-[0.14em] transition-colors',
+        active ? 'text-white' : 'text-white/40 hover:text-white/70',
+      ].join(' ')}
+    >
+      {label}
+      {unreadCount > 0 && !active && (
+        <span className="absolute -right-2.5 -top-1.5 flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-gold px-1 text-[8px] font-black leading-none text-black">
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </span>
+      )}
+    </button>
   );
 }
 

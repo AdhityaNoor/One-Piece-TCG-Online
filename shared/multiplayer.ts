@@ -52,6 +52,14 @@ export const ClientMessage = {
   Unready: 'unready',
   /** A single player intent (GameAction). Server validates before applying. */
   Intent: 'intent',
+  /**
+   * A chat line from this seat. Deliberately NOT a GameAction/intent — chat
+   * is table talk, not a rules-affecting player action, so it never touches
+   * the engine, GameState, or the action-dispatch/validation pipeline. It
+   * still rides the same authoritative room so the server can attribute a
+   * message to a real seat and rate-limit it.
+   */
+  Chat: 'chat',
 } as const;
 
 export interface ReadyPayload {
@@ -63,6 +71,11 @@ export interface ReadyPayload {
 
 export interface IntentPayload {
   action: GameAction;
+}
+
+export interface ChatPayload {
+  /** Raw text from the sender. Server trims/clamps before broadcasting. */
+  message: string;
 }
 
 // ---- server -> client messages ---------------------------------------------
@@ -84,6 +97,8 @@ export const ServerMessage = {
   MatchStarted: 'match-started',
   /** The match ended (concede / rules game-over). */
   MatchEnded: 'match-ended',
+  /** A chat line, echoed to every seat in the room (including the sender). */
+  Chat: 'chat',
 } as const;
 
 export interface StatePayload {
@@ -118,4 +133,13 @@ export interface LogPayload {
 export interface MatchEndedPayload {
   winnerId: string | null;
   reason: string;
+}
+
+export interface ChatBroadcastPayload {
+  /** Engine player id: 'p1' | 'p2' — matches SeatView.seatId / GameState player ids. */
+  seatId: string;
+  username: string;
+  message: string;
+  /** Server epoch ms, so clients can order/label consistently. */
+  sentAt: number;
 }

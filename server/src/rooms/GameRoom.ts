@@ -44,9 +44,16 @@ import {
   type LogPayload,
   type StatePayload,
   type MatchEndedPayload,
+  type ChatPayload,
+  type ChatBroadcastPayload,
 } from '../../../shared/multiplayer';
 
 const RECONNECT_WINDOW_SECONDS = 30;
+/** Table-talk chat, not a rules action — kept well clear of the engine (see
+ *  shared/multiplayer.ts ClientMessage.Chat doc). Guards are deliberately
+ *  minimal: a length clamp and a per-seat send interval, nothing smarter. */
+const CHAT_MAX_LENGTH = 240;
+const CHAT_MIN_INTERVAL_MS = 300;
 
 interface SeatBinding {
   seatId: string;
@@ -66,6 +73,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   private rankedMatchId: string | null = null;
   private rankedSeasonId: string | null = null;
   private rankedParticipants: RankedRoomParticipant[] = [];
+  private lastChatAt = new Map<string, number>();
 
   onCreate(options: { roomCode?: string } & RankedRoomOptions): void {
     this.seatReservationTimeout = 5;
@@ -78,6 +86,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     this.onMessage(ClientMessage.Ready, (client, payload: ReadyPayload) => this.handleReady(client, payload));
     this.onMessage(ClientMessage.Unready, (client) => this.handleUnready(client));
     this.onMessage(ClientMessage.Intent, (client, payload: IntentPayload) => this.handleIntent(client, payload));
+    this.onMessage(ClientMessage.Chat, (client, payload: ChatPayload) => this.handleChat(client, payload));
 
     this.syncMetadata();
   }
@@ -228,6 +237,32 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     if (this.session.isOver()) void this.endMatch();
   }
 
+  /**
+   * Chat is deliberately NOT gated on `phase === 'in-game'` — a room's two
+   * seats may want to talk before both are ready. It IS gated on holding a
+   * seat at all (no anonymous broadcast) and is never run through the
+   * engine/session (see shared/multiplayer.ts ClientMessage.Chat doc).
+   */
+  private handleChat(client: Client, payload: ChatPayload): void {
+    const binding = this.bindings.get(client.sessionId);
+    if (!binding) return;
+
+    const now = Date.now();
+    const last = this.lastChatAt.get(client.sessionId) ?? 0;
+    if (now - last < CHAT_MIN_INTERVAL_MS) return;
+
+    const message = typeof payload?.message === 'string' ? payload.message.trim().slice(0, CHAT_MAX_LENGTH) : '';
+    if (!message) return;
+
+    this.lastChatAt.set(client.sessionId, now);
+    this.broadcast(ServerMessage.Chat, {
+      seatId: binding.seatId,
+      username: binding.username,
+      message,
+      sentAt: now,
+    } satisfies ChatBroadcastPayload);
+  }
+
   /** Send each connected client its own seat-redacted GameState. */
   private broadcastStatePerSeat(): void {
     for (const client of this.clients) this.sendStateTo(client);
@@ -345,6 +380,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   private removeClient(client: Client): void {
     this.bindings.delete(client.sessionId);
     this.state.seats.delete(client.sessionId);
+    this.lastChatAt.delete(client.sessionId);
     this.syncMetadata();
   }
 

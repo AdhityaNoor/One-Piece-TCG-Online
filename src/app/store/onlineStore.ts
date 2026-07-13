@@ -19,7 +19,7 @@ import type { GameState } from '../../engine/state';
 import type { GameAction } from '../../engine/actions';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import type { SavedDeck } from '../../cards/decks/savedDeck';
-import type { RoomPhase, SeatView, StatePayload } from '../../../shared/multiplayer';
+import type { ChatBroadcastPayload, RoomPhase, SeatView, StatePayload } from '../../../shared/multiplayer';
 import { ClientMessage, ServerMessage } from '../../../shared/multiplayer';
 import {
   createRoom,
@@ -33,6 +33,18 @@ import { useMatchStore, PLAYER_A_ID, PLAYER_B_ID } from './matchStore';
 import { useNavigationStore } from './navigationStore';
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error';
+
+/**
+ * Client-side view of a chat line. `id` is synthesized locally (seatId +
+ * sentAt is enough for a single room's small in-memory log) so React can key
+ * list items; it is not part of the wire payload.
+ */
+export interface ChatMessageView extends ChatBroadcastPayload {
+  id: string;
+}
+
+/** Keep the in-memory chat log bounded — this is table talk, not a record that needs to survive a reload. */
+const CHAT_HISTORY_LIMIT = 200;
 
 /** Kept outside zustand — a live socket handle, not serializable state. */
 let activeRoom: Room | null = null;
@@ -51,6 +63,8 @@ interface OnlineState {
   logs: unknown[];
   endResult: { winnerId: string | null; reason: string } | null;
   error: string | null;
+  /** Table talk for the current room, oldest first. Never touches GameState/the engine. */
+  chatMessages: ChatMessageView[];
 
   /** Real open rooms from the backend (replaces the old mock generator). */
   rooms: OpenRoomInfo[];
@@ -63,6 +77,7 @@ interface OnlineState {
   ready(deck: SavedDeck): void;
   unready(): void;
   sendIntent(action: GameAction): void;
+  sendChat(message: string): void;
   leave(): void;
 }
 
@@ -78,6 +93,7 @@ export const useOnlineStore = create<OnlineState>((set, get) => ({
   logs: [],
   endResult: null,
   error: null,
+  chatMessages: [],
   rooms: [],
   loadingRooms: false,
 
@@ -121,6 +137,13 @@ export const useOnlineStore = create<OnlineState>((set, get) => ({
     activeRoom.send(ClientMessage.Intent, { action });
   },
 
+  sendChat(message) {
+    if (!activeRoom) return;
+    const trimmed = message.trim();
+    if (!trimmed) return;
+    activeRoom.send(ClientMessage.Chat, { message: trimmed });
+  },
+
   leave() {
     void get;
     if (activeRoom) {
@@ -139,6 +162,7 @@ export const useOnlineStore = create<OnlineState>((set, get) => ({
       logs: [],
       endResult: null,
       error: null,
+      chatMessages: [],
     });
   },
 }));
@@ -156,7 +180,7 @@ async function connect(
   role: 'host' | 'guest',
   open: () => Promise<Room>,
 ): Promise<boolean> {
-  set({ status: 'connecting', role, error: null, logs: [], endResult: null, gameState: null, defs: {} });
+  set({ status: 'connecting', role, error: null, logs: [], endResult: null, gameState: null, defs: {}, chatMessages: [] });
   try {
     const room = await open();
     activeRoom = room;
@@ -207,6 +231,13 @@ function wireRoom(room: Room, set: SetFn): void {
   room.onMessage(ServerMessage.Log, (payload: { entries: unknown[] }) => {
     const existing = useOnlineStore.getState().logs;
     set({ logs: [...existing, ...(payload?.entries ?? [])] });
+  });
+
+  room.onMessage(ServerMessage.Chat, (payload: ChatBroadcastPayload) => {
+    if (!payload?.message) return;
+    const entry: ChatMessageView = { ...payload, id: `${payload.seatId}-${payload.sentAt}-${Math.random().toString(36).slice(2, 7)}` };
+    const existing = useOnlineStore.getState().chatMessages;
+    set({ chatMessages: [...existing, entry].slice(-CHAT_HISTORY_LIMIT) });
   });
 
   room.onMessage(ServerMessage.Rejected, (payload: { of: string; reasons: string[] }) => {
