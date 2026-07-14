@@ -14,7 +14,7 @@ import { Router, type Request, type Response } from 'express';
 import { ObjectId } from 'mongodb';
 import { env } from '../config/env';
 import { requireAuth } from '../auth/middleware';
-import { users } from '../db/mongo';
+import { profiles, users } from '../db/mongo';
 import { AchievementService } from './achievementService';
 import { CosmeticService } from './cosmeticService';
 import { MatchHistoryService } from './matchHistoryService';
@@ -26,6 +26,7 @@ import { ACHIEVEMENT_CATALOG } from './achievementCatalog';
 import { ProfileServiceError, sendProfileError } from './errors';
 import type {
   AchievementView,
+  BlockedPlayerSummary,
   ChangeUsernameRequest,
   EquipCosmeticRequest,
   FriendRequestSummary,
@@ -202,7 +203,7 @@ export function profileRouter(): Router {
     await handle(res, async () => {
       ensureEnabled();
       const graph = await socialService.getGraph(userId(req));
-      const ids = [...graph.friends, ...graph.incomingRequests, ...graph.outgoingRequests].map((id) => {
+      const ids = [...graph.friends, ...graph.incomingRequests, ...graph.outgoingRequests, ...graph.blocked].map((id) => {
         try {
           return new ObjectId(id);
         } catch {
@@ -211,11 +212,20 @@ export function profileRouter(): Router {
       }).filter((id): id is ObjectId => id !== null);
       const userDocs = ids.length ? await users().find({ _id: { $in: ids } }).project({ username: 1 }).toArray() : [];
       const usernameOf = (id: string): string => userDocs.find((u) => u._id!.toHexString() === id)?.username ?? 'Unknown Pirate';
+      // Avatar join for friend/request rows (SocialTab thumbnails) — profiles()
+      // is keyed by the same userId string as the social graph, so a plain
+      // $in on that field is enough; no ObjectId conversion needed here.
+      const rawIds = [...graph.friends, ...graph.incomingRequests, ...graph.outgoingRequests];
+      const profileDocs = rawIds.length
+        ? await profiles().find({ userId: { $in: rawIds } }).project({ userId: 1, 'equippedCosmetics.avatar': 1 }).toArray()
+        : [];
+      const avatarOf = (id: string): string | null => profileDocs.find((p) => p.userId === id)?.equippedCosmetics?.avatar ?? null;
 
-      const friends: FriendSummary[] = graph.friends.map((id) => ({ userId: id, username: usernameOf(id), onlineStatus: 'unknown', favoriteLeaderCardNumber: null, since: graph.updatedAt }));
-      const incoming: FriendRequestSummary[] = graph.incomingRequests.map((id) => ({ userId: id, username: usernameOf(id), requestedAt: graph.updatedAt }));
-      const outgoing: FriendRequestSummary[] = graph.outgoingRequests.map((id) => ({ userId: id, username: usernameOf(id), requestedAt: graph.updatedAt }));
-      res.json({ friends, incomingRequests: incoming, outgoingRequests: outgoing, blockedCount: graph.blocked.length });
+      const friends: FriendSummary[] = graph.friends.map((id) => ({ userId: id, username: usernameOf(id), onlineStatus: 'unknown', favoriteLeaderCardNumber: null, since: graph.updatedAt, avatarCatalogId: avatarOf(id) }));
+      const incoming: FriendRequestSummary[] = graph.incomingRequests.map((id) => ({ userId: id, username: usernameOf(id), requestedAt: graph.updatedAt, avatarCatalogId: avatarOf(id) }));
+      const outgoing: FriendRequestSummary[] = graph.outgoingRequests.map((id) => ({ userId: id, username: usernameOf(id), requestedAt: graph.updatedAt, avatarCatalogId: avatarOf(id) }));
+      const blocked: BlockedPlayerSummary[] = graph.blocked.map((id) => ({ userId: id, username: usernameOf(id) }));
+      res.json({ friends, incomingRequests: incoming, outgoingRequests: outgoing, blocked, blockedCount: blocked.length });
     });
   });
 

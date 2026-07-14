@@ -1,7 +1,9 @@
 /**
  * In-match chat for online play (Casual + Ranked — both hydrate through
  * matchStore.onlineMode/hydrateOnlineMatch, see onlineStore.ts). Lives inside
- * MatchScreen's left Actions aside as a second tab next to Actions.
+ * MatchScreen's left Actions aside as an always-visible dock below the
+ * action content (not a tab — an earlier tabbed version was reworked per
+ * feedback since chat should always be visible, not behind a click).
  *
  * Deliberately NOT part of the engine/action-dispatch system: chat is table
  * talk, not a GameAction, so it never touches GameState, validateAction, or
@@ -53,10 +55,15 @@ export function MatchChatPanel({ messages, localPlayerId, nameFor, onSend, disab
   }
 
   return (
-    <div className={['flex min-h-0 flex-col', className ?? ''].join(' ')}>
+    // Lighter wash than the surrounding navy aside (bg-white/[0.035]), and
+    // font-sans (plain system sans, NOT the game's Poppins font-display/
+    // font-heading used everywhere else) — chat content should read as
+    // casual table talk, not another piece of game chrome. Chrome elements
+    // (the Send button) stay on the game's normal button styling.
+    <div className={['flex min-h-0 flex-col bg-white/[0.035] font-sans', className ?? ''].join(' ')}>
       <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto p-3">
         {messages.length === 0 ? (
-          <p className="border border-dashed border-white/10 px-3 py-6 text-center text-xs text-white/30">
+          <p className="border border-dashed border-white/15 px-3 py-6 text-center text-xs text-white/40">
             No messages yet. Say hi!
           </p>
         ) : (
@@ -68,7 +75,7 @@ export function MatchChatPanel({ messages, localPlayerId, nameFor, onSend, disab
         )}
       </div>
 
-      <div className="flex-shrink-0 border-t border-gold/25 bg-black/18 p-2">
+      <div className="flex-shrink-0 border-t border-gold/25 bg-white/[0.04] p-2">
         <div className="flex items-end gap-2">
           <input
             type="text"
@@ -83,13 +90,13 @@ export function MatchChatPanel({ messages, localPlayerId, nameFor, onSend, disab
                 submit();
               }
             }}
-            className="h-10 min-w-0 flex-1 border border-white/20 bg-black/30 px-3 text-xs text-white outline-none placeholder:text-white/30 focus:border-gold/60 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-10 min-w-0 flex-1 border border-white/25 bg-white/[0.07] px-3 text-sm font-normal text-white outline-none placeholder:text-white/40 focus:border-gold/60 disabled:cursor-not-allowed disabled:opacity-50"
           />
           <button
             type="button"
             disabled={disabled || draft.trim().length === 0}
             onClick={submit}
-            className="h-10 flex-shrink-0 border border-white/15 bg-black/28 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/15 disabled:hover:text-white/65"
+            className="h-10 flex-shrink-0 border border-white/15 bg-black/28 px-3 font-heading text-[10px] font-black uppercase tracking-[0.14em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/15 disabled:hover:text-white/65"
           >
             Send
           </button>
@@ -108,16 +115,16 @@ function ChatBubble({ entry, own, nameFor }: { entry: ChatMessageView; own: bool
     <li className={`flex w-full ${own ? 'justify-end' : 'justify-start'}`}>
       <div
         className={[
-          'min-w-0 max-w-[88%] p-2',
+          'min-w-0 max-w-[88%] rounded-lg p-2.5',
           own
-            ? 'border border-gold/25 bg-gold/[0.08] text-right shadow-[0_8px_20px_rgba(0,0,0,0.18)]'
-            : 'border border-white/10 bg-white/[0.045] text-left',
+            ? 'border border-gold/35 bg-gold/[0.16] text-right shadow-[0_8px_20px_rgba(0,0,0,0.18)]'
+            : 'border border-white/20 bg-white/[0.11] text-left',
         ].join(' ')}
       >
-        <p className={`mb-1 text-[9px] font-black uppercase tracking-[0.12em] text-white/38 ${own ? 'text-right' : 'text-left'}`}>
+        <p className={`mb-1 text-[10px] font-medium normal-case tracking-normal text-white/55 ${own ? 'text-right' : 'text-left'}`}>
           {nameFor(entry.seatId)} · {formatTime(entry.sentAt)}
         </p>
-        <p className="min-w-0 whitespace-pre-wrap break-words text-[11px] font-semibold leading-snug text-white/85">{entry.message}</p>
+        <p className="min-w-0 whitespace-pre-wrap break-words text-[13px] font-normal leading-snug text-white/95">{entry.message}</p>
       </div>
     </li>
   );

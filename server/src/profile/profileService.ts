@@ -29,6 +29,7 @@ import {
   type ChangeUsernameRequest,
   type FeaturedDeckSummary,
   type PlayerProfile,
+  type PlayerSearchResult,
   type ProfileHeaderResponse,
   type ProfilePrivacySettings,
   type ProfileSectionId,
@@ -342,7 +343,7 @@ export class ProfileService {
   }
 
   /** Prefix search on username, capped and generically-shaped to resist enumeration (project rule). */
-  async searchPlayers(query: string, limit: number): Promise<{ userId: string; username: string }[]> {
+  async searchPlayers(query: string, limit: number): Promise<PlayerSearchResult[]> {
     const trimmed = query.trim();
     if (trimmed.length < 2) return [];
     const safeLimit = Math.max(1, Math.min(20, limit || 10));
@@ -351,7 +352,12 @@ export class ProfileService {
       .project({ username: 1 })
       .limit(safeLimit)
       .toArray();
-    return docs.map((doc) => ({ userId: doc._id!.toHexString(), username: doc.username }));
+    const ids = docs.map((doc) => doc._id!.toHexString());
+    const profileDocs = ids.length
+      ? await profiles().find({ userId: { $in: ids } }).project({ userId: 1, 'equippedCosmetics.avatar': 1 }).toArray()
+      : [];
+    const avatarOf = (id: string): string | null => profileDocs.find((p) => p.userId === id)?.equippedCosmetics?.avatar ?? null;
+    return docs.map((doc) => ({ userId: doc._id!.toHexString(), username: doc.username, avatarCatalogId: avatarOf(doc._id!.toHexString()) }));
   }
 
   async getPrivateAccountSettings(userId: string): Promise<{ email: string; emailVerified: boolean; linkedProviders: string[]; createdAt: string; usernameChangeHistory: { previousUsername: string; changedAt: string }[]; activeSessionCount: number }> {

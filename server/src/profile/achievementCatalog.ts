@@ -22,8 +22,13 @@ export const ACHIEVEMENT_CATALOG: AchievementDefinition[] = [
   { id: 'win_streak_5', name: 'On a Roll', description: 'Win 5 matches in a row.', icon: 'flame', category: 'match_milestones', targetValue: 5, rarity: 'uncommon', hidden: false, seasonal: false, reward: 'badge_win_streak' },
   { id: 'win_streak_10', name: 'Unstoppable', description: 'Win 10 matches in a row.', icon: 'flame', category: 'match_milestones', targetValue: 10, rarity: 'rare', hidden: false, seasonal: false, reward: null },
 
-  { id: 'placement_complete', name: 'Placement Voyage', description: 'Complete your ranked placement matches.', icon: 'compass', category: 'ranked', targetValue: 1, rarity: 'common', hidden: false, seasonal: true, reward: 'avatar_log_pose' },
-  { id: 'reach_supernova', name: 'Supernova', description: 'Reach Supernova rank in a season.', icon: 'star', category: 'ranked', targetValue: 1, rarity: 'rare', hidden: false, seasonal: true, reward: 'avatar_supernova' },
+  // reward: null — these previously referenced avatar_log_pose/avatar_supernova,
+  // ids that no longer exist now that the avatar catalog mirrors the 8
+  // Settings character portraits (all default/unlocked, see
+  // cosmeticCatalog.ts). No cosmetic system currently grants season-locked
+  // items anyway (`reward` isn't even rendered client-side yet).
+  { id: 'placement_complete', name: 'Placement Voyage', description: 'Complete your ranked placement matches.', icon: 'compass', category: 'ranked', targetValue: 1, rarity: 'common', hidden: false, seasonal: true, reward: null },
+  { id: 'reach_supernova', name: 'Supernova', description: 'Reach Supernova rank in a season.', icon: 'star', category: 'ranked', targetValue: 1, rarity: 'rare', hidden: false, seasonal: true, reward: null },
   { id: 'reach_yonko', name: 'Yonko', description: 'Reach Yonko rank in a season.', icon: 'crown', category: 'ranked', targetValue: 1, rarity: 'epic', hidden: false, seasonal: true, reward: null },
   { id: 'reach_pirate_king', name: 'Pirate King', description: 'Reach Pirate King rank in a season.', icon: 'treasure', category: 'ranked', targetValue: 1, rarity: 'legendary', hidden: false, seasonal: true, reward: 'title_pirate_king' },
 

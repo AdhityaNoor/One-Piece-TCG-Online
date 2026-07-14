@@ -6,6 +6,7 @@
  */
 import type {
   AchievementView,
+  BlockedPlayerSummary,
   ChangeUsernameRequest,
   CosmeticInventoryEntry,
   EquipCosmeticRequest,
@@ -13,6 +14,7 @@ import type {
   FeaturedDeckSummary,
   FriendRequestSummary,
   FriendSummary,
+  PlayerSearchResult,
   ProfileApiErrorBody,
   ProfileHeaderResponse,
   ProfileMatchHistoryPage,
@@ -126,11 +128,13 @@ export async function fetchMatchHistory(
   return parseOrThrow(await fetch(url(`${path}${query ? `?${query}` : ''}`), { headers: authHeaders(token) }));
 }
 
-export async function fetchSocial(token: string): Promise<{ friends: FriendSummary[]; incomingRequests: FriendRequestSummary[]; outgoingRequests: FriendRequestSummary[]; blockedCount: number }> {
+export async function fetchSocial(
+  token: string,
+): Promise<{ friends: FriendSummary[]; incomingRequests: FriendRequestSummary[]; outgoingRequests: FriendRequestSummary[]; blocked: BlockedPlayerSummary[]; blockedCount: number }> {
   return parseOrThrow(await fetch(url('/profile/me/social'), { headers: authHeaders(token) }));
 }
 
-export async function searchPlayers(token: string, query: string): Promise<{ results: { userId: string; username: string }[] }> {
+export async function searchPlayers(token: string, query: string): Promise<{ results: PlayerSearchResult[] }> {
   return parseOrThrow(await fetch(url(`/profile/search?q=${encodeURIComponent(query)}`), { headers: authHeaders(token) }));
 }
 

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ProfileSectionId, ProfileVisibility, UpdateProfileRequest } from '../../../shared/profile';
+import type { CosmeticType, ProfileSectionId, ProfileVisibility, ReportPlayerRequest, UpdateProfileRequest } from '../../../shared/profile';
 import { isBackendConfigured } from '../../multiplayer/net/backendConfig';
-import { Button, CanvasMenuButton, GameCanvasScreen, OpSelect } from '../components';
+import { AvatarPicker, BannerPicker, Button, CanvasMenuButton, GameCanvasScreen, Modal, OpSelect } from '../components';
+import { avatarCatalogIdToOptionId, avatarOptionIdToCatalogId, resolveAvatarUrl } from '../lib/avatars';
+import { resolveBannerGradient } from '../lib/banners';
 import { useNavigationStore, useCurrentScreen } from '../store/navigationStore';
 import { useProfileStore } from '../store/profileStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -79,6 +81,13 @@ export function ProfileScreen() {
 
 function ProfileHeader() {
   const header = useProfileStore((state) => state.header);
+  const equip = useProfileStore((state) => state.equip);
+  const blockUser = useProfileStore((state) => state.blockUser);
+  const unblockUser = useProfileStore((state) => state.unblockUser);
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+
   if (!header) {
     return (
       <div className="border border-cyan-200/20 bg-[#08101f] p-4 text-center">
@@ -87,14 +96,48 @@ function ProfileHeader() {
     );
   }
 
-  const { profile, ranked } = header;
+  const { profile, ranked, isOwner } = header;
+  const avatarOptionId = avatarCatalogIdToOptionId(profile.equippedCosmetics.avatar);
+  const avatarUrl = resolveAvatarUrl(avatarOptionId);
+  const bannerGradient = resolveBannerGradient(profile.equippedCosmetics.banner);
+
   return (
     <div className="overflow-hidden border border-cyan-200/20 bg-[#08101f]">
-      <div className="h-20 bg-[linear-gradient(135deg,_rgba(217,164,65,0.45),_rgba(16,76,132,0.72))]" />
-      <div className="-mt-8 p-4 pt-0 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center border-2 border-gold bg-[#050914] font-display text-2xl font-black uppercase text-white">
-          {profile.displayName.slice(0, 1) || '?'}
-        </div>
+      {/* Banner sits as a full-bleed backdrop BEHIND the avatar + name card
+          below (not a separate strip) — the -mt-8 on the card pulls it up
+          to overlap the banner, and the avatar itself overlaps both. */}
+      <button
+        type="button"
+        disabled={!isOwner}
+        onClick={() => setBannerPickerOpen(true)}
+        aria-label={isOwner ? 'Change banner' : undefined}
+        className={['group relative block h-20 w-full', isOwner ? 'cursor-pointer' : 'cursor-default'].join(' ')}
+        style={{ background: bannerGradient }}
+      >
+        {isOwner && (
+          <span className="absolute inset-0 hidden items-center justify-center bg-black/45 text-[10px] font-black uppercase tracking-[0.16em] text-white group-hover:flex">
+            Change Banner
+          </span>
+        )}
+      </button>
+      <div className="relative -mt-8 p-4 pt-0 text-center">
+        <button
+          type="button"
+          disabled={!isOwner}
+          onClick={() => setAvatarPickerOpen(true)}
+          aria-label={isOwner ? 'Change profile photo' : undefined}
+          className={[
+            'group relative mx-auto flex h-16 w-16 items-center justify-center overflow-hidden border-2 border-gold bg-[#050914]',
+            isOwner ? 'cursor-pointer' : 'cursor-default',
+          ].join(' ')}
+        >
+          <img src={avatarUrl} alt="" draggable={false} className="h-full w-full object-contain p-1" />
+          {isOwner && (
+            <span className="absolute inset-0 hidden items-center justify-center bg-black/55 text-[8px] font-black uppercase tracking-[0.12em] text-white group-hover:flex">
+              Change
+            </span>
+          )}
+        </button>
         <h2 className="mt-3 truncate font-display text-xl font-black uppercase tracking-[0.1em] text-white">{profile.displayName}</h2>
         <p className="mt-1 truncate text-xs font-bold uppercase tracking-[0.14em] text-white/50">@{profile.username}</p>
         {profile.statusMessage && <p className="mt-3 text-sm leading-5 text-slate-200/75">{profile.statusMessage}</p>}
@@ -105,8 +148,115 @@ function ProfileHeader() {
           </p>
         </div>
         <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/38">Sailing Since {formatDate(profile.createdAt)}</p>
+
+        {!isOwner && (
+          <div className="mt-4 flex justify-center gap-2">
+            {header.relationship === 'blocked_by_viewer' ? (
+              <CanvasMenuButton label="Unblock" size="sm" onClick={() => void unblockUser(profile.username)} />
+            ) : (
+              <CanvasMenuButton label="Block" size="sm" prominence="danger" onClick={() => void blockUser(profile.username)} />
+            )}
+            <CanvasMenuButton label="Report" size="sm" onClick={() => setReportOpen(true)} />
+          </div>
+        )}
       </div>
+
+      {isOwner && (
+        <Modal open={avatarPickerOpen} onClose={() => setAvatarPickerOpen(false)} title="Profile Photo" maxWidthClassName="max-w-md">
+          <div className="p-4">
+            <p className="mb-3 text-xs leading-5 text-slate-200/65">Same portraits as your Settings avatar — pick one to use on your profile.</p>
+            <AvatarPicker
+              value={avatarOptionId ?? 'luffy'}
+              onChange={(optionId) => {
+                void equip(avatarOptionIdToCatalogId(optionId), 'avatar');
+                setAvatarPickerOpen(false);
+              }}
+            />
+          </div>
+        </Modal>
+      )}
+      {isOwner && (
+        <Modal open={bannerPickerOpen} onClose={() => setBannerPickerOpen(false)} title="Profile Banner" maxWidthClassName="max-w-md">
+          <div className="p-4">
+            <p className="mb-3 text-xs leading-5 text-slate-200/65">Gradient banners — no photo upload yet.</p>
+            <BannerPicker
+              value={profile.equippedCosmetics.banner}
+              onChange={(bannerId) => {
+                void equip(bannerId, 'banner');
+                setBannerPickerOpen(false);
+              }}
+            />
+          </div>
+        </Modal>
+      )}
+      {!isOwner && <ReportPlayerModal open={reportOpen} onClose={() => setReportOpen(false)} username={profile.username} />}
     </div>
+  );
+}
+
+function ReportPlayerModal({ open, onClose, username }: { open: boolean; onClose: () => void; username: string }) {
+  const reportUser = useProfileStore((state) => state.reportUser);
+  const [reason, setReason] = useState<ReportPlayerRequest['reason']>('harassment');
+  const [details, setDetails] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const reasons: { value: ReportPlayerRequest['reason']; label: string }[] = [
+    { value: 'harassment', label: 'Harassment' },
+    { value: 'cheating', label: 'Cheating' },
+    { value: 'inappropriate_name', label: 'Inappropriate Name' },
+    { value: 'inappropriate_content', label: 'Inappropriate Content' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  function handleClose(): void {
+    setSubmitted(false);
+    setDetails('');
+    setReason('harassment');
+    onClose();
+  }
+
+  return (
+    <Modal open={open} onClose={handleClose} title={`Report @${username}`} maxWidthClassName="max-w-md">
+      <div className="p-4">
+        {submitted ? (
+          <p className="text-sm leading-6 text-emerald-200">Report submitted. Thanks for helping keep the crew honest.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              {reasons.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setReason(option.value)}
+                  className={[
+                    'border px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.1em] transition',
+                    reason === option.value ? 'border-gold bg-gold/15 text-white' : 'border-white/10 bg-white/[0.04] text-white/55 hover:border-gold/45 hover:text-gold',
+                  ].join(' ')}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={details}
+              onChange={(event) => setDetails(event.target.value)}
+              className="mt-3 min-h-24 w-full border border-white/10 bg-black/35 px-3 py-2 text-sm text-white"
+              placeholder="Additional details (optional)"
+            />
+            <div className="mt-3 flex justify-end">
+              <Button
+                onClick={async () => {
+                  await reportUser(username, { reason, details });
+                  setSubmitted(true);
+                }}
+              >
+                Submit Report
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 }
 
@@ -316,34 +466,126 @@ function AchievementsSection() {
   );
 }
 
+const COSMETIC_TYPE_ORDER: CosmeticType[] = [
+  'avatar',
+  'banner',
+  'frame',
+  'title',
+  'badge',
+  'card_back',
+  'board_skin',
+  'match_intro_effect',
+  'victory_effect',
+  'emote_set',
+];
+
+const COSMETIC_TYPE_LABELS: Record<CosmeticType, string> = {
+  avatar: 'Profile Photo',
+  banner: 'Banner',
+  frame: 'Frame',
+  title: 'Title',
+  badge: 'Badge',
+  card_back: 'Card Back',
+  board_skin: 'Board Skin',
+  match_intro_effect: 'Match Intro',
+  victory_effect: 'Victory Effect',
+  emote_set: 'Emotes',
+};
+
 function CosmeticsSection() {
+  const header = useProfileStore((state) => state.header);
   const cosmetics = useProfileStore((state) => state.cosmetics);
+  const equip = useProfileStore((state) => state.equip);
+  const unequip = useProfileStore((state) => state.unequip);
+
+  if (!header?.isOwner) return <EmptyState title="Owner Only" body="Cosmetic inventory is owner-only." />;
+  if (cosmetics.length === 0) return <EmptyState title="Cosmetics Unavailable" body="Cosmetic inventory is unavailable." />;
+
+  const groups: Partial<Record<CosmeticType, typeof cosmetics>> = {};
+  for (const entry of cosmetics) {
+    (groups[entry.item.type] ??= []).push(entry);
+  }
+
   return (
-    <Panel title="Identity" subtitle="Owned cosmetics can be equipped after server-side ownership validation.">
-      {cosmetics.length ? (
-        <div className="grid gap-3 md:grid-cols-2">
-          {cosmetics.map((entry) => (
-            <ListRow key={entry.item.id} left={entry.item.name} right={entry.equipped ? 'Equipped' : entry.owned ? 'Owned' : 'Locked'} />
-          ))}
-        </div>
-      ) : (
-        <EmptyState title="Cosmetics Unavailable" body="Cosmetic inventory is owner-only or unavailable." />
-      )}
+    <Panel title="Identity" subtitle="Equip owned cosmetics. Profile Photo and Banner can also be changed directly from your profile card above.">
+      <div className="flex flex-col gap-6">
+        {COSMETIC_TYPE_ORDER.filter((type) => (groups[type]?.length ?? 0) > 0).map((type) => (
+          <div key={type}>
+            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-gold">{COSMETIC_TYPE_LABELS[type]}</p>
+            <div className="grid gap-2 md:grid-cols-2">
+              {(groups[type] ?? []).map((entry) => (
+                <CosmeticRow
+                  key={entry.item.id}
+                  entry={entry}
+                  onEquip={() => void equip(entry.item.id, entry.item.type)}
+                  onUnequip={() => void unequip(entry.item.type)}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </Panel>
+  );
+}
+
+function CosmeticRow({
+  entry,
+  onEquip,
+  onUnequip,
+}: {
+  entry: { item: { id: string; name: string; description: string }; owned: boolean; equipped: boolean };
+  onEquip: () => void;
+  onUnequip: () => void;
+}) {
+  const { item, owned, equipped } = entry;
+  return (
+    <div className="flex items-center justify-between gap-3 border border-white/10 bg-black/25 px-3 py-2">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-bold text-white">{item.name}</p>
+        <p className="truncate text-xs text-white/45">{item.description}</p>
+      </div>
+      {equipped ? (
+        <CanvasMenuButton label="Unequip" size="sm" prominence="danger" onClick={onUnequip} />
+      ) : owned ? (
+        <CanvasMenuButton label="Equip" size="sm" prominence="primary" onClick={onEquip} />
+      ) : (
+        <span className="shrink-0 text-xs font-bold uppercase tracking-[0.12em] text-white/35">Locked</span>
+      )}
+    </div>
   );
 }
 
 function SocialSection() {
   const social = useProfileStore((state) => state.social);
+  const unblockUser = useProfileStore((state) => state.unblockUser);
   return (
-    <Panel title="Social" subtitle="Prepared for friends, requests, and blocks.">
+    <Panel title="Social" subtitle="Friend requests live on the Social tab (Hub menu). Blocked players are managed here.">
       {social ? (
-        <div className="grid gap-3 md:grid-cols-4">
-          <Metric label="Friends" value={String(social.friends.length)} />
-          <Metric label="Incoming" value={String(social.incomingRequests.length)} />
-          <Metric label="Outgoing" value={String(social.outgoingRequests.length)} />
-          <Metric label="Blocked" value={String(social.blockedCount)} />
-        </div>
+        <>
+          <div className="grid gap-3 md:grid-cols-4">
+            <Metric label="Friends" value={String(social.friends.length)} />
+            <Metric label="Incoming" value={String(social.incomingRequests.length)} />
+            <Metric label="Outgoing" value={String(social.outgoingRequests.length)} />
+            <Metric label="Blocked" value={String(social.blockedCount)} />
+          </div>
+
+          <div className="mt-5">
+            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-gold">Blocked Players</p>
+            {social.blocked.length ? (
+              <div className="grid gap-2">
+                {social.blocked.map((entry) => (
+                  <div key={entry.userId} className="flex items-center justify-between gap-3 border border-white/10 bg-black/25 px-3 py-2">
+                    <span className="min-w-0 truncate text-sm font-bold text-white">{entry.username}</span>
+                    <CanvasMenuButton label="Unblock" size="sm" onClick={() => void unblockUser(entry.username)} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-white/45">No blocked players.</p>
+            )}
+          </div>
+        </>
       ) : (
         <EmptyState title="Social Unavailable" body="Social data is owner-only until public social views are enabled." />
       )}

@@ -1,4 +1,5 @@
 export * from './AvatarPicker';
+export * from './BannerPicker';
 export * from './Button';
 export * from './Toggle';
 export * from './MenuRow';

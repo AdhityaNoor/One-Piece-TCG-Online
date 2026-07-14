@@ -109,7 +109,7 @@ export interface EquippedCosmetics {
 }
 
 export const DEFAULT_EQUIPPED_COSMETICS: EquippedCosmetics = {
-  avatar: 'avatar_straw_hat',
+  avatar: 'avatar_luffy',
   banner: 'banner_east_blue',
   frame: null,
   title: 'title_rookie_pirate',
@@ -276,12 +276,28 @@ export interface FriendSummary {
   onlineStatus: 'online' | 'offline' | 'unknown';
   favoriteLeaderCardNumber: string | null;
   since: string;
+  /** equippedCosmetics.avatar catalog id (e.g. 'avatar_luffy'), null if unresolved. */
+  avatarCatalogId: string | null;
 }
 
 export interface FriendRequestSummary {
   userId: string;
   username: string;
   requestedAt: string;
+  avatarCatalogId: string | null;
+}
+
+/** GET /profile/me/social's `blocked` entries — previously the endpoint only returned a count, with no way to render an unblock list. */
+export interface BlockedPlayerSummary {
+  userId: string;
+  username: string;
+}
+
+/** GET /profile/search results. */
+export interface PlayerSearchResult {
+  userId: string;
+  username: string;
+  avatarCatalogId: string | null;
 }
 
 // ---- match history ---------------------------------------------------------

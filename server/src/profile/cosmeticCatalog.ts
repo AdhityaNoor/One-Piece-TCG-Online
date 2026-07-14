@@ -15,17 +15,37 @@
 import type { CosmeticDefinition } from '../../../shared/profile';
 
 export const COSMETIC_CATALOG: CosmeticDefinition[] = [
-  // Avatars — default set, unlocked for everyone at profile creation.
-  { id: 'avatar_straw_hat', type: 'avatar', name: 'Straw Hat', description: 'The mark of a rookie setting sail.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'straw-hat' },
-  { id: 'avatar_den_den_mushi', type: 'avatar', name: 'Den Den Mushi', description: 'Stay connected across the Grand Line.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'den-den-mushi' },
-  { id: 'avatar_jolly_roger', type: 'avatar', name: 'Jolly Roger', description: 'Fly your own flag.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'jolly-roger' },
-  { id: 'avatar_log_pose', type: 'avatar', name: 'Log Pose', description: 'Awarded for completing your first ranked season.', rarity: 'uncommon', unlockSource: 'season_reward', unlockRequirement: 'Complete a ranked season', icon: 'log-pose' },
-  { id: 'avatar_supernova', type: 'avatar', name: 'Supernova', description: 'Reach Supernova rank in a season.', rarity: 'rare', unlockSource: 'season_reward', unlockRequirement: 'Reach Supernova this season', icon: 'supernova' },
+  // Avatars — mirrors src/app/lib/avatars.ts's AVATAR_OPTIONS 1:1 (icon =
+  // that list's option id) so the client can resolve each catalog entry to
+  // a real character portrait already shipped under /public/avatars/,
+  // instead of the old symbolic-item set (straw hat/den den mushi/etc.)
+  // which had no art at all. All default/unlocked, same as Settings' picker
+  // — "profile photo options" should be the same picker as Settings, not a
+  // separate unlock track. NOTE: this renames catalog ids from the old
+  // avatar_straw_hat/etc. set — any profile whose inventory was created
+  // before this change won't own the new ids (see cosmeticService.grant);
+  // acceptable for now since there's no live userbase yet, but flagged as a
+  // migration gap if this ever needs backfilling.
+  { id: 'avatar_luffy', type: 'avatar', name: 'Luffy', description: 'The future Pirate King.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'luffy' },
+  { id: 'avatar_ace', type: 'avatar', name: 'Ace', description: 'Fire Fist of the Whitebeard Pirates.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'ace' },
+  { id: 'avatar_law', type: 'avatar', name: 'Law', description: 'The Surgeon of Death.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'law' },
+  { id: 'avatar_nami', type: 'avatar', name: 'Nami', description: 'Navigator of the Straw Hats.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'nami' },
+  { id: 'avatar_sabo', type: 'avatar', name: 'Sabo', description: 'Chief of Staff of the Revolutionary Army.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'sabo' },
+  { id: 'avatar_sanji', type: 'avatar', name: 'Sanji', description: 'Cook of the Straw Hats.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'sanji' },
+  { id: 'avatar_shanks', type: 'avatar', name: 'Shanks', description: 'Red-Haired Emperor of the Sea.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'shanks' },
+  { id: 'avatar_zoro', type: 'avatar', name: 'Zoro', description: 'Aspiring greatest swordsman.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'zoro' },
 
-  // Banners
+  // Banners — CSS gradient presets (src/app/lib/banners.ts), not image
+  // assets; none exist in the project yet. All default/unlocked for the
+  // same reason as avatars above: no progression system currently grants
+  // season-reward cosmetics, so gating these behind unreachable unlocks
+  // would just be a permanently-locked dead end.
   { id: 'banner_east_blue', type: 'banner', name: 'East Blue Waters', description: 'Where every voyage begins.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'east-blue' },
-  { id: 'banner_grand_line', type: 'banner', name: 'Grand Line Storm', description: 'Earned by entering the Grand Line ranks.', rarity: 'uncommon', unlockSource: 'season_reward', unlockRequirement: 'Reach Grand Line Adventurer this season', icon: 'grand-line' },
-  { id: 'banner_new_world', type: 'banner', name: 'New World Horizon', description: "Reserved for the Grand Line's finest.", rarity: 'epic', unlockSource: 'season_reward', unlockRequirement: 'Reach Emperor Commander this season', icon: 'new-world' },
+  { id: 'banner_grand_line', type: 'banner', name: 'Grand Line Storm', description: 'The sea that tests every crew.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'grand-line' },
+  { id: 'banner_new_world', type: 'banner', name: 'New World Horizon', description: "The Grand Line's second half.", rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'new-world' },
+  { id: 'banner_jolly_roger', type: 'banner', name: 'Jolly Roger', description: 'Fly your own flag.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'jolly-roger' },
+  { id: 'banner_sunset_sea', type: 'banner', name: 'Sunset Sea', description: 'End of a long voyage.', rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'sunset-sea' },
+  { id: 'banner_gold_rush', type: 'banner', name: 'Gold Rush', description: "The lure of One Piece itself.", rarity: 'common', unlockSource: 'default', unlockRequirement: null, icon: 'gold-rush' },
 
   // Frames
   { id: 'frame_bronze', type: 'frame', name: 'Bronze Frame', description: 'Complete 10 matches.', rarity: 'common', unlockSource: 'achievement', unlockRequirement: 'Milestone: 10 lifetime matches', icon: 'frame-bronze' },
