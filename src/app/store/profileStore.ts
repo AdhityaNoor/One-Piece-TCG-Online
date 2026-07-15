@@ -32,7 +32,9 @@ import {
   updatePrivacy,
   updateProfile,
 } from '../../multiplayer/net/profileClient';
+import { avatarCatalogIdToOptionId } from '../lib/avatars';
 import { useAuthStore } from './authStore';
+import { useSettingsStore } from './settingsStore';
 
 export type ProfileLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -146,7 +148,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   async refreshSocial() {
     try {
       const social = await fetchSocial(requireToken());
-      set({ social });
+      set({ social: normalizeSocial(social) });
     } catch (cause) {
       set({ error: message(cause) });
     }
@@ -214,6 +216,13 @@ function applyEquippedCosmetics(set: SetFn, get: GetFn, equippedCosmetics: Equip
     cosmetics: get().cosmetics.map((entry) => ({ ...entry, equipped: equippedIds.has(entry.item.id) })),
     error: null,
   });
+  // AppHeader's top-bar avatar preview reads settingsStore.avatarId (kept as
+  // a passive, editor-less fallback now that Settings no longer has its own
+  // Avatar picker — see SettingsScreen.tsx doc comment). Mirror every equip
+  // here so the header updates immediately instead of only after a full
+  // reload, keeping "change it on Profile, see it everywhere" true.
+  const optionId = avatarCatalogIdToOptionId(equippedCosmetics.avatar);
+  if (optionId) useSettingsStore.getState().setAvatarId(optionId);
 }
 
 async function loadSections(
@@ -247,10 +256,27 @@ async function loadSections(
       ? load('cosmetics', fetchCosmeticInventory(token), (value) => set({ cosmetics: value.inventory }))
       : Promise.resolve(set({ cosmetics: [] })),
     header.isOwner ? load('account', fetchOwnAccount(token), (value) => set({ account: value.account })) : Promise.resolve(set({ account: null })),
-    header.isOwner ? load('social', fetchSocial(token), (value) => set({ social: value })) : Promise.resolve(set({ social: null })),
+    header.isOwner ? load('social', fetchSocial(token), (value) => set({ social: normalizeSocial(value) })) : Promise.resolve(set({ social: null })),
   ]);
 
   set({ sectionErrors });
+}
+
+/**
+ * Defends against a stale backend response missing fields this client now
+ * expects (e.g. `blocked`, added after Cloud Run's last manual redeploy —
+ * unlike Vercel, the backend doesn't auto-deploy on git push). Without this,
+ * `social.blocked.length` etc. in ProfileScreen/SocialTab throws and blanks
+ * the whole screen instead of just rendering an empty list.
+ */
+function normalizeSocial(social: ProfileSocialState): ProfileSocialState {
+  return {
+    friends: social.friends ?? [],
+    incomingRequests: social.incomingRequests ?? [],
+    outgoingRequests: social.outgoingRequests ?? [],
+    blocked: social.blocked ?? [],
+    blockedCount: social.blockedCount ?? 0,
+  };
 }
 
 function requireToken(): string {

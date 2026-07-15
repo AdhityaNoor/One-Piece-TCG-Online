@@ -87,13 +87,17 @@ export const useSocialStore = create<SocialState>((set, get) => ({
     set({ status: 'loading', error: null });
     try {
       const social = await fetchSocial(token);
+      // Defensive fallbacks: a backend that hasn't been redeployed yet (Cloud
+      // Run isn't auto-deployed like the Vercel frontend) may omit fields
+      // this client now expects (e.g. `blocked`) — default to empty rather
+      // than letting `undefined.length` crash the whole tab.
       set({
         status: 'ready',
-        friends: social.friends,
-        incomingRequests: social.incomingRequests,
-        outgoingRequests: social.outgoingRequests,
-        blocked: social.blocked,
-        blockedCount: social.blockedCount,
+        friends: social.friends ?? [],
+        incomingRequests: social.incomingRequests ?? [],
+        outgoingRequests: social.outgoingRequests ?? [],
+        blocked: social.blocked ?? [],
+        blockedCount: social.blockedCount ?? 0,
       });
     } catch (cause) {
       set({ status: 'error', error: message(cause) });

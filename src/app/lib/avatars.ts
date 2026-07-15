@@ -6,16 +6,20 @@
  * AppHeader.tsx — callers must never paint a solid shape behind the art,
  * only the character's own silhouette should be visible).
  *
- * Resolved through resolveAssetUrl (same seam CardImage.tsx uses) so this
- * keeps working if avatar assets ever move behind the same
- * VITE_ASSET_BASE_URL indirection card images already use.
+ * Deliberately NOT resolved through resolveAssetUrl. That helper prefixes
+ * root-relative paths with VITE_ASSET_BASE_URL (the Vercel Blob store), but
+ * only /public/card-images/ is excluded from the Vercel bundle and uploaded
+ * there (see .vercelignore) — /public/avatars/ ships as part of the normal
+ * static deployment. Routing avatar paths through resolveAssetUrl in
+ * production rewrote them to a Blob URL that was never uploaded, 404ing
+ * every avatar image. Plain root-relative paths work in both dev (served by
+ * Vite from /public/) and prod (served by the Vercel deployment itself).
  */
-import { resolveAssetUrl } from './assetUrl';
 
 export interface AvatarOption {
   id: string;
   label: string;
-  /** Root-relative path under /public — resolved through resolveAssetUrl at render time. */
+  /** Root-relative path under /public — served as-is, same origin as the app. */
   path: string;
 }
 
@@ -35,7 +39,7 @@ export const DEFAULT_AVATAR_ID = 'luffy';
 /** Resolves a saved avatarId (possibly stale/unknown/null) to a real image URL, always falling back to the default. */
 export function resolveAvatarUrl(avatarId: string | null | undefined): string {
   const option = AVATAR_OPTIONS.find((a) => a.id === avatarId) ?? AVATAR_OPTIONS.find((a) => a.id === DEFAULT_AVATAR_ID) ?? AVATAR_OPTIONS[0];
-  return resolveAssetUrl(option.path) ?? option.path;
+  return option.path;
 }
 
 /**

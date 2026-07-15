@@ -10,6 +10,12 @@
 import type { CardCategory, Color, FaceState, Orientation } from '../../engine/state/card';
 import type { GameState } from '../../engine/state/game';
 import { computeCurrentCost, computeCurrentPower, hasContinuousKeyword, type CardDefinitionLookup } from '../../engine/rules/shared';
+import {
+  computeProjectedCostWithV2,
+  computeProjectedPowerWithV2,
+  hasProjectedKeywordWithV2,
+  type V2ProjectionContext,
+} from '../../engine/effects_V2/projectionAdapter_V2';
 
 export interface CardView {
   instanceId: string;
@@ -68,7 +74,8 @@ export function buildCardView(
   defs: CardDefinitionLookup,
   state: GameState,
   images: Record<string, string | null>,
-  instanceId: string
+  instanceId: string,
+  v2Projection?: V2ProjectionContext,
 ): CardView {
   const instance = state.cardsById[instanceId];
   const def = instance ? defs[instance.cardDefinitionId] : undefined;
@@ -112,10 +119,20 @@ export function buildCardView(
   const isPowerCard = def.category === 'leader' || def.category === 'character';
   const isCostCard = def.category === 'character' || def.category === 'stage' || def.category === 'event';
 
-  const power = isPowerCard ? computeCurrentPower(defs, state, instanceId) : null;
+  const power = isPowerCard
+    ? v2Projection?.sidecars ? computeProjectedPowerWithV2(defs, state, instanceId, v2Projection) : computeCurrentPower(defs, state, instanceId)
+    : null;
   const basePower = isPowerCard ? def.basePower ?? 0 : null;
-  const cost = isCostCard ? computeCurrentCost(defs, state, instanceId) : null;
+  const cost = isCostCard
+    ? v2Projection?.sidecars ? computeProjectedCostWithV2(defs, state, instanceId, v2Projection) : computeCurrentCost(defs, state, instanceId)
+    : null;
   const baseCost = isCostCard ? def.baseCost ?? 0 : null;
+  const hasV2Projection = Boolean(v2Projection?.sidecars);
+  const v2Rush = hasProjectedKeywordWithV2(defs, state, instanceId, 'rush', v2Projection);
+  const v2Blocker = hasProjectedKeywordWithV2(defs, state, instanceId, 'blocker', v2Projection);
+  const v2DoubleAttack = hasProjectedKeywordWithV2(defs, state, instanceId, 'doubleAttack', v2Projection);
+  const v2Banish = hasProjectedKeywordWithV2(defs, state, instanceId, 'banish', v2Projection);
+  const v2Unblockable = hasProjectedKeywordWithV2(defs, state, instanceId, 'unblockable', v2Projection);
 
   return {
     instanceId,
@@ -142,11 +159,11 @@ export function buildCardView(
     donAttachedIds: instance.donAttached,
     oncePerTurnUsed: instance.oncePerTurnUsed,
     summoningSick: instance.summoningSick,
-    hasBlocker: def.hasBlocker || hasContinuousKeyword(defs, state, instanceId, 'blocker'),
-    hasRush: def.hasRush || hasContinuousKeyword(defs, state, instanceId, 'rush'),
-    hasDoubleAttack: def.hasDoubleAttack || hasContinuousKeyword(defs, state, instanceId, 'doubleAttack'),
-    hasBanish: (def.hasBanish ?? false) || hasContinuousKeyword(defs, state, instanceId, 'banish'),
-    isUnblockable: def.isUnblockable || hasContinuousKeyword(defs, state, instanceId, 'unblockable'),
+    hasBlocker: hasV2Projection ? v2Blocker ?? def.hasBlocker : def.hasBlocker || hasContinuousKeyword(defs, state, instanceId, 'blocker'),
+    hasRush: hasV2Projection ? v2Rush ?? def.hasRush : def.hasRush || hasContinuousKeyword(defs, state, instanceId, 'rush'),
+    hasDoubleAttack: hasV2Projection ? v2DoubleAttack ?? def.hasDoubleAttack : def.hasDoubleAttack || hasContinuousKeyword(defs, state, instanceId, 'doubleAttack'),
+    hasBanish: hasV2Projection ? v2Banish ?? (def.hasBanish ?? false) : (def.hasBanish ?? false) || hasContinuousKeyword(defs, state, instanceId, 'banish'),
+    isUnblockable: hasV2Projection ? v2Unblockable ?? def.isUnblockable : def.isUnblockable || hasContinuousKeyword(defs, state, instanceId, 'unblockable'),
     hasTrigger: def.hasTrigger,
     isUnknownDefinition: false,
   };

@@ -25,4 +25,5 @@ interface ImportMetaEnv {
    * http(s) replaced by ws(s) when unset.
    */
   readonly VITE_COLYSEUS_URL?: string;
+  readonly VITE_EFFECT_SYSTEM?: 'v1' | 'v2';
 }

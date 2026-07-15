@@ -1,12 +1,17 @@
 /**
  * Grid picker over the predefined avatar catalog (lib/avatars.ts). Used on
- * SettingsScreen. Every option is a transparent-background webp — tiles
- * intentionally carry no solid fill behind the art, only a hairline border
- * + selected-state ring, so the character silhouette reads directly against
- * the panel background instead of sitting in a filled box.
+ * ProfileScreen's avatar-change modal. Every option is a transparent-
+ * background webp — tiles intentionally carry no solid fill behind the art,
+ * only a hairline border + selected-state ring, so the character silhouette
+ * reads directly against the panel background instead of sitting in a
+ * filled box.
+ *
+ * Renders avatar.path directly (root-relative, e.g. "/avatars/..."), NOT
+ * through resolveAssetUrl — that helper is for the Blob-hosted card-image
+ * store only (see lib/avatars.ts doc comment); avatars ship in the normal
+ * Vercel bundle and 404 if prefixed with the Blob origin.
  */
 import { AVATAR_OPTIONS } from '../lib/avatars';
-import { resolveAssetUrl } from '../lib/assetUrl';
 
 export interface AvatarPickerProps {
   value: string;
@@ -32,7 +37,7 @@ export function AvatarPicker({ value, onChange }: AvatarPickerProps) {
             ].join(' ')}
           >
             <img
-              src={resolveAssetUrl(avatar.path) ?? avatar.path}
+              src={avatar.path}
               alt=""
               draggable={false}
               className="h-full w-full object-contain"

@@ -37,6 +37,29 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useOnlineStore } from '../store/onlineStore';
 import type { CardView } from '../../board/projection';
 import { logEffectText, logSourceCardLabel } from '../lib/logDisplay';
+import { EFFECT_RUNTIME_LABEL, EFFECT_RUNTIME_MODE } from '../config/effectRuntimeMode';
+
+function EffectRuntimeBadge() {
+  const summary = useMatchStore((s) => s.v2EffectRuntime?.summary);
+  const primitiveUsage = summary?.primitiveUsage;
+  const label = EFFECT_RUNTIME_MODE === 'v2' && summary
+    ? primitiveUsage
+      ? `${EFFECT_RUNTIME_LABEL} sidecar: ${summary.v2AbilityCount} abilities, ${primitiveUsage.implementedUsages} native / ${primitiveUsage.bridgeOnlyUsages} bridge / ${primitiveUsage.plannedUsages} planned`
+      : `${EFFECT_RUNTIME_LABEL} sidecar: ${summary.v2AbilityCount} abilities, ${summary.legacyWarningCount} bridge gaps`
+    : EFFECT_RUNTIME_LABEL;
+  return (
+    <span
+      className={[
+        'rounded-sm border px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.18em]',
+        EFFECT_RUNTIME_MODE === 'v2'
+          ? 'border-cyan-200/40 bg-cyan-950/50 text-cyan-100'
+          : 'border-white/10 bg-white/5 text-white/45',
+      ].join(' ')}
+    >
+      {label}
+    </span>
+  );
+}
 
 export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNode } = {}) {
   const current = useCurrentScreen();
@@ -51,6 +74,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const startError = useMatchStore((s) => s.startError);
   const startMatch = useMatchStore((s) => s.startMatch);
   const resetMatch = useMatchStore((s) => s.reset);
+  const v2EffectSidecars = useMatchStore((s) => s.v2EffectSidecars);
   // Presentation seat binding (null == hotseat). Drives fixed-perspective +
   // username labelling for Casual matches; never touches GameState.
   const localPlayerId = useMatchStore((s) => s.localPlayerId);
@@ -286,8 +310,9 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // seat, never getActingPlayerId()).
   const bottomPlayerId = localPlayerId ?? matchState.activePlayerId;
   const topPlayerId = getOpponentId(matchState, bottomPlayerId);
-  const bottomPlayerBoard = projectPlayerBoard(matchState, defs, images, bottomPlayerId);
-  const topPlayerBoard = projectPlayerBoard(matchState, defs, images, topPlayerId);
+  const v2Projection = EFFECT_RUNTIME_MODE === 'v2' ? { sidecars: v2EffectSidecars } : undefined;
+  const bottomPlayerBoard = projectPlayerBoard(matchState, defs, images, bottomPlayerId, v2Projection);
+  const topPlayerBoard = projectPlayerBoard(matchState, defs, images, topPlayerId, v2Projection);
 
   // Action AUTHORITY (who may currently act, and whose hand/board ActionBar
   // should read for eligibility checks) still tracks getActingPlayerId() —
@@ -370,7 +395,10 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{matchModeLabel}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{matchModeLabel}</p>
+              <EffectRuntimeBadge />
+            </div>
             <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
             <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">
               Turn {matchState.turnNumber} · {nameFor(matchState.activePlayerId)} · {matchState.currentPhase}
@@ -482,7 +510,10 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
             <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{matchModeLabel}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{matchModeLabel}</p>
+                    <EffectRuntimeBadge />
+                  </div>
                   <h2 className="font-display text-sm font-black uppercase tracking-[0.16em] text-white">Actions</h2>
                   <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.12em] text-white/48">
                     Turn {matchState.turnNumber} · {nameFor(matchState.activePlayerId)} · {matchState.currentPhase}
@@ -2136,13 +2167,21 @@ function AttackArrowOverlay({ attackerInstanceId, targetInstanceId, committed }:
   const headShadowOpacity = 0.32;
   const arrowHeads = [0, 1, 2, 3, 4, 5, 6];
   const durationSeconds = 1.15;
+  const glowFilterId = `${pathId}-glow`;
 
   return (
     <svg ref={overlayRef} className="pointer-events-none absolute inset-0 z-40 h-full w-full overflow-visible" aria-hidden="true">
       <defs>
-        <filter id="attack-arrow-glow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor={glow} floodOpacity="0.85" />
-          <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000000" floodOpacity="0.5" />
+        {/* Plain feGaussianBlur only — deliberately NOT feDropShadow with
+            floodColor. WebKit/Safari (the mobile-first target platform) has
+            a long-standing bug where chained feDropShadow primitives ignore
+            flood-color and paint solid black instead of the intended
+            yellow/red tint, which is exactly the "arrow is just black"
+            regression reported here. Blurring an already-colored copy of
+            the shape sidesteps flood-color entirely, so the glow keeps its
+            hue on every renderer. */}
+        <filter id={glowFilterId} x="-150%" y="-150%" width="400%" height="400%">
+          <feGaussianBlur stdDeviation="4.5" />
         </filter>
       </defs>
       {arrowPath && (
@@ -2150,8 +2189,16 @@ function AttackArrowOverlay({ attackerInstanceId, targetInstanceId, committed }:
           <path id={pathId} d={arrowPath} fill="none" stroke="none" />
           {arrowHeads.map((index) => (
             <g key={index} opacity="0">
+              {/* Drop shadow: flat dark silhouette, offset — no filter, so
+                  there is nothing here that can turn the actual arrow color
+                  black. */}
               <polygon points="24,0 -18,-14 -8,0 -18,14" fill="#000000" opacity={headShadowOpacity} transform="translate(2 4)" />
-              <polygon points="24,0 -18,-14 -8,0 -18,14" fill={stroke} filter="url(#attack-arrow-glow)" />
+              {/* Glow: blurred copy already filled with the target hue. */}
+              <polygon points="24,0 -18,-14 -8,0 -18,14" fill={glow} opacity="0.85" filter={`url(#${glowFilterId})`} />
+              {/* Crisp arrowhead on top, unfiltered — this is what guarantees
+                  the yellow (uncommitted target) / red (committed attack)
+                  color always renders correctly. */}
+              <polygon points="24,0 -18,-14 -8,0 -18,14" fill={stroke} />
               <animateMotion dur={`${durationSeconds}s`} repeatCount="indefinite" rotate="auto" begin={`${index * -0.16}s`}>
                 <mpath href={`#${pathId}`} />
               </animateMotion>

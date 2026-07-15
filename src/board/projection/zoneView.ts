@@ -6,6 +6,7 @@
  */
 import type { GameState } from '../../engine/state/game';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
+import type { V2ProjectionContext } from '../../engine/effects_V2/projectionAdapter_V2';
 import { buildCardView, type CardView } from './cardView';
 
 export interface PlayerBoardView {
@@ -39,10 +40,11 @@ export function projectPlayerBoard(
   state: GameState,
   defs: CardDefinitionLookup,
   images: Record<string, string | null>,
-  playerId: string
+  playerId: string,
+  v2Projection?: V2ProjectionContext,
 ): PlayerBoardView {
   const player = state.players[playerId];
-  const view = (id: string): CardView => buildCardView(defs, state, images, id);
+  const view = (id: string): CardView => buildCardView(defs, state, images, id, v2Projection);
 
   return {
     playerId,

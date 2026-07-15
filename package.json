@@ -6,6 +6,7 @@
   "description": "One Piece TCG web simulator. Pure rules engine + card/deck layer under /src/engine and /src/cards; React+Vite+Tailwind app shell under /src/app, /src/board, /src/animations, /src/renderer3d.",
   "scripts": {
     "dev": "vite",
+    "dev:v2": "vite --mode v2",
     "build": "tsc --noEmit -p tsconfig.app.json && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.scripts.json",

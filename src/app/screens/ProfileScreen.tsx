@@ -564,17 +564,17 @@ function SocialSection() {
       {social ? (
         <>
           <div className="grid gap-3 md:grid-cols-4">
-            <Metric label="Friends" value={String(social.friends.length)} />
-            <Metric label="Incoming" value={String(social.incomingRequests.length)} />
-            <Metric label="Outgoing" value={String(social.outgoingRequests.length)} />
-            <Metric label="Blocked" value={String(social.blockedCount)} />
+            <Metric label="Friends" value={String((social.friends ?? []).length)} />
+            <Metric label="Incoming" value={String((social.incomingRequests ?? []).length)} />
+            <Metric label="Outgoing" value={String((social.outgoingRequests ?? []).length)} />
+            <Metric label="Blocked" value={String(social.blockedCount ?? (social.blocked ?? []).length)} />
           </div>
 
           <div className="mt-5">
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-gold">Blocked Players</p>
-            {social.blocked.length ? (
+            {(social.blocked ?? []).length ? (
               <div className="grid gap-2">
-                {social.blocked.map((entry) => (
+                {(social.blocked ?? []).map((entry) => (
                   <div key={entry.userId} className="flex items-center justify-between gap-3 border border-white/10 bg-black/25 px-3 py-2">
                     <span className="min-w-0 truncate text-sm font-bold text-white">{entry.username}</span>
                     <CanvasMenuButton label="Unblock" size="sm" onClick={() => void unblockUser(entry.username)} />

@@ -101,8 +101,10 @@ graphify-out/
 
 .history/
 
-# To be migrated V2 effect templates. These are local migration prep artifacts for now.
-*v2*
-*_V2*
-OPTCG_Canonical_Effect_Structure.md
+# # To be migrated V2 effect templates. These are local migration prep artifacts for now.
+# *v2*
+# *_V2*
+# OPTCG_Canonical_Effect_Structure.md
 
+ffect*.md
+ffect*.csv
