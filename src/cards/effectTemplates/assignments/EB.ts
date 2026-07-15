@@ -1922,9 +1922,14 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 7, pick: 1, reveal: true, destination: 'hand', filter: { name: 'Lulucia Kingdom' } }] },
   },
 
-  // EB04-007 — [On Play] your Leader gains +2000 power until end of opponent's next turn.
-  //   PARTIAL: the [Activate: Main] [Once Per Turn] "if opponent has an 8000+ power Character, gain [Rush: Character]" is deferred (gate keys off current power, and opponentHasCharacterBasePowerAtLeast is base power).
-  { cardNumber: 'EB04-007', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn' }] } },
+  // EB04-007 — [On Play] your Leader gains +2000 power until end of opponent's next turn. [Activate: Main] if opponent has 8000+ power Character, gain [Rush: Character].
+  {
+    cardNumber: 'EB04-007',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'opponentCharacterCurrentPowerCount', power: 8000, atLeast: 1 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'duringThisTurn' }] } },
+    ],
+  },
 
   // EB04-008 — (Event) [Main] If 2 or less Life, give up to 1 opp Character −3000 this turn. [Counter] Your Leader +3000 battle.
   {
@@ -1935,7 +1940,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB04-009 — PARTIAL: give active DON!! to [Silvers Rayleigh] deferred; mapped Counter +2000 to [Silvers Rayleigh] or Character.
+  // EB04-009 - [Main] give 1 active DON!! to [Silvers Rayleigh]: opp Character -2000. [Counter] +2000.
   {
     cardNumber: 'EB04-009',
     templates: [
@@ -1944,7 +1949,8 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'activateMain',
           functions: [
-            { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true },
+            { fn: 'giveDon', count: 1, targetName: 'Silvers Rayleigh', activeDonOnly: true, optional: true },
+            { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
           ],
         },
       },
@@ -2096,8 +2102,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB04-022 — [On Play] trash 2 from hand → opp places 2 hand cards on deck bottom (if 6+ hand); [DON!! x1] [When Attacking] trash 1: opp Character −2000.
-  // PARTIAL: opponent hand → deck-bottom uses trashFromOpponentHandChosenByOpponent (not bottom placement).
+  // EB04-022 - [On Play] trash 2 from hand: if opponent has 6+ hand, they bottom-deck 2 from hand. [DON!! x1] [When Attacking] trash 1: opp Character -2000.
   {
     cardNumber: 'EB04-022',
     templates: [
@@ -2107,7 +2112,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
           timing: 'onPlay',
           functions: [
             { fn: 'optionalTrashFromHand', count: 2 },
-            { fn: 'trashFromOpponentHandChosenByOpponent', count: 2, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'opponentHand', atLeast: 6 }] },
+            { fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, minTargets: 2, maxTargets: 2, chooser: 'opponent', ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'opponentHand', atLeast: 6 }] },
           ],
         },
       },
@@ -2214,24 +2219,28 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB04-033 — [On Play] DON!! −1: If 3+ {Foxy Pirates} Characters, K.O. up to 1 opp Character base power 6000 or less.
   { cardNumber: 'EB04-033', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Foxy Pirates', atLeast: 3 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }, optional: true }] } },
 
-  // EB04-030 — K.O. replacement (return 1 DON!!). PARTIAL: onPlay Rush + rest deferred.
+  // EB04-030 — K.O. replacement (return 1 DON!!); [On Play] DON!! -2 grants Rush and rests an opponent Character.
   {
     cardNumber: 'EB04-030',
-    templateId: 'ability',
-    params: {
-      timing: 'onEnterPlay',
-      functions: [{ fn: 'registerKoReplacementSelf', returnDon: { count: 1 }, duration: 'permanent' }],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementSelf', returnDon: { count: 1 }, duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }], functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' },
+        { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 7 } }, optional: true },
+      ] } },
+    ],
   },
 
-  // EB04-031 — K.O. replacement (return 1 DON!!). PARTIAL: activate Main DON!! deferred.
+  // EB04-031 — K.O. replacement (return 1 DON!!); [Activate: Main] adds active + rested DON!! if no other [King].
   {
     cardNumber: 'EB04-031',
-    templateId: 'ability',
-    params: {
-      timing: 'onEnterPlay',
-      functions: [{ fn: 'registerKoReplacementSelf', returnDon: { count: 1 }, duration: 'permanent' }],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementSelf', returnDon: { count: 1 }, duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }, { kind: 'selfOtherNamedCharacterCount', name: 'King', atMost: 0 }], functions: [
+        { fn: 'addDonFromDeck', count: 1, rested: false },
+        { fn: 'addDonFromDeck', count: 1, rested: true },
+      ] } },
+    ],
   },
 
   // EB04-032 — [On Play] trash 1 {Animal Kingdom Pirates} from hand: draw 2; [Activate: Main] rest 2 DON!!: if Leader {Animal Kingdom Pirates}, add 1 rested DON!!.
@@ -2432,8 +2441,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // EB04-045 — [Activate: Main] rest this: if 2+ Characters cost ≥8, Revolutionary Army Leader/Character +1000 this turn.
-  // PARTIAL: "2 or more Characters with cost 8+" count gate deferred; mapped with anyCharacterCostAtLeast: 8.
+  // EB04-045 — [Activate: Main] rest this: if 2+ Characters cost >=8, Revolutionary Army Leader/Character +1000 this turn.
   {
     cardNumber: 'EB04-045',
     templateId: 'ability',
@@ -2446,7 +2454,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
         amount: 1000,
         duration: 'duringThisTurn',
         optional: true,
-        ifGate: [{ kind: 'anyCharacterCostAtLeast', atLeast: 8 }],
+        ifGate: [{ kind: 'anyCharacterCostCount', minCost: 8, atLeast: 2 }],
       }],
     },
   },
@@ -2522,15 +2530,17 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
       },
     ],
   },
-  // EB04-052 — PARTIAL: [When Attacking] copy opponent Leader base power deferred; mapped [On K.O.] yellow ≤6000 play at ≤2 Life.
+  // EB04-052 - [When Attacking] copy opponent Leader power. [On K.O.] at 2 or less Life, play yellow Character power <=6000.
   {
     cardNumber: 'EB04-052',
-    templateId: 'ability',
-    params: {
-      timing: 'onKO',
-      gate: [{ kind: 'selfLife', atMost: 2 }],
-      functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'yellow', maxPower: 6000 } }],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'setBasePowerFromSource', target: { ref: 'self' }, source: { group: 'leader', player: 'opponent' }, duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: {
+        timing: 'onKO',
+        gate: [{ kind: 'selfLife', atMost: 2 }],
+        functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'yellow', maxPower: 6000 } }],
+      } },
+    ],
   },
 
   // EB04-053 — [Blocker] [On Block] If 2 or less Life, draw 1.

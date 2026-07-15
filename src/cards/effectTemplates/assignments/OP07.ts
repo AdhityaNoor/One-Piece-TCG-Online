@@ -159,9 +159,14 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-031 — PARTIAL: fires on any Character rest during your turn, not only rests caused by your effects.
   { cardNumber: 'OP07-031', templateId: 'ability', params: { timing: 'onRested', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
 
-  // OP07-032 — [On Play] if Leader {Fish-Man}/{Merfolk}: rest up to 1 opp Character with a cost of 6 or less.
-  //   PARTIAL: the static "can attack Characters on the turn it is played" is deferred.
-  { cardNumber: 'OP07-032', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },
+  // OP07-032 — Static: can attack Characters on the turn played. [On Play] if Leader {Fish-Man}/{Merfolk}: rest up to 1 opp Character cost <=6.
+  {
+    cardNumber: 'OP07-032',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] } },
+    ],
+  },
 
   // OP07-033 — If 3+ Characters, your cost≤3 Characters other than [Luffy] cannot be K.O.'d by opponent effects.
   { cardNumber: 'OP07-033', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunityAuraControllerCharacters', scope: 'effect', duration: 'permanent', excludeSource: true, targetCondition: { maxCost: 3, gate: [{ kind: 'selfCharacterCount', atLeast: 3 }] }, effectSourceController: 'opponent' }] } },
@@ -529,13 +534,15 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'moveCards', from: { zone: 'trash', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
   ] } },
 
-  // OP07-094 — [Counter] up to 1 Leader/Char +2000 this battle. [Trigger] Return up to 1 of your Characters to hand.
-  //   PARTIAL: the "if 10+ trash, return your CP-type Character" rider needs a trash-count gate (deferred).
+  // OP07-094 — [Counter] up to 1 Leader/Char +2000 this battle. [Trigger] Return up to 1 of your Characters to hand, or CP Character if 10+ trash.
   {
     cardNumber: 'OP07-094',
     templates: [
       { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'CP' } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] },
+      ] } },
     ],
   },
 
@@ -551,12 +558,14 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP07-096 — [Main] Draw 1. [Trigger] K.O. up to 1 opp Character cost ≤3.
-  //   PARTIAL: the "if 10+ trash, give opp −3 cost" rider needs a trash-count gate (deferred).
+  // OP07-096 — [Main] Draw 1, then if 10+ trash give up to 1 opp Character -3 cost. [Trigger] K.O. up to 1 opp Character cost <=3.
   {
     cardNumber: 'OP07-096',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'draw', amount: 1 },
+        { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true, ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] },
+      ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
     ],
   },

@@ -470,6 +470,10 @@ export interface ContinuousEffectNegation {
   appliesToInstanceId?: string;
   /** Negate abilities on all cards controlled by this player. */
   appliesToControllerId?: string;
+  /** Controller-wide negation only applies to these printed card categories when present. */
+  appliesToCategories?: Exclude<CardCategory, 'don'>[];
+  /** Controller-wide negation does not apply to cards whose printed types include this value. */
+  exceptTypeIncludes?: string;
   /** Omitted or empty = all timings; otherwise only the listed timings are negated. */
   negatedTimings?: IrTiming[];
 }

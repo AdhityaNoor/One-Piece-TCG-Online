@@ -46,4 +46,24 @@ describe('effect negation', () => {
     expect(isAbilityNegated(withNegation, instanceId, 'onPlay')).toBe(true);
     expect(isAbilityNegated(withNegation, instanceId, 'onKO')).toBe(false);
   });
+
+  it('can scope controller-wide negation by category with a type exception', () => {
+    const base = buildBaseRig({ activePlayerId: 'p1' });
+    const rogerDef = makeCharacterDef({ cardDefinitionId: 'ROGER-CHAR', cardNumber: 'NEG-ROGER', types: ['Roger Pirates'] });
+    const nonRogerDef = makeCharacterDef({ cardDefinitionId: 'NON-ROGER-CHAR', cardNumber: 'NEG-NON-ROGER', types: ['Navy'] });
+    const withRoger = putCharacterInPlay(base, 'p1', rogerDef);
+    const withNonRoger = putCharacterInPlay(withRoger.rig, 'p1', nonRogerDef);
+
+    const ctx = new EffectContextImpl(withNonRoger.rig.state, withRoger.instanceId, withNonRoger.rig.defs, 'test');
+    ctx.negateControllerEffects({
+      appliesToControllerId: 'p1',
+      duration: 'permanent',
+      appliesToCategories: ['leader', 'character'],
+      exceptTypeIncludes: 'Roger Pirates',
+    });
+    const withNegation = ctx.finish().state;
+
+    expect(isAbilityNegated(withNegation, withRoger.instanceId, 'onPlay', withNonRoger.rig.defs)).toBe(false);
+    expect(isAbilityNegated(withNegation, withNonRoger.instanceId, 'onPlay', withNonRoger.rig.defs)).toBe(true);
+  });
 });

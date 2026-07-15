@@ -169,6 +169,14 @@ function evaluateGate(
       return def.colors.length > 1;
     }
 
+    case 'leaderColor': {
+      const leaderInst = state.cardsById[player.leaderInstanceId];
+      if (!leaderInst) return false;
+      const def = defs[leaderInst.cardDefinitionId];
+      if (!def) return false;
+      return def.colors.includes(gate.color);
+    }
+
     case 'leaderActive': {
       const leaderInst = state.cardsById[player.leaderInstanceId];
       return leaderInst?.orientation === 'active';
@@ -308,6 +316,13 @@ function evaluateGate(
       return count >= gate.atLeast;
     }
 
+    case 'anyCharacterCostCount': {
+      const opponentId = getOpponentId(state, ownerId);
+      const ids = [...player.characterArea.cardIds, ...state.players[opponentId].characterArea.cardIds];
+      const count = ids.filter((id) => currentCostForGate(state, defs, id) >= gate.minCost).length;
+      return count >= gate.atLeast;
+    }
+
     case 'selfHasCharacterBasePowerAtLeast': {
       return player.characterArea.cardIds.some((id) => (defs[state.cardsById[id]?.cardDefinitionId ?? '']?.basePower ?? -1) >= gate.power);
     }
@@ -343,6 +358,14 @@ function evaluateGate(
     case 'selfDoesNotControlNamed': {
       const ids = [...player.characterArea.cardIds, ...player.stageArea.cardIds, player.leaderInstanceId];
       return !ids.some((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name);
+    }
+
+    case 'selfNamedCardCount': {
+      const ids = [...player.characterArea.cardIds, ...player.stageArea.cardIds, player.leaderInstanceId];
+      const c = ids.filter((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name).length;
+      if (gate.atLeast !== undefined && c < gate.atLeast) return false;
+      if (gate.atMost !== undefined && c > gate.atMost) return false;
+      return true;
     }
 
     case 'selfHandMatching': {
@@ -382,6 +405,16 @@ function evaluateGate(
       return true;
     }
 
+    case 'selfTypedCharacterDistinctNameCount': {
+      const names = new Set<string>();
+      for (const id of player.characterArea.cardIds) {
+        const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
+        if (!def || !typeMatches(def.types, gate.typeIncludes)) continue;
+        names.add(def.name);
+      }
+      return names.size >= gate.atLeast;
+    }
+
     case 'selfAnyTypedCharacterCount': {
       const c = player.characterArea.cardIds.filter((id) => {
         if (gate.rested !== undefined && (state.cardsById[id]?.orientation === 'rested') !== gate.rested) return false;
@@ -402,6 +435,12 @@ function evaluateGate(
       const leaderId = player.leaderInstanceId;
       if (!leaderId) return false;
       return computeCurrentPower(defs, state, leaderId) <= gate.power;
+    }
+
+    case 'selfLeaderPowerAtLeast': {
+      const leaderId = player.leaderInstanceId;
+      if (!leaderId) return false;
+      return computeCurrentPower(defs, state, leaderId) >= gate.power;
     }
 
     case 'selfTurnCount': {
@@ -469,6 +508,16 @@ function evaluateGate(
       return true;
     }
 
+    case 'opponentCharacterCurrentPowerCount': {
+      const opponentId = getOpponentId(state, ownerId);
+      const opp = state.players[opponentId];
+      if (!opp) return false;
+      const count = opp.characterArea.cardIds.filter((id) => computeCurrentPower(defs, state, id) >= gate.power).length;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
     case 'selfCharactersTotalCostAtLeast': {
       let total = 0;
       for (const id of player.characterArea.cardIds) total += currentCostForGate(state, defs, id);
@@ -497,6 +546,7 @@ function evaluateGate(
         const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
         if (!def) return false;
         if (gate.category !== undefined && def.category !== gate.category) return false;
+        if (gate.name !== undefined && def.name !== gate.name) return false;
         if (gate.typeIncludes !== undefined && !typeMatches(def.types, gate.typeIncludes)) return false;
         return true;
       }).length;
@@ -594,6 +644,13 @@ function evaluateGate(
       const def = defs[state.cardsById[playedId]?.cardDefinitionId ?? ''];
       if (!def) return false;
       return typeMatches(def.types, gate.typeIncludes);
+    }
+
+    case 'playedCharacterHasTrigger': {
+      const playedId = eventContext?.playedCharacterInstanceId;
+      if (!playedId) return false;
+      const def = defs[state.cardsById[playedId]?.cardDefinitionId ?? ''];
+      return !!def?.hasTrigger;
     }
 
     case 'playedCharacterBaseCostAtLeast': {

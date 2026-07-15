@@ -11,11 +11,12 @@
 import { describe, expect, it } from 'vitest';
 import { runTimings, resumeProgram } from '../../../engine/effects/interpreter';
 import { runRefreshPhase } from '../../../engine/rules/phases/runRefreshPhase';
-import { buildBaseRig, makeCharacterDef, putCharacterInPlay } from '../../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, makeStageDef, putCharacterInPlay, putStageInPlay } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
 
 const SRC = makeCharacterDef({ cardDefinitionId: 'SYN-SRC', cardNumber: 'SYN-SRC', category: 'character', baseCost: 3, basePower: 4000 });
 const OPP = makeCharacterDef({ cardDefinitionId: 'SYN-OPP', cardNumber: 'SYN-OPP', category: 'character', baseCost: 2, basePower: 3000 });
+const OPP_STAGE = makeStageDef({ cardDefinitionId: 'SYN-OPP-STAGE', cardNumber: 'SYN-OPP-STAGE', category: 'stage', baseCost: 2 });
 
 describe('family: preventRefresh (will not become active in next Refresh Phase)', () => {
   const assignment: CardEffectAssignment = {
@@ -52,5 +53,30 @@ describe('family: preventRefresh (will not become active in next Refresh Phase)'
     const stillRested = { ...afterFirst, activePlayerId: 'p2', cardsById: { ...afterFirst.cardsById, [flaggedId]: { ...afterFirst.cardsById[flaggedId], orientation: 'rested' as const } } };
     const afterSecond = runRefreshPhase(stillRested).state;
     expect(afterSecond.cardsById[flaggedId].orientation).toBe('active');
+  });
+
+  it('can choose a rested opponent Stage when the target is Characters or Stages', () => {
+    const stageAssignment: CardEffectAssignment = {
+      cardNumber: 'SYN-SRC',
+      templateId: 'ability',
+      params: { timing: 'onPlay', functions: [{ fn: 'preventRefresh', target: { group: 'charactersOrStages', player: 'opponent', filter: { rested: true } }, optional: true }] },
+    };
+    const registry = buildRegistryFromAssignments([stageAssignment]);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let srcId: string;
+    let stageId: string;
+    ({ rig, instanceId: srcId } = putCharacterInPlay(rig, 'p1', SRC));
+    ({ rig, instanceId: stageId } = putStageInPlay(rig, 'p2', OPP_STAGE, { orientation: 'rested' }));
+
+    const fired = runTimings(registry['SYN-SRC'], ['onPlay'], rig.state, srcId, rig.defs, null, registry);
+    const choice = fired.state.pendingChoices[0];
+    expect(choice.constraints.candidateInstanceIds).toContain(stageId);
+    let state = resumeProgram(registry['SYN-SRC'], fired.state, choice, [stageId], rig.defs, null, registry).state;
+    expect(state.cardsById[stageId].skipNextRefresh).toBe(true);
+
+    state = { ...state, activePlayerId: 'p2' };
+    const afterRefresh = runRefreshPhase(state).state;
+    expect(afterRefresh.cardsById[stageId].orientation).toBe('rested');
+    expect(afterRefresh.cardsById[stageId].skipNextRefresh).toBe(false);
   });
 });

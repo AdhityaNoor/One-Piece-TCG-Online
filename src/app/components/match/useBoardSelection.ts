@@ -91,18 +91,18 @@ function abilityConditionMet(ability: Ability, source: CardInstance, sourceInsta
   return true;
 }
 
-function v2StandardAbility(cardDefinitionId: string, timing: 'ACTIVATE_MAIN' | 'EVENT_MAIN' | 'EVENT_COUNTER' | 'ON_OPPONENT_ATTACK') {
+function v2StandardAbility(cardNumber: string, timing: 'ACTIVATE_MAIN' | 'EVENT_MAIN' | 'EVENT_COUNTER' | 'ON_OPPONENT_ATTACK') {
   const runtime = useMatchStore.getState().v2EffectRuntime;
   if (EFFECT_RUNTIME_MODE !== 'v2' || !runtime) return undefined;
-  return runtime.programsByCardNumber[cardDefinitionId]?.abilities.find((ability) =>
+  return runtime.programsByCardNumber[cardNumber]?.abilities.find((ability) =>
     ability.timing.kind === 'STANDARD_TIMING' && ability.timing.timing === timing
   );
 }
 
-function v2DonMinusCost(cardDefinitionId: string, timing: 'ACTIVATE_MAIN' | 'EVENT_MAIN' | 'EVENT_COUNTER' | 'ON_OPPONENT_ATTACK'): number {
-  const ability = v2StandardAbility(cardDefinitionId, timing);
+function v2DonSelectionCostCount(cardNumber: string, timing: 'ACTIVATE_MAIN' | 'EVENT_MAIN' | 'EVENT_COUNTER' | 'ON_OPPONENT_ATTACK'): number {
+  const ability = v2StandardAbility(cardNumber, timing);
   return ability?.activationCost?.payments
-    .filter((cost) => cost.type === 'DON_MINUS_COST')
+    .filter((cost) => cost.type === 'DON_MINUS_COST' || cost.type === 'REST_DON_COST')
     .reduce((sum, cost) => sum + (cost.count.kind === 'NUMBER' ? cost.count.value : 0), 0) ?? 0;
 }
 
@@ -176,7 +176,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (!state) return false;
     if (!actingPlayerId) return false;
     if (EFFECT_RUNTIME_MODE === 'v2') {
-      const ability = v2EffectRuntime?.programsByCardNumber[card.cardDefinitionId]?.abilities.find((entry) =>
+      const ability = v2EffectRuntime?.programsByCardNumber[card.cardNumber]?.abilities.find((entry) =>
         entry.timing.kind === 'STANDARD_TIMING' && entry.timing.timing === 'ACTIVATE_MAIN'
       );
       if (!ability) return false;
@@ -217,7 +217,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
   const hasUnusedActivateMain = (card: CardView): boolean => {
     if (EFFECT_RUNTIME_MODE === 'v2') {
-      const ability = v2EffectRuntime?.programsByCardNumber[card.cardDefinitionId]?.abilities.find((entry) =>
+      const ability = v2EffectRuntime?.programsByCardNumber[card.cardNumber]?.abilities.find((entry) =>
         entry.timing.kind === 'STANDARD_TIMING' && entry.timing.timing === 'ACTIVATE_MAIN'
       );
       if (!ability) return false;
@@ -231,11 +231,11 @@ export function useBoardSelection(actingPlayerId: string | null) {
   /** True if the card's curated program exposes a [Counter] ability (7-1-3). */
   const hasCounter = (card: CardView): boolean =>
     EFFECT_RUNTIME_MODE === 'v2'
-      ? !!v2StandardAbility(card.cardDefinitionId, 'EVENT_COUNTER')
+      ? !!v2StandardAbility(card.cardNumber, 'EVENT_COUNTER')
       : !!registry[card.cardDefinitionId]?.abilities.some((ability) => ability.timing === 'counter');
 
-  const activateMainDonMinusCost = (card: CardView): number => {
-    if (EFFECT_RUNTIME_MODE === 'v2') return v2DonMinusCost(card.cardDefinitionId, 'ACTIVATE_MAIN');
+  const activateMainDonSelectionCost = (card: CardView): number => {
+    if (EFFECT_RUNTIME_MODE === 'v2') return v2DonSelectionCostCount(card.cardNumber, 'ACTIVATE_MAIN');
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'activateMain');
     return ability?.cost
       ?.filter((cost) => cost.kind === 'donMinus')
@@ -250,7 +250,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (!battle || battle.step !== 'block') return false;
     if (actingPlayerId === state.activePlayerId) return false; // defender only
     if (EFFECT_RUNTIME_MODE === 'v2') {
-      const ability = v2StandardAbility(card.cardDefinitionId, 'ON_OPPONENT_ATTACK');
+      const ability = v2StandardAbility(card.cardNumber, 'ON_OPPONENT_ATTACK');
       if (!ability) return false;
       const inst = state.cardsById[card.instanceId];
       if (!inst || inst.controllerId !== actingPlayerId || (inst.currentZone !== 'leaderArea' && inst.currentZone !== 'characterArea' && inst.currentZone !== 'stageArea')) return false;
@@ -279,8 +279,8 @@ export function useBoardSelection(actingPlayerId: string | null) {
     ).legal;
   };
 
-  const onOppAttackDonMinusCost = (card: CardView): number => {
-    if (EFFECT_RUNTIME_MODE === 'v2') return v2DonMinusCost(card.cardDefinitionId, 'ON_OPPONENT_ATTACK');
+  const onOppAttackDonSelectionCost = (card: CardView): number => {
+    if (EFFECT_RUNTIME_MODE === 'v2') return v2DonSelectionCostCount(card.cardNumber, 'ON_OPPONENT_ATTACK');
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'onOpponentsAttack');
     return ability?.cost
       ?.filter((cost) => cost.kind === 'donMinus')
@@ -328,11 +328,11 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (!state || !actingPlayerId) return null;
     if (card.category !== 'event') return null;
     if (EFFECT_RUNTIME_MODE === 'v2') {
-      const ability = v2StandardAbility(card.cardDefinitionId, 'EVENT_MAIN');
+      const ability = v2StandardAbility(card.cardNumber, 'EVENT_MAIN');
       if (!ability) return null;
       const cost = currentCostOf(card);
       const playCostDon = new Set(activeCostAreaDonIds(actingPlayerId).slice(0, cost));
-      const donMinus = v2DonMinusCost(card.cardDefinitionId, 'EVENT_MAIN');
+      const donMinus = v2DonSelectionCostCount(card.cardNumber, 'EVENT_MAIN');
       return { cost, donMinus, available: activeCostAreaDonIds(actingPlayerId).length - playCostDon.size + playCostDon.size };
     }
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'activateMain');
@@ -355,7 +355,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     const donInstanceIds = activeCostAreaDonIds(actingPlayerId).slice(0, info.cost);
     if (donInstanceIds.length < info.cost) return null;
     if (EFFECT_RUNTIME_MODE === 'v2') {
-      const requiredDon = v2DonMinusCost(card.cardDefinitionId, 'EVENT_MAIN');
+      const requiredDon = v2DonSelectionCostCount(card.cardNumber, 'EVENT_MAIN');
       const candidateInstanceIds = activeCostAreaDonIds(actingPlayerId).filter((id) => !new Set(donInstanceIds).has(id));
       if (candidateInstanceIds.length < requiredDon) return null;
       return { donInstanceIds, abilityCost: requiredDon, candidateInstanceIds };
@@ -383,11 +383,11 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (!state || !actingPlayerId) return null;
     if (card.category !== 'event' || !hasCounter(card)) return null;
     if (EFFECT_RUNTIME_MODE === 'v2') {
-      const ability = v2StandardAbility(card.cardDefinitionId, 'EVENT_COUNTER');
+      const ability = v2StandardAbility(card.cardNumber, 'EVENT_COUNTER');
       if (!ability) return null;
       const cost = currentCostOf(card);
       const playCostDon = new Set(activeCostAreaDonIds(actingPlayerId).slice(0, cost));
-      const donMinus = v2DonMinusCost(card.cardDefinitionId, 'EVENT_COUNTER');
+      const donMinus = v2DonSelectionCostCount(card.cardNumber, 'EVENT_COUNTER');
       return { cost, donMinus, available: activeCostAreaDonIds(actingPlayerId).length - playCostDon.size + playCostDon.size };
     }
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'counter');
@@ -421,7 +421,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     const donInstanceIds = activeCostAreaDonIds(actingPlayerId).slice(0, info.cost);
     if (donInstanceIds.length < info.cost) return null;
     if (EFFECT_RUNTIME_MODE === 'v2') {
-      const requiredDon = v2DonMinusCost(card.cardDefinitionId, 'EVENT_COUNTER');
+      const requiredDon = v2DonSelectionCostCount(card.cardNumber, 'EVENT_COUNTER');
       const candidateInstanceIds = activeCostAreaDonIds(actingPlayerId).filter((id) => !new Set(donInstanceIds).has(id));
       if (candidateInstanceIds.length < requiredDon) return null;
       return { donInstanceIds, abilityCost: requiredDon, candidateInstanceIds };
@@ -726,7 +726,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
   }
 
   function activateMainFromCard(card: CardView): void {
-    const donMinusCost = activateMainDonMinusCost(card);
+    const donMinusCost = activateMainDonSelectionCost(card);
     if (donMinusCost > 0) {
       setMode({ kind: 'payingActivateEffectCost', sourceInstanceId: card.instanceId, cost: donMinusCost, selectedDonIds: [] });
       setLastError(null);
@@ -745,7 +745,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const beginActivateOnOppAttack = (): void => { setMode({ kind: 'selectOnOppAttackSource' }); setLastError(null); };
 
   function activateOnOppAttackFromCard(card: CardView): void {
-    const donMinusCost = onOppAttackDonMinusCost(card);
+    const donMinusCost = onOppAttackDonSelectionCost(card);
     if (donMinusCost > 0) {
       setMode({ kind: 'payingOnOppAttackCost', sourceInstanceId: card.instanceId, cost: donMinusCost, selectedDonIds: [] });
       setLastError(null);

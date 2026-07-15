@@ -10,6 +10,10 @@ import type { GameLogEntry } from '../logs/logEntry';
 import { createActionLogger } from '../rules/shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 
+function trashThisSourceZone(currentZone: string): 'characterArea' | 'stageArea' | null {
+  return currentZone === 'characterArea' || currentZone === 'stageArea' ? currentZone : null;
+}
+
 export function fieldDonIds(state: GameState, playerId: string): string[] {
   const player = state.players[playerId];
   if (!player) return [];
@@ -128,7 +132,7 @@ export function canPayAbilityCost(
           reasons.push('Cost requires trashing the source card, but it is not in play.');
         } else if (source.currentZone === 'trash') {
           // already trashed (e.g. Event moved to trash before paying [Main] ability cost)
-        } else if (source.currentZone !== 'characterArea') {
+        } else if (trashThisSourceZone(source.currentZone) === null) {
           reasons.push('Cost requires trashing the source card, but it is not in play.');
         }
         break;
@@ -191,13 +195,15 @@ export function payAbilityCost(
         if (source.currentZone === 'trash') break;
         const owner = working.players[source.ownerId];
         const fromZone = source.currentZone;
+        const sourceZone = trashThisSourceZone(fromZone);
+        if (!owner || sourceZone === null) break;
         working = {
           ...working,
           players: {
             ...working.players,
             [source.ownerId]: {
               ...owner,
-              characterArea: removeFromZone(owner.characterArea, sourceInstanceId),
+              [sourceZone]: removeFromZone(owner[sourceZone], sourceInstanceId),
               trash: addToZoneTop(owner.trash, sourceInstanceId),
             },
           },

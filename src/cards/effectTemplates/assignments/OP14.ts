@@ -159,7 +159,6 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Your Turn] When this Character becomes rested, you may add 1 card from the top of your Life cards to
   //   your hand. If you do, up to 1 of your opponent's rested Characters or Stages will not become active
   //   in your opponent's next Refresh Phase.
-  // PARTIAL: Stage preventRefresh option deferred.
   {
     cardNumber: 'OP14-021',
     templateId: 'ability',
@@ -168,7 +167,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
       condition: { turn: 'your' },
       functions: [
         { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' }, optional: true },
-        { fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, duration: 'untilStartOfNextTurn', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+        { fn: 'preventRefresh', target: { group: 'charactersOrStages', player: 'opponent', filter: { rested: true } }, duration: 'untilStartOfNextTurn', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
       ],
     },
   },
@@ -434,11 +433,16 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   of your opponent's next End Phase. Then, if your opponent has a Character with a cost of 0 or with a
   //   cost of 8 or more, draw 1 card.[On K.O.] You may trash 1 card from your hand: Play this Character
   //   card from your trash.
-  //   PARTIAL: the exact self-revival line remains deferred.
-  { cardNumber: 'OP14-120', templateId: 'ability', params: { timing: 'onPlay', functions: [
-    { fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 9 } }, duration: 'endOfOpponentsTurn', optional: true },
-    { fn: 'draw', amount: 1, ifGate: [{ kind: 'anyOf', gates: [{ kind: 'anyCharacterExactCost', exactCost: 0 }, { kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }] },
-  ] } },
+  { cardNumber: 'OP14-120', templates: [
+    { templateId: 'ability', params: { timing: 'onPlay', functions: [
+      { fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 9 } }, duration: 'endOfOpponentsTurn', optional: true },
+      { fn: 'draw', amount: 1, ifGate: [{ kind: 'anyOf', gates: [{ kind: 'anyCharacterExactCost', exactCost: 0 }, { kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }] },
+    ] } },
+    { templateId: 'ability', params: { timing: 'onKO', functions: [
+      { fn: 'optionalTrashFromHand', count: 1 },
+      { fn: 'playSelfFromTrash', ifPrevious: 'previousMovedAny' },
+    ] } },
+  ] },
 
 
   { cardNumber: 'OP14-048', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'trashHandDownTo', handSize: 0 }] } },

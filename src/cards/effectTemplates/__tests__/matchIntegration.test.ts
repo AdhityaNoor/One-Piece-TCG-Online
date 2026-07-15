@@ -7,6 +7,183 @@ import { buildRegistryFromAssignments } from '../assembler';
 import { buildCuratedEffectRegistry } from '../curatedPrograms';
 
 describe('curated effect template integration with match engine dispatch', () => {
+  it('resolves OP06-069 On Play from a saved snapshot whose definition id is not the card number', () => {
+    const reiju = makeCharacterDef({
+      cardDefinitionId: 'OP06-069_alt-art',
+      cardNumber: 'OP06-069',
+      name: 'Vinsmoke Reiju',
+      category: 'character',
+      baseCost: 0,
+      basePower: 5000,
+    });
+    const filler = makeCharacterDef({
+      cardDefinitionId: 'TEST-OP06-069-FILLER',
+      cardNumber: 'TEST-OP06-069-FILLER',
+      name: 'Filler',
+      category: 'character',
+      baseCost: 1,
+      basePower: 1000,
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', reiju));
+    for (let i = 0; i < 5; i += 1) {
+      ({ rig } = putInHand(rig, 'p1', makeCharacterDef({ cardDefinitionId: `TEST-OP06-069-HAND-${i}`, cardNumber: `TEST-OP06-069-HAND-${i}`, category: 'character' })));
+    }
+    ({ rig } = putDeckCards(rig, 'p1', filler, 3));
+    ({ rig } = putDon(rig, 'p1', 3));
+    ({ rig } = putDon(rig, 'p2', 3));
+
+    const registry = buildCuratedEffectRegistry(rig.defs);
+    expect(registry['OP06-069_alt-art']?.abilities[0]).toMatchObject({
+      timing: 'onPlay',
+      gate: [{ kind: 'selfDonAtMostOpponent' }, { kind: 'selfHand', atMost: 5 }],
+    });
+
+    const result = executeAction(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+
+    expect(result.state.players.p1.hand.cardIds).toHaveLength(7);
+    expect(result.state.players.p1.deck.cardIds).toHaveLength(1);
+    expect(result.log.filter((entry) => entry.message.includes('drew 1 card from an effect'))).toHaveLength(2);
+  });
+
+  it('prompts OP06-063 to optionally trash from hand before checking DON parity for the recovery', () => {
+    const judge = makeCharacterDef({
+      cardDefinitionId: 'OP06-063_alt-art',
+      cardNumber: 'OP06-063',
+      name: 'Vinsmoke Judge',
+      category: 'character',
+      baseCost: 0,
+      basePower: 5000,
+    });
+    const spare = makeCharacterDef({
+      cardDefinitionId: 'TEST-OP06-063-SPARE',
+      cardNumber: 'TEST-OP06-063-SPARE',
+      name: 'Spare',
+      category: 'character',
+      baseCost: 1,
+      basePower: 1000,
+    });
+    const recovery = makeCharacterDef({
+      cardDefinitionId: 'TEST-OP06-063-RECOVERY',
+      cardNumber: 'TEST-OP06-063-RECOVERY',
+      name: 'Vinsmoke Recovery',
+      category: 'character',
+      types: ['The Vinsmoke Family'],
+      baseCost: 1,
+      basePower: 4000,
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let handId: string;
+    let spareId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', judge));
+    ({ rig, instanceId: spareId } = putInHand(rig, 'p1', spare));
+    const recoveryId = 'test-op06-063-trash-recovery';
+    rig = {
+      state: {
+        ...rig.state,
+        cardsById: {
+          ...rig.state.cardsById,
+          [recoveryId]: {
+            instanceId: recoveryId,
+            cardDefinitionId: recovery.cardDefinitionId,
+            ownerId: 'p1',
+            controllerId: 'p1',
+            currentZone: 'trash',
+            orientation: null,
+            faceState: 'faceUp',
+            donAttached: [],
+            appliedContinuousEffectIds: [],
+            oncePerTurnUsed: [],
+            summoningSick: false,
+            revealedTo: 'all',
+          },
+        },
+        players: {
+          ...rig.state.players,
+          p1: {
+            ...rig.state.players.p1,
+            trash: { ...rig.state.players.p1.trash, cardIds: [recoveryId] },
+          },
+        },
+      },
+      defs: { ...rig.defs, [recovery.cardDefinitionId]: recovery },
+    };
+    ({ rig } = putDon(rig, 'p1', 4));
+    ({ rig } = putDon(rig, 'p2', 3));
+
+    const registry = buildCuratedEffectRegistry(rig.defs);
+    const playResult = executeAction(
+      rig.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: handId, donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+
+    const trashChoice = playResult.state.pendingChoices[0];
+    expect(trashChoice).toMatchObject({
+      sourceEffectId: 'ir',
+      prompt: 'You may trash 1 card from your hand.',
+      constraints: { min: 0, max: 1, candidateInstanceIds: [spareId] },
+    });
+
+    const afterTrashWithoutParity = executeAction(
+      playResult.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: trashChoice.id, response: [spareId] },
+      rig.defs,
+      registry,
+    );
+    expect(afterTrashWithoutParity.state.pendingChoices).toEqual([]);
+    expect(afterTrashWithoutParity.state.players.p1.trash.cardIds).toContain(recoveryId);
+
+    const parityState = {
+      ...playResult.state,
+      players: {
+        ...playResult.state.players,
+        p2: {
+          ...playResult.state.players.p2,
+          costArea: { ...playResult.state.players.p2.costArea, cardIds: [...playResult.state.players.p2.costArea.cardIds, 'synthetic-opponent-don'] },
+        },
+      },
+      cardsById: {
+        ...playResult.state.cardsById,
+        'synthetic-opponent-don': {
+          instanceId: 'synthetic-opponent-don',
+          cardDefinitionId: 'DON-GENERIC',
+          ownerId: 'p2',
+          controllerId: 'p2',
+          currentZone: 'costArea',
+          orientation: null,
+          faceState: 'faceUp',
+          donAttached: [],
+          appliedContinuousEffectIds: [],
+          oncePerTurnUsed: [],
+          summoningSick: false,
+          revealedTo: 'all',
+          donRested: false,
+        },
+      },
+    };
+    const afterTrashWithParity = executeAction(
+      parityState,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: trashChoice.id, response: [spareId] },
+      rig.defs,
+      registry,
+    );
+    const recoverChoice = afterTrashWithParity.state.pendingChoices[0];
+    expect(recoverChoice).toMatchObject({
+      sourceEffectId: 'ir',
+      constraints: { min: 0, max: 1, candidateInstanceIds: [recoveryId] },
+    });
+  });
+
   it('prompts EB01-033 On Play DON!! -1 when its Water Seven leader gate is met', () => {
     const blueno = makeCharacterDef({
       cardDefinitionId: 'EB01-033',

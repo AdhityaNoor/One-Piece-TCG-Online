@@ -349,8 +349,14 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-056', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'draw', amount: 1 }] } },
 
-  // OP13-057 — [Counter] Leader +3000. PARTIAL: the [Main] rest-1-DON unblockable-Leader clause is deferred.
-  { cardNumber: 'OP13-057', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+  // OP13-057 — [Main] rest 1 DON!! and if at <=1 Life, opponent cannot activate [Blocker] when Leader attacks this turn. [Counter] Leader +3000.
+  {
+    cardNumber: 'OP13-057',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }], gate: [{ kind: 'selfLife', atMost: 1 }], functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn', target: 'controllerLeader' }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP13-058',
@@ -396,18 +402,22 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP13-063', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfGivenDonCount', atLeast: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
 
-  // PARTIAL: static type-filtered controller negation deferred; mapped [On Play] DON!! −3 payoff only.
   {
     cardNumber: 'OP13-064',
-    templateId: 'ability',
-    params: {
-      timing: 'onPlay',
-      cost: [{ kind: 'donMinus', count: 3 }],
-      functions: [
-        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn' },
-        { fn: 'addPowerAuraOpponentCharacters', amount: -2000, duration: 'endOfOpponentsTurn' },
-      ],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'negateControllerEffects', player: 'controller', duration: 'permanent', appliesToCategories: ['leader', 'character'], exceptTypeIncludes: 'Roger Pirates' }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          cost: [{ kind: 'donMinus', count: 3 }],
+          functions: [
+            { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn' },
+            { fn: 'addPowerAuraOpponentCharacters', amount: -2000, duration: 'endOfOpponentsTurn' },
+          ],
+        },
+      },
+    ],
   },
 
   // OP13-065 - [On Play] Look at 5; add Roger Pirates card other than this card's name.
@@ -461,6 +471,8 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP13-078', templateId: 'ability', params: {
     timing: 'onRemovedFromField',
     oncePerTurn: true,
+    condition: { turn: 'opponent' },
+    cost: [{ kind: 'restThis' }],
     gate: [
       { kind: 'removedFromFieldCategory', category: 'character' },
       { kind: 'removedFromFieldController', player: 'controller' },
@@ -525,7 +537,6 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Activate: Main] If your Leader is [Imu], you may rest 1 of your DON!! cards and trash 1 card from
   //   your hand: Trash all of your Characters and play up to 5 {Five Elders} type Character cards with 5000
   //   power and different card names from your trash.
-  // PARTIAL: "different card names" across the played cards is not enforced yet.
   {
     cardNumber: 'OP13-082',
     templateId: 'ability',
@@ -544,7 +555,7 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
             functions: [
               { fn: 'trashFromHand', count: 1 },
               { fn: 'moveAllCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'trash', player: 'owner' }, ifPrevious: 'previousMovedAny' },
-              { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Five Elders', exactPower: 5000 }, maxTargets: 5 },
+              { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Five Elders', exactPower: 5000 }, maxTargets: 5, distinctNames: true },
             ],
           },
         ],
@@ -625,19 +636,16 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP13-099 — PARTIAL: play cost should scale with DON!! on field; mapped maxCost 10 proxy.
+  // OP13-099 — static trash-count Leader buff; [Activate: Main] rest this + 3 DON!! to play black {Five Elders} cost <= DON!! field count.
   {
     cardNumber: 'OP13-099',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'permanent', condition: { turn: 'your', gate: [{ kind: 'selfTrashCount', atLeast: 19 }] } }] } },
-      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }, { kind: 'restDon', count: 3 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'black', typeIncludes: 'Five Elders', maxCost: 10 }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }, { kind: 'restDon', count: 3 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'black', typeIncludes: 'Five Elders', maxCostFromSelfDon: true }, optional: true }] } },
     ],
   },
 
-  // OP13-100 (leader) Jewelry Bonney —
-  //   [Your Turn] [Once Per Turn] This effect can be activated when you play a Character with a [Trigger].
-  //   Give up to 2 rested DON!! cards to 1 of your Leader or Character cards.
-  // PARTIAL: played-Character [Trigger] gate deferred; mapped giveDon on any Character play.
+  // OP13-100 (leader) Jewelry Bonney — [Your Turn] [OPT] When you play a Character with [Trigger], give up to 2 rested DON!!.
   {
     cardNumber: 'OP13-100',
     templateId: 'ability',
@@ -645,6 +653,7 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'onCharacterPlayedFromHand',
       oncePerTurn: true,
       condition: { turn: 'your' },
+      gate: [{ kind: 'playedCharacterHasTrigger' }],
       functions: [{ fn: 'giveDon', count: 2 }],
     },
   },
@@ -766,12 +775,16 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'preventControllerCharacterPlay', duration: 'duringThisTurn', minBaseCost: 5 },
   ] } },
 
-  // OP13-119 — static: if ≤3 Life, [Rush]. [On Play] give 1 rested DON!! to Leader, then return up to 1 opp Char cost ≤5. PARTIAL: opp-play drawback deferred.
+  // OP13-119 - static: if <=3 Life, [Rush]. [On Play] give 1 rested DON!! to Leader, return opp cost<=5; if returned, opponent may play cost<=4.
   {
     cardNumber: 'OP13-119',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfLife', atMost: 3 }] } }] } },
-      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 1 }, { fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [
+        { fn: 'giveDonControllerLeader', count: 1 },
+        { fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'playFromHand', player: 'opponent', chooser: 'opponent', filter: { category: 'character', maxCost: 4 }, ifPrevious: 'previousMovedAny' },
+      ] } },
     ],
   },
 

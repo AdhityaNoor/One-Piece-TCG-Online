@@ -40,6 +40,8 @@ export interface ChoiceConstraints {
   numberMax?: number;
   /** For multi-target SELECT_CARDS: selected cards' combined current power must be at most this. */
   maxCombinedPower?: number;
+  /** For multi-target SELECT_CARDS: selected cards must have different printed names. */
+  distinctNames?: boolean;
 }
 
 export interface KoReplacementResumeState {
@@ -100,5 +102,55 @@ export interface PendingChoice {
     branchIndex?: number;
     branchOpIndex?: number;
     koReplacement?: KoReplacementResumeState;
+    v2ActivationCost?: {
+      sourceInstanceId: string;
+      abilityId: string;
+      timing: import('../../cards/effectCompiler_V2/types_V2').StandardTiming_V2;
+      costCounts: number[];
+    };
+    v2SelectMoveToHand?: {
+      sourceInstanceId: string;
+      controllerId: string;
+      timing: import('../../cards/effectCompiler_V2/types_V2').TimingExpression_V2;
+      moveAction: Extract<import('../../cards/effectCompiler_V2/types_V2').Action_V2, { type: 'MOVE_CARD' }>;
+      remainingNodes: import('../../cards/effectCompiler_V2/types_V2').ResolutionNode_V2[];
+      bindings: {
+        selectedObjects: Record<string, string[]>;
+        actionResults: Record<string, unknown>;
+      };
+    };
+    v2ChooseOption?: {
+      sourceInstanceId: string;
+      controllerId: string;
+      timing: import('../../cards/effectCompiler_V2/types_V2').TimingExpression_V2;
+      options: import('../../cards/effectCompiler_V2/types_V2').ResolutionNode_V2[];
+      remainingNodes: import('../../cards/effectCompiler_V2/types_V2').ResolutionNode_V2[];
+      bindings: {
+        selectedObjects: Record<string, string[]>;
+        actionResults: Record<string, unknown>;
+      };
+    };
+    v2ReorderCards?: {
+      sourceInstanceId: string;
+      controllerId: string;
+      timing: import('../../cards/effectCompiler_V2/types_V2').TimingExpression_V2;
+      reorderAction: Extract<import('../../cards/effectCompiler_V2/types_V2').Action_V2, { type: 'REORDER_CARDS' }>;
+      remainingNodes: import('../../cards/effectCompiler_V2/types_V2').ResolutionNode_V2[];
+      bindings: {
+        selectedObjects: Record<string, string[]>;
+        actionResults: Record<string, unknown>;
+      };
+    };
+    v2SelectPlayCard?: {
+      sourceInstanceId: string;
+      controllerId: string;
+      timing: import('../../cards/effectCompiler_V2/types_V2').TimingExpression_V2;
+      playAction: Extract<import('../../cards/effectCompiler_V2/types_V2').Action_V2, { type: 'PLAY_CARD' }>;
+      remainingNodes: import('../../cards/effectCompiler_V2/types_V2').ResolutionNode_V2[];
+      bindings: {
+        selectedObjects: Record<string, string[]>;
+        actionResults: Record<string, unknown>;
+      };
+    };
   };
 }

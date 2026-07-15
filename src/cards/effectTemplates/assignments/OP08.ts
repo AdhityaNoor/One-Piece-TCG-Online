@@ -21,16 +21,15 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-005 — [On Play] Give up to 1 opp Character −2000 this turn. Then, if you don't have [Kuromarimo], play it.
   { cardNumber: 'OP08-005', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }, { fn: 'playFromHand', filter: { category: 'character', name: 'Kuromarimo' }, ifGate: [{ kind: 'selfDoesNotControlNamed', name: 'Kuromarimo' }] }] } },
 
-  // OP08-006 — PARTIAL: requires [Kuromarimo] and [Chess] in trash (named-trash AND gate not modeled).
-  { cardNumber: 'OP08-006', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'your' } }] } },
+  // OP08-006 — [Your Turn] If [Kuromarimo] and [Chess] are in your trash, this Character +2000.
+  { cardNumber: 'OP08-006', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'your', gate: [{ kind: 'selfTrashMatching', name: 'Kuromarimo', atLeast: 1 }, { kind: 'selfTrashMatching', name: 'Chess', atLeast: 1 }] } }] } },
 
   // OP08-007 — [Your Turn] [On Play]/[When Attacking] Look 5, play up to 1 {Animal} power<=4000 rested, rest to bottom.
-  //   PARTIAL: rested play from deck is deferred; mapped as reveal-and-play chain.
   {
     cardNumber: 'OP08-007',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, functions: [{ fn: 'revealTopThen', filter: { category: 'character', typeIncludes: 'Animal', maxPower: 4000 }, then: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Animal', maxPower: 4000 }, maxTargets: 1 }] }] } },
-      { templateId: 'ability', params: { timing: 'whenAttacking', condition: { turn: 'your' }, functions: [{ fn: 'revealTopThen', filter: { category: 'character', typeIncludes: 'Animal', maxPower: 4000 }, then: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Animal', maxPower: 4000 }, maxTargets: 1 }] }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'play', filter: { category: 'character', typeIncludes: 'Animal', maxPower: 4000 }, remainder: 'bottom', rested: true }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', condition: { turn: 'your' }, functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'play', filter: { category: 'character', typeIncludes: 'Animal', maxPower: 4000 }, remainder: 'bottom', rested: true }] } },
     ],
   },
 
@@ -213,8 +212,10 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP08-040 — [On Play] reveal 2 {Whitebeard Pirates} from hand + Leader WB: return up to 1 opp Character cost<=4 to hand.
-  //   PARTIAL: reveal-from-hand not modeled; gate approximates holding 2 WB cards in hand.
-  { cardNumber: 'OP08-040', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifGate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 2 }, { kind: 'leaderType', type: 'Whitebeard Pirates' }] }] } },
+  { cardNumber: 'OP08-040', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'optionalRevealTypeFromHand', count: 2, filter: { typeIncludes: 'Whitebeard Pirates' }, prompt: 'You may reveal 2 cards with a type including Whitebeard Pirates from your hand.' },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousSelectedAny', ifGate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }] },
+  ] } },
 
   // OP08-041 — [Activate: Main] return this to hand + Leader {Kuja Pirates}: place up to 1 opp Character cost<=1 at bottom of deck.
   { cardNumber: 'OP08-041', templateId: 'ability', params: { timing: 'activateMain', functions: [
@@ -343,10 +344,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   }] } },
 
   // OP08-058 — [When Attacking] turn 2 top Life face-up: add 1 DON!! from deck and rest it.
-  //   PARTIAL: only 1-card turnTopLifeFace primitive; chained twice to approximate turning 2 Life face-up.
   { cardNumber: 'OP08-058', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
-    { fn: 'turnTopLifeFace', faceUp: true },
-    { fn: 'turnTopLifeFace', faceUp: true, ifPrevious: 'previousSelectedAny' },
+    { fn: 'turnTopLifeFace', faceUp: true, count: 2 },
     { fn: 'addDonFromDeck', count: 1, rested: true, ifPrevious: 'previousSelectedAny' },
   ] } },
 
@@ -359,8 +358,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-061 — [When Attacking] DON!! −1: K.O. up to 1 opp Character with a cost of 3 or less.
   { cardNumber: 'OP08-061', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
 
-  // OP08-062 — PARTIAL: dynamic max cost from opponent DON!! count deferred; mapped static minCost 3 maxCost 10.
-  { cardNumber: 'OP08-062', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Big Mom Pirates' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Charlotte Katakuri', minCost: 3, maxCost: 10 } }] } },
+  // OP08-062 — [Activate: Main] Trash this: if Leader {Big Mom Pirates}, play [Charlotte Katakuri] cost 3+ and <= opponent DON!! field count.
+  { cardNumber: 'OP08-062', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Big Mom Pirates' }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Charlotte Katakuri', minCost: 3, maxCostFromOpponentDon: true } }] } },
 
   // OP08-063 — [On Play] turn 1 top Life face-down: add 1 DON!! from deck active.
   { cardNumber: 'OP08-063', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'addDonFromDeck', count: 1, rested: false, ifPrevious: 'previousSelectedAny' }] } },
@@ -382,8 +381,12 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-069 — [On Play] DON!! −1, trash 1 → add top of deck to top of Life. PARTIAL: "add opp Character to their Life face-up" is deferred.
-  { cardNumber: 'OP08-069', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+  // OP08-069 — [On Play] DON!! -1, trash 1 -> add deck top to Life, then add opp cost<=6 Character to their Life face-up.
+  { cardNumber: 'OP08-069', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [
+    { fn: 'optionalTrashFromHand', count: 1 },
+    { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 6 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP08-070 — [Blocker] [On K.O.] DON!! −1: Play up to 1 [Viscount Hiyoko] with a cost of 5 or less from your hand.
   { cardNumber: 'OP08-070', templateId: 'ability', params: { timing: 'onKO', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Viscount Hiyoko', maxCost: 5 } }] } },
@@ -539,13 +542,13 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-096 — PARTIAL: +5000 only if milled card cost>=6 not gated; trigger playFromTrash mapped.
+  // OP08-096 — [Counter] trash deck top; if it costs 6+, +5000. [Trigger] play black cost<=3 from trash.
   {
     cardNumber: 'OP08-096',
     templates: [
       { templateId: 'ability', params: { timing: 'counter', functions: [
         { fn: 'trashTopDeck', count: 1 },
-        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 5000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' },
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 5000, duration: 'duringThisBattle', optional: true, ifPreviousMovedAnyCostAtLeast: 6 },
       ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromTrash', filter: { category: 'character', color: 'black', maxCost: 3 } }] } },
     ],
@@ -563,10 +566,9 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-098 — [DON!! x1] [When Attacking] play up to 1 {Shandian Warrior} from hand cost <= DON count; if you do, add 1 top Life to hand.
-  //   PARTIAL: dynamic maxCost from DON count deferred; mapped as flat maxCost play.
+  // OP08-098 — [DON!! x1] [When Attacking] play up to 1 {Shandian Warrior} from hand cost <= DON field count; if you do, add 1 top Life to hand.
   { cardNumber: 'OP08-098', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [
-    { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Shandian Warrior', maxCost: 10 } },
+    { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Shandian Warrior', maxCostFromSelfDon: true } },
     { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
 
@@ -590,10 +592,10 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP08-102 — PARTIAL: maxCost should scale with your Life count (maxCostFromSelfLife not modeled); mapped maxCost 5.
+  // OP08-102 — [On Play] You may trash 1 from hand: K.O. up to 1 opponent Character cost <= your Life count.
   { cardNumber: 'OP08-102', templateId: 'ability', params: { timing: 'onPlay', functions: [
     { fn: 'optionalTrashFromHand', count: 1 },
-    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true, ifPrevious: 'previousMovedAny' },
+    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromSelfLife: true } }, optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
 
   // OP08-103 — [Activate: Main] [OPT] add 1 top Life to hand: up to 1 Character +1000 until end of opp next turn.

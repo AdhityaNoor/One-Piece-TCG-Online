@@ -21,7 +21,7 @@ import type {
   SequenceCondition,
 } from '../../../engine/effects/effectIr';
 import type { ContinuousKeyword, PowerScaleSource, SourceStateCondition } from '../../../engine/state/game';
-import type { Color } from '../../../engine/state/card';
+import type { CardCategory, Color } from '../../../engine/state/card';
 
 export const TEMPLATE_IDS = {
   ABILITY: 'ability',
@@ -64,6 +64,7 @@ export interface TargetFilter {
   exactBasePower?: number;
   rested?: boolean;
   hasBlocker?: boolean;
+  hasTrigger?: boolean;
   typeIncludes?: string;
   anyOfTypes?: string[];
   color?: Color;
@@ -75,6 +76,12 @@ export interface TargetFilter {
   maxCostFromOpponentLife?: boolean;
   /** When set, maxCost is resolved as the combined Life count of both players at selection time. */
   maxCostFromCombinedLife?: boolean;
+  /** When set, maxCost is resolved as the controller's current Life count at selection time. */
+  maxCostFromSelfLife?: boolean;
+  /** When set, maxCost is resolved as the opponent's DON!! cards on field at selection time. */
+  maxCostFromOpponentDon?: boolean;
+  /** When set, maxCost is resolved as the controller's DON!! cards on field at selection time. */
+  maxCostFromSelfDon?: boolean;
   /** In-play target must have no base effect (2-8-5): vanilla / keywords only, no [Trigger]. */
   noBaseEffect?: boolean;
   /** Exclude cards with this exact printed name ("other than [X]"). */
@@ -94,6 +101,7 @@ export type TargetSpec =
   | { group: 'leader'; player: 'opponent'; filter?: { rested?: boolean } }
   | { group: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: TargetFilter }
   | { group: 'charactersOrDon'; player: 'opponent'; filter?: { maxCost?: number } }
+  | { group: 'charactersOrStages'; player: 'controller' | 'opponent' | 'any'; filter?: TargetFilter }
   | { group: 'leaderOrCharacters'; player: 'controller' | 'opponent'; filter?: TargetFilter };
 
 export type AbilityFunction =
@@ -116,7 +124,7 @@ export type AbilityFunction =
   | { fn: 'swapBasePower'; target: TargetSpec; duration: IrDuration; minTargets?: number; maxTargets?: number; swapKind?: 'anyTwo' | 'leaderAndCharacter'; prompt?: string }
   | { fn: 'preventRest'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string; effectSourceController?: 'opponent' | 'controller'; condition?: IrCondition }
   | { fn: 'negateEffect'; target: TargetSpec; duration: IrDuration; negatedTimings?: IrTiming[]; optional?: boolean; maxTargets?: number; prompt?: string }
-  | { fn: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[] }
+  | { fn: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[]; appliesToCategories?: Exclude<CardCategory, 'don'>[]; exceptTypeIncludes?: string }
   // "You cannot add Life cards to your hand using your own effects" for the controller (or opponent).
   | { fn: 'preventControllerLifeToHand'; duration: IrDuration; player?: 'controller' | 'opponent' }
   // "You cannot play Character cards [matching filter] this turn" for the controller (or opponent).
@@ -126,9 +134,9 @@ export type AbilityFunction =
   | { fn: 'addCost'; target: TargetSpec; amount: number; duration?: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'addPower'; target: TargetSpec; amount: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   // "This card's / your Leader's base power BECOMES N" (2-6): a SET (overwrite), not a +/− delta.
-  // Additive power modifiers still stack on top of the set value. Fixed value only — "becomes the
-  // same as X" (dynamic) is intentionally out of scope.
+  // Additive power modifiers still stack on top of the set value.
   | { fn: 'setBasePower'; target: TargetSpec; value: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
+  | { fn: 'setBasePowerFromSource'; target: TargetSpec; source: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   // "This card's base cost BECOMES N" (2-7): a SET (overwrite). Additive cost deltas still stack.
   | { fn: 'setBaseCost'; target: TargetSpec; value: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'addKeyword'; target: TargetSpec; keyword: ContinuousKeyword; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
@@ -136,7 +144,7 @@ export type AbilityFunction =
   | { fn: 'addKeywordAuraControllerTypes'; keyword: ContinuousKeyword; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // Aura: grant a keyword to ALL of the controller's Characters (chars only), optionally name/type-filtered.
   | { fn: 'addKeywordAuraControllerCharacters'; keyword: ContinuousKeyword; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
-  | { fn: 'preventBlockers'; duration: IrDuration; target?: 'self' | 'chosenControllerLeaderOrCharacter'; filter?: { typeIncludes?: string; name?: string; minPower?: number }; blockerPowerAtLeast?: number; blockerPowerAtMost?: number; blockerMaxCost?: number; powerBonus?: number }
+  | { fn: 'preventBlockers'; duration: IrDuration; target?: 'self' | 'controllerLeader' | 'chosenControllerLeaderOrCharacter'; filter?: { typeIncludes?: string; name?: string; minPower?: number }; blockerPowerAtLeast?: number; blockerPowerAtMost?: number; blockerMaxCost?: number; powerBonus?: number }
   | { fn: 'suppressBlockerOnTarget'; target: TargetSpec; duration: IrDuration; optional?: boolean; maxTargets?: number }
   | { fn: 'drawAndTrash'; drawCount: number; trashCount: number }
   | { fn: 'drawAndTrashByTypedCharacterCount'; typeIncludes: string }
@@ -152,11 +160,12 @@ export type AbilityFunction =
   | { fn: 'moveAllCharactersToBottomDeck'; filter?: { maxCost?: number; maxPower?: number; maxBaseCost?: number; maxBasePower?: number } }
   | { fn: 'peekLifeAndPlace'; from: 'controllerOrOpponentTop'; placement: 'topOrBottom' }
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
-  | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number; optional?: boolean; rested?: boolean }
+  | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number; optional?: boolean; rested?: boolean; player?: 'controller' | 'opponent'; chooser?: 'controller' | 'opponent'; distinctNames?: boolean }
   | { fn: 'activateEventFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'activateEventFromTrash'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number; rested?: boolean }
-  | { fn: 'playFromTrash'; filter: SearchFilter; maxTargets?: number; rested?: boolean }
+  | { fn: 'playFromTrash'; filter: SearchFilter; maxTargets?: number; rested?: boolean; distinctNames?: boolean }
+  | { fn: 'playSelfFromTrash' }
   | { fn: 'triggerPlaySelf' }
   | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination; rested?: boolean }
   | { fn: 'searchDeck'; pick: number; reveal: boolean; destination: Extract<SearchPickDestination, 'hand'>; filter?: SearchFilter }
@@ -176,14 +185,15 @@ export type AbilityFunction =
   | { fn: 'restSelf' }
   // Rest 1 chosen controller Leader/Stage matching a type (for 'You may rest 1 of your {X} Leader or Stage cards:' costs). Binds var 't'.
   | { fn: 'restControllerLeaderOrStage'; typeIncludes?: string }
-  // 'You may turn 1 card from the top of your Life cards face-up/down:' cost. Optional flip of the top Life card; binds var 't'.
-  | { fn: 'turnTopLifeFace'; faceUp: boolean }
+  // 'You may turn N cards from the top of your Life cards face-up/down:' cost. Optional flip of the top Life card(s); binds var 't'.
+  | { fn: 'turnTopLifeFace'; faceUp: boolean; count?: number }
   | { fn: 'turnAllLifeFace'; player?: 'controller' | 'opponent'; faceUp: boolean }
   | { fn: 'lookLifeAndReorder'; player?: 'controller' | 'opponent'; moveOneToDeckTop?: boolean }
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }
   | { fn: 'setActiveControllerLeader' }
-  | { fn: 'setActiveControllerCharacter'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string }; maxTargets?: number; optional?: boolean }
+  | { fn: 'setActiveControllerCharacters'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string; color?: Color } }
+  | { fn: 'setActiveControllerCharacter'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string; color?: Color }; maxTargets?: number; optional?: boolean }
   | { fn: 'setActiveControllerDon'; maxTargets: number }
   | { fn: 'setActiveControllerDonAtEndOfTurn'; maxTargets: number }
   | { fn: 'restOpponentDonAtStartOfNextMain'; maxTargets?: number }
@@ -200,7 +210,7 @@ export type AbilityFunction =
   | { fn: 'preventRefreshOnGivenCharacterAtEndOfTurn'; minDonAttached: number; requireRested?: boolean; ifPrevious?: SequenceCondition }
   | { fn: 'preventRefreshOnCharactersCostAtMost'; maxCost: number; activationGate?: AbilityGate[] }
   // Optional reveal-from-hand payment (card stays in hand; gates subsequent steps via ifPrevious).
-  | { fn: 'optionalRevealTypeFromHand'; filter?: SearchFilter; prompt?: string }
+  | { fn: 'optionalRevealTypeFromHand'; filter?: SearchFilter; prompt?: string; count?: number }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
   | { fn: 'restOpponentDon'; maxTargets?: number; optional?: boolean }
   // Rest up to N of the controller's active DON!! cards (optional effect-chain payment).
@@ -264,6 +274,8 @@ export type AbilityFunction =
 export type SequencedAbilityFunction = AbilityFunction & {
   /** Gate this function on the prior function result, for "if you do" wording. */
   ifPrevious?: SequenceCondition;
+  /** Gate this function on any card moved by the prior function having printed cost >= N. */
+  ifPreviousMovedAnyCostAtLeast?: number;
   /** Gate this function at its exact sequence point, after prior effects/costs have resolved. */
   ifGate?: AbilityGate[];
 };

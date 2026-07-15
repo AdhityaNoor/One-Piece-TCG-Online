@@ -152,6 +152,8 @@ export interface EffectContext {
     appliesToControllerId: string;
     duration: ContinuousEffectDuration;
     negatedTimings?: import('./effectIr').IrTiming[];
+    appliesToCategories?: Exclude<import('../state/card').CardCategory, 'don'>[];
+    exceptTypeIncludes?: string;
     description?: string;
   }): void;
   /** Register "cannot add Life cards to hand using your own effects" for a player. */

@@ -129,7 +129,7 @@ describe('V2 resolution nodes', () => {
     expect(result.unsupportedReasons?.[0]).toContain('UNKNOWN_ATOM');
   });
 
-  it('creates V2 choice sidecar prompts for CHOOSE nodes', () => {
+  it('creates normal pending choices for CHOOSE nodes', () => {
     const state = createSampleGameState();
     const defs: CardDefinitionLookup = {
       'OP01-001': def('OP01-001', { category: 'leader' }),
@@ -147,25 +147,21 @@ describe('V2 resolution nodes', () => {
       ],
     }, 'choose-test');
 
-    expect(result.choicePrompts).toHaveLength(1);
-    expect(result.choicePrompts?.[0]).toMatchObject({
-      id: 'p1-leader:choice:1:0',
+    expect(result.choicePrompts ?? []).toEqual([]);
+    expect(result.state.pendingChoices).toHaveLength(1);
+    expect(result.state.pendingChoices[0]).toMatchObject({
+      id: 'p1-leader:v2-choose:1:0',
       sourceInstanceId: 'p1-leader',
-      controllerId: 'p1',
-      chooserPlayerId: 'p1',
-      minimumChoices: 1,
-      maximumChoices: 1,
-      options: [
-        { index: 0, label: 'Option 1', node: { kind: 'NO_OP' } },
-        { index: 1, label: 'Option 2', node: { kind: 'ACTION' } },
-      ],
-      status: 'PENDING',
+      sourceEffectId: 'v2:chooseOption',
+      playerId: 'p1',
+      kind: 'SELECT_OPTION',
+      constraints: {
+        min: 1,
+        max: 1,
+        options: [{ label: 'Option 1' }, { label: 'Option 2' }],
+      },
     });
-    expect(result.state.pendingChoices).toEqual([]);
-    expect(result.log[0]).toMatchObject({
-      type: 'CHOICE_REQUESTED',
-      data: { choicePromptId: 'p1-leader:choice:1:0', optionCount: 2 },
-    });
+    expect(result.log).toEqual([]);
   });
 
   it('executes ACTIVATE_EVENT against the selected Event V2 runtime ability', () => {

@@ -9,10 +9,11 @@
  */
 import { describe, expect, it } from 'vitest';
 import { runTimings } from '../../../engine/effects/interpreter';
-import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putDeckCards } from '../../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, makeStageDef, putCharacterInPlay, putDeckCards, putStageInPlay } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
 
 const SRC = makeCharacterDef({ cardDefinitionId: 'SYN-SRC', cardNumber: 'SYN-SRC', category: 'character', baseCost: 3, basePower: 4000 });
+const STAGE_SRC = makeStageDef({ cardDefinitionId: 'SYN-STAGE', cardNumber: 'SYN-STAGE', category: 'stage', baseCost: 1 });
 const DECK = makeCharacterDef({ cardDefinitionId: 'SYN-DECK', cardNumber: 'SYN-DECK', category: 'character', baseCost: 1, basePower: 1000 });
 
 describe('cost: trashThis (trash the source Character to pay an ability)', () => {
@@ -36,6 +37,27 @@ describe('cost: trashThis (trash the source Character to pay an ability)', () =>
     expect(state.players.p1.characterArea.cardIds).not.toContain(srcId);
     expect(state.players.p1.trash.cardIds).toContain(srcId);
     // Effect still resolved.
+    expect(state.players.p1.hand.cardIds.length - handBefore).toBe(1);
+  });
+
+  it('moves a source Stage from the stage area to its owner trash, then runs the effect', () => {
+    const assignment: CardEffectAssignment = {
+      cardNumber: 'SYN-STAGE',
+      templateId: 'ability',
+      params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'draw', amount: 1 }] },
+    };
+    const registry = buildRegistryFromAssignments([assignment]);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let srcId: string;
+    ({ rig, instanceId: srcId } = putStageInPlay(rig, 'p1', STAGE_SRC));
+    ({ rig } = putDeckCards(rig, 'p1', DECK, 5));
+    const handBefore = rig.state.players.p1.hand.cardIds.length;
+
+    const state = runTimings(registry['SYN-STAGE'], ['activateMain'], rig.state, srcId, rig.defs, null, registry).state;
+
+    expect(state.cardsById[srcId].currentZone).toBe('trash');
+    expect(state.players.p1.stageArea.cardIds).not.toContain(srcId);
+    expect(state.players.p1.trash.cardIds).toContain(srcId);
     expect(state.players.p1.hand.cardIds.length - handBefore).toBe(1);
   });
 });

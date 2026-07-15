@@ -165,9 +165,15 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-029 Dellinger — [End of Your Turn] Set up to 1 DON!! active.
   { cardNumber: 'OP04-029', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
 
-  // OP04-030 Trebol — [On Play] K.O. up to 1 opp rested Character with a cost of 5 or less.
-  //   (The [On Your Opponent's Attack] rest clause needs an onOpponentAttack timing — deferred.)
-  { cardNumber: 'OP04-030', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 5 } }, optional: true }] } },
+  // OP04-030 Trebol — [On Play] K.O. up to 1 opp rested Character cost<=5.
+  //   [On Your Opponent's Attack] rest 2 DON!!: rest up to 1 opp Character cost<=4.
+  {
+    cardNumber: 'OP04-030',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 5 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+    ],
+  },
 
   // OP04-118 — PARTIAL: red/cost≥3/other-than-self filters not on keyword aura.
   { cardNumber: 'OP04-118', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'rush', duration: 'permanent' }] } },
@@ -608,9 +614,14 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Character cards gains +3000 power during this turn.
   // NOTE: not yet implemented (needs template).
 
-  // OP04-108 — [DON!! x1] this Character gains [Banish].
-  //   PARTIAL: the [Trigger] "you may trash 1 from hand: play this" is deferred (trash-from-hand trigger cost).
-  { cardNumber: 'OP04-108', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+  // OP04-108 — [DON!! x1] this Character gains [Banish]. [Trigger] trash 1 from hand: play this.
+  {
+    cardNumber: 'OP04-108',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
   // OP04-110 — [Blocker] [On K.O.] Add up to 1 opp Character cost<=3 to the top or bottom of opponent's Life face-up.
   { cardNumber: 'OP04-110', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] } },

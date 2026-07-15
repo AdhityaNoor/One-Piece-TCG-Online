@@ -117,8 +117,17 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This Leader cannot attack.[Activate: Main] [Once Per Turn] You may rest 1 of your DON!! cards and
   //   turn 1 card from the top of your Life cards face-up: Play up to 1 {Neptunian} type Character card or
   //   [Megalo] with a cost equal to or less than the number of DON!! cards on your field from your hand.
-  //   PARTIAL: the static "cannot attack" lock is implemented below; the activated play-from-hand ability remains deferred.
-  { cardNumber: 'OP11-022', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+  //   The static "cannot attack" lock and activated play-from-hand ability are both mapped.
+  {
+    cardNumber: 'OP11-022',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], functions: [
+        { fn: 'turnTopLifeFace', faceUp: true },
+        { fn: 'playFromHand', filter: { category: 'character', anyOf: [{ typeIncludes: 'Neptunian' }, { name: 'Megalo' }], maxCostFromSelfDon: true }, optional: true, ifPrevious: 'previousSelectedAny' },
+      ] } },
+    ],
+  },
 
   // OP11-023 — [Trigger] Rest up to 1 opp Character cost ≤4. PARTIAL: the static in-hand −cost clause is deferred.
   { cardNumber: 'OP11-023', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
@@ -477,8 +486,14 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },
-  // OP11-080 — [Counter] your Leader +3000 this battle. PARTIAL: the [Main] "rest 2 DON!!: if blue leader, ramp" needs a leader-color gate (deferred).
-  { cardNumber: 'OP11-080', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+  // OP11-080 — [Main] rest 2 DON!!: if blue Leader, add 1 rested DON!!. [Counter] Leader +3000 this battle.
+  {
+    cardNumber: 'OP11-080',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 2 }], gate: [{ kind: 'leaderColor', color: 'blue' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   // OP11-081 — [Main] choose cost, reveal opp deck top; if cost matches, K.O. up to 1 opp Character base cost ≤8. [Trigger] add 1 active DON!!.
   {

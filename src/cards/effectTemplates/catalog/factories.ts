@@ -6,7 +6,7 @@
  */
 import type { Ability, EffectOp, EffectProgram, NonSuspendingEffectOp, Selector } from '../../../engine/effects/effectIr';
 import type { KoReplacementAction } from '../../../engine/state/game';
-import type { MoveCardDestination, MoveCardSource, SequencedAbilityFunction, TargetSpec, TemplateId, TemplateParamMap } from './templateDefs';
+import type { MoveCardDestination, MoveCardSource, SequencedAbilityFunction, TargetFilter, TargetSpec, TemplateId, TemplateParamMap } from './templateDefs';
 
 function koReplacementAction(f: {
   trashSelf?: true;
@@ -82,8 +82,17 @@ function selectorFromTarget(target: TargetSpec): Selector {
   if (target.group === 'leaderOrCharacters' && target.player === 'opponent') return { sel: 'var', name: 't' };
   if (target.group === 'characters') return { sel: 'var', name: 't' };
   if (target.group === 'charactersOrDon' && target.player === 'opponent') return { sel: 'var', name: 't' };
+  if (target.group === 'charactersOrStages') return { sel: 'var', name: 't' };
 
   throw new Error(`Unsupported target ${JSON.stringify(target)}`);
+}
+
+function stageFilterFromTarget(filter: TargetFilter | undefined): { maxCost?: number; exactCost?: number; rested?: boolean } {
+  return {
+    ...(filter?.maxCost !== undefined ? { maxCost: filter.maxCost } : {}),
+    ...(filter?.exactCost !== undefined ? { exactCost: filter.exactCost } : {}),
+    ...(filter?.rested !== undefined ? { rested: filter.rested } : {}),
+  };
 }
 
 function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTargets' }>['from'] | null {
@@ -112,6 +121,16 @@ function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTa
         { sel: 'opponentUnattachedDon' },
       ],
     };
+  }
+  if (target.group === 'charactersOrStages') {
+    const stageFilter = stageFilterFromTarget(target.filter);
+    if (target.player === 'controller') {
+      return { sel: 'union', members: [{ sel: 'controllerCharacters', ...target.filter }, { sel: 'controllerStages', ...stageFilter }] };
+    }
+    if (target.player === 'opponent') {
+      return { sel: 'union', members: [{ sel: 'opponentCharacters', ...target.filter }, { sel: 'opponentStages', ...stageFilter }] };
+    }
+    return { sel: 'union', members: [{ sel: 'allCharacters', ...target.filter }, { sel: 'allStages', ...stageFilter }] };
   }
   if (target.group === 'characters' && target.player === 'any') return { sel: 'allCharacters', ...target.filter };
 
@@ -272,10 +291,11 @@ function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>)
 
 function functionOps(f: SequencedAbilityFunction): EffectOp[] {
   const withSequenceGate = (ops: EffectOp[]): EffectOp[] =>
-    f.ifPrevious || f.ifGate
+    f.ifPrevious || f.ifPreviousMovedAnyCostAtLeast !== undefined || f.ifGate
       ? ops.map((op) => ({
           ...op,
           ...(f.ifPrevious ? { ifPrevious: f.ifPrevious } : {}),
+          ...(f.ifPreviousMovedAnyCostAtLeast !== undefined ? { ifPreviousMovedAnyCostAtLeast: f.ifPreviousMovedAnyCostAtLeast } : {}),
           ...(f.ifGate ? { ifGate: f.ifGate } : {}),
         }))
       : ops;
@@ -454,6 +474,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         player: f.player,
         duration: f.duration,
         ...(f.negatedTimings?.length ? { negatedTimings: f.negatedTimings } : {}),
+        ...(f.appliesToCategories?.length ? { appliesToCategories: f.appliesToCategories } : {}),
+        ...(f.exceptTypeIncludes ? { exceptTypeIncludes: f.exceptTypeIncludes } : {}),
       }];
     case 'preventControllerLifeToHand':
       return [{
@@ -499,6 +521,36 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         (target) => ({ op: 'setBasePower', target, value: f.value, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }),
         { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
       );
+    case 'setBasePowerFromSource': {
+      const sourceFrom = chooseFromTarget(f.source);
+      if (sourceFrom) {
+        return [
+          {
+            op: 'chooseTargets',
+            var: 'basePowerSource',
+            from: sourceFrom,
+            min: f.optional ? 0 : 1,
+            max: f.maxTargets ?? 1,
+            prompt: f.prompt ?? 'Select a card to copy power from.',
+          },
+          {
+            op: 'setBasePowerFromSource',
+            target: selectorFromTarget(f.target),
+            source: { sel: 'var', name: 'basePowerSource' },
+            duration: f.duration,
+            ifPrevious: 'previousSelectedAny',
+            ...(f.condition ? { condition: f.condition } : {}),
+          },
+        ];
+      }
+      return [{
+        op: 'setBasePowerFromSource',
+        target: selectorFromTarget(f.target),
+        source: selectorFromTarget(f.source),
+        duration: f.duration,
+        ...(f.condition ? { condition: f.condition } : {}),
+      }];
+    }
     case 'setBaseCost':
       return targetOps(
         f.target,
@@ -534,6 +586,18 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
       ];
     case 'preventBlockers': {
+      if (f.target === 'controllerLeader') {
+        return [
+          {
+            op: 'preventBlockers',
+            target: { sel: 'controllerLeader' },
+            duration: f.duration,
+            ...(f.blockerPowerAtLeast !== undefined ? { blockerPowerAtLeast: f.blockerPowerAtLeast } : {}),
+            ...(f.blockerPowerAtMost !== undefined ? { blockerPowerAtMost: f.blockerPowerAtMost } : {}),
+            ...(f.blockerMaxCost !== undefined ? { blockerMaxCost: f.blockerMaxCost } : {}),
+          },
+        ];
+      }
       if (f.target === 'chosenControllerLeaderOrCharacter') {
         const chooseFrom = {
           sel: 'controllerLeaderOrCharacters' as const,
@@ -622,7 +686,25 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
         { op: 'trashCards', target: { sel: 'var', name: 't' } },
       ];
-    case 'optionalRevealTypeFromHand':
+    case 'optionalRevealTypeFromHand': {
+      const count = f.count ?? 1;
+      if (count > 1) {
+        return [{
+          op: 'chooseOption',
+          prompt: f.prompt ?? `You may reveal ${count} cards from your hand.`,
+          ifGate: [{ kind: 'selfHandMatching', atLeast: count, ...(f.filter ?? {}) }],
+          options: [
+            { label: 'doNotReveal', ops: [{ op: 'revealCards', target: { sel: 'var', name: '__none' } }] },
+            {
+              label: 'reveal',
+              ops: [
+                { op: 'chooseTargets', var: 't', from: { sel: 'controllerHand', ...(f.filter ? { filter: f.filter } : {}) }, min: count, max: count, prompt: f.prompt ?? `Reveal ${count} cards from your hand.` },
+                { op: 'revealCards', target: { sel: 'var', name: 't' } },
+              ],
+            },
+          ],
+        }];
+      }
       return [
         {
           op: 'chooseTargets',
@@ -634,6 +716,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
         { op: 'revealCards', target: { sel: 'var', name: 't' }, ifPrevious: 'previousSelectedAny' },
       ];
+    }
     case 'optionalTrashFromHand': {
       const anyNumber = f.anyNumber === true;
       const count = f.count ?? 1;
@@ -726,14 +809,19 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       const maxTargets = f.maxTargets ?? 1;
       const category = f.filter.category;
       const noun = category === 'stage' ? 'Stage' : category === 'event' ? 'Event' : 'Character';
+      const player = f.player ?? 'controller';
+      const chooser = f.chooser ?? player;
+      const whoseHand = player === 'opponent' ? "your opponent's hand" : 'your hand';
       return [
         {
           op: 'chooseTargets',
           var: 't',
-          from: { sel: 'controllerHand', filter: f.filter },
+          from: { sel: player === 'opponent' ? 'opponentHand' : 'controllerHand', filter: f.filter },
           min: 0,
           max: maxTargets,
-          prompt: `Play up to ${maxTargets} matching ${noun} card${maxTargets === 1 ? '' : 's'} from your hand.`,
+          chooser,
+          prompt: `Play up to ${maxTargets} matching ${noun} card${maxTargets === 1 ? '' : 's'} from ${whoseHand}.`,
+          ...(f.distinctNames ? { distinctNames: true } : {}),
         },
         { op: 'playFromHand', target: { sel: 'var', name: 't' }, ...(f.rested ? { rested: true } : {}) },
       ];
@@ -788,10 +876,13 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           min: 0,
           max: maxTargets,
           prompt: `Play up to ${maxTargets} matching Character card${maxTargets === 1 ? '' : 's'} from your trash${f.rested ? ' rested' : ''}.`,
+          ...(f.distinctNames ? { distinctNames: true } : {}),
         },
         { op: 'playFromTrash', target: { sel: 'var', name: 't' }, ...(f.rested ? { rested: true } : {}) },
       ];
     }
+    case 'playSelfFromTrash':
+      return [{ op: 'playFromTrash', target: { sel: 'self' } }];
     case 'triggerPlaySelf':
       return [{ op: 'playSelf' }];
     case 'searchTopDeck':
@@ -842,11 +933,29 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'addPower', target: { sel: 'self' }, amount: 0, duration: f.duration, scale: { per: f.per, step: f.step, amountPer: f.amountPer }, ...(f.condition ? { condition: f.condition } : {}) }];
     case 'restSelf':
       return [{ op: 'rest', target: { sel: 'self' } }];
-    case 'turnTopLifeFace':
+    case 'turnTopLifeFace': {
+      const count = f.count ?? 1;
+      if (count > 1) {
+        return [{
+          op: 'chooseOption',
+          prompt: `You may turn ${count} cards from the top of your Life face-${f.faceUp ? 'up' : 'down'}.`,
+          options: [
+            { label: 'doNotTurnLife', ops: [] },
+            {
+              label: 'turnLife',
+              ops: [
+                { op: 'chooseTargets', var: 't', from: { sel: 'controllerLifeTopN', count }, min: count, max: count, prompt: `Turn ${count} cards from the top of your Life face-${f.faceUp ? 'up' : 'down'}.` },
+                { op: 'turnLifeFace', target: { sel: 'var', name: 't' }, faceUp: f.faceUp },
+              ],
+            },
+          ],
+        }];
+      }
       return [
         { op: 'chooseTargets', var: 't', from: { sel: 'controllerLifeTop' }, min: 0, max: 1, prompt: `You may turn the top card of your Life face-${f.faceUp ? 'up' : 'down'}.` },
         { op: 'turnLifeFace', target: { sel: 'var', name: 't' }, faceUp: f.faceUp },
       ];
+    }
     case 'turnAllLifeFace':
       return [{ op: 'turnAllLifeFace', player: f.player ?? 'controller', faceUp: f.faceUp }];
     case 'lookLifeAndReorder':
@@ -867,6 +976,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'setActive', target: { sel: 'self' } }];
     case 'setActiveControllerLeader':
       return [{ op: 'setActive', target: { sel: 'controllerLeader' } }];
+    case 'setActiveControllerCharacters':
+      return [{ op: 'setActive', target: { sel: 'controllerCharacters', ...f.filter } }];
     case 'setActiveControllerCharacter': {
       const maxTargets = f.maxTargets ?? 1;
       return [

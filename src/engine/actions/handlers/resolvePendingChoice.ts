@@ -28,6 +28,11 @@ function findChoice(state: GameState, action: ResolvePendingChoiceAction) {
   return state.pendingChoices.find((c) => c.id === action.choiceId);
 }
 
+function printedNameOf(state: GameState, defs: CardDefinitionLookup, instanceId: string): string | undefined {
+  const defId = state.cardsById[instanceId]?.cardDefinitionId;
+  return defId ? defs[defId]?.name : undefined;
+}
+
 export function validateResolvePendingChoice(state: GameState, action: ResolvePendingChoiceAction, defs: CardDefinitionLookup = {}): ValidationResult {
   const reasons: string[] = [];
   const choice = findChoice(state, action);
@@ -68,7 +73,7 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
     } else if (!Array.isArray(sel)) {
       reasons.push('A card-effect choice expects an array of selected instance ids.');
     } else {
-      const { min, max, candidateInstanceIds, maxCombinedPower } = choice.constraints;
+      const { min, max, candidateInstanceIds, maxCombinedPower, distinctNames } = choice.constraints;
       const candidates = candidateInstanceIds ?? [];
       const candidateSet = new Set(candidates);
       // Softlock escape: fewer eligible targets than min → allow selecting all remaining (or none).
@@ -93,6 +98,18 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
           const combined = sel.reduce((sum, id) => sum + computeCurrentPower(defs, state, id), 0);
           if (combined > maxCombinedPower) {
             reasons.push(`Selected cards' combined power is ${combined}, which exceeds ${maxCombinedPower}.`);
+          }
+        }
+        if (distinctNames && sel.length > 1) {
+          const names = new Set<string>();
+          for (const id of sel) {
+            const name = printedNameOf(state, defs, id);
+            if (!name) continue;
+            if (names.has(name)) {
+              reasons.push(`Selected cards must have different card names; '${name}' was selected more than once.`);
+              break;
+            }
+            names.add(name);
           }
         }
       }

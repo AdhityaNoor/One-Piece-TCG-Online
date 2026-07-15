@@ -39,9 +39,12 @@ export const CURATED_EFFECT_PROGRAMS: EffectTemplateRegistry =
  */
 export function buildCuratedEffectRegistry(defs: CardDefinitionLookup): EffectTemplateRegistry {
   const registry: EffectTemplateRegistry = {};
-  for (const cardNumber of Object.keys(defs)) {
-    const program = CURATED_EFFECT_PROGRAMS[cardNumber];
-    if (program) registry[cardNumber] = program;
+  for (const [cardDefinitionId, definition] of Object.entries(defs)) {
+    const program = CURATED_EFFECT_PROGRAMS[definition.cardNumber] ?? CURATED_EFFECT_PROGRAMS[cardDefinitionId];
+    if (program) {
+      registry[cardDefinitionId] = program;
+      registry[definition.cardNumber] = program;
+    }
   }
   return registry;
 }

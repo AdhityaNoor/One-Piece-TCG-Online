@@ -75,6 +75,25 @@ describe('validateResolvePendingChoice', () => {
     const result = validateResolvePendingChoice(rig.state, resolveAction('p1', choice.id, [charId]));
     expect(result.legal).toBe(true);
   });
+
+  it('rejects duplicate printed names when an IR card choice requires distinct names', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const first = putCharacterInPlay(base, 'p1', makeCharacterDef({ cardDefinitionId: 'elder-a', name: 'Five Elder' }));
+    const second = putCharacterInPlay(first.rig, 'p1', makeCharacterDef({ cardDefinitionId: 'elder-b', name: 'Five Elder' }));
+    const choice: PendingChoice = {
+      id: nextTestId('choice'),
+      playerId: 'p1',
+      kind: 'SELECT_CARDS',
+      prompt: 'Play up to 5 cards with different card names.',
+      constraints: { min: 0, max: 5, candidateInstanceIds: [first.instanceId, second.instanceId], distinctNames: true },
+      sourceInstanceId: first.instanceId,
+      sourceEffectId: 'ir',
+    };
+    const state = { ...second.rig.state, pendingChoices: [choice] };
+    const result = validateResolvePendingChoice(state, resolveAction('p1', choice.id, [first.instanceId, second.instanceId]), second.rig.defs);
+    expect(result.legal).toBe(false);
+    expect(result.reasons.join(' ')).toContain('different card names');
+  });
 });
 
 describe('executeResolvePendingChoice', () => {

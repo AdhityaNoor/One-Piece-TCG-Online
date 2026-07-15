@@ -157,6 +157,52 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfLeaderPowerAtMost', power: 4999 }], rig.state, rig.defs, 'p1')).toBe(false);
   });
 
+  it('checks selfLeaderPowerAtLeast against current Leader power', () => {
+    let rig = buildBaseRig();
+    const leaderId = rig.state.players.p1.leaderInstanceId!;
+    rig = {
+      ...rig,
+      defs: {
+        ...rig.defs,
+        [rig.state.cardsById[leaderId].cardDefinitionId]: makeCharacterDef({
+          cardDefinitionId: rig.state.cardsById[leaderId].cardDefinitionId,
+          basePower: 5000,
+        }),
+      },
+      state: {
+        ...rig.state,
+        continuousEffects: [{
+          id: 'leader-boost',
+          sourceInstanceId: leaderId,
+          ownerId: 'p1',
+          duration: 'permanent',
+          description: '+2000',
+          powerModifier: { appliesToInstanceId: leaderId, amount: 2000 },
+        }],
+      },
+    };
+    expect(evaluateGates([{ kind: 'selfLeaderPowerAtLeast', power: 7000 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfLeaderPowerAtLeast', power: 7001 }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks leaderColor against the Leader definition colors', () => {
+    let rig = buildBaseRig();
+    const leaderId = rig.state.players.p1.leaderInstanceId!;
+    rig = {
+      ...rig,
+      defs: {
+        ...rig.defs,
+        [rig.state.cardsById[leaderId].cardDefinitionId]: makeCharacterDef({
+          cardDefinitionId: rig.state.cardsById[leaderId].cardDefinitionId,
+          colors: ['blue'],
+        }),
+      },
+    };
+
+    expect(evaluateGates([{ kind: 'leaderColor', color: 'blue' }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'leaderColor', color: 'green' }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
   it('checks selfTypedCharacterPowerAtLeast against current Character power and type', () => {
     let rig = buildBaseRig();
     ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Sky Island'], basePower: 6000 })));
@@ -282,6 +328,30 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfOtherCharacterPowerAtLeast', power: 7000 }], rig.state, rig.defs, 'p1', sourceId)).toBe(true);
   });
 
+  it('checks opponentCharacterCurrentPowerCount against live opponent Character power', () => {
+    let rig = buildBaseRig();
+    let boostedId: string;
+    ({ rig, instanceId: boostedId } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ basePower: 4000 })));
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ basePower: 3000 })));
+    expect(evaluateGates([{ kind: 'opponentCharacterCurrentPowerCount', power: 5000, atLeast: 1 }], rig.state, rig.defs, 'p1')).toBe(false);
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        continuousEffects: [{
+          id: 'opponent-character-boost',
+          sourceInstanceId: boostedId,
+          ownerId: 'p2',
+          duration: 'permanent',
+          description: '+1000',
+          powerModifier: { appliesToInstanceId: boostedId, amount: 1000 },
+        }],
+      },
+    };
+    expect(evaluateGates([{ kind: 'opponentCharacterCurrentPowerCount', power: 5000, atLeast: 1 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'opponentCharacterCurrentPowerCount', power: 5000, atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
   it('checks leaderActive and leaderRested from Leader orientation', () => {
     const rig = buildBaseRig();
     const leaderId = rig.state.players.p1.leaderInstanceId;
@@ -360,5 +430,84 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfDonAtLeastLessThanOpponent', count: 2 }], rig.state, rig.defs, 'p1')).toBe(true);
     expect(evaluateGates([{ kind: 'selfDonAtLeastLessThanOpponent', count: 3 }], rig.state, rig.defs, 'p1')).toBe(false);
     expect(evaluateGates([{ kind: 'selfDonAtLeastLessThanOpponent', count: 1 }], rig.state, rig.defs, 'p2')).toBe(false);
+  });
+
+  it('checks anyCharacterCostCount across both players', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'COST8-A', baseCost: 8 })));
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ cardDefinitionId: 'COST8-B', baseCost: 8 })));
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ cardDefinitionId: 'COST7', baseCost: 7 })));
+
+    expect(evaluateGates([{ kind: 'anyCharacterCostCount', minCost: 8, atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'anyCharacterCostCount', minCost: 8, atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks selfTypedCharacterDistinctNameCount by card name', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'IMPEL-A', name: 'A', types: ['Impel Down'] })));
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'IMPEL-B', name: 'B', types: ['Impel Down'] })));
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'IMPEL-B-ALT', name: 'B', types: ['Impel Down'] })));
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'NON-IMPEL', name: 'C', types: ['Navy'] })));
+
+    const gate = [{ kind: 'selfTypedCharacterDistinctNameCount' as const, typeIncludes: 'Impel Down', atLeast: 2 }];
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfTypedCharacterDistinctNameCount', typeIncludes: 'Impel Down', atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks selfTrashMatching by exact card name', () => {
+    let rig = buildBaseRig();
+    let kuromarimoId: string;
+    let chessId: string;
+    ({ rig, instanceId: kuromarimoId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'KUROMARIMO', name: 'Kuromarimo' })));
+    ({ rig, instanceId: chessId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'CHESS', name: 'Chess' })));
+    const player = rig.state.players.p1;
+    rig = {
+      ...rig,
+      state: {
+        ...rig.state,
+        cardsById: {
+          ...rig.state.cardsById,
+          [kuromarimoId]: { ...rig.state.cardsById[kuromarimoId], currentZone: 'trash' },
+          [chessId]: { ...rig.state.cardsById[chessId], currentZone: 'trash' },
+        },
+        players: {
+          ...rig.state.players,
+          p1: {
+            ...player,
+            characterArea: { ...player.characterArea, cardIds: player.characterArea.cardIds.filter((id) => id !== kuromarimoId && id !== chessId) },
+            trash: { ...player.trash, cardIds: [kuromarimoId, chessId] },
+          },
+        },
+      },
+    };
+
+    expect(evaluateGates([{ kind: 'selfTrashMatching', name: 'Kuromarimo', atLeast: 1 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfTrashMatching', name: 'Chess', atLeast: 1 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfTrashMatching', name: 'Chess', atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'selfTrashMatching', name: 'Chessmarimo', atLeast: 1 }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks selfNamedCardCount across leader, characters, and stage', () => {
+    let rig = buildBaseRig({ leaderOverridesP1: { name: 'Prisoner of Impel Down' } });
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'PRISONER-CHAR', name: 'Prisoner of Impel Down' })));
+    ({ rig } = putStageInPlay(rig, 'p1', makeStageDef({ cardDefinitionId: 'PRISONER-STAGE', name: 'Prisoner of Impel Down' })));
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ cardDefinitionId: 'OPP-PRISONER', name: 'Prisoner of Impel Down' })));
+
+    expect(evaluateGates([{ kind: 'selfNamedCardCount', name: 'Prisoner of Impel Down', atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfNamedCardCount', name: 'Prisoner of Impel Down', atLeast: 4 }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'selfNamedCardCount', name: 'Prisoner of Impel Down', atMost: 2 }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks playedCharacterHasTrigger against the reactive played Character', () => {
+    let rig = buildBaseRig();
+    let triggeredId: string;
+    let plainId: string;
+    ({ rig, instanceId: triggeredId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'TRIGGERED-CHAR', hasTrigger: true })));
+    ({ rig, instanceId: plainId } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'PLAIN-CHAR', hasTrigger: false })));
+
+    const gate = [{ kind: 'playedCharacterHasTrigger' as const }];
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { playedCharacterInstanceId: triggeredId })).toBe(true);
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { playedCharacterInstanceId: plainId })).toBe(false);
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1')).toBe(false);
   });
 });

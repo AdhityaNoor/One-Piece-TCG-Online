@@ -953,6 +953,8 @@ export class EffectContextImpl implements EffectContext {
     appliesToControllerId: string;
     duration: ContinuousEffectDuration;
     negatedTimings?: import('./effectIr').IrTiming[];
+    appliesToCategories?: Exclude<import('../state/card').CardCategory, 'don'>[];
+    exceptTypeIncludes?: string;
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -964,6 +966,8 @@ export class EffectContextImpl implements EffectContext {
       effectNegation: {
         appliesToControllerId: spec.appliesToControllerId,
         ...(spec.negatedTimings?.length ? { negatedTimings: spec.negatedTimings } : {}),
+        ...(spec.appliesToCategories?.length ? { appliesToCategories: spec.appliesToCategories } : {}),
+        ...(spec.exceptTypeIncludes ? { exceptTypeIncludes: spec.exceptTypeIncludes } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -971,7 +975,7 @@ export class EffectContextImpl implements EffectContext {
       actorPlayerId: this.controllerId,
       type: 'EFFECT_RESOLVED',
       message: `${spec.appliesToControllerId}'s effects negated (${record.description}).`,
-      data: { continuousEffectId: record.id, duration: spec.duration, negatedTimings: spec.negatedTimings },
+      data: { continuousEffectId: record.id, duration: spec.duration, negatedTimings: spec.negatedTimings, appliesToCategories: spec.appliesToCategories, exceptTypeIncludes: spec.exceptTypeIncludes },
       relatedCardInstanceIds: [this.sourceInstanceId],
       visibility: 'public',
     });

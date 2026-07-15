@@ -2,14 +2,18 @@ import type { EffectAbility_V2 } from '../../cards/effectCompiler_V2/effectIr_V2
 import type { ActivationCost_V2, CostAction_V2, StandardTiming_V2, TimingExpression_V2 } from '../../cards/effectCompiler_V2/types_V2';
 import type { GameAction } from '../actions';
 import type { ActivateCardEffectAction, ActivateCounterEventAction, ActivateEventMainAction, ActivateOnOpponentsAttackAction } from '../actions/action';
+import { executeActivateCounterEvent } from '../actions/handlers/activateCounterEvent';
+import { executeActivateEventMain } from '../actions/handlers/activateEventMain';
 import type { CardDefinitionLookup } from '../rules/shared';
 import { computeCurrentCost } from '../rules/shared/power';
 import type { GameLogEntry } from '../logs/logEntry';
+import type { PendingChoice } from '../events/pendingChoice';
 import type { GameState } from '../state/game';
 import type { EffectRuntimeBundle_V2 } from './runtime_V2';
 import { createEmptyEffectRuntimeSidecars_V2, dispatchCardEffectsForTiming_V2, type EffectRuntimeSidecars_V2, type V2EffectDispatchResult } from './dispatcher_V2';
 import { validateCostPayments_V2, type CostPaymentSelection_V2 } from './costs_V2';
 import { evaluateGates_V2 } from './gates_V2';
+import { executeResolutionNode_V2, type ResolutionExecutionResult_V2 } from './resolution_V2';
 import type { SelectorContext_V2 } from './selectorResolver_V2';
 import { pruneExpiredEffectRuntimeSidecars_V2 } from './sidecarLifecycle_V2';
 
@@ -46,6 +50,11 @@ export interface V2ActionEffectResult {
   sidecars: EffectRuntimeSidecars_V2;
 }
 
+export type V2ActionOverrideResult =
+  | { handled: false }
+  | { handled: true; ok: false; reasons: string[] }
+  | { handled: true; ok: true; state: GameState; log: GameLogEntry[]; sidecars: EffectRuntimeSidecars_V2 };
+
 function timingExpression(timing: StandardTiming_V2): TimingExpression_V2 {
   return { kind: 'STANDARD_TIMING', timing };
 }
@@ -55,14 +64,108 @@ export function fixedV2CostCount(cost: CostAction_V2): number {
   return cost.count.kind === 'NUMBER' ? cost.count.value : 0;
 }
 
-export function activationCostSelectionsFromDonIds_V2(cost: ActivationCost_V2 | undefined, donInstanceIds: readonly string[]): CostPaymentSelection_V2[] {
+function automaticCostPromptCounts_V2(ability: EffectAbility_V2 | undefined): number[] {
+  if (!ability?.activationCost?.payments.length) return [];
+  const counts = ability.activationCost.payments.map((payment) => (payment.type === 'DON_MINUS_COST' ? fixedV2CostCount(payment) : -1));
+  return counts.every((count) => count > 0) ? counts : [];
+}
+
+function costAreaDonCandidates(state: GameState, playerId: string): string[] {
+  return state.players[playerId]?.costArea.cardIds.filter((id) => state.cardsById[id]?.ownerId === playerId) ?? [];
+}
+
+function v2ActivationCostChoiceId(sourceInstanceId: string, abilityId: string, turnNumber: number): string {
+  return `${sourceInstanceId}:v2-cost:${abilityId}:${turnNumber}`;
+}
+
+function createV2ActivationCostChoice(input: {
+  state: GameState;
+  sourceInstanceId: string;
+  controllerId: string;
+  ability: EffectAbility_V2;
+  timing: StandardTiming_V2;
+  costCounts: number[];
+}): PendingChoice | null {
+  const total = input.costCounts.reduce((sum, count) => sum + count, 0);
+  if (total <= 0) return null;
+  return {
+    id: v2ActivationCostChoiceId(input.sourceInstanceId, input.ability.abilityId, input.state.turnNumber),
+    playerId: input.controllerId,
+    kind: 'SELECT_CARDS',
+    prompt: `Select ${total} DON!! card${total === 1 ? '' : 's'} for this V2 effect cost.`,
+    constraints: {
+      min: total,
+      max: total,
+      zoneId: 'costArea',
+      filterDescription: 'DON!! cards on your field for a V2 activation cost.',
+      candidateInstanceIds: costAreaDonCandidates(input.state, input.controllerId),
+    },
+    sourceInstanceId: input.sourceInstanceId,
+    sourceEffectId: 'v2:activationCost',
+    resumeState: {
+      abilityIndex: 0,
+      opIndex: 0,
+      bindings: {},
+      v2ActivationCost: {
+        sourceInstanceId: input.sourceInstanceId,
+        abilityId: input.ability.abilityId,
+        timing: input.timing,
+        costCounts: input.costCounts,
+      },
+    },
+  };
+}
+
+function appendPendingChoiceIfMissing(state: GameState, choice: PendingChoice | null): GameState {
+  if (!choice || state.pendingChoices.some((candidate) => candidate.id === choice.id)) return state;
+  return { ...state, pendingChoices: [...state.pendingChoices, choice] };
+}
+
+function mergeSidecarsFromResolution_V2(sidecars: EffectRuntimeSidecars_V2 | null, result: ResolutionExecutionResult_V2): EffectRuntimeSidecars_V2 {
+  const base = createEmptyEffectRuntimeSidecars_V2(sidecars ?? undefined);
+  return {
+    delayedEffects: [...base.delayedEffects, ...(result.delayedEffects ?? [])],
+    replacementEffects: [...base.replacementEffects, ...(result.replacementEffects ?? [])],
+    permissionEffects: [...base.permissionEffects, ...(result.permissionEffects ?? [])],
+    statModifiers: [...base.statModifiers, ...(result.statModifiers ?? [])],
+    keywordModifiers: [...base.keywordModifiers, ...(result.keywordModifiers ?? [])],
+    counterModifiers: [...base.counterModifiers, ...(result.counterModifiers ?? [])],
+    effectInvalidations: [...base.effectInvalidations, ...(result.effectInvalidations ?? [])],
+    activatedEvents: [...base.activatedEvents, ...(result.activatedEvents ?? [])],
+    choicePrompts: [...base.choicePrompts, ...(result.choicePrompts ?? [])],
+    lookBuffers: [...base.lookBuffers, ...(result.lookBuffers ?? [])],
+  };
+}
+
+function isSelfCardCost_V2(payment: CostAction_V2): payment is Extract<CostAction_V2, { type: 'REST_CARD_COST' }> {
+  return payment.type === 'REST_CARD_COST' && payment.selector.relations?.includes('THIS_CARD') === true;
+}
+
+function fixedDonSelectionCount_V2(payment: CostAction_V2): number {
+  return payment.type === 'DON_MINUS_COST' || payment.type === 'REST_DON_COST' ? fixedV2CostCount(payment) : 0;
+}
+
+export function activationCostSelectionsFromDonIds_V2(cost: ActivationCost_V2 | undefined, donInstanceIds: readonly string[], sourceInstanceId?: string): CostPaymentSelection_V2[] {
   if (!cost?.payments.length) return [];
   let offset = 0;
   return cost.payments.map((payment, costIndex) => {
-    const count = payment.type === 'DON_MINUS_COST' ? fixedV2CostCount(payment) : 0;
-    const selectedInstanceIds = count > 0 ? donInstanceIds.slice(offset, offset + count) : [];
+    const count = fixedDonSelectionCount_V2(payment);
+    const selectedInstanceIds = count > 0
+      ? donInstanceIds.slice(offset, offset + count)
+      : isSelfCardCost_V2(payment) && sourceInstanceId
+        ? [sourceInstanceId]
+        : [];
     offset += count;
     return { costIndex, selectedInstanceIds };
+  });
+}
+
+function activationCostSelectionsFromCounts_V2(costCounts: readonly number[], selectedInstanceIds: readonly string[]): CostPaymentSelection_V2[] {
+  let offset = 0;
+  return costCounts.map((count, costIndex) => {
+    const selection = { costIndex, selectedInstanceIds: selectedInstanceIds.slice(offset, offset + count) };
+    offset += count;
+    return selection;
   });
 }
 
@@ -131,7 +234,7 @@ function validateV2ActivationCost(args: {
   if (!ability) return validateV2AbilityForTiming(args);
   const reasons = validateV2AbilityForTiming({
     ...args,
-    activationCostSelections: activationCostSelectionsFromDonIds_V2(ability.activationCost, args.donInstanceIds),
+    activationCostSelections: activationCostSelectionsFromDonIds_V2(ability.activationCost, args.donInstanceIds, args.sourceInstanceId),
   });
   if (!ability.activationCost?.payments.length && args.donInstanceIds.length > 0) {
     reasons.push('This V2 effect has no activation cost, so no DON!! should be selected.');
@@ -262,6 +365,309 @@ export function validateActivateOnOpponentsAttack_V2(
   return reasons;
 }
 
+function withOnOpponentsAttackUsage_V2(state: GameState, action: ActivateOnOpponentsAttackAction): GameState {
+  const battle = state.currentBattle;
+  if (!battle) return state;
+  return {
+    ...state,
+    currentBattle: {
+      ...battle,
+      onOpponentsAttackUsedInstanceIds: [...(battle.onOpponentsAttackUsedInstanceIds ?? []), action.sourceInstanceId],
+    },
+  };
+}
+
+export function executeV2ActionOverride(input: {
+  state: GameState;
+  defs: CardDefinitionLookup;
+  runtime: EffectRuntimeBundle_V2;
+  sidecars: EffectRuntimeSidecars_V2 | null;
+  action: GameAction;
+}): V2ActionOverrideResult {
+  const { state, defs, runtime, sidecars, action } = input;
+  switch (action.type) {
+    case 'RESOLVE_PENDING_CHOICE': {
+      const choice = state.pendingChoices.find((candidate) => candidate.id === action.choiceId);
+      if (
+        choice?.sourceEffectId !== 'v2:activationCost'
+        && choice?.sourceEffectId !== 'v2:selectMoveToHand'
+        && choice?.sourceEffectId !== 'v2:chooseOption'
+        && choice?.sourceEffectId !== 'v2:reorderCards'
+        && choice?.sourceEffectId !== 'v2:selectPlayCard'
+      ) return { handled: false };
+      if (choice.playerId !== action.playerId) return { handled: true, ok: false, reasons: [`Choice '${choice.id}' belongs to '${choice.playerId}', not '${action.playerId}'.`] };
+      if (choice.sourceEffectId === 'v2:chooseOption') {
+        const resume = choice.resumeState?.v2ChooseOption;
+        if (!resume) return { handled: true, ok: false, reasons: [`Choice '${choice.id}' is missing V2 option resume data.`] };
+        if (typeof action.response !== 'number' || !Number.isInteger(action.response)) {
+          return { handled: true, ok: false, reasons: ['A V2 option choice expects a selected option index.'] };
+        }
+        const selectedNode = resume.options[action.response];
+        if (!selectedNode) return { handled: true, ok: false, reasons: [`V2 option index ${action.response} is not valid.`] };
+        const stateWithoutChoice = { ...state, pendingChoices: state.pendingChoices.filter((candidate) => candidate.id !== action.choiceId) };
+        const ctx: SelectorContext_V2 = {
+          state: stateWithoutChoice,
+          defs,
+          runtime,
+          sourceInstanceId: resume.sourceInstanceId,
+          controllerId: resume.controllerId,
+          currentTiming: resume.timing,
+          bindings: resume.bindings,
+        };
+        const result = executeResolutionNode_V2(ctx, { kind: 'SEQUENCE', nodes: [selectedNode, ...resume.remainingNodes] }, null);
+        return {
+          handled: true,
+          ok: true,
+          state: result.state,
+          log: result.log,
+          sidecars: mergeSidecarsFromResolution_V2(sidecars, result),
+        };
+      }
+      if (choice.sourceEffectId === 'v2:reorderCards') {
+        const resume = choice.resumeState?.v2ReorderCards;
+        if (!resume) return { handled: true, ok: false, reasons: [`Choice '${choice.id}' is missing V2 reorder resume data.`] };
+        if (!Array.isArray(action.response)) return { handled: true, ok: false, reasons: ['A V2 reorder choice expects selected card ids in order.'] };
+        const orderedIds = action.response;
+        const candidateIds = choice.constraints.candidateInstanceIds ?? [];
+        const candidateSet = new Set(candidateIds);
+        const reasons: string[] = [];
+        if (orderedIds.length !== candidateIds.length) reasons.push(`Select all ${candidateIds.length} card(s) in order for this V2 reorder.`);
+        if (new Set(orderedIds).size !== orderedIds.length) reasons.push('V2 reorder selection contains duplicate cards.');
+        for (const id of orderedIds) {
+          if (!candidateSet.has(id)) reasons.push(`'${id}' is not eligible for this V2 reorder.`);
+        }
+        if (reasons.length > 0) return { handled: true, ok: false, reasons };
+        const stateWithoutChoice = { ...state, pendingChoices: state.pendingChoices.filter((candidate) => candidate.id !== action.choiceId) };
+        const ctx: SelectorContext_V2 = {
+          state: stateWithoutChoice,
+          defs,
+          runtime,
+          sourceInstanceId: resume.sourceInstanceId,
+          controllerId: resume.controllerId,
+          currentTiming: resume.timing,
+          bindings: {
+            selectedObjects: {
+              ...resume.bindings.selectedObjects,
+              SELECTED_PREVIOUSLY: orderedIds,
+              PREVIOUS_ACTION_TARGET: orderedIds,
+              REMAINDER_OF_PREVIOUS_SELECTION: orderedIds,
+            },
+            actionResults: resume.bindings.actionResults,
+          },
+        };
+        const reorderNode = {
+          kind: 'ACTION' as const,
+          action: {
+            ...resume.reorderAction,
+            selector: {
+              ...resume.reorderAction.selector,
+              subject: 'CARD' as const,
+              relations: undefined,
+              instanceIds: orderedIds,
+              quantity: { kind: 'EXACTLY' as const, value: { kind: 'NUMBER' as const, value: orderedIds.length } },
+            },
+          },
+        };
+        const result = executeResolutionNode_V2(ctx, { kind: 'SEQUENCE', nodes: [reorderNode, ...resume.remainingNodes] }, null);
+        return {
+          handled: true,
+          ok: true,
+          state: result.state,
+          log: result.log,
+          sidecars: mergeSidecarsFromResolution_V2(sidecars, result),
+        };
+      }
+      if (choice.sourceEffectId === 'v2:selectPlayCard') {
+        const resume = choice.resumeState?.v2SelectPlayCard;
+        if (!resume) return { handled: true, ok: false, reasons: [`Choice '${choice.id}' is missing V2 play-card resume data.`] };
+        if (!Array.isArray(action.response)) return { handled: true, ok: false, reasons: ['A V2 play-card choice expects selected card ids.'] };
+        const selectedIds = action.response;
+        const candidateSet = new Set(choice.constraints.candidateInstanceIds ?? []);
+        const reasons: string[] = [];
+        if (selectedIds.length < choice.constraints.min || selectedIds.length > choice.constraints.max) {
+          reasons.push(`Select between ${choice.constraints.min} and ${choice.constraints.max} card(s) to play.`);
+        }
+        if (new Set(selectedIds).size !== selectedIds.length) reasons.push('V2 play-card selection contains duplicate cards.');
+        for (const id of selectedIds) {
+          if (!candidateSet.has(id)) reasons.push(`'${id}' is not eligible to play with this V2 effect.`);
+        }
+        if (reasons.length > 0) return { handled: true, ok: false, reasons };
+        const stateWithoutChoice = { ...state, pendingChoices: state.pendingChoices.filter((candidate) => candidate.id !== action.choiceId) };
+        const playNode = selectedIds.length > 0
+          ? {
+              kind: 'ACTION' as const,
+              action: {
+                ...resume.playAction,
+                selector: {
+                  ...resume.playAction.selector,
+                  subject: 'CARD' as const,
+                  relations: undefined,
+                  instanceIds: selectedIds,
+                  quantity: { kind: 'EXACTLY' as const, value: { kind: 'NUMBER' as const, value: selectedIds.length } },
+                },
+              },
+            }
+          : null;
+        const ctx: SelectorContext_V2 = {
+          state: stateWithoutChoice,
+          defs,
+          runtime,
+          sourceInstanceId: resume.sourceInstanceId,
+          controllerId: resume.controllerId,
+          currentTiming: resume.timing,
+          bindings: {
+            selectedObjects: {
+              ...resume.bindings.selectedObjects,
+              SELECTED_PREVIOUSLY: selectedIds,
+              PREVIOUS_ACTION_TARGET: selectedIds,
+            },
+            actionResults: resume.bindings.actionResults,
+          },
+        };
+        const result = executeResolutionNode_V2(ctx, { kind: 'SEQUENCE', nodes: [...(playNode ? [playNode] : []), ...resume.remainingNodes] }, null);
+        return {
+          handled: true,
+          ok: true,
+          state: result.state,
+          log: result.log,
+          sidecars: mergeSidecarsFromResolution_V2(sidecars, result),
+        };
+      }
+      if (!Array.isArray(action.response)) return { handled: true, ok: false, reasons: ['A V2 activation-cost choice expects selected DON!! instance ids.'] };
+      if (choice.sourceEffectId === 'v2:selectMoveToHand') {
+        const resume = choice.resumeState?.v2SelectMoveToHand;
+        if (!resume) return { handled: true, ok: false, reasons: [`Choice '${choice.id}' is missing V2 search resume data.`] };
+        const selectedIds = action.response;
+        const candidateSet = new Set(choice.constraints.candidateInstanceIds ?? []);
+        const reasons: string[] = [];
+        if (selectedIds.length < choice.constraints.min || selectedIds.length > choice.constraints.max) {
+          reasons.push(`Select between ${choice.constraints.min} and ${choice.constraints.max} card(s) for this V2 search.`);
+        }
+        if (new Set(selectedIds).size !== selectedIds.length) reasons.push('V2 search selection contains duplicate cards.');
+        for (const id of selectedIds) {
+          if (!candidateSet.has(id)) reasons.push(`'${id}' is not an eligible card for this V2 search.`);
+        }
+        if (reasons.length > 0) return { handled: true, ok: false, reasons };
+
+        const lookedIds = resume.bindings.selectedObjects.LOOKED_AT_PREVIOUSLY ?? choice.constraints.visibleInstanceIds ?? choice.constraints.candidateInstanceIds ?? [];
+        const remainderIds = lookedIds.filter((id) => !selectedIds.includes(id));
+        const lookBuffer = resume.bindings.actionResults.LOOK_BUFFER_V2;
+        const actionResults = {
+          ...resume.bindings.actionResults,
+          ...(lookBuffer && typeof lookBuffer === 'object'
+            ? {
+                LOOK_BUFFER_V2: {
+                  ...lookBuffer,
+                  selectedInstanceIds: selectedIds,
+                  remainingInstanceIds: remainderIds,
+                },
+              }
+            : {}),
+        };
+        const selectedMoveNode = selectedIds.length > 0
+          ? {
+              kind: 'ACTION' as const,
+              action: {
+                ...resume.moveAction,
+                selector: {
+                  ...resume.moveAction.selector,
+                  subject: 'CARD' as const,
+                  relations: undefined,
+                  instanceIds: selectedIds,
+                  quantity: { kind: 'EXACTLY' as const, value: { kind: 'NUMBER' as const, value: selectedIds.length } },
+                },
+              },
+            }
+          : null;
+        const nodes = [...(selectedMoveNode ? [selectedMoveNode] : []), ...resume.remainingNodes];
+        const stateWithoutChoice = { ...state, pendingChoices: state.pendingChoices.filter((candidate) => candidate.id !== action.choiceId) };
+        const ctx: SelectorContext_V2 = {
+          state: stateWithoutChoice,
+          defs,
+          runtime,
+          sourceInstanceId: resume.sourceInstanceId,
+          controllerId: resume.controllerId,
+          currentTiming: resume.timing,
+          bindings: {
+            selectedObjects: {
+              ...resume.bindings.selectedObjects,
+              SELECTED_PREVIOUSLY: selectedIds,
+              PREVIOUS_ACTION_TARGET: selectedIds,
+              REMAINDER_OF_PREVIOUS_SELECTION: remainderIds,
+            },
+            actionResults,
+          },
+        };
+        const result = executeResolutionNode_V2(ctx, { kind: 'SEQUENCE', nodes }, null);
+        return {
+          handled: true,
+          ok: true,
+          state: result.state,
+          log: result.log,
+          sidecars: mergeSidecarsFromResolution_V2(sidecars, result),
+        };
+      }
+      const resume = choice.resumeState?.v2ActivationCost;
+      if (!resume) return { handled: true, ok: false, reasons: [`Choice '${choice.id}' is missing V2 activation-cost resume data.`] };
+      const candidates = new Set(choice.constraints.candidateInstanceIds ?? []);
+      const selectedIds = action.response;
+      const reasons: string[] = [];
+      if (selectedIds.length < choice.constraints.min || selectedIds.length > choice.constraints.max) {
+        reasons.push(`Select exactly ${choice.constraints.min} DON!! card(s) for this V2 cost.`);
+      }
+      for (const id of selectedIds) {
+        if (!candidates.has(id)) reasons.push(`'${id}' is not an eligible DON!! card for this V2 cost.`);
+      }
+      if (new Set(selectedIds).size !== selectedIds.length) reasons.push('V2 activation-cost selection contains duplicate DON!! cards.');
+      if (reasons.length > 0) return { handled: true, ok: false, reasons };
+      const stateWithoutChoice = { ...state, pendingChoices: state.pendingChoices.filter((candidate) => candidate.id !== action.choiceId) };
+      const result = dispatchV2AbilityForTiming({
+        state: stateWithoutChoice,
+        defs,
+        runtime,
+        sourceInstanceId: resume.sourceInstanceId,
+        controllerId: action.playerId,
+        timing: resume.timing,
+        sidecars: sidecars ?? undefined,
+        activationCostSelections: activationCostSelectionsFromCounts_V2(resume.costCounts, selectedIds),
+      });
+      const costFailures = result.skippedEffects.filter((effect) => effect.reason === 'COST_PAYMENT_INVALID');
+      if (costFailures.length > 0) {
+        return { handled: true, ok: false, reasons: costFailures.flatMap((failure) => failure.details ?? ['V2 activation cost payment is invalid.']) };
+      }
+      return { handled: true, ok: true, state: result.state, log: result.log, sidecars: result.sidecars };
+    }
+    case 'ACTIVATE_CARD_EFFECT': {
+      const reasons = validateActivateCardEffect_V2(state, action, defs, runtime);
+      if (reasons.length > 0) return { handled: true, ok: false, reasons };
+      const applied = applyV2EffectsForAction({ previousState: state, state, defs, runtime, sidecars, action, log: [] });
+      return { handled: true, ok: true, state: applied.state, log: applied.log, sidecars: applied.sidecars };
+    }
+    case 'ACTIVATE_EVENT_MAIN': {
+      const reasons = validateActivateEventMain_V2(state, action, defs, runtime);
+      if (reasons.length > 0) return { handled: true, ok: false, reasons };
+      const base = executeActivateEventMain(state, action, defs, {});
+      const applied = applyV2EffectsForAction({ previousState: state, state: base.state, defs, runtime, sidecars, action, log: base.log });
+      return { handled: true, ok: true, state: applied.state, log: [...base.log, ...applied.log], sidecars: applied.sidecars };
+    }
+    case 'ACTIVATE_COUNTER_EVENT': {
+      const reasons = validateActivateCounterEvent_V2(state, action, defs, runtime);
+      if (reasons.length > 0) return { handled: true, ok: false, reasons };
+      const base = executeActivateCounterEvent(state, action, defs, {});
+      const applied = applyV2EffectsForAction({ previousState: state, state: base.state, defs, runtime, sidecars, action, log: base.log });
+      return { handled: true, ok: true, state: applied.state, log: [...base.log, ...applied.log], sidecars: applied.sidecars };
+    }
+    case 'ACTIVATE_ON_OPPONENTS_ATTACK': {
+      const reasons = validateActivateOnOpponentsAttack_V2(state, action, defs, runtime);
+      if (reasons.length > 0) return { handled: true, ok: false, reasons };
+      const applied = applyV2EffectsForAction({ previousState: state, state, defs, runtime, sidecars, action, log: [] });
+      return { handled: true, ok: true, state: withOnOpponentsAttackUsage_V2(applied.state, action), log: applied.log, sidecars: applied.sidecars };
+    }
+    default:
+      return { handled: false };
+  }
+}
+
 function inPlayZone(zone: string | null | undefined): boolean {
   return zone === 'leaderArea' || zone === 'characterArea' || zone === 'stageArea';
 }
@@ -298,7 +704,7 @@ export function applyV2EffectsForAction(input: V2ActionEffectInput): V2ActionEff
       requests.push({
         sourceInstanceId: action.sourceInstanceId,
         timing: 'ACTIVATE_MAIN',
-        activationCostSelections: activationCostSelectionsFromDonIds_V2(ability?.activationCost, action.donInstanceIds),
+        activationCostSelections: activationCostSelectionsFromDonIds_V2(ability?.activationCost, action.donInstanceIds, action.sourceInstanceId),
       });
       break;
     }
@@ -307,7 +713,7 @@ export function applyV2EffectsForAction(input: V2ActionEffectInput): V2ActionEff
       requests.push({
         sourceInstanceId: action.handCardInstanceId,
         timing: 'EVENT_MAIN',
-        activationCostSelections: activationCostSelectionsFromDonIds_V2(ability?.activationCost, action.abilityCostDonInstanceIds ?? []),
+        activationCostSelections: activationCostSelectionsFromDonIds_V2(ability?.activationCost, action.abilityCostDonInstanceIds ?? [], action.handCardInstanceId),
       });
       break;
     }
@@ -316,7 +722,7 @@ export function applyV2EffectsForAction(input: V2ActionEffectInput): V2ActionEff
       requests.push({
         sourceInstanceId: action.handCardInstanceId,
         timing: 'EVENT_COUNTER',
-        activationCostSelections: activationCostSelectionsFromDonIds_V2(ability?.activationCost, action.abilityCostDonInstanceIds ?? []),
+        activationCostSelections: activationCostSelectionsFromDonIds_V2(ability?.activationCost, action.abilityCostDonInstanceIds ?? [], action.handCardInstanceId),
       });
       break;
     }
@@ -325,7 +731,7 @@ export function applyV2EffectsForAction(input: V2ActionEffectInput): V2ActionEff
       requests.push({
         sourceInstanceId: action.sourceInstanceId,
         timing: 'ON_OPPONENT_ATTACK',
-        activationCostSelections: activationCostSelectionsFromDonIds_V2(ability?.activationCost, action.donInstanceIds),
+        activationCostSelections: activationCostSelectionsFromDonIds_V2(ability?.activationCost, action.donInstanceIds, action.sourceInstanceId),
       });
       break;
     }
@@ -369,6 +775,13 @@ export function applyV2EffectsForAction(input: V2ActionEffectInput): V2ActionEff
   for (const request of requests) {
     const source = state.cardsById[request.sourceInstanceId];
     if (!source) continue;
+    const ability = findV2AbilityForTiming({
+      state,
+      defs: input.defs,
+      runtime: input.runtime,
+      sourceInstanceId: request.sourceInstanceId,
+      timing: request.timing,
+    });
     const result = dispatchV2AbilityForTiming({
       state,
       defs: input.defs,
@@ -380,6 +793,21 @@ export function applyV2EffectsForAction(input: V2ActionEffectInput): V2ActionEff
       activationCostSelections: request.activationCostSelections,
     });
     state = result.state;
+    if (
+      ability
+      && result.skippedEffects.some((effect) => effect.abilityId === ability.abilityId && effect.reason === 'COST_PAYMENT_INVALID')
+      && !request.activationCostSelections?.length
+    ) {
+      const costCounts = automaticCostPromptCounts_V2(ability);
+      state = appendPendingChoiceIfMissing(state, createV2ActivationCostChoice({
+        state,
+        sourceInstanceId: request.sourceInstanceId,
+        controllerId: source.controllerId,
+        ability,
+        timing: request.timing,
+        costCounts,
+      }));
+    }
     log = [...log, ...result.log];
     sidecars = result.sidecars;
   }

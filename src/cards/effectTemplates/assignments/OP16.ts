@@ -36,16 +36,21 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP16-003 — [Your Turn] your Leader gains [Double Attack] and +2000 power.
-  //   PARTIAL: the [On Play] "reveal 2 8000-power Chars → give opp Char −6000" is deferred (reveal-from-hand cost).
-  { cardNumber: 'OP16-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { group: 'leader', player: 'controller' }, keyword: 'doubleAttack', duration: 'permanent', condition: { turn: 'your' } }, { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'permanent', condition: { turn: 'your' } }] } },
+  // OP16-003 — [Your Turn] your Leader gains [Double Attack] and +2000 power. [On Play] reveal 2 8000-power Characters: opp Character -6000.
+  {
+    cardNumber: 'OP16-003',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { group: 'leader', player: 'controller' }, keyword: 'doubleAttack', duration: 'permanent', condition: { turn: 'your' } }, { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'permanent', condition: { turn: 'your' } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalRevealTypeFromHand', count: 2, filter: { category: 'character', exactPower: 8000 }, prompt: 'You may reveal 2 Character cards with 8000 power from your hand.' }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -6000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousSelectedAny' }] } },
+    ],
+  },
 
   // OP16-005 (character) Thatch —
   //   If you have a Character with 8000 power or more and a type including "Whitebeard Pirates", give this
   //   card in your hand −3 cost.[Blocker]
   { cardNumber: 'OP16-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'selfTypedCharacterPowerAtLeast', typeIncludes: 'Whitebeard Pirates', power: 8000 }] }] } },
 
-  // ── Triage batch (OP16 expressible). "reveal 8000-power Char from hand" cost, "base power becomes same as..." swaps, named-present gates, and opp-Life-to-opponent's-hand are deferred. ──
+  // ── Triage batch (OP16 expressible). Named-present gates and opp-Life-to-opponent's-hand are deferred. ──
   { cardNumber: 'OP16-006', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, optional: true }] } },
 
   { cardNumber: 'OP16-013', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 8000 } }, optional: true }] } },
@@ -155,7 +160,6 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Main] You may rest 1 of your DON!! cards and reveal 1 Character card with 8000 power from your hand:
   //   Draw 1 card.[Counter] You may trash 1 card from your hand: Up to 1 of your Leader or Character cards
   //   gains +3000 power during this battle.
-  // PARTIAL: reveal-from-hand cost is a selfHandMatching gate proxy.
   {
     cardNumber: 'OP16-020',
     templates: [
@@ -164,8 +168,10 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'activateMain',
           cost: [{ kind: 'restDon', count: 1 }],
-          gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }],
-          functions: [{ fn: 'draw', amount: 1 }],
+          functions: [
+            { fn: 'optionalRevealTypeFromHand', filter: { category: 'character', exactPower: 8000 }, prompt: 'You may reveal 1 Character card with 8000 power from your hand.' },
+            { fn: 'draw', amount: 1, ifPrevious: 'previousSelectedAny' },
+          ],
         },
       },
       {
@@ -181,11 +187,14 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-021 (stage) — [On Play] If Leader {Whitebeard Pirates}, Look 3, add up to 1, rest to bottom.
-  // PARTIAL: trash-self give-DON activate deferred. Verified 2026-07-12: the `trashThis` ability cost
-  // (abilityCost.ts) is hardcoded to characterArea and cannot pay from stageArea — this needs an engine
-  // fix (generalize trashThis to the source's actual zone), not a data-only assignment fix.
-  { cardNumber: 'OP16-021', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: false, destination: 'hand', remainder: 'bottom' }] } },
+  // OP16-021 (stage) — [On Play] If Leader {Whitebeard Pirates}, Look 3, add up to 1, rest to bottom. [Activate: Main] Trash this Stage: give rested DON.
+  {
+    cardNumber: 'OP16-021',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: false, destination: 'hand', remainder: 'bottom' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'giveDon', count: 1, optional: true }] } },
+    ],
+  },
 
   // OP16-022 (leader) Monkey.D.Luffy —
   {
@@ -240,16 +249,35 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP16-035', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }, { fn: 'optionalTrashFromHand', count: 1 }, { fn: 'giveDon', count: 3, ifPrevious: 'previousMovedAny' }] } },
 
-  // OP16-036 — [On Play] Rest up to 1 opp Character cost ≤4. PARTIAL: base-power-swap [When Attacking] deferred.
-  { cardNumber: 'OP16-036', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+  // OP16-036 - [On Play] rest up to 1 opp Character cost<=4. [When Attacking] base power becomes opponent Leader power.
+  {
+    cardNumber: 'OP16-036',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'setBasePowerFromSource', target: { ref: 'self' }, source: { group: 'leader', player: 'opponent' }, duration: 'duringThisTurn' }] } },
+    ],
+  },
 
   { cardNumber: 'OP16-037', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
 
-  // OP16-038/040 — [Counter] Leader +3000. PARTIAL: named-count/preventRefresh [Main] clauses deferred.
-  { cardNumber: 'OP16-038', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+  // OP16-038 — [Main] rest 6 DON!!: if 5 differently named {Impel Down} Characters, set Leader and all Characters active. [Counter] Leader +3000.
+  {
+    cardNumber: 'OP16-038',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 6 }], gate: [{ kind: 'selfTypedCharacterDistinctNameCount', typeIncludes: 'Impel Down', atLeast: 5 }], functions: [{ fn: 'setActiveControllerLeader' }, { fn: 'setActiveControllerCharacters' }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
 
-  { cardNumber: 'OP16-040', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+  // OP16-040 — [Main] if [Monkey.D.Luffy] and [Mr.3(Galdino)], prevent-refresh rested opp Character cost <=6. [Counter] Leader +3000.
+  {
+    cardNumber: 'OP16-040',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfControlsNamed', name: 'Monkey.D.Luffy' }, { kind: 'selfControlsNamed', name: 'Mr.3(Galdino)' }], functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 6 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   // OP16-043 — [Blocker] [On K.O.] rest 1 {Dressrosa} Leader/Stage: return up to 1 opp Character cost<=5 to hand.
   { cardNumber: 'OP16-043', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'restControllerLeaderOrStage', typeIncludes: 'Dressrosa' }, { fn: 'moveCards', ifPrevious: 'previousSelectedAny', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
@@ -325,16 +353,28 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-055 — [On Play] Draw 1. PARTIAL: base-power-swap [When Attacking] deferred.
-  { cardNumber: 'OP16-055', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
+  // OP16-055 - [On Play] draw 1. [DON!! x1][When Attacking] base power becomes opponent Leader power.
+  {
+    cardNumber: 'OP16-055',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'setBasePowerFromSource', target: { ref: 'self' }, source: { group: 'leader', player: 'opponent' }, duration: 'duringThisTurn' }] } },
+    ],
+  },
 
   // OP16-056 (character) Mr.3(Galdino) —
   //   [Activate: Main] You may trash this Character: Draw 2 cards, and up to 1 of your opponent's
   //   Characters with a cost of 9 or less cannot attack until the end of your opponent's next End Phase.
   { cardNumber: 'OP16-056', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 9 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
-  // OP16-057 — [Trigger] Draw 2, trash 1. PARTIAL: the [Prisoner]-count [Counter] buff is deferred.
-  { cardNumber: 'OP16-057', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+  // OP16-057 — [Counter] If you have 2+ [Prisoner of Impel Down] cards, +4000. [Trigger] Draw 2, trash 1.
+  {
+    cardNumber: 'OP16-057',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'selfNamedCardCount', name: 'Prisoner of Impel Down', atLeast: 2 }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+    ],
+  },
 
   // OP16-058 (event) The Prisoners Are Rioting!! —
   //   [Main] If you have 10 DON!! cards on your field, all of your [Prisoner of Impel Down] cards' base
@@ -350,11 +390,8 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP16-059', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
 
-  // OP16-060 (leader) Sengoku —
-  //   [Activate: Main] You may return 8 of your active DON!! cards to your DON!! deck: Play up to 3
-  //   {Admiral} type Character cards with different card names from your hand.
-  // PARTIAL: "different card names" across the selected cards is not enforced yet.
-  { cardNumber: 'OP16-060', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 8, activeOnly: true }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Admiral' }, maxTargets: 3 }] } },
+  // OP16-060 (leader) Sengoku — DON!! -8 active: play up to 3 {Admiral} Characters with different names from hand.
+  { cardNumber: 'OP16-060', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 8, activeOnly: true }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Admiral' }, maxTargets: 3, distinctNames: true }] } },
 
   // OP16-063 — [On Play] Add up to 2 DON!! (rested). [Activate: Main] DON!! -1: 1 opponent Character loses [Blocker] access this turn.
   {
@@ -444,8 +481,7 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // PARTIAL: green color filter on setActive dropped.
-  { cardNumber: 'OP16-030', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true }] } }, { templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerCharacter', filter: { maxCost: 5 } }] } }] },
+  { cardNumber: 'OP16-030', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true }] } }, { templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerCharacter', filter: { color: 'green', maxCost: 5 } }] } }] },
 
 
   // PARTIAL: DON×1 +1000 per unique ally name deferred.
@@ -729,8 +765,14 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-104 — [Trigger] Draw 1, play up to 1 {Blackbeard Pirates} cost 1 from trash. PARTIAL: base-power-swap [When Attacking] deferred.
-  { cardNumber: 'OP16-104', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Blackbeard Pirates', exactCost: 1 } }] } },
+  // OP16-104 - [When Attacking] copy selected opponent Character power. [Trigger] draw 1, play Blackbeard Pirates cost 1 from trash.
+  {
+    cardNumber: 'OP16-104',
+    templates: [
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'setBasePowerFromSource', target: { ref: 'self' }, source: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Blackbeard Pirates', exactCost: 1 } }] } },
+    ],
+  },
 
   // OP16-105 — [Trigger] If ≤1 Life, play up to 1 each of [Absalom]/[Dr. Hogback]/[Perona] cost ≤4 from trash.
   { cardNumber: 'OP16-105', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'selfLife', atMost: 1 }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', name: 'Absalom', maxCost: 4 } }, { fn: 'playFromTrash', filter: { category: 'character', name: 'Dr. Hogback', maxCost: 4 } }, { fn: 'playFromTrash', filter: { category: 'character', name: 'Perona', maxCost: 4 } }] } },

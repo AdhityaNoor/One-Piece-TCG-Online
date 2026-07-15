@@ -40,6 +40,14 @@ function conditionMet(op: EffectOp, bindings: Record<string, string[]>, ctx: Eff
   if (op.ifPrevious === 'previousSelectedAny' && bindings.__lastSelected?.[0] !== 'true') return false;
   if (op.ifPrevious === 'previousMovedAny' && bindings.__lastMoved?.[0] !== 'true') return false;
   if (op.ifPrevious === 'previousRevealMatched' && bindings.__lastRevealMatched?.[0] !== 'true') return false;
+  if (op.ifPreviousMovedAnyCostAtLeast !== undefined) {
+    const ids = bindings.__lastMovedIds ?? [];
+    const matched = ids.some((id) => {
+      const inst = ctx.state().cardsById[id];
+      return (inst ? defs[inst.cardDefinitionId]?.baseCost ?? -1 : -1) >= op.ifPreviousMovedAnyCostAtLeast!;
+    });
+    if (!matched) return false;
+  }
   if (op.ifGate?.length && !evaluateGates(op.ifGate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId)) return false;
   return true;
 }
@@ -138,6 +146,20 @@ function finishWithCascade(
     if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
   }
 
+  const playedCharacterQueue = ctx.takePlayedCharacters();
+  const playedCharacterEntryQueue = [...playedCharacterQueue];
+  guard = 0;
+  while (playedCharacterEntryQueue.length > 0 && guard++ < 200) {
+    const event = playedCharacterEntryQueue.shift()!;
+    const inst = working.cardsById[event.instanceId];
+    const program = inst ? registry[inst.cardDefinitionId] : undefined;
+    if (!program?.abilities.some((a) => a.timing === 'onEnterPlay' || a.timing === 'onPlay')) continue;
+    const fired = runTimings(program, ['onEnterPlay', 'onPlay'], working, event.instanceId, defs, actionId, registry);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+
   const playedFromTrashQueue = ctx.takePlayedFromTrash();
   guard = 0;
   while (playedFromTrashQueue.length > 0 && guard++ < 200) {
@@ -160,10 +182,10 @@ function finishWithCascade(
     if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
   }
 
-  const playedCharacterQueue = ctx.takePlayedCharacters();
+  const playedCharacterReactionQueue = [...playedCharacterQueue];
   guard = 0;
-  while (playedCharacterQueue.length > 0 && guard++ < 200) {
-    const event = playedCharacterQueue.shift()!;
+  while (playedCharacterReactionQueue.length > 0 && guard++ < 200) {
+    const event = playedCharacterReactionQueue.shift()!;
     const samePlayer = fireCharacterPlayedFromHandReactions(working, event.controllerId, event.instanceId, registry, defs, actionId);
     working = samePlayer.state;
     log = [...log, ...samePlayer.log];
@@ -214,7 +236,8 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
   }
   if (filter.attribute && !def.attributes?.includes(filter.attribute)) return false;
   if (filter.name && def.name !== filter.name) return false;
-  if (filter.maxCost !== undefined && (def.baseCost ?? Infinity) > filter.maxCost) return false;
+  const maxCost = effectiveMaxCost(filter, ctx);
+  if (maxCost !== undefined && (def.baseCost ?? Infinity) > maxCost) return false;
   if (filter.minCost !== undefined && (def.baseCost ?? -Infinity) < filter.minCost) return false;
   if (filter.exactCost !== undefined && (def.baseCost ?? -1) !== filter.exactCost) return false;
   if (filter.maxPower !== undefined && (def.basePower ?? Infinity) > filter.maxPower) return false;
@@ -334,12 +357,25 @@ function applyDonAttachedFilter(ids: string[], minDonAttached: number | undefine
   return ids.filter((id) => (state.cardsById[id]?.donAttached.length ?? 0) >= minDonAttached);
 }
 
-function effectiveMaxCost(sel: { maxCost?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean }, ctx: EffectContextImpl): number | undefined {
+function effectiveMaxCost(
+  sel: {
+    maxCost?: number;
+    maxCostFromOpponentLife?: boolean;
+    maxCostFromCombinedLife?: boolean;
+    maxCostFromSelfLife?: boolean;
+    maxCostFromOpponentDon?: boolean;
+    maxCostFromSelfDon?: boolean;
+  },
+  ctx: EffectContextImpl,
+): number | undefined {
   if (sel.maxCostFromCombinedLife) {
     const state = ctx.state();
     return state.players[ctx.controllerId].lifeArea.cardIds.length + state.players[ctx.opponentId].lifeArea.cardIds.length;
   }
   if (sel.maxCostFromOpponentLife) return ctx.state().players[ctx.opponentId].lifeArea.cardIds.length;
+  if (sel.maxCostFromSelfLife) return ctx.state().players[ctx.controllerId].lifeArea.cardIds.length;
+  if (sel.maxCostFromOpponentDon) return fieldDonIds(ctx.state(), ctx.opponentId).length;
+  if (sel.maxCostFromSelfDon) return fieldDonIds(ctx.state(), ctx.controllerId).length;
   return sel.maxCost;
 }
 
@@ -367,6 +403,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
       if (sel.anyOfTypes !== undefined) ids = ids.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
+      if (sel.hasTrigger !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasTrigger === true) === sel.hasTrigger);
       if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
       if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
       if (sel.excludeSelfName) {
@@ -479,6 +516,10 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const life = ctx.state().players[ctx.controllerId].lifeArea.cardIds;
       return life.length > 0 ? [life[0]] : [];
     }
+    case 'controllerLifeTopN': {
+      const life = ctx.state().players[ctx.controllerId].lifeArea.cardIds;
+      return life.slice(0, sel.count);
+    }
     case 'opponentLifeTop':
       return ctx.opponentLifeTopIds();
     case 'battleOpponent': {
@@ -521,6 +562,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       ids = applyBaseFilters(ids, sel, ctx);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.hasBlocker !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasBlocker === true) === sel.hasBlocker);
+      if (sel.hasTrigger !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasTrigger === true) === sel.hasTrigger);
       if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
       if (sel.excludeName !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
@@ -548,12 +590,15 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     }
     case 'allStages': {
       const state = ctx.state();
-      return [...state.players.p1.stageArea.cardIds, ...state.players.p2.stageArea.cardIds];
+      let ids = [...state.players.p1.stageArea.cardIds, ...state.players.p2.stageArea.cardIds];
+      if (sel.rested !== undefined) ids = ids.filter((id) => ctx.state().cardsById[id]?.orientation === (sel.rested ? 'rested' : 'active'));
+      return ids;
     }
     case 'controllerStages': {
       let ids = ctx.state().players[ctx.controllerId]?.stageArea.cardIds ?? [];
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
+      if (sel.rested !== undefined) ids = ids.filter((id) => ctx.state().cardsById[id]?.orientation === (sel.rested ? 'rested' : 'active'));
       return ids;
     }
     case 'controllerActiveStages': {
@@ -566,6 +611,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       let ids = ctx.state().players[ctx.opponentId]?.stageArea.cardIds ?? [];
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
+      if (sel.rested !== undefined) ids = ids.filter((id) => ctx.state().cardsById[id]?.orientation === (sel.rested ? 'rested' : 'active'));
       return ids;
     }
     case 'controllerHand': {
@@ -574,7 +620,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       return ids;
     }
     case 'opponentHand':
-      return ctx.opponentHandIds();
+      return searchEligible(ctx.opponentHandIds(), sel.filter, ctx, bindings);
     case 'controllerTrash':
       return searchEligible(ctx.controllerTrashIds(), sel.filter, ctx);
     case 'opponentTrash':
@@ -656,6 +702,22 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
           duration: op.duration,
           ...(op.condition ? { condition: op.condition } : {}),
           ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}),
+        });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
+    case 'setBasePowerFromSource': {
+      const sourceId = resolveSelector(op.source, ctx, bindings)[0];
+      if (!sourceId) return EMPTY_RESULT;
+      const value = ctx.powerOf(sourceId);
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.setContinuousBasePower({
+          appliesToInstanceId: id,
+          value,
+          duration: op.duration,
+          ...(op.condition ? { condition: op.condition } : {}),
+          description: `base power becomes ${value}`,
         });
       }
       return { selectedIds: ids, movedIds: [] };
@@ -812,6 +874,8 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
         appliesToControllerId: targetPlayerId,
         duration: op.duration,
         ...(op.negatedTimings?.length ? { negatedTimings: op.negatedTimings } : {}),
+        ...(op.appliesToCategories?.length ? { appliesToCategories: op.appliesToCategories } : {}),
+        ...(op.exceptTypeIncludes ? { exceptTypeIncludes: op.exceptTypeIncludes } : {}),
       });
       return EMPTY_RESULT;
     }
@@ -1155,9 +1219,11 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       for (const id of ids) ctx.trashCard(id);
       return { selectedIds: ids, movedIds: ids };
     }
-    case 'trashTopDeck':
+    case 'trashTopDeck': {
+      const moving = ctx.topOfDeck(ctx.controllerId, op.count);
       ctx.trashTopOfDeck(ctx.controllerId, op.count);
-      return { selectedIds: [], movedIds: op.count > 0 ? ['__trashTopDeck'] : [] };
+      return { selectedIds: [], movedIds: moving };
+    }
     case 'trashLife': {
       const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
       const lifeCount = ctx.state().players[playerId]?.lifeArea.cardIds.length ?? 0;
@@ -1293,6 +1359,7 @@ function runOpList(
           max: clampedMax,
           candidateInstanceIds: candidates,
           ...(op.maxCombinedPower !== undefined ? { maxCombinedPower: op.maxCombinedPower } : {}),
+          ...(op.distinctNames ? { distinctNames: true } : {}),
         },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
@@ -1743,7 +1810,7 @@ function runFollowingAbilities(
   for (let i = startAbilityIndex; i < program.abilities.length; i += 1) {
     const ability = program.abilities[i];
     if (ability.timing !== timing) continue;
-    if (isAbilityNegated(ctx.state(), ctx.sourceInstanceId, ability.timing)) continue;
+    if (isAbilityNegated(ctx.state(), ctx.sourceInstanceId, ability.timing, defs)) continue;
     if (!evalCondition(ability.condition, ctx)) continue;
     if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId, eventContext)) continue;
     if (payCosts && suspendOrPayAbilityCost(ability, i, ctx, actionId, defs, registry)) return true;
@@ -1810,7 +1877,7 @@ export function runTimings(
 
   const ctx = new EffectContextImpl(state, sourceInstanceId, defs, actionId);
   for (const { ability, index } of matching) {
-    if (isAbilityNegated(ctx.state(), ctx.sourceInstanceId, ability.timing)) continue;
+    if (isAbilityNegated(ctx.state(), ctx.sourceInstanceId, ability.timing, defs)) continue;
     if (!evalCondition(ability.condition, ctx)) continue;
     // "If …" board-state gate: an unmet precondition means the ability does nothing.
     if (ability.gate?.length && !evaluateGates(ability.gate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId, eventContext)) continue;

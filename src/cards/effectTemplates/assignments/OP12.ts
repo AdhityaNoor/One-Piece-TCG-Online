@@ -230,8 +230,14 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP12-039 — [Trigger] up to 1 Leader/Char +1000 this turn. PARTIAL: the [Main] "set your Zoro Leader active" needs a set-Leader-active op (deferred).
-  { cardNumber: 'OP12-039', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
+  // OP12-039 — [Main] set your Zoro Leader active. [Trigger] up to 1 Leader/Char +1000 this turn.
+  {
+    cardNumber: 'OP12-039',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderName', name: 'Roronoa Zoro' }], functions: [{ fn: 'setActiveControllerLeader' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP12-040',
@@ -243,8 +249,14 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP12-041 (leader) — [When Attacking] If your DON!! ≤ opponent's, add 1 DON!! (rested). PARTIAL: the "activate Event from hand" main is deferred.
-  { cardNumber: 'OP12-041', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  // OP12-041 (leader) — [Activate: Main] DON!! -1: activate a Straw Hat Crew Event cost <=3 from hand. [When Attacking] If your DON!! <= opponent's, add 1 DON!! (rested).
+  {
+    cardNumber: 'OP12-041',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'activateEventFromHand', filter: { category: 'event', typeIncludes: 'Straw Hat Crew', maxCost: 3 }, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+    ],
+  },
 
   // OP12-042 — If you have 2+ Characters with base cost 5+, +1 cost. [On Play] Place opp base-cost≤1 Character at bottom.
   {

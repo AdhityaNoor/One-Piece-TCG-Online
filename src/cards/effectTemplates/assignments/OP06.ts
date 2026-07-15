@@ -438,9 +438,9 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP06-063 — [On Play] You may trash 1 from hand: if DON!! <= opponent's, add up to 1 {The Vinsmoke Family} Character (<=4000 power) from trash to hand.
-  { cardNumber: 'OP06-063', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [
+  { cardNumber: 'OP06-063', templateId: 'ability', params: { timing: 'onPlay', functions: [
     { fn: 'optionalTrashFromHand', count: 1 },
-    { fn: 'moveCards', ifPrevious: 'previousMovedAny', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'The Vinsmoke Family', maxPower: 4000 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'moveCards', ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfDonAtMostOpponent' }], from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'The Vinsmoke Family', maxPower: 4000 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
   ] } },
 
   // OP06-064 — [Activate: Main] DON!! −1 + trash this: if Leader {GERMA 66}, play [Vinsmoke Niji] cost<=5 from hand or trash.

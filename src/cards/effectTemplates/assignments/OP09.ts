@@ -60,12 +60,14 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-015 — [Blocker][On K.O.] If Leader {Red-Haired Pirates}, K.O. up to 1 opp Character with base power 6000 or less.
   { cardNumber: 'OP09-015', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 6000 } }, optional: true }] } },
 
-  // OP09-019 — [Main] If Leader {Red-Haired Pirates}, give up to 1 opp Character −3000. [Trigger] Draw 1.
-  //   PARTIAL: the "if opp has a 5000+ power Character, draw 1" rider needs a power-based gate (deferred).
+  // OP09-019 — [Main] If Leader {Red-Haired Pirates}, give up to 1 opp Character -3000, then if opp has a 5000+ power Character draw 1. [Trigger] Draw 1.
   {
     cardNumber: 'OP09-019',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [
+        { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true },
+        { fn: 'draw', amount: 1, ifGate: [{ kind: 'opponentCharacterCurrentPowerCount', power: 5000, atLeast: 1 }] },
+      ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },
@@ -172,20 +174,17 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-101', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }, { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifPrevious: 'previousMovedAny' }] } },
 
 
-  // PARTIAL: [Trigger] filter on KO target dropped.
-  { cardNumber: 'OP09-115', templates: [{ templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } }] },
+  { cardNumber: 'OP09-115', templates: [{ templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3, hasTrigger: true } }, optional: true }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } }] },
 
 
-  // PARTIAL: exclude [Dereshi!] name filter dropped.
-  { cardNumber: 'OP09-117', templates: [{ templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'hand', filter: { hasTrigger: true }, remainder: 'bottom' }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } }] },
+  { cardNumber: 'OP09-117', templates: [{ templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'hand', filter: { hasTrigger: true, excludeSelfName: true }, remainder: 'bottom' }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } }] },
 
 
   // OP09-005 - [On Play] if opponent has 2+ Characters with 5000+ base power, draw 2 and trash 1. [Blocker] is printed.
   { cardNumber: 'OP09-005', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentCharacterBasePowerCount', power: 5000, atLeast: 2 }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
 
 
-  // PARTIAL: Leader 7000+ power gate dropped.
-  { cardNumber: 'OP09-017', templateId: 'ability', params: { timing: 'onEnterPlay', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'leaderType', type: 'Kid Pirates' }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
+  { cardNumber: 'OP09-017', templateId: 'ability', params: { timing: 'onEnterPlay', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'leaderType', type: 'Kid Pirates' }, { kind: 'selfLeaderPowerAtLeast', power: 7000 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
 
 
   // PARTIAL: [Main] opponent-chooses return deferred; mapped [Trigger] only.
@@ -453,13 +452,14 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-080 (stage) Thousand Sunny —
   //   [Opponent's Turn] You may rest this Stage: When your {Straw Hat Crew} type Character is removed from
   //   the field by your opponent's effect, add up to 1 DON!! card from your DON!! deck and rest it.
-  // PARTIAL: opponent's-turn rest-this-Stage prepaid cost deferred (OP13-078 pattern for the removal hook).
   {
     cardNumber: 'OP09-080',
     templateId: 'ability',
     params: {
       timing: 'onRemovedFromField',
       oncePerTurn: true,
+      condition: { turn: 'opponent' },
+      cost: [{ kind: 'restThis' }],
       gate: [
         { kind: 'removedFromFieldCategory', category: 'character' },
         { kind: 'removedFromFieldController', player: 'controller' },
@@ -577,7 +577,7 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-099 (stage) — [Activate: Main] rest this + trash 1: Look 3, reveal up to 1 {Blackbeard Pirates} to hand, rest to bottom.
   { cardNumber: 'OP09-099', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Blackbeard Pirates' }, remainder: 'bottom', ifPrevious: 'previousMovedAny' }] } },
 
-  // OP09-100 — PARTIAL: [Blocker] is a printed keyword; only the [Trigger] clause is templated.
+  // OP09-100 — [Blocker] is a printed keyword; only the [Trigger] clause is templated.
   { cardNumber: 'OP09-100', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }, { kind: 'combinedLifeTotal', atMost: 5 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
 

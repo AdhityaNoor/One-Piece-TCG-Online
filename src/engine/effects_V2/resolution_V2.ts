@@ -1,7 +1,8 @@
 import type { Action_V2, ResolutionNode_V2, TimingExpression_V2 } from '../../cards/effectCompiler_V2/types_V2';
+import type { PendingChoice } from '../events/pendingChoice';
 import { executeAction_V2, type ActionExecutionResult_V2 } from './actions_V2';
 import { evaluateCondition_V2 } from './conditions_V2';
-import type { SelectorContext_V2 } from './selectorResolver_V2';
+import { resolveSelector_V2, type SelectorContext_V2 } from './selectorResolver_V2';
 
 export interface ResolutionExecutionResult_V2 extends ActionExecutionResult_V2 {
   unsupportedReasons?: string[];
@@ -117,6 +118,163 @@ function withUnsupported(result: ResolutionExecutionResult_V2, unsupportedReason
   return { ...result, unsupportedReasons: [...(result.unsupportedReasons ?? []), ...unsupportedReasons] };
 }
 
+function promptableSearchMoveToHand_V2(ctx: SelectorContext_V2, node: ResolutionNode_V2): PendingChoice | null {
+  if (node.kind !== 'ACTION' || node.action.type !== 'MOVE_CARD') return null;
+  if (node.action.to.zone !== 'HAND') return null;
+  if (node.action.selector.subject !== 'ACTION_RESULT') return null;
+  const resolved = resolveSelector_V2(ctx, node.action.selector);
+  if (resolved.candidateInstanceIds.length === 0) return null;
+  const maximum = resolved.maximum < 0 ? resolved.candidateInstanceIds.length : resolved.maximum;
+  return {
+    id: `${ctx.sourceInstanceId}:v2-search:${ctx.state.turnNumber}:${ctx.state.pendingChoices.length}`,
+    playerId: ctx.controllerId,
+    kind: 'SELECT_CARDS',
+    prompt: `Choose up to ${maximum} card${maximum === 1 ? '' : 's'} to add to your hand.`,
+    constraints: {
+      min: resolved.minimum,
+      max: maximum,
+      zoneId: 'deck',
+      filterDescription: 'Cards looked at by this V2 search effect.',
+      candidateInstanceIds: resolved.candidateInstanceIds,
+      visibleInstanceIds: ctx.bindings?.selectedObjects.LOOKED_AT_PREVIOUSLY ?? resolved.candidateInstanceIds,
+    },
+    sourceInstanceId: ctx.sourceInstanceId,
+    sourceEffectId: 'v2:selectMoveToHand',
+    resumeState: {
+      abilityIndex: 0,
+      opIndex: 0,
+      bindings: {},
+      v2SelectMoveToHand: {
+        sourceInstanceId: ctx.sourceInstanceId,
+        controllerId: ctx.controllerId,
+        timing: ctx.currentTiming ?? { kind: 'STANDARD_TIMING', timing: 'ON_PLAY' },
+        moveAction: node.action,
+        remainingNodes: [],
+        bindings: {
+          selectedObjects: ctx.bindings?.selectedObjects ?? {},
+          actionResults: ctx.bindings?.actionResults ?? {},
+        },
+      },
+    },
+  };
+}
+
+function promptableChooseOption_V2(ctx: SelectorContext_V2, node: ResolutionNode_V2): PendingChoice | null {
+  if (node.kind !== 'CHOOSE') return null;
+  const options = node.options.map((_, index) => ({ label: `Option ${index + 1}` }));
+  return {
+    id: `${ctx.sourceInstanceId}:v2-choose:${ctx.state.turnNumber}:${ctx.state.pendingChoices.length}`,
+    playerId: node.chooser === 'OPPONENT'
+      ? Object.keys(ctx.state.players).find((id) => id !== ctx.controllerId) ?? ctx.controllerId
+      : ctx.controllerId,
+    kind: 'SELECT_OPTION',
+    prompt: 'Choose one V2 effect option.',
+    constraints: {
+      min: node.minimumChoices,
+      max: node.maximumChoices,
+      options,
+    },
+    sourceInstanceId: ctx.sourceInstanceId,
+    sourceEffectId: 'v2:chooseOption',
+    resumeState: {
+      abilityIndex: 0,
+      opIndex: 0,
+      bindings: {},
+      v2ChooseOption: {
+        sourceInstanceId: ctx.sourceInstanceId,
+        controllerId: ctx.controllerId,
+        timing: ctx.currentTiming ?? { kind: 'STANDARD_TIMING', timing: 'ON_PLAY' },
+        options: node.options,
+        remainingNodes: [],
+        bindings: {
+          selectedObjects: ctx.bindings?.selectedObjects ?? {},
+          actionResults: ctx.bindings?.actionResults ?? {},
+        },
+      },
+    },
+  };
+}
+
+function promptableReorderCards_V2(ctx: SelectorContext_V2, node: ResolutionNode_V2): PendingChoice | null {
+  if (node.kind !== 'ACTION' || node.action.type !== 'REORDER_CARDS') return null;
+  if (node.action.orderChooser !== 'PLAYER' && node.action.orderChooser !== 'OWNER') return null;
+  if (node.action.selector.instanceIds?.length) return null;
+  const resolved = resolveSelector_V2(ctx, node.action.selector);
+  if (resolved.candidateInstanceIds.length <= 1) return null;
+  return {
+    id: `${ctx.sourceInstanceId}:v2-reorder:${ctx.state.turnNumber}:${ctx.state.pendingChoices.length}`,
+    playerId: ctx.controllerId,
+    kind: 'SELECT_CARDS',
+    prompt: 'Choose the order for these V2 effect cards.',
+    constraints: {
+      min: resolved.candidateInstanceIds.length,
+      max: resolved.candidateInstanceIds.length,
+      zoneId: node.action.destination.zone === 'DECK' ? 'deck' : undefined,
+      filterDescription: 'Select every card in the order to place them.',
+      candidateInstanceIds: resolved.candidateInstanceIds,
+      visibleInstanceIds: ctx.bindings?.selectedObjects.LOOKED_AT_PREVIOUSLY ?? resolved.candidateInstanceIds,
+    },
+    sourceInstanceId: ctx.sourceInstanceId,
+    sourceEffectId: 'v2:reorderCards',
+    resumeState: {
+      abilityIndex: 0,
+      opIndex: 0,
+      bindings: {},
+      v2ReorderCards: {
+        sourceInstanceId: ctx.sourceInstanceId,
+        controllerId: ctx.controllerId,
+        timing: ctx.currentTiming ?? { kind: 'STANDARD_TIMING', timing: 'ON_PLAY' },
+        reorderAction: node.action,
+        remainingNodes: [],
+        bindings: {
+          selectedObjects: ctx.bindings?.selectedObjects ?? {},
+          actionResults: ctx.bindings?.actionResults ?? {},
+        },
+      },
+    },
+  };
+}
+
+function promptablePlayCard_V2(ctx: SelectorContext_V2, node: ResolutionNode_V2): PendingChoice | null {
+  if (node.kind !== 'ACTION' || node.action.type !== 'PLAY_CARD') return null;
+  if (node.action.selector.subject !== 'ACTION_RESULT') return null;
+  if (node.action.selector.instanceIds?.length) return null;
+  const resolved = resolveSelector_V2(ctx, node.action.selector);
+  if (resolved.candidateInstanceIds.length === 0) return null;
+  const maximum = resolved.maximum < 0 ? resolved.candidateInstanceIds.length : resolved.maximum;
+  return {
+    id: `${ctx.sourceInstanceId}:v2-play-select:${ctx.state.turnNumber}:${ctx.state.pendingChoices.length}`,
+    playerId: ctx.controllerId,
+    kind: 'SELECT_CARDS',
+    prompt: `Choose up to ${maximum} card${maximum === 1 ? '' : 's'} to play.`,
+    constraints: {
+      min: resolved.minimum,
+      max: maximum,
+      filterDescription: 'Cards eligible to play with this V2 effect.',
+      candidateInstanceIds: resolved.candidateInstanceIds,
+      visibleInstanceIds: ctx.bindings?.selectedObjects.LOOKED_AT_PREVIOUSLY ?? resolved.candidateInstanceIds,
+    },
+    sourceInstanceId: ctx.sourceInstanceId,
+    sourceEffectId: 'v2:selectPlayCard',
+    resumeState: {
+      abilityIndex: 0,
+      opIndex: 0,
+      bindings: {},
+      v2SelectPlayCard: {
+        sourceInstanceId: ctx.sourceInstanceId,
+        controllerId: ctx.controllerId,
+        timing: ctx.currentTiming ?? { kind: 'STANDARD_TIMING', timing: 'ON_PLAY' },
+        playAction: node.action,
+        remainingNodes: [],
+        bindings: {
+          selectedObjects: ctx.bindings?.selectedObjects ?? {},
+          actionResults: ctx.bindings?.actionResults ?? {},
+        },
+      },
+    },
+  };
+}
+
 export function executeResolutionNode_V2(
   ctx: SelectorContext_V2,
   node: ResolutionNode_V2,
@@ -131,7 +289,42 @@ export function executeResolutionNode_V2(
     case 'SEQUENCE': {
       let aggregate = emptyResult(ctx);
       let currentCtx = ctx;
-      for (const child of node.nodes) {
+      for (let index = 0; index < node.nodes.length; index += 1) {
+        const child = node.nodes[index];
+        const prompt = promptableSearchMoveToHand_V2(currentCtx, child) ?? promptablePlayCard_V2(currentCtx, child) ?? promptableChooseOption_V2(currentCtx, child) ?? promptableReorderCards_V2(currentCtx, child);
+        if (prompt) {
+          const remainingNodes = node.nodes.slice(index + 1);
+          const pendingChoice: PendingChoice = {
+            ...prompt,
+            resumeState: {
+              ...prompt.resumeState!,
+              ...(prompt.resumeState!.v2SelectMoveToHand ? { v2SelectMoveToHand: {
+                ...prompt.resumeState!.v2SelectMoveToHand!,
+                remainingNodes,
+              } } : {}),
+              ...(prompt.resumeState!.v2ChooseOption ? { v2ChooseOption: {
+                ...prompt.resumeState!.v2ChooseOption!,
+                remainingNodes,
+              } } : {}),
+              ...(prompt.resumeState!.v2ReorderCards ? { v2ReorderCards: {
+                ...prompt.resumeState!.v2ReorderCards!,
+                remainingNodes,
+              } } : {}),
+              ...(prompt.resumeState!.v2SelectPlayCard ? { v2SelectPlayCard: {
+                ...prompt.resumeState!.v2SelectPlayCard!,
+                remainingNodes,
+              } } : {}),
+            },
+          };
+          const suspended: ResolutionExecutionResult_V2 = {
+            state: {
+              ...currentCtx.state,
+              pendingChoices: [...currentCtx.state.pendingChoices, pendingChoice],
+            },
+            log: [],
+          };
+          return mergeSidecars(aggregate, suspended);
+        }
         const childResult = executeResolutionNode_V2(currentCtx, child, actionId);
         aggregate = mergeSidecars(aggregate, childResult);
         currentCtx = {
@@ -163,6 +356,13 @@ export function executeResolutionNode_V2(
       return branch ? executeResolutionNode_V2(ctx, branch, actionId) : emptyResult(ctx);
     }
     case 'CHOOSE': {
+      const prompt = promptableChooseOption_V2(ctx, node);
+      if (prompt) {
+        return {
+          state: { ...ctx.state, pendingChoices: [...ctx.state.pendingChoices, prompt] },
+          log: [],
+        };
+      }
       const choiceAction = {
         type: 'PLAYER_CHOOSES',
         options: node.options,

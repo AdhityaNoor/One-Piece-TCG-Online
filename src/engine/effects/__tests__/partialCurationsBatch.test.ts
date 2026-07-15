@@ -3,6 +3,7 @@ import { executeAction } from '../../actions';
 import { executeActivateEventMain } from '../../actions/handlers/activateEventMain';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../../../cards/effectTemplates/assembler';
 import { OP03_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/OP03';
+import { OP07_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/OP07';
 import { OP09_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/OP09';
 import { OP11_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/OP11';
 import { OP12_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/OP12';
@@ -19,6 +20,7 @@ import { OP10_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/OP1
 import { ST29_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/ST29';
 import { applyTemplate } from '../../../cards/effectTemplates/catalog/factories';
 import { battleAttackerIsCharacterWithAttribute, fireOnKO, fireOnPlay, fireOpponentCharacterPlayedFromHandReactions } from '../fireTiming';
+import { runTimings } from '../interpreter';
 import { evaluateGates } from '../gates';
 import {
   buildBaseRig,
@@ -333,13 +335,31 @@ describe('partial curation batch: OP03-001 / OP11-088 / OP12-081', () => {
   });
 
   it('OP16 batch compiles newly closed partial mappings', () => {
-    const ids = ['OP16-001', 'OP16-007', 'OP16-008', 'OP16-048', 'OP16-063', 'OP16-076', 'OP16-087', 'OP16-101', 'OP16-106', 'OP16-113', 'OP16-115', 'OP16-117'] as const;
+    const ids = ['OP16-001', 'OP16-003', 'OP16-007', 'OP16-008', 'OP16-020', 'OP16-021', 'OP16-030', 'OP16-036', 'OP16-038', 'OP16-040', 'OP16-048', 'OP16-055', 'OP16-057', 'OP16-060', 'OP16-063', 'OP16-076', 'OP16-087', 'OP16-101', 'OP16-104', 'OP16-106', 'OP16-113', 'OP16-115', 'OP16-117'] as const;
     const programs = Object.fromEntries(ids.map((id) => {
       const entry = OP16_ASSIGNMENTS.find((a) => a.cardNumber === id)!;
       return [id, programFor(entry)];
     }));
 
     expect(programs['OP16-001'].abilities[0].ops[0]).toMatchObject({ op: 'chooseOption' });
+    expect(programs['OP16-003'].abilities.map((a) => a.timing)).toEqual(['onEnterPlay', 'onPlay']);
+    expect(programs['OP16-003'].abilities.find((a) => a.timing === 'onPlay')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          op: 'chooseOption',
+          ifGate: [{ kind: 'selfHandMatching', atLeast: 2, category: 'character', exactPower: 8000 }],
+          options: expect.arrayContaining([
+            expect.objectContaining({
+              label: 'reveal',
+              ops: expect.arrayContaining([
+                expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerHand', filter: { category: 'character', exactPower: 8000 } }, min: 2, max: 2 }),
+              ]),
+            }),
+          ]),
+        }),
+        expect.objectContaining({ op: 'addPower', amount: -6000, ifPrevious: 'previousSelectedAny' }),
+      ]),
+    );
     expect(programs['OP16-007'].abilities[0].ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerHand', filter: { category: 'character', exactPower: 8000 } } }),
@@ -354,13 +374,89 @@ describe('partial curation batch: OP03-001 / OP11-088 / OP12-081', () => {
         expect.objectContaining({ op: 'ko', target: { sel: 'var', name: 't' }, ifPrevious: 'previousMovedAny' }),
       ]),
     );
+    expect(programs['OP16-020'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerHand', filter: { category: 'character', exactPower: 8000 } } }),
+        expect.objectContaining({ op: 'revealCards', ifPrevious: 'previousSelectedAny' }),
+        expect.objectContaining({ op: 'draw', amount: 1, ifPrevious: 'previousSelectedAny' }),
+      ]),
+    );
+    expect(programs['OP16-021'].abilities.map((a) => a.timing)).toEqual(['onPlay', 'activateMain']);
+    expect(programs['OP16-021'].abilities.find((a) => a.timing === 'activateMain')).toMatchObject({
+      cost: [{ kind: 'trashThis' }],
+    });
+    expect(programs['OP16-021'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerLeaderOrCharacters' }, min: 0, max: 1 }),
+        expect.objectContaining({ op: 'giveDon' }),
+      ]),
+    );
+    expect(programs['OP16-030'].abilities.find((a) => a.timing === 'endOfTurn')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: expect.objectContaining({ color: 'green', maxCost: 5 }) }),
+      ]),
+    );
+    expect(programs['OP16-036'].abilities.find((a) => a.timing === 'whenAttacking')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'setBasePowerFromSource', target: { sel: 'self' }, source: { sel: 'opponentLeader' } }),
+      ]),
+    );
+    expect(programs['OP16-038'].abilities.find((a) => a.timing === 'activateMain')).toMatchObject({
+      cost: [{ kind: 'restDon', count: 6 }],
+      gate: [{ kind: 'selfTypedCharacterDistinctNameCount', typeIncludes: 'Impel Down', atLeast: 5 }],
+    });
+    expect(programs['OP16-038'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'setActive', target: { sel: 'controllerLeader' } }),
+        expect.objectContaining({ op: 'setActive', target: { sel: 'controllerCharacters' } }),
+      ]),
+    );
+    expect(programs['OP16-040'].abilities.find((a) => a.timing === 'activateMain')).toMatchObject({
+      gate: [
+        { kind: 'selfControlsNamed', name: 'Monkey.D.Luffy' },
+        { kind: 'selfControlsNamed', name: 'Mr.3(Galdino)' },
+      ],
+    });
+    expect(programs['OP16-040'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentCharacters', rested: true, maxCost: 6 } }),
+        expect.objectContaining({ op: 'preventRefresh', target: { sel: 'var', name: 't' } }),
+      ]),
+    );
     expect(programs['OP16-048'].abilities.map((a) => a.timing)).toEqual(['onPlay', 'onOpponentsAttack']);
     expect(programs['OP16-048'].abilities[1].ops.some((op) => op.op === 'addKeyword' && op.keyword === 'blocker')).toBe(true);
+    expect(programs['OP16-055'].abilities.find((a) => a.timing === 'whenAttacking')).toMatchObject({ condition: { donAttachedAtLeast: 1 } });
+    expect(programs['OP16-055'].abilities.find((a) => a.timing === 'whenAttacking')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'setBasePowerFromSource', target: { sel: 'self' }, source: { sel: 'opponentLeader' } }),
+      ]),
+    );
+    expect(programs['OP16-057'].abilities.map((a) => a.timing)).toEqual(['counter', 'lifeTrigger']);
+    expect(programs['OP16-057'].abilities.find((a) => a.timing === 'counter')).toMatchObject({
+      gate: [{ kind: 'selfNamedCardCount', name: 'Prisoner of Impel Down', atLeast: 2 }],
+    });
+    expect(programs['OP16-057'].abilities.find((a) => a.timing === 'counter')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'addPower', amount: 4000 }),
+      ]),
+    );
+    expect(programs['OP16-060'].abilities[0]).toMatchObject({ cost: [{ kind: 'donMinus', count: 8, activeOnly: true }] });
+    expect(programs['OP16-060'].abilities[0].ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerHand', filter: { category: 'character', typeIncludes: 'Admiral' } }, max: 3, distinctNames: true }),
+      ]),
+    );
     expect(programs['OP16-063'].abilities.find((a) => a.timing === 'activateMain')).toMatchObject({ oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }] });
     expect(programs['OP16-063'].abilities.find((a) => a.timing === 'activateMain')?.ops.some((op) => op.op === 'suppressBlockerActivation')).toBe(true);
     expect(programs['OP16-076'].abilities.find((a) => a.timing === 'counter')).toMatchObject({ gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Admiral', atLeast: 1 }] });
     expect(programs['OP16-087'].abilities[0].ops[0]).toMatchObject({ op: 'chooseOption' });
     expect(programs['OP16-101'].abilities[0].ops.some((op) => op.op === 'ko' && op.ifGate?.[0]?.kind === 'selfTrashCount')).toBe(true);
+    expect(programs['OP16-104'].abilities.find((a) => a.timing === 'whenAttacking')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentCharacters' }, min: 0, max: 1 }),
+        expect.objectContaining({ op: 'setBasePowerFromSource', target: { sel: 'self' }, source: { sel: 'var', name: 'basePowerSource' }, ifPrevious: 'previousSelectedAny' }),
+      ]),
+    );
     expect(programs['OP16-106'].abilities.every((ability) => ability.ops.some((op) => op.op === 'setBasePower' && op.value === 7000))).toBe(true);
     expect(programs['OP16-113'].abilities.find((a) => a.timing === 'onEnterPlay')?.ops.some((op) => op.op === 'addKeyword' && op.keyword === 'blocker')).toBe(true);
     expect(programs['OP16-115'].abilities[0].ops[0]).toMatchObject({ from: { sel: 'controllerTrash', filter: { hasTrigger: true, excludeSelfName: true } } });
@@ -407,6 +503,93 @@ describe('partial curation batch: EB expressible fixes', () => {
     expect(onKo.ops[0]).toMatchObject({ op: 'chooseOption' });
   });
 
+  it('EB04-007 compiles opponent current-power gate for Rush: Character', () => {
+    const entry = EB_ASSIGNMENTS.find((a) => a.cardNumber === 'EB04-007')!;
+    const program = programFor(entry);
+    expect(program.abilities.map((a) => a.timing)).toEqual(['onPlay', 'activateMain']);
+    expect(program.abilities.find((a) => a.timing === 'activateMain')).toMatchObject({
+      oncePerTurn: true,
+      gate: [{ kind: 'opponentCharacterCurrentPowerCount', power: 8000, atLeast: 1 }],
+    });
+    expect(program.abilities.find((a) => a.timing === 'activateMain')?.ops[0]).toMatchObject({
+      op: 'addKeyword',
+      keyword: 'canAttackCharactersWhileSummoningSick',
+      duration: 'duringThisTurn',
+    });
+  });
+
+  it('EB04-009 compiles active DON to Silvers Rayleigh as the Main cost gate', () => {
+    const entry = EB_ASSIGNMENTS.find((a) => a.cardNumber === 'EB04-009')!;
+    const program = programFor(entry);
+    const activate = program.abilities.find((a) => a.timing === 'activateMain')!;
+
+    expect(activate.ops[0]).toMatchObject({
+      op: 'chooseTargets',
+      from: { sel: 'controllerLeaderOrCharacters', name: 'Silvers Rayleigh' },
+      min: 0,
+      max: 1,
+    });
+    expect(activate.ops[1]).toMatchObject({
+      op: 'giveDonFromCostArea',
+      count: 1,
+      donOwner: 'controller',
+      activeOnly: true,
+    });
+    expect(activate.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          op: 'addPower',
+          amount: -2000,
+          ifPrevious: 'previousMovedAny',
+        }),
+      ]),
+    );
+  });
+
+  it('EB04-022 compiles opponent-chosen hand cards to deck bottom', () => {
+    const entry = EB_ASSIGNMENTS.find((a) => a.cardNumber === 'EB04-022')!;
+    const program = programFor(entry);
+    const onPlay = program.abilities.find((a) => a.timing === 'onPlay')!;
+
+    expect(onPlay.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          op: 'chooseTargets',
+          from: { sel: 'opponentHand' },
+          min: 2,
+          max: 2,
+          chooser: 'opponent',
+          ifPrevious: 'previousMovedAny',
+          ifGate: [{ kind: 'opponentHand', atLeast: 6 }],
+        }),
+        expect.objectContaining({
+          op: 'moveToBottomDeck',
+          ifPrevious: 'previousMovedAny',
+          ifGate: [{ kind: 'opponentHand', atLeast: 6 }],
+        }),
+      ]),
+    );
+  });
+
+  it('EB04-052 compiles when-attacking opponent Leader power copy plus onKO play', () => {
+    const entry = EB_ASSIGNMENTS.find((a) => a.cardNumber === 'EB04-052')!;
+    const program = programFor(entry);
+
+    expect(program.abilities.map((a) => a.timing)).toEqual(['whenAttacking', 'onKO']);
+    expect(program.abilities.find((a) => a.timing === 'whenAttacking')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          op: 'setBasePowerFromSource',
+          source: { sel: 'opponentLeader' },
+          duration: 'duringThisTurn',
+        }),
+      ]),
+    );
+    expect(program.abilities.find((a) => a.timing === 'onKO')).toMatchObject({
+      gate: [{ kind: 'selfLife', atMost: 2 }],
+    });
+  });
+
   it('OP04-043 compiles hand-or-deck-bottom return', () => {
     const entry = OP04_ASSIGNMENTS.find((a) => a.cardNumber === 'OP04-043')!;
     const program = programFor(entry);
@@ -414,7 +597,7 @@ describe('partial curation batch: EB expressible fixes', () => {
   });
 
   it('OP08 follow-up batch compiles existing-capability partial closures', () => {
-    const programs = Object.fromEntries(['OP08-005', 'OP08-060', 'OP08-075'].map((id) => {
+    const programs = Object.fromEntries(['OP08-005', 'OP08-006', 'OP08-007', 'OP08-040', 'OP08-058', 'OP08-060', 'OP08-062', 'OP08-069', 'OP08-075', 'OP08-096', 'OP08-098', 'OP08-102'].map((id) => {
       const entry = OP08_ASSIGNMENTS.find((a) => a.cardNumber === id)!;
       return [id, programFor(entry)];
     }));
@@ -425,12 +608,139 @@ describe('partial curation batch: EB expressible fixes', () => {
         expect.objectContaining({ op: 'playFromHand', ifGate: [{ kind: 'selfDoesNotControlNamed', name: 'Kuromarimo' }] }),
       ]),
     );
+    expect(programs['OP08-006'].abilities[0].ops[0]).toMatchObject({
+      op: 'addPower',
+      amount: 2000,
+      condition: {
+        turn: 'your',
+        gate: [
+          { kind: 'selfTrashMatching', name: 'Kuromarimo', atLeast: 1 },
+          { kind: 'selfTrashMatching', name: 'Chess', atLeast: 1 },
+        ],
+      },
+    });
+    expect(programs['OP08-007'].abilities.map((a) => a.timing)).toEqual(['onPlay', 'whenAttacking']);
+    expect(programs['OP08-007'].abilities.every((ability) => ability.ops.some((op) => (
+      op.op === 'searchTopDeck'
+      && op.destination === 'play'
+      && op.rested === true
+      && op.filter?.typeIncludes === 'Animal'
+      && op.filter?.maxPower === 4000
+    )))).toBe(true);
+    expect(programs['OP08-040'].abilities[0].ops[0]).toMatchObject({
+      op: 'chooseOption',
+      ifGate: [{ kind: 'selfHandMatching', atLeast: 2, typeIncludes: 'Whitebeard Pirates' }],
+      options: expect.arrayContaining([
+        expect.objectContaining({
+          label: 'reveal',
+          ops: expect.arrayContaining([
+            expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerHand', filter: { typeIncludes: 'Whitebeard Pirates' } }, min: 2, max: 2 }),
+          ]),
+        }),
+      ]),
+    });
+    expect(programs['OP08-040'].abilities[0].ops[1]).toMatchObject({ op: 'chooseTargets', ifPrevious: 'previousSelectedAny', ifGate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }] });
+    expect(programs['OP08-058'].abilities[0].ops[0]).toMatchObject({
+      op: 'chooseOption',
+      options: expect.arrayContaining([
+        expect.objectContaining({
+          label: 'turnLife',
+          ops: expect.arrayContaining([
+            expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerLifeTopN', count: 2 }, min: 2, max: 2 }),
+            expect.objectContaining({ op: 'turnLifeFace', faceUp: true }),
+          ]),
+        }),
+      ]),
+    });
+    expect(programs['OP08-058'].abilities[0].ops[1]).toMatchObject({ op: 'addDonFromDeck', count: 1, rested: true, ifPrevious: 'previousSelectedAny' });
     expect(programs['OP08-060'].abilities[0].gate).toEqual([{ kind: 'opponentDonFieldCount', atLeast: 5 }]);
     expect(programs['OP08-060'].abilities[0].ops[0]).toMatchObject({ op: 'addKeyword', keyword: 'rush' });
+    expect(programs['OP08-062'].abilities[0].ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: expect.objectContaining({ filter: expect.objectContaining({ maxCostFromOpponentDon: true }) }) }),
+      ]),
+    );
+    expect(programs['OP08-069'].abilities[0].ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseOption' }),
+      ]),
+    );
     expect(programs['OP08-075'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'rest' }),
         expect.objectContaining({ op: 'turnAllLifeFace', faceUp: false }),
+      ]),
+    );
+    expect(programs['OP08-096'].abilities.find((a) => a.timing === 'counter')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'trashTopDeck', count: 1 }),
+        expect.objectContaining({ op: 'addPower', amount: 5000, ifPreviousMovedAnyCostAtLeast: 6 }),
+      ]),
+    );
+    expect(programs['OP08-098'].abilities[0].ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: expect.objectContaining({ filter: expect.objectContaining({ maxCostFromSelfDon: true }) }) }),
+      ]),
+    );
+    expect(programs['OP08-102'].abilities[0].ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: expect.objectContaining({ maxCostFromSelfLife: true }) }),
+      ]),
+    );
+  });
+
+  it('OP08-096 gates the Counter buff on the milled card cost', () => {
+    const entry = OP08_ASSIGNMENTS.find((a) => a.cardNumber === 'OP08-096')!;
+    const program = programFor(entry);
+    const sourceDef = makeEventDef({ cardDefinitionId: 'OP08-096-SOURCE', cardNumber: 'OP08-096' });
+    const highCost = makeCharacterDef({ cardDefinitionId: 'MILL-COST-6', baseCost: 6 });
+    const lowCost = makeCharacterDef({ cardDefinitionId: 'MILL-COST-5', baseCost: 5 });
+
+    let highRig = buildBaseRig();
+    let highSourceId: string;
+    ({ rig: highRig, instanceId: highSourceId } = putInHand(highRig, 'p1', sourceDef));
+    ({ rig: highRig } = putDeckCards(highRig, 'p1', highCost, 1));
+    const highResult = runTimings(program, ['counter'], highRig.state, highSourceId, highRig.defs, 'test', { [sourceDef.cardDefinitionId]: program });
+    expect(highResult.pendingChoices[0]?.kind).toBe('SELECT_CARDS');
+    expect(highResult.state.players.p1.trash.cardIds.some((id) => highResult.state.cardsById[id]?.cardDefinitionId === 'MILL-COST-6')).toBe(true);
+
+    let lowRig = buildBaseRig();
+    let lowSourceId: string;
+    ({ rig: lowRig, instanceId: lowSourceId } = putInHand(lowRig, 'p1', sourceDef));
+    ({ rig: lowRig } = putDeckCards(lowRig, 'p1', lowCost, 1));
+    const lowResult = runTimings(program, ['counter'], lowRig.state, lowSourceId, lowRig.defs, 'test', { [sourceDef.cardDefinitionId]: program });
+    expect(lowResult.pendingChoices).toHaveLength(0);
+    expect(lowResult.state.players.p1.trash.cardIds.some((id) => lowResult.state.cardsById[id]?.cardDefinitionId === 'MILL-COST-5')).toBe(true);
+  });
+
+  it('OP07 follow-up batch compiles existing-capability partial closures', () => {
+    const ids = ['OP07-032', 'OP07-094', 'OP07-096'] as const;
+    const programs = Object.fromEntries(ids.map((id) => {
+      const entry = OP07_ASSIGNMENTS.find((a) => a.cardNumber === id)!;
+      return [id, programFor(entry)];
+    }));
+
+    expect(programs['OP07-032'].abilities.map((a) => a.timing)).toEqual(['onEnterPlay', 'onPlay']);
+    expect(programs['OP07-032'].abilities.find((a) => a.timing === 'onEnterPlay')?.ops[0]).toMatchObject({
+      op: 'addKeyword',
+      keyword: 'canAttackCharactersWhileSummoningSick',
+      duration: 'permanent',
+    });
+    expect(programs['OP07-032'].abilities.find((a) => a.timing === 'onPlay')?.gate).toEqual([
+      { kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] },
+    ]);
+
+    expect(programs['OP07-094'].abilities.find((a) => a.timing === 'lifeTrigger')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'moveToHand' }),
+        expect.objectContaining({ op: 'moveToHand', ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] }),
+      ]),
+    );
+
+    expect(programs['OP07-096'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'draw', amount: 1 }),
+        expect.objectContaining({ op: 'addCost', amount: -3, ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] }),
       ]),
     );
   });
@@ -507,12 +817,29 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
   });
 
   it('OP14 batch compiles existing-capability partial closures', () => {
-    const ids = ['OP14-048', 'OP14-057', 'OP14-063', 'OP14-088', 'OP14-098', 'OP14-103', 'OP14-104', 'OP14-110', 'OP14-112', 'OP14-120'] as const;
+    const ids = ['OP14-021', 'OP14-048', 'OP14-057', 'OP14-063', 'OP14-088', 'OP14-098', 'OP14-103', 'OP14-104', 'OP14-110', 'OP14-112', 'OP14-120'] as const;
     const programs = Object.fromEntries(ids.map((id) => {
       const entry = OP14_ASSIGNMENTS.find((a) => a.cardNumber === id)!;
       return [id, programFor(entry)];
     }));
 
+    expect(programs['OP14-021'].abilities[0].ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseLifeToHand', optional: true, position: 'top' }),
+        expect.objectContaining({
+          op: 'chooseTargets',
+          ifPrevious: 'previousMovedAny',
+          from: {
+            sel: 'union',
+            members: [
+              { sel: 'opponentCharacters', rested: true },
+              { sel: 'opponentStages', rested: true },
+            ],
+          },
+        }),
+        expect.objectContaining({ op: 'preventRefresh', target: { sel: 'var', name: 't' }, ifPrevious: 'previousMovedAny' }),
+      ]),
+    );
     expect(programs['OP14-048'].abilities[0].ops.some((op) => op.op === 'trashHandDownTo')).toBe(true);
     expect(programs['OP14-057'].abilities.find((a) => a.timing === 'onPlay')?.ops[0]).toMatchObject({
       op: 'addPowerAura',
@@ -529,14 +856,31 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
     expect(programs['OP14-110'].abilities.find((a) => a.timing === 'onKO')?.ops.some((op) => op.op === 'playFromTrash')).toBe(true);
     expect(programs['OP14-112'].abilities.find((a) => a.timing === 'lifeTrigger')?.ops.some((op) => op.op === 'playFromHand')).toBe(true);
     expect(programs['OP14-120'].abilities[0].ops.some((op) => op.op === 'draw' && op.ifGate?.[0]?.kind === 'anyOf')).toBe(true);
+    expect(programs['OP14-120'].abilities.find((a) => a.timing === 'onKO')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: expect.objectContaining({ sel: 'controllerHand' }), min: 0, max: 1 }),
+        expect.objectContaining({ op: 'trashCards' }),
+        expect.objectContaining({ op: 'playFromTrash', target: { sel: 'self' }, ifPrevious: 'previousMovedAny' }),
+      ]),
+    );
   });
 
   it('OP04 follow-up batch compiles existing-capability partial closures', () => {
-    const ids = ['OP04-039', 'OP04-093', 'OP04-094', 'OP04-116'] as const;
+    const ids = ['OP04-030', 'OP04-039', 'OP04-093', 'OP04-094', 'OP04-108', 'OP04-116'] as const;
     const programs = Object.fromEntries(ids.map((id) => {
       const entry = OP04_ASSIGNMENTS.find((a) => a.cardNumber === id)!;
       return [id, programFor(entry)];
     }));
+
+    expect(programs['OP04-030'].abilities.map((a) => a.timing)).toEqual(['onPlay', 'onOpponentsAttack']);
+    expect(programs['OP04-030'].abilities.find((a) => a.timing === 'onOpponentsAttack')).toMatchObject({
+      cost: [{ kind: 'restDon', count: 2 }],
+    });
+    expect(programs['OP04-030'].abilities.find((a) => a.timing === 'onOpponentsAttack')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'rest', target: { sel: 'var', name: 't' } }),
+      ]),
+    );
 
     expect(programs['OP04-039'].abilities.map((a) => a.timing)).toEqual(['onEnterPlay', 'activateMain']);
     expect(programs['OP04-039'].abilities.find((a) => a.timing === 'activateMain')).toMatchObject({
@@ -562,6 +906,13 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentCharacters', maxCost: 6 }, ifGate: [{ kind: 'selfTrashCount', atLeast: 15 }] }),
       ]),
     );
+    expect(programs['OP04-108'].abilities.map((a) => a.timing)).toEqual(['onEnterPlay', 'lifeTrigger']);
+    expect(programs['OP04-108'].abilities.find((a) => a.timing === 'lifeTrigger')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: expect.objectContaining({ sel: 'controllerHand', excludeSelf: true }), max: 1 }),
+        expect.objectContaining({ op: 'playSelf', ifPrevious: 'previousMovedAny' }),
+      ]),
+    );
     expect(programs['OP04-116'].abilities.find((a) => a.timing === 'counter')?.ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'addPower', amount: 6000 }),
@@ -571,7 +922,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
   });
 
   it('OP09 follow-up batch compiles existing-capability partial closures', () => {
-    const ids = ['OP09-005', 'OP09-039', 'OP09-112'] as const;
+    const ids = ['OP09-005', 'OP09-017', 'OP09-019', 'OP09-039', 'OP09-080', 'OP09-100', 'OP09-112', 'OP09-115', 'OP09-117'] as const;
     const programs = Object.fromEntries(ids.map((id) => {
       const entry = OP09_ASSIGNMENTS.find((a) => a.cardNumber === id)!;
       return [id, programFor(entry)];
@@ -580,6 +931,16 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
     expect(programs['OP09-005'].abilities[0].gate).toEqual([
       { kind: 'opponentCharacterBasePowerCount', power: 5000, atLeast: 2 },
     ]);
+    expect(programs['OP09-017'].abilities[0].gate).toEqual([
+      { kind: 'leaderType', type: 'Kid Pirates' },
+      { kind: 'selfLeaderPowerAtLeast', power: 7000 },
+    ]);
+    expect(programs['OP09-019'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'addPower', amount: -3000 }),
+        expect.objectContaining({ op: 'draw', amount: 1, ifGate: [{ kind: 'opponentCharacterCurrentPowerCount', power: 5000, atLeast: 1 }] }),
+      ]),
+    );
     expect(programs['OP09-039'].abilities.map((a) => a.timing)).toEqual(['counter', 'lifeTrigger']);
     expect(programs['OP09-039'].abilities.find((a) => a.timing === 'counter')).toMatchObject({
       gate: [{ kind: 'leaderType', type: 'ODYSSEY' }, { kind: 'selfRestedCharacterCount', atLeast: 2 }],
@@ -589,9 +950,32 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
         expect.objectContaining({ op: 'addPower', amount: 2000 }),
       ]),
     );
+    expect(programs['OP09-080'].abilities[0]).toMatchObject({
+      timing: 'onRemovedFromField',
+      condition: { turn: 'opponent' },
+      cost: [{ kind: 'restThis' }],
+      gate: expect.arrayContaining([
+        { kind: 'removedFromFieldCategory', category: 'character' },
+        { kind: 'removedFromFieldController', player: 'controller' },
+        { kind: 'removedFromFieldTypeIncludes', typeIncludes: 'Straw Hat Crew' },
+        { kind: 'removedByEffectController', player: 'opponent' },
+      ]),
+    });
     expect(programs['OP09-112'].abilities.map((a) => a.timing)).toEqual(['onPlay', 'lifeTrigger']);
     expect(programs['OP09-112'].abilities.find((a) => a.timing === 'lifeTrigger')).toMatchObject({
       gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }, { kind: 'combinedLifeTotal', atMost: 5 }],
+    });
+    expect(programs['OP09-100'].abilities[0]).toMatchObject({
+      timing: 'lifeTrigger',
+      gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }, { kind: 'combinedLifeTotal', atMost: 5 }],
+    });
+    expect(programs['OP09-115'].abilities.find((a) => a.timing === 'activateMain')?.ops[0]).toMatchObject({
+      op: 'chooseTargets',
+      from: { sel: 'opponentCharacters', maxCost: 3, hasTrigger: true },
+    });
+    expect(programs['OP09-117'].abilities.find((a) => a.timing === 'activateMain')?.ops[0]).toMatchObject({
+      op: 'searchTopDeck',
+      filter: { hasTrigger: true, excludeSelfName: true },
     });
   });
 
@@ -624,12 +1008,23 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
   });
 
   it('OP11 follow-up batch compiles existing-capability partial closures', () => {
-    const ids = ['OP11-046', 'OP11-049', 'OP11-058', 'OP11-097', 'OP11-114', 'OP11-119'] as const;
+    const ids = ['OP11-022', 'OP11-046', 'OP11-049', 'OP11-058', 'OP11-080', 'OP11-097', 'OP11-114', 'OP11-119'] as const;
     const programs = Object.fromEntries(ids.map((id) => {
       const entry = OP11_ASSIGNMENTS.find((a) => a.cardNumber === id)!;
       return [id, programFor(entry)];
     }));
 
+    expect(programs['OP11-022'].abilities.map((a) => a.timing)).toEqual(['onEnterPlay', 'activateMain']);
+    expect(programs['OP11-022'].abilities.find((a) => a.timing === 'activateMain')).toMatchObject({
+      oncePerTurn: true,
+      cost: [{ kind: 'restDon', count: 1 }],
+    });
+    expect(programs['OP11-022'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'turnLifeFace', faceUp: true }),
+        expect.objectContaining({ op: 'chooseTargets', from: expect.objectContaining({ filter: expect.objectContaining({ maxCostFromSelfDon: true }) }) }),
+      ]),
+    );
     expect(programs['OP11-046'].abilities[0].ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'addKoImmunity', effectSourceController: 'opponent' }),
@@ -641,6 +1036,15 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
     expect(programs['OP11-058'].abilities[0].ops[0]).toMatchObject({
       op: 'preventAttack',
       condition: { gate: [{ kind: 'selfHand', atLeast: 5 }] },
+    });
+    expect(programs['OP11-080'].abilities.map((a) => a.timing)).toEqual(['activateMain', 'counter']);
+    expect(programs['OP11-080'].abilities.find((a) => a.timing === 'activateMain')).toMatchObject({
+      cost: [{ kind: 'restDon', count: 2 }],
+      gate: [{ kind: 'leaderColor', color: 'blue' }],
+    });
+    expect(programs['OP11-080'].abilities.find((a) => a.timing === 'activateMain')?.ops[0]).toMatchObject({
+      op: 'addDonFromDeck',
+      rested: true,
     });
     expect(programs['OP11-097'].abilities[0].ops).toEqual(
       expect.arrayContaining([
@@ -740,7 +1144,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
   });
 
   it('OP13 batch compiles existing-capability partial closures', () => {
-    const ids = ['OP13-046', 'OP13-062', 'OP13-075', 'OP13-076', 'OP13-089', 'OP13-091', 'OP13-106', 'OP13-108', 'OP13-109', 'OP13-114', 'OP13-117'] as const;
+    const ids = ['OP13-046', 'OP13-057', 'OP13-062', 'OP13-064', 'OP13-075', 'OP13-076', 'OP13-078', 'OP13-082', 'OP13-089', 'OP13-091', 'OP13-099', 'OP13-100', 'OP13-106', 'OP13-108', 'OP13-109', 'OP13-114', 'OP13-117', 'OP13-119'] as const;
     const programs = Object.fromEntries(ids.map((id) => {
       const entry = OP13_ASSIGNMENTS.find((a) => a.cardNumber === id)!;
       return [id, programFor(entry)];
@@ -752,11 +1156,44 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
       effectSourceController: 'opponent',
       action: { kind: 'trashFromHand', filter: { typeIncludes: 'Whitebeard Pirates' } },
     });
+    expect(programs['OP13-057'].abilities.find((a) => a.timing === 'activateMain')?.ops.some((op) => op.op === 'preventBlockers')).toBe(true);
     expect(programs['OP13-062'].abilities.find((a) => a.timing === 'onPlay')?.gate).toEqual([{ kind: 'selfGivenDonCount', atLeast: 1 }]);
+    expect(programs['OP13-064'].abilities.find((a) => a.timing === 'onEnterPlay')?.ops[0]).toMatchObject({
+      op: 'negateControllerEffects',
+      appliesToCategories: ['leader', 'character'],
+      exceptTypeIncludes: 'Roger Pirates',
+    });
     expect(programs['OP13-075'].abilities.find((a) => a.timing === 'activateMain')?.ops.some((op) => op.op === 'addDonFromDeck')).toBe(true);
     expect(programs['OP13-076'].abilities.find((a) => a.timing === 'activateMain')?.ops.some((op) => op.op === 'addPower' && op.amount === -8000)).toBe(true);
+    expect(programs['OP13-078'].abilities[0]).toMatchObject({
+      timing: 'onRemovedFromField',
+      condition: { turn: 'opponent' },
+      cost: [{ kind: 'restThis' }],
+      gate: expect.arrayContaining([
+        { kind: 'removedFromFieldCategory', category: 'character' },
+        { kind: 'removedFromFieldController', player: 'controller' },
+        { kind: 'removedFromFieldTypeIncludes', typeIncludes: 'Roger Pirates' },
+        { kind: 'removedByEffectController', player: 'opponent' },
+      ]),
+    });
+    const op13082Choice = programs['OP13-082'].abilities[0].ops.find((op) => op.op === 'chooseOption');
+    const op13082PayOps = op13082Choice?.op === 'chooseOption' ? op13082Choice.options.find((option) => option.label === 'pay')?.ops : undefined;
+    expect(op13082PayOps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerTrash', filter: { category: 'character', typeIncludes: 'Five Elders', exactPower: 5000 } }, max: 5, distinctNames: true }),
+      ]),
+    );
     expect(programs['OP13-089'].abilities.some((a) => a.ops.some((op) => op.op === 'addKeyword' && op.keyword === 'blocker'))).toBe(true);
     expect(programs['OP13-091'].abilities.some((a) => a.ops.some((op) => op.op === 'addKeyword' && op.keyword === 'blocker'))).toBe(true);
+    expect(programs['OP13-099'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: expect.objectContaining({ filter: expect.objectContaining({ maxCostFromSelfDon: true }) }) }),
+      ]),
+    );
+    expect(programs['OP13-100'].abilities[0].timing).toBe('onCharacterPlayedFromHand');
+    expect(programs['OP13-100'].abilities[0].gate).toEqual(
+      expect.arrayContaining([{ kind: 'playedCharacterHasTrigger' }]),
+    );
     expect(programs['OP13-106'].abilities.map((a) => a.timing)).toEqual(['onTriggerActivated', 'lifeTrigger']);
     expect(programs['OP13-108'].abilities.find((a) => a.timing === 'onPlay')?.ops.some((op) => op.op === 'moveLifeTopToHand' && op.player === 'opponent')).toBe(true);
     expect(programs['OP13-109'].abilities.find((a) => a.timing === 'onEnterPlay')?.ops.find((op) => op.op === 'registerKoReplacement')).toMatchObject({
@@ -772,10 +1209,17 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
     );
     expect(programs['OP13-114'].abilities.find((a) => a.timing === 'whenAttacking')?.ops.some((op) => op.op === 'turnLifeFace')).toBe(true);
     expect(programs['OP13-117'].abilities.find((a) => a.timing === 'onPlay')?.ops.some((op) => op.op === 'ko')).toBe(true);
+    expect(programs['OP13-119'].abilities.find((a) => a.timing === 'onPlay')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'giveDon', target: { sel: 'controllerLeader' } }),
+        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentHand', filter: { category: 'character', maxCost: 4 } }, chooser: 'opponent', ifPrevious: 'previousMovedAny' }),
+        expect.objectContaining({ op: 'playFromHand', target: { sel: 'var', name: 't' } }),
+      ]),
+    );
   });
 
   it('OP12 batch compiles existing-capability partial closures', () => {
-    const ids = ['OP12-018', 'OP12-059', 'OP12-065', 'OP12-087', 'OP12-089', 'OP12-095', 'OP12-096', 'OP12-100', 'OP12-113', 'OP12-115'] as const;
+    const ids = ['OP12-018', 'OP12-039', 'OP12-041', 'OP12-059', 'OP12-065', 'OP12-087', 'OP12-089', 'OP12-095', 'OP12-096', 'OP12-100', 'OP12-113', 'OP12-115'] as const;
     const programs = Object.fromEntries(ids.map((id) => {
       const entry = OP12_ASSIGNMENTS.find((a) => a.cardNumber === id)!;
       return [id, programFor(entry)];
@@ -783,6 +1227,12 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
 
     expect(programs['OP12-018'].abilities[0].ops.some((op) => op.op === 'chooseTargets' && op.from?.sel === 'controllerActiveDon')).toBe(true);
     expect(programs['OP12-018'].abilities[0].ops.some((op) => op.op === 'addPowerAura' && op.amount === -1000 && op.ifPrevious === 'previousSelectedAny')).toBe(true);
+    expect(programs['OP12-039'].abilities.find((a) => a.timing === 'activateMain')?.ops[0]).toMatchObject({ op: 'setActive', target: { sel: 'controllerLeader' } });
+    expect(programs['OP12-041'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'activateEventFromHand' }),
+      ]),
+    );
     expect(programs['OP12-059'].abilities.find((a) => a.timing === 'counter')).toMatchObject({ gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] });
     expect(programs['OP12-065'].abilities.find((a) => a.timing === 'onKO')?.ops.some((op) => op.op === 'moveToHand')).toBe(true);
     expect(programs['OP12-087'].abilities.find((a) => a.timing === 'onEnterPlay')?.ops).toEqual(
@@ -917,6 +1367,45 @@ describe('partial curation batch: KO replacement cluster', () => {
       action: { kind: 'trashTrashToDeckBottom', count: 3 },
     });
     expect(program.abilities.find((a) => a.timing === 'onPlay')?.ops.some((op) => op.op === 'trashTopDeck')).toBe(true);
+  });
+
+  it('EB04-030 and EB04-031 compile their non-replacement riders', () => {
+    const programs = Object.fromEntries(['EB04-030', 'EB04-031'].map((id) => {
+      const entry = EB_ASSIGNMENTS.find((a) => a.cardNumber === id)!;
+      return [id, programFor(entry)];
+    }));
+
+    expect(programs['EB04-030'].abilities.map((a) => a.timing)).toEqual(['onEnterPlay', 'onPlay']);
+    expect(programs['EB04-030'].abilities.find((a) => a.timing === 'onPlay')).toMatchObject({
+      cost: [{ kind: 'donMinus', count: 2 }],
+      gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }],
+    });
+    expect(programs['EB04-030'].abilities.find((a) => a.timing === 'onPlay')?.ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'addKeyword', keyword: 'rush' }),
+        expect.objectContaining({ op: 'chooseTargets', from: expect.objectContaining({ maxCost: 7 }) }),
+      ]),
+    );
+
+    expect(programs['EB04-031'].abilities.map((a) => a.timing)).toEqual(['onEnterPlay', 'activateMain']);
+    expect(programs['EB04-031'].abilities.find((a) => a.timing === 'activateMain')).toMatchObject({
+      oncePerTurn: true,
+      gate: [
+        { kind: 'leaderType', type: 'Animal Kingdom Pirates' },
+        { kind: 'selfOtherNamedCharacterCount', name: 'King', atMost: 0 },
+      ],
+    });
+    expect(programs['EB04-031'].abilities.find((a) => a.timing === 'activateMain')?.ops.filter((op) => op.op === 'addDonFromDeck')).toHaveLength(2);
+  });
+
+  it('EB04-045 compiles any-character cost count gate', () => {
+    const entry = EB_ASSIGNMENTS.find((a) => a.cardNumber === 'EB04-045')!;
+    const program = programFor(entry);
+    expect(program.abilities[0].ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'addPower', ifGate: [{ kind: 'anyCharacterCostCount', minCost: 8, atLeast: 2 }] }),
+      ]),
+    );
   });
 
   it('EB02-015 compiles preventRefresh + setActiveControllerDonAtEndOfTurn', () => {

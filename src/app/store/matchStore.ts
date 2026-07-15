@@ -19,8 +19,6 @@ import { GENERIC_DON_CARD_DEFINITION } from '../../cards/decks/genericDonCard';
 import type { SavedDeck } from '../../cards/decks/savedDeck';
 import type { GameAction } from '../../engine/actions';
 import { validateAction, executeAction } from '../../engine/actions';
-import { executeActivateEventMain } from '../../engine/actions/handlers/activateEventMain';
-import { executeActivateCounterEvent } from '../../engine/actions/handlers/activateCounterEvent';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import { mintRuntimeInstanceId } from '../../engine/rules/shared/mintInstance';
 import type { EffectTemplateRegistry } from '../../engine/effects';
@@ -30,10 +28,7 @@ import type { EffectRuntimeBundle_V2 } from '../../engine/effects_V2/runtime_V2'
 import { createEmptyEffectRuntimeSidecars_V2, type EffectRuntimeSidecars_V2 } from '../../engine/effects_V2/dispatcher_V2';
 import {
   applyV2EffectsForAction,
-  validateActivateCardEffect_V2,
-  validateActivateCounterEvent_V2,
-  validateActivateEventMain_V2,
-  validateActivateOnOpponentsAttack_V2,
+  executeV2ActionOverride,
 } from '../../engine/effects_V2/engineAdapter_V2';
 import { hashSeed } from '../../engine/rng';
 import { createPreGameState, type PlayerSetupInput } from '../../engine/setup';
@@ -715,124 +710,31 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     if (action.type === 'RETURN_GIVEN_DON' && localPlayerId !== null && get().cpuPlayerIds.length === 0) {
       return { ok: false, reasons: ['Returning given DON!! is not allowed in Casual matches.'] };
     }
-    if (EFFECT_RUNTIME_MODE === 'v2' && v2EffectRuntime && action.type === 'ACTIVATE_CARD_EFFECT') {
-      const reasons = validateActivateCardEffect_V2(state, action, defs, v2EffectRuntime);
-      if (reasons.length > 0) {
-        if (playTestMode) get().recordPlayTestError('V2 Play Test action failed validation.', { actionType: action.type, reasons, details: { action } });
-        return { ok: false, reasons };
-      }
+    if (EFFECT_RUNTIME_MODE === 'v2' && v2EffectRuntime) {
       try {
-        const applied = applyV2EffectsForAction({
-          previousState: state,
+        const handled = executeV2ActionOverride({
           state,
           defs,
           runtime: v2EffectRuntime,
           sidecars: v2EffectSidecars,
           action,
-          log: [],
         });
-        set({ state: applied.state, v2EffectSidecars: applied.sidecars });
-        return { ok: true };
-      } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        if (playTestMode) get().recordPlayTestError('V2 Play Test action threw during execution.', { actionType: action.type, reasons: [message], details: { action } });
-        return { ok: false, reasons: [message] };
-      }
-    }
-    if (EFFECT_RUNTIME_MODE === 'v2' && v2EffectRuntime && action.type === 'ACTIVATE_EVENT_MAIN') {
-      const reasons = validateActivateEventMain_V2(state, action, defs, v2EffectRuntime);
-      if (reasons.length > 0) {
-        if (playTestMode) get().recordPlayTestError('V2 Play Test action failed validation.', { actionType: action.type, reasons, details: { action } });
-        return { ok: false, reasons };
-      }
-      try {
-        const base = executeActivateEventMain(state, action, defs, {});
-        const applied = applyV2EffectsForAction({
-          previousState: state,
-          state: base.state,
-          defs,
-          runtime: v2EffectRuntime,
-          sidecars: v2EffectSidecars,
-          action,
-          log: base.log,
-        });
-        const { cardImagesByDefinitionId } = get();
-        if (useSettingsStore.getState().animationsEnabled && [...base.log, ...applied.log].length > 0) {
-          const specs = applyMovementPresentation(
-            parseMovementSpecs(state, [...base.log, ...applied.log], cardImagesByDefinitionId),
-            localPlayerId,
-          );
-          useCardAnimationStore.getState().enqueue(specs);
+        if (handled.handled) {
+          if (!handled.ok) {
+            if (playTestMode) get().recordPlayTestError('V2 Play Test action failed validation.', { actionType: action.type, reasons: handled.reasons, details: { action } });
+            return { ok: false, reasons: handled.reasons };
+          }
+          const { cardImagesByDefinitionId } = get();
+          if (useSettingsStore.getState().animationsEnabled && handled.log.length > 0) {
+            const specs = applyMovementPresentation(
+              parseMovementSpecs(state, handled.log, cardImagesByDefinitionId),
+              localPlayerId,
+            );
+            useCardAnimationStore.getState().enqueue(specs);
+          }
+          set({ state: handled.state, v2EffectSidecars: handled.sidecars });
+          return { ok: true };
         }
-        set({ state: applied.state, v2EffectSidecars: applied.sidecars });
-        return { ok: true };
-      } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        if (playTestMode) get().recordPlayTestError('V2 Play Test action threw during execution.', { actionType: action.type, reasons: [message], details: { action } });
-        return { ok: false, reasons: [message] };
-      }
-    }
-    if (EFFECT_RUNTIME_MODE === 'v2' && v2EffectRuntime && action.type === 'ACTIVATE_COUNTER_EVENT') {
-      const reasons = validateActivateCounterEvent_V2(state, action, defs, v2EffectRuntime);
-      if (reasons.length > 0) {
-        if (playTestMode) get().recordPlayTestError('V2 Play Test action failed validation.', { actionType: action.type, reasons, details: { action } });
-        return { ok: false, reasons };
-      }
-      try {
-        const base = executeActivateCounterEvent(state, action, defs, {});
-        const applied = applyV2EffectsForAction({
-          previousState: state,
-          state: base.state,
-          defs,
-          runtime: v2EffectRuntime,
-          sidecars: v2EffectSidecars,
-          action,
-          log: base.log,
-        });
-        const { cardImagesByDefinitionId } = get();
-        if (useSettingsStore.getState().animationsEnabled && [...base.log, ...applied.log].length > 0) {
-          const specs = applyMovementPresentation(
-            parseMovementSpecs(state, [...base.log, ...applied.log], cardImagesByDefinitionId),
-            localPlayerId,
-          );
-          useCardAnimationStore.getState().enqueue(specs);
-        }
-        set({ state: applied.state, v2EffectSidecars: applied.sidecars });
-        return { ok: true };
-      } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        if (playTestMode) get().recordPlayTestError('V2 Play Test action threw during execution.', { actionType: action.type, reasons: [message], details: { action } });
-        return { ok: false, reasons: [message] };
-      }
-    }
-    if (EFFECT_RUNTIME_MODE === 'v2' && v2EffectRuntime && action.type === 'ACTIVATE_ON_OPPONENTS_ATTACK') {
-      const reasons = validateActivateOnOpponentsAttack_V2(state, action, defs, v2EffectRuntime);
-      if (reasons.length > 0) {
-        if (playTestMode) get().recordPlayTestError('V2 Play Test action failed validation.', { actionType: action.type, reasons, details: { action } });
-        return { ok: false, reasons };
-      }
-      try {
-        const applied = applyV2EffectsForAction({
-          previousState: state,
-          state,
-          defs,
-          runtime: v2EffectRuntime,
-          sidecars: v2EffectSidecars,
-          action,
-          log: [],
-        });
-        const battle = applied.state.currentBattle;
-        const nextState = battle
-          ? {
-              ...applied.state,
-              currentBattle: {
-                ...battle,
-                onOpponentsAttackUsedInstanceIds: [...(battle.onOpponentsAttackUsedInstanceIds ?? []), action.sourceInstanceId],
-              },
-            }
-          : applied.state;
-        set({ state: nextState, v2EffectSidecars: applied.sidecars });
-        return { ok: true };
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         if (playTestMode) get().recordPlayTestError('V2 Play Test action threw during execution.', { actionType: action.type, reasons: [message], details: { action } });

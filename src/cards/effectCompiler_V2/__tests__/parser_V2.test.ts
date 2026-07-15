@@ -92,6 +92,26 @@ describe('effectCompiler_V2 parser', () => {
     });
   });
 
+  it('lifts rest-DON plus rest-this-Character activation costs', () => {
+    const parsed = parseCardEffect_V2(
+      'OP09-095',
+      '[Activate: Main] You may rest 1 of your DON!! cards and this Character: Draw 1 card.',
+    );
+
+    expect(parsed.atomicEffects.map((atom) => atom.coverage)).toEqual(['coveredByParser', 'coveredByParser']);
+    expect(parsed.effects[0].activationCost?.payments).toEqual([
+      expect.objectContaining({ type: 'REST_DON_COST', count: { kind: 'NUMBER', value: 1 } }),
+      expect.objectContaining({
+        type: 'REST_CARD_COST',
+        selector: expect.objectContaining({ relations: ['THIS_CARD'] }),
+      }),
+    ]);
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'ACTION',
+      action: { type: 'DRAW_CARD' },
+    });
+  });
+
   it('does not split trigger-filter cost text into a separate timing segment', () => {
     const parsed = parseCardEffect_V2(
       'TEST-TRIGGER-COST',

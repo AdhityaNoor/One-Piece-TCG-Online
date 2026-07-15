@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { runTimings, resumeProgram } from '../../../engine/effects/interpreter';
-import { buildBaseRig, makeCharacterDef, putCharacterInPlay } from '../../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, makeLeaderDef, putCharacterInPlay } from '../../../engine/rules/shared/__tests__/testRig';
 import type { CardInstance } from '../../../engine/state/card';
 import { buildRegistryFromAssignments, type CardEffectAssignment } from '../assembler';
 
@@ -62,5 +62,82 @@ describe('family: playFromTrash (recur a filtered Character from your trash)', (
     expect(played).toBeDefined();
     expect(played?.currentZone).toBe('characterArea');
     expect(played?.orientation).toBe('rested');
+  });
+
+  it('fires OP11-047 On Play after it is played from trash by an effect', () => {
+    const source = makeCharacterDef({ cardDefinitionId: 'SYN-GERMA-RECUR', cardNumber: 'SYN-GERMA-RECUR', baseCost: 3, basePower: 4000 });
+    const leader = makeLeaderDef({ cardDefinitionId: 'VINSMOKE-LEADER', cardNumber: 'VINSMOKE-LEADER', types: ['The Vinsmoke Family'] });
+    const sora = makeCharacterDef({
+      cardDefinitionId: 'OP11-047',
+      cardNumber: 'OP11-047',
+      name: 'Vinsmoke Sora',
+      types: ['The Vinsmoke Family'],
+      baseCost: 1,
+      basePower: 0,
+    });
+    const germa = makeCharacterDef({ cardDefinitionId: 'GERMA-TOP', cardNumber: 'GERMA-TOP', name: 'GERMA top hit', types: ['GERMA'] });
+
+    const registry = buildRegistryFromAssignments([
+      {
+        cardNumber: source.cardNumber,
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [{ fn: 'playFromTrash', filter: { category: 'character', name: 'Vinsmoke Sora' } }],
+        },
+      },
+      {
+        cardNumber: 'OP11-047',
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          gate: [{ kind: 'leaderType', type: 'The Vinsmoke Family' }],
+          functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'GERMA' }, remainder: 'trash' }],
+        },
+      },
+    ]);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3, leaderOverridesP1: leader });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', source));
+    const trashSora = trashInstance('trash-sora', sora);
+    const deckGerma: CardInstance = {
+      instanceId: 'deck-germa',
+      cardDefinitionId: germa.cardDefinitionId,
+      ownerId: 'p1',
+      controllerId: 'p1',
+      currentZone: 'deck',
+      orientation: null,
+      faceState: 'faceDown',
+      donAttached: [],
+      appliedContinuousEffectIds: [],
+      oncePerTurnUsed: [],
+      summoningSick: false,
+      revealedTo: [],
+    };
+    rig = {
+      defs: { ...rig.defs, [source.cardDefinitionId]: source, [sora.cardDefinitionId]: sora, [germa.cardDefinitionId]: germa },
+      state: {
+        ...rig.state,
+        cardsById: { ...rig.state.cardsById, [trashSora.instanceId]: trashSora, [deckGerma.instanceId]: deckGerma },
+        players: {
+          ...rig.state.players,
+          p1: {
+            ...rig.state.players.p1,
+            trash: { ...rig.state.players.p1.trash, cardIds: [trashSora.instanceId] },
+            deck: { ...rig.state.players.p1.deck, cardIds: [deckGerma.instanceId, ...rig.state.players.p1.deck.cardIds] },
+          },
+        },
+      },
+    };
+
+    const fired = runTimings(registry[source.cardNumber], ['activateMain'], rig.state, sourceId, rig.defs, null, registry);
+    const trashChoice = fired.state.pendingChoices[0];
+    const resumed = resumeProgram(registry[source.cardNumber], fired.state, trashChoice, [trashSora.instanceId], rig.defs, null, registry);
+    const playedSoraId = resumed.state.players.p1.characterArea.cardIds.find((id) => resumed.state.cardsById[id]?.cardDefinitionId === sora.cardDefinitionId);
+    const onPlayChoice = resumed.state.pendingChoices.find((choice) => choice.sourceInstanceId === playedSoraId);
+
+    expect(playedSoraId).toBeDefined();
+    expect(onPlayChoice?.constraints.visibleInstanceIds).toContain(deckGerma.instanceId);
+    expect(onPlayChoice?.constraints.candidateInstanceIds).toContain(deckGerma.instanceId);
   });
 });
