@@ -2576,6 +2576,7 @@ export class EffectContextImpl implements EffectContext {
         sourceEffectId: 'rule:characterAreaOverflow',
       });
     }
+    for (const id of playedIds) this.recordPlayedCharacter(id);
   }
 
   searchResolveTopOrBottom(playerId: string, lookedIds: string[], topOrderIds: string[], bottomOrderIds: string[]): void {

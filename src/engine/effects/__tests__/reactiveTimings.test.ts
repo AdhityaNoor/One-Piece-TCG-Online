@@ -211,4 +211,103 @@ describe('reactive timings', () => {
     expect(playedId).toBeDefined();
     expect(hasContinuousKeyword(defs, result.state, playedId!, 'rush')).toBe(true);
   });
+
+  it('Character played from trash fires its own onPlay ability', () => {
+    const sourceDef = makeCharacterDef({ cardDefinitionId: 'TRASH-PLAY-SOURCE' });
+    const playedDef = makeCharacterDef({
+      cardDefinitionId: 'TRASH-PLAYED-ONPLAY',
+      cardNumber: 'TRASH-PLAYED-ONPLAY',
+      baseCost: 2,
+    });
+    const deckDef = makeCharacterDef({ cardDefinitionId: 'TRASH-PLAY-DRAW', cardNumber: 'TRASH-PLAY-DRAW' });
+    const base = buildBaseRig({ activePlayerId: 'p1' });
+    const withSource = putCharacterInPlay(base, 'p1', sourceDef);
+    const withDeck = putDeckCards(withSource.rig, 'p1', deckDef, 1);
+    const trashId = nextTestId('trash-played');
+    const player = withDeck.rig.state.players.p1;
+    const state: GameState = {
+      ...withDeck.rig.state,
+      cardsById: {
+        ...withDeck.rig.state.cardsById,
+        [trashId]: {
+          instanceId: trashId,
+          cardDefinitionId: playedDef.cardDefinitionId,
+          ownerId: 'p1',
+          controllerId: 'p1',
+          currentZone: 'trash',
+          orientation: null,
+          faceState: 'faceUp',
+          donAttached: [],
+          appliedContinuousEffectIds: [],
+          oncePerTurnUsed: [],
+          summoningSick: false,
+          revealedTo: 'all',
+        },
+      },
+      players: {
+        ...withDeck.rig.state.players,
+        p1: { ...player, trash: { ...player.trash, cardIds: [trashId] } },
+      },
+    };
+    const defs = { ...withDeck.rig.defs, [sourceDef.cardDefinitionId]: sourceDef, [playedDef.cardDefinitionId]: playedDef };
+    const registry = {
+      [sourceDef.cardDefinitionId]: {
+        cardNumber: 'TRASH-PLAY-SOURCE',
+        abilities: [{ timing: 'activateMain', ops: [{ op: 'playFromTrash', target: { sel: 'controllerTrash', filter: { category: 'character' } } }] }],
+      } satisfies EffectProgram,
+      [playedDef.cardDefinitionId]: {
+        cardNumber: 'TRASH-PLAYED-ONPLAY',
+        abilities: [{ timing: 'onPlay', ops: [{ op: 'draw', amount: 1 }] }],
+      } satisfies EffectProgram,
+    };
+
+    const result = runTimings(registry[sourceDef.cardDefinitionId], ['activateMain'], state, withSource.instanceId, defs, 'test', registry, false);
+
+    expect(result.state.players.p1.hand.cardIds).toHaveLength(1);
+    expect(result.state.players.p1.deck.cardIds).toHaveLength(0);
+  });
+
+  it('Character played from searched deck top fires its own onPlay ability', () => {
+    const sourceDef = makeCharacterDef({ cardDefinitionId: 'SEARCH-PLAY-SOURCE' });
+    const playedDef = makeCharacterDef({
+      cardDefinitionId: 'SEARCH-PLAYED-ONPLAY',
+      cardNumber: 'SEARCH-PLAYED-ONPLAY',
+      baseCost: 2,
+    });
+    const drawDef = makeCharacterDef({ cardDefinitionId: 'SEARCH-PLAY-DRAW', cardNumber: 'SEARCH-PLAY-DRAW' });
+    const base = buildBaseRig({ activePlayerId: 'p1' });
+    const withSource = putCharacterInPlay(base, 'p1', sourceDef);
+    const withPlayed = putDeckCards(withSource.rig, 'p1', playedDef, 1);
+    const playedDeckId = withPlayed.deckIds[0]!;
+    const withDraw = putDeckCards(withPlayed.rig, 'p1', drawDef, 1);
+    const registry = {
+      [sourceDef.cardDefinitionId]: {
+        cardNumber: 'SEARCH-PLAY-SOURCE',
+        abilities: [{
+          timing: 'activateMain',
+          ops: [{ op: 'searchTopDeck', look: 1, pick: 1, reveal: true, destination: 'play', filter: { category: 'character' }, remainder: 'bottom' }],
+        }],
+      } satisfies EffectProgram,
+      [playedDef.cardDefinitionId]: {
+        cardNumber: 'SEARCH-PLAYED-ONPLAY',
+        abilities: [{ timing: 'onPlay', ops: [{ op: 'draw', amount: 1 }] }],
+      } satisfies EffectProgram,
+    };
+
+    const prompted = runTimings(registry[sourceDef.cardDefinitionId], ['activateMain'], withDraw.rig.state, withSource.instanceId, withDraw.rig.defs, 'test', registry, false);
+    expect(prompted.pendingChoices).toHaveLength(1);
+
+    const result = resumeProgram(
+      registry[sourceDef.cardDefinitionId],
+      prompted.state,
+      prompted.pendingChoices[0],
+      [playedDeckId],
+      withDraw.rig.defs,
+      'test',
+      registry,
+    );
+
+    expect(result.state.players.p1.hand.cardIds).toHaveLength(1);
+    expect(result.state.players.p1.deck.cardIds).toHaveLength(0);
+  });
 });
