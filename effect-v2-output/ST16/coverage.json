@@ -20,6 +20,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -38,6 +39,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 {FILM} type card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -56,6 +58,7 @@
         "atomIndex": 1,
         "rawText": "Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -90,6 +93,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -108,6 +112,7 @@
         "atomIndex": 0,
         "rawText": "You may trash any number of {Music} type cards from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -126,6 +131,7 @@
         "atomIndex": 1,
         "rawText": "Your Leader or 1 of your Characters gains +1000 power during this battle for every card trashed.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -160,6 +166,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader has the {FILM} type and you have 6 or more rested cards, this Character gains +2000 power.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -194,6 +201,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's rested Characters.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -228,6 +236,7 @@
         "atomIndex": 0,
         "rawText": "If you have a rested [Uta], this Character gains +1000 power.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [

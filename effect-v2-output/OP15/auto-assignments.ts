@@ -1871,7 +1871,7 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               ]
             },
             "cost": {
-              "propertyLayer": "CURRENT",
+              "propertyLayer": "BASE",
               "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
@@ -3919,7 +3919,7 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               },
               "chooser": "EFFECT_OWNER",
               "cost": {
-                "propertyLayer": "CURRENT",
+                "propertyLayer": "BASE",
                 "comparison": "AT_MOST",
                 "value": {
                   "kind": "NUMBER",
@@ -12252,7 +12252,7 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
             },
             "chooser": "EFFECT_OWNER",
             "cost": {
-              "propertyLayer": "CURRENT",
+              "propertyLayer": "BASE",
               "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",

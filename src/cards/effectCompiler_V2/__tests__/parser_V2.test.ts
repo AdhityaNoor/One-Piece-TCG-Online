@@ -155,6 +155,75 @@ describe('effectCompiler_V2 parser', () => {
     });
   });
 
+  it('keeps every payment in circled-DON compound activation costs', () => {
+    const parsed = parseCardEffect_V2(
+      'OP05-088',
+      '[Activate: Main] ➀ You may rest this Character and place 2 cards from your trash at the bottom of your deck in any order: Add up to 1 black Character card with a cost of 3 to 5 from your trash to your hand.',
+    );
+
+    expect(parsed.atomicEffects[0].coverage).toBe('coveredByParser');
+    expect(parsed.atomicEffects[0].parsedCosts).toEqual([
+      expect.objectContaining({ type: 'REST_DON_COST', count: { kind: 'NUMBER', value: 1 } }),
+      expect.objectContaining({
+        type: 'REST_CARD_COST',
+        selector: expect.objectContaining({ relations: ['THIS_CARD'] }),
+      }),
+      expect.objectContaining({
+        type: 'RETURN_CARD_TO_DECK_COST',
+        selector: expect.objectContaining({ zones: ['TRASH'], quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 2 } } }),
+      }),
+    ]);
+    expect(parsed.effects[0].activationCost?.payments).toEqual(parsed.atomicEffects[0].parsedCosts);
+  });
+
+  it('uses BASE cost filters when card text says base cost', () => {
+    const parsed = parseCardEffect_V2(
+      'EB03-056',
+      '[On Play] DON!! −1: K.O. up to 2 of your opponent\'s Characters with a base cost of 3 or less.',
+    );
+
+    expect(parsed.atomicEffects.at(-1)?.parsedAction).toMatchObject({
+      type: 'KO_CARD',
+      selector: { cost: { propertyLayer: 'BASE', comparison: 'AT_MOST', value: { kind: 'NUMBER', value: 3 } } },
+    });
+    expect(parsed.atomicEffects.at(-1)?.semanticStatus).toBe('safe');
+  });
+
+  it('preserves without-counter filters in counter rule modifiers', () => {
+    const parsed = parseCardEffect_V2(
+      'EB01-001',
+      'All of your {Land of Wano} type Character cards without a Counter have a +1000 Counter, according to the rules.',
+    );
+
+    expect(parsed.atomicEffects[0].parsedAction).toMatchObject({
+      type: 'MODIFY_COUNTER',
+      selector: {
+        controller: 'PLAYER',
+        cardCategories: ['CHARACTER'],
+        types: { kind: 'HAS_ANY_TYPE', values: ['Land of Wano'] },
+        counter: { propertyLayer: 'BASE', comparison: 'EQUAL', value: { kind: 'NUMBER', value: 0 } },
+      },
+      duration: { kind: 'PERMANENT' },
+    });
+    expect(parsed.atomicEffects[0].semanticStatus).toBe('safe');
+  });
+
+  it('parses deck-out win text as a victory-condition rule modifier', () => {
+    const parsed = parseCardEffect_V2(
+      'OP03-040',
+      'When your deck is reduced to 0, you win the game instead of losing, according to the rules.',
+    );
+
+    expect(parsed.atomicEffects[0].parsedAction).toMatchObject({
+      type: 'MODIFY_VICTORY_CONDITION',
+      modifier: {
+        scope: 'VICTORY_CONDITION',
+        modifier: { expression: { operation: 'WIN_INSTEAD_OF_LOSE' } },
+      },
+    });
+    expect(parsed.atomicEffects[0].semanticStatus).toBe('safe');
+  });
+
   it('does not split trigger-filter cost text into a separate timing segment', () => {
     const parsed = parseCardEffect_V2(
       'TEST-TRIGGER-COST',

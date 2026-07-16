@@ -412,8 +412,9 @@ describe('V2 engine adapter', () => {
     });
 
     expect(prompted.handled).toBe(true);
-    expect(prompted.ok, prompted.handled && !prompted.ok ? prompted.reasons.join('; ') : '').toBe(true);
-    if (!prompted.handled || !prompted.ok) return;
+    if (!prompted.handled) return;
+    expect(prompted.ok, !prompted.ok ? prompted.reasons.join('; ') : '').toBe(true);
+    if (!prompted.ok) return;
     expect(prompted.state.pendingChoices[0]).toMatchObject({
       sourceEffectId: 'v2:activationCost',
       constraints: { min: 1, max: 1, candidateInstanceIds: [characterCostId, handCostId] },
@@ -434,8 +435,9 @@ describe('V2 engine adapter', () => {
     });
 
     expect(resolved.handled).toBe(true);
-    expect(resolved.ok, resolved.handled && !resolved.ok ? resolved.reasons.join('; ') : '').toBe(true);
-    if (resolved.handled && resolved.ok) {
+    if (!resolved.handled) return;
+    expect(resolved.ok, !resolved.ok ? resolved.reasons.join('; ') : '').toBe(true);
+    if (resolved.ok) {
       expect(resolved.state.players.p1.characterArea.cardIds).toEqual([]);
       expect(resolved.state.players.p1.trash.cardIds).toContain(characterCostId);
       expect(resolved.state.players.p1.hand.cardIds).toEqual([handCostId, deckCardId]);

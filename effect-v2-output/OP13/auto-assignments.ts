@@ -8954,7 +8954,7 @@ export const OP13_AUTO_ASSIGNMENTS_V2 = [
             },
             "chooser": "EFFECT_OWNER",
             "cost": {
-              "propertyLayer": "CURRENT",
+              "propertyLayer": "BASE",
               "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
@@ -9301,7 +9301,7 @@ export const OP13_AUTO_ASSIGNMENTS_V2 = [
             },
             "chooser": "EFFECT_OWNER",
             "cost": {
-              "propertyLayer": "CURRENT",
+              "propertyLayer": "BASE",
               "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
@@ -9538,7 +9538,7 @@ export const OP13_AUTO_ASSIGNMENTS_V2 = [
             },
             "chooser": "EFFECT_OWNER",
             "cost": {
-              "propertyLayer": "CURRENT",
+              "propertyLayer": "BASE",
               "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
@@ -11807,7 +11807,7 @@ export const OP13_AUTO_ASSIGNMENTS_V2 = [
             },
             "chooser": "EFFECT_OWNER",
             "cost": {
-              "propertyLayer": "CURRENT",
+              "propertyLayer": "BASE",
               "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",

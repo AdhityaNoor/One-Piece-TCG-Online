@@ -3450,6 +3450,23 @@
               "kind": "NUMBER",
               "value": 1
             }
+          },
+          {
+            "type": "RETURN_CARD_TO_HAND_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
           }
         ],
         "optionalPayment": "REQUIRED_TO_ACTIVATE",

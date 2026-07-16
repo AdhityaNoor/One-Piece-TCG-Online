@@ -20,6 +20,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -38,6 +39,7 @@
         "atomIndex": 0,
         "rawText": "You may turn 1 card from the top of your Life cards face-up:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -56,6 +58,7 @@
         "atomIndex": 1,
         "rawText": "Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -90,6 +93,7 @@
         "atomIndex": 0,
         "rawText": "If this Character would be KO'd by an effect, you may trash 1 card from the top of your Life cards instead.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -108,6 +112,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -126,6 +131,7 @@
         "atomIndex": 1,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -160,6 +166,7 @@
         "atomIndex": 0,
         "rawText": "Look at up to 1 card from the top of your or your opponent's Life cards,",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -178,6 +185,7 @@
         "atomIndex": 1,
         "rawText": "place it at the top or bottom of the Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -196,6 +204,7 @@
         "atomIndex": 2,
         "rawText": "add this card to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -231,6 +240,7 @@
         "atomIndex": 0,
         "rawText": "You may add 1 card from the top of your Life cards to your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -249,6 +259,7 @@
         "atomIndex": 1,
         "rawText": "Set up to 1 of your {Big Mom Pirates} type Characters with a cost of 3 or less as active.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -267,6 +278,7 @@
         "atomIndex": 0,
         "rawText": "Rest up to 1 of your opponent's Characters with a cost of 3 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -301,6 +313,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -319,6 +332,7 @@
         "atomIndex": 1,
         "rawText": "Your opponent chooses one:• Your opponent trashes 2 cards from their hand.• Trash 1 card from the top of your opponent's Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [

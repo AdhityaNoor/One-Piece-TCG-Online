@@ -20,6 +20,7 @@
         "atomIndex": 0,
         "rawText": "When a Character is KO'd, give up to 1 rested DON!! card to this Leader.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -54,6 +55,7 @@
         "atomIndex": 0,
         "rawText": "This Character cannot be KO'd in battle by Leaders.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -72,6 +74,7 @@
         "atomIndex": 0,
         "rawText": "You may rest this Character:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -90,6 +93,7 @@
         "atomIndex": 1,
         "rawText": "Give up to 1 of your opponent's Characters −2 cost during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -139,6 +143,7 @@
         "atomIndex": 0,
         "rawText": "You may rest this Character:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -157,6 +162,7 @@
         "atomIndex": 1,
         "rawText": "KO up to 1 of your opponent's Characters with a cost of 2 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -191,6 +197,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -209,6 +216,7 @@
         "atomIndex": 1,
         "rawText": "KO all Characters with a cost of 1 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -243,6 +251,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -261,6 +270,7 @@
         "atomIndex": 0,
         "rawText": "Give up to 1 of your opponent's Characters −4 cost during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -295,6 +305,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -313,6 +324,7 @@
         "atomIndex": 0,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -347,6 +359,7 @@
         "atomIndex": 0,
         "rawText": "Give up to 1 of your opponent's Characters −2 cost during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -381,6 +394,7 @@
         "atomIndex": 0,
         "rawText": "If there is a Character with a cost of 0, draw 1 card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -460,6 +474,7 @@
         "atomIndex": 0,
         "rawText": "At the end of a battle in which this Character battles your opponent's Character, you may KO the opponent’s Character you battled with.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -478,6 +493,7 @@
         "atomIndex": 1,
         "rawText": "If you do, KO this Character.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -512,6 +528,7 @@
         "atomIndex": 0,
         "rawText": "You may add 1 card from the top of your Life cards to your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -530,6 +547,7 @@
         "atomIndex": 1,
         "rawText": "Give up to 1 of your opponent's Characters −7 cost during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -548,6 +566,7 @@
         "atomIndex": 0,
         "rawText": "Add up to 1 black Character card with a cost of 2 or less from your trash to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -583,6 +602,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's Characters with a cost of 2 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -601,6 +621,7 @@
         "atomIndex": 0,
         "rawText": "Draw 1 card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [

@@ -295,6 +295,7 @@
           "atomIndex": 0,
           "rawText": "You may add 1 of your Characters with a cost of 3 or more and 7000 power or more to the top of your Life cards face-up:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -313,6 +314,7 @@
           "atomIndex": 1,
           "rawText": "Up to 1 of your Characters gains +2000 power until the start of your next turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -719,6 +721,7 @@
           "atomIndex": 0,
           "rawText": "Look at 5 cards from the top of your deck",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -737,6 +740,7 @@
           "atomIndex": 1,
           "rawText": "add up to 1 Character card with a cost of 5 to the top of your Life cards face-up.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -755,6 +759,7 @@
           "atomIndex": 2,
           "rawText": "place the rest at the bottom of your deck in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -773,6 +778,7 @@
           "atomIndex": 0,
           "rawText": "Trash all your face-up Life cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1192,6 +1198,7 @@
           "atomIndex": 0,
           "rawText": "Your face-up Life cards are placed at the bottom of your deck instead of being added to your hand, according to the rules.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1210,6 +1217,7 @@
           "atomIndex": 0,
           "rawText": "You may trash 1 card from your hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1228,6 +1236,7 @@
           "atomIndex": 1,
           "rawText": "If you have 0 Life cards, add up to 2 Character cards with a cost of 5 from your hand or trash to the top of your Life cards face-up.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1524,6 +1533,7 @@
           "atomIndex": 0,
           "rawText": "Add 1 card from the top of your deck to the top of your Life cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1542,6 +1552,7 @@
           "atomIndex": 1,
           "rawText": "look at all your Life cards;",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1560,6 +1571,7 @@
           "atomIndex": 2,
           "rawText": "place 1 card at the top of your deck",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1579,6 +1591,7 @@
           "atomIndex": 3,
           "rawText": "place the rest back in your Life area in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1890,6 +1903,7 @@
           "atomIndex": 0,
           "rawText": "[Blocker]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1908,6 +1922,7 @@
           "atomIndex": 0,
           "rawText": "You may trash 1 card from the top or bottom of your Life cards:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1926,6 +1941,7 @@
           "atomIndex": 1,
           "rawText": "Reveal up to 1 Character card with a cost of 5 from your hand and add it to the top of your Life cards face-down.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2210,6 +2226,7 @@
           "atomIndex": 0,
           "rawText": "[Blocker]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2228,6 +2245,7 @@
           "atomIndex": 0,
           "rawText": "Play up to 1 each of [Sabo], [Portgas.D.Ace], and [Monkey.D.Luffy] with a cost of 2 from your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2554,6 +2572,7 @@
           "atomIndex": 0,
           "rawText": "You may trash this Character:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2572,6 +2591,7 @@
           "atomIndex": 1,
           "rawText": "Reveal 1 card from the top of your Life cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2590,6 +2610,7 @@
           "atomIndex": 2,
           "rawText": "If that card is a [Sabo] with a cost of 5, you may play that card.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2608,6 +2629,7 @@
           "atomIndex": 3,
           "rawText": "If you do, up to 1 of your Leader gains +2000 power until the end of your opponent's next turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2832,6 +2854,7 @@
           "atomIndex": 0,
           "rawText": "You may trash 1 card from the top or bottom of your Life cards:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2850,6 +2873,7 @@
           "atomIndex": 1,
           "rawText": "KO up to 1 of your opponent's Characters with a cost of 5 or less.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3086,6 +3110,7 @@
           "atomIndex": 0,
           "rawText": "You may turn 1 of your face-up Life cards face-down:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3104,6 +3129,7 @@
           "atomIndex": 1,
           "rawText": "If your opponent has 7 or more cards in their hand, trash up to 1 card from the top of your opponent's Life cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3430,6 +3456,7 @@
           "atomIndex": 0,
           "rawText": "You may trash this Character:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3448,6 +3475,7 @@
           "atomIndex": 1,
           "rawText": "Reveal 1 card from the top of your Life cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3466,6 +3494,7 @@
           "atomIndex": 2,
           "rawText": "If that card is a [Portgas.D.Ace] with a cost of 5, you may play that card.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3484,6 +3513,7 @@
           "atomIndex": 3,
           "rawText": "If you do, up to 1 of your Leader gains +2000 power until the end of your opponent's next turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3681,6 +3711,7 @@
           "atomIndex": 0,
           "rawText": "If you have 2 or less Life cards, this Character gains [Rush].",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3926,6 +3957,7 @@
           "atomIndex": 0,
           "rawText": "You may add 1 card from the top or bottom of your Life cards to your hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3944,6 +3976,7 @@
           "atomIndex": 1,
           "rawText": "Look at all of your Life cards",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3962,6 +3995,7 @@
           "atomIndex": 2,
           "rawText": "place them back in your Life area in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4275,6 +4309,7 @@
           "atomIndex": 0,
           "rawText": "Look at 5 cards from the top of your deck;",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4293,6 +4328,7 @@
           "atomIndex": 1,
           "rawText": "reveal up to 1 [Sabo], [Portgas.D.Ace], or [Monkey.D.Luffy] with a cost of 5 or less and add it to your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4312,6 +4348,7 @@
           "atomIndex": 2,
           "rawText": "place the rest at the bottom of your deck in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4638,6 +4675,7 @@
           "atomIndex": 0,
           "rawText": "You may trash this Character:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4656,6 +4694,7 @@
           "atomIndex": 1,
           "rawText": "Reveal 1 card from the top of your Life cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4674,6 +4713,7 @@
           "atomIndex": 2,
           "rawText": "If that card is a [Monkey.D.Luffy] with a cost of 5, you may play that card.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4692,6 +4732,7 @@
           "atomIndex": 3,
           "rawText": "If you do, up to 1 of your Leader gains +2000 power until the end of your opponent's next turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4975,6 +5016,7 @@
           "atomIndex": 0,
           "rawText": "This Character gains +2000 power until the start of your next turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4993,6 +5035,7 @@
           "atomIndex": 1,
           "rawText": "if you have 1 or more Life cards, draw 1 card",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -5011,6 +5054,7 @@
           "atomIndex": 2,
           "rawText": "trash 1 card from the top of your Life cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -5361,6 +5405,7 @@
           "atomIndex": 0,
           "rawText": "[Rush]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -5379,6 +5424,7 @@
           "atomIndex": 0,
           "rawText": "Look at all your Life cards;",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -5397,6 +5443,7 @@
           "atomIndex": 1,
           "rawText": "place 1 at the top of your deck",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -5416,6 +5463,7 @@
           "atomIndex": 2,
           "rawText": "place the rest back in your Life area in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -5841,6 +5889,7 @@
           "atomIndex": 0,
           "rawText": "Up to 1 of your Leader or Character cards gains +4000 power during this battle.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -5859,6 +5908,7 @@
           "atomIndex": 1,
           "rawText": "look at all your Life cards",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -5877,6 +5927,7 @@
           "atomIndex": 2,
           "rawText": "place them back in your Life area in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -5895,6 +5946,7 @@
           "atomIndex": 0,
           "rawText": "You may add 1 card from the top or bottom of your Life cards to your hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -5913,6 +5965,7 @@
           "atomIndex": 1,
           "rawText": "Add up to 1 card from your hand to the top of your Life cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -6281,6 +6334,7 @@
           "atomIndex": 0,
           "rawText": "Up to 1 of your Leader or Character cards gains +2000 power during this battle.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -6299,6 +6353,7 @@
           "atomIndex": 1,
           "rawText": "if you have 0 Life cards, draw 1 card.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -6317,6 +6372,7 @@
           "atomIndex": 0,
           "rawText": "You may add 1 card from the top or bottom of your Life cards to your hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -6335,6 +6391,7 @@
           "atomIndex": 1,
           "rawText": "Add up to 1 card from your hand to the top of your Life cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -6749,6 +6806,7 @@
           "atomIndex": 0,
           "rawText": "Look at 5 cards from the top of your deck;",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -6767,6 +6825,7 @@
           "atomIndex": 1,
           "rawText": "reveal up to 1 [Sabo], [Portgas.D.Ace], or [Monkey.D.Luffy] with a cost of 5 or less and add it to your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -6786,6 +6845,7 @@
           "atomIndex": 2,
           "rawText": "place the rest at the bottom of your deck in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -6804,6 +6864,7 @@
           "atomIndex": 0,
           "rawText": "Activate this card's [Main] effect.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [

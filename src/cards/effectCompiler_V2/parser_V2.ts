@@ -781,6 +781,16 @@ function selectorFromText_V2(text: string): Selector_V2 {
   if (/select your leader and (?:\d+|a|an|one) character/i.test(text)) {
     return withTextFilters_V2({ ...leaderOrCharacterSelector_V2('PLAYER', exactly_V2(2)), relations: ['REQUIRES_LEADER_AND_CHARACTER'] }, text);
   }
+  if (/\ball of your\b/i.test(text) && /\bCharacter cards?\b/i.test(text)) {
+    return withTextFilters_V2({
+      subject: 'CARD',
+      controller: 'PLAYER',
+      zones: ['CHARACTER_AREA'],
+      cardCategories: ['CHARACTER'],
+      quantity: { kind: 'ALL' },
+      chooser: 'EFFECT_OWNER',
+    }, text);
+  }
   if (/all of your .*characters|your .*characters/i.test(text)) return withTextFilters_V2(controllerCharacterSelector_V2(/all/i.test(text) ? { kind: 'ALL' } : quantity), text);
   if (/\ball Characters?(?: cards?)?\b/i.test(text)) {
     return withTextFilters_V2({
@@ -934,18 +944,19 @@ function withTextFilters_V2(selector: Selector_V2, text: string): Selector_V2 {
 
 function numericFiltersFromText_V2(text: string): Pick<Selector_V2, 'cost' | 'power'> {
   const filters: Pick<Selector_V2, 'cost' | 'power'> = {};
+  const costPropertyLayer = /\bbase cost\b|\bwith a base cost\b/i.test(text) ? 'BASE' : 'CURRENT';
   const costAtMost = text.match(/\bcost(?: of)? (\d+) or less\b/i);
   if (costAtMost) {
-    filters.cost = { propertyLayer: 'CURRENT', comparison: 'AT_MOST', value: numberValue_V2(Number(costAtMost[1])) };
+    filters.cost = { propertyLayer: costPropertyLayer, comparison: 'AT_MOST', value: numberValue_V2(Number(costAtMost[1])) };
   }
   const costAtLeast = text.match(/\bcost(?: of)? (\d+) or more\b/i);
   if (costAtLeast) {
-    filters.cost = { propertyLayer: 'CURRENT', comparison: 'AT_LEAST', value: numberValue_V2(Number(costAtLeast[1])) };
+    filters.cost = { propertyLayer: costPropertyLayer, comparison: 'AT_LEAST', value: numberValue_V2(Number(costAtLeast[1])) };
   }
   const costBetween = text.match(/\bcost of (\d+) to (\d+)\b/i);
   if (costBetween) {
     filters.cost = {
-      propertyLayer: 'CURRENT',
+      propertyLayer: costPropertyLayer,
       comparison: 'BETWEEN',
       minimum: numberValue_V2(Number(costBetween[1])),
       maximum: numberValue_V2(Number(costBetween[2])),
@@ -954,7 +965,7 @@ function numericFiltersFromText_V2(text: string): Pick<Selector_V2, 'cost' | 'po
   const costEither = text.match(/\bcost of (\d+) or (\d+)\b/i);
   if (costEither) {
     filters.cost = {
-      propertyLayer: 'CURRENT',
+      propertyLayer: costPropertyLayer,
       comparison: 'IN_SET',
       values: [numberValue_V2(Number(costEither[1])), numberValue_V2(Number(costEither[2]))],
     };
@@ -1010,6 +1021,12 @@ function countFromText_V2(text: string, fallback = 1): number {
 }
 
 function circledNumber_V2(text: string): number | null {
+  const actualGlyph = Array.from(text.trim())[0];
+  const actualGlyphs: Record<string, number> = {
+    '➀': 1, '➁': 2, '➂': 3, '➃': 4, '➄': 5, '➅': 6, '➆': 7, '➇': 8, '➈': 9, '➉': 10,
+    '①': 1, '②': 2, '③': 3, '④': 4, '⑤': 5, '⑥': 6, '⑦': 7, '⑧': 8, '⑨': 9, '⑩': 10,
+  };
+  if (actualGlyph && actualGlyph in actualGlyphs) return actualGlyphs[actualGlyph];
   const glyph = text.trim().match(/^([➀➁➂➃➄➅➆➇➈➉①②③④⑤⑥⑦⑧⑨⑩])/u)?.[1];
   if (!glyph) return null;
   return {
@@ -1018,11 +1035,31 @@ function circledNumber_V2(text: string): number | null {
   }[glyph] ?? null;
 }
 
+function stripLeadingCircledCostMarker_V2(text: string): string {
+  const strippedActual = text.trim().replace(/^([➀➁➂➃➄➅➆➇➈➉①②③④⑤⑥⑦⑧⑨⑩])\s*/u, '');
+  if (strippedActual !== text.trim()) return strippedActual.replace(/^\([^)]*\)\s*/u, '').trim();
+  return text
+    .trim()
+    .replace(/^([âž€âžâž‚âžƒâž„âž…âž†âž‡âžˆâž‰â‘ â‘¡â‘¢â‘£â‘¤â‘¥â‘¦â‘§â‘¨â‘©])\s*/u, '')
+    .replace(/^\([^)]*\)\s*/u, '')
+    .trim();
+}
+
 function parseActivationCost_V2(text: string): CostAction_V2[] | undefined {
   const normalized = collapseSpaces_V2(text);
   const lower = normalized.toLowerCase();
   const circled = circledNumber_V2(normalized);
-  if (circled != null && /:\s*$/.test(normalized)) return [{ type: 'REST_DON_COST', count: numberValue_V2(circled) }];
+  if (circled != null && /:\s*$/.test(normalized)) {
+    const donCost: CostAction_V2 = { type: 'REST_DON_COST', count: numberValue_V2(circled) };
+    const remainder = stripLeadingCircledCostMarker_V2(normalized);
+    if (remainder && remainder !== normalized && !/^:$/i.test(remainder)) {
+      const remainderCosts = parseActivationCost_V2(remainder);
+      if (remainderCosts?.length && remainderCosts.every((cost) => cost.type !== 'RAW_COST')) {
+        return [donCost, ...remainderCosts];
+      }
+    }
+    return [donCost];
+  }
 
   const body = normalized.replace(/:\s*$/, '').replace(/^(?:you may|you can)\s+/i, '').trim();
   const restDonAndThis = lower.match(/(?:you may|you can) rest (\d+|a|an|one|two|three) of your don!! cards and this (character|card):?$/);
@@ -1871,10 +1908,13 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
 
   const counterAdd = normalized.match(/\bhave a \+?(\d+) counter\b|\bgain \+?(\d+) counter\b/i);
   if (counterAdd) {
+    const selector = selectorFromText_V2(normalized);
     return {
       action: {
         type: 'MODIFY_COUNTER',
-        selector: selectorFromText_V2(normalized),
+        selector: /\bwithout a Counter\b/i.test(normalized)
+          ? { ...selector, counter: { propertyLayer: 'BASE', comparison: 'EQUAL', value: numberValue_V2(0) } }
+          : selector,
         propertyLayer: 'CURRENT_VALUE',
         operation: 'ADD',
         value: numberValue_V2(Number(counterAdd[1] ?? counterAdd[2])),
@@ -2845,6 +2885,27 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     };
   }
 
+  if ((/\bdeck (?:is )?reduced to 0\b/.test(lower) || /\byou win the game instead of losing\b/.test(lower)) && /\byou win the game instead of losing\b/.test(lower)) {
+    return {
+      action: {
+        type: 'MODIFY_VICTORY_CONDITION',
+        modifier: {
+          scope: 'VICTORY_CONDITION',
+          validFrom: 'ALWAYS',
+          modifier: {
+            type: 'RULE_MODIFIER',
+            scope: 'DECK_OUT_REPLACEMENT',
+            expression: {
+              operation: 'WIN_INSTEAD_OF_LOSE',
+              event: 'PLAYER_DECK_REDUCED_TO_ZERO',
+              player: 'PLAYER',
+            },
+          },
+        },
+      },
+    };
+  }
+
   if (/\byou win the game\b/.test(lower)) {
     return { action: { type: 'PLAYER_WINS', player: 'PLAYER' } };
   }
@@ -3656,6 +3717,39 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
   return { reason: unrecognized.reason, unrecognizedKind: unrecognized.kind, trackingRemark: unrecognized.remark };
 }
 
+function collectSelectorsFromValue_V2(value: unknown, selectors: Selector_V2[] = []): Selector_V2[] {
+  if (!value || typeof value !== 'object') return selectors;
+  const record = value as Record<string, unknown>;
+  if (typeof record.subject === 'string') selectors.push(record as unknown as Selector_V2);
+  for (const child of Object.values(record)) {
+    if (Array.isArray(child)) {
+      for (const item of child) collectSelectorsFromValue_V2(item, selectors);
+    } else {
+      collectSelectorsFromValue_V2(child, selectors);
+    }
+  }
+  return selectors;
+}
+
+function semanticIssuesForParsedAtom_V2(text: string, parsed: { action?: Action_V2; costs?: CostAction_V2[] }): string[] {
+  const issues: string[] = [];
+  const selectors = collectSelectorsFromValue_V2(parsed.action ?? parsed.costs);
+
+  if (/\bbase cost\b|\bwith a base cost\b/i.test(text) && selectors.some((selector) => selector.cost?.propertyLayer === 'CURRENT')) {
+    issues.push('Text says base cost, but at least one parsed selector still uses CURRENT cost.');
+  }
+
+  if (/\bwithout a Counter\b/i.test(text) && !selectors.some((selector) => selector.counter)) {
+    issues.push('Text filters cards without a Counter, but the parsed selector has no counter filter.');
+  }
+
+  if (/\bwin the game instead of losing\b/i.test(text) && parsed.action?.type === 'PLAYER_WINS') {
+    issues.push('Replacement/victory-condition text was parsed as an immediate PLAYER_WINS action.');
+  }
+
+  return issues;
+}
+
 function wordNumber_V2(value: string): number {
   const lookup: Record<string, number> = {
     a: 1,
@@ -4396,6 +4490,7 @@ function buildEffectDefinition_V2(cardNumber: string, effectIndex: number, segme
     const canonicalClassification = classifyUnrecognizedTextAgainstCanonical_V2(parsed.unrecognizedKind, clause);
     const atomId = `${cardNumber}#${effectIndex}.${atomIndex}`;
     atomIndex += 1;
+    const semanticIssues = semanticIssuesForParsedAtom_V2(clause, parsed);
     atoms.push({
       id: atomId,
       cardNumber,
@@ -4407,6 +4502,8 @@ function buildEffectDefinition_V2(cardNumber: string, effectIndex: number, segme
       ...(parsed.action
         ? {
             parsedAction: parsed.action,
+            semanticStatus: semanticIssues.length > 0 ? 'needsAudit' : 'safe',
+            ...(semanticIssues.length > 0 ? { semanticIssues } : {}),
             canonicalAtoms: canonicalAtomsForAction_V2(parsed.action),
             canonicalCoverage: 'canonical' as const,
             canonicalRemark: 'Parser emitted a canonical V2 atom.',
@@ -4415,6 +4512,9 @@ function buildEffectDefinition_V2(cardNumber: string, effectIndex: number, segme
         : parsed.costs?.length
           ? {
               parsedCost: parsed.costs[0],
+              parsedCosts: parsed.costs,
+              semanticStatus: semanticIssues.length > 0 ? 'needsAudit' : 'safe',
+              ...(semanticIssues.length > 0 ? { semanticIssues } : {}),
               canonicalAtoms: ['ActivationCost'],
               canonicalCoverage: 'canonical' as const,
               canonicalRemark: 'Parser lifted this clause into activationCost.',

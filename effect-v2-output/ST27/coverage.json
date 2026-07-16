@@ -20,6 +20,7 @@
         "atomIndex": 0,
         "rawText": "You may rest 1 of your [Fullalead] cards:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -38,6 +39,7 @@
         "atomIndex": 1,
         "rawText": "If your Leader has the {Blackbeard Pirates} type, this Character gains +4000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -56,6 +58,7 @@
         "atomIndex": 0,
         "rawText": "Draw 1 card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -90,6 +93,7 @@
         "atomIndex": 0,
         "rawText": "You may trash this Character:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -108,6 +112,7 @@
         "atomIndex": 1,
         "rawText": "If your Leader has the {Blackbeard Pirates} type, give up to 1 of your opponent's Characters −1 cost during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -126,6 +131,7 @@
         "atomIndex": 0,
         "rawText": "Draw 1 card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -160,6 +166,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -178,6 +185,7 @@
         "atomIndex": 0,
         "rawText": "Play up to 1 {Blackbeard Pirates} type Character card with a cost of 5 or less from your trash rested.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -212,6 +220,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader has the {Blackbeard Pirates} type, this Character gains [Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -230,6 +239,7 @@
         "atomIndex": 1,
         "rawText": "If your Leader has the {Blackbeard Pirates} type, this Character gains +1 cost for every 4 cards in your trash.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -248,6 +258,7 @@
         "atomIndex": 0,
         "rawText": "Trash 1 card from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -282,6 +293,7 @@
         "atomIndex": 0,
         "rawText": "You may rest this Character:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -300,6 +312,7 @@
         "atomIndex": 1,
         "rawText": "KO up to 1 Character with a cost of 3 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -318,6 +331,7 @@
         "atomIndex": 0,
         "rawText": "Add up to 1 black card from your trash to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [

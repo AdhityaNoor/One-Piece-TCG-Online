@@ -20,6 +20,7 @@
         "atomIndex": 0,
         "rawText": "When this Leader attacks or is attacked, you may trash any number of Event or Stage cards from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -38,6 +39,7 @@
         "atomIndex": 1,
         "rawText": "This Leader gains +1000 power during this battle for every card trashed.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -72,6 +74,7 @@
         "atomIndex": 0,
         "rawText": "Your opponent cannot activate a [Blocker] Character that has 2000 or less power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -106,6 +109,7 @@
         "atomIndex": 0,
         "rawText": "Look at 5 cards from the top of your deck;",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -124,6 +128,7 @@
         "atomIndex": 1,
         "rawText": "reveal up to 1 card with a type including \"Whitebeard Pirates\" other than [Izo] and add it to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -143,6 +148,7 @@
         "atomIndex": 2,
         "rawText": "place the rest at the bottom of your deck in any order.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -177,6 +183,7 @@
         "atomIndex": 0,
         "rawText": "This Character cannot attack a Leader on the turn in which it is played.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -195,6 +202,7 @@
         "atomIndex": 0,
         "rawText": "This Character gains [Rush].",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -229,6 +237,7 @@
         "atomIndex": 0,
         "rawText": "This Character gains +2000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -247,6 +256,7 @@
         "atomIndex": 1,
         "rawText": "trash this Character at the end of this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -311,6 +321,7 @@
         "atomIndex": 0,
         "rawText": "This Character cannot be KO'd in battle by <Slash> attribute cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -329,6 +340,7 @@
         "atomIndex": 0,
         "rawText": "Look at 5 cards from the top of your deck;",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -347,6 +359,7 @@
         "atomIndex": 1,
         "rawText": "reveal up to 1 red Event and add it to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -366,6 +379,7 @@
         "atomIndex": 2,
         "rawText": "place the rest at the bottom of your deck in any order.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -400,6 +414,7 @@
         "atomIndex": 0,
         "rawText": "Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -434,6 +449,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -468,6 +484,7 @@
         "atomIndex": 0,
         "rawText": "Give up to 1 of your opponent's Characters −2000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -502,6 +519,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 of your red Characters with 4000 power or more:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -520,6 +538,7 @@
         "atomIndex": 1,
         "rawText": "Draw 1 card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -538,6 +557,7 @@
         "atomIndex": 2,
         "rawText": "this Character gains +1000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -572,6 +592,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's Characters with 3000 power or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -590,6 +611,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 Event from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -608,6 +630,7 @@
         "atomIndex": 1,
         "rawText": "You may play this Character card from your trash rested.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -642,6 +665,7 @@
         "atomIndex": 0,
         "rawText": "Play up to 1 red Character card with a cost of 1 from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -676,6 +700,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -694,6 +719,7 @@
         "atomIndex": 1,
         "rawText": "[Opponent's Turn] When this Character is KO'd, give up to 1 of your opponent's Leader or Character cards −2000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -728,6 +754,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader is [Portgas.D.Ace], KO up to 1 of your opponent's Characters with 8000 power or less, and your Leader gains [Double Attack]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -746,6 +773,7 @@
         "atomIndex": 1,
         "rawText": "If your Leader is [Portgas.D.Ace], KO up to 1 of your opponent's Characters with 8000 power or less, and your Leader gains +3000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -764,6 +792,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's Characters with 6000 power or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -798,6 +827,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader's type includes \"Whitebeard Pirates\", give up to 1 of your opponent's Characters −4000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -816,6 +846,7 @@
         "atomIndex": 0,
         "rawText": "Activate this card's [Main] effect.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -850,6 +881,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 Event from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -868,6 +900,7 @@
         "atomIndex": 1,
         "rawText": "KO up to 1 of your opponent's Characters with 5000 power or less and up to 1 of your opponent's Characters with 4000 power or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -886,6 +919,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's Characters with 5000 power or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -920,6 +954,7 @@
         "atomIndex": 0,
         "rawText": "Your Leader gains +4000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -938,6 +973,7 @@
         "atomIndex": 0,
         "rawText": "Give up to 1 of your opponent's Leader or Character cards -10000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -972,6 +1008,7 @@
         "atomIndex": 0,
         "rawText": "② You may rest this Stage:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -990,6 +1027,7 @@
         "atomIndex": 1,
         "rawText": "If your Leader is [Portgas.D.Ace], look at 5 cards from the top of your deck;",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1008,6 +1046,7 @@
         "atomIndex": 2,
         "rawText": "reveal up to 1 Event and add it to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1027,6 +1066,7 @@
         "atomIndex": 3,
         "rawText": "place the rest at the bottom of your deck in any order.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1061,6 +1101,7 @@
         "atomIndex": 0,
         "rawText": "③ You may rest 2 of your {East Blue} type Characters:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1079,6 +1120,7 @@
         "atomIndex": 1,
         "rawText": "Set this Leader as active, and rest up to 1 of your opponent's Characters with a cost of 5 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1113,6 +1155,7 @@
         "atomIndex": 0,
         "rawText": "① :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1131,6 +1174,7 @@
         "atomIndex": 1,
         "rawText": "Play up to 1 Character card with a cost of 4 or less and a [Trigger] from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1180,6 +1224,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader has the {East Blue} type, rest up to 2 of your opponent's Characters with a cost of 4 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1214,6 +1259,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1232,6 +1278,7 @@
         "atomIndex": 1,
         "rawText": "KO up to 2 of your opponent's rested Characters with a cost of 4 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1250,6 +1297,7 @@
         "atomIndex": 0,
         "rawText": "This Character gains [Double Attack].",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1284,6 +1332,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader has the {East Blue} type, rest up to 1 of your opponent's Characters.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1302,6 +1351,7 @@
         "atomIndex": 0,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1336,6 +1386,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader has the {East Blue} type, rest up to 1 of your opponent's Characters with a cost of 2 or less",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1354,6 +1405,7 @@
         "atomIndex": 1,
         "rawText": "if you don't have [Buchi], play up to 1 [Buchi] from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1388,6 +1440,7 @@
         "atomIndex": 0,
         "rawText": "Set up to 1 of your {East Blue} type Leader or Character cards with a cost of 6 or less as active.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1406,6 +1459,7 @@
         "atomIndex": 1,
         "rawText": "Rest this Character and up to 1 of your opponent's Characters.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1440,6 +1494,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's rested Characters with a cost of 4 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1458,6 +1513,7 @@
         "atomIndex": 0,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1492,6 +1548,7 @@
         "atomIndex": 0,
         "rawText": "Look at 5 cards from the top of your deck;",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1510,6 +1567,7 @@
         "atomIndex": 1,
         "rawText": "reveal up to 1 green {East Blue} type card other than [Nami] and add it to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1529,6 +1587,7 @@
         "atomIndex": 2,
         "rawText": "place the rest at the bottom of your deck in any order.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1547,6 +1606,7 @@
         "atomIndex": 0,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1581,6 +1641,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1615,6 +1676,7 @@
         "atomIndex": 0,
         "rawText": "This Character cannot be KO'd in battle by <Slash> attribute cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1649,6 +1711,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader has the {East Blue} type, play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1683,6 +1746,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's rested Characters with a cost of 2 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1732,6 +1796,7 @@
         "atomIndex": 0,
         "rawText": "You may rest 1 of your {East Blue} type Characters:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1750,6 +1815,7 @@
         "atomIndex": 1,
         "rawText": "Set up to 1 of your [Kuro] cards as active.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1768,6 +1834,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's rested Characters with a cost of 3 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1802,6 +1869,7 @@
         "atomIndex": 0,
         "rawText": "You may rest 1 of your {East Blue} type Characters:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1820,6 +1888,7 @@
         "atomIndex": 1,
         "rawText": "KO up to 1 of your opponent's rested Characters with a cost of 3 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1838,6 +1907,7 @@
         "atomIndex": 0,
         "rawText": "Play up to 1 Character card with a cost of 4 or less and a [Trigger] from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1872,6 +1942,7 @@
         "atomIndex": 0,
         "rawText": "Rest up to 2 of your opponent's Characters with a cost of 2 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1890,6 +1961,7 @@
         "atomIndex": 0,
         "rawText": "Rest up to 1 of your opponent's Characters with a cost of 5 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1924,6 +1996,7 @@
         "atomIndex": 0,
         "rawText": "Rest up to 1 of your opponent's Characters with a cost of 1 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1942,6 +2015,7 @@
         "atomIndex": 1,
         "rawText": "up to 1 of your Characters gains +1000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1960,6 +2034,7 @@
         "atomIndex": 0,
         "rawText": "Rest up to 1 of your opponent's Characters with a cost of 4 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -1994,13 +2069,14 @@
         "atomIndex": 0,
         "rawText": "When your deck is reduced to 0, you win the game instead of losing, according to the rules.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
           "v2:auto:OP03-040:0"
         ],
         "canonicalAtoms": [
-          "PLAYER_WINS"
+          "RULE_MODIFIER"
         ],
         "canonicalCoverage": "canonical",
         "canonicalRemark": "Parser emitted a canonical V2 atom."
@@ -2012,6 +2088,7 @@
         "atomIndex": 0,
         "rawText": "When this Leader's attack deals damage to your opponent's Life, you may trash 1 card from the top of your deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2046,6 +2123,7 @@
         "atomIndex": 0,
         "rawText": "[Rush]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2064,6 +2142,7 @@
         "atomIndex": 1,
         "rawText": "[DON!! x1] When this Character's attack deals damage to your opponent's Life, you may trash 7 cards from the top of your deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2098,6 +2177,7 @@
         "atomIndex": 0,
         "rawText": "Add up to 1 blue [Usopp] from your trash to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2133,6 +2213,7 @@
         "atomIndex": 0,
         "rawText": "When you deal damage to your opponent's Life, you may trash 3 cards from the top of your deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2151,6 +2232,7 @@
         "atomIndex": 1,
         "rawText": "If you do, trash this Character.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2185,6 +2267,7 @@
         "atomIndex": 0,
         "rawText": "Draw 2 cards",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2203,6 +2286,7 @@
         "atomIndex": 1,
         "rawText": "trash 2 cards from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2237,6 +2321,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2255,6 +2340,7 @@
         "atomIndex": 1,
         "rawText": "[Opponent's Turn] If you have 20 or less cards in your deck, this Character gains +3000 power.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2304,6 +2390,7 @@
         "atomIndex": 0,
         "rawText": "When this Character's attack deals damage to your opponent's Life, you may trash 7 cards from the top of your deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2322,6 +2409,7 @@
         "atomIndex": 0,
         "rawText": "You may return up to 1 Character with a cost of 3 or less to the owner's hand, and you may trash 2 cards from the top of your deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2356,6 +2444,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader is [Nami], return up to 1 of your opponent's Characters with a cost of 5 or less to the owner's hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2391,6 +2480,7 @@
         "atomIndex": 0,
         "rawText": "If you have 20 or less cards in your deck, return up to 1 Character with a cost of 3 or less to the owner's hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2426,6 +2516,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2444,6 +2535,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from the top of your deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2478,6 +2570,7 @@
         "atomIndex": 0,
         "rawText": "When this Character's attack deals damage to your opponent's Life, you may trash 7 cards from the top of your deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2496,6 +2589,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 3 cards from the top of your deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2545,6 +2639,7 @@
         "atomIndex": 0,
         "rawText": "If you have 20 or less cards in your deck, this Character gains +2000 power.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2579,6 +2674,7 @@
         "atomIndex": 0,
         "rawText": "Up to 1 of your Leader or Character cards gains +2000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2597,6 +2693,7 @@
         "atomIndex": 1,
         "rawText": "you may trash 1 card from the top of your deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2615,6 +2712,7 @@
         "atomIndex": 0,
         "rawText": "Draw 1 card and you may trash 1 card from the top of your deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2649,6 +2747,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2667,6 +2766,7 @@
         "atomIndex": 1,
         "rawText": "Up to 1 of your Leader gains +4000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2685,6 +2785,7 @@
         "atomIndex": 2,
         "rawText": "you may trash 2 cards from the top of your deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2703,6 +2804,7 @@
         "atomIndex": 0,
         "rawText": "Return up to 1 Character with a cost of 4 or less to the owner's hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2738,6 +2840,7 @@
         "atomIndex": 0,
         "rawText": "Draw 2 cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2756,6 +2859,7 @@
         "atomIndex": 0,
         "rawText": "Activate this card's [Main] effect.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2790,6 +2894,7 @@
         "atomIndex": 0,
         "rawText": "Place up to 1 Character with a cost of 5 or less at the bottom of the owner's deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2809,6 +2914,7 @@
         "atomIndex": 0,
         "rawText": "Place up to 1 Character with a cost of 3 or less at the bottom of the owner's deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2844,6 +2950,7 @@
         "atomIndex": 0,
         "rawText": "This Leader cannot attack.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2862,6 +2969,7 @@
         "atomIndex": 0,
         "rawText": "DON!! −1 You may rest this Leader:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2880,6 +2988,7 @@
         "atomIndex": 1,
         "rawText": "Play up to 1 {Galley-La Company} type Character card with a cost of 5 or less from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2914,6 +3023,7 @@
         "atomIndex": 0,
         "rawText": "DON!! −1 :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2932,6 +3042,7 @@
         "atomIndex": 1,
         "rawText": "This Character gains [Banish] during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2966,6 +3077,7 @@
         "atomIndex": 0,
         "rawText": "DON!! −1 :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -2984,6 +3096,7 @@
         "atomIndex": 1,
         "rawText": "Draw 2 cards",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3002,6 +3115,7 @@
         "atomIndex": 2,
         "rawText": "trash 1 card from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3051,6 +3165,7 @@
         "atomIndex": 0,
         "rawText": "Look at 5 cards from the top of your deck;",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3069,6 +3184,7 @@
         "atomIndex": 1,
         "rawText": "reveal up to 1 {Water Seven} type card other than [Kokoro] and add it to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3088,6 +3204,7 @@
         "atomIndex": 2,
         "rawText": "place the rest at the bottom of your deck in any order.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3122,6 +3239,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3140,6 +3258,7 @@
         "atomIndex": 0,
         "rawText": "DON!! −1 :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3158,6 +3277,7 @@
         "atomIndex": 1,
         "rawText": "If your Leader has the {Water Seven} type, draw 1 card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3192,6 +3312,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader has the {Galley-La Company} type, add up to 1 DON!! card from your DON!! deck and rest it.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3226,6 +3347,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3260,6 +3382,7 @@
         "atomIndex": 0,
         "rawText": "➁ :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3278,6 +3401,7 @@
         "atomIndex": 1,
         "rawText": "Add up to 1 DON!! card from your DON!! deck and set it as active.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3296,6 +3420,7 @@
         "atomIndex": 2,
         "rawText": "if you have 8 or more DON!! cards on your field, KO up to 1 of your opponent's Characters with a cost of 4 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3330,6 +3455,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader has the {Galley-La Company} type, add up to 1 DON!! card from your DON!! deck and rest it.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3364,6 +3490,7 @@
         "atomIndex": 0,
         "rawText": "[Banish]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3382,6 +3509,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader has the {Impel Down} type, add up to 1 DON!! card from your DON!! deck and rest it.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3416,6 +3544,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader has the {Impel Down} type, draw 2 cards",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3434,6 +3563,7 @@
         "atomIndex": 1,
         "rawText": "trash 1 card from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3468,6 +3598,7 @@
         "atomIndex": 0,
         "rawText": "DON!! −1 You may trash 1 Character card with a cost of 5 from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3486,6 +3617,7 @@
         "atomIndex": 1,
         "rawText": "This Character gains [Rush] during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3520,6 +3652,7 @@
         "atomIndex": 0,
         "rawText": "DON!! −1 :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3538,6 +3671,7 @@
         "atomIndex": 1,
         "rawText": "Rest up to 1 of your opponent's Characters with a cost of 5 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3572,6 +3706,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3590,6 +3725,7 @@
         "atomIndex": 1,
         "rawText": "Up to 1 of your Leader or Character cards gains +3000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3608,6 +3744,7 @@
         "atomIndex": 0,
         "rawText": "Add up to 1 DON!! card from your DON!! deck and set it as active.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3642,6 +3779,7 @@
         "atomIndex": 0,
         "rawText": "DON!! -1 :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3660,6 +3798,7 @@
         "atomIndex": 1,
         "rawText": "If your Leader has the {Water Seven} type, KO up to 1 of your opponent's Characters with a cost of 2 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3678,6 +3817,7 @@
         "atomIndex": 0,
         "rawText": "Activate this card's [Main] effect.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3712,6 +3852,7 @@
         "atomIndex": 0,
         "rawText": "DON!! -2 :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3730,6 +3871,7 @@
         "atomIndex": 1,
         "rawText": "Place up to 1 of your opponent's Characters with a cost of 4 or less at the bottom of the owner's deck.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3749,6 +3891,7 @@
         "atomIndex": 0,
         "rawText": "Activate this card's [Main] effect.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3783,6 +3926,7 @@
         "atomIndex": 0,
         "rawText": "You may rest this Stage:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3801,6 +3945,7 @@
         "atomIndex": 1,
         "rawText": "If your Leader is [Iceburg], add up to 1 DON!! card from your DON!! deck and rest it.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3835,6 +3980,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 2 cards from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3853,6 +3999,7 @@
         "atomIndex": 1,
         "rawText": "When your opponent's Character is KO'd, set this Leader as active.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3887,6 +4034,7 @@
         "atomIndex": 0,
         "rawText": "② You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3905,6 +4053,7 @@
         "atomIndex": 1,
         "rawText": "If you have 1 or less Life cards, add up to 1 card from the top of your deck to the top of your Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3939,6 +4088,7 @@
         "atomIndex": 0,
         "rawText": "Give all of your opponent's Characters −3 cost.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3957,6 +4107,7 @@
         "atomIndex": 0,
         "rawText": "If your opponent has 6 or more cards in their hand, trash 2 cards from your opponent's hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -3991,6 +4142,7 @@
         "atomIndex": 0,
         "rawText": "This Character cannot be KO'd in battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4025,6 +4177,7 @@
         "atomIndex": 0,
         "rawText": "You may place 2 cards with a type including \"CP\" from your trash at the bottom of your deck in any order:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4043,6 +4196,7 @@
         "atomIndex": 1,
         "rawText": "KO up to 1 of your opponent's Characters with a cost of 3 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4077,6 +4231,7 @@
         "atomIndex": 0,
         "rawText": "Draw 2 cards",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4095,6 +4250,7 @@
         "atomIndex": 1,
         "rawText": "trash 2 cards from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4113,6 +4269,7 @@
         "atomIndex": 2,
         "rawText": "give up to 1 of your opponent's Characters −2 cost during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4162,6 +4319,7 @@
         "atomIndex": 0,
         "rawText": "Look at 5 cards from the top of your deck and trash up to 2 cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4180,6 +4338,7 @@
         "atomIndex": 1,
         "rawText": "place the rest at the bottom of your deck in any order.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4244,6 +4403,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader's type includes \"CP\", look at 3 cards from the top of your deck;",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4262,6 +4422,7 @@
         "atomIndex": 1,
         "rawText": "reveal up to 1 card with a type including \"CP\" other than [Spandam] and add it to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4281,6 +4442,7 @@
         "atomIndex": 2,
         "rawText": "trash the rest.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4330,6 +4492,7 @@
         "atomIndex": 0,
         "rawText": "This Character cannot be KO'd by effects.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4348,6 +4511,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4382,6 +4546,7 @@
         "atomIndex": 0,
         "rawText": "Look at 3 cards from the top of your deck;",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4400,6 +4565,7 @@
         "atomIndex": 1,
         "rawText": "reveal up to 1 {Navy} type card other than [Brannew] and add it to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4419,6 +4585,7 @@
         "atomIndex": 2,
         "rawText": "trash the rest.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4453,6 +4620,7 @@
         "atomIndex": 0,
         "rawText": "This Character gains [Blocker].",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4471,6 +4639,7 @@
         "atomIndex": 0,
         "rawText": "Play up to 1 Character card with a type including \"CP\" and a cost of 4 or less from your trash rested.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4505,6 +4674,7 @@
         "atomIndex": 0,
         "rawText": "Set the cost of up to 1 of your opponent's Characters with no base effect to 0 during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4539,6 +4709,7 @@
         "atomIndex": 0,
         "rawText": "You may place 2 cards with a type including \"CP\" from your trash at the bottom of your deck in any order:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4557,6 +4728,7 @@
         "atomIndex": 1,
         "rawText": "This Character gains [Rush] during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4591,6 +4763,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4609,6 +4782,7 @@
         "atomIndex": 1,
         "rawText": "If your Leader's type includes \"CP\", KO up to 1 of your opponent's Characters with a cost of 1 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4643,6 +4817,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader's type includes \"CP\", look at 5 cards from the top of your deck;",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4661,6 +4836,7 @@
         "atomIndex": 1,
         "rawText": "play up to 1 Character card with a type including \"CP\" and a cost of 5 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4679,6 +4855,7 @@
         "atomIndex": 2,
         "rawText": "trash the rest.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4697,6 +4874,7 @@
         "atomIndex": 0,
         "rawText": "Play up to 1 black Character card with a cost of 3 or less from your trash.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4731,6 +4909,7 @@
         "atomIndex": 0,
         "rawText": "Give up to 2 of your opponent's Characters -2 cost during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4749,6 +4928,7 @@
         "atomIndex": 0,
         "rawText": "Your opponent trashes 1 card from their hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4783,6 +4963,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's Characters with a cost of 0 or your opponent's Stages with a cost of 3 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4801,6 +4982,7 @@
         "atomIndex": 0,
         "rawText": "Draw 2 cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4835,6 +5017,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4853,6 +5036,7 @@
         "atomIndex": 1,
         "rawText": "Up to 1 of your Leader or Character cards gains +3000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4871,6 +5055,7 @@
         "atomIndex": 0,
         "rawText": "Draw 1 card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4889,6 +5074,7 @@
         "atomIndex": 1,
         "rawText": "KO up to 1 of your opponent's Characters with a cost of 1 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4923,6 +5109,7 @@
         "atomIndex": 0,
         "rawText": "You may rest this Stage:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4941,6 +5128,7 @@
         "atomIndex": 1,
         "rawText": "If your Leader's type includes \"CP\", give up to 1 of your opponent's Characters -2 cost during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4959,6 +5147,7 @@
         "atomIndex": 0,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -4993,6 +5182,7 @@
         "atomIndex": 0,
         "rawText": "Look at up to 1 card from the top of your or your opponent's Life cards,",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5011,6 +5201,7 @@
         "atomIndex": 1,
         "rawText": "place it at the top or bottom of the Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5029,6 +5220,7 @@
         "atomIndex": 2,
         "rawText": "this Leader gains +1000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5063,6 +5255,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from the top or bottom of your Life cards:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5081,6 +5274,7 @@
         "atomIndex": 1,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5130,6 +5324,7 @@
         "atomIndex": 0,
         "rawText": "You may add 1 card from the top or bottom of your Life cards to your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5148,6 +5343,7 @@
         "atomIndex": 1,
         "rawText": "Add up to 1 card from the top of your deck to the top of your Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5197,6 +5393,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5215,6 +5412,7 @@
         "atomIndex": 0,
         "rawText": "Look at up to 1 card from the top of your or your opponent's Life cards,",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5233,6 +5431,7 @@
         "atomIndex": 1,
         "rawText": "place it at the top or bottom of the Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5267,6 +5466,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card with a [Trigger] from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5285,6 +5485,7 @@
         "atomIndex": 1,
         "rawText": "This Character gains +3000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5334,6 +5535,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5368,6 +5570,7 @@
         "atomIndex": 0,
         "rawText": "If you have less Life cards than your opponent, this Character gains [Double Attack]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5386,6 +5589,7 @@
         "atomIndex": 1,
         "rawText": "If you have less Life cards than your opponent, this Character gains +1000 power.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5404,6 +5608,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5422,6 +5627,7 @@
         "atomIndex": 1,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5456,6 +5662,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from the top or bottom of your Life cards:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5474,6 +5681,7 @@
         "atomIndex": 1,
         "rawText": "Add up to 1 card from the top of your deck to the top of your Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5508,6 +5716,7 @@
         "atomIndex": 0,
         "rawText": "You may add 1 card from the top or bottom of your Life cards to your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5526,6 +5735,7 @@
         "atomIndex": 1,
         "rawText": "This Character gains +2000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5544,6 +5754,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5562,6 +5773,7 @@
         "atomIndex": 1,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5611,6 +5823,7 @@
         "atomIndex": 0,
         "rawText": "Look at 4 cards from the top of your deck;",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5629,6 +5842,7 @@
         "atomIndex": 1,
         "rawText": "reveal up to 1 [Sanji] or {Big Mom Pirates} type card other than [Charlotte Pudding] and add it to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5648,6 +5862,7 @@
         "atomIndex": 2,
         "rawText": "place the rest at the bottom of your deck in any order.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5682,6 +5897,7 @@
         "atomIndex": 0,
         "rawText": "Look at 3 cards from the top of your deck;",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5700,6 +5916,7 @@
         "atomIndex": 1,
         "rawText": "reveal up to 1 {Big Mom Pirates} type card and add it to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5719,6 +5936,7 @@
         "atomIndex": 2,
         "rawText": "place the rest at the bottom of your deck in any order.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5737,6 +5955,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5755,6 +5974,7 @@
         "atomIndex": 1,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5789,6 +6009,7 @@
         "atomIndex": 0,
         "rawText": "If your Leader has the {Big Mom Pirates} type, add up to 1 card from the top of your deck to the top of your Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5807,6 +6028,7 @@
         "atomIndex": 1,
         "rawText": "trash up to 1 card from the top of your opponent's Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5841,6 +6063,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card with a [Trigger] from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5859,6 +6082,7 @@
         "atomIndex": 1,
         "rawText": "KO up to 1 of your opponent's Characters with a cost of 1 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5893,6 +6117,7 @@
         "atomIndex": 0,
         "rawText": "Draw 3 cards",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5911,6 +6136,7 @@
         "atomIndex": 1,
         "rawText": "trash 2 cards from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5929,6 +6155,7 @@
         "atomIndex": 0,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5963,6 +6190,7 @@
         "atomIndex": 0,
         "rawText": "You may rest this Character:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5981,6 +6209,7 @@
         "atomIndex": 1,
         "rawText": "Up to 1 of your [Charlotte Linlin] cards gains +1000 power until the start of your next turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -5999,6 +6228,7 @@
         "atomIndex": 0,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6033,6 +6263,7 @@
         "atomIndex": 0,
         "rawText": "Up to 1 of your Leader or Character cards gains +5000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6051,6 +6282,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 2 cards from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6069,6 +6301,7 @@
         "atomIndex": 1,
         "rawText": "Add up to 1 card from the top of your deck to the top of your Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6103,6 +6336,7 @@
         "atomIndex": 0,
         "rawText": "If you have less Life cards than your opponent, KO up to 1 of your opponent's Characters with a cost of 4 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6121,6 +6355,7 @@
         "atomIndex": 0,
         "rawText": "Play up to 1 Character card with a cost of 4 or less and a [Trigger] from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6155,6 +6390,7 @@
         "atomIndex": 0,
         "rawText": "If your opponent has 4 or more Life cards, trash up to 1 card from the top of your opponent's Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6173,6 +6409,7 @@
         "atomIndex": 0,
         "rawText": "Activate this card's [Main] effect.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6207,6 +6444,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 1 card from the top of your Life cards:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6225,6 +6463,7 @@
         "atomIndex": 1,
         "rawText": "KO up to 1 of your opponent's Characters with a cost of 5 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6243,6 +6482,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's Characters with a cost of 5 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6277,6 +6517,7 @@
         "atomIndex": 0,
         "rawText": "Also treat this card's name as [Usopp] according to the rules.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6295,6 +6536,7 @@
         "atomIndex": 0,
         "rawText": "Return up to 1 Character with a cost of 6 or less to the owner's hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6314,6 +6556,7 @@
         "atomIndex": 1,
         "rawText": "draw 2 cards",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6332,6 +6575,7 @@
         "atomIndex": 2,
         "rawText": "trash 2 cards from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -6366,6 +6610,7 @@
         "atomIndex": 0,
         "rawText": "Add up to 1 Character with a cost of 8 or less to the top or bottom of the owner's Life cards face-up.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [

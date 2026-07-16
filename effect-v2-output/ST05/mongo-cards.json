@@ -191,6 +191,7 @@
           "atomIndex": 0,
           "rawText": "DON!! −3 :",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -209,6 +210,7 @@
           "atomIndex": 1,
           "rawText": "All of your {FILM} type Characters gain +2000 power during this turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -342,6 +344,7 @@
           "atomIndex": 0,
           "rawText": "Add up to 1 DON!! card from your DON!! deck and rest it.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -491,6 +494,7 @@
           "atomIndex": 0,
           "rawText": "[Blocker]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -800,6 +804,7 @@
           "atomIndex": 0,
           "rawText": "[Blocker]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -818,6 +823,7 @@
           "atomIndex": 0,
           "rawText": "DON!! −1 :",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -836,6 +842,7 @@
           "atomIndex": 1,
           "rawText": "Rest up to 1 of your opponent's Characters with a cost of 5 or less.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1127,6 +1134,7 @@
           "atomIndex": 0,
           "rawText": "You may rest this Character",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1145,6 +1153,7 @@
           "atomIndex": 1,
           "rawText": "trash 1 {FILM} type card from your hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1163,6 +1172,7 @@
           "atomIndex": 2,
           "rawText": "If your opponent has more DON!! cards on their field than you, add 2 DON!! cards from your DON!! deck and rest them.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1325,6 +1335,7 @@
           "atomIndex": 0,
           "rawText": "DON!! −2 :",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1343,6 +1354,7 @@
           "atomIndex": 1,
           "rawText": "Draw 2 cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1559,6 +1571,7 @@
           "atomIndex": 0,
           "rawText": "If you have 8 or more DON!! cards on your field, this Character cannot be KO'd in battle.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1708,6 +1721,7 @@
           "atomIndex": 0,
           "rawText": "Play this card.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2017,6 +2031,7 @@
           "atomIndex": 0,
           "rawText": "When this Character battles ＜Strike＞ attribute Characters, this Character gains +3000 power during this turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2035,6 +2050,7 @@
           "atomIndex": 0,
           "rawText": "DON!! −1 :",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2053,6 +2069,7 @@
           "atomIndex": 1,
           "rawText": "This Character gains +2000 power during this turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2314,6 +2331,7 @@
           "atomIndex": 0,
           "rawText": "DON!! −4 :",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2332,6 +2350,7 @@
           "atomIndex": 1,
           "rawText": "Rest up to 2 of your opponent's Characters with a cost of 6 or less.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2350,6 +2369,7 @@
           "atomIndex": 2,
           "rawText": "this Character gains [Double Attack] during this turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2689,6 +2709,7 @@
           "atomIndex": 0,
           "rawText": "Look at 5 cards from the top of your deck;",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2707,6 +2728,7 @@
           "atomIndex": 1,
           "rawText": "reveal up to 1 {FILM} type card other than [Buena Festa] and add it to your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2726,6 +2748,7 @@
           "atomIndex": 2,
           "rawText": "place the rest at the bottom of your deck in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3040,6 +3063,7 @@
           "atomIndex": 0,
           "rawText": "DON!! −2 :",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3058,6 +3082,7 @@
           "atomIndex": 1,
           "rawText": "KO up to 1 of your opponent's Characters with a cost of 5 or less.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3076,6 +3101,7 @@
           "atomIndex": 0,
           "rawText": "Add up to 1 DON!! card from your DON!! deck and set it as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3411,6 +3437,7 @@
           "atomIndex": 0,
           "rawText": "Up to 1 of your {FILM} type Leader or Character cards gains +4000 power during this battle.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3429,6 +3456,7 @@
           "atomIndex": 1,
           "rawText": "If that card is a Character, that Character cannot be KO'd during this turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3447,6 +3475,7 @@
           "atomIndex": 0,
           "rawText": "Add up to 1 DON!! card from your DON!! deck and set it as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [

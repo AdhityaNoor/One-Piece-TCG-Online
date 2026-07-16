@@ -698,7 +698,6 @@ export interface GameState {
   /**
    * Instance ids of Life cards whose [Trigger] the defending player chose to
    * activate (10-1-5-2), awaiting the "trash instead of keeping in hand"
-   * activate (10-1-5-2), awaiting the "trash instead of keeping in hand"
    * cleanup once every PendingChoice belonging to that card's own ability
    * chain has resolved. Needed because a triggered ability can itself
    * suspend on further player choices (e.g. an optional target) — the

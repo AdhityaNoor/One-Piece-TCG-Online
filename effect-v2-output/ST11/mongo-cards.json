@@ -292,6 +292,7 @@
           "atomIndex": 0,
           "rawText": "Reveal 1 card from the top of your deck",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -310,6 +311,7 @@
           "atomIndex": 1,
           "rawText": "add up to 1 {FILM} type card to your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -329,6 +331,7 @@
           "atomIndex": 2,
           "rawText": "place the rest at the bottom of your deck.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -650,6 +653,7 @@
           "atomIndex": 0,
           "rawText": "[Blocker]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -668,6 +672,7 @@
           "atomIndex": 0,
           "rawText": "You may trash 1 Event from your hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -686,6 +691,7 @@
           "atomIndex": 1,
           "rawText": "Set up to 1 of your {FILM} type Characters as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -998,6 +1004,7 @@
           "atomIndex": 0,
           "rawText": "Rest up to 1 of your opponent's Characters with a cost of 5 or less.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1016,6 +1023,7 @@
           "atomIndex": 1,
           "rawText": "KO up to 1 of your opponent's rested Characters with a cost of 5 or less.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1365,6 +1373,7 @@
           "atomIndex": 0,
           "rawText": "If your Leader is [Uta], look at 3 cards from the top of your deck;",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1383,6 +1392,7 @@
           "atomIndex": 1,
           "rawText": "reveal up to 1 {FILM} type card other than [New Genesis] and add it to your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1402,6 +1412,7 @@
           "atomIndex": 2,
           "rawText": "place the rest at the bottom of your deck in any order and set up to 1 of your DON!! cards as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1684,6 +1695,7 @@
           "atomIndex": 0,
           "rawText": "Set up to 1 of your [Uta] Leader as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1702,6 +1714,7 @@
           "atomIndex": 0,
           "rawText": "Up to 1 of your Leader or Character cards gains +1000 power during this turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [

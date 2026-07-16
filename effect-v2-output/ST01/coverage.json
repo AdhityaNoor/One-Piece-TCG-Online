@@ -20,6 +20,7 @@
         "atomIndex": 0,
         "rawText": "Give this Leader or 1 of your Characters up to 1 rested DON!! card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -54,6 +55,7 @@
         "atomIndex": 0,
         "rawText": "Your opponent cannot activate a [Blocker] Character that has 5000 or more power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -72,6 +74,7 @@
         "atomIndex": 0,
         "rawText": "Play this card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -121,6 +124,7 @@
         "atomIndex": 0,
         "rawText": "This Character gains [Rush].",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -155,6 +159,7 @@
         "atomIndex": 0,
         "rawText": "Up to 1 of your Leader or Character cards other than this card gains +1000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -189,6 +194,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -223,6 +229,7 @@
         "atomIndex": 0,
         "rawText": "Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -302,6 +309,7 @@
         "atomIndex": 0,
         "rawText": "Give up to 2 rested DON!! cards to your Leader or 1 of your Characters.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -336,6 +344,7 @@
         "atomIndex": 0,
         "rawText": "[Rush]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -354,6 +363,7 @@
         "atomIndex": 0,
         "rawText": "Your opponent cannot activate [Blocker] during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -388,6 +398,7 @@
         "atomIndex": 0,
         "rawText": "This Character gains +1000 power.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -422,6 +433,7 @@
         "atomIndex": 0,
         "rawText": "Up to 1 of your Leader or Character cards gains +3000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -440,6 +452,7 @@
         "atomIndex": 0,
         "rawText": "Up to 1 of your Leader or Character cards gains +1000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -474,6 +487,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's Characters with 6000 power or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -492,6 +506,7 @@
         "atomIndex": 0,
         "rawText": "Activate this card's [Main] effect.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -526,6 +541,7 @@
         "atomIndex": 0,
         "rawText": "Select up to 1 of your {Straw Hat Crew} type Leader or Character cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -542,6 +558,7 @@
         "atomIndex": 1,
         "rawText": "Your opponent cannot activate [Blocker] if that Leader or Character attacks during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -560,6 +577,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's [Blocker] Characters with a cost of 3 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -594,6 +612,7 @@
         "atomIndex": 0,
         "rawText": "You may rest this Stage:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -612,6 +631,7 @@
         "atomIndex": 1,
         "rawText": "Up to 1 {Straw Hat Crew} type Leader or Character card on your field gains +1000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [

@@ -34,6 +34,24 @@
                 "kind": "NUMBER",
                 "value": 3
               }
+            },
+            {
+              "type": "TRASH_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
             }
           ],
           "optionalPayment": "REQUIRED_TO_ACTIVATE",
@@ -100,6 +118,24 @@
                   "kind": "NUMBER",
                   "value": 3
                 }
+              },
+              {
+                "type": "TRASH_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "HAND"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
               }
             ],
             "optionalPayment": "REQUIRED_TO_ACTIVATE",
@@ -155,6 +191,7 @@
           "atomIndex": 0,
           "rawText": "③ You may trash 1 card from your hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -173,6 +210,7 @@
           "atomIndex": 1,
           "rawText": "Set this Leader as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -405,6 +443,7 @@
           "atomIndex": 0,
           "rawText": "If you have 3 or more Characters, this card gains +2000 power.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -554,6 +593,7 @@
           "atomIndex": 0,
           "rawText": "[Blocker]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -832,6 +872,7 @@
           "atomIndex": 0,
           "rawText": "KO up to 1 of your opponent's rested Characters with a cost of 3 or less.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -850,6 +891,7 @@
           "atomIndex": 0,
           "rawText": "Play this card.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -921,6 +963,23 @@
               "count": {
                 "kind": "NUMBER",
                 "value": 1
+              }
+            },
+            {
+              "type": "REST_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
               }
             }
           ],
@@ -1054,6 +1113,23 @@
                   "kind": "NUMBER",
                   "value": 1
                 }
+              },
+              {
+                "type": "REST_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
               }
             ],
             "optionalPayment": "REQUIRED_TO_ACTIVATE",
@@ -1177,6 +1253,7 @@
           "atomIndex": 0,
           "rawText": "➀ You may rest this Character:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1195,6 +1272,7 @@
           "atomIndex": 1,
           "rawText": "Look at 5 cards from the top of your deck;",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1213,6 +1291,7 @@
           "atomIndex": 2,
           "rawText": "reveal up to 1 {Supernovas} type card and add it to your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1232,6 +1311,7 @@
           "atomIndex": 3,
           "rawText": "place the rest at the bottom of your deck in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1431,6 +1511,7 @@
           "atomIndex": 0,
           "rawText": "Rest up to 1 of your opponent's DON!! cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1616,6 +1697,7 @@
           "atomIndex": 0,
           "rawText": "Set up to 1 of your {Supernovas} or {Heart Pirates} type rested Characters with a cost of 5 or less as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1837,6 +1919,7 @@
           "atomIndex": 0,
           "rawText": "If this Character battles your opponent's Character, set this card as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2185,6 +2268,7 @@
           "atomIndex": 0,
           "rawText": "[Blocker]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2203,6 +2287,7 @@
           "atomIndex": 0,
           "rawText": "Set this card as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2464,6 +2549,7 @@
           "atomIndex": 0,
           "rawText": "If this Character is rested, your {Supernovas} or {Navy} type Leaders and Characters gain +1000 power.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2797,6 +2883,7 @@
           "atomIndex": 0,
           "rawText": "Up to 1 of your Leader or Character cards gains +2000 power during this battle.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2815,6 +2902,7 @@
           "atomIndex": 1,
           "rawText": "set up to 1 of your DON!! cards as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2833,6 +2921,7 @@
           "atomIndex": 0,
           "rawText": "Set up to 2 of your DON!! cards as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3061,6 +3150,7 @@
           "atomIndex": 0,
           "rawText": "Up to 1 of your Leader or Character cards gains +4000 power during this battle.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3079,6 +3169,7 @@
           "atomIndex": 1,
           "rawText": "set up to 1 of your DON!! cards as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3365,6 +3456,7 @@
           "atomIndex": 0,
           "rawText": "Rest up to 1 of your opponent's Characters.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3383,6 +3475,7 @@
           "atomIndex": 0,
           "rawText": "Play up to 1 {Supernovas} type card with a cost of 2 or less from your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [

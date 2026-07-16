@@ -171,6 +171,7 @@
           "atomIndex": 0,
           "rawText": "Reveal 1 card from the top of your deck.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -189,6 +190,7 @@
           "atomIndex": 1,
           "rawText": "If that card is a {The Seven Warlords of the Sea} type card, draw 2 cards and place 1 card from your hand at the top of your deck.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -461,6 +463,7 @@
           "atomIndex": 0,
           "rawText": "You may return 1 of your Characters to the owner's hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -479,6 +482,7 @@
           "atomIndex": 1,
           "rawText": "If your Leader has the {The Seven Warlords of the Sea} type, return up to 1 Character with a cost of 4 or less to the owner's hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -698,6 +702,7 @@
           "atomIndex": 0,
           "rawText": "Look at 3 cards from the top of your deck",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -716,6 +721,7 @@
           "atomIndex": 1,
           "rawText": "place them at the top of your deck in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1139,6 +1145,7 @@
           "atomIndex": 0,
           "rawText": "[Blocker]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1157,6 +1164,7 @@
           "atomIndex": 0,
           "rawText": "Look at 3 cards from the top of your deck",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1175,6 +1183,7 @@
           "atomIndex": 1,
           "rawText": "place them at the top or bottom of your deck in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1193,6 +1202,7 @@
           "atomIndex": 2,
           "rawText": "give up to 1 rested DON!! card to 1 of your {The Seven Warlords of the Sea} type Leader or Character cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1435,6 +1445,7 @@
           "atomIndex": 0,
           "rawText": "You may place 1 card from your hand at the top of your deck:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1453,6 +1464,7 @@
           "atomIndex": 1,
           "rawText": "Give up to 2 rested DON!! cards to your Leader or 1 of your Characters.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [

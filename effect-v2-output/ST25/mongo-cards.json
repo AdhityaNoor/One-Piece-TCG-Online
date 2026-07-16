@@ -346,6 +346,7 @@
           "atomIndex": 0,
           "rawText": "If you have 2 or more Characters with a base cost of 5 or more, this Character gains +1 cost.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -364,6 +365,7 @@
           "atomIndex": 0,
           "rawText": "If your Leader is [Buggy], draw 3 cards",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -382,6 +384,7 @@
           "atomIndex": 1,
           "rawText": "trash 2 cards from your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -663,6 +666,7 @@
           "atomIndex": 0,
           "rawText": "If you have 2 or more Characters with a base cost of 5 or more, this Character gains [Blocker]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -681,6 +685,7 @@
           "atomIndex": 1,
           "rawText": "If you have 2 or more Characters with a base cost of 5 or more, this Character gains +1 cost.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -699,6 +704,7 @@
           "atomIndex": 2,
           "rawText": "[Opponent's Turn] This Character gains +5000 power.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1205,6 +1211,7 @@
           "atomIndex": 0,
           "rawText": "Draw 2 cards",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1223,6 +1230,7 @@
           "atomIndex": 1,
           "rawText": "trash 1 card from your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1241,6 +1249,7 @@
           "atomIndex": 2,
           "rawText": "play up to 1 {Cross Guild} type Character card with a cost of 4 or less from your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1259,6 +1268,7 @@
           "atomIndex": 0,
           "rawText": "If your {Cross Guild} type Character would be removed from the field by your opponent's effect, you may trash 1 card from your hand instead.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1583,6 +1593,7 @@
           "atomIndex": 0,
           "rawText": "You may trash 1 card from your hand and trash this Character:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1601,6 +1612,7 @@
           "atomIndex": 1,
           "rawText": "If your Leader is [Buggy], play up to 1 {Cross Guild} type Character card with a cost of 6 or less from your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1966,6 +1978,7 @@
           "atomIndex": 0,
           "rawText": "If you have 2 or more Characters with a base cost of 5 or more, this Character gains [Blocker]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1984,6 +1997,7 @@
           "atomIndex": 1,
           "rawText": "If you have 2 or more Characters with a base cost of 5 or more, this Character gains +1 cost.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2002,6 +2016,7 @@
           "atomIndex": 0,
           "rawText": "If your Leader is [Buggy] and you have 3 or less cards in your hand, draw 1 card.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [

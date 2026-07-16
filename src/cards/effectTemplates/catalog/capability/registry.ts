@@ -1544,6 +1544,7 @@ export const TIMINGS: Record<IrTiming, string> = {
   counter: '[Counter] — during the opponent\'s attack, from hand.',
   lifeTrigger: '[Trigger] — when this card is revealed from Life.',
   endOfTurn: '[End of Your Turn].',
+  startOfGame: '"At the start of the game" — fires once per player from setup (5-2-1-5-1), before opening hands are dealt. Never fires via the normal card-play/battle cascade paths.',
 };
 
 export const DURATIONS: Record<IrDuration, string> = {
@@ -1564,6 +1565,7 @@ export const KEYWORDS: Record<ContinuousKeyword, string> = {
   canAttackActive: 'Can attack active Characters/Leader (attack-restriction lift).',
   canAttackCharactersWhileSummoningSick: 'Can attack Characters on the turn this Character is played, without granting Leader attacks.',
 };
+
 
 /** Convenience: all capability ids by group, for the doc generator and the triage classifier. */
 export const CAPABILITY_INDEX = {

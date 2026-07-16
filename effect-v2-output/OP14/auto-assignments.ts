@@ -3246,7 +3246,7 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
               ]
             },
             "cost": {
-              "propertyLayer": "CURRENT",
+              "propertyLayer": "BASE",
               "comparison": "AT_LEAST",
               "value": {
                 "kind": "NUMBER",

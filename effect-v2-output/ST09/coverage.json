@@ -20,6 +20,7 @@
         "atomIndex": 0,
         "rawText": "If you have 2 or less Life cards, this Leader gains +1000 power.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -54,6 +55,7 @@
         "atomIndex": 0,
         "rawText": "Rest up to 1 of your opponent's Characters with a cost of 2 or less and add this card to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -103,6 +105,7 @@
         "atomIndex": 0,
         "rawText": "If you have 2 or less Life cards, this Character cannot be KO'd in battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -137,6 +140,7 @@
         "atomIndex": 0,
         "rawText": "This Character gains [Double Attack].",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -155,6 +159,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 2 cards from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -173,6 +178,7 @@
         "atomIndex": 1,
         "rawText": "Add up to 1 card from the top of your deck to the top of your Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -222,6 +228,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -240,6 +247,7 @@
         "atomIndex": 0,
         "rawText": "You may add 1 card from the top or bottom of your Life cards to your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -258,6 +266,7 @@
         "atomIndex": 1,
         "rawText": "This Character gains +4000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -292,6 +301,7 @@
         "atomIndex": 0,
         "rawText": "You may add 1 card from the top or bottom of your Life cards to your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -310,6 +320,7 @@
         "atomIndex": 1,
         "rawText": "Play up to 1 yellow {Land of Wano} type Character card with a cost of 4 or less from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -344,6 +355,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's Characters with a cost of 1 or less and add this card to your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -378,6 +390,7 @@
         "atomIndex": 0,
         "rawText": "If this Character would be KO'd, you may trash 1 card from the top or bottom of your Life cards instead.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -427,6 +440,7 @@
         "atomIndex": 0,
         "rawText": "You may add 1 card from the top or bottom of your Life cards to your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -445,6 +459,7 @@
         "atomIndex": 1,
         "rawText": "This Character gains +2000 power until the start of your next turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -494,6 +509,7 @@
         "atomIndex": 0,
         "rawText": "If you have 2 or less Life cards, give up to 1 of your opponent's Leader or Character cards −3000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -512,6 +528,7 @@
         "atomIndex": 0,
         "rawText": "You may trash 2 cards from your hand:",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -530,6 +547,7 @@
         "atomIndex": 1,
         "rawText": "Add up to 1 card from the top of your deck to the top of your Life cards.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -564,6 +582,7 @@
         "atomIndex": 0,
         "rawText": "Up to 1 of your Leader or Character cards gains +4000 power during this battle.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -582,6 +601,7 @@
         "atomIndex": 1,
         "rawText": "if you have 2 or less Life cards, add up to 1 of your opponent's Characters with a cost of 3 or less to the top or bottom of the owner's Life cards face-up.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -600,6 +620,7 @@
         "atomIndex": 0,
         "rawText": "Draw 1 card.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [

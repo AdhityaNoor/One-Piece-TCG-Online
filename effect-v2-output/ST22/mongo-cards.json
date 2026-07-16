@@ -171,6 +171,7 @@
           "atomIndex": 0,
           "rawText": "You may reveal 1 card with a type including \"Whitebeard Pirates\" from your hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -189,6 +190,7 @@
           "atomIndex": 1,
           "rawText": "Draw 1 card and place the revealed card at the top of your deck.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -614,6 +616,7 @@
           "atomIndex": 0,
           "rawText": "Look at 5 cards from the top of your deck;",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -632,6 +635,7 @@
           "atomIndex": 1,
           "rawText": "reveal up to 1 card with a type including \"Whitebeard Pirates\" other than [Izo] and add it to your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -651,6 +655,7 @@
           "atomIndex": 2,
           "rawText": "place the rest at the bottom of your deck in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -669,6 +674,7 @@
           "atomIndex": 0,
           "rawText": "You may trash this Character:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -687,6 +693,7 @@
           "atomIndex": 1,
           "rawText": "Draw 1 card and place 1 card from your hand at the bottom of your deck.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1044,6 +1051,7 @@
           "atomIndex": 0,
           "rawText": "[Double Attack]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1062,6 +1070,7 @@
           "atomIndex": 0,
           "rawText": "Reveal 1 card from the top of your deck.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1080,6 +1089,7 @@
           "atomIndex": 1,
           "rawText": "If that card's type includes \"Whitebeard Pirates\", draw 2 cards.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1560,6 +1570,7 @@
           "atomIndex": 0,
           "rawText": "If this Character would be removed from the field by your opponent's effect, you may trash 2 cards from your hand instead.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1578,6 +1589,7 @@
           "atomIndex": 0,
           "rawText": "You may rest 3 of your DON!! cards and return 1 of your Characters other than this Character to the owner's hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1596,6 +1608,7 @@
           "atomIndex": 1,
           "rawText": "Set this Character as active.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1905,6 +1918,7 @@
           "atomIndex": 0,
           "rawText": "Reveal 1 card from the top of your deck.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1923,6 +1937,7 @@
           "atomIndex": 1,
           "rawText": "If that card's type includes \"Whitebeard Pirates\", draw 2 cards",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1941,6 +1956,7 @@
           "atomIndex": 2,
           "rawText": "trash 1 card from your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2255,6 +2271,7 @@
           "atomIndex": 0,
           "rawText": "Reveal 1 card from the top of your deck.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2273,6 +2290,7 @@
           "atomIndex": 1,
           "rawText": "If that card's type includes \"Whitebeard Pirates\", give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2445,6 +2463,7 @@
           "atomIndex": 0,
           "rawText": "[Blocker]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2734,6 +2753,7 @@
           "atomIndex": 0,
           "rawText": "You may reveal 2 cards with a type including \"Whitebeard Pirates\" from your hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -2752,6 +2772,7 @@
           "atomIndex": 1,
           "rawText": "Up to 1 of your Leader with a type including \"Whitebeard Pirates\" gains +2000 power during this turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3279,6 +3300,7 @@
           "atomIndex": 0,
           "rawText": "If this Character would be KO'd by your opponent's effect, you may trash 1 card from your hand instead.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3297,6 +3319,7 @@
           "atomIndex": 0,
           "rawText": "Reveal 1 card from the top of your deck.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3315,6 +3338,7 @@
           "atomIndex": 1,
           "rawText": "If that card's type includes \"Whitebeard Pirates\", this Character gains +1000 power until the end of your opponent's next turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3724,6 +3748,7 @@
           "atomIndex": 0,
           "rawText": "If your Leader's type includes \"Whitebeard Pirates\", play up to 1 [Edward.Newgate] from your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3742,6 +3767,7 @@
           "atomIndex": 1,
           "rawText": "you may add 1 card from the top or bottom of your Life cards to your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -3761,6 +3787,7 @@
           "atomIndex": 2,
           "rawText": "If you do, up to 1 of your Leader gains +2000 power until the end of your opponent's next turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4142,6 +4169,7 @@
           "atomIndex": 0,
           "rawText": "Reveal 1 card from the top of your deck.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4160,6 +4188,7 @@
           "atomIndex": 1,
           "rawText": "If that card's type includes \"Whitebeard Pirates\", up to 1 of your Leader or Character cards gains +4000 power during this battle.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4178,6 +4207,7 @@
           "atomIndex": 0,
           "rawText": "Draw 1 card.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4530,6 +4560,7 @@
           "atomIndex": 0,
           "rawText": "You may reveal 2 cards with a type including \"Whitebeard Pirates\" from your hand:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4548,6 +4579,7 @@
           "atomIndex": 1,
           "rawText": "Draw 1 card.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4566,6 +4598,7 @@
           "atomIndex": 2,
           "rawText": "place up to 1 Character with a cost of 5 or less at the bottom of the owner's deck.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -4585,6 +4618,7 @@
           "atomIndex": 0,
           "rawText": "Return up to 1 Character with a cost of 3 or less to the owner's hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [

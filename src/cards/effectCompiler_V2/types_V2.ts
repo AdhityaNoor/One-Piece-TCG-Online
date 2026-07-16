@@ -374,6 +374,9 @@ export interface ParsedAtomicEffect_V2 {
   normalizedText: string;
   parsedAction?: Action_V2;
   parsedCost?: CostAction_V2;
+  parsedCosts?: CostAction_V2[];
+  semanticStatus?: 'safe' | 'needsAudit';
+  semanticIssues?: string[];
   canonicalAtoms?: string[];
   canonicalCoverage?: 'canonical' | 'parserGap' | 'definitionGap';
   canonicalRemark?: string;
@@ -420,6 +423,8 @@ export interface AtomicCoverageStatus_V2 {
   atomIndex: number;
   rawText: string;
   parserStatus: 'recognized' | 'unrecognized';
+  semanticStatus?: 'safe' | 'needsAudit';
+  semanticIssues?: string[];
   assignmentStatus: 'assigned' | 'partial' | 'unassigned';
   status: 'covered' | 'partial' | 'uncovered';
   coveredByAssignmentIds: string[];

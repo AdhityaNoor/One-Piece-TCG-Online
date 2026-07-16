@@ -81,7 +81,7 @@
               },
               "chooser": "EFFECT_OWNER",
               "cost": {
-                "propertyLayer": "CURRENT",
+                "propertyLayer": "BASE",
                 "comparison": "AT_MOST",
                 "value": {
                   "kind": "NUMBER",
@@ -179,7 +179,7 @@
                 },
                 "chooser": "EFFECT_OWNER",
                 "cost": {
-                  "propertyLayer": "CURRENT",
+                  "propertyLayer": "BASE",
                   "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
@@ -218,6 +218,7 @@
           "atomIndex": 0,
           "rawText": "If your Leader has the {Land of Wano} type and your opponent has 3 or more Life cards, KO up to 1 of your opponent's Characters with a base cost of 5 or less.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -534,6 +535,7 @@
           "atomIndex": 0,
           "rawText": "This Character gains [Blocker].",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -552,6 +554,7 @@
           "atomIndex": 0,
           "rawText": "Your {Land of Wano} type Leader gains [Banish] during this turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -761,6 +764,7 @@
           "atomIndex": 0,
           "rawText": "If your Leader has the {Land of Wano} type and your opponent has 3 or less Life cards, play this card.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1235,6 +1239,7 @@
           "atomIndex": 0,
           "rawText": "If you have 2 or less Life cards, your Leader gains +1000 power.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1253,6 +1258,7 @@
           "atomIndex": 0,
           "rawText": "You may return 2 total of your currently given DON!! cards to your cost area rested:",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1271,6 +1277,7 @@
           "atomIndex": 1,
           "rawText": "This Character gains [Rush]",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1289,6 +1296,7 @@
           "atomIndex": 2,
           "rawText": "This Character gains +1000 power during this turn.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1781,6 +1789,7 @@
           "atomIndex": 0,
           "rawText": "This Character gains +3000 power.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1799,6 +1808,7 @@
           "atomIndex": 0,
           "rawText": "Look at 5 cards from the top of your deck;",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1817,6 +1827,7 @@
           "atomIndex": 1,
           "rawText": "reveal up to 1 {Land of Wano} type card with a cost of 2 or more and add it to your hand.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [
@@ -1836,6 +1847,7 @@
           "atomIndex": 2,
           "rawText": "place the rest at the bottom of your deck in any order.",
           "parserStatus": "recognized",
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
           "status": "covered",
           "coveredByAssignmentIds": [

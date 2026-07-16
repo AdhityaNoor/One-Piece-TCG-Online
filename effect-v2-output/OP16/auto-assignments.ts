@@ -13061,11 +13061,9 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
             "subject": "CARD",
             "controller": "PLAYER",
             "zones": [
-              "LEADER_AREA",
               "CHARACTER_AREA"
             ],
             "cardCategories": [
-              "LEADER",
               "CHARACTER"
             ],
             "quantity": {

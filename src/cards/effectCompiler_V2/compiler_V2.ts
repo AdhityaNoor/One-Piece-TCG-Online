@@ -63,7 +63,8 @@ export function buildCoverageReportFromAssignments_V2(parsed: ParsedEffect_V2, a
     const coveringAssignments = assignmentByAtom.get(atom.id) ?? [];
     const hasPartial = coveringAssignments.some((assignment) => assignment.status === 'PARTIAL');
     const hasAssigned = coveringAssignments.some((assignment) => assignment.status === 'ASSIGNED');
-    const status: AtomicCoverageStatus_V2['status'] = hasAssigned ? 'covered' : hasPartial ? 'partial' : 'uncovered';
+    const semanticNeedsAudit = atom.semanticStatus === 'needsAudit';
+    const status: AtomicCoverageStatus_V2['status'] = semanticNeedsAudit ? 'partial' : hasAssigned ? 'covered' : hasPartial ? 'partial' : 'uncovered';
     const assignmentStatus: AtomicCoverageStatus_V2['assignmentStatus'] = hasAssigned ? 'assigned' : hasPartial ? 'partial' : 'unassigned';
     return {
       atomicEffectId: atom.id,
@@ -72,6 +73,8 @@ export function buildCoverageReportFromAssignments_V2(parsed: ParsedEffect_V2, a
       atomIndex: atom.atomIndex,
       rawText: atom.rawText,
       parserStatus: atom.coverage === 'coveredByParser' ? 'recognized' : 'unrecognized',
+      ...(atom.semanticStatus ? { semanticStatus: atom.semanticStatus } : {}),
+      ...(atom.semanticIssues ? { semanticIssues: atom.semanticIssues } : {}),
       assignmentStatus,
       status,
       coveredByAssignmentIds: coveringAssignments.map((assignment) => assignment.assignmentId),
@@ -81,13 +84,14 @@ export function buildCoverageReportFromAssignments_V2(parsed: ParsedEffect_V2, a
       ...(atom.unrecognizedKind ? { unrecognizedKind: atom.unrecognizedKind } : {}),
       ...(status === 'uncovered' ? { uncoveredReason: atom.uncoveredReason ?? 'No V2 assignment covers this atomic effect.' } : {}),
       ...(atom.trackingRemark ? { trackingRemark: atom.trackingRemark } : {}),
+      ...(semanticNeedsAudit ? { trackingRemark: atom.semanticIssues?.join(' ') ?? 'Parser recognized this atom, but semantic audit marked it unsafe.' } : {}),
     };
   });
 
   const parserRecognized = statuses.filter((status) => status.parserStatus === 'recognized').length;
   const parserUnrecognized = statuses.filter((status) => status.parserStatus === 'unrecognized').length;
   const assignmentCovered = statuses.filter((status) => status.assignmentStatus === 'assigned').length;
-  const assignmentPartial = statuses.filter((status) => status.assignmentStatus === 'partial').length;
+  const assignmentPartial = statuses.filter((status) => status.status === 'partial').length;
   const assignmentUncovered = statuses.filter((status) => status.assignmentStatus === 'unassigned').length;
 
   return {

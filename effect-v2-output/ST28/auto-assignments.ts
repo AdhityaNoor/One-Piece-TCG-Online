@@ -78,7 +78,7 @@ export const ST28_AUTO_ASSIGNMENTS_V2 = [
             },
             "chooser": "EFFECT_OWNER",
             "cost": {
-              "propertyLayer": "CURRENT",
+              "propertyLayer": "BASE",
               "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",

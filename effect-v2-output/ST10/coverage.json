@@ -20,6 +20,7 @@
         "atomIndex": 0,
         "rawText": "DON!! −3 :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -38,6 +39,7 @@
         "atomIndex": 1,
         "rawText": "Place up to 1 of your opponent's Characters with 3000 power or less at the bottom of the owner's deck,",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -57,6 +59,7 @@
         "atomIndex": 2,
         "rawText": "play up to 1 Character card with a cost of 4 or less from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -91,6 +94,7 @@
         "atomIndex": 0,
         "rawText": "If you have 0 DON!! cards on your field or 8 or more DON!! cards on your field, add up to 1 DON!! card from your DON!! deck and set it as active.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -125,6 +129,7 @@
         "atomIndex": 0,
         "rawText": "If you have 4 or more Life cards, give this Leader −1000 power.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -143,6 +148,7 @@
         "atomIndex": 0,
         "rawText": "DON!! −1 :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -161,6 +167,7 @@
         "atomIndex": 1,
         "rawText": "This Leader gains +2000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -195,6 +202,7 @@
         "atomIndex": 0,
         "rawText": "If your opponent has a Character with 5000 or more power, this Character gains [Rush] during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -229,6 +237,7 @@
         "atomIndex": 0,
         "rawText": "Give up to 1 of your opponent's Characters −2000 power during this turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -263,6 +272,7 @@
         "atomIndex": 0,
         "rawText": "[Rush]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -281,6 +291,7 @@
         "atomIndex": 1,
         "rawText": "[Once Per Turn] When your opponent activates a [Blocker], KO up to 1 of your opponent's Characters with 8000 power or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -315,6 +326,7 @@
         "atomIndex": 0,
         "rawText": "When a DON!! card on your field is returned to your DON!! deck, KO up to 1 of your opponent's rested Characters with a cost of 3 or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -349,6 +361,7 @@
         "atomIndex": 0,
         "rawText": "If you have 3 or less DON!! cards on your field, add up to 2 DON!! cards from your DON!! deck and rest them.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -383,6 +396,7 @@
         "atomIndex": 0,
         "rawText": "➀ :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -401,6 +415,7 @@
         "atomIndex": 1,
         "rawText": "Add up to 1 DON!! card from your DON!! deck and set it as active.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -435,6 +450,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -453,6 +469,7 @@
         "atomIndex": 0,
         "rawText": "DON!! −1 :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -471,6 +488,7 @@
         "atomIndex": 1,
         "rawText": "If your opponent has 7 or more cards in their hand, trash 2 cards from your opponent's hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -505,6 +523,7 @@
         "atomIndex": 0,
         "rawText": "When a DON!! card on your field is returned to your DON!! deck, this Character gains +2000 power until the start of your next turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -539,6 +558,7 @@
         "atomIndex": 0,
         "rawText": "If your opponent has more DON!! cards on their field than you, add up to 1 DON!! card from your DON!! deck and rest it.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -573,6 +593,7 @@
         "atomIndex": 0,
         "rawText": "DON!! −1 :",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -591,6 +612,7 @@
         "atomIndex": 1,
         "rawText": "Up to 1 of your Leader gains +1000 power until the start of your next turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -625,6 +647,7 @@
         "atomIndex": 0,
         "rawText": "[Blocker]",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -643,6 +666,7 @@
         "atomIndex": 1,
         "rawText": "[Once Per Turn] When a DON!! card on your field is returned to your DON!! deck, draw 1 card",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -661,6 +685,7 @@
         "atomIndex": 2,
         "rawText": "trash 1 card from your hand.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -695,6 +720,7 @@
         "atomIndex": 0,
         "rawText": "Up to 1 of your Leader or Character cards gains +2000 power during this battle, and KO up to 1 of your opponent's Characters with 2000 power or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -729,6 +755,7 @@
         "atomIndex": 0,
         "rawText": "KO up to 1 of your opponent's Characters with 7000 power or less.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -747,6 +774,7 @@
         "atomIndex": 0,
         "rawText": "Up to 1 of your Leader gains +1000 power until the end of your next turn.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -781,6 +809,7 @@
         "atomIndex": 0,
         "rawText": "Rest up to 1 of your opponent's Characters with a cost of 2 or less,",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -799,6 +828,7 @@
         "atomIndex": 1,
         "rawText": "add up to 1 DON!! card from your DON!! deck and rest it.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [
@@ -817,6 +847,7 @@
         "atomIndex": 0,
         "rawText": "Add up to 1 DON!! card from your DON!! deck and set it as active.",
         "parserStatus": "recognized",
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [

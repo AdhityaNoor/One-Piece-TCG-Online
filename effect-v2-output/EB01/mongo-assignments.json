@@ -38,6 +38,13 @@
           "type": "MODIFY_COUNTER",
           "selector": {
             "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "ALL"
             },
@@ -47,6 +54,14 @@
               "values": [
                 "Land of Wano"
               ]
+            },
+            "counter": {
+              "propertyLayer": "BASE",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 0
+              }
             }
           },
           "propertyLayer": "CURRENT_VALUE",

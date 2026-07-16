@@ -3241,7 +3241,7 @@
               ]
             },
             "cost": {
-              "propertyLayer": "CURRENT",
+              "propertyLayer": "BASE",
               "comparison": "AT_LEAST",
               "value": {
                 "kind": "NUMBER",
