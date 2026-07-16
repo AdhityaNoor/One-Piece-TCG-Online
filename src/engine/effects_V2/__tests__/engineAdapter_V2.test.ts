@@ -651,6 +651,295 @@ describe('V2 engine adapter', () => {
     }
   });
 
+  it('prompts and resumes V2 direct deck search-to-hand selections', () => {
+    const base = createSampleGameState();
+    const sourceInstanceId = base.players.p1.leaderInstanceId;
+    const wantedId = 'deck-smile';
+    const otherId = 'deck-other';
+    const drawId = 'deck-draw-after-search';
+    const state = {
+      ...base,
+      players: {
+        ...base.players,
+        p1: {
+          ...base.players.p1,
+          deck: { ...base.players.p1.deck, cardIds: [wantedId, otherId, drawId] },
+        },
+      },
+      cardsById: {
+        ...base.cardsById,
+        [sourceInstanceId]: { ...base.cardsById[sourceInstanceId], cardDefinitionId: 'TEST-LEADER' },
+        [wantedId]: instance(wantedId, 'p1', 'deck', { cardDefinitionId: 'SMILE' }),
+        [otherId]: instance(otherId, 'p1', 'deck', { cardDefinitionId: 'OTHER-CHAR' }),
+        [drawId]: instance(drawId, 'p1', 'deck', { cardDefinitionId: 'OTHER-CHAR' }),
+      },
+    };
+    const cardDefs: CardDefinitionLookup = {
+      ...defs(),
+      SMILE: def('SMILE', { name: 'Artificial Devil Fruit SMILE', category: 'character', baseCost: 1, life: undefined }),
+      'OTHER-CHAR': def('OTHER-CHAR', { name: 'Other Card', category: 'character', baseCost: 1, life: undefined }),
+    };
+    const bundle = runtime([
+      effect('TEST-LEADER#direct-search', 'ON_PLAY', {
+        kind: 'SEQUENCE',
+        nodes: [
+          {
+            kind: 'ACTION',
+            action: {
+              type: 'MOVE_CARD',
+              selector: {
+                subject: 'CARD',
+                owner: 'PLAYER',
+                zones: ['DECK'],
+                names: [{ kind: 'NAME_EXACT', value: 'Artificial Devil Fruit SMILE' }],
+                quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+                chooser: 'EFFECT_OWNER',
+              },
+              to: { zone: 'HAND', owner: 'PLAYER' },
+              cause: 'EFFECT',
+            },
+          },
+          {
+            kind: 'ACTION',
+            action: { type: 'DRAW_CARD', player: 'PLAYER', count: { kind: 'NUMBER', value: 1 } },
+          },
+        ],
+      }),
+    ]);
+
+    const prompted = applyV2EffectsForAction({
+      state,
+      defs: cardDefs,
+      runtime: bundle,
+      sidecars: null,
+      action: { type: 'PASS_STEP', actionId: 'direct-search-played', playerId: 'p1' },
+      log: [logEntry({ relatedCardInstanceIds: [sourceInstanceId] })],
+    });
+
+    expect(prompted.state.players.p1.hand.cardIds).toEqual([]);
+    expect(prompted.state.players.p1.deck.cardIds).toEqual([wantedId, otherId, drawId]);
+    expect(prompted.state.pendingChoices).toHaveLength(1);
+    expect(prompted.state.pendingChoices[0]).toMatchObject({
+      sourceEffectId: 'v2:selectMoveToHand',
+      constraints: { candidateInstanceIds: [wantedId], visibleInstanceIds: [wantedId] },
+    });
+
+    const resolved = executeV2ActionOverride({
+      state: prompted.state,
+      defs: cardDefs,
+      runtime: bundle,
+      sidecars: prompted.sidecars,
+      action: {
+        type: 'RESOLVE_PENDING_CHOICE',
+        actionId: 'direct-search-pick',
+        playerId: 'p1',
+        choiceId: prompted.state.pendingChoices[0].id,
+        response: [wantedId],
+      },
+    });
+
+    expect(resolved.handled).toBe(true);
+    if (!resolved.handled) throw new Error('unreachable: handled asserted above');
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.state.pendingChoices).toEqual([]);
+      expect(resolved.state.players.p1.hand.cardIds).toEqual([wantedId, otherId]);
+      expect(resolved.state.players.p1.deck.cardIds).toEqual([drawId]);
+    }
+  });
+
+  it('prompts and resumes V2 direct hand play selections', () => {
+    const base = createSampleGameState();
+    const sourceInstanceId = base.players.p1.leaderInstanceId;
+    const playableId = 'hand-playable';
+    const otherPlayableId = 'hand-playable-2';
+    const nonPlayableId = 'hand-other';
+    const drawId = 'deck-after-play';
+    const state = {
+      ...base,
+      players: {
+        ...base.players,
+        p1: {
+          ...base.players.p1,
+          hand: { ...base.players.p1.hand, cardIds: [playableId, otherPlayableId, nonPlayableId] },
+          deck: { ...base.players.p1.deck, cardIds: [drawId] },
+        },
+      },
+      cardsById: {
+        ...base.cardsById,
+        [sourceInstanceId]: { ...base.cardsById[sourceInstanceId], cardDefinitionId: 'TEST-LEADER' },
+        [playableId]: instance(playableId, 'p1', 'hand', { cardDefinitionId: 'PLAYABLE-CHAR' }),
+        [otherPlayableId]: instance(otherPlayableId, 'p1', 'hand', { cardDefinitionId: 'PLAYABLE-CHAR' }),
+        [nonPlayableId]: instance(nonPlayableId, 'p1', 'hand', { cardDefinitionId: 'OTHER-CHAR' }),
+        [drawId]: instance(drawId, 'p1', 'deck', { cardDefinitionId: 'OTHER-CHAR' }),
+      },
+    };
+    const cardDefs: CardDefinitionLookup = {
+      ...defs(),
+      'PLAYABLE-CHAR': def('PLAYABLE-CHAR', { category: 'character', types: ['Straw Hat Crew'], baseCost: 2, basePower: 3000, life: undefined }),
+      'OTHER-CHAR': def('OTHER-CHAR', { category: 'character', types: ['Animal'], baseCost: 2, basePower: 3000, life: undefined }),
+    };
+    const bundle = runtime([
+      effect('TEST-LEADER#hand-play', 'ON_PLAY', {
+        kind: 'SEQUENCE',
+        nodes: [
+          {
+            kind: 'ACTION',
+            action: {
+              type: 'PLAY_CARD',
+              player: 'PLAYER',
+              selector: {
+                subject: 'CARD',
+                owner: 'PLAYER',
+                zones: ['HAND'],
+                types: { kind: 'HAS_ANY_TYPE', values: ['Straw Hat Crew'] },
+                quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+                chooser: 'EFFECT_OWNER',
+              },
+            },
+          },
+          {
+            kind: 'ACTION',
+            action: { type: 'DRAW_CARD', player: 'PLAYER', count: { kind: 'NUMBER', value: 1 } },
+          },
+        ],
+      }),
+    ]);
+
+    const prompted = applyV2EffectsForAction({
+      state,
+      defs: cardDefs,
+      runtime: bundle,
+      sidecars: null,
+      action: { type: 'PASS_STEP', actionId: 'hand-played', playerId: 'p1' },
+      log: [logEntry({ relatedCardInstanceIds: [sourceInstanceId] })],
+    });
+
+    expect(prompted.state.players.p1.characterArea.cardIds).toEqual([]);
+    expect(prompted.state.players.p1.hand.cardIds).toEqual([playableId, otherPlayableId, nonPlayableId]);
+    expect(prompted.state.pendingChoices[0]).toMatchObject({
+      sourceEffectId: 'v2:selectPlayCard',
+      constraints: { candidateInstanceIds: [playableId, otherPlayableId], visibleInstanceIds: [playableId, otherPlayableId] },
+    });
+
+    const resolved = executeV2ActionOverride({
+      state: prompted.state,
+      defs: cardDefs,
+      runtime: bundle,
+      sidecars: prompted.sidecars,
+      action: {
+        type: 'RESOLVE_PENDING_CHOICE',
+        actionId: 'hand-play-pick',
+        playerId: 'p1',
+        choiceId: prompted.state.pendingChoices[0].id,
+        response: [otherPlayableId],
+      },
+    });
+
+    expect(resolved.handled).toBe(true);
+    if (!resolved.handled) throw new Error('unreachable: handled asserted above');
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.state.pendingChoices).toEqual([]);
+      expect(resolved.state.players.p1.hand.cardIds).toEqual([playableId, nonPlayableId, drawId]);
+      expect(resolved.state.players.p1.characterArea.cardIds).toHaveLength(1);
+      const playedId = resolved.state.players.p1.characterArea.cardIds[0];
+      expect(resolved.state.cardsById[playedId].cardDefinitionId).toBe('PLAYABLE-CHAR');
+    }
+  });
+
+  it('prompts and resumes V2 targeted return-to-hand selections', () => {
+    const base = createSampleGameState();
+    const sourceInstanceId = base.players.p1.leaderInstanceId;
+    const targetOneId = 'p2-target-1';
+    const targetTwoId = 'p2-target-2';
+    const drawId = 'deck-after-return';
+    const state = {
+      ...base,
+      players: {
+        ...base.players,
+        p1: { ...base.players.p1, deck: { ...base.players.p1.deck, cardIds: [drawId] } },
+        p2: { ...base.players.p2, characterArea: { ...base.players.p2.characterArea, cardIds: [targetOneId, targetTwoId] } },
+      },
+      cardsById: {
+        ...base.cardsById,
+        [sourceInstanceId]: { ...base.cardsById[sourceInstanceId], cardDefinitionId: 'TEST-LEADER' },
+        [targetOneId]: instance(targetOneId, 'p2', 'characterArea', { cardDefinitionId: 'TARGET-CHAR' }),
+        [targetTwoId]: instance(targetTwoId, 'p2', 'characterArea', { cardDefinitionId: 'TARGET-CHAR' }),
+        [drawId]: instance(drawId, 'p1', 'deck', { cardDefinitionId: 'TARGET-CHAR' }),
+      },
+    };
+    const cardDefs: CardDefinitionLookup = {
+      ...defs(),
+      'TARGET-CHAR': def('TARGET-CHAR', { category: 'character', baseCost: 3, basePower: 3000, life: undefined }),
+    };
+    const bundle = runtime([
+      effect('TEST-LEADER#return-target', 'ON_PLAY', {
+        kind: 'SEQUENCE',
+        nodes: [
+          {
+            kind: 'ACTION',
+            action: {
+              type: 'MOVE_CARD',
+              selector: {
+                subject: 'CARD',
+                owner: 'OPPONENT',
+                zones: ['CHARACTER_AREA'],
+                quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+                chooser: 'EFFECT_OWNER',
+              },
+              to: { zone: 'HAND', owner: 'OPPONENT' },
+              cause: 'EFFECT',
+            },
+          },
+          {
+            kind: 'ACTION',
+            action: { type: 'DRAW_CARD', player: 'PLAYER', count: { kind: 'NUMBER', value: 1 } },
+          },
+        ],
+      }),
+    ]);
+
+    const prompted = applyV2EffectsForAction({
+      state,
+      defs: cardDefs,
+      runtime: bundle,
+      sidecars: null,
+      action: { type: 'PASS_STEP', actionId: 'target-return-played', playerId: 'p1' },
+      log: [logEntry({ relatedCardInstanceIds: [sourceInstanceId] })],
+    });
+
+    expect(prompted.state.players.p2.characterArea.cardIds).toEqual([targetOneId, targetTwoId]);
+    expect(prompted.state.pendingChoices[0]).toMatchObject({
+      sourceEffectId: 'v2:selectActionTarget',
+      constraints: { candidateInstanceIds: [targetOneId, targetTwoId] },
+    });
+
+    const resolved = executeV2ActionOverride({
+      state: prompted.state,
+      defs: cardDefs,
+      runtime: bundle,
+      sidecars: prompted.sidecars,
+      action: {
+        type: 'RESOLVE_PENDING_CHOICE',
+        actionId: 'target-return-pick',
+        playerId: 'p1',
+        choiceId: prompted.state.pendingChoices[0].id,
+        response: [targetTwoId],
+      },
+    });
+
+    expect(resolved.handled).toBe(true);
+    if (!resolved.handled) throw new Error('unreachable: handled asserted above');
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) {
+      expect(resolved.state.pendingChoices).toEqual([]);
+      expect(resolved.state.players.p2.characterArea.cardIds).toEqual([targetOneId]);
+      expect(resolved.state.players.p2.hand.cardIds).toEqual([targetTwoId]);
+      expect(resolved.state.players.p1.hand.cardIds).toEqual([drawId]);
+    }
+  });
+
   it('prompts and resumes V2 modal choose options', () => {
     const base = createSampleGameState();
     const sourceInstanceId = base.players.p1.leaderInstanceId;

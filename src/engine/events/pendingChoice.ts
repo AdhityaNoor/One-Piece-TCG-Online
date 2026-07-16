@@ -153,5 +153,17 @@ export interface PendingChoice {
         actionResults: Record<string, unknown>;
       };
     };
+    v2SelectActionTarget?: {
+      sourceInstanceId: string;
+      controllerId: string;
+      timing: import('../../cards/effectCompiler_V2/types_V2').TimingExpression_V2;
+      action: import('../../cards/effectCompiler_V2/types_V2').Action_V2;
+      targetField: 'selector' | 'newTarget';
+      remainingNodes: import('../../cards/effectCompiler_V2/types_V2').ResolutionNode_V2[];
+      bindings: {
+        selectedObjects: Record<string, string[]>;
+        actionResults: Record<string, unknown>;
+      };
+    };
   };
 }

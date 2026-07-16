@@ -425,6 +425,7 @@ export function executeV2ActionOverride(input: {
       if (
         choice?.sourceEffectId !== 'v2:activationCost'
         && choice?.sourceEffectId !== 'v2:selectMoveToHand'
+        && choice?.sourceEffectId !== 'v2:selectActionTarget'
         && choice?.sourceEffectId !== 'v2:chooseOption'
         && choice?.sourceEffectId !== 'v2:reorderCards'
         && choice?.sourceEffectId !== 'v2:selectPlayCard'
@@ -559,6 +560,64 @@ export function executeV2ActionOverride(input: {
           },
         };
         const result = executeResolutionNode_V2(ctx, { kind: 'SEQUENCE', nodes: [...(playNode ? [playNode] : []), ...resume.remainingNodes] }, null);
+        return {
+          handled: true,
+          ok: true,
+          state: result.state,
+          log: result.log,
+          sidecars: mergeSidecarsFromResolution_V2(sidecars, result),
+        };
+      }
+      if (choice.sourceEffectId === 'v2:selectActionTarget') {
+        const resume = choice.resumeState?.v2SelectActionTarget;
+        if (!resume) return { handled: true, ok: false, reasons: [`Choice '${choice.id}' is missing V2 action-target resume data.`] };
+        if (!Array.isArray(action.response)) return { handled: true, ok: false, reasons: ['A V2 action-target choice expects selected card ids.'] };
+        const selectedIds = action.response;
+        const candidateSet = new Set(choice.constraints.candidateInstanceIds ?? []);
+        const reasons: string[] = [];
+        if (selectedIds.length < choice.constraints.min || selectedIds.length > choice.constraints.max) {
+          reasons.push(`Select between ${choice.constraints.min} and ${choice.constraints.max} target(s) for this V2 effect.`);
+        }
+        if (new Set(selectedIds).size !== selectedIds.length) reasons.push('V2 action-target selection contains duplicate cards.');
+        for (const id of selectedIds) {
+          if (!candidateSet.has(id)) reasons.push(`'${id}' is not an eligible target for this V2 effect.`);
+        }
+        if (reasons.length > 0) return { handled: true, ok: false, reasons };
+        const stateWithoutChoice = { ...state, pendingChoices: state.pendingChoices.filter((candidate) => candidate.id !== action.choiceId) };
+        const selectedSelector = {
+          ...(resume.targetField === 'newTarget' && resume.action.type === 'CHANGE_ATTACK_TARGET'
+            ? resume.action.newTarget
+            : 'selector' in resume.action
+              ? resume.action.selector
+              : { subject: 'CARD' as const }),
+          subject: 'CARD' as const,
+          relations: undefined,
+          instanceIds: selectedIds,
+          quantity: { kind: 'EXACTLY' as const, value: { kind: 'NUMBER' as const, value: selectedIds.length } },
+        };
+        const selectedAction = resume.targetField === 'newTarget' && resume.action.type === 'CHANGE_ATTACK_TARGET'
+          ? { ...resume.action, newTarget: selectedSelector }
+          : { ...resume.action, selector: selectedSelector };
+        const selectedNode = selectedIds.length > 0
+          ? { kind: 'ACTION' as const, action: selectedAction as typeof resume.action }
+          : null;
+        const ctx: SelectorContext_V2 = {
+          state: stateWithoutChoice,
+          defs,
+          runtime,
+          sourceInstanceId: resume.sourceInstanceId,
+          controllerId: resume.controllerId,
+          currentTiming: resume.timing,
+          bindings: {
+            selectedObjects: {
+              ...resume.bindings.selectedObjects,
+              SELECTED_PREVIOUSLY: selectedIds,
+              PREVIOUS_ACTION_TARGET: selectedIds,
+            },
+            actionResults: resume.bindings.actionResults,
+          },
+        };
+        const result = executeResolutionNode_V2(ctx, { kind: 'SEQUENCE', nodes: [...(selectedNode ? [selectedNode] : []), ...resume.remainingNodes] }, null);
         return {
           handled: true,
           ok: true,

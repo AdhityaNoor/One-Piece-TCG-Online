@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CosmeticType, ProfileSectionId, ProfileVisibility, ReportPlayerRequest, UpdateProfileRequest } from '../../../shared/profile';
 import { isBackendConfigured } from '../../multiplayer/net/backendConfig';
-import { AvatarPicker, BannerPicker, Button, CanvasMenuButton, GameCanvasScreen, Modal, OpSelect } from '../components';
+import { AvatarPicker, BannerPicker, Button, CanvasMenuButton, GameCanvasScreen, Modal, OpSelect, RankBadge } from '../components';
 import { avatarCatalogIdToOptionId, avatarOptionIdToCatalogId, resolveAvatarUrl } from '../lib/avatars';
 import { resolveBannerGradient } from '../lib/banners';
 import { useNavigationStore, useCurrentScreen } from '../store/navigationStore';
@@ -141,11 +141,19 @@ function ProfileHeader() {
         <h2 className="mt-3 truncate font-display text-xl font-black uppercase tracking-[0.1em] text-white">{profile.displayName}</h2>
         <p className="mt-1 truncate text-xs font-bold uppercase tracking-[0.14em] text-white/50">@{profile.username}</p>
         {profile.statusMessage && <p className="mt-3 text-sm leading-5 text-slate-200/75">{profile.statusMessage}</p>}
-        <div className="mt-4 border border-white/10 bg-black/25 p-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gold">{ranked?.rankName ?? 'Unranked'}</p>
-          <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-white/55">
-            {ranked ? (ranked.inPlacement ? 'Placement Voyage' : ranked.division ? `Division ${ranked.division} - ${ranked.rankedPoints} BP` : `${ranked.rankedPoints} BP`) : 'No ranked record'}
-          </p>
+        <div className="mt-4 flex items-center gap-3 border border-white/10 bg-black/25 p-3 text-left">
+          <RankBadge
+            rank={ranked?.rank}
+            division={ranked?.division}
+            inPlacement={ranked?.inPlacement ?? !ranked}
+            size="md"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-[10px] font-black uppercase tracking-[0.2em] text-gold">{ranked?.rankName ?? 'Unranked'}</p>
+            <p className="mt-1 truncate text-xs font-bold uppercase tracking-[0.12em] text-white/55">
+              {ranked ? (ranked.inPlacement ? 'Placement Voyage' : ranked.division ? `Division ${ranked.division} - ${ranked.rankedPoints} BP` : `${ranked.rankedPoints} BP`) : 'No ranked record'}
+            </p>
+          </div>
         </div>
         <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/38">Sailing Since {formatDate(profile.createdAt)}</p>
 
@@ -359,6 +367,19 @@ function RankedSection() {
   if (!header?.ranked) return <EmptyState title="Ranked Private" body="Ranked information is unavailable or private." />;
   return (
     <Panel title="Grand Line Record" subtitle="Ranked data is loaded from the ranked system, not recalculated here.">
+      <div className="mb-4 flex items-center gap-4 border border-white/10 bg-black/25 p-4">
+        <RankBadge rank={header.ranked.rank} division={header.ranked.division} inPlacement={header.ranked.inPlacement} size="lg" />
+        <div className="min-w-0">
+          <p className="truncate font-display text-lg font-black uppercase tracking-[0.08em] text-white">{header.ranked.rankName}</p>
+          <p className="mt-1 truncate text-xs font-bold uppercase tracking-[0.12em] text-white/55">
+            {header.ranked.inPlacement
+              ? 'Placement Voyage'
+              : header.ranked.division
+                ? `Division ${header.ranked.division} - ${header.ranked.rankedPoints} BP`
+                : `${header.ranked.rankedPoints} BP`}
+          </p>
+        </div>
+      </div>
       <div className="grid gap-3 md:grid-cols-4">
         <Metric label="Rank" value={header.ranked.rankName} />
         <Metric label="Division" value={header.ranked.division ?? (header.ranked.inPlacement ? 'Placement' : 'Elite')} />

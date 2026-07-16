@@ -101,6 +101,221 @@ describe('V2 resolution nodes', () => {
     expect(result.log).toHaveLength(2);
   });
 
+  it('prompts for direct deck search-to-hand instead of auto-moving a matching card', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      smile: def('smile', { name: 'Artificial Devil Fruit SMILE' }),
+      other: def('other', { name: 'Other Card' }),
+    };
+    const withDeck = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, deck: { ...state.players.p1.deck, cardIds: ['wanted', 'other'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        wanted: instance('wanted', 'smile'),
+        other: instance('other', 'other'),
+      },
+    };
+    const ctx = { state: withDeck, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+
+    const result = executeResolutionNode_V2(ctx, {
+      kind: 'SEQUENCE',
+      nodes: [
+        {
+          kind: 'ACTION',
+          action: {
+            type: 'MOVE_CARD',
+            selector: {
+              subject: 'CARD',
+              owner: 'PLAYER',
+              zones: ['DECK'],
+              names: [{ kind: 'NAME_EXACT', value: 'Artificial Devil Fruit SMILE' }],
+              quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+              chooser: 'EFFECT_OWNER',
+            },
+            to: { zone: 'HAND', owner: 'PLAYER' },
+            cause: 'EFFECT',
+          },
+        },
+        {
+          kind: 'ACTION',
+          action: { type: 'SHUFFLE_ZONE', player: 'PLAYER', zone: 'DECK' },
+        },
+      ],
+    }, 'direct-search-test');
+
+    expect(result.state.players.p1.hand.cardIds).toEqual([]);
+    expect(result.state.players.p1.deck.cardIds).toEqual(['wanted', 'other']);
+    expect(result.state.pendingChoices).toHaveLength(1);
+    expect(result.state.pendingChoices[0]).toMatchObject({
+      sourceEffectId: 'v2:selectMoveToHand',
+      constraints: {
+        min: 0,
+        max: 1,
+        zoneId: 'deck',
+        filterDescription: 'Cards in deck eligible for this V2 search effect.',
+        candidateInstanceIds: ['wanted'],
+        visibleInstanceIds: ['wanted'],
+      },
+    });
+    expect(result.state.pendingChoices[0].resumeState?.v2SelectMoveToHand?.remainingNodes).toHaveLength(1);
+    expect(result.log).toEqual([]);
+  });
+
+  it('prompts for direct hand play instead of auto-playing the first eligible card', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      ally: def('ally', { category: 'character', name: 'Ally', types: ['Straw Hat Crew'], baseCost: 2 }),
+      other: def('other', { category: 'character', name: 'Other', types: ['Animal'], baseCost: 2 }),
+    };
+    const withHand = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, hand: { ...state.players.p1.hand, cardIds: ['ally-1', 'ally-2', 'other'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'ally-1': instance('ally-1', 'ally', 'hand'),
+        'ally-2': instance('ally-2', 'ally', 'hand'),
+        other: instance('other', 'other', 'hand'),
+      },
+    };
+    const ctx = { state: withHand, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+
+    const result = executeResolutionNode_V2(ctx, {
+      kind: 'SEQUENCE',
+      nodes: [{
+        kind: 'ACTION',
+        action: {
+          type: 'PLAY_CARD',
+          player: 'PLAYER',
+          selector: {
+            subject: 'CARD',
+            owner: 'PLAYER',
+            zones: ['HAND'],
+            types: { kind: 'HAS_ANY_TYPE', values: ['Straw Hat Crew'] },
+            quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+            chooser: 'EFFECT_OWNER',
+          },
+        },
+      }],
+    }, 'direct-play-test');
+
+    expect(result.state.players.p1.hand.cardIds).toEqual(['ally-1', 'ally-2', 'other']);
+    expect(result.state.players.p1.characterArea.cardIds).toEqual([]);
+    expect(result.state.pendingChoices).toHaveLength(1);
+    expect(result.state.pendingChoices[0]).toMatchObject({
+      sourceEffectId: 'v2:selectPlayCard',
+      constraints: {
+        min: 0,
+        max: 1,
+        zoneId: 'hand',
+        filterDescription: 'Cards eligible to play with this V2 effect.',
+        candidateInstanceIds: ['ally-1', 'ally-2'],
+        visibleInstanceIds: ['ally-1', 'ally-2'],
+      },
+    });
+  });
+
+  it('prompts top-level targeted actions instead of auto-selecting the first target', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      target: def('target', { category: 'character', name: 'Target', baseCost: 3 }),
+    };
+    const withTargets = {
+      ...state,
+      players: {
+        ...state.players,
+        p2: { ...state.players.p2, characterArea: { ...state.players.p2.characterArea, cardIds: ['target-1', 'target-2'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'target-1': { ...instance('target-1', 'target', 'characterArea'), ownerId: 'p2', controllerId: 'p2', orientation: 'active' as const, faceState: 'faceUp' as const, revealedTo: 'all' as const },
+        'target-2': { ...instance('target-2', 'target', 'characterArea'), ownerId: 'p2', controllerId: 'p2', orientation: 'active' as const, faceState: 'faceUp' as const, revealedTo: 'all' as const },
+      },
+    };
+    const ctx = { state: withTargets, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+
+    const result = executeResolutionNode_V2(ctx, {
+      kind: 'ACTION',
+      action: {
+        type: 'MOVE_CARD',
+        selector: {
+          subject: 'CARD',
+          owner: 'OPPONENT',
+          zones: ['CHARACTER_AREA'],
+          quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+          chooser: 'EFFECT_OWNER',
+        },
+        to: { zone: 'HAND', owner: 'OPPONENT' },
+        cause: 'EFFECT',
+      },
+    }, 'target-choice-test');
+
+    expect(result.state.players.p2.characterArea.cardIds).toEqual(['target-1', 'target-2']);
+    expect(result.state.players.p2.hand.cardIds).toEqual([]);
+    expect(result.state.pendingChoices).toHaveLength(1);
+    expect(result.state.pendingChoices[0]).toMatchObject({
+      sourceEffectId: 'v2:selectActionTarget',
+      constraints: {
+        min: 0,
+        max: 1,
+        zoneId: 'characterArea',
+        candidateInstanceIds: ['target-1', 'target-2'],
+      },
+    });
+  });
+
+  it('does not prompt for ordered top-deck movement even when quantity is up to', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      card: def('card'),
+    };
+    const withDeck = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, deck: { ...state.players.p1.deck, cardIds: ['top', 'second'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        top: instance('top', 'card'),
+        second: instance('second', 'card'),
+      },
+    };
+    const ctx = { state: withDeck, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+
+    const result = executeResolutionNode_V2(ctx, {
+      kind: 'ACTION',
+      action: {
+        type: 'ADD_CARD_TO_LIFE',
+        selector: {
+          subject: 'CARD',
+          owner: 'PLAYER',
+          zones: ['DECK'],
+          quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+          ordering: 'DECK_ORDER',
+        },
+        player: 'PLAYER',
+        position: 'TOP',
+        face: 'FACE_DOWN',
+      },
+    }, 'ordered-top-deck-test');
+
+    expect(result.state.pendingChoices).toEqual([]);
+    expect(result.state.players.p1.deck.cardIds).toEqual(['second']);
+    expect(result.state.players.p1.lifeArea.cardIds[0]).toBe('top');
+    expect(result.log.map((entry) => entry.type)).toEqual(['CARD_MOVED']);
+  });
+
   it('does not execute an IF branch when condition atoms are unsupported', () => {
     const state = createSampleGameState();
     const defs: CardDefinitionLookup = {
