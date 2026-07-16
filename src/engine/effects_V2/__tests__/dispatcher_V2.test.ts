@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { EffectDefinition_V2, StandardTiming_V2 } from '../../../cards/effectCompiler_V2/types_V2';
 import { createSampleGameState } from '../../state/__fixtures__/sampleGameState';
 import type { CardDefinition } from '../../state/card';
+import type { GameState } from '../../state/game';
 import type { CardDefinitionLookup } from '../../rules/shared';
 import type { EffectRuntimeBundle_V2 } from '../runtime_V2';
 import { createEffectInvalidationRecord_V2 } from '../modifiers_V2';
@@ -119,7 +120,7 @@ describe('V2 effect dispatcher', () => {
     });
 
     const result = dispatchCardEffectsForTiming_V2({
-      state: withLeader,
+      state: withLeader as GameState,
       defs,
       runtime: runtime([
         effect('TEST-LEADER#0', { kind: 'ACTION', action: { type: 'DRAW_CARD', player: 'PLAYER', count: { kind: 'NUMBER', value: 1 } } }),
@@ -158,7 +159,7 @@ describe('V2 effect dispatcher', () => {
     };
 
     const result = dispatchCardEffectsForTiming_V2({
-      state: withLeader,
+      state: withLeader as GameState,
       defs,
       runtime: runtime([
         effect('TEST-LEADER#0', {
@@ -207,7 +208,7 @@ describe('V2 effect dispatcher', () => {
     };
 
     const result = dispatchCardEffectsForTiming_V2({
-      state: withLeader,
+      state: withLeader as GameState,
       defs,
       runtime: runtime([
         {
@@ -286,7 +287,7 @@ describe('V2 effect dispatcher', () => {
     ];
 
     const result = dispatchCardEffectsForTiming_V2({
-      state: withLeader,
+      state: withLeader as GameState,
       defs,
       runtime: bundle,
       sourceInstanceId,

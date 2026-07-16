@@ -20,6 +20,7 @@ function def(id: string, patch: Partial<CardDefinition> = {}): CardDefinition {
     hasRush: false,
     hasBlocker: false,
     isUnblockable: false,
+    hasDoubleAttack: false,
     ...patch,
   };
 }

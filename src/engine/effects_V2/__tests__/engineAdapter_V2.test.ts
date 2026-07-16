@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { EffectDefinition_V2, ResolutionNode_V2, StandardTiming_V2 } from '../../../cards/effectCompiler_V2/types_V2';
 import type { EffectGate_V2 } from '../../../cards/effectCompiler_V2/effectIr_V2';
 import type { CardDefinition, CardInstance } from '../../state/card';
+import type { GameState } from '../../state/game';
 import type { CardDefinitionLookup } from '../../rules/shared';
 import { createSampleGameState } from '../../state/__fixtures__/sampleGameState';
 import type { GameLogEntry } from '../../logs/logEntry';
@@ -200,7 +201,7 @@ describe('V2 engine adapter', () => {
     const cardDefs = defs();
 
     const result = applyV2EffectsForAction({
-      state,
+      state: state as GameState,
       defs: cardDefs,
       runtime: runtime([
         effect('TEST-LEADER#enter', 'ON_ENTER_PLAY', { kind: 'NO_OP' }),
@@ -248,8 +249,9 @@ describe('V2 engine adapter', () => {
     });
 
     expect(result.handled).toBe(true);
-    expect(result.ok, result.handled && !result.ok ? result.reasons.join('; ') : '').toBe(true);
-    if (result.handled && result.ok) {
+    if (!result.handled) throw new Error('unreachable: handled asserted above');
+    expect(result.ok, !result.ok ? result.reasons.join('; ') : '').toBe(true);
+    if (result.ok) {
       expect(result.state.players.p1.hand.cardIds).toEqual(['p1-override-draw']);
       expect(result.log.some((entry) => entry.type === 'CARD_DRAWN')).toBe(true);
     }
@@ -319,8 +321,9 @@ describe('V2 engine adapter', () => {
     });
 
     expect(result.handled).toBe(true);
-    expect(result.ok, result.handled && !result.ok ? result.reasons.join('; ') : '').toBe(true);
-    if (result.handled && result.ok) {
+    if (!result.handled) throw new Error('unreachable: handled asserted above');
+    expect(result.ok, !result.ok ? result.reasons.join('; ') : '').toBe(true);
+    if (result.ok) {
       expect(result.state.cardsById[donId].donRested).toBe(true);
       expect(result.state.cardsById[sourceInstanceId].orientation).toBe('rested');
       expect(result.state.players.p1.hand.cardIds).toEqual([deckCardId]);
@@ -353,6 +356,8 @@ describe('V2 engine adapter', () => {
     const bundle = runtime([effect('TEST-LEADER#paid-onplay', 'ON_PLAY')]);
     bundle.programsByCardNumber['TEST-LEADER'].abilities[0].activationCost = {
       payments: [{ type: 'DON_MINUS_COST', count: { kind: 'NUMBER', value: 1 }, selectableZones: ['COST_AREA'] }],
+      optionalPayment: 'REQUIRED_TO_ACTIVATE',
+      executionPolicy: 'VERIFY_ALL_THEN_PAY_IN_ORDER',
     };
 
     const prompted = applyV2EffectsForAction({
@@ -387,8 +392,9 @@ describe('V2 engine adapter', () => {
     });
 
     expect(resolved.handled).toBe(true);
+    if (!resolved.handled) throw new Error('unreachable: handled asserted above');
     expect(resolved.ok).toBe(true);
-    if (resolved.handled && resolved.ok) {
+    if (resolved.ok) {
       expect(resolved.state.pendingChoices).toEqual([]);
       expect(resolved.state.players.p1.hand.cardIds).toEqual([drawId]);
       expect(resolved.state.players.p1.costArea.cardIds).toEqual([]);
@@ -499,8 +505,9 @@ describe('V2 engine adapter', () => {
     });
 
     expect(resolved.handled).toBe(true);
+    if (!resolved.handled) throw new Error('unreachable: handled asserted above');
     expect(resolved.ok).toBe(true);
-    if (resolved.handled && resolved.ok) {
+    if (resolved.ok) {
       expect(resolved.state.players.p1.hand.cardIds).toEqual([wantedId]);
       expect(resolved.state.pendingChoices).toHaveLength(1);
       expect(resolved.state.pendingChoices[0]).toMatchObject({
@@ -521,8 +528,9 @@ describe('V2 engine adapter', () => {
         },
       });
       expect(reordered.handled).toBe(true);
+      if (!reordered.handled) throw new Error('unreachable: handled asserted above');
       expect(reordered.ok).toBe(true);
-      if (reordered.handled && reordered.ok) {
+      if (reordered.ok) {
         expect(reordered.state.pendingChoices).toEqual([]);
         expect(reordered.state.players.p1.deck.cardIds).toEqual([tailId, thirdId, otherId]);
       }
@@ -592,8 +600,9 @@ describe('V2 engine adapter', () => {
     });
 
     expect(resolved.handled).toBe(true);
+    if (!resolved.handled) throw new Error('unreachable: handled asserted above');
     expect(resolved.ok).toBe(true);
-    if (resolved.handled && resolved.ok) {
+    if (resolved.ok) {
       expect(resolved.state.pendingChoices).toEqual([]);
       expect(resolved.state.players.p1.hand.cardIds).toEqual([drawId]);
     }
@@ -683,8 +692,9 @@ describe('V2 engine adapter', () => {
     });
 
     expect(resolved.handled).toBe(true);
+    if (!resolved.handled) throw new Error('unreachable: handled asserted above');
     expect(resolved.ok).toBe(true);
-    if (resolved.handled && resolved.ok) {
+    if (resolved.ok) {
       expect(resolved.state.pendingChoices).toEqual([]);
       expect(resolved.state.players.p1.deck.cardIds).toEqual([otherId]);
       expect(resolved.state.players.p1.characterArea.cardIds).toHaveLength(1);
@@ -764,8 +774,8 @@ describe('V2 engine adapter', () => {
     };
 
     const result = applyV2EffectsForAction({
-      previousState: state,
-      state,
+      previousState: state as GameState,
+      state: state as GameState,
       defs: defs(),
       runtime: runtime([effect('TEST-LEADER#trigger', 'TRIGGER')]),
       sidecars: null,

@@ -3,6 +3,7 @@ import type { CardDefinition, CardInstance } from '../../state/card';
 import { createSampleGameState } from '../../state/__fixtures__/sampleGameState';
 import type { CardDefinitionLookup } from '../../rules/shared';
 import { payCosts_V2, validateCostPayments_V2 } from '../costs_V2';
+import type { CostAction_V2 } from '../../../cards/effectCompiler_V2/types_V2';
 
 function def(id: string, patch: Partial<CardDefinition> = {}): CardDefinition {
   return {
@@ -20,6 +21,7 @@ function def(id: string, patch: Partial<CardDefinition> = {}): CardDefinition {
     hasRush: false,
     hasBlocker: false,
     isUnblockable: false,
+    hasDoubleAttack: false,
     ...patch,
   };
 }
@@ -56,7 +58,7 @@ describe('V2 costs', () => {
         'life-1': instance('life-1', 'life', 'lifeArea'),
       },
     };
-    const cost = {
+    const cost: CostAction_V2 = {
       type: 'ADD_LIFE_TO_HAND_COST',
       selector: {
         subject: 'CARD',
@@ -64,7 +66,7 @@ describe('V2 costs', () => {
         zones: ['LIFE'],
         quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } },
       },
-    } as const;
+    };
     const ctx = { state: withLife, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
 
     expect(validateCostPayments_V2(ctx, [cost], [{ costIndex: 0, selectedInstanceIds: ['life-1'] }])).toEqual({ legal: true, reasons: [] });
@@ -92,7 +94,7 @@ describe('V2 costs', () => {
         'chopper-1': instance('chopper-1', 'chopper', 'characterArea'),
       },
     };
-    const cost = {
+    const cost: CostAction_V2 = {
       type: 'RETURN_CARD_TO_DECK_COST',
       position: 'BOTTOM',
       selector: {
@@ -103,7 +105,7 @@ describe('V2 costs', () => {
         power: { propertyLayer: 'PRINTED', comparison: 'EQUAL', value: { kind: 'NUMBER', value: 1000 } },
         quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } },
       },
-    } as const;
+    };
     const ctx = { state: withCharacter, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
     const paid = payCosts_V2(ctx, [cost], [{ costIndex: 0, selectedInstanceIds: ['chopper-1'] }]);
 
@@ -138,7 +140,7 @@ describe('V2 costs', () => {
         'trash-2': instance('trash-2', 'card', 'trash'),
       },
     };
-    const cost = {
+    const cost: CostAction_V2 = {
       type: 'RETURN_CARD_TO_DECK_AND_SHUFFLE_COST',
       selector: {
         subject: 'CARD',
@@ -146,7 +148,7 @@ describe('V2 costs', () => {
         zones: ['TRASH'],
         quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 2 } },
       },
-    } as const;
+    };
     const ctx = { state: withTrash, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
     const paid = payCosts_V2(ctx, [cost], [{ costIndex: 0, selectedInstanceIds: ['trash-1', 'trash-2'] }]);
 
@@ -174,7 +176,7 @@ describe('V2 costs', () => {
         'kotori-1': instance('kotori-1', 'kotori', 'hand'),
       },
     };
-    const cost = {
+    const cost: CostAction_V2 = {
       type: 'PLAY_CARD_COST',
       state: 'ACTIVE',
       selector: {
@@ -184,7 +186,7 @@ describe('V2 costs', () => {
         names: [{ kind: 'NAME_EXACT', value: 'Kotori' }],
         quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } },
       },
-    } as const;
+    };
     const ctx = { state: withHand, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
     const paid = payCosts_V2(ctx, [cost], [{ costIndex: 0, selectedInstanceIds: ['kotori-1'] }]);
 
@@ -210,7 +212,7 @@ describe('V2 costs', () => {
         'blocker-1': instance('blocker-1', 'blocker', 'characterArea'),
       },
     };
-    const cost = {
+    const cost: CostAction_V2 = {
       type: 'ADD_CARD_TO_LIFE_COST',
       position: 'TOP',
       face: 'FACE_UP',
@@ -223,7 +225,7 @@ describe('V2 costs', () => {
         power: { propertyLayer: 'CURRENT', comparison: 'AT_LEAST', value: { kind: 'NUMBER', value: 7000 } },
         quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } },
       },
-    } as const;
+    };
     const ctx = { state: withCharacter, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
     const paid = payCosts_V2(ctx, [cost], [{ costIndex: 0, selectedInstanceIds: ['blocker-1'] }]);
 
@@ -255,7 +257,7 @@ describe('V2 costs', () => {
         'noah-1': instance('noah-1', 'noah', 'stageArea'),
       },
     };
-    const cost = {
+    const cost: CostAction_V2 = {
       type: 'CHOOSE_ONE_COST',
       options: [
         [{
@@ -279,7 +281,7 @@ describe('V2 costs', () => {
           },
         }],
       ],
-    } as const;
+    };
     const ctx = { state: withOptions, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
 
     expect(validateCostPayments_V2(ctx, [cost], [{
@@ -305,7 +307,7 @@ describe('V2 costs', () => {
   it('pays temporary power modifier costs', () => {
     const state = createSampleGameState();
     const defs: CardDefinitionLookup = { 'OP01-001': def('OP01-001', { category: 'leader' }) };
-    const cost = {
+    const cost: CostAction_V2 = {
       type: 'MODIFY_POWER_COST',
       selector: {
         subject: 'CARD',
@@ -317,7 +319,7 @@ describe('V2 costs', () => {
       operation: 'SUBTRACT',
       value: { kind: 'NUMBER', value: 5000 },
       duration: { kind: 'THIS_TURN' },
-    } as const;
+    };
     const ctx = { state, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
     const paid = payCosts_V2(ctx, [cost], [{ costIndex: 0, selectedInstanceIds: ['p1-leader'] }]);
 
@@ -346,7 +348,7 @@ describe('V2 costs', () => {
         'don-1': { ...instance('don-1', 'don', 'costArea'), donRested: false },
       },
     };
-    const cost = {
+    const cost: CostAction_V2 = {
       type: 'GIVE_DON_COST',
       donSelector: {
         subject: 'DON',
@@ -362,7 +364,7 @@ describe('V2 costs', () => {
         cardCategories: ['LEADER'],
         quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } },
       },
-    } as const;
+    };
     const ctx = { state: withDon, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
     const paid = payCosts_V2(ctx, [cost], [{ costIndex: 0, selectedInstanceIds: ['don-1'], selectedTargetInstanceIds: ['p1-leader'] }]);
 
@@ -385,7 +387,7 @@ describe('V2 costs', () => {
         'don-1': { ...instance('don-1', 'don', 'leaderArea'), donRested: true },
       },
     };
-    const cost = {
+    const cost: CostAction_V2 = {
       type: 'RETURN_DON_TO_COST_AREA_COST',
       state: 'RESTED',
       selector: {
@@ -394,7 +396,7 @@ describe('V2 costs', () => {
         zones: ['ATTACHED_DON'],
         quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } },
       },
-    } as const;
+    };
     const ctx = { state: withAttachedDon, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
     const paid = payCosts_V2(ctx, [cost], [{ costIndex: 0, selectedInstanceIds: ['don-1'] }]);
 

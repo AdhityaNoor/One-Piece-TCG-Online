@@ -191,7 +191,7 @@ describe('executeDeclareAttack', () => {
     expect(result.log.some((e) => e.type === 'PHASE_CHANGED' && String(e.message).includes('no legal Blocker'))).toBe(true);
   });
 
-  it('still opens at the Block Step when the defender has a Character without [Blocker]', () => {
+  it('skips the Block Step when the defender only has a Character without [Blocker] (7-1-2: no legal Blocker)', () => {
     const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
     const { rig } = putCharacterInPlay(base, 'p2', makeCharacterDef({ hasBlocker: false }));
     const leaderId = rig.state.players.p1.leaderInstanceId;
@@ -199,7 +199,7 @@ describe('executeDeclareAttack', () => {
 
     const result = executeDeclareAttack(rig.state, declareAttack('p1', leaderId, opponentLeaderId), rig.defs);
 
-    expect(result.state.currentBattle?.step).toBe('block');
+    expect(result.state.currentBattle?.step).toBe('counter');
   });
 
   it('skips the Block Step when the defender\'s only Blocker is RESTED', () => {

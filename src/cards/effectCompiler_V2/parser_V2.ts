@@ -1714,7 +1714,7 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     const sourceSelector = /\bselected Character'?s power\b/i.test(normalized)
       ? { subject: 'ACTION_RESULT', relations: ['SELECTED_PREVIOUSLY'], quantity: exactly_V2(1) } as Selector_V2
       : /\bopponent'?s attacking Leader or Character\b/i.test(normalized)
-        ? { ...leaderOrCharacterSelector_V2('OPPONENT', exactly_V2(1)), states: ['ATTACKING'] }
+        ? ({ ...leaderOrCharacterSelector_V2('OPPONENT', exactly_V2(1)), states: ['ATTACKING'] } as Selector_V2)
         : { subject: 'ACTION_RESULT', relations: ['REFERENCED_BY_TEXT'], quantity: exactly_V2(1) } as Selector_V2;
     return {
       action: {

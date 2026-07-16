@@ -35,7 +35,7 @@ import {
   putLifeCards,
 } from '../../rules/shared/__tests__/testRig';
 import type { GameState } from '../../state/game';
-import type { EffectOp } from '../effectIr';
+import type { EffectOp, Selector } from '../effectIr';
 
 function programFor(assignment: CardEffectAssignment) {
   const bindings = 'templates' in assignment ? assignment.templates : [assignment];
@@ -1895,7 +1895,10 @@ describe('partial curation batch: giveDon filters / color play / OP14-020 Leader
   it('OP01-002 compiles excludeColorsOfPreviousMove on playFromHand', () => {
     const entry = OP01_ASSIGNMENTS.find((a) => a.cardNumber === 'OP01-002')!;
     const program = programFor(entry);
-    const play = program.abilities[0].ops.find((op) => op.op === 'chooseTargets' && op.from?.sel === 'controllerHand');
+    const play = program.abilities[0].ops.find(
+      (op): op is Extract<EffectOp, { op: 'chooseTargets' }> & { from: Extract<Selector, { sel: 'controllerHand' }> } =>
+        op.op === 'chooseTargets' && op.from?.sel === 'controllerHand',
+    );
     expect(play?.from?.filter).toMatchObject({ excludeColorsOfPreviousMove: true });
   });
 

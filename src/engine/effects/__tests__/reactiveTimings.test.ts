@@ -285,7 +285,7 @@ describe('reactive timings', () => {
         cardNumber: 'SEARCH-PLAY-SOURCE',
         abilities: [{
           timing: 'activateMain',
-          ops: [{ op: 'searchTopDeck', look: 1, pick: 1, reveal: true, destination: 'play', filter: { category: 'character' }, remainder: 'bottom' }],
+          ops: [{ op: 'searchTopDeck', look: 1, pick: 1, reveal: true, destination: 'play', filter: { category: 'character' }, remainder: 'bottom', prompt: 'Play a Character from the top of your deck.' }],
         }],
       } satisfies EffectProgram,
       [playedDef.cardDefinitionId]: {

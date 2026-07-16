@@ -1702,3 +1702,4 @@ describe('curated effect template integration with match engine dispatch', () =>
     expect(resolved.state.cardsById[restedDonId].donRested).toBe(true);
   });
 });
+

@@ -588,7 +588,25 @@ function main(): void {
     );
   }
 
-  const aggregateSummary = allSummary.reduce(
+  const aggregateSummary = allSummary.reduce<{
+    cards: number;
+    manualAssignments: number;
+    autoAssignments: number;
+    assignments: number;
+    totalAtomicEffects: number;
+    parserRecognizedAtomicEffects: number;
+    parserUnrecognizedAtomicEffects: number;
+    assignmentCoveredAtomicEffects: number;
+    assignmentPartialAtomicEffects: number;
+    assignmentUncoveredAtomicEffects: number;
+    fullyCuratedCards: number;
+    partiallyCuratedCards: number;
+    uncuratedCards: number;
+    noEffectCards: number;
+    fullyCuratedEffects: number;
+    partiallyCuratedEffects: number;
+    uncuratedEffects: number;
+  }>(
     (total, rawSummary) => {
       const summary = rawSummary as CuratedCoverageSummary & {
         cards: number;
