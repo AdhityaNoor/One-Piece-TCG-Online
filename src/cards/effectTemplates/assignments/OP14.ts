@@ -345,8 +345,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP14-040 (leader) — [Activate: Main] trash 1 → give up to 2 rested DON!! to Leader/1 Char (type filter dropped).
-  { cardNumber: 'OP14-040', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'giveDon', count: 2, ifPrevious: 'previousMovedAny' }] } },
+  // OP14-040 (leader) - [Activate: Main] trash 1: give up to 2 rested DON!! to Fish-Man/Merfolk Leader/1 Char.
+  { cardNumber: 'OP14-040', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'giveDon', count: 2, anyOfTypes: ['Fish-Man', 'Merfolk'], ifPrevious: 'previousMovedAny' }] } },
 
   // OP14-041 (leader) Boa Hancock —
   //   [Opponent's Turn] When you play a Character, draw 1 card.[DON!! x1] [Once Per Turn] When one of your

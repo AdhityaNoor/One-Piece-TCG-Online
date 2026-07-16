@@ -250,6 +250,21 @@ function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>)
     return [{ op: 'moveLifeTopToHand', player: 'opponent', count }];
   }
   if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'opponent' && f.to.zone === 'trash' && f.to.player === 'owner') {
+    if (optional) {
+      const target = { sel: 'var', name: 't' } as const;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'opponentLifeTop' },
+          min: 0,
+          max: count,
+          prompt: f.prompt ?? `Choose up to ${count} card${count === 1 ? '' : 's'} from the top of your opponent's Life cards to trash.`,
+          ...(f.chooser ? { chooser: f.chooser } : {}),
+        },
+        { op: 'trashCards', target },
+      ];
+    }
     return [{ op: 'trashLife', player: 'opponent', count }];
   }
   if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'controller' && f.to.zone === 'trash' && f.to.player === 'owner') {

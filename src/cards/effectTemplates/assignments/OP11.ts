@@ -217,11 +217,11 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP11-039 — [Counter] up to 1 Leader/Char +3000 this battle (Fish-Man/Merfolk filter dropped), then rest up to 1 opp Char cost ≤3. [Trigger] rest cost ≤4.
+  // OP11-039 - [Counter] up to 1 Fish-Man/Merfolk Leader/Char +3000 this battle, then rest opp cost<=3. [Trigger] rest cost<=4.
   {
     cardNumber: 'OP11-039',
     templates: [
-      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { anyOfTypes: ['Fish-Man', 'Merfolk'] } }, amount: 3000, duration: 'duringThisBattle', optional: true }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
     ],
   },

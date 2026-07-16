@@ -295,14 +295,16 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-045 — [Blocker] [Opponent's Turn] If 20 or less cards in deck, this Character +3000.
   { cardNumber: 'OP03-045', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'selfDeckCount', atMost: 20 }] } }] } },
 
-  // OP03-047 — PARTIAL: life-damage mill deferred; [On Play] return cost≤3 + trash 2 from deck mapped.
+  // OP03-047 - [DON!! x1] on Life damage trash 7 from deck. [On Play] return cost<=3 + trash 2 from deck.
   {
     cardNumber: 'OP03-047',
-    templateId: 'ability',
-    params: { timing: 'onPlay', functions: [
-      { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
-      { fn: 'trashTopDeck', count: 2 },
-    ] },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'trashTopDeck', count: 7, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'trashTopDeck', count: 2 },
+      ] } },
+    ],
   },
 
   // OP03-048 - [On Play] If Leader is Nami, return opponent Character cost 5 or less.
@@ -314,8 +316,14 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-050 — [Blocker] [On K.O.] trash 1 from top of deck.
   { cardNumber: 'OP03-050', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'trashTopDeck', count: 1 }] } },
 
-  // OP03-051 — PARTIAL: life-damage mill deferred; [On K.O.] trash 3 from deck top mapped.
-  { cardNumber: 'OP03-051', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'trashTopDeck', count: 3 }] } },
+  // OP03-051 - [DON!! x1] on Life damage trash 7 from deck. [On K.O.] trash 3 from deck.
+  {
+    cardNumber: 'OP03-051',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'trashTopDeck', count: 7, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'trashTopDeck', count: 3 }] } },
+    ],
+  },
 
   // OP03-053 — [DON!! x1] if 20 or less cards in deck, +2000
   { cardNumber: 'OP03-053', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 1, gate: [{ kind: 'selfDeckCount', atMost: 20 }] } }] } },
@@ -487,9 +495,14 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ] },
   },
 
-  // OP03-078 (character) Issho —
-  //   PARTIAL: [On Play] opponent-hand-trash deferred; mapped [DON!! x1] [Your Turn] −3 cost aura.
-  { cardNumber: 'OP03-078', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -3, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
+  // OP03-078 - [DON!! x1][Your Turn] opponent Characters -3 cost. [On Play] if opponent has 6+ hand, trash 2 from their hand.
+  {
+    cardNumber: 'OP03-078',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -3, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentHand', atLeast: 6 }], functions: [{ fn: 'trashFromOpponentHandChosenByOpponent', count: 2 }] } },
+    ],
+  },
 
   // OP03-081 - [On Play] Draw 2, trash 2, then give opponent Character -2 cost.
   { cardNumber: 'OP03-081', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, optional: true }] } },
@@ -676,9 +689,10 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP03-114 — [On Play] if Leader Big Mom Pirates, add deck top to Life. PARTIAL: trash opp Life top deferred.
+  // OP03-114 - [On Play] if Leader Big Mom Pirates, add deck top to Life, then trash top opponent Life.
   { cardNumber: 'OP03-114', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Big Mom Pirates' }], functions: [
     { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true },
+    { fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'trash', player: 'owner' }, optional: true },
   ] } },
 
   // OP03-115 — [On Play] you may trash 1 card with a [Trigger] from hand: K.O. up to 1 opp Character cost<=1.

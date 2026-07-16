@@ -263,10 +263,10 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-053 — [Blocker] [On Play] Draw 2 and place 2 from hand at the bottom of your deck.
   { cardNumber: 'OP07-053', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 2 }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 2 }] } },
 
-  // OP07-047 — PARTIAL: opponent hand bottom-deck placement is approximated as discard.
+  // OP07-047 - Return self to hand, then if opponent has 6+ hand they place 1 hand card on deck bottom.
   { cardNumber: 'OP07-047', templateId: 'ability', params: { timing: 'activateMain', functions: [
     { fn: 'returnSelfToHand' },
-    { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'opponentHand', atLeast: 6 }] },
+    { fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1, chooser: 'opponent', ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'opponentHand', atLeast: 6 }] },
   ] } },
 
   // OP07-048 (character) Donquixote Doflamingo —
@@ -425,9 +425,10 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-074 — [Activate: Main] Trash this: if Leader {Foxy Pirates}, add 1 DON!! from deck and rest it.
   { cardNumber: 'OP07-074', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
-  // OP07-075 — PARTIAL: "up to 1 each of Leader and Character" approximated as up to 2 leaderOrCharacters picks.
+  // OP07-075 - [Counter] DON!! -1: up to 1 opponent Leader and up to 1 opponent Character -2000 this turn.
   { cardNumber: 'OP07-075', templateId: 'ability', params: { timing: 'counter', cost: [{ kind: 'donMinus', count: 1 }], functions: [
-    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, maxTargets: 2 },
+    { fn: 'addPower', target: { group: 'leader', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true },
+    { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true },
   ] } },
 
   // OP07-076 — [Counter] DON!! −1: +2000 battle, then rest up to 1 opp Character. [Trigger] add 1 DON!! (active).

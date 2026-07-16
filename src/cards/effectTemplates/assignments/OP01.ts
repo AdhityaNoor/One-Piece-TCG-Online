@@ -165,7 +165,7 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP01-037', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP01-038 (character) Kanjuro — PARTIAL: [On K.O.] opponent chooses 1 from your hand to trash deferred.
+  // OP01-038 - [DON!! x1] attack K.O. rested cost<=2. [On K.O.] opponent chooses 1 from your hand to trash.
   {
     cardNumber: 'OP01-038',
     templates: [
@@ -175,6 +175,13 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
           timing: 'whenAttacking',
           condition: { donAttachedAtLeast: 1 },
           functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 2 } }, optional: true }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onKO',
+          functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'trash', player: 'owner' }, minTargets: 1, maxTargets: 1, chooser: 'opponent' }],
         },
       },
     ],

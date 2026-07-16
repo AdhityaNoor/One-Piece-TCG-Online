@@ -183,8 +183,8 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP10-035 — [On K.O.] Rest up to 1 opp Character cost ≤5 (the "or Leader" option is dropped).
-  { cardNumber: 'OP10-035', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
+  // OP10-035 - [On K.O.] Rest up to 1 opponent Leader or Character cost <=5.
+  { cardNumber: 'OP10-035', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
 
 
   // OP10-037 — [End of Your Turn] Set up to 1 of your {ODYSSEY} Characters active. PARTIAL: the removal-replacement clause is deferred.
@@ -359,8 +359,14 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   //   opponent's effects until the end of your opponent's next turn.
   { cardNumber: 'OP10-070', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'koImmunityAuraControllerCharacters', scope: 'effect', duration: 'endOfOpponentsTurn', targetCondition: { maxBasePower: 1000 }, effectSourceController: 'opponent' }] } },
 
-  // OP10-071 — [On Play] DON!! −1: Play up to 1 {Donquixote Pirates} cost ≤5 from hand. PARTIAL: [On Opponent's Attack] ramp deferred.
-  { cardNumber: 'OP10-071', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Donquixote Pirates', maxCost: 5 } }] } },
+  // OP10-071 - [On Play] DON!! -1 play Donquixote Pirates cost<=5. [On Opponent's Attack][OPT] rest 1 DON!!: add 1 active DON!!.
+  {
+    cardNumber: 'OP10-071',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Donquixote Pirates', maxCost: 5 } }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+    ],
+  },
 
   // OP10-072 — [On Play] trash 1 Event → draw 2. [End of Your Turn] If 7+ DON!!, set up to 2 DON!! active.
   {

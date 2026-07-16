@@ -433,8 +433,14 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-068 — [Blocker] is card data.
   { cardNumber: 'OP04-068', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
-  // OP04-069 — PARTIAL: onOpponentsAttack copy attacker power deferred; mapped [Trigger] DON!! −1 play this.
-  { cardNumber: 'OP04-069', templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+  // OP04-069 - [On Your Opponent's Attack] DON!! -1: copy attacker power. [Trigger] DON!! -1: play this.
+  {
+    cardNumber: 'OP04-069',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'setBasePowerFromSource', target: { ref: 'self' }, source: { ref: 'battleOpponent' }, duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   // OP04-070 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: give up to 1 opp Character −1000 this turn.
   { cardNumber: 'OP04-070', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },

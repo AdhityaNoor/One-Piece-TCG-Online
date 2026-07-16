@@ -18,8 +18,8 @@ export const ST26_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST26-002 — [Blocker][On Play] DON!! −2: Rest up to 1 opp Character cost ≤1 (the "or DON!!" option is dropped).
-  { cardNumber: 'ST26-002', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
+  // ST26-002 - [Blocker][On Play] DON!! -2: Rest up to 1 opponent DON!! or Character cost <=1.
+  { cardNumber: 'ST26-002', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'rest', target: { group: 'charactersOrDon', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
 
   // ST26-003 — [On Play] DON!! −2: add up to 1 DON!! from deck active.
   { cardNumber: 'ST26-003', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },

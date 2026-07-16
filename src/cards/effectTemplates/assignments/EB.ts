@@ -328,11 +328,11 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB01-037 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: K.O. up to 1 opp Character cost<=2.
   { cardNumber: 'EB01-037', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
 
-  // EB01-038 (event) Oh Come My Way —
-  //   PARTIAL: Counter attack-redirect deferred; mapped Trigger draw 2 with DON!! −1.
+  // EB01-038 - [Counter] DON!! -1 redirect attack to your Baroque Works Character. [Trigger] DON!! -1 draw 2.
   {
     cardNumber: 'EB01-038',
     templates: [
+      { templateId: 'ability', params: { timing: 'counter', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'redirectAttackTarget', target: { group: 'characters', player: 'controller' }, optional: false }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 2 }] } },
     ],
   },
@@ -498,8 +498,14 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }, { fn: 'trashFromHand', count: 1 }] } },
     ],
   },
-  // EB01-061 — PARTIAL: [When Attacking] copy opponent Character base power (dynamic) deferred; mapped [On Play] add 1 active DON!!.
-  { cardNumber: 'EB01-061', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+  // EB01-061 - [On Play] add 1 active DON!!. [When Attacking] copy selected opponent Character power.
+  {
+    cardNumber: 'EB01-061',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'setBasePowerFromSource', target: { ref: 'self' }, source: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
 
   // EB02-002 — [Activate: Main] rest this: up to 1 {Revolutionary Army} Character (other than self) +2000 this turn.
   { cardNumber: 'EB02-002', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Revolutionary Army', excludeSelf: true } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
@@ -775,15 +781,13 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // EB02-035 — PARTIAL: [Your Turn] DON-return trigger add-DON clause deferred.
+  // EB02-035 - [Your Turn][OPT] when 2+ DON!! return, add 1 active DON!!. [On Play] draw if DON!! <= opponent.
   {
     cardNumber: 'EB02-035',
-    templateId: 'ability',
-    params: {
-      timing: 'onPlay',
-      gate: [{ kind: 'selfDonAtMostOpponent' }],
-      functions: [{ fn: 'draw', amount: 1 }],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 2 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
   },
   // EB02-036 — [Blocker] [On K.O.] DON!! −1: look 3, reveal up to 1 {Straw Hat Crew}, add to hand, rest to bottom.
   { cardNumber: 'EB02-036', templateId: 'ability', params: { timing: 'onKO', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Straw Hat Crew' }, remainder: 'bottom' }] } },
@@ -1827,19 +1831,31 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB03-059 — PARTIAL: on-play add Character with [Trigger] from hand to Life deferred; trigger preventAttack mapped.
+  // EB03-059 - [On Play] Egghead 2+ Life: add Trigger Character from hand to Life face-up. [Trigger] prevent attack.
   {
     cardNumber: 'EB03-059',
-    templateId: 'ability',
-    params: {
-      timing: 'lifeTrigger',
-      functions: [{
-        fn: 'preventAttack',
-        target: { group: 'characters', player: 'opponent', filter: { maxCost: 6, excludeName: 'Monkey.D.Luffy' } },
-        duration: 'duringThisTurn',
-        optional: true,
-      }],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          gate: [{ kind: 'leaderType', type: 'Egghead' }, { kind: 'selfLife', atLeast: 2 }],
+          functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { category: 'character', hasTrigger: true } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'lifeTrigger',
+          functions: [{
+            fn: 'preventAttack',
+            target: { group: 'characters', player: 'opponent', filter: { maxCost: 6, excludeName: 'Monkey.D.Luffy' } },
+            duration: 'duringThisTurn',
+            optional: true,
+          }],
+        },
+      },
+    ],
   },
 
   // EB03-060 — (Event) [Main] If Leader [Nami], look 4, reveal up to 1 cost 2-8, add to hand, rest to bottom. [Trigger] Activate [Main].
@@ -2512,7 +2528,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB04-051 — Cannot attack unless any Character has base power ≥12000. PARTIAL: [Trigger] branch deferred.
+  // EB04-051 - Cannot attack unless any Character has base power >=12000. [Trigger] all opponent Characters -3000, then play at 0 Life.
   {
     cardNumber: 'EB04-051',
     templates: [
@@ -2526,6 +2542,16 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
             duration: 'permanent',
             attackUnlessGate: [{ kind: 'anyCharacterBasePowerAtLeast', power: 12000 }],
           }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'lifeTrigger',
+          functions: [
+            { fn: 'addPowerAuraOpponentCharacters', amount: -3000, duration: 'duringThisTurn' },
+            { fn: 'triggerPlaySelf', ifGate: [{ kind: 'selfLife', atMost: 0 }] },
+          ],
         },
       },
     ],

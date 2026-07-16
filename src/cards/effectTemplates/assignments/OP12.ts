@@ -73,7 +73,7 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP12-017 — PARTIAL: deck search after active-DON give mapped; remainder ordering deferred.
+  // OP12-017 - [Main] give 1 active DON!! to [Silvers Rayleigh]: look 4, add red Event or cost 3+ Character.
   {
     cardNumber: 'OP12-017',
     templateId: 'ability',

@@ -187,11 +187,17 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-017', templateId: 'ability', params: { timing: 'onEnterPlay', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'leaderType', type: 'Kid Pirates' }, { kind: 'selfLeaderPowerAtLeast', power: 7000 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
 
 
-  // PARTIAL: [Main] opponent-chooses return deferred; mapped [Trigger] only.
-  { cardNumber: 'OP09-058', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  // OP09-058 - [Main] opponent chooses cost<=6 Character to return. [Trigger] return cost<=3 Character.
+  {
+    cardNumber: 'OP09-058',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 6 } }, to: { zone: 'hand', player: 'owner' }, chooser: 'opponent' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+    ],
+  },
 
 
-  // PARTIAL: onDonReturned trigger implemented; static [DON!! x1] cost aura uses onEnterPlay + donAttachedAtLeast.
+  // OP09-061 - [DON!! x1] all Characters +1 cost. [Your Turn][OPT] when 2+ DON!! return, add 1 active and 1 rested DON!!.
   {
     cardNumber: 'OP09-061',
     templates: [
