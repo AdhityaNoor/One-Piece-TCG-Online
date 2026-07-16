@@ -126,7 +126,7 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'PRB02-014', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'selfTrashCount', atLeast: 15 }] }] } },
 
 
-  // PRB02-018 — [On Play] If face-up Life: play up to 1 [Sabo]/[Ace]/[Luffy] cost≤2 from hand or trash.
+  // PRB02-018 — [On Play] If face-up Life: play up to 1 [Sabo]/[Ace]/[Luffy] cost==2 from hand or trash.
   {
     cardNumber: 'PRB02-018',
     templateId: 'ability',
@@ -138,8 +138,8 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
         chooser: 'controller',
         prompt: 'Play from:',
         options: [
-          { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 2, anyOf: [{ name: 'Sabo' }, { name: 'Portgas.D.Ace' }, { name: 'Monkey.D.Luffy' }] } }] },
-          { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { category: 'character', maxCost: 2, anyOf: [{ name: 'Sabo' }, { name: 'Portgas.D.Ace' }, { name: 'Monkey.D.Luffy' }] } }] },
+          { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { category: 'character', exactCost: 2, anyOf: [{ name: 'Sabo' }, { name: 'Portgas.D.Ace' }, { name: 'Monkey.D.Luffy' }] } }] },
+          { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { category: 'character', exactCost: 2, anyOf: [{ name: 'Sabo' }, { name: 'Portgas.D.Ace' }, { name: 'Monkey.D.Luffy' }] } }] },
         ],
       }],
     },

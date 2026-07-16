@@ -501,11 +501,13 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   If you have 7 or more cards in your trash, this Character cannot be removed from the field by your
   //   opponent's effects and gains [Rush].[When Attacking] If you have 10 or more cards in your trash, give
   //   up to 1 of your opponent's Characters −2000 power during this turn.
-  // PARTIAL: field-removal immunity remains deferred; [Rush] and attack debuff are mapped.
   {
     cardNumber: 'OP13-080',
     templates: [
-      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } },
+        { fn: 'preventFieldRemoval', target: { ref: 'self' }, duration: 'permanent', effectSourceController: 'opponent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } },
+      ] } },
       { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfTrashCount', atLeast: 10 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
     ],
   },
@@ -563,15 +565,23 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP13-083 — [On Play] Look 5, reveal up to 1 {Five Elders} to hand, rest to bottom. PARTIAL: static trash-count immunity deferred.
-  { cardNumber: 'OP13-083', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Five Elders' }, remainder: 'bottom' }] } },
+  // OP13-083 — If 7+ trash, cannot be removed from field by opponent's effects. [On Play] Look 5, reveal up to 1 {Five Elders} to hand, rest to bottom.
+  {
+    cardNumber: 'OP13-083',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventFieldRemoval', target: { ref: 'self' }, duration: 'permanent', effectSourceController: 'opponent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Five Elders' }, remainder: 'bottom' }] } },
+    ],
+  },
 
   // OP13-084 (character) St. Shepherd Ju Peter —
   //   If you have 7 or more cards in your trash, this Character cannot be removed from the field by your
   //   opponent's effects.[Your Turn] If you have 10 or more cards in your trash, set the base power of all
   //   of your {Five Elders} type Characters to 7000.
-  // PARTIAL: field-removal immunity remains deferred; Five Elders base-power aura is mapped.
-  { cardNumber: 'OP13-084', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'setBasePowerAuraControllerTypes', value: 7000, duration: 'permanent', anyOfTypes: ['Five Elders'], sourceCondition: { turn: 'your' }, gate: [{ kind: 'selfTrashCount', atLeast: 10 }] }] } },
+  { cardNumber: 'OP13-084', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+    { fn: 'setBasePowerAuraControllerTypes', value: 7000, duration: 'permanent', anyOfTypes: ['Five Elders'], sourceCondition: { turn: 'your' }, gate: [{ kind: 'selfTrashCount', atLeast: 10 }] },
+    { fn: 'preventFieldRemoval', target: { ref: 'self' }, duration: 'permanent', effectSourceController: 'opponent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } },
+  ] } },
 
   // OP13-086 - [On Play] Look at 3; add Celestial Dragons other than self, trash rest, then trash 1 from hand.
   {
@@ -584,20 +594,26 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-087', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashTopDeck', count: 1 }] } },
 
-  // OP13-089 — [On K.O.] Draw 1. PARTIAL: static trash-count immunity deferred.
+  // OP13-089 — If 7+ trash, cannot be removed from field by opponent's effects and gains [Blocker]. [On K.O.] Draw 1.
   {
     cardNumber: 'OP13-089',
     templates: [
-      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } },
+        { fn: 'preventFieldRemoval', target: { ref: 'self' }, duration: 'permanent', effectSourceController: 'opponent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } },
+      ] } },
       { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },
 
-  // OP13-091 — [On Play] trash 1 → K.O. up to 1 opp Character base cost ≤5. PARTIAL: static trash-count immunity deferred.
+  // OP13-091 — If 7+ trash, cannot be removed from field by opponent's effects and gains [Blocker]. [On Play] trash 1 → K.O. up to 1 opp Character base cost<=5.
   {
     cardNumber: 'OP13-091',
     templates: [
-      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } },
+        { fn: 'preventFieldRemoval', target: { ref: 'self' }, duration: 'permanent', effectSourceController: 'opponent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } },
+      ] } },
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 5 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
     ],
   },

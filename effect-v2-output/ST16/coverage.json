@@ -1,0 +1,244 @@
+[
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST16-001",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST16-001#0.0",
+        "cardNumber": "ST16-001",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST16-001:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "ST16-001#1.0",
+        "cardNumber": "ST16-001",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "You may trash 1 {FILM} type card from your hand:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST16-001:1"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "ST16-001#1.1",
+        "cardNumber": "ST16-001",
+        "effectIndex": 1,
+        "atomIndex": 1,
+        "rawText": "Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST16-001:1"
+        ],
+        "canonicalAtoms": [
+          "GIVE_DON"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST16-002",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST16-002#0.0",
+        "cardNumber": "ST16-002",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST16-002:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "ST16-002#1.0",
+        "cardNumber": "ST16-002",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "You may trash any number of {Music} type cards from your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST16-002:1"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "ST16-002#1.1",
+        "cardNumber": "ST16-002",
+        "effectIndex": 1,
+        "atomIndex": 1,
+        "rawText": "Your Leader or 1 of your Characters gains +1000 power during this battle for every card trashed.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST16-002:1"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST16-003",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST16-003#0.0",
+        "cardNumber": "ST16-003",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If your Leader has the {FILM} type and you have 6 or more rested cards, this Character gains +2000 power.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST16-003:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST16-004",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST16-004#0.0",
+        "cardNumber": "ST16-004",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "KO up to 1 of your opponent's rested Characters.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST16-004:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST16-005",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST16-005#0.0",
+        "cardNumber": "ST16-005",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If you have a rested [Uta], this Character gains +1000 power.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST16-005:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  }
+]

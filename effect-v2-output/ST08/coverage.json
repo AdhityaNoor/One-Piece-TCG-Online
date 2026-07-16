@@ -1,0 +1,617 @@
+[
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-001",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST08-001#0.0",
+        "cardNumber": "ST08-001",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "When a Character is KO'd, give up to 1 rested DON!! card to this Leader.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-001:0"
+        ],
+        "canonicalAtoms": [
+          "GIVE_DON"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-002",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST08-002#0.0",
+        "cardNumber": "ST08-002",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "This Character cannot be KO'd in battle by Leaders.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-002:0"
+        ],
+        "canonicalAtoms": [
+          "PREVENT_ACTION"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "ST08-002#1.0",
+        "cardNumber": "ST08-002",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "You may rest this Character:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-002:1"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "ST08-002#1.1",
+        "cardNumber": "ST08-002",
+        "effectIndex": 1,
+        "atomIndex": 1,
+        "rawText": "Give up to 1 of your opponent's Characters −2 cost during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-002:1"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_COST"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-003",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-004",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST08-004#0.0",
+        "cardNumber": "ST08-004",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may rest this Character:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-004:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "ST08-004#0.1",
+        "cardNumber": "ST08-004",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "KO up to 1 of your opponent's Characters with a cost of 2 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-004:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-005",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST08-005#0.0",
+        "cardNumber": "ST08-005",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may trash 1 card from your hand:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-005:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "ST08-005#0.1",
+        "cardNumber": "ST08-005",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "KO all Characters with a cost of 1 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-005:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-006",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST08-006#0.0",
+        "cardNumber": "ST08-006",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-006:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "ST08-006#1.0",
+        "cardNumber": "ST08-006",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Give up to 1 of your opponent's Characters −4 cost during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-006:1"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_COST"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-007",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST08-007#0.0",
+        "cardNumber": "ST08-007",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-007:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "ST08-007#1.0",
+        "cardNumber": "ST08-007",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Play this card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-007:1"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-008",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST08-008#0.0",
+        "cardNumber": "ST08-008",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Give up to 1 of your opponent's Characters −2 cost during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-008:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_COST"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-009",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST08-009#0.0",
+        "cardNumber": "ST08-009",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If there is a Character with a cost of 0, draw 1 card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-009:0"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-010",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-011",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-012",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-013",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST08-013#0.0",
+        "cardNumber": "ST08-013",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "At the end of a battle in which this Character battles your opponent's Character, you may KO the opponent’s Character you battled with.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-013:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "ST08-013#0.1",
+        "cardNumber": "ST08-013",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "If you do, KO this Character.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-013:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-014",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST08-014#0.0",
+        "cardNumber": "ST08-014",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may add 1 card from the top of your Life cards to your hand:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-014:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "ST08-014#0.1",
+        "cardNumber": "ST08-014",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Give up to 1 of your opponent's Characters −7 cost during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-014:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_COST"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "ST08-014#1.0",
+        "cardNumber": "ST08-014",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Add up to 1 black Character card with a cost of 2 or less from your trash to your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-014:1"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "ST08-015",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "ST08-015#0.0",
+        "cardNumber": "ST08-015",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "KO up to 1 of your opponent's Characters with a cost of 2 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-015:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "ST08-015#1.0",
+        "cardNumber": "ST08-015",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Draw 1 card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:ST08-015:1"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  }
+]

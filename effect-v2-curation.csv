@@ -1,0 +1,1 @@
+set,cardNumber,name,category,effectIndex,atomIndex,atomicEffectId,parserStatus,assignmentStatus,actionType,markerTags,rawText,unrecognizedKind,uncoveredReason,trackingRemark,canonicalCoverage,canonicalAtoms,canonicalRemark

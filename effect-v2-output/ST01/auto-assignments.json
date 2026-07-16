@@ -1,0 +1,1237 @@
+[
+  {
+    "assignmentId": "v2:auto:ST01-001:0",
+    "cardNumber": "ST01-001",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] [Once Per Turn] Give this Leader or 1 of your Characters up to 1 rested DON!! card.",
+    "effect": {
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GIVE_DON",
+          "donSelector": {
+            "subject": "DON",
+            "owner": "PLAYER",
+            "zones": [
+              "COST_AREA"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "target": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "actionId": "ST01-001#0.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-001#0.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-002:0",
+    "cardNumber": "ST01-002",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": " [DON!! x2] [When Attacking] Your opponent cannot activate a [Blocker] Character that has 5000 or more power during this battle.",
+    "effect": {
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "WHEN_ATTACKING"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "ATTACHED_DON_COUNT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 2
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PREVENT_ACTION",
+          "selector": {
+            "subject": "CARD",
+            "controller": "OPPONENT",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "action": "ACTIVATE_BLOCKER",
+          "duration": {
+            "kind": "THIS_BATTLE"
+          }
+        },
+        "actionId": "ST01-002#0.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-002#0.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-002:1",
+    "cardNumber": "ST01-002",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] Play this card.",
+    "effect": {
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PLAY_CARD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "ST01-002#1.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-002#1.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-004:0",
+    "cardNumber": "ST01-004",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[DON!! x2] This Character gains [Rush]. (This card can attack on the turn in which it is played.)",
+    "effect": {
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "ATTACHED_DON_COUNT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 2
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "RUSH",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST01-004#0.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-004#0.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-005:0",
+    "cardNumber": "ST01-005",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": " [DON!! x1] [When Attacking] Up to 1 of your Leader or Character cards other than this card gains +1000 power during this turn.",
+    "effect": {
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "WHEN_ATTACKING"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "ATTACHED_DON_COUNT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MODIFY_POWER",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "relations": [
+              "EXCLUDE_THIS_CARD"
+            ]
+          },
+          "propertyLayer": "CURRENT_VALUE",
+          "operation": "ADD",
+          "value": {
+            "kind": "NUMBER",
+            "value": 1000
+          },
+          "duration": {
+            "kind": "THIS_TURN"
+          }
+        },
+        "actionId": "ST01-005#0.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-005#0.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-006:0",
+    "cardNumber": "ST01-006",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+    "effect": {
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "BLOCKER",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST01-006#0.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-006#0.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-007:0",
+    "cardNumber": "ST01-007",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+    "effect": {
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GIVE_DON",
+          "donSelector": {
+            "subject": "DON",
+            "owner": "PLAYER",
+            "zones": [
+              "COST_AREA"
+            ],
+            "states": [
+              "RESTED"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "target": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "actionId": "ST01-007#0.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-007#0.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-011:0",
+    "cardNumber": "ST01-011",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Give up to 2 rested DON!! cards to your Leader or 1 of your Characters.",
+    "effect": {
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GIVE_DON",
+          "donSelector": {
+            "subject": "DON",
+            "owner": "PLAYER",
+            "zones": [
+              "COST_AREA"
+            ],
+            "states": [
+              "RESTED"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 2
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "target": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "actionId": "ST01-011#0.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-011#0.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-012:0",
+    "cardNumber": "ST01-012",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Rush] (This card can attack on the turn in which it is played.)",
+    "effect": {
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "RUSH",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST01-012#0.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-012#0.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-012:1",
+    "cardNumber": "ST01-012",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[DON!! x2] [When Attacking] Your opponent cannot activate [Blocker] during this battle.",
+    "effect": {
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "WHEN_ATTACKING"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "ATTACHED_DON_COUNT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 2
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PREVENT_ACTION",
+          "selector": {
+            "subject": "CARD",
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "action": "ACTIVATE_BLOCKER",
+          "duration": {
+            "kind": "THIS_BATTLE"
+          }
+        },
+        "actionId": "ST01-012#1.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-012#1.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-013:0",
+    "cardNumber": "ST01-013",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[DON!! x1] This Character gains +1000 power.",
+    "effect": {
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "ATTACHED_DON_COUNT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MODIFY_POWER",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "propertyLayer": "CURRENT_VALUE",
+          "operation": "ADD",
+          "value": {
+            "kind": "NUMBER",
+            "value": 1000
+          },
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST01-013#0.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-013#0.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-014:0",
+    "cardNumber": "ST01-014",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Counter] Up to 1 of your Leader or Character cards gains +3000 power during this battle.",
+    "effect": {
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "EVENT_COUNTER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MODIFY_POWER",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "propertyLayer": "CURRENT_VALUE",
+          "operation": "ADD",
+          "value": {
+            "kind": "NUMBER",
+            "value": 3000
+          },
+          "duration": {
+            "kind": "THIS_BATTLE"
+          }
+        },
+        "actionId": "ST01-014#0.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-014#0.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-014:1",
+    "cardNumber": "ST01-014",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] Up to 1 of your Leader or Character cards gains +1000 power during this turn.",
+    "effect": {
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MODIFY_POWER",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "propertyLayer": "CURRENT_VALUE",
+          "operation": "ADD",
+          "value": {
+            "kind": "NUMBER",
+            "value": 1000
+          },
+          "duration": {
+            "kind": "THIS_TURN"
+          }
+        },
+        "actionId": "ST01-014#1.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-014#1.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-015:0",
+    "cardNumber": "ST01-015",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Main] K.O. up to 1 of your opponent's Characters with 6000 power or less.",
+    "effect": {
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "EVENT_MAIN"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "KO_CARD",
+          "selector": {
+            "subject": "CARD",
+            "controller": "OPPONENT",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "power": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 6000
+              }
+            }
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST01-015#0.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-015#0.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-015:1",
+    "cardNumber": "ST01-015",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] Activate this card's [Main] effect.",
+    "effect": {
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "ACTIVATE_EVENT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "ST01-015#1.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-015#1.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-016:0",
+    "cardNumber": "ST01-016",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Main] Select up to 1 of your {Straw Hat Crew} type Leader or Character cards. Your opponent cannot activate [Blocker] if that Leader or Character attacks during this turn.",
+    "effect": {
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "EVENT_MAIN"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "SELECT",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA",
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER",
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "Straw Hat Crew"
+                  ]
+                }
+              },
+              "selectionId": "selected"
+            },
+            "actionId": "ST01-016#0.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PREVENT_ACTION",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "LEADER_AREA",
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER",
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "action": "ACTIVATE_BLOCKER",
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "ST01-016#0.1"
+          }
+        ]
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-016#0.0",
+      "ST01-016#0.1"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-016:1",
+    "cardNumber": "ST01-016",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] K.O. up to 1 of your opponent's [Blocker] Characters with a cost of 3 or less.",
+    "effect": {
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "KO_CARD",
+          "selector": {
+            "subject": "CARD",
+            "controller": "OPPONENT",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
+            }
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST01-016#1.0"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-016#1.0"
+    ]
+  },
+  {
+    "assignmentId": "v2:auto:ST01-017:0",
+    "cardNumber": "ST01-017",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] You may rest this Stage: Up to 1 {Straw Hat Crew} type Leader or Character card on your field gains +1000 power during this turn.",
+    "effect": {
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MODIFY_POWER",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "Straw Hat Crew"
+              ]
+            }
+          },
+          "propertyLayer": "CURRENT_VALUE",
+          "operation": "ADD",
+          "value": {
+            "kind": "NUMBER",
+            "value": 1000
+          },
+          "duration": {
+            "kind": "THIS_TURN"
+          }
+        },
+        "actionId": "ST01-017#0.1"
+      }
+    },
+    "coveredAtomicEffectIds": [
+      "ST01-017#0.0",
+      "ST01-017#0.1"
+    ]
+  }
+]

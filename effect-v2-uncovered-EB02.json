@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "generatedBy": "scripts/effect-v2/uncovered.ts",
+    "selectedSets": [
+      "EB02"
+    ],
+    "totalUncoveredAtomicEffects": 1,
+    "parserRecognizedUnassignedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 1,
+    "guideCoveredParserGaps": 1,
+    "possibleDefinitionGaps": 0
+  },
+  "rows": [
+    {
+      "setCode": "EB02",
+      "cardNumber": "EB02-053",
+      "name": "Myskina Olga",
+      "category": "character",
+      "effectIndex": 1,
+      "atomIndex": 0,
+      "atomicEffectId": "EB02-053#1.0",
+      "parserStatus": "unrecognized",
+      "assignmentStatus": "unassigned",
+      "actionType": "",
+      "markerTags": "[On K.O.]",
+      "rawText": "Look at up to 1 card from the top of your or your opponent's Life cards and place it at the top or bottom of the Life cards.",
+      "effectText": "[On K.O.] Look at up to 1 card from the top of your or your opponent's Life cards and place it at the top or bottom of the Life cards.",
+      "unrecognizedKind": "search-or-reveal",
+      "uncoveredReason": "Search/reveal/remainder permutation needs a composed LOOK_AT_CARDS/SELECT_CARD/REVEAL_CARD/MOVE_CARD sequence.",
+      "trackingRemark": "Represent this as the canonical search permutation: LOOK_AT_CARDS, SELECT_CARD, optional REVEAL_CARD, MOVE_CARD, REORDER_CARDS or MOVE_CARD for the remainder.",
+      "canonicalCoverage": "parserGap",
+      "canonicalAtoms": "SEARCH+LOOK_AT_CARDS+SELECT_CARD+REVEAL_CARD+MOVE_CARD+REORDER_CARDS",
+      "canonicalRemark": "Guide-covered search permutation. Parser must compose referenced atoms."
+    }
+  ]
+}

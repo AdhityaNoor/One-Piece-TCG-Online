@@ -13,7 +13,7 @@ import { createActionLogger, type ActionLogger } from '../rules/shared/actionLog
 import type { GameLogEntry } from '../logs/logEntry';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 import { getOpponentId } from '../rules/shared/players';
-import { cannotBeRestedByEffect, computeCurrentCost, computeCurrentPower, isKoImmune } from '../rules/shared/power';
+import { cannotBeRemovedFromFieldByEffect, cannotBeRestedByEffect, computeCurrentCost, computeCurrentPower, isKoImmune } from '../rules/shared/power';
 import { isControllerLifeToHandPrevented } from '../rules/shared/lifeToHandRestriction';
 import { isControllerCharacterPlayPrevented } from '../rules/shared/characterPlayRestriction';
 import { isControllerHandPlayPrevented } from '../rules/shared/handPlayRestriction';
@@ -921,6 +921,36 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  preventFieldRemoval(spec: {
+    appliesToInstanceId: string;
+    duration: ContinuousEffectDuration;
+    effectSourceController?: 'opponent' | 'controller';
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'cannot be removed from the field by effects',
+      fieldRemovalImmunityModifier: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        ...(spec.effectSourceController ? { effectSourceController: spec.effectSourceController } : {}),
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToInstanceId} cannot be removed from the field by effects (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
   negateEffect(spec: {
     appliesToInstanceId: string;
     duration: ContinuousEffectDuration;
@@ -1215,6 +1245,19 @@ export class EffectContextImpl implements EffectContext {
       });
       return;
     }
+    // "Cannot be removed from the field by opponent's effects" (broader than K.O. immunity —
+    // also blocks bounce/bottom-deck, see returnToHand/moveToBottomDeck below).
+    if (cannotBeRemovedFromFieldByEffect(this.working, targetInstanceId, this.sourceInstanceId, this.defs)) {
+      this.logger.push({
+        actorPlayerId: this.controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${targetInstanceId} cannot be removed from the field — the K.O. is prevented.`,
+        data: { targetInstanceId, fieldRemovalPrevented: true },
+        relatedCardInstanceIds: [targetInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     const owner = this.working.players[inst.ownerId];
     const newOwner = {
       ...owner,
@@ -1308,6 +1351,20 @@ export class EffectContextImpl implements EffectContext {
     const inst = this.working.cardsById[targetInstanceId];
     if (!inst) return;
     const fromZone = inst.currentZone;
+    if (
+      (fromZone === 'characterArea' || fromZone === 'stageArea') &&
+      cannotBeRemovedFromFieldByEffect(this.working, targetInstanceId, this.sourceInstanceId, this.defs)
+    ) {
+      this.logger.push({
+        actorPlayerId: this.controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${targetInstanceId} cannot be removed from the field — the return-to-hand is prevented.`,
+        data: { targetInstanceId, fieldRemovalPrevented: true },
+        relatedCardInstanceIds: [targetInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     const owner = this.working.players[inst.ownerId];
     const newOwner = {
       ...owner,
@@ -1340,6 +1397,20 @@ export class EffectContextImpl implements EffectContext {
     const inst = this.working.cardsById[instanceId];
     if (!inst) return;
     const fromZone = inst.currentZone;
+    if (
+      (fromZone === 'characterArea' || fromZone === 'stageArea') &&
+      cannotBeRemovedFromFieldByEffect(this.working, instanceId, this.sourceInstanceId, this.defs)
+    ) {
+      this.logger.push({
+        actorPlayerId: this.controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${instanceId} cannot be removed from the field — the bottom-of-deck placement is prevented.`,
+        data: { targetInstanceId: instanceId, fieldRemovalPrevented: true },
+        relatedCardInstanceIds: [instanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     const owner = this.working.players[inst.ownerId];
     if (!owner) return;
     const newOwner = {
@@ -1983,6 +2054,76 @@ export class EffectContextImpl implements EffectContext {
       });
     }
     this.recordPlayedCharacter(newId);
+  }
+
+  /**
+   * Play a chosen deck Stage into the Stage area (no cost), mirroring
+   * playCharacterFromDeck's "fresh instance, remove-from-deck" shape but for
+   * Stage semantics: replaces (trashes) any existing Stage instead of an
+   * overflow choice (3-8-5, mirrors executePlayStage), never summoning sick,
+   * and never rested (Stages have no orientation-on-entry concept beyond
+   * active). Used by Imu (OP13-079)'s "at the start of the game" ability —
+   * see setup/advanceStartOfGameEffects.ts.
+   */
+  playStageFromDeck(deckInstanceId: string): void {
+    const deckInst = this.working.cardsById[deckInstanceId];
+    if (!deckInst || deckInst.currentZone !== 'deck') return;
+    const def = this.defs[deckInst.cardDefinitionId];
+    if (!def || def.category !== 'stage') return;
+    const controllerId = deckInst.controllerId;
+    const player = this.working.players[controllerId];
+    if (!player) return;
+
+    let cardsById = { ...this.working.cardsById };
+    let trash = player.trash;
+    const displacedStageId = player.stageArea.cardIds[0];
+    if (displacedStageId) {
+      cardsById[displacedStageId] = { ...cardsById[displacedStageId], currentZone: 'trash', donAttached: [] };
+      trash = addToZoneTop(trash, displacedStageId);
+      this.logger.push({
+        actorPlayerId: controllerId,
+        type: 'CARD_MOVED',
+        message: `${controllerId}'s previous Stage was trashed to make room for a new one (3-8-5).`,
+        data: { from: 'stageArea', to: 'trash' },
+        relatedCardInstanceIds: [displacedStageId],
+        visibility: 'public',
+      });
+    }
+
+    const minted = mintRuntimeInstanceId(this.working);
+    const newId = minted.id;
+    const newInstance: CardInstance = {
+      instanceId: newId,
+      cardDefinitionId: deckInst.cardDefinitionId,
+      ownerId: deckInst.ownerId,
+      controllerId,
+      currentZone: 'stageArea',
+      orientation: 'active',
+      faceState: 'faceUp',
+      donAttached: [],
+      appliedContinuousEffectIds: [],
+      oncePerTurnUsed: [],
+      summoningSick: false,
+      revealedTo: 'all',
+    };
+    cardsById = { ...minted.state.cardsById, ...cardsById, [newId]: newInstance };
+    delete cardsById[deckInstanceId];
+    const newStageArea = addToZoneBottom({ ...player.stageArea, cardIds: [] }, newId);
+    const newDeck = removeFromZone(player.deck, deckInstanceId);
+    this.working = {
+      ...minted.state,
+      cardsById,
+      players: { ...minted.state.players, [controllerId]: { ...player, deck: newDeck, stageArea: newStageArea, trash } },
+    };
+
+    this.logger.push({
+      actorPlayerId: controllerId,
+      type: 'CARD_PLAYED',
+      message: `${controllerId} played ${def.name} from deck via an effect (no cost).`,
+      data: { from: 'deck', to: 'stageArea', cost: 0, oldInstanceId: deckInstanceId },
+      relatedCardInstanceIds: [newId],
+      visibility: 'public',
+    });
   }
 
   shuffleDeck(playerId: string): void {

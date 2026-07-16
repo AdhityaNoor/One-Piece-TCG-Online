@@ -207,6 +207,9 @@ export type EffectOp =
   | ({ op: 'swapBasePower'; var: string; duration: IrDuration; mustIncludeControllerLeader?: boolean } & EffectOpSequenceGate)
   // Prevent effect-driven rest on the target Leader/Character for the duration.
   | ({ op: 'preventRest'; target: Selector; duration: IrDuration; effectSourceController?: 'opponent' | 'controller'; condition?: IrCondition } & EffectOpSequenceGate)
+  // Prevent the target Character/Stage from being removed from the field (effect K.O., return to
+  // hand, or bottom-of-deck) for the duration. Never blocks battle K.O.
+  | ({ op: 'preventFieldRemoval'; target: Selector; duration: IrDuration; effectSourceController?: 'opponent' | 'controller'; condition?: IrCondition } & EffectOpSequenceGate)
   // Negate all (or selected timings of) abilities on the target Leader/Character/Stage.
   | ({ op: 'negateEffect'; target: Selector; duration: IrDuration; negatedTimings?: IrTiming[] } & EffectOpSequenceGate)
   // Negate abilities on all cards controlled by a player (e.g. "your [On Play] effects are negated").
@@ -259,6 +262,7 @@ export type EffectOp =
   | ({ op: 'activateEventFromTrash'; target: Selector } & EffectOpSequenceGate) // activate [Main] of a chosen Event in trash
   | ({ op: 'playFromTrash'; target: Selector; rested?: boolean } & EffectOpSequenceGate) // put a chosen Character from trash into play (no cost); `rested` plays it rested
   | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string; rested?: boolean } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
+  | ({ op: 'playStageFromDeck'; pick: number; filter: SearchFilter; prompt: string } & EffectOpSequenceGate) // search deck, play up to N matching Stages (replacing any existing Stage), then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
   | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
   | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string; chooser?: 'controller' | 'opponent'; maxCombinedPower?: number; distinctNames?: boolean; mustIncludeControllerLeader?: boolean } & EffectOpSequenceGate)
@@ -301,6 +305,7 @@ export type NonSuspendingEffectOp = Exclude<
   | { op: 'chooseCost' }
   | { op: 'searchTopDeck' }
   | { op: 'playFromDeck' }
+  | { op: 'playStageFromDeck' }
   | { op: 'lookLifeAndReorder' }
   | { op: 'peekLifeThenPlace' }
   | { op: 'chooseLifeToHand' }
@@ -346,7 +351,11 @@ export type IrTiming =
   | 'onHandTrashed'
   | 'counter'
   | 'lifeTrigger'
-  | 'endOfTurn';
+  | 'endOfTurn'
+  // 5-2-1-5-1: "at the start of the game" Leader effects, fired once per player
+  // from setup/advanceStartOfGameEffects.ts (before opening hands are dealt) —
+  // never fired via the normal card-play/battle cascade paths.
+  | 'startOfGame';
 
 /**
  * An activation cost that must be PAID before an activated ability resolves

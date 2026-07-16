@@ -278,7 +278,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // EB01-031 — [On Play] DON!! −1: If Leader {Water Seven}, add up to 2 Characters cost<=4 from trash to hand.
   { cardNumber: 'EB01-031', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Water Seven' }], functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 2 }] } },
 
-  // EB01-033 — [On Play] DON!! −1: If Leader {Water Seven}, play up to 1 {Water Seven} Character cost≤5 (other than Blueno) from hand or trash.
+  // EB01-033 — [On Play] DON!! −1: If Leader {Water Seven}, play up to 1 {Water Seven} Character cost==5 (other than Blueno) from hand or trash.
   {
     cardNumber: 'EB01-033',
     templateId: 'ability',
@@ -291,8 +291,8 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
         chooser: 'controller',
         prompt: 'Play Water Seven Character from:',
         options: [
-          { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Water Seven', maxCost: 5, excludeSelfName: true } }] },
-          { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Water Seven', maxCost: 5, excludeSelfName: true } }] },
+          { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Water Seven', exactCost: 5, excludeSelfName: true } }] },
+          { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Water Seven', exactCost: 5, excludeSelfName: true } }] },
         ],
       }],
     },
@@ -1710,7 +1710,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'onPlay',
       functions: [
         { fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'stage', typeIncludes: 'Dressrosa' }, remainder: 'bottom' },
-        { fn: 'playFromHand', filter: { category: 'stage', typeIncludes: 'Dressrosa', maxCost: 1 }, maxTargets: 1 },
+        { fn: 'playFromHand', filter: { category: 'stage', typeIncludes: 'Dressrosa', exactCost: 1 }, maxTargets: 1 },
       ],
     },
   },

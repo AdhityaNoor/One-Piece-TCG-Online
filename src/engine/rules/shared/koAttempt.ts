@@ -12,6 +12,7 @@ import type {
   ContinuousRestReplacementModifier,
   GameState,
   KoReplacementHandFilter,
+  KoReplacementLeaderOrNamedFilter,
   KoReplacementTrigger,
 } from '../../state/game';
 import type { KoReplacementResumeState, PendingChoice } from '../../events/pendingChoice';
@@ -152,6 +153,37 @@ function eligibleBottomDeckCharacters(state: GameState, ownerId: string, exclude
   return charArea.filter((id) => id !== excludeInstanceId && state.cardsById[id]?.currentZone === 'characterArea');
 }
 
+/**
+ * Candidate pool for `restLeaderOrNamed`: your active Leader (optionally restricted to a
+ * specific printed name) plus any active Character/Stage card on your field whose printed
+ * name exactly matches `filter.cardName`.
+ */
+function eligibleRestLeaderOrNamed(
+  state: GameState,
+  ownerId: string,
+  defs: CardDefinitionLookup,
+  filter: KoReplacementLeaderOrNamedFilter,
+): string[] {
+  const player = state.players[ownerId];
+  if (!player) return [];
+  const ids: string[] = [];
+  const leaderId = player.leaderInstanceId;
+  const leader = state.cardsById[leaderId];
+  if (leader && leader.orientation === 'active') {
+    if (!filter.leaderName || getDefinition(defs, leader).name === filter.leaderName) {
+      ids.push(leaderId);
+    }
+  }
+  const fieldIds = [...player.characterArea.cardIds, ...player.stageArea.cardIds];
+  for (const id of fieldIds) {
+    const inst = state.cardsById[id];
+    if (!inst || inst.orientation !== 'active') continue;
+    if (getDefinition(defs, inst).name !== filter.cardName) continue;
+    ids.push(id);
+  }
+  return ids;
+}
+
 function replacementTriggersInclude(mod: ContinuousKoReplacementModifier, trigger: KoReplacementTrigger): boolean {
   const triggers = mod.replacementTriggers ?? ['ko'];
   return triggers.includes(trigger);
@@ -184,6 +216,8 @@ function replacementCostIsImmediate(action: KoReplacementAction): boolean {
   if (action.kind === 'chooseLifeToHand') return action.position === 'top';
   if (action.kind === 'trashLife') return action.position === 'top';
   if (action.kind === 'payAbilityCosts') return requiredDonMinusCount(action.costs) === 0;
+  if (action.kind === 'restTargetAndTrashFromHand') return false;
+  if (action.kind === 'restLeaderOrNamed') return false;
   return (
     action.kind === 'trashSelf' ||
     action.kind === 'trashSource' ||
@@ -310,6 +344,14 @@ function replacementCostAvailable(
   }
   if (mod.action.kind === 'moveTargetToLifeFaceDown') {
     return true;
+  }
+  if (mod.action.kind === 'restTargetAndTrashFromHand') {
+    if (target.currentZone !== 'characterArea') return false;
+    const eligible = eligibleHandCards(defs, state, target.ownerId, mod.action.filter);
+    return eligible.length >= 1;
+  }
+  if (mod.action.kind === 'restLeaderOrNamed') {
+    return eligibleRestLeaderOrNamed(state, target.ownerId, defs, mod.action.filter).length >= 1;
   }
   return true;
 }
@@ -483,6 +525,32 @@ export function buildKoReplacementPayChoice(
       kind: 'SELECT_CARDS',
       prompt: `Choose ${mod.action.count} card${mod.action.count === 1 ? '' : 's'} from your trash to place at the bottom of your deck instead.`,
       constraints: { min: mod.action.count, max: mod.action.count, candidateInstanceIds: trash },
+      sourceInstanceId: routing.sourceInstanceId,
+      sourceEffectId: routing.sourceEffectId,
+      resumeState,
+    };
+  }
+  if (mod.action.kind === 'restTargetAndTrashFromHand') {
+    const eligible = eligibleHandCards(defs, state, target.ownerId, mod.action.filter);
+    return {
+      id: choiceId,
+      playerId: target.ownerId,
+      kind: 'SELECT_CARDS',
+      prompt: 'Choose 1 card to trash from your hand (this Character will also be rested) to avoid the removal.',
+      constraints: { min: 1, max: 1, candidateInstanceIds: eligible },
+      sourceInstanceId: routing.sourceInstanceId,
+      sourceEffectId: routing.sourceEffectId,
+      resumeState,
+    };
+  }
+  if (mod.action.kind === 'restLeaderOrNamed') {
+    const eligible = eligibleRestLeaderOrNamed(state, target.ownerId, defs, mod.action.filter);
+    return {
+      id: choiceId,
+      playerId: target.ownerId,
+      kind: 'SELECT_CARDS',
+      prompt: `Choose your Leader or 1 [${mod.action.filter.cardName}] to rest to avoid the K.O.`,
+      constraints: { min: 1, max: 1, candidateInstanceIds: eligible },
       sourceInstanceId: routing.sourceInstanceId,
       sourceEffectId: routing.sourceEffectId,
       resumeState,
@@ -749,6 +817,57 @@ export function applyKoReplacementCost(
     const moved = ctx.finish();
     working = moved.state;
     logger.log.push(...moved.log);
+  } else if (mod.action.kind === 'restTargetAndTrashFromHand') {
+    working = restCardInState(working, targetInstanceId);
+    logger.push({
+      actorPlayerId: target.ownerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${targetInstanceId} was rested as a K.O./removal replacement.`,
+      data: { restedInstanceId: targetInstanceId, targetInstanceId, koReplacement: true },
+      relatedCardInstanceIds: [targetInstanceId],
+      visibility: 'public',
+    });
+    const selectedIds = Array.isArray(selection) ? selection : [];
+    const handId = selectedIds[0];
+    const handInst = handId ? cardsById[handId] : undefined;
+    if (handInst && handInst.currentZone === 'hand') {
+      const owner = working.players[handInst.ownerId];
+      cardsById = { ...working.cardsById, [handId]: { ...handInst, currentZone: 'trash', donAttached: [] } };
+      working = {
+        ...working,
+        cardsById,
+        players: {
+          ...working.players,
+          [handInst.ownerId]: {
+            ...owner,
+            hand: removeFromZone(owner.hand, handId),
+            trash: addToZoneTop(owner.trash, handId),
+          },
+        },
+      };
+      logger.push({
+        actorPlayerId: handInst.ownerId,
+        type: 'CARD_MOVED',
+        message: `${handId} trashed from hand as part of a K.O./removal replacement.`,
+        data: { from: 'hand', to: 'trash', koReplacement: true },
+        relatedCardInstanceIds: [handId],
+        visibility: 'public',
+      });
+    }
+  } else if (mod.action.kind === 'restLeaderOrNamed') {
+    const selectedIds = Array.isArray(selection) ? selection : [];
+    const chosenId = selectedIds[0];
+    if (chosenId) {
+      working = restCardInState(working, chosenId);
+      logger.push({
+        actorPlayerId: target.ownerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${chosenId} was rested as a K.O. replacement.`,
+        data: { restedInstanceId: chosenId, targetInstanceId, koReplacement: true },
+        relatedCardInstanceIds: [chosenId, targetInstanceId],
+        visibility: 'public',
+      });
+    }
   } else if (mod.action.kind === 'chooseLifeToHand') {
     const ownerId = target.ownerId;
     const life = working.players[ownerId]?.lifeArea.cardIds ?? [];
@@ -877,6 +996,10 @@ export function koReplacementDescription(mod: ContinuousKoReplacementModifier): 
       return `Give your Leader −${mod.action.amount} power during this turn instead?`;
     case 'moveTargetToLifeFaceDown':
       return 'Add the ally to the top of your Life cards face-down instead?';
+    case 'restTargetAndTrashFromHand':
+      return 'Rest this Character and trash 1 card from your hand instead?';
+    case 'restLeaderOrNamed':
+      return `Rest your Leader or 1 [${mod.action.filter.cardName}] instead?`;
   }
 }
 

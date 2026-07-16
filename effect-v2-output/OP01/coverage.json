@@ -1,0 +1,5620 @@
+[
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-001",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-001#0.0",
+        "cardNumber": "OP01-001",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "All of your Characters gain +1000 power.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:OP01-001:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-002",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-002#0.0",
+        "cardNumber": "OP01-002",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "➁ :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-002:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-002#0.1",
+        "cardNumber": "OP01-002",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "If you have 5 Characters, return 1 of your Characters to the owner's hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-002:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-002#0.2",
+        "cardNumber": "OP01-002",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "play up to 1 Character with a cost of 5 or less from your hand that is a different color than the returned Character.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-002:0"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-003",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-003#0.0",
+        "cardNumber": "OP01-003",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "➃ :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-003:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-003#0.1",
+        "cardNumber": "OP01-003",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Set up to 1 of your {Supernovas} or {Straw Hat Crew} type Character cards with a cost of 5 or less as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-003:0"
+        ],
+        "canonicalAtoms": [
+          "SET_CARD_ACTIVE"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-003#0.2",
+        "cardNumber": "OP01-003",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "It gains +1000 power during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-003:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-004",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-004#0.0",
+        "cardNumber": "OP01-004",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Draw 1 card when your opponent activates an Event.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-004:0"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-005",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-005#0.0",
+        "cardNumber": "OP01-005",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Add up to 1 red Character card other than [Uta] with a cost of 3 or less from your trash to your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-005:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-006",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-006#0.0",
+        "cardNumber": "OP01-006",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Give up to 1 of your opponent's Characters −2000 power during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-006:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-007",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-007#0.0",
+        "cardNumber": "OP01-007",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "KO up to 1 of your opponent's Characters with 4000 power or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-007:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-008",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-008#0.0",
+        "cardNumber": "OP01-008",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may add 1 card from your Life area to your hand:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-008:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-008#0.1",
+        "cardNumber": "OP01-008",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "This Character gains [Rush] during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-008:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-009",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-009#0.0",
+        "cardNumber": "OP01-009",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Play this card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-009:0"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-010",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-011",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-011#0.0",
+        "cardNumber": "OP01-011",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may place 1 card from your hand at the bottom of your deck:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-011:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-011#0.1",
+        "cardNumber": "OP01-011",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Draw 1 card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-011:0"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-012",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-013",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-013#0.0",
+        "cardNumber": "OP01-013",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may add 1 card from your Life area to your hand:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-013:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-013#0.1",
+        "cardNumber": "OP01-013",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "This Character gains +2000 power during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-013:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-013#0.2",
+        "cardNumber": "OP01-013",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "give this Character up to 2 rested DON!! cards.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-013:0"
+        ],
+        "canonicalAtoms": [
+          "GIVE_DON"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-014",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-014#0.0",
+        "cardNumber": "OP01-014",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-014:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-014#1.0",
+        "cardNumber": "OP01-014",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Play up to 1 red Character card with a cost of 2 or less from your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-014:1"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-015",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-015#0.0",
+        "cardNumber": "OP01-015",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may trash 1 card from your hand:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-015:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-015#0.1",
+        "cardNumber": "OP01-015",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Add up to 1 {Straw Hat Crew} type Character card other than [Tony Tony.Chopper] with a cost of 4 or less from your trash to your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-015:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-016",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-016#0.0",
+        "cardNumber": "OP01-016",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Look at 5 cards from the top of your deck;",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-016:0"
+        ],
+        "canonicalAtoms": [
+          "LOOK_AT_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-016#0.1",
+        "cardNumber": "OP01-016",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "reveal up to 1 {Straw Hat Crew} type card other than [Nami] and add it to your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-016:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-016#0.2",
+        "cardNumber": "OP01-016",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "place the rest at the bottom of your deck in any order.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-016:0"
+        ],
+        "canonicalAtoms": [
+          "REORDER_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-017",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-017#0.0",
+        "cardNumber": "OP01-017",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "KO up to 1 of your opponent's Characters with 3000 power or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-017:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-018",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-019",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-019#0.0",
+        "cardNumber": "OP01-019",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-019:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-019#0.1",
+        "cardNumber": "OP01-019",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "[DON!! x2] [Opponent's Turn] This Character gains +3000 power.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-019:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-020",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-020#0.0",
+        "cardNumber": "OP01-020",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may rest this Character:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-020:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-020#0.1",
+        "cardNumber": "OP01-020",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Up to 1 of your Leader or Character cards gains +2000 power during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-020:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-021",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-021#0.0",
+        "cardNumber": "OP01-021",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "This Character can also attack your opponent's active Characters.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-021:0"
+        ],
+        "canonicalAtoms": [
+          "ALLOW_ACTION"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-022",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-022#0.0",
+        "cardNumber": "OP01-022",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Give up to 2 of your opponent's Characters −2000 power during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-022:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-023",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-024",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-024#0.0",
+        "cardNumber": "OP01-024",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "This Character cannot be KO'd in battle by ＜Strike＞ attribute Characters.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-024:0"
+        ],
+        "canonicalAtoms": [
+          "PREVENT_ACTION"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-024#1.0",
+        "cardNumber": "OP01-024",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Give this Character up to 2 rested DON!! cards.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-024:1"
+        ],
+        "canonicalAtoms": [
+          "GIVE_DON"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-025",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-025#0.0",
+        "cardNumber": "OP01-025",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Rush]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-025:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-026",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-026#0.0",
+        "cardNumber": "OP01-026",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Up to 1 of your Leader or Character cards gains +4000 power during this battle.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:OP01-026:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-026#0.1",
+        "cardNumber": "OP01-026",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "KO up to 1 of your opponent's Characters with 4000 power or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:OP01-026:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-026#1.0",
+        "cardNumber": "OP01-026",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Give up to 1 of your opponent's Leader or Character cards −10000 power during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-026:1"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-027",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-028",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-028#0.0",
+        "cardNumber": "OP01-028",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Give up to 1 of your opponent's Leader or Character cards −2000 power during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-028:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-028#1.0",
+        "cardNumber": "OP01-028",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Activate this card's [Counter] effect.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-028:1"
+        ],
+        "canonicalAtoms": [
+          "ACTIVATE_EVENT"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-029",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-029#0.0",
+        "cardNumber": "OP01-029",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Up to 1 of your Leader or Character cards gains +2000 power during this battle.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-029:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-029#0.1",
+        "cardNumber": "OP01-029",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "if you have 2 or less Life cards, that card gains an additional +2000 power.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-029:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-029#1.0",
+        "cardNumber": "OP01-029",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Up to 1 of your Leader or Character cards gains +1000 power during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-029:1"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-030",
+    "totalAtomicEffects": 4,
+    "parserRecognizedAtomicEffects": 4,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 4,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 4,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-030#0.0",
+        "cardNumber": "OP01-030",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Look at 5 cards from the top of your deck;",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-030:0"
+        ],
+        "canonicalAtoms": [
+          "LOOK_AT_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-030#0.1",
+        "cardNumber": "OP01-030",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "reveal up to 1 {Straw Hat Crew} type Character card and add it to your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-030:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-030#0.2",
+        "cardNumber": "OP01-030",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "place the rest at the bottom of your deck in any order.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-030:0"
+        ],
+        "canonicalAtoms": [
+          "REORDER_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-030#1.0",
+        "cardNumber": "OP01-030",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Activate this card's [Main] effect.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-030:1"
+        ],
+        "canonicalAtoms": [
+          "ACTIVATE_EVENT"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-031",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-031#0.0",
+        "cardNumber": "OP01-031",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You can trash 1 {Land of Wano} type card from your hand:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-031:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-031#0.1",
+        "cardNumber": "OP01-031",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Set up to 2 of your DON!! cards as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-031:0"
+        ],
+        "canonicalAtoms": [
+          "SET_DON_ACTIVE"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-032",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-032#0.0",
+        "cardNumber": "OP01-032",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If your opponent has 2 or more rested Characters, this Character gains +2000 power.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-032:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-033",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-033#0.0",
+        "cardNumber": "OP01-033",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Rest up to 1 of your opponent's Characters with a cost of 4 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-033:0"
+        ],
+        "canonicalAtoms": [
+          "REST_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-034",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-034#0.0",
+        "cardNumber": "OP01-034",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Set up to 1 of your DON!! cards as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-034:0"
+        ],
+        "canonicalAtoms": [
+          "SET_DON_ACTIVE"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-035",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-035#0.0",
+        "cardNumber": "OP01-035",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Rest up to 1 of your opponent's Characters with a cost of 5 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-035:0"
+        ],
+        "canonicalAtoms": [
+          "REST_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-036",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-037",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-037#0.0",
+        "cardNumber": "OP01-037",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Play this card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-037:0"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-038",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-038#0.0",
+        "cardNumber": "OP01-038",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "KO up to 1 of your opponent's rested Characters with a cost of 2 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-038:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-038#1.0",
+        "cardNumber": "OP01-038",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Your opponent chooses 1 card from your hand;",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-038:1"
+        ],
+        "canonicalAtoms": [],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-038#1.1",
+        "cardNumber": "OP01-038",
+        "effectIndex": 1,
+        "atomIndex": 1,
+        "rawText": "trash that card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-038:1"
+        ],
+        "canonicalAtoms": [
+          "TRASH_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-039",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-039#0.0",
+        "cardNumber": "OP01-039",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-039:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-039#1.0",
+        "cardNumber": "OP01-039",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "If you have 3 or more Characters, draw 1 card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-039:1"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-040",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-040#0.0",
+        "cardNumber": "OP01-040",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If your Leader is [Kouzuki Oden], play up to 1 {The Akazaya Nine} type Character card with a cost of 3 or less from your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-040:0"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-040#1.0",
+        "cardNumber": "OP01-040",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Set up to 1 of your {The Akazaya Nine} type Character cards with a cost of 3 or less as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-040:1"
+        ],
+        "canonicalAtoms": [
+          "SET_CARD_ACTIVE"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-041",
+    "totalAtomicEffects": 4,
+    "parserRecognizedAtomicEffects": 4,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 4,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 4,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-041#0.0",
+        "cardNumber": "OP01-041",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "➀ You may rest this Character:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-041:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-041#0.1",
+        "cardNumber": "OP01-041",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Look at 5 cards from the top of your deck;",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-041:0"
+        ],
+        "canonicalAtoms": [
+          "LOOK_AT_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-041#0.2",
+        "cardNumber": "OP01-041",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "reveal up to 1 {Land of Wano} type card and add it to your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-041:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-041#0.3",
+        "cardNumber": "OP01-041",
+        "effectIndex": 0,
+        "atomIndex": 3,
+        "rawText": "place the rest at the bottom of your deck in any order.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-041:0"
+        ],
+        "canonicalAtoms": [
+          "REORDER_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-042",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-042#0.0",
+        "cardNumber": "OP01-042",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "③ :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-042:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-042#0.1",
+        "cardNumber": "OP01-042",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "If your Leader is [Kouzuki Oden], set up to 1 of your {Land of Wano} type Character cards with a cost of 3 or less as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-042:0"
+        ],
+        "canonicalAtoms": [
+          "SET_CARD_ACTIVE"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-043",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-044",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-044#0.0",
+        "cardNumber": "OP01-044",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-044:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-044#1.0",
+        "cardNumber": "OP01-044",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "If you don't have [Penguin], play up to 1 [Penguin] from your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-044:1"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-045",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-046",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-046#0.0",
+        "cardNumber": "OP01-046",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If your Leader is [Kouzuki Oden], set up to 2 of your DON!! cards as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-046:0"
+        ],
+        "canonicalAtoms": [
+          "SET_DON_ACTIVE"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-047",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-047#0.0",
+        "cardNumber": "OP01-047",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-047:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-047#1.0",
+        "cardNumber": "OP01-047",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "You may return 1 Character to your hand:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-047:1"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-047#1.1",
+        "cardNumber": "OP01-047",
+        "effectIndex": 1,
+        "atomIndex": 1,
+        "rawText": "Play up to 1 Character card with a cost of 3 or less from your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-047:1"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-048",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-048#0.0",
+        "cardNumber": "OP01-048",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Rest up to 1 of your opponent's Characters with a cost of 3 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-048:0"
+        ],
+        "canonicalAtoms": [
+          "REST_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-049",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-049#0.0",
+        "cardNumber": "OP01-049",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Play up to 1 {Heart Pirates} type Character card other than [Bepo] with a cost of 4 or less from your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-049:0"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-050",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-050#0.0",
+        "cardNumber": "OP01-050",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-050:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-050#1.0",
+        "cardNumber": "OP01-050",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "If you don't have [Shachi], play up to 1 [Shachi] from your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-050:1"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-051",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-051#0.0",
+        "cardNumber": "OP01-051",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If this Character is rested, your opponent cannot attack any card other than the Character [Eustass\"Captain\"Kid].",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-051:0"
+        ],
+        "canonicalAtoms": [
+          "PREVENT_ACTION"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-051#1.0",
+        "cardNumber": "OP01-051",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "You may rest this Character:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-051:1"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-051#1.1",
+        "cardNumber": "OP01-051",
+        "effectIndex": 1,
+        "atomIndex": 1,
+        "rawText": "Play up to 1 Character card with a cost of 3 or less from your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-051:1"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-052",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-052#0.0",
+        "cardNumber": "OP01-052",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If you have 2 or more rested Characters, draw 1 card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-052:0"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-053",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-054",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-054#0.0",
+        "cardNumber": "OP01-054",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "KO up to 1 of your opponent's rested Characters with a cost of 4 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-054:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-055",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-055#0.0",
+        "cardNumber": "OP01-055",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may rest 2 of your Characters:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-055:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-055#0.1",
+        "cardNumber": "OP01-055",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Draw 2 cards.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-055:0"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-056",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-056#0.0",
+        "cardNumber": "OP01-056",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "KO up to 2 of your opponent's rested Characters with a cost of 5 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-056:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-057",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-057#0.0",
+        "cardNumber": "OP01-057",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Up to 1 of your Leader or Character cards gains +2000 power during this battle.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-057:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-057#0.1",
+        "cardNumber": "OP01-057",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "set up to 1 of your Characters as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-057:0"
+        ],
+        "canonicalAtoms": [
+          "SET_CARD_ACTIVE"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-057#1.0",
+        "cardNumber": "OP01-057",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "KO up to 1 of your opponent's rested Characters with a cost of 4 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-057:1"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-058",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-058#0.0",
+        "cardNumber": "OP01-058",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Up to 1 of your Leader or Character cards gains +4000 power during this battle.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-058:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-058#0.1",
+        "cardNumber": "OP01-058",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "rest up to 1 of your opponent's Characters with a cost of 4 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-058:0"
+        ],
+        "canonicalAtoms": [
+          "REST_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-058#1.0",
+        "cardNumber": "OP01-058",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Rest up to 1 of your opponent's Characters.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-058:1"
+        ],
+        "canonicalAtoms": [
+          "REST_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-059",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-059#0.0",
+        "cardNumber": "OP01-059",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may trash 1 {Land of Wano} type card from your hand:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-059:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-059#0.1",
+        "cardNumber": "OP01-059",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Set up to 1 of your {Land of Wano} type Character cards with a cost of 3 or less as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-059:0"
+        ],
+        "canonicalAtoms": [
+          "SET_CARD_ACTIVE"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-060",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-060#0.0",
+        "cardNumber": "OP01-060",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "➀ :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-060:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-060#0.1",
+        "cardNumber": "OP01-060",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Reveal 1 card from the top of your deck.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-060:0"
+        ],
+        "canonicalAtoms": [
+          "REVEAL_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-060#0.2",
+        "cardNumber": "OP01-060",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "If that card is a {The Seven Warlords of the Sea} type Character card with a cost of 4 or less, you may play that card rested.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-060:0"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-061",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-061#0.0",
+        "cardNumber": "OP01-061",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "When your opponent's Character is KO'd, add up to 1 DON!! card from your DON!! deck and set it as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-061:0"
+        ],
+        "canonicalAtoms": [
+          "ADD_DON_FROM_DON_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-062",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-062#0.0",
+        "cardNumber": "OP01-062",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "When you activate an Event, you may draw 1 card if you have 4 or less cards in your hand and haven't drawn a card using this Leader's effect during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-062:0"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-063",
+    "totalAtomicEffects": 4,
+    "parserRecognizedAtomicEffects": 4,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 4,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 4,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-063#0.0",
+        "cardNumber": "OP01-063",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may rest this Character:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-063:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-063#0.1",
+        "cardNumber": "OP01-063",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Choose 1 card from your opponent's hand;",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-063:0"
+        ],
+        "canonicalAtoms": [],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-063#0.2",
+        "cardNumber": "OP01-063",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "your opponent reveals that card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-063:0"
+        ],
+        "canonicalAtoms": [
+          "REVEAL_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-063#0.3",
+        "cardNumber": "OP01-063",
+        "effectIndex": 0,
+        "atomIndex": 3,
+        "rawText": "If the revealed card is an Event, place up to 1 card from your opponent's Life area at the bottom of the owner's deck.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-063:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "PLACE_CARD_IN_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-064",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-064#0.0",
+        "cardNumber": "OP01-064",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may trash 1 card from your hand:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-064:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-064#0.1",
+        "cardNumber": "OP01-064",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Return up to 1 of your opponent's Characters with a cost of 3 or less to the owner's hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-064:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-065",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-066",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-067",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-067#0.0",
+        "cardNumber": "OP01-067",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Banish]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-067:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-067#0.1",
+        "cardNumber": "OP01-067",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "[DON!! x1] Give blue Events in your hand −1 cost.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-067:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_COST"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-068",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-068#0.0",
+        "cardNumber": "OP01-068",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "This Character gains [Double Attack] if you have 5 or more cards in your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-068:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-069",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-069#0.0",
+        "cardNumber": "OP01-069",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Play up to 1 [Smiley] from your deck",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-069:0"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-069#0.1",
+        "cardNumber": "OP01-069",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "shuffle your deck.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-069:0"
+        ],
+        "canonicalAtoms": [
+          "SHUFFLE_ZONE"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-070",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-070#0.0",
+        "cardNumber": "OP01-070",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Place up to 1 Character with a cost of 7 or less at the bottom of the owner's deck.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-070:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "PLACE_CARD_IN_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-071",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-071#0.0",
+        "cardNumber": "OP01-071",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Place up to 1 Character with a cost of 3 or less at the bottom of the owner's deck.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-071:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "PLACE_CARD_IN_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-071#1.0",
+        "cardNumber": "OP01-071",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Play this card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-071:1"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-072",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-072#0.0",
+        "cardNumber": "OP01-072",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "This Character gains +1000 power for every card in your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-072:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-073",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-073#0.0",
+        "cardNumber": "OP01-073",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-073:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-073#1.0",
+        "cardNumber": "OP01-073",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Look at 5 cards from the top of your deck",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-073:1"
+        ],
+        "canonicalAtoms": [
+          "LOOK_AT_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-073#1.1",
+        "cardNumber": "OP01-073",
+        "effectIndex": 1,
+        "atomIndex": 1,
+        "rawText": "place them at the top or bottom of the deck in any order.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-073:1"
+        ],
+        "canonicalAtoms": [
+          "REORDER_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-074",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-074#0.0",
+        "cardNumber": "OP01-074",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-074:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-074#1.0",
+        "cardNumber": "OP01-074",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Play up to 1 [Pacifista] with a cost of 4 or less from your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-074:1"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-075",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-075#0.0",
+        "cardNumber": "OP01-075",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Under the rules of this game, you may have any number of this card in your deck.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-075:0"
+        ],
+        "canonicalAtoms": [
+          "RULE_MODIFIER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-075#1.0",
+        "cardNumber": "OP01-075",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-075:1"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-076",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-077",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-077#0.0",
+        "cardNumber": "OP01-077",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Look at 5 cards from the top of your deck",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-077:0"
+        ],
+        "canonicalAtoms": [
+          "LOOK_AT_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-077#0.1",
+        "cardNumber": "OP01-077",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "place them at the top or bottom of the deck in any order.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-077:0"
+        ],
+        "canonicalAtoms": [
+          "REORDER_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-078",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-078#0.0",
+        "cardNumber": "OP01-078",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-078:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-078#2.0",
+        "cardNumber": "OP01-078",
+        "effectIndex": 2,
+        "atomIndex": 0,
+        "rawText": "Draw 1 card if you have 5 or less cards in your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-078:2"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-079",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-079#0.0",
+        "cardNumber": "OP01-079",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-079:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-079#1.0",
+        "cardNumber": "OP01-079",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "If your Leader has the {Baroque Works} type, add up to 1 Event from your trash to your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-079:1"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-080",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-080#0.0",
+        "cardNumber": "OP01-080",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Draw 1 card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-080:0"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-081",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-082",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-082#0.0",
+        "cardNumber": "OP01-082",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Play this card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-082:0"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-083",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-083#0.0",
+        "cardNumber": "OP01-083",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If your Leader has the {Baroque Works} type, this Character gains +1000 power for every 2 Events in your trash.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-083:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-084",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-084#0.0",
+        "cardNumber": "OP01-084",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Look at 5 cards from the top of your deck;",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-084:0"
+        ],
+        "canonicalAtoms": [
+          "LOOK_AT_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-084#0.1",
+        "cardNumber": "OP01-084",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "reveal up to 1 {Baroque Works} type Event card and add it to your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-084:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-084#0.2",
+        "cardNumber": "OP01-084",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "place the rest at the bottom of your deck in any order.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-084:0"
+        ],
+        "canonicalAtoms": [
+          "REORDER_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-085",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-085#0.0",
+        "cardNumber": "OP01-085",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If your Leader has the {Baroque Works} type, select up to 1 of your opponent's Characters with a cost of 4 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-085:0"
+        ],
+        "canonicalAtoms": [],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-085#0.1",
+        "cardNumber": "OP01-085",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "The selected Character cannot attack until the end of your opponent's next turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-085:0"
+        ],
+        "canonicalAtoms": [
+          "PREVENT_ACTION"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-086",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-086#0.0",
+        "cardNumber": "OP01-086",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Up to 1 of your Leader or Character cards gains +4000 power during this battle.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-086:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-086#0.1",
+        "cardNumber": "OP01-086",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "return up to 1 active Character with a cost of 3 or less to the owner's hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-086:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-086#1.0",
+        "cardNumber": "OP01-086",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Return up to 1 Character with a cost of 4 or less to the owner's hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-086:1"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-087",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-087#0.0",
+        "cardNumber": "OP01-087",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Play up to 1 {Baroque Works} type Character card with a cost of 3 or less from your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-087:0"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-087#1.0",
+        "cardNumber": "OP01-087",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Activate this card's [Counter] effect.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-087:1"
+        ],
+        "canonicalAtoms": [
+          "ACTIVATE_EVENT"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-088",
+    "totalAtomicEffects": 5,
+    "parserRecognizedAtomicEffects": 5,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 5,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 5,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-088#0.0",
+        "cardNumber": "OP01-088",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Up to 1 of your Leader or Character cards gains +2000 power during this battle.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-088:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-088#0.1",
+        "cardNumber": "OP01-088",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "look at 3 cards from the top of your deck",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-088:0"
+        ],
+        "canonicalAtoms": [
+          "LOOK_AT_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-088#0.2",
+        "cardNumber": "OP01-088",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "place them at the top or bottom of the deck in any order.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-088:0"
+        ],
+        "canonicalAtoms": [
+          "REORDER_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-088#1.0",
+        "cardNumber": "OP01-088",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Draw 2 cards",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-088:1"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-088#1.1",
+        "cardNumber": "OP01-088",
+        "effectIndex": 1,
+        "atomIndex": 1,
+        "rawText": "trash 1 card from your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-088:1"
+        ],
+        "canonicalAtoms": [
+          "TRASH_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-089",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-089#0.0",
+        "cardNumber": "OP01-089",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If your Leader has the {The Seven Warlords of the Sea} type, return up to 1 Character with a cost of 5 or less to the owner's hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-089:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-090",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-090#0.0",
+        "cardNumber": "OP01-090",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Look at 5 cards from the top of your deck;",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-090:0"
+        ],
+        "canonicalAtoms": [
+          "LOOK_AT_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-090#0.1",
+        "cardNumber": "OP01-090",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "reveal up to 1 {Baroque Works} type card other than [Baroque Works] and add it to your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-090:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-090#0.2",
+        "cardNumber": "OP01-090",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "place the rest at the bottom of your deck in any order.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-090:0"
+        ],
+        "canonicalAtoms": [
+          "REORDER_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-091",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-091#0.0",
+        "cardNumber": "OP01-091",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If you have 10 DON!! cards on your field, give all of your opponent's Characters −1000 power.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-091:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-092",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-093",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-093#0.0",
+        "cardNumber": "OP01-093",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "① :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-093:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-093#0.1",
+        "cardNumber": "OP01-093",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Add up to 1 DON!! card from your DON!! deck and rest it.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-093:0"
+        ],
+        "canonicalAtoms": [
+          "ADD_DON_FROM_DON_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-094",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-094#0.0",
+        "cardNumber": "OP01-094",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "DON!! −6 :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-094:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-094#0.1",
+        "cardNumber": "OP01-094",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "If your Leader has the {Animal Kingdom Pirates} type, KO all Characters other than this Character.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-094:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-095",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-095#0.0",
+        "cardNumber": "OP01-095",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Draw 1 card if you have 8 or more DON!! cards on your field.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-095:0"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-096",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-096#0.0",
+        "cardNumber": "OP01-096",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "DON!! −2 :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-096:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-096#0.1",
+        "cardNumber": "OP01-096",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "KO up to 1 of your opponent's Characters with a cost of 3 or less and up to 1 of your opponent's Characters with a cost of 2 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-096:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-097",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-097#0.0",
+        "cardNumber": "OP01-097",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "DON!! −1 :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-097:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-097#0.1",
+        "cardNumber": "OP01-097",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "This Character gains [Rush] during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-097:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-097#0.2",
+        "cardNumber": "OP01-097",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "give up to 1 of your opponent's Characters −2000 power during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-097:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-098",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-098#0.0",
+        "cardNumber": "OP01-098",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Reveal up to 1 [Artificial Devil Fruit SMILE] from your deck and add it to your hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-098:0"
+        ],
+        "canonicalAtoms": [
+          "MOVE_CARD",
+          "ADD_CARD_TO_HAND"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-098#0.1",
+        "cardNumber": "OP01-098",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "shuffle your deck.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-098:0"
+        ],
+        "canonicalAtoms": [
+          "SHUFFLE_ZONE"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-099",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-099#0.0",
+        "cardNumber": "OP01-099",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "{Kurozumi Clan} type Characters other than your [Kurozumi Semimaru] cannot be KO'd in battle.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-099:0"
+        ],
+        "canonicalAtoms": [
+          "PREVENT_ACTION"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-100",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-100#0.0",
+        "cardNumber": "OP01-100",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-100:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-101",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-101#0.0",
+        "cardNumber": "OP01-101",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "You may trash 1 card from your hand:",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-101:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-101#0.1",
+        "cardNumber": "OP01-101",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Add up to 1 DON!! card from your DON!! deck and rest it.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-101:0"
+        ],
+        "canonicalAtoms": [
+          "ADD_DON_FROM_DON_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-102",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-102#0.0",
+        "cardNumber": "OP01-102",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "DON!! −1 :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-102:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-102#0.1",
+        "cardNumber": "OP01-102",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Your opponent trashes 1 card from their hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-102:0"
+        ],
+        "canonicalAtoms": [
+          "TRASH_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-103",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-104",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-104#0.0",
+        "cardNumber": "OP01-104",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Play this card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-104:0"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-105",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-105#0.0",
+        "cardNumber": "OP01-105",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Choose 2 cards from your opponent's hand;",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-105:0"
+        ],
+        "canonicalAtoms": [],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-105#0.1",
+        "cardNumber": "OP01-105",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "your opponent reveals those cards.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-105:0"
+        ],
+        "canonicalAtoms": [
+          "REVEAL_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-106",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-106#0.0",
+        "cardNumber": "OP01-106",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Add up to 1 DON!! card from your DON!! deck and rest it.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-106:0"
+        ],
+        "canonicalAtoms": [
+          "ADD_DON_FROM_DON_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-106#1.0",
+        "cardNumber": "OP01-106",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Play this card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-106:1"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-107",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-108",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-108#0.0",
+        "cardNumber": "OP01-108",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "DON!! −1 :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-108:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-108#0.1",
+        "cardNumber": "OP01-108",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "KO up to 1 of your opponent's Characters with a cost of 5 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-108:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-109",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-109#0.0",
+        "cardNumber": "OP01-109",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "If you have 8 or more DON!! cards on your field, this Character gains +1000 power.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-109:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-110",
+    "totalAtomicEffects": 0,
+    "parserRecognizedAtomicEffects": 0,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 0,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": []
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-111",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-111#0.0",
+        "cardNumber": "OP01-111",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Blocker]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-111:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-111#1.0",
+        "cardNumber": "OP01-111",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "DON!! −1 :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-111:1"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-111#1.1",
+        "cardNumber": "OP01-111",
+        "effectIndex": 1,
+        "atomIndex": 1,
+        "rawText": "This Character gains +1000 power during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-111:1"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-112",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-112#0.0",
+        "cardNumber": "OP01-112",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "DON!! −1 :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-112:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-112#0.1",
+        "cardNumber": "OP01-112",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "This Character can also attack your opponent's active Characters during this turn.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-112:0"
+        ],
+        "canonicalAtoms": [
+          "ALLOW_ACTION"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-113",
+    "totalAtomicEffects": 1,
+    "parserRecognizedAtomicEffects": 1,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 1,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-113#0.0",
+        "cardNumber": "OP01-113",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Add up to 1 DON!! card from your DON!! deck and rest it.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-113:0"
+        ],
+        "canonicalAtoms": [
+          "ADD_DON_FROM_DON_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-114",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-114#0.0",
+        "cardNumber": "OP01-114",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "DON!! −1 :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-114:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-114#0.1",
+        "cardNumber": "OP01-114",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Your opponent trashes 1 card from their hand.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-114:0"
+        ],
+        "canonicalAtoms": [
+          "TRASH_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-115",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-115#0.0",
+        "cardNumber": "OP01-115",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "KO up to 1 of your opponent's Characters with a cost of 2 or less",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-115:0"
+        ],
+        "canonicalAtoms": [
+          "KO_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-115#0.1",
+        "cardNumber": "OP01-115",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "add up to 1 DON!! card from your DON!! deck and set it as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-115:0"
+        ],
+        "canonicalAtoms": [
+          "ADD_DON_FROM_DON_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-115#1.0",
+        "cardNumber": "OP01-115",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Activate this card's [Main] effect.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-115:1"
+        ],
+        "canonicalAtoms": [
+          "ACTIVATE_EVENT"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-116",
+    "totalAtomicEffects": 4,
+    "parserRecognizedAtomicEffects": 4,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 4,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 4,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-116#0.0",
+        "cardNumber": "OP01-116",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Look at 5 cards from the top of your deck;",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-116:0"
+        ],
+        "canonicalAtoms": [
+          "LOOK_AT_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-116#0.1",
+        "cardNumber": "OP01-116",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "play up to 1 {SMILE} type Character card with a cost of 3 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-116:0"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-116#0.2",
+        "cardNumber": "OP01-116",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "place the rest at the bottom of your deck in any order.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-116:0"
+        ],
+        "canonicalAtoms": [
+          "REORDER_CARDS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-116#1.0",
+        "cardNumber": "OP01-116",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Activate this card's [Main] effect.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-116:1"
+        ],
+        "canonicalAtoms": [
+          "ACTIVATE_EVENT"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-117",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-117#0.0",
+        "cardNumber": "OP01-117",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "DON!! −1 :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-117:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-117#0.1",
+        "cardNumber": "OP01-117",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Rest up to 1 of your opponent's Characters with a cost of 6 or less.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-117:0"
+        ],
+        "canonicalAtoms": [
+          "REST_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-118",
+    "totalAtomicEffects": 4,
+    "parserRecognizedAtomicEffects": 4,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 4,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 4,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-118#0.0",
+        "cardNumber": "OP01-118",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "DON!! −2 :",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-118:0"
+        ],
+        "canonicalAtoms": [
+          "ActivationCost"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser lifted this clause into activationCost."
+      },
+      {
+        "atomicEffectId": "OP01-118#0.1",
+        "cardNumber": "OP01-118",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "Up to 1 of your Leader or Character cards gains +2000 power during this battle.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-118:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-118#0.2",
+        "cardNumber": "OP01-118",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "draw 1 card.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-118:0"
+        ],
+        "canonicalAtoms": [
+          "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-118#1.0",
+        "cardNumber": "OP01-118",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Add up to 1 DON!! card from your DON!! deck and set it as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-118:1"
+        ],
+        "canonicalAtoms": [
+          "ADD_DON_FROM_DON_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-119",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-119#0.0",
+        "cardNumber": "OP01-119",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Up to 1 of your Leader or Character cards gains +4000 power during this battle.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-119:0"
+        ],
+        "canonicalAtoms": [
+          "MODIFY_POWER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-119#0.1",
+        "cardNumber": "OP01-119",
+        "effectIndex": 0,
+        "atomIndex": 1,
+        "rawText": "if you have 2 or less Life cards, add up to 1 DON!! card from your DON!! deck and rest it.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-119:0"
+        ],
+        "canonicalAtoms": [
+          "ADD_DON_FROM_DON_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-119#1.0",
+        "cardNumber": "OP01-119",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Add up to 1 DON!! card from your DON!! deck and set it as active.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-119:1"
+        ],
+        "canonicalAtoms": [
+          "ADD_DON_FROM_DON_DECK"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-120",
+    "totalAtomicEffects": 2,
+    "parserRecognizedAtomicEffects": 2,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 2,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 2,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-120#0.0",
+        "cardNumber": "OP01-120",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "[Rush]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-120:0"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-120#1.0",
+        "cardNumber": "OP01-120",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "Your opponent cannot activate a [Blocker] Character that has 2000 or less power during this battle.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-120:1"
+        ],
+        "canonicalAtoms": [
+          "PREVENT_ACTION"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  },
+  {
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "generatedBy": "effectCompiler_V2",
+    "cardNumber": "OP01-121",
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
+    "parserUnrecognizedAtomicEffects": 0,
+    "assignmentCoveredAtomicEffects": 3,
+    "assignmentPartialAtomicEffects": 0,
+    "assignmentUncoveredAtomicEffects": 0,
+    "coveredAtomicEffects": 3,
+    "partialAtomicEffects": 0,
+    "uncoveredAtomicEffects": 0,
+    "statuses": [
+      {
+        "atomicEffectId": "OP01-121#0.0",
+        "cardNumber": "OP01-121",
+        "effectIndex": 0,
+        "atomIndex": 0,
+        "rawText": "Also treat this card's name as [Kouzuki Oden] according to the rules.",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-121:0"
+        ],
+        "canonicalAtoms": [
+          "RULE_MODIFIER"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-121#1.0",
+        "cardNumber": "OP01-121",
+        "effectIndex": 1,
+        "atomIndex": 0,
+        "rawText": "[Double Attack]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-121:1"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP01-121#1.1",
+        "cardNumber": "OP01-121",
+        "effectIndex": 1,
+        "atomIndex": 1,
+        "rawText": "[Banish]",
+        "parserStatus": "recognized",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP01-121:1"
+        ],
+        "canonicalAtoms": [
+          "GRANT_KEYWORD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      }
+    ]
+  }
+]

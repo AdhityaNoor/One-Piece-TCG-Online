@@ -1,0 +1,177 @@
+[
+  {
+    "_id": "effects-v2:PRB01-001",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "PRB01-001",
+    "effects": [
+      {
+        "id": "PRB01-001#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ACTIVATE_MAIN"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "GRANT_KEYWORD",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 8
+                }
+              }
+            },
+            "keyword": "RUSH",
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "PRB01-001#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "PRB01-001",
+          "effectIndex": 0,
+          "printedText": "[Activate: Main] [Once Per Turn] Up to 1 of your Characters without an [On Play] effect and with a cost of 8 or less gains [Rush] during this turn. (This card can attack on the turn in which it is played.)",
+          "normalizedText": "[Activate: Main] [Once Per Turn] Up to 1 of your Characters without an [On Play] effect and with a cost of 8 or less gains [Rush] during this turn. (This card can attack on the turn in which it is played.)",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:PRB01-001:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:PRB01-001:0",
+        "cardNumber": "PRB01-001",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Activate: Main] [Once Per Turn] Up to 1 of your Characters without an [On Play] effect and with a cost of 8 or less gains [Rush] during this turn. (This card can attack on the turn in which it is played.)",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ACTIVATE_MAIN"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "GRANT_KEYWORD",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 8
+                  }
+                }
+              },
+              "keyword": "RUSH",
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "PRB01-001#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "PRB01-001#0.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "PRB01-001",
+      "totalAtomicEffects": 1,
+      "parserRecognizedAtomicEffects": 1,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 1,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "PRB01-001#0.0",
+          "cardNumber": "PRB01-001",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "Up to 1 of your Characters without an [On Play] effect and with a cost of 8 or less gains [Rush] during this turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:PRB01-001:0"
+          ],
+          "canonicalAtoms": [
+            "GRANT_KEYWORD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  }
+]

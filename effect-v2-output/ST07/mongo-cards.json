@@ -1,0 +1,4245 @@
+[
+  {
+    "_id": "effects-v2:ST07-001",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-001",
+    "effects": [
+      {
+        "id": "ST07-001#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "WHEN_ATTACKING"
+        },
+        "conditions": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "ATTACHED_DON_COUNT",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          },
+          "operator": "GREATER_OR_EQUAL",
+          "right": {
+            "kind": "NUMBER",
+            "value": 2
+          }
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "ADD_LIFE_TO_HAND_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "LIFE"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "IF",
+          "condition": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "COUNT",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "LIFE"
+                ],
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              }
+            },
+            "operator": "LESS_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 2
+            }
+          },
+          "then": {
+            "kind": "ACTION",
+            "action": {
+              "type": "ADD_CARD_TO_LIFE",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "player": "PLAYER",
+              "position": "TOP",
+              "face": "FACE_DOWN"
+            },
+            "actionId": "ST07-001#0.1"
+          }
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-001",
+          "effectIndex": 0,
+          "printedText": " [DON!! x2] [When Attacking] You may add 1 card from the top or bottom of your Life cards to your hand: If you have 2 or less Life cards, add up to 1 card from your hand to the top of your Life cards.",
+          "normalizedText": "[DON!! x2] [When Attacking] You may add 1 card from the top or bottom of your Life cards to your hand: If you have 2 or less Life cards, add up to 1 card from your hand to the top of your Life cards.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-001:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-001:0",
+        "cardNumber": "ST07-001",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": " [DON!! x2] [When Attacking] You may add 1 card from the top or bottom of your Life cards to your hand: If you have 2 or less Life cards, add up to 1 card from your hand to the top of your Life cards.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "WHEN_ATTACKING"
+          },
+          "conditions": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "ATTACHED_DON_COUNT",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 2
+            }
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "ADD_LIFE_TO_HAND_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "LIFE"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "ordering": "DECK_ORDER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "IF",
+            "condition": {
+              "kind": "PREDICATE",
+              "left": {
+                "kind": "COUNT",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "LIFE"
+                  ],
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  }
+                }
+              },
+              "operator": "LESS_OR_EQUAL",
+              "right": {
+                "kind": "NUMBER",
+                "value": 2
+              }
+            },
+            "then": {
+              "kind": "ACTION",
+              "action": {
+                "type": "ADD_CARD_TO_LIFE",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "HAND"
+                  ],
+                  "quantity": {
+                    "kind": "UP_TO",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                },
+                "player": "PLAYER",
+                "position": "TOP",
+                "face": "FACE_DOWN"
+              },
+              "actionId": "ST07-001#0.1"
+            }
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-001#0.0",
+          "ST07-001#0.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-001",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-001#0.0",
+          "cardNumber": "ST07-001",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may add 1 card from the top or bottom of your Life cards to your hand:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-001:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST07-001#0.1",
+          "cardNumber": "ST07-001",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "If you have 2 or less Life cards, add up to 1 card from your hand to the top of your Life cards.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-001:0"
+          ],
+          "canonicalAtoms": [
+            "ADD_CARD_TO_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-002",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-002",
+    "effects": [],
+    "assignments": [],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-002",
+      "totalAtomicEffects": 0,
+      "parserRecognizedAtomicEffects": 0,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 0,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": []
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-003",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-003",
+    "effects": [
+      {
+        "id": "ST07-003#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_PLAY"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "SEQUENCE",
+          "nodes": [
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "LOOK_AT_LIFE",
+                "player": "ANY",
+                "count": {
+                  "kind": "NUMBER",
+                  "value": 1
+                },
+                "position": "TOP"
+              },
+              "actionId": "ST07-003#0.0"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "REORDER_LIFE",
+                "player": "ANY",
+                "selector": {
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  }
+                },
+                "orderChooser": "PLAYER"
+              },
+              "actionId": "ST07-003#0.1"
+            },
+            {
+              "kind": "IF",
+              "condition": {
+                "kind": "PREDICATE",
+                "left": {
+                  "kind": "COUNT",
+                  "selector": {
+                    "subject": "CARD",
+                    "owner": "PLAYER",
+                    "zones": [
+                      "LIFE"
+                    ],
+                    "quantity": {
+                      "kind": "ANY_NUMBER"
+                    }
+                  }
+                },
+                "operator": "LESS_THAN",
+                "right": {
+                  "kind": "COUNT",
+                  "selector": {
+                    "subject": "CARD",
+                    "owner": "OPPONENT",
+                    "zones": [
+                      "LIFE"
+                    ],
+                    "quantity": {
+                      "kind": "ANY_NUMBER"
+                    }
+                  }
+                }
+              },
+              "then": {
+                "kind": "ACTION",
+                "action": {
+                  "type": "GRANT_KEYWORD",
+                  "selector": {
+                    "subject": "CARD",
+                    "relations": [
+                      "THIS_CARD"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER"
+                  },
+                  "keyword": "RUSH",
+                  "duration": {
+                    "kind": "THIS_TURN"
+                  }
+                },
+                "actionId": "ST07-003#0.2"
+              }
+            }
+          ]
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-003",
+          "effectIndex": 0,
+          "printedText": "[On Play] Look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards. Then, if you have less Life cards than your opponent, this Character gains [Rush] during this turn.(This card can attack on the turn in which it is played.)",
+          "normalizedText": "[On Play] Look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards. Then, if you have less Life cards than your opponent, this Character gains [Rush] during this turn.(This card can attack on the turn in which it is played.)",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-003:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-003:0",
+        "cardNumber": "ST07-003",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[On Play] Look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards. Then, if you have less Life cards than your opponent, this Character gains [Rush] during this turn.(This card can attack on the turn in which it is played.)",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_PLAY"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "SEQUENCE",
+            "nodes": [
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "LOOK_AT_LIFE",
+                  "player": "ANY",
+                  "count": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  },
+                  "position": "TOP"
+                },
+                "actionId": "ST07-003#0.0"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "REORDER_LIFE",
+                  "player": "ANY",
+                  "selector": {
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    }
+                  },
+                  "orderChooser": "PLAYER"
+                },
+                "actionId": "ST07-003#0.1"
+              },
+              {
+                "kind": "IF",
+                "condition": {
+                  "kind": "PREDICATE",
+                  "left": {
+                    "kind": "COUNT",
+                    "selector": {
+                      "subject": "CARD",
+                      "owner": "PLAYER",
+                      "zones": [
+                        "LIFE"
+                      ],
+                      "quantity": {
+                        "kind": "ANY_NUMBER"
+                      }
+                    }
+                  },
+                  "operator": "LESS_THAN",
+                  "right": {
+                    "kind": "COUNT",
+                    "selector": {
+                      "subject": "CARD",
+                      "owner": "OPPONENT",
+                      "zones": [
+                        "LIFE"
+                      ],
+                      "quantity": {
+                        "kind": "ANY_NUMBER"
+                      }
+                    }
+                  }
+                },
+                "then": {
+                  "kind": "ACTION",
+                  "action": {
+                    "type": "GRANT_KEYWORD",
+                    "selector": {
+                      "subject": "CARD",
+                      "relations": [
+                        "THIS_CARD"
+                      ],
+                      "quantity": {
+                        "kind": "EXACTLY",
+                        "value": {
+                          "kind": "NUMBER",
+                          "value": 1
+                        }
+                      },
+                      "chooser": "EFFECT_OWNER"
+                    },
+                    "keyword": "RUSH",
+                    "duration": {
+                      "kind": "THIS_TURN"
+                    }
+                  },
+                  "actionId": "ST07-003#0.2"
+                }
+              }
+            ]
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-003#0.0",
+          "ST07-003#0.1",
+          "ST07-003#0.2"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-003",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-003#0.0",
+          "cardNumber": "ST07-003",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "Look at up to 1 card from the top of your or your opponent's Life cards,",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-003:0"
+          ],
+          "canonicalAtoms": [
+            "LOOK_AT_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-003#0.1",
+          "cardNumber": "ST07-003",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "place it at the top or bottom of the Life cards.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-003:0"
+          ],
+          "canonicalAtoms": [
+            "REORDER_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-003#0.2",
+          "cardNumber": "ST07-003",
+          "effectIndex": 0,
+          "atomIndex": 2,
+          "rawText": "if you have less Life cards than your opponent, this Character gains [Rush] during this turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-003:0"
+          ],
+          "canonicalAtoms": [
+            "GRANT_KEYWORD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-004",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-004",
+    "effects": [
+      {
+        "id": "ST07-004#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "WHEN_ATTACKING"
+        },
+        "conditions": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "ATTACHED_DON_COUNT",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          },
+          "operator": "GREATER_OR_EQUAL",
+          "right": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "ADD_LIFE_TO_HAND_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "LIFE"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "SEQUENCE",
+          "nodes": [
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "GRANT_KEYWORD",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                },
+                "keyword": "BANISH",
+                "duration": {
+                  "kind": "INSTANT"
+                }
+              },
+              "actionId": "ST07-004#0.1"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "MODIFY_POWER",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                },
+                "propertyLayer": "CURRENT_VALUE",
+                "operation": "ADD",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1000
+                },
+                "duration": {
+                  "kind": "THIS_BATTLE"
+                }
+              },
+              "actionId": "ST07-004#0.2"
+            }
+          ]
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-004",
+          "effectIndex": 0,
+          "printedText": " [DON!! x1] [When Attacking] You may add 1 card from the top or bottom of your Life cards to your hand: This Character gains [Banish] and +1000 power during this battle.(When this card deals damage, the target card is trashed without activating its Trigger.)",
+          "normalizedText": "[DON!! x1] [When Attacking] You may add 1 card from the top or bottom of your Life cards to your hand: This Character gains [Banish] and +1000 power during this battle.(When this card deals damage, the target card is trashed without activating its Trigger.)",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-004:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-004:0",
+        "cardNumber": "ST07-004",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": " [DON!! x1] [When Attacking] You may add 1 card from the top or bottom of your Life cards to your hand: This Character gains [Banish] and +1000 power during this battle.(When this card deals damage, the target card is trashed without activating its Trigger.)",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "WHEN_ATTACKING"
+          },
+          "conditions": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "ATTACHED_DON_COUNT",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "ADD_LIFE_TO_HAND_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "LIFE"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "ordering": "DECK_ORDER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "SEQUENCE",
+            "nodes": [
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "GRANT_KEYWORD",
+                  "selector": {
+                    "subject": "CARD",
+                    "relations": [
+                      "THIS_CARD"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER"
+                  },
+                  "keyword": "BANISH",
+                  "duration": {
+                    "kind": "INSTANT"
+                  }
+                },
+                "actionId": "ST07-004#0.1"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "MODIFY_POWER",
+                  "selector": {
+                    "subject": "CARD",
+                    "relations": [
+                      "THIS_CARD"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER"
+                  },
+                  "propertyLayer": "CURRENT_VALUE",
+                  "operation": "ADD",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1000
+                  },
+                  "duration": {
+                    "kind": "THIS_BATTLE"
+                  }
+                },
+                "actionId": "ST07-004#0.2"
+              }
+            ]
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-004#0.0",
+          "ST07-004#0.1",
+          "ST07-004#0.2"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-004",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-004#0.0",
+          "cardNumber": "ST07-004",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may add 1 card from the top or bottom of your Life cards to your hand:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-004:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST07-004#0.1",
+          "cardNumber": "ST07-004",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "This Character gains [Banish]",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-004:0"
+          ],
+          "canonicalAtoms": [
+            "GRANT_KEYWORD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-004#0.2",
+          "cardNumber": "ST07-004",
+          "effectIndex": 0,
+          "atomIndex": 2,
+          "rawText": "This Character gains +1000 power during this battle.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-004:0"
+          ],
+          "canonicalAtoms": [
+            "MODIFY_POWER"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-005",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-005",
+    "effects": [
+      {
+        "id": "ST07-005#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "WHEN_ATTACKING"
+        },
+        "conditions": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "ATTACHED_DON_COUNT",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          },
+          "operator": "GREATER_OR_EQUAL",
+          "right": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "ADD_LIFE_TO_HAND_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "LIFE"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "ADD_CARD_TO_LIFE",
+            "selector": {
+              "subject": "CARD",
+              "owner": "PLAYER",
+              "zones": [
+                "DECK"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "ordering": "DECK_ORDER"
+            },
+            "player": "PLAYER",
+            "position": "TOP",
+            "face": "FACE_DOWN"
+          },
+          "actionId": "ST07-005#0.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-005",
+          "effectIndex": 0,
+          "printedText": " [DON!! x1] [When Attacking] You may add 1 card from the top or bottom of your Life cards to your hand: Add up to 1 card from the top of your deck to the top of your Life cards.",
+          "normalizedText": "[DON!! x1] [When Attacking] You may add 1 card from the top or bottom of your Life cards to your hand: Add up to 1 card from the top of your deck to the top of your Life cards.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-005:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-005:0",
+        "cardNumber": "ST07-005",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": " [DON!! x1] [When Attacking] You may add 1 card from the top or bottom of your Life cards to your hand: Add up to 1 card from the top of your deck to the top of your Life cards.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "WHEN_ATTACKING"
+          },
+          "conditions": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "ATTACHED_DON_COUNT",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "ADD_LIFE_TO_HAND_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "LIFE"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "ordering": "DECK_ORDER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "ADD_CARD_TO_LIFE",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "DECK"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              },
+              "player": "PLAYER",
+              "position": "TOP",
+              "face": "FACE_DOWN"
+            },
+            "actionId": "ST07-005#0.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-005#0.0",
+          "ST07-005#0.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-005",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-005#0.0",
+          "cardNumber": "ST07-005",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may add 1 card from the top or bottom of your Life cards to your hand:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-005:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST07-005#0.1",
+          "cardNumber": "ST07-005",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "Add up to 1 card from the top of your deck to the top of your Life cards.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-005:0"
+          ],
+          "canonicalAtoms": [
+            "ADD_CARD_TO_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-006",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-006",
+    "effects": [],
+    "assignments": [],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-006",
+      "totalAtomicEffects": 0,
+      "parserRecognizedAtomicEffects": 0,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 0,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": []
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-007",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-007",
+    "effects": [
+      {
+        "id": "ST07-007#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "PERMANENT",
+        "applicationMode": "CONTINUOUS",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_ENTER_PLAY"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "GRANT_KEYWORD",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "keyword": "BLOCKER",
+            "duration": {
+              "kind": "PERMANENT"
+            }
+          },
+          "actionId": "ST07-007#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-007",
+          "effectIndex": 0,
+          "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+          "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-007:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST07-007#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "TRIGGER"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "PLAY_CARD",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "player": "PLAYER"
+          },
+          "actionId": "ST07-007#1.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-007",
+          "effectIndex": 1,
+          "printedText": "[Trigger] Play this card.",
+          "normalizedText": "[Trigger] Play this card.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-007:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-007:0",
+        "cardNumber": "ST07-007",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "effect": {
+          "category": "PERMANENT",
+          "applicationMode": "CONTINUOUS",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_ENTER_PLAY"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "GRANT_KEYWORD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "keyword": "BLOCKER",
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "ST07-007#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-007#0.0"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST07-007:1",
+        "cardNumber": "ST07-007",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Trigger] Play this card.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "TRIGGER"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "PLAY_CARD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "player": "PLAYER"
+            },
+            "actionId": "ST07-007#1.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-007#1.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-007",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-007#0.0",
+          "cardNumber": "ST07-007",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "[Blocker]",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-007:0"
+          ],
+          "canonicalAtoms": [
+            "GRANT_KEYWORD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-007#1.0",
+          "cardNumber": "ST07-007",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "Play this card.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-007:1"
+          ],
+          "canonicalAtoms": [
+            "PLAY_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-008",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-008",
+    "effects": [
+      {
+        "id": "ST07-008#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_PLAY"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "SEQUENCE",
+          "nodes": [
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "LOOK_AT_LIFE",
+                "player": "ANY",
+                "count": {
+                  "kind": "NUMBER",
+                  "value": 1
+                },
+                "position": "TOP"
+              },
+              "actionId": "ST07-008#0.0"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "REORDER_LIFE",
+                "player": "ANY",
+                "selector": {
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  }
+                },
+                "orderChooser": "PLAYER"
+              },
+              "actionId": "ST07-008#0.1"
+            }
+          ]
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-008",
+          "effectIndex": 0,
+          "printedText": "[On Play] Look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards.",
+          "normalizedText": "[On Play] Look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-008:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-008:0",
+        "cardNumber": "ST07-008",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[On Play] Look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_PLAY"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "SEQUENCE",
+            "nodes": [
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "LOOK_AT_LIFE",
+                  "player": "ANY",
+                  "count": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  },
+                  "position": "TOP"
+                },
+                "actionId": "ST07-008#0.0"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "REORDER_LIFE",
+                  "player": "ANY",
+                  "selector": {
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    }
+                  },
+                  "orderChooser": "PLAYER"
+                },
+                "actionId": "ST07-008#0.1"
+              }
+            ]
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-008#0.0",
+          "ST07-008#0.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-008",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-008#0.0",
+          "cardNumber": "ST07-008",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "Look at up to 1 card from the top of your or your opponent's Life cards,",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-008:0"
+          ],
+          "canonicalAtoms": [
+            "LOOK_AT_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-008#0.1",
+          "cardNumber": "ST07-008",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "place it at the top or bottom of the Life cards.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-008:0"
+          ],
+          "canonicalAtoms": [
+            "REORDER_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-009",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-009",
+    "effects": [
+      {
+        "id": "ST07-009#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ACTIVATE_MAIN"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "REST_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            {
+              "type": "ADD_LIFE_TO_HAND_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "LIFE"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "KO_CARD",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 3
+                }
+              }
+            },
+            "cause": "EFFECT"
+          },
+          "actionId": "ST07-009#0.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-009",
+          "effectIndex": 0,
+          "printedText": "[Activate: Main] You may rest this Character and add 1 card from the top or bottom of your Life cards to your hand: K.O. up to 1 of your opponent's Characters with a cost of 3 or less.",
+          "normalizedText": "[Activate: Main] You may rest this Character and add 1 card from the top or bottom of your Life cards to your hand: K.O. up to 1 of your opponent's Characters with a cost of 3 or less.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-009:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST07-009#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "TRIGGER"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "TRASH_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "PLAY_CARD",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "player": "PLAYER"
+          },
+          "actionId": "ST07-009#1.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-009",
+          "effectIndex": 1,
+          "printedText": "[Trigger] You may trash 1 card from your hand: Play this card.",
+          "normalizedText": "[Trigger] You may trash 1 card from your hand: Play this card.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-009:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-009:0",
+        "cardNumber": "ST07-009",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Activate: Main] You may rest this Character and add 1 card from the top or bottom of your Life cards to your hand: K.O. up to 1 of your opponent's Characters with a cost of 3 or less.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ACTIVATE_MAIN"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "REST_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              },
+              {
+                "type": "ADD_LIFE_TO_HAND_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "LIFE"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "ordering": "DECK_ORDER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "KO_CARD",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 3
+                  }
+                }
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "ST07-009#0.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-009#0.0",
+          "ST07-009#0.1"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST07-009:1",
+        "cardNumber": "ST07-009",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Trigger] You may trash 1 card from your hand: Play this card.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "TRIGGER"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "TRASH_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "HAND"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "PLAY_CARD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "player": "PLAYER"
+            },
+            "actionId": "ST07-009#1.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-009#1.0",
+          "ST07-009#1.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-009",
+      "totalAtomicEffects": 4,
+      "parserRecognizedAtomicEffects": 4,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 4,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 4,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-009#0.0",
+          "cardNumber": "ST07-009",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may rest this Character and add 1 card from the top or bottom of your Life cards to your hand:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-009:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST07-009#0.1",
+          "cardNumber": "ST07-009",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "KO up to 1 of your opponent's Characters with a cost of 3 or less.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-009:0"
+          ],
+          "canonicalAtoms": [
+            "KO_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-009#1.0",
+          "cardNumber": "ST07-009",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "You may trash 1 card from your hand:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-009:1"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST07-009#1.1",
+          "cardNumber": "ST07-009",
+          "effectIndex": 1,
+          "atomIndex": 1,
+          "rawText": "Play this card.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-009:1"
+          ],
+          "canonicalAtoms": [
+            "PLAY_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-010",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-010",
+    "effects": [
+      {
+        "id": "ST07-010#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_PLAY"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "TRASH_LIFE",
+            "player": "OPPONENT",
+            "position": "TOP",
+            "count": {
+              "kind": "NUMBER",
+              "value": 1
+            },
+            "activateTrigger": false
+          },
+          "actionId": "ST07-010#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-010",
+          "effectIndex": 0,
+          "printedText": "[On Play] Your opponent chooses one:- Trash 1 card from the top of your opponent's Life cards.- Add 1 card from the top of your deck to the top of your Life cards.",
+          "normalizedText": "[On Play] Your opponent chooses one:- Trash 1 card from the top of your opponent's Life cards.- Add 1 card from the top of your deck to the top of your Life cards.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-010:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-010:0",
+        "cardNumber": "ST07-010",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[On Play] Your opponent chooses one:- Trash 1 card from the top of your opponent's Life cards.- Add 1 card from the top of your deck to the top of your Life cards.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_PLAY"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "TRASH_LIFE",
+              "player": "OPPONENT",
+              "position": "TOP",
+              "count": {
+                "kind": "NUMBER",
+                "value": 1
+              },
+              "activateTrigger": false
+            },
+            "actionId": "ST07-010#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-010#0.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-010",
+      "totalAtomicEffects": 1,
+      "parserRecognizedAtomicEffects": 1,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 1,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-010#0.0",
+          "cardNumber": "ST07-010",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "Your opponent chooses one:- Trash 1 card from the top of your opponent's Life cards.- Add 1 card from the top of your deck to the top of your Life cards.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-010:0"
+          ],
+          "canonicalAtoms": [
+            "TRASH_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-011",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-011",
+    "effects": [
+      {
+        "id": "ST07-011#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ACTIVATE_MAIN"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "REST_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "GRANT_KEYWORD",
+            "selector": {
+              "subject": "CARD",
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "names": [
+                {
+                  "kind": "NAME_EXACT",
+                  "value": "Charlotte Linlin"
+                }
+              ]
+            },
+            "keyword": "BANISH",
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "ST07-011#0.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-011",
+          "effectIndex": 0,
+          "printedText": "[Activate: Main] You may rest this Character: Up to 1 of your [Charlotte Linlin] cards gains [Banish] during this turn.(When this card deals damage, the target card is trashed without activating its Trigger.)",
+          "normalizedText": "[Activate: Main] You may rest this Character: Up to 1 of your [Charlotte Linlin] cards gains [Banish] during this turn.(When this card deals damage, the target card is trashed without activating its Trigger.)",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-011:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST07-011#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "TRIGGER"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "PLAY_CARD",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "player": "PLAYER"
+          },
+          "actionId": "ST07-011#1.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-011",
+          "effectIndex": 1,
+          "printedText": "[Trigger] Play this card.",
+          "normalizedText": "[Trigger] Play this card.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-011:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-011:0",
+        "cardNumber": "ST07-011",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Activate: Main] You may rest this Character: Up to 1 of your [Charlotte Linlin] cards gains [Banish] during this turn.(When this card deals damage, the target card is trashed without activating its Trigger.)",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ACTIVATE_MAIN"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "REST_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "GRANT_KEYWORD",
+              "selector": {
+                "subject": "CARD",
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Charlotte Linlin"
+                  }
+                ]
+              },
+              "keyword": "BANISH",
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "ST07-011#0.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-011#0.0",
+          "ST07-011#0.1"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST07-011:1",
+        "cardNumber": "ST07-011",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Trigger] Play this card.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "TRIGGER"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "PLAY_CARD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "player": "PLAYER"
+            },
+            "actionId": "ST07-011#1.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-011#1.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-011",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-011#0.0",
+          "cardNumber": "ST07-011",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may rest this Character:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-011:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST07-011#0.1",
+          "cardNumber": "ST07-011",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "Up to 1 of your [Charlotte Linlin] cards gains [Banish] during this turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-011:0"
+          ],
+          "canonicalAtoms": [
+            "GRANT_KEYWORD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-011#1.0",
+          "cardNumber": "ST07-011",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "Play this card.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-011:1"
+          ],
+          "canonicalAtoms": [
+            "PLAY_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-012",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-012",
+    "effects": [],
+    "assignments": [],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-012",
+      "totalAtomicEffects": 0,
+      "parserRecognizedAtomicEffects": 0,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 0,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": []
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-013",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-013",
+    "effects": [
+      {
+        "id": "ST07-013#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ACTIVATE_MAIN"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "REST_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "GRANT_KEYWORD",
+            "selector": {
+              "subject": "CARD",
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "names": [
+                {
+                  "kind": "NAME_EXACT",
+                  "value": "Charlotte Linlin"
+                }
+              ]
+            },
+            "keyword": "DOUBLE_ATTACK",
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "ST07-013#0.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-013",
+          "effectIndex": 0,
+          "printedText": "[Activate: Main] You may rest this Character: Up to 1 of your [Charlotte Linlin] cards gains [Double Attack] during this turn.(This card deals 2 damage.)",
+          "normalizedText": "[Activate: Main] You may rest this Character: Up to 1 of your [Charlotte Linlin] cards gains [Double Attack] during this turn.(This card deals 2 damage.)",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-013:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST07-013#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "TRIGGER"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "PLAY_CARD",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "player": "PLAYER"
+          },
+          "actionId": "ST07-013#1.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-013",
+          "effectIndex": 1,
+          "printedText": "[Trigger] Play this card.",
+          "normalizedText": "[Trigger] Play this card.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-013:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-013:0",
+        "cardNumber": "ST07-013",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Activate: Main] You may rest this Character: Up to 1 of your [Charlotte Linlin] cards gains [Double Attack] during this turn.(This card deals 2 damage.)",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ACTIVATE_MAIN"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "REST_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "GRANT_KEYWORD",
+              "selector": {
+                "subject": "CARD",
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Charlotte Linlin"
+                  }
+                ]
+              },
+              "keyword": "DOUBLE_ATTACK",
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "ST07-013#0.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-013#0.0",
+          "ST07-013#0.1"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST07-013:1",
+        "cardNumber": "ST07-013",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Trigger] Play this card.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "TRIGGER"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "PLAY_CARD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "player": "PLAYER"
+            },
+            "actionId": "ST07-013#1.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-013#1.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-013",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-013#0.0",
+          "cardNumber": "ST07-013",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may rest this Character:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-013:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST07-013#0.1",
+          "cardNumber": "ST07-013",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "Up to 1 of your [Charlotte Linlin] cards gains [Double Attack] during this turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-013:0"
+          ],
+          "canonicalAtoms": [
+            "GRANT_KEYWORD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-013#1.0",
+          "cardNumber": "ST07-013",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "Play this card.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-013:1"
+          ],
+          "canonicalAtoms": [
+            "PLAY_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-014",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-014",
+    "effects": [],
+    "assignments": [],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-014",
+      "totalAtomicEffects": 0,
+      "parserRecognizedAtomicEffects": 0,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 0,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": []
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-015",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-015",
+    "effects": [
+      {
+        "id": "ST07-015#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "EVENT_MAIN"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "TRASH_LIFE",
+            "player": "OPPONENT",
+            "position": "TOP",
+            "count": {
+              "kind": "NUMBER",
+              "value": 1
+            },
+            "activateTrigger": false
+          },
+          "actionId": "ST07-015#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-015",
+          "effectIndex": 0,
+          "printedText": "[Main] Your opponent chooses one:- Trash 1 card from the top of your opponent's Life cards.- Add 1 card from the top of your deck to the top of your Life cards.",
+          "normalizedText": "[Main] Your opponent chooses one:- Trash 1 card from the top of your opponent's Life cards.- Add 1 card from the top of your deck to the top of your Life cards.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-015:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST07-015#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "TRIGGER"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "ACTIVATE_EVENT",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "player": "PLAYER"
+          },
+          "actionId": "ST07-015#1.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-015",
+          "effectIndex": 1,
+          "printedText": "[Trigger] Activate this card's [Main] effect.",
+          "normalizedText": "[Trigger] Activate this card's [Main] effect.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-015:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-015:0",
+        "cardNumber": "ST07-015",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Main] Your opponent chooses one:- Trash 1 card from the top of your opponent's Life cards.- Add 1 card from the top of your deck to the top of your Life cards.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "EVENT_MAIN"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "TRASH_LIFE",
+              "player": "OPPONENT",
+              "position": "TOP",
+              "count": {
+                "kind": "NUMBER",
+                "value": 1
+              },
+              "activateTrigger": false
+            },
+            "actionId": "ST07-015#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-015#0.0"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST07-015:1",
+        "cardNumber": "ST07-015",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Trigger] Activate this card's [Main] effect.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "TRIGGER"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "ACTIVATE_EVENT",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "player": "PLAYER"
+            },
+            "actionId": "ST07-015#1.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-015#1.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-015",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-015#0.0",
+          "cardNumber": "ST07-015",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "Your opponent chooses one:- Trash 1 card from the top of your opponent's Life cards.- Add 1 card from the top of your deck to the top of your Life cards.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-015:0"
+          ],
+          "canonicalAtoms": [
+            "TRASH_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-015#1.0",
+          "cardNumber": "ST07-015",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "Activate this card's [Main] effect.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-015:1"
+          ],
+          "canonicalAtoms": [
+            "ACTIVATE_EVENT"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-016",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-016",
+    "effects": [
+      {
+        "id": "ST07-016#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "EVENT_COUNTER"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "SEQUENCE",
+          "nodes": [
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "LOOK_AT_LIFE",
+                "player": "ANY",
+                "count": {
+                  "kind": "NUMBER",
+                  "value": 1
+                },
+                "position": "TOP"
+              },
+              "actionId": "ST07-016#0.0"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "REORDER_LIFE",
+                "player": "ANY",
+                "selector": {
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  }
+                },
+                "orderChooser": "PLAYER"
+              },
+              "actionId": "ST07-016#0.1"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "MODIFY_POWER",
+                "selector": {
+                  "subject": "CARD",
+                  "controller": "PLAYER",
+                  "zones": [
+                    "LEADER_AREA",
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "LEADER",
+                    "CHARACTER"
+                  ],
+                  "quantity": {
+                    "kind": "UP_TO",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                },
+                "propertyLayer": "CURRENT_VALUE",
+                "operation": "ADD",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2000
+                },
+                "duration": {
+                  "kind": "THIS_BATTLE"
+                }
+              },
+              "actionId": "ST07-016#0.2"
+            }
+          ]
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-016",
+          "effectIndex": 0,
+          "printedText": "[Counter] Look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards. Then, up to 1 of your Leader or Character cards gains +2000 power during this battle.",
+          "normalizedText": "[Counter] Look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards. Then, up to 1 of your Leader or Character cards gains +2000 power during this battle.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-016:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST07-016#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "TRIGGER"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "SEQUENCE",
+          "nodes": [
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "DRAW_CARD",
+                "player": "PLAYER",
+                "count": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "actionId": "ST07-016#1.0"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "REORDER_LIFE",
+                "player": "ANY",
+                "selector": {
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  }
+                },
+                "orderChooser": "PLAYER"
+              },
+              "actionId": "ST07-016#1.1"
+            }
+          ]
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-016",
+          "effectIndex": 1,
+          "printedText": "[Trigger] Draw 1 card, look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards.",
+          "normalizedText": "[Trigger] Draw 1 card, look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-016:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-016:0",
+        "cardNumber": "ST07-016",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Counter] Look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards. Then, up to 1 of your Leader or Character cards gains +2000 power during this battle.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "EVENT_COUNTER"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "SEQUENCE",
+            "nodes": [
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "LOOK_AT_LIFE",
+                  "player": "ANY",
+                  "count": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  },
+                  "position": "TOP"
+                },
+                "actionId": "ST07-016#0.0"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "REORDER_LIFE",
+                  "player": "ANY",
+                  "selector": {
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    }
+                  },
+                  "orderChooser": "PLAYER"
+                },
+                "actionId": "ST07-016#0.1"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "MODIFY_POWER",
+                  "selector": {
+                    "subject": "CARD",
+                    "controller": "PLAYER",
+                    "zones": [
+                      "LEADER_AREA",
+                      "CHARACTER_AREA"
+                    ],
+                    "cardCategories": [
+                      "LEADER",
+                      "CHARACTER"
+                    ],
+                    "quantity": {
+                      "kind": "UP_TO",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER"
+                  },
+                  "propertyLayer": "CURRENT_VALUE",
+                  "operation": "ADD",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2000
+                  },
+                  "duration": {
+                    "kind": "THIS_BATTLE"
+                  }
+                },
+                "actionId": "ST07-016#0.2"
+              }
+            ]
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-016#0.0",
+          "ST07-016#0.1",
+          "ST07-016#0.2"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST07-016:1",
+        "cardNumber": "ST07-016",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Trigger] Draw 1 card, look at up to 1 card from the top of your or your opponent's Life cards, and place it at the top or bottom of the Life cards.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "TRIGGER"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "SEQUENCE",
+            "nodes": [
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "DRAW_CARD",
+                  "player": "PLAYER",
+                  "count": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "actionId": "ST07-016#1.0"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "REORDER_LIFE",
+                  "player": "ANY",
+                  "selector": {
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    }
+                  },
+                  "orderChooser": "PLAYER"
+                },
+                "actionId": "ST07-016#1.1"
+              }
+            ]
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-016#1.0",
+          "ST07-016#1.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-016",
+      "totalAtomicEffects": 5,
+      "parserRecognizedAtomicEffects": 5,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 5,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 5,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-016#0.0",
+          "cardNumber": "ST07-016",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "Look at up to 1 card from the top of your or your opponent's Life cards,",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-016:0"
+          ],
+          "canonicalAtoms": [
+            "LOOK_AT_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-016#0.1",
+          "cardNumber": "ST07-016",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "place it at the top or bottom of the Life cards.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-016:0"
+          ],
+          "canonicalAtoms": [
+            "REORDER_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-016#0.2",
+          "cardNumber": "ST07-016",
+          "effectIndex": 0,
+          "atomIndex": 2,
+          "rawText": "up to 1 of your Leader or Character cards gains +2000 power during this battle.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-016:0"
+          ],
+          "canonicalAtoms": [
+            "MODIFY_POWER"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-016#1.0",
+          "cardNumber": "ST07-016",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "Draw 1 card, look at up to 1 card from the top of your or your opponent's Life cards,",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-016:1"
+          ],
+          "canonicalAtoms": [
+            "DRAW_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-016#1.1",
+          "cardNumber": "ST07-016",
+          "effectIndex": 1,
+          "atomIndex": 1,
+          "rawText": "place it at the top or bottom of the Life cards.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-016:1"
+          ],
+          "canonicalAtoms": [
+            "REORDER_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST07-017",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST07-017",
+    "effects": [
+      {
+        "id": "ST07-017#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ACTIVATE_MAIN"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "REST_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            {
+              "type": "ADD_LIFE_TO_HAND_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "LIFE"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "ADD_CARD_TO_LIFE",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "player": "CARD_OWNER",
+            "position": "TOP",
+            "face": "FACE_UP"
+          },
+          "actionId": "ST07-017#0.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-017",
+          "effectIndex": 0,
+          "printedText": "[Activate: Main] You may rest this Stage and add 1 card from the top or bottom of your Life cards to your hand: Add up to 1 of your Characters with a cost of 3 to the top of the owner's Life cards face-up.",
+          "normalizedText": "[Activate: Main] You may rest this Stage and add 1 card from the top or bottom of your Life cards to your hand: Add up to 1 of your Characters with a cost of 3 to the top of the owner's Life cards face-up.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-017:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST07-017#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "TRIGGER"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "PLAY_CARD",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "player": "PLAYER"
+          },
+          "actionId": "ST07-017#1.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST07-017",
+          "effectIndex": 1,
+          "printedText": "[Trigger] Play this card.",
+          "normalizedText": "[Trigger] Play this card.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST07-017:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST07-017:0",
+        "cardNumber": "ST07-017",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Activate: Main] You may rest this Stage and add 1 card from the top or bottom of your Life cards to your hand: Add up to 1 of your Characters with a cost of 3 to the top of the owner's Life cards face-up.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ACTIVATE_MAIN"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "REST_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              },
+              {
+                "type": "ADD_LIFE_TO_HAND_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "LIFE"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "ordering": "DECK_ORDER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "ADD_CARD_TO_LIFE",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "player": "CARD_OWNER",
+              "position": "TOP",
+              "face": "FACE_UP"
+            },
+            "actionId": "ST07-017#0.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-017#0.0",
+          "ST07-017#0.1"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST07-017:1",
+        "cardNumber": "ST07-017",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Trigger] Play this card.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "TRIGGER"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "PLAY_CARD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "player": "PLAYER"
+            },
+            "actionId": "ST07-017#1.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST07-017#1.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST07-017",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST07-017#0.0",
+          "cardNumber": "ST07-017",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may rest this Stage and add 1 card from the top or bottom of your Life cards to your hand:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-017:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST07-017#0.1",
+          "cardNumber": "ST07-017",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "Add up to 1 of your Characters with a cost of 3 to the top of the owner's Life cards face-up.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-017:0"
+          ],
+          "canonicalAtoms": [
+            "ADD_CARD_TO_LIFE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST07-017#1.0",
+          "cardNumber": "ST07-017",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "Play this card.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST07-017:1"
+          ],
+          "canonicalAtoms": [
+            "PLAY_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  }
+]

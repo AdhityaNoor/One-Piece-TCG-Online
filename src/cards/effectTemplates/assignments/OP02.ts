@@ -201,10 +201,10 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-034 - [DON!! x1] [When Attacking] Rest opponent Character with cost 2 or less.
   { cardNumber: 'OP02-034', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
 
-  // OP02-035 — return this Character to hand, then play up to 1 cost-3 Character from hand.
+  // OP02-035 — return this Character to hand, then play up to 1 cost==3 Character from hand.
   { cardNumber: 'OP02-035', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }], functions: [
     { fn: 'returnSelfToHand' },
-    { fn: 'playFromHand', filter: { category: 'character', maxCost: 3 }, ifPrevious: 'previousMovedAny' },
+    { fn: 'playFromHand', filter: { category: 'character', exactCost: 3 }, ifPrevious: 'previousMovedAny' },
   ] } },
 
   // OP02-036 — [On Play]/[When Attacking] rest 1 DON!!: look 3, reveal up to 1 {FILM} (other than [Nami]), add to hand, rest to bottom.
@@ -651,5 +651,6 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 0 } }, optional: true }] } },
     ],
   },
+
 
 ];

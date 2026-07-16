@@ -330,6 +330,118 @@ describe('V2 engine adapter', () => {
     }
   });
 
+  it('prompts and resumes simple activate-main CHOOSE_ONE_COST card payments', () => {
+    const base = createSampleGameState();
+    const sourceInstanceId = base.players.p1.leaderInstanceId;
+    const characterCostId = 'p1-celestial';
+    const handCostId = 'p1-hand-cost';
+    const deckCardId = 'p1-draw-choose-one';
+    const state = {
+      ...base,
+      players: {
+        ...base.players,
+        p1: {
+          ...base.players.p1,
+          characterArea: { ...base.players.p1.characterArea, cardIds: [characterCostId] },
+          hand: { ...base.players.p1.hand, cardIds: [handCostId] },
+          deck: { ...base.players.p1.deck, cardIds: [deckCardId] },
+        },
+      },
+      cardsById: {
+        ...base.cardsById,
+        [sourceInstanceId]: { ...base.cardsById[sourceInstanceId], cardDefinitionId: 'TEST-LEADER' },
+        [characterCostId]: instance(characterCostId, 'p1', 'characterArea', { cardDefinitionId: 'CELESTIAL-CHARACTER' }),
+        [handCostId]: instance(handCostId, 'p1', 'hand', { cardDefinitionId: 'HAND-COST' }),
+        [deckCardId]: instance(deckCardId, 'p1', 'deck', { cardDefinitionId: 'HAND-COST' }),
+      },
+    };
+    const cardDefs = {
+      ...defs(),
+      'CELESTIAL-CHARACTER': def('CELESTIAL-CHARACTER', { category: 'character', types: ['Celestial Dragons'], baseCost: 1, life: undefined }),
+      'HAND-COST': def('HAND-COST', { category: 'character', baseCost: 1, life: undefined }),
+    };
+    const activate = {
+      ...effect('TEST-LEADER#choose-one', 'ACTIVATE_MAIN'),
+      activationCost: {
+        payments: [{
+          type: 'CHOOSE_ONE_COST' as const,
+          options: [
+            [{
+              type: 'TRASH_CARD_COST' as const,
+              selector: {
+                subject: 'CARD' as const,
+                controller: 'PLAYER' as const,
+                zones: ['CHARACTER_AREA' as const],
+                cardCategories: ['CHARACTER' as const],
+                types: { kind: 'HAS_ANY_TYPE' as const, values: ['Celestial Dragons'] },
+                quantity: { kind: 'EXACTLY' as const, value: { kind: 'NUMBER' as const, value: 1 } },
+                chooser: 'EFFECT_OWNER' as const,
+              },
+            }],
+            [{
+              type: 'TRASH_CARD_COST' as const,
+              selector: {
+                subject: 'CARD' as const,
+                owner: 'PLAYER' as const,
+                zones: ['HAND' as const],
+                quantity: { kind: 'EXACTLY' as const, value: { kind: 'NUMBER' as const, value: 1 } },
+                chooser: 'EFFECT_OWNER' as const,
+              },
+            }],
+          ],
+        }],
+        optionalPayment: 'REQUIRED_TO_ACTIVATE' as const,
+        executionPolicy: 'VERIFY_ALL_THEN_PAY_IN_ORDER' as const,
+      },
+    };
+    const bundle = runtime([activate]);
+
+    const prompted = executeV2ActionOverride({
+      state,
+      defs: cardDefs,
+      runtime: bundle,
+      sidecars: null,
+      action: {
+        type: 'ACTIVATE_CARD_EFFECT',
+        actionId: 'activate-choose-one',
+        playerId: 'p1',
+        sourceInstanceId,
+        effectId: 'TEST-LEADER#choose-one',
+        donInstanceIds: [],
+      },
+    });
+
+    expect(prompted.handled).toBe(true);
+    expect(prompted.ok, prompted.handled && !prompted.ok ? prompted.reasons.join('; ') : '').toBe(true);
+    if (!prompted.handled || !prompted.ok) return;
+    expect(prompted.state.pendingChoices[0]).toMatchObject({
+      sourceEffectId: 'v2:activationCost',
+      constraints: { min: 1, max: 1, candidateInstanceIds: [characterCostId, handCostId] },
+    });
+
+    const resolved = executeV2ActionOverride({
+      state: prompted.state,
+      defs: cardDefs,
+      runtime: bundle,
+      sidecars: prompted.sidecars,
+      action: {
+        type: 'RESOLVE_PENDING_CHOICE',
+        actionId: 'pay-choose-one',
+        playerId: 'p1',
+        choiceId: prompted.state.pendingChoices[0].id,
+        response: [characterCostId],
+      },
+    });
+
+    expect(resolved.handled).toBe(true);
+    expect(resolved.ok, resolved.handled && !resolved.ok ? resolved.reasons.join('; ') : '').toBe(true);
+    if (resolved.handled && resolved.ok) {
+      expect(resolved.state.players.p1.characterArea.cardIds).toEqual([]);
+      expect(resolved.state.players.p1.trash.cardIds).toContain(characterCostId);
+      expect(resolved.state.players.p1.hand.cardIds).toEqual([handCostId, deckCardId]);
+    }
+  });
+
   it('prompts and resumes automatic ON_PLAY DON-minus costs through V2 pending choices', () => {
     const base = createSampleGameState();
     const sourceInstanceId = base.players.p1.leaderInstanceId;

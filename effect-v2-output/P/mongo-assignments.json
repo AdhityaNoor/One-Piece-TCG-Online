@@ -1,0 +1,3311 @@
+[
+  {
+    "_id": "v2:auto:P-014:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-014",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+    "coveredAtomicEffectIds": [
+      "P-014#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-014#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "BLOCKER",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "P-014#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-014",
+        "effectIndex": 0,
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-014:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-014:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-014",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] Play this card.",
+    "coveredAtomicEffectIds": [
+      "P-014#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-014#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PLAY_CARD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "P-014#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-014",
+        "effectIndex": 1,
+        "printedText": "[Trigger] Play this card.",
+        "normalizedText": "[Trigger] Play this card.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-014:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-029:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-029",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[End of Your Turn] You may rest this Character: Set up to 1 of your {FILM} type Characters other than [Bartolomeo] as active.",
+    "coveredAtomicEffectIds": [
+      "P-029#0.0",
+      "P-029#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-029#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "END_OF_YOUR_TURN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "SET_CARD_ACTIVE",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "names": [
+              {
+                "kind": "NAME_NOT",
+                "value": "Bartolomeo"
+              }
+            ],
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "FILM"
+              ]
+            }
+          }
+        },
+        "actionId": "P-029#0.1"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-029",
+        "effectIndex": 0,
+        "printedText": "[End of Your Turn] You may rest this Character: Set up to 1 of your {FILM} type Characters other than [Bartolomeo] as active.",
+        "normalizedText": "[End of Your Turn] You may rest this Character: Set up to 1 of your {FILM} type Characters other than [Bartolomeo] as active.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-029:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-030:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-030",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On K.O.] Place up to 1 Character with a cost of 3 or less at the bottom of the owner's deck.",
+    "coveredAtomicEffectIds": [
+      "P-030#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-030#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_KO"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "to": {
+            "zone": "DECK",
+            "owner": "CARD_OWNER",
+            "position": "BOTTOM"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "P-030#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-030",
+        "effectIndex": 0,
+        "printedText": "[On K.O.] Place up to 1 Character with a cost of 3 or less at the bottom of the owner's deck.",
+        "normalizedText": "[On K.O.] Place up to 1 Character with a cost of 3 or less at the bottom of the owner's deck.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-030:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-044:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-044",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[DON!! x1] If you have 4 or less cards in your hand, this Character gains +2000 power.",
+    "coveredAtomicEffectIds": [
+      "P-044#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-044#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "conditions": {
+        "kind": "AND",
+        "conditions": [
+          {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "ATTACHED_DON_COUNT",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "COUNT",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              }
+            },
+            "operator": "LESS_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 4
+            }
+          }
+        ]
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MODIFY_POWER",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "propertyLayer": "CURRENT_VALUE",
+          "operation": "ADD",
+          "value": {
+            "kind": "NUMBER",
+            "value": 2000
+          },
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "P-044#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-044",
+        "effectIndex": 0,
+        "printedText": "[DON!! x1] If you have 4 or less cards in your hand, this Character gains +2000 power.",
+        "normalizedText": "[DON!! x1] If you have 4 or less cards in your hand, this Character gains +2000 power.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-044:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-053:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-053",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] If you have 3 or less cards in your hand, return up to 1 of your opponent's Characters with a cost of 3 or less to the owner's hand.",
+    "coveredAtomicEffectIds": [
+      "P-053#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-053#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "COUNT",
+          "selector": {
+            "subject": "CARD",
+            "owner": "PLAYER",
+            "zones": [
+              "HAND"
+            ],
+            "quantity": {
+              "kind": "ANY_NUMBER"
+            }
+          }
+        },
+        "operator": "LESS_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 3
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "controller": "OPPONENT",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
+            }
+          },
+          "to": {
+            "zone": "HAND",
+            "owner": "CARD_OWNER"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "P-053#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-053",
+        "effectIndex": 0,
+        "printedText": "[On Play] If you have 3 or less cards in your hand, return up to 1 of your opponent's Characters with a cost of 3 or less to the owner's hand.",
+        "normalizedText": "[On Play] If you have 3 or less cards in your hand, return up to 1 of your opponent's Characters with a cost of 3 or less to the owner's hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-053:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-055:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-055",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] You may trash 2 cards from your hand: Your opponent places 1 of their Characters at the bottom of the owner's deck.",
+    "coveredAtomicEffectIds": [
+      "P-055#0.0",
+      "P-055#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-055#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "TRASH_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "owner": "PLAYER",
+              "zones": [
+                "HAND"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "controller": "OPPONENT",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "to": {
+            "zone": "DECK",
+            "owner": "OPPONENT",
+            "position": "BOTTOM"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "P-055#0.1"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-055",
+        "effectIndex": 0,
+        "printedText": "[On Play] You may trash 2 cards from your hand: Your opponent places 1 of their Characters at the bottom of the owner's deck.",
+        "normalizedText": "[On Play] You may trash 2 cards from your hand: Your opponent places 1 of their Characters at the bottom of the owner's deck.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-055:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-057:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-057",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Main] If your Leader is [Uta], up to 2 of your opponent's rested Characters with a cost of 4 or less will not become active in your opponent's next Refresh Phase.",
+    "coveredAtomicEffectIds": [
+      "P-057#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-057#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "EVENT_MAIN"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "COUNT",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
+            "names": [
+              {
+                "kind": "NAME_EXACT",
+                "value": "Uta"
+              }
+            ],
+            "quantity": {
+              "kind": "ANY_NUMBER"
+            }
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PREVENT_ACTION",
+          "selector": {
+            "subject": "CARD",
+            "controller": "OPPONENT",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 2
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 4
+              }
+            }
+          },
+          "action": "SET_CARD_ACTIVE",
+          "causeFilter": "REFRESH_PHASE",
+          "duration": {
+            "kind": "UNTIL_NEXT_REFRESH_PHASE",
+            "player": "OPPONENT"
+          }
+        },
+        "actionId": "P-057#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-057",
+        "effectIndex": 0,
+        "printedText": "[Main] If your Leader is [Uta], up to 2 of your opponent's rested Characters with a cost of 4 or less will not become active in your opponent's next Refresh Phase.",
+        "normalizedText": "[Main] If your Leader is [Uta], up to 2 of your opponent's rested Characters with a cost of 4 or less will not become active in your opponent's next Refresh Phase.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-057:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-057:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-057",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] Activate this card's [Main] effect.",
+    "coveredAtomicEffectIds": [
+      "P-057#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-057#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "ACTIVATE_EVENT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "P-057#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-057",
+        "effectIndex": 1,
+        "printedText": "[Trigger] Activate this card's [Main] effect.",
+        "normalizedText": "[Trigger] Activate this card's [Main] effect.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-057:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-058:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-058",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Main] If your Leader is [Uta], set all of your {FILM} type Characters as active at the end of this turn.",
+    "coveredAtomicEffectIds": [
+      "P-058#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-058#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "EVENT_MAIN"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "COUNT",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
+            "names": [
+              {
+                "kind": "NAME_EXACT",
+                "value": "Uta"
+              }
+            ],
+            "quantity": {
+              "kind": "ANY_NUMBER"
+            }
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "SET_CARD_ACTIVE",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "ALL"
+            },
+            "chooser": "EFFECT_OWNER",
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "FILM"
+              ]
+            }
+          }
+        },
+        "actionId": "P-058#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-058",
+        "effectIndex": 0,
+        "printedText": "[Main] If your Leader is [Uta], set all of your {FILM} type Characters as active at the end of this turn.",
+        "normalizedText": "[Main] If your Leader is [Uta], set all of your {FILM} type Characters as active at the end of this turn.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-058:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-058:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-058",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] Set all of your {FILM} type Characters as active.",
+    "coveredAtomicEffectIds": [
+      "P-058#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-058#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "SET_CARD_ACTIVE",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "ALL"
+            },
+            "chooser": "EFFECT_OWNER",
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "FILM"
+              ]
+            }
+          }
+        },
+        "actionId": "P-058#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-058",
+        "effectIndex": 1,
+        "printedText": "[Trigger] Set all of your {FILM} type Characters as active.",
+        "normalizedText": "[Trigger] Set all of your {FILM} type Characters as active.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-058:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-059:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-059",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Counter] If your Leader is [Uta], you may return any number of Characters on your field to the owner's hand. Up to 1 of your Leader or Character cards gains +2000 power during this battle for every returned Character.",
+    "coveredAtomicEffectIds": [
+      "P-059#0.0",
+      "P-059#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-059#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "EVENT_COUNTER"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "COUNT",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
+            "names": [
+              {
+                "kind": "NAME_EXACT",
+                "value": "Uta"
+              }
+            ],
+            "quantity": {
+              "kind": "ANY_NUMBER"
+            }
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "MOVE_CARD",
+              "selector": {
+                "subject": "CARD",
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "to": {
+                "zone": "HAND",
+                "owner": "CARD_OWNER"
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "P-059#0.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_POWER",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA",
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER",
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "ADD",
+              "value": {
+                "kind": "MULTIPLY",
+                "values": [
+                  {
+                    "kind": "NUMBER",
+                    "value": 2000
+                  },
+                  {
+                    "kind": "PREVIOUS_RESULT",
+                    "resultId": "returned-character-count"
+                  }
+                ]
+              },
+              "duration": {
+                "kind": "THIS_BATTLE"
+              }
+            },
+            "actionId": "P-059#0.1"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "P-059",
+        "effectIndex": 0,
+        "printedText": "[Counter] If your Leader is [Uta], you may return any number of Characters on your field to the owner's hand. Up to 1 of your Leader or Character cards gains +2000 power during this battle for every returned Character.",
+        "normalizedText": "[Counter] If your Leader is [Uta], you may return any number of Characters on your field to the owner's hand. Up to 1 of your Leader or Character cards gains +2000 power during this battle for every returned Character.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-059:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-060:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-060",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Main] You may rest 1 of your [Uta] cards: Rest up to 2 of your opponent's DON!! cards.",
+    "coveredAtomicEffectIds": [
+      "P-060#0.0",
+      "P-060#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-060#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "EVENT_MAIN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "LEADER_AREA",
+                "CHARACTER_AREA",
+                "STAGE_AREA"
+              ],
+              "names": [
+                {
+                  "kind": "NAME_EXACT",
+                  "value": "Uta"
+                }
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "REST_DON",
+          "selector": {
+            "subject": "DON",
+            "owner": "OPPONENT",
+            "zones": [
+              "COST_AREA"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 2
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "actionId": "P-060#0.1"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-060",
+        "effectIndex": 0,
+        "printedText": "[Main] You may rest 1 of your [Uta] cards: Rest up to 2 of your opponent's DON!! cards.",
+        "normalizedText": "[Main] You may rest 1 of your [Uta] cards: Rest up to 2 of your opponent's DON!! cards.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-060:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-063:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-063",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Rest up to 1 of your opponent's Characters with a cost of 1 or less.",
+    "coveredAtomicEffectIds": [
+      "P-063#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-063#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "REST_CARD",
+          "selector": {
+            "subject": "CARD",
+            "controller": "OPPONENT",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            }
+          }
+        },
+        "actionId": "P-063#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-063",
+        "effectIndex": 0,
+        "printedText": "[On Play] Rest up to 1 of your opponent's Characters with a cost of 1 or less.",
+        "normalizedText": "[On Play] Rest up to 1 of your opponent's Characters with a cost of 1 or less.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-063:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-068:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-068",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] You may trash this Character: Look at 5 cards from the top of your deck and place them at the top or bottom of the deck in any order.",
+    "coveredAtomicEffectIds": [
+      "P-068#0.0",
+      "P-068#0.1",
+      "P-068#0.2"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-068#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "TRASH_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "LOOK_AT_CARDS",
+              "player": "PLAYER",
+              "source": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "DECK"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              },
+              "count": {
+                "kind": "NUMBER",
+                "value": 5
+              }
+            },
+            "actionId": "P-068#0.1"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "REORDER_CARDS",
+              "selector": {
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ],
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              },
+              "destination": {
+                "zone": "DECK",
+                "owner": "PLAYER",
+                "position": "TOP"
+              },
+              "orderChooser": "PLAYER"
+            },
+            "actionId": "P-068#0.2"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "P-068",
+        "effectIndex": 0,
+        "printedText": "[Activate: Main] You may trash this Character: Look at 5 cards from the top of your deck and place them at the top or bottom of the deck in any order.",
+        "normalizedText": "[Activate: Main] You may trash this Character: Look at 5 cards from the top of your deck and place them at the top or bottom of the deck in any order.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-068:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-069:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-069",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+    "coveredAtomicEffectIds": [
+      "P-069#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-069#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GIVE_DON",
+          "donSelector": {
+            "subject": "DON",
+            "owner": "PLAYER",
+            "zones": [
+              "COST_AREA"
+            ],
+            "states": [
+              "RESTED"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "target": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "actionId": "P-069#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-069",
+        "effectIndex": 0,
+        "printedText": "[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+        "normalizedText": "[Activate: Main] [Once Per Turn] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-069:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-070:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-070",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+    "coveredAtomicEffectIds": [
+      "P-070#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-070#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "BLOCKER",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "P-070#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-070",
+        "effectIndex": 0,
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-070:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-073:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-073",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] [Once Per Turn] You may add 1 card from the top or bottom of your Life cards to your hand: This Character gains +1000 power during this turn.",
+    "coveredAtomicEffectIds": [
+      "P-073#0.0",
+      "P-073#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-073#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "ADD_LIFE_TO_HAND_COST",
+            "selector": {
+              "subject": "CARD",
+              "owner": "PLAYER",
+              "zones": [
+                "LIFE"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "ordering": "DECK_ORDER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MODIFY_POWER",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "propertyLayer": "CURRENT_VALUE",
+          "operation": "ADD",
+          "value": {
+            "kind": "NUMBER",
+            "value": 1000
+          },
+          "duration": {
+            "kind": "THIS_TURN"
+          }
+        },
+        "actionId": "P-073#0.1"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-073",
+        "effectIndex": 0,
+        "printedText": "[Activate: Main] [Once Per Turn] You may add 1 card from the top or bottom of your Life cards to your hand: This Character gains +1000 power during this turn.",
+        "normalizedText": "[Activate: Main] [Once Per Turn] You may add 1 card from the top or bottom of your Life cards to your hand: This Character gains +1000 power during this turn.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-073:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-074:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-074",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] You may return this Character to the owner's hand: Look at 5 cards from the top of your deck and place them at the top or bottom of the deck in any order.",
+    "coveredAtomicEffectIds": [
+      "P-074#0.0",
+      "P-074#0.1",
+      "P-074#0.2"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-074#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "RETURN_CARD_TO_HAND_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "LOOK_AT_CARDS",
+              "player": "PLAYER",
+              "source": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "DECK"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              },
+              "count": {
+                "kind": "NUMBER",
+                "value": 5
+              }
+            },
+            "actionId": "P-074#0.1"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "REORDER_CARDS",
+              "selector": {
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ],
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              },
+              "destination": {
+                "zone": "DECK",
+                "owner": "PLAYER",
+                "position": "TOP"
+              },
+              "orderChooser": "PLAYER"
+            },
+            "actionId": "P-074#0.2"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "P-074",
+        "effectIndex": 0,
+        "printedText": "[Activate: Main] You may return this Character to the owner's hand: Look at 5 cards from the top of your deck and place them at the top or bottom of the deck in any order.",
+        "normalizedText": "[Activate: Main] You may return this Character to the owner's hand: Look at 5 cards from the top of your deck and place them at the top or bottom of the deck in any order.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-074:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-075:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-075",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+    "coveredAtomicEffectIds": [
+      "P-075#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-075#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GIVE_DON",
+          "donSelector": {
+            "subject": "DON",
+            "owner": "PLAYER",
+            "zones": [
+              "COST_AREA"
+            ],
+            "states": [
+              "RESTED"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "target": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "actionId": "P-075#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-075",
+        "effectIndex": 0,
+        "printedText": "[On Play] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+        "normalizedText": "[On Play] Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-075:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-075:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-075",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[When Attacking] If you have a Character with a cost of 8 or more on your field, draw 1 card and trash 1 card from your hand.",
+    "coveredAtomicEffectIds": [
+      "P-075#1.0",
+      "P-075#1.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-075#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "WHEN_ATTACKING"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "DRAW_CARD",
+              "player": "PLAYER",
+              "count": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "actionId": "P-075#1.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "TRASH_CARD",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "P-075#1.1"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "P-075",
+        "effectIndex": 1,
+        "printedText": "[When Attacking] If you have a Character with a cost of 8 or more on your field, draw 1 card and trash 1 card from your hand.",
+        "normalizedText": "[When Attacking] If you have a Character with a cost of 8 or more on your field, draw 1 card and trash 1 card from your hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-075:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-078:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-078",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "If you have 2 or more rested {ODYSSEY} type Characters, this Character gains +1000 power.",
+    "coveredAtomicEffectIds": [
+      "P-078#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-078#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MODIFY_POWER",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "propertyLayer": "CURRENT_VALUE",
+          "operation": "ADD",
+          "value": {
+            "kind": "NUMBER",
+            "value": 1000
+          },
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "P-078#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-078",
+        "effectIndex": 0,
+        "printedText": "If you have 2 or more rested {ODYSSEY} type Characters, this Character gains +1000 power.",
+        "normalizedText": "If you have 2 or more rested {ODYSSEY} type Characters, this Character gains +1000 power.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-078:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-079:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-079",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+    "coveredAtomicEffectIds": [
+      "P-079#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-079#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "BLOCKER",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "P-079#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-079",
+        "effectIndex": 0,
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-079:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-079:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-079",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[End of Your Turn] If you have 2 or more rested {ODYSSEY} type Characters, set this Character as active.",
+    "coveredAtomicEffectIds": [
+      "P-079#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-079#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "END_OF_YOUR_TURN"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "SET_CARD_ACTIVE",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "actionId": "P-079#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-079",
+        "effectIndex": 1,
+        "printedText": "[End of Your Turn] If you have 2 or more rested {ODYSSEY} type Characters, set this Character as active.",
+        "normalizedText": "[End of Your Turn] If you have 2 or more rested {ODYSSEY} type Characters, set this Character as active.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-079:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-081:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-081",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] You may return this Character to the owner's hand: If you have 3 or more blue {Cross Guild} type Characters, play up to 1 {Cross Guild} type Character card with a cost of 5 from your hand.",
+    "coveredAtomicEffectIds": [
+      "P-081#0.0",
+      "P-081#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-081#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "RETURN_CARD_TO_HAND_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PLAY_CARD",
+          "selector": {
+            "subject": "CARD",
+            "owner": "PLAYER",
+            "zones": [
+              "HAND"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "Cross Guild"
+              ]
+            }
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "P-081#0.1"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-081",
+        "effectIndex": 0,
+        "printedText": "[Activate: Main] You may return this Character to the owner's hand: If you have 3 or more blue {Cross Guild} type Characters, play up to 1 {Cross Guild} type Character card with a cost of 5 from your hand.",
+        "normalizedText": "[Activate: Main] You may return this Character to the owner's hand: If you have 3 or more blue {Cross Guild} type Characters, play up to 1 {Cross Guild} type Character card with a cost of 5 from your hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-081:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-082:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-082",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": " [Your Turn] [On Play] If your Leader has the {Cross Guild} type or a type including \"Baroque Works\", place up to 1 of your opponent's Characters with 2000 power or less at the bottom of the owner's deck.",
+    "coveredAtomicEffectIds": [
+      "P-082#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-082#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "conditions": {
+        "kind": "AND",
+        "conditions": [
+          {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "CURRENT_TURN_PLAYER"
+            },
+            "operator": "EQUAL",
+            "right": {
+              "kind": "EFFECT_OWNER"
+            }
+          },
+          {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "COUNT",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER"
+                ],
+                "types": {
+                  "kind": "TYPE_INCLUDES_TEXT",
+                  "values": [
+                    "Cross Guild"
+                  ]
+                },
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          }
+        ]
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "controller": "OPPONENT",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "power": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 2000
+              }
+            }
+          },
+          "to": {
+            "zone": "DECK",
+            "owner": "OPPONENT",
+            "position": "BOTTOM"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "P-082#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-082",
+        "effectIndex": 0,
+        "printedText": " [Your Turn] [On Play] If your Leader has the {Cross Guild} type or a type including \"Baroque Works\", place up to 1 of your opponent's Characters with 2000 power or less at the bottom of the owner's deck.",
+        "normalizedText": "[Your Turn] [On Play] If your Leader has the {Cross Guild} type or a type including \"Baroque Works\", place up to 1 of your opponent's Characters with 2000 power or less at the bottom of the owner's deck.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-082:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-083:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-083",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": " [DON!! x1] [When Attacking] You may trash 1 Character card from your hand: Give up to 1 of your opponent's Characters −1000 power during this turn. Then, draw 1 card.",
+    "coveredAtomicEffectIds": [
+      "P-083#0.0",
+      "P-083#0.1",
+      "P-083#0.2"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-083#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "WHEN_ATTACKING"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "ATTACHED_DON_COUNT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "TRASH_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "owner": "PLAYER",
+              "zones": [
+                "HAND"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_POWER",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "SUBTRACT",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1000
+              },
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "P-083#0.1"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "DRAW_CARD",
+              "player": "PLAYER",
+              "count": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "actionId": "P-083#0.2"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "P-083",
+        "effectIndex": 0,
+        "printedText": " [DON!! x1] [When Attacking] You may trash 1 Character card from your hand: Give up to 1 of your opponent's Characters −1000 power during this turn. Then, draw 1 card.",
+        "normalizedText": "[DON!! x1] [When Attacking] You may trash 1 Character card from your hand: Give up to 1 of your opponent's Characters −1000 power during this turn. Then, draw 1 card.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-083:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-084:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-084",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "This Character cannot attack.If your Leader is [Buggy], all Characters with a cost of 3 or 4 cannot attack.",
+    "coveredAtomicEffectIds": [
+      "P-084#0.0",
+      "P-084#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-084#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PREVENT_ACTION",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "action": "DECLARE_ATTACK",
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "P-084#0.0"
+          },
+          {
+            "kind": "IF",
+            "condition": {
+              "kind": "PREDICATE",
+              "left": {
+                "kind": "COUNT",
+                "selector": {
+                  "subject": "CARD",
+                  "controller": "PLAYER",
+                  "zones": [
+                    "LEADER_AREA"
+                  ],
+                  "cardCategories": [
+                    "LEADER"
+                  ],
+                  "names": [
+                    {
+                      "kind": "NAME_EXACT",
+                      "value": "Buggy"
+                    }
+                  ],
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  }
+                }
+              },
+              "operator": "GREATER_OR_EQUAL",
+              "right": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "then": {
+              "kind": "ACTION",
+              "action": {
+                "type": "PREVENT_ACTION",
+                "selector": {
+                  "subject": "CARD",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
+                  "quantity": {
+                    "kind": "ALL"
+                  },
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "IN_SET",
+                    "values": [
+                      {
+                        "kind": "NUMBER",
+                        "value": 3
+                      },
+                      {
+                        "kind": "NUMBER",
+                        "value": 4
+                      }
+                    ]
+                  }
+                },
+                "action": "DECLARE_ATTACK",
+                "duration": {
+                  "kind": "PERMANENT"
+                }
+              },
+              "actionId": "P-084#0.1"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "P-084",
+        "effectIndex": 0,
+        "printedText": "This Character cannot attack.If your Leader is [Buggy], all Characters with a cost of 3 or 4 cannot attack.",
+        "normalizedText": "This Character cannot attack.If your Leader is [Buggy], all Characters with a cost of 3 or 4 cannot attack.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-084:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-084:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-084",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Play up to 1 {Cross Guild} type Character card with a cost of 6 or less from your hand.",
+    "coveredAtomicEffectIds": [
+      "P-084#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-084#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PLAY_CARD",
+          "selector": {
+            "subject": "CARD",
+            "owner": "PLAYER",
+            "zones": [
+              "HAND"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "Cross Guild"
+              ]
+            },
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 6
+              }
+            }
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "P-084#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-084",
+        "effectIndex": 1,
+        "printedText": "[On Play] Play up to 1 {Cross Guild} type Character card with a cost of 6 or less from your hand.",
+        "normalizedText": "[On Play] Play up to 1 {Cross Guild} type Character card with a cost of 6 or less from your hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-084:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-085:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-085",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] If your Leader has the {Supernovas} type and the number of your Life cards is equal to or less than the number of your opponent's Life cards, add up to 1 of your opponent's Characters with a cost of 4 or less to the top or bottom of the owner's Life cards face-up.",
+    "coveredAtomicEffectIds": [
+      "P-085#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-085#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "COUNT",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
+            "types": {
+              "kind": "TYPE_INCLUDES_TEXT",
+              "values": [
+                "Supernovas"
+              ]
+            },
+            "quantity": {
+              "kind": "ANY_NUMBER"
+            }
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "ADD_CARD_TO_LIFE",
+          "selector": {
+            "subject": "CARD",
+            "controller": "OPPONENT",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 4
+              }
+            }
+          },
+          "player": "CARD_OWNER",
+          "position": "TOP",
+          "face": "FACE_UP"
+        },
+        "actionId": "P-085#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-085",
+        "effectIndex": 0,
+        "printedText": "[On Play] If your Leader has the {Supernovas} type and the number of your Life cards is equal to or less than the number of your opponent's Life cards, add up to 1 of your opponent's Characters with a cost of 4 or less to the top or bottom of the owner's Life cards face-up.",
+        "normalizedText": "[On Play] If your Leader has the {Supernovas} type and the number of your Life cards is equal to or less than the number of your opponent's Life cards, add up to 1 of your opponent's Characters with a cost of 4 or less to the top or bottom of the owner's Life cards face-up.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-085:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-088:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-088",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] If your Leader has the {Supernovas} type and you and your opponent have a total of 5 or less Life cards, play this card.",
+    "coveredAtomicEffectIds": [
+      "P-088#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-088#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "COUNT",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
+            "types": {
+              "kind": "TYPE_INCLUDES_TEXT",
+              "values": [
+                "Supernovas"
+              ]
+            },
+            "quantity": {
+              "kind": "ANY_NUMBER"
+            }
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PLAY_CARD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "P-088#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-088",
+        "effectIndex": 0,
+        "printedText": "[Trigger] If your Leader has the {Supernovas} type and you and your opponent have a total of 5 or less Life cards, play this card.",
+        "normalizedText": "[Trigger] If your Leader has the {Supernovas} type and you and your opponent have a total of 5 or less Life cards, play this card.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-088:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-105:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-105",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "If your Leader has the {Revolutionary Army} type, this Character gains [Blocker] and +4 cost.",
+    "coveredAtomicEffectIds": [
+      "P-105#0.0",
+      "P-105#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-105#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "COUNT",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
+            "types": {
+              "kind": "TYPE_INCLUDES_TEXT",
+              "values": [
+                "Revolutionary Army"
+              ]
+            },
+            "quantity": {
+              "kind": "ANY_NUMBER"
+            }
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "GRANT_KEYWORD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "keyword": "BLOCKER",
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "P-105#0.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_COST",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "ADD",
+              "value": {
+                "kind": "NUMBER",
+                "value": 4
+              },
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "P-105#0.1"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "P-105",
+        "effectIndex": 0,
+        "printedText": "If your Leader has the {Revolutionary Army} type, this Character gains [Blocker] and +4 cost.",
+        "normalizedText": "If your Leader has the {Revolutionary Army} type, this Character gains [Blocker] and +4 cost.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-105:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:P-105:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "P-105",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] You may add 1 card from the top or bottom of your Life cards to your hand: Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+    "coveredAtomicEffectIds": [
+      "P-105#1.0",
+      "P-105#1.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "P-105#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "ADD_LIFE_TO_HAND_COST",
+            "selector": {
+              "subject": "CARD",
+              "owner": "PLAYER",
+              "zones": [
+                "LIFE"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "ordering": "DECK_ORDER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GIVE_DON",
+          "donSelector": {
+            "subject": "DON",
+            "owner": "PLAYER",
+            "zones": [
+              "COST_AREA"
+            ],
+            "states": [
+              "RESTED"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "target": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "actionId": "P-105#1.1"
+      },
+      "metadata": {
+        "sourceCardNumber": "P-105",
+        "effectIndex": 1,
+        "printedText": "[On Play] You may add 1 card from the top or bottom of your Life cards to your hand: Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+        "normalizedText": "[On Play] You may add 1 card from the top or bottom of your Life cards to your hand: Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:P-105:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  }
+]

@@ -10,7 +10,7 @@
  * every read, so a conditional buff turns on/off as DON!! attaches or the turn
  * flips, with no extra bookkeeping. Cost modifiers use the same record model.
  */
-import type { ContinuousEffectRecord, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousPowerCondition, ContinuousRestRestriction, ForbiddenAttackTargetFilter, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
+import type { ContinuousEffectRecord, ContinuousFieldRemovalImmunityModifier, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousPowerCondition, ContinuousRestRestriction, ForbiddenAttackTargetFilter, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
 
@@ -71,6 +71,10 @@ export function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffec
     const def = getDefinition(defs, target);
     const attrs = def.attributes ?? [];
     if (!group.anyOfAttributes.some((a) => attrs.some((have) => have.toLowerCase() === a.toLowerCase()))) return false;
+  }
+  if (group.anyOfColors !== undefined) {
+    const def = getDefinition(defs, target);
+    if (!group.anyOfColors.some((c) => def.colors.includes(c))) return false;
   }
   return true;
 }
@@ -444,6 +448,42 @@ export function cannotBeRestedByEffect(state: GameState, instanceId: string, res
     const r = record.restRestriction;
     if (!r || r.appliesToInstanceId !== instanceId) return false;
     if (!restSourceMatches(r, state, instanceId, restSourceInstanceId)) return false;
+    if (r.condition && !continuousTargetConditionApplies(r.condition, record, state, instanceId, defs)) return false;
+    return true;
+  });
+}
+
+function fieldRemovalSourceMatches(
+  mod: ContinuousFieldRemovalImmunityModifier,
+  state: GameState,
+  protectedInstanceId: string,
+  effectSourceInstanceId: string | undefined,
+): boolean {
+  if (mod.effectSourceController === undefined) return true;
+  if (!effectSourceInstanceId) return false;
+  const protectedInst = state.cardsById[protectedInstanceId];
+  const source = state.cardsById[effectSourceInstanceId];
+  if (!protectedInst || !source) return false;
+  if (mod.effectSourceController === 'opponent') return source.controllerId !== protectedInst.ownerId;
+  return source.controllerId === protectedInst.ownerId;
+}
+
+/**
+ * Whether `instanceId` currently cannot be removed from the field — by effect K.O., returned to
+ * hand, or placed at the bottom of the deck — by the resolving card effect. Never blocks battle
+ * K.O. (see ContinuousFieldRemovalImmunityModifier's doc comment); callers on the battle-K.O. path
+ * should not call this.
+ */
+export function cannotBeRemovedFromFieldByEffect(
+  state: GameState,
+  instanceId: string,
+  effectSourceInstanceId: string | undefined,
+  defs: CardDefinitionLookup = {},
+): boolean {
+  return state.continuousEffects.some((record) => {
+    const r = record.fieldRemovalImmunityModifier;
+    if (!r || r.appliesToInstanceId !== instanceId) return false;
+    if (!fieldRemovalSourceMatches(r, state, instanceId, effectSourceInstanceId)) return false;
     if (r.condition && !continuousTargetConditionApplies(r.condition, record, state, instanceId, defs)) return false;
     return true;
   });

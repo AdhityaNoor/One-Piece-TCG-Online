@@ -11,7 +11,7 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
   // PARTIAL: "blue {Cross Guild}" character-count gate lacks color+type field-count support.
-  { cardNumber: 'P-081', templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', atLeast: 3 }], functions: [{ fn: 'returnSelfToHand' }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Cross Guild', maxCost: 5 }, ifPrevious: 'previousMovedAny' }] } },
+  { cardNumber: 'P-081', templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', atLeast: 3 }], functions: [{ fn: 'returnSelfToHand' }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Cross Guild', exactCost: 5 }, ifPrevious: 'previousMovedAny' }] } },
 
   // --- codegen batch ---
   { cardNumber: 'P-014', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },

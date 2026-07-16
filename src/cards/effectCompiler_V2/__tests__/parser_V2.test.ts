@@ -112,6 +112,49 @@ describe('effectCompiler_V2 parser', () => {
     });
   });
 
+  it('parses OP13-079 deck restriction, game-start setup, and choose-one activate cost', () => {
+    const parsed = parseCardEffect_V2(
+      'OP13-079',
+      'Under the rules of this game, you cannot include Events with a cost of 2 or more in your deck and at the start of the game, play up to 1 {Mary Geoise} type Stage card from your deck.[Activate: Main] [Once Per Turn] You may trash 1 of your {Celestial Dragons} type Characters or 1 card from your hand: Draw 1 card.',
+    );
+
+    expect(parsed.atomicEffects.map((atom) => atom.coverage)).toEqual([
+      'coveredByParser',
+      'coveredByParser',
+      'coveredByParser',
+      'coveredByParser',
+    ]);
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'SEQUENCE',
+      nodes: [
+        { kind: 'ACTION', action: { type: 'MODIFY_DECK_CONSTRUCTION', modifier: { modifier: { expression: { rule: 'CANNOT_INCLUDE_CATEGORY_COST_OR_MORE', cardCategory: 'EVENT', cost: 2 } } } } },
+        { kind: 'ACTION', action: { type: 'MODIFY_STARTING_SETUP', modifier: { validFrom: 'GAME_START', modifier: { expression: { operation: 'PLAY_FROM_DECK_AT_GAME_START' } } } } },
+      ],
+    });
+    expect(parsed.effects[1].activationCost?.payments).toEqual([
+      expect.objectContaining({
+        type: 'CHOOSE_ONE_COST',
+        options: [
+          [expect.objectContaining({
+            type: 'TRASH_CARD_COST',
+            selector: expect.objectContaining({
+              zones: ['CHARACTER_AREA'],
+              types: { kind: 'HAS_ANY_TYPE', values: ['Celestial Dragons'] },
+            }),
+          })],
+          [expect.objectContaining({
+            type: 'TRASH_CARD_COST',
+            selector: expect.objectContaining({ zones: ['HAND'] }),
+          })],
+        ],
+      }),
+    ]);
+    expect(parsed.effects[1].resolution).toMatchObject({
+      kind: 'ACTION',
+      action: { type: 'DRAW_CARD' },
+    });
+  });
+
   it('does not split trigger-filter cost text into a separate timing segment', () => {
     const parsed = parseCardEffect_V2(
       'TEST-TRIGGER-COST',

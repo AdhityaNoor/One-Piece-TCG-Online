@@ -314,7 +314,6 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-048 (character) Donquixote Rosinante —
   //   [Opponent's Turn] If your blue {Navy} type Character would be removed from the field by your
   //   opponent's effect, you may rest this Character and trash 1 card from your hand instead.
-  // PARTIAL: compound rest+trash replacement; blue color filter dropped; mapped restSource only.
   {
     cardNumber: 'OP12-048',
     templateId: 'ability',
@@ -324,7 +323,8 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
         fn: 'registerKoReplacementAura',
         scope: 'effect',
         anyOfTypes: ['Navy'],
-        restSource: true,
+        anyOfColors: ['blue'],
+        restTargetAndTrashFromHand: {},
         sourceCondition: { turn: 'opponent' },
         duration: 'permanent',
       }],

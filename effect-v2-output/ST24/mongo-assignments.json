@@ -1,0 +1,713 @@
+[
+  {
+    "_id": "v2:auto:ST24-001:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST24-001",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+    "coveredAtomicEffectIds": [
+      "ST24-001#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST24-001#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "BLOCKER",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST24-001#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST24-001",
+        "effectIndex": 0,
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST24-001:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST24-001:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST24-001",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] If you have 6 or more rested cards, draw 1 card and trash 1 card from your hand.",
+    "coveredAtomicEffectIds": [
+      "ST24-001#1.0",
+      "ST24-001#1.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST24-001#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "DRAW_CARD",
+              "player": "PLAYER",
+              "count": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "actionId": "ST24-001#1.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "TRASH_CARD",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "ST24-001#1.1"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "ST24-001",
+        "effectIndex": 1,
+        "printedText": "[On Play] If you have 6 or more rested cards, draw 1 card and trash 1 card from your hand.",
+        "normalizedText": "[On Play] If you have 6 or more rested cards, draw 1 card and trash 1 card from your hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST24-001:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST24-002:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST24-002",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Supernovas} type card and add it to your hand. Then, place the rest at the bottom of your deck in any order.",
+    "coveredAtomicEffectIds": [
+      "ST24-002#0.0",
+      "ST24-002#0.1",
+      "ST24-002#0.2"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST24-002#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "LOOK_AT_CARDS",
+              "player": "PLAYER",
+              "source": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "DECK"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              },
+              "count": {
+                "kind": "NUMBER",
+                "value": 5
+              }
+            },
+            "actionId": "ST24-002#0.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "MOVE_CARD",
+              "selector": {
+                "subject": "CARD",
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "Supernovas"
+                  ]
+                },
+                "owner": "PLAYER",
+                "zones": [
+                  "DECK"
+                ]
+              },
+              "to": {
+                "zone": "HAND",
+                "owner": "PLAYER"
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "ST24-002#0.1"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "REORDER_CARDS",
+              "selector": {
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "REMAINDER_OF_PREVIOUS_SELECTION"
+                ],
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              },
+              "destination": {
+                "zone": "DECK",
+                "owner": "PLAYER",
+                "position": "BOTTOM"
+              },
+              "orderChooser": "PLAYER"
+            },
+            "actionId": "ST24-002#0.2"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "ST24-002",
+        "effectIndex": 0,
+        "printedText": "[On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Supernovas} type card and add it to your hand. Then, place the rest at the bottom of your deck in any order.",
+        "normalizedText": "[On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Supernovas} type card and add it to your hand. Then, place the rest at the bottom of your deck in any order.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST24-002:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST24-002:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST24-002",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[On Your Opponent's Attack] You may trash this Character: Set up to 1 of your DON!! cards as active.",
+    "coveredAtomicEffectIds": [
+      "ST24-002#1.0",
+      "ST24-002#1.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST24-002#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_OPPONENT_ATTACK"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "TRASH_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "SET_DON_ACTIVE",
+          "selector": {
+            "subject": "DON",
+            "owner": "PLAYER",
+            "zones": [
+              "COST_AREA"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "actionId": "ST24-002#1.1"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST24-002",
+        "effectIndex": 1,
+        "printedText": "[On Your Opponent's Attack] You may trash this Character: Set up to 1 of your DON!! cards as active.",
+        "normalizedText": "[On Your Opponent's Attack] You may trash this Character: Set up to 1 of your DON!! cards as active.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST24-002:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST24-003:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST24-003",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[End of Your Turn] Set up to 1 of your DON!! cards as active.",
+    "coveredAtomicEffectIds": [
+      "ST24-003#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST24-003#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "END_OF_YOUR_TURN"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "SET_DON_ACTIVE",
+          "selector": {
+            "subject": "DON",
+            "owner": "PLAYER",
+            "zones": [
+              "COST_AREA"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "actionId": "ST24-003#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST24-003",
+        "effectIndex": 0,
+        "printedText": "[End of Your Turn] Set up to 1 of your DON!! cards as active.",
+        "normalizedText": "[End of Your Turn] Set up to 1 of your DON!! cards as active.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST24-003:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST24-004:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST24-004",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Rest up to 1 of your opponent's Characters and that Character will not become active in your opponent's next Refresh Phase. Then, if your opponent has 2 or more rested Characters, your Leader gains +2000 power until the end of your opponent's next End Phase.",
+    "coveredAtomicEffectIds": [
+      "ST24-004#0.0",
+      "ST24-004#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST24-004#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PREVENT_ACTION",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "action": "SET_CARD_ACTIVE",
+              "causeFilter": "REFRESH_PHASE",
+              "duration": {
+                "kind": "UNTIL_NEXT_REFRESH_PHASE",
+                "player": "OPPONENT"
+              }
+            },
+            "actionId": "ST24-004#0.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_POWER",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "ADD",
+              "value": {
+                "kind": "NUMBER",
+                "value": 2000
+              },
+              "duration": {
+                "kind": "INSTANT"
+              }
+            },
+            "actionId": "ST24-004#0.1"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "ST24-004",
+        "effectIndex": 0,
+        "printedText": "[On Play] Rest up to 1 of your opponent's Characters and that Character will not become active in your opponent's next Refresh Phase. Then, if your opponent has 2 or more rested Characters, your Leader gains +2000 power until the end of your opponent's next End Phase.",
+        "normalizedText": "[On Play] Rest up to 1 of your opponent's Characters and that Character will not become active in your opponent's next Refresh Phase. Then, if your opponent has 2 or more rested Characters, your Leader gains +2000 power until the end of your opponent's next End Phase.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST24-004:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST24-005:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST24-005",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] If your Leader has the {Supernovas} type, rest up to 1 of your opponent's Characters with a cost of 5 or less. Then, set up to 1 of your DON!! cards as active at the end of this turn.",
+    "coveredAtomicEffectIds": [
+      "ST24-005#0.0",
+      "ST24-005#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST24-005#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "COUNT",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
+            "types": {
+              "kind": "TYPE_INCLUDES_TEXT",
+              "values": [
+                "Supernovas"
+              ]
+            },
+            "quantity": {
+              "kind": "ANY_NUMBER"
+            }
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "REST_CARD",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
+                  }
+                }
+              }
+            },
+            "actionId": "ST24-005#0.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "SET_DON_ACTIVE",
+              "selector": {
+                "subject": "DON",
+                "owner": "PLAYER",
+                "zones": [
+                  "COST_AREA"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            "actionId": "ST24-005#0.1"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "ST24-005",
+        "effectIndex": 0,
+        "printedText": "[On Play] If your Leader has the {Supernovas} type, rest up to 1 of your opponent's Characters with a cost of 5 or less. Then, set up to 1 of your DON!! cards as active at the end of this turn.",
+        "normalizedText": "[On Play] If your Leader has the {Supernovas} type, rest up to 1 of your opponent's Characters with a cost of 5 or less. Then, set up to 1 of your DON!! cards as active at the end of this turn.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST24-005:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  }
+]

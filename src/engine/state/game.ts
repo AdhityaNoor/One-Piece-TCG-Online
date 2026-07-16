@@ -6,7 +6,7 @@
  * GameState must be fully JSON-serializable (project ground rule) — no
  * class instances, Map/Set, functions, or undefined values inside it.
  */
-import type { CardCategory, CardInstance } from './card';
+import type { CardCategory, CardInstance, Color } from './card';
 import type { PlayerState } from './player';
 import type { GameLogEntry } from '../logs/logEntry';
 import type { PendingChoice } from '../events/pendingChoice';
@@ -26,7 +26,7 @@ import type { AbilityGate, AbilityCost, IrTiming } from '../effects/effectIr';
 export type Phase = 'setup' | 'refresh' | 'draw' | 'don' | 'main' | 'end';
 
 /** Sub-steps within the 'setup' phase. See src/engine/setup for the reducers. */
-export type SetupStage = 'awaitingGoingFirstChoice' | 'awaitingMulliganDecision';
+export type SetupStage = 'awaitingGoingFirstChoice' | 'awaitingStartOfGameLeaderEffect' | 'awaitingMulliganDecision';
 
 /**
  * Active only while currentPhase === 'setup'; null afterward. Tracks the
@@ -49,6 +49,16 @@ export interface SetupState {
   /** Filled in by executeChooseGoingFirst once 5-2-1-5 resolves. */
   goingFirstPlayerId?: string;
   goingSecondPlayerId?: string;
+  /**
+   * Player ids still needing their "at the start of the game" Leader effect
+   * processed (5-2-1-5-1, e.g. Imu/OP13-079's Mary Geoise Stage search),
+   * in turn order — present only while stage === 'awaitingStartOfGameLeaderEffect'.
+   * Populated by executeChooseGoingFirst, drained by advanceStartOfGameEffects.
+   * TODO: the rules do not specify an ordering between two players' simultaneous
+   * "at the start of the game" effects if both Leaders had one; this mirrors the
+   * existing going-first-then-going-second convention used for mulligan decisions.
+   */
+  startOfGameEffectQueue?: string[];
 }
 
 /** 7-1-1 through 7-1-5. */
@@ -134,6 +144,8 @@ export interface PowerAuraGroup {
   anyOfNames?: string[];
   /** Restrict to cards carrying any of these attributes (OR). Leader/Character only. */
   anyOfAttributes?: string[];
+  /** Restrict to cards whose printed colors include any of these (OR). */
+  anyOfColors?: Color[];
   /** Exclude the Leader (chars only) — for "all of your Characters" auras. */
   charactersOnly?: boolean;
   /** Target the OPPONENT's Characters instead of the controller's — for "give all of your opponent's Characters -N". */
@@ -281,6 +293,22 @@ export interface ContinuousRestRestriction {
 }
 
 /**
+ * Prevents a Character/Stage from being "removed from the field" by card effects — a broader
+ * protection than ContinuousKoImmunityModifier: covers effect K.O., return-to-hand (bounce), and
+ * bottom-of-deck placement in one check. Every printed "cannot be removed from the field by your
+ * opponent's effects" card is effect-scoped only (never blocks battle K.O.), so unlike
+ * ContinuousKoImmunityModifier there is no `scope` field — this modifier simply doesn't apply to
+ * the battle-K.O. path at all. Mirrors ContinuousRestRestriction's shape.
+ */
+export interface ContinuousFieldRemovalImmunityModifier {
+  appliesToInstanceId: string;
+  /** Omitted = any effect source. Otherwise relative to the protected card's owner. */
+  effectSourceController?: 'opponent' | 'controller';
+  /** Re-evaluated condition on the protected card (e.g. trash-count gate). */
+  condition?: ContinuousPowerCondition;
+}
+
+/**
  * `'canAttackActive'`: "This Leader/Character can also attack active Characters" —
  * relaxes the normal 7-1-1-2 restriction (only the opponent's Leader or a RESTED
  * Character may be attacked) for the granted instance's own attacks.
@@ -361,6 +389,14 @@ export interface KoReplacementHandFilter {
   minCurrentPower?: number;
 }
 
+/** Filter for a K.O. replacement offering a choice between the Leader and one specific named field card. */
+export interface KoReplacementLeaderOrNamedFilter {
+  /** Restrict the Leader option to this printed name (e.g. "your [Shirahoshi] Leader"). Omit to allow any Leader. */
+  leaderName?: string;
+  /** Printed name of the specific Character or Stage card forming the other option (e.g. "[Corrida Coliseum]"). */
+  cardName: string;
+}
+
 export type KoReplacementAction =
   | { kind: 'trashFromHand'; count: number; filter?: KoReplacementHandFilter }
   /** Trash the character that would be K.O.'d (self replacement). */
@@ -394,7 +430,16 @@ export type KoReplacementAction =
   /** Pay structured ability costs (e.g. `{ kind: 'donMinus', count: 1 }`). */
   | { kind: 'payAbilityCosts'; costs: AbilityCost[] }
   /** Add a Life card to hand — same op shape as effect IR `chooseLifeToHand`. */
-  | { kind: 'chooseLifeToHand'; position: 'top' | 'topOrBottom' };
+  | { kind: 'chooseLifeToHand'; position: 'top' | 'topOrBottom' }
+  /**
+   * Rest the Character that would be removed (the K.O./removal target itself, NOT the aura
+   * source) AND trash 1 card from your hand instead (compound, both required). For aura-style
+   * "if your {Type} Character would be removed … rest this Character and trash 1 …" text where
+   * "this Character" refers back to whichever ally is threatened, not the ability's source card.
+   */
+  | { kind: 'restTargetAndTrashFromHand'; filter?: KoReplacementHandFilter }
+  /** Rest your Leader OR 1 specific named field card instead (choice between two heterogeneous pools). */
+  | { kind: 'restLeaderOrNamed'; filter: KoReplacementLeaderOrNamedFilter };
 
 /** Which field-removal event a replacement modifier listens for. Omitted = K.O. only (legacy). */
 export type KoReplacementTrigger = 'ko' | 'returnToHand' | 'bottomDeck';
@@ -499,6 +544,8 @@ export interface ContinuousEffectRecord {
   forcedAttackTarget?: ContinuousForcedAttackTargetModifier;
   /** Structured rest restriction ("cannot be rested by effects"). Omitted for unrelated continuous effects. */
   restRestriction?: ContinuousRestRestriction;
+  /** Structured field-removal immunity ("cannot be removed from the field by effects"). Omitted for unrelated continuous effects. */
+  fieldRemovalImmunityModifier?: ContinuousFieldRemovalImmunityModifier;
   /** Structured keyword grant. Omitted for unrelated continuous effects. */
   keywordModifier?: ContinuousKeywordModifier;
   /** Structured "cannot be K.O.'d" grant. Omitted for unrelated continuous effects. */
@@ -650,6 +697,7 @@ export interface GameState {
   pendingChoices: PendingChoice[];
   /**
    * Instance ids of Life cards whose [Trigger] the defending player chose to
+   * activate (10-1-5-2), awaiting the "trash instead of keeping in hand"
    * activate (10-1-5-2), awaiting the "trash instead of keeping in hand"
    * cleanup once every PendingChoice belonging to that card's own ability
    * chain has resolved. Needed because a triggered ability can itself

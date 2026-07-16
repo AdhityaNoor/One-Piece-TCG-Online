@@ -5,7 +5,7 @@
  * execute card text, and callers never pass raw card effect text.
  */
 import type { Ability, EffectOp, EffectProgram, NonSuspendingEffectOp, Selector } from '../../../engine/effects/effectIr';
-import type { KoReplacementAction } from '../../../engine/state/game';
+import type { KoReplacementAction, KoReplacementLeaderOrNamedFilter } from '../../../engine/state/game';
 import type { MoveCardDestination, MoveCardSource, SequencedAbilityFunction, TargetFilter, TargetSpec, TemplateId, TemplateParamMap } from './templateDefs';
 
 function koReplacementAction(f: {
@@ -28,7 +28,11 @@ function koReplacementAction(f: {
   giveSelfPowerPenalty?: { amount: number; duration: import('../../../engine/effects/effectIr').IrDuration };
   giveLeaderPowerPenalty?: { amount: number; duration: import('../../../engine/effects/effectIr').IrDuration };
   moveTargetToLifeFaceDown?: true;
+  restTargetAndTrashFromHand?: { filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } };
+  restLeaderOrNamed?: KoReplacementLeaderOrNamedFilter;
 }): KoReplacementAction {
+  if (f.restLeaderOrNamed) return { kind: 'restLeaderOrNamed', filter: f.restLeaderOrNamed };
+  if (f.restTargetAndTrashFromHand) return { kind: 'restTargetAndTrashFromHand', ...(f.restTargetAndTrashFromHand.filter ? { filter: f.restTargetAndTrashFromHand.filter } : {}) };
   if (f.returnDon) return { kind: 'payAbilityCosts', costs: [{ kind: 'donMinus', count: f.returnDon.count ?? 1 }] };
   if (f.restDon) return { kind: 'payAbilityCosts', costs: [{ kind: 'restDon', count: f.restDon.count ?? 1 }] };
   if (f.lifeToHand) return { kind: 'chooseLifeToHand', position: f.lifeToHand.position ?? 'top' };
@@ -472,6 +476,12 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         (target) => ({ op: 'preventRest', target, duration: f.duration, ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}), ...(f.condition ? { condition: f.condition } : {}) }),
         { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
       );
+    case 'preventFieldRemoval':
+      return targetOps(
+        f.target,
+        (target) => ({ op: 'preventFieldRemoval', target, duration: f.duration, ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}), ...(f.condition ? { condition: f.condition } : {}) }),
+        {},
+      );
     case 'negateEffect':
       return targetOps(
         f.target,
@@ -881,6 +891,17 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
       ];
     }
+    case 'playStageFromDeck': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'playStageFromDeck',
+          pick: maxTargets,
+          filter: f.filter,
+          prompt: `Play up to ${maxTargets} matching Stage card${maxTargets === 1 ? '' : 's'} from your deck, then shuffle your deck.`,
+        },
+      ];
+    }
     case 'playFromTrash': {
       const maxTargets = f.maxTargets ?? 1;
       return [
@@ -1282,6 +1303,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
             ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}),
             ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}),
             ...(f.anyOfAttributes ? { anyOfAttributes: f.anyOfAttributes } : {}),
+            ...(f.anyOfColors ? { anyOfColors: f.anyOfColors } : {}),
             ...(f.excludeSource ? { excludeSource: true } : {}),
           },
           scope: f.scope ?? 'any',

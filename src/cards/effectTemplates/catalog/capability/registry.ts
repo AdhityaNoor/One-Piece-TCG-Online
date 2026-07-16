@@ -365,6 +365,20 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { cardNumber: 'OP12-021', snippet: "{ fn: 'preventRest', target: { ref: 'self' }, duration: 'permanent', effectSourceController: 'opponent', condition: { gate: [{ kind: 'leaderAttribute', attribute: 'slash' }, { kind: 'selfRestedDonCount', atLeast: 6 }] } }" },
     ],
   },
+  preventFieldRemoval: {
+    id: 'preventFieldRemoval',
+    summary: 'Target Character/Stage cannot be removed from the field — effect K.O., returned to hand, or placed at the bottom of the deck — for the duration. Never blocks battle K.O.',
+    params: [
+      { name: 'target', type: 'TargetSpec', required: true },
+      { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'effectSourceController', type: "'opponent' | 'controller'", required: false, note: 'for "by your opponent\'s effects" / "by your effects"' },
+      { name: 'condition', type: 'IrCondition', required: false },
+    ],
+    covers: ['If you have 7 or more cards in your trash, this Character cannot be removed from the field by your opponent\'s effects'],
+    examples: [
+      { cardNumber: 'OP13-080', snippet: "{ fn: 'preventFieldRemoval', target: { ref: 'self' }, duration: 'permanent', effectSourceController: 'opponent', condition: { gate: [{ kind: 'selfTrashCount', atLeast: 7 }] } }" },
+    ],
+  },
   negateEffect: {
     id: 'negateEffect',
     summary: 'Negate the effect(s) of chosen Leader/Character/Stage cards for the duration.',
@@ -882,6 +896,16 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['play up to 1 {type} Character card ... from your deck'],
     examples: [{ cardNumber: 'OP01-069', snippet: "{ fn: 'playFromDeck', filter: { category: 'character', name: 'Smiley' } }" }],
   },
+  playStageFromDeck: {
+    id: 'playStageFromDeck',
+    summary: 'At the start of the game, play up to N Stage cards matching a filter directly from the deck (5-2-1-5-1), replacing any existing Stage; the deck is shuffled afterward.',
+    params: [
+      { name: 'filter', type: 'SearchFilter', required: true },
+      { name: 'maxTargets', type: 'number', required: false },
+    ],
+    covers: ['at the start of the game, play up to 1 {type} Stage card from your deck'],
+    examples: [{ cardNumber: 'OP13-079', snippet: "{ fn: 'playStageFromDeck', filter: { category: 'stage', typeIncludes: 'Mary Geoise' } }" }],
+  },
   playFromTrash: {
     id: 'playFromTrash',
     summary: 'Play up to N cards matching a filter from the trash (optionally rested).',
@@ -1296,9 +1320,10 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'returnDon', type: '{ count?: number }', required: false, note: 'Same as ability donMinus / field DON return' },
       { name: 'restDon', type: '{ count?: number }', required: false, note: 'Same as ability restDon cost' },
       { name: 'lifeToHand', type: "{ position?: 'top' | 'topOrBottom' }", required: false, note: 'Same as moveCards life → hand' },
+      { name: 'restLeaderOrNamed', type: '{ leaderName?: string; cardName: string }', required: false, note: 'Choice: rest your Leader (optionally name-gated) OR 1 specific named field card' },
       { name: 'duration', type: 'IrDuration', required: true },
     ],
-    covers: ['If this Character would be K.O.\'d, you may trash 1 card from your hand instead', 'If this Character would be K.O.\'d, you may trash 1 Event from your hand instead', 'If this Character would be K.O.\'d by an effect, you may trash 1 Event or Stage card from your hand instead', 'If this Character would be K.O.\'d, you may trash this Character instead', 'If this Character would be K.O.\'d, you may return 1 DON!! card from your field to your DON!! deck instead', 'If this Character would be K.O\'d in battle, you may add 1 card from the top of your Life cards to your hand instead', 'If this Character would be K.O.\'d by your opponent\'s effect, you may rest 2 of your active DON!! cards instead', 'If this Character would be K.O.\'d, you may rest 2 of your cards instead'],
+    covers: ['If this Character would be K.O.\'d, you may trash 1 card from your hand instead', 'If this Character would be K.O.\'d, you may trash 1 Event from your hand instead', 'If this Character would be K.O.\'d by an effect, you may trash 1 Event or Stage card from your hand instead', 'If this Character would be K.O.\'d, you may trash this Character instead', 'If this Character would be K.O.\'d, you may return 1 DON!! card from your field to your DON!! deck instead', 'If this Character would be K.O\'d in battle, you may add 1 card from the top of your Life cards to your hand instead', 'If this Character would be K.O.\'d by your opponent\'s effect, you may rest 2 of your active DON!! cards instead', 'If this Character would be K.O.\'d, you may rest 2 of your cards instead', 'If this Character would be K.O.\'d, you may rest your Leader or 1 [Named Stage] instead', 'If this Character would be K.O.\'d, you may rest 1 of your [Named Card] or your [Named] Leader instead'],
     examples: [
       { cardNumber: 'OP15-014', snippet: "{ fn: 'registerKoReplacementSelf', trashFromHand: { count: 1, filter: { category: 'event' } }, duration: 'permanent' }" },
       { cardNumber: 'EB01-008', snippet: "{ fn: 'registerKoReplacementSelf', scope: 'effect', oncePerTurn: true, trashFromHand: { count: 1, filter: { categories: ['event', 'stage'] } }, duration: 'permanent' }" },
@@ -1306,6 +1331,8 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { cardNumber: 'OP10-034', snippet: "{ fn: 'registerKoReplacementSelf', scope: 'battle', oncePerTurn: true, lifeToHand: { position: 'top' }, duration: 'permanent' }" },
       { cardNumber: 'OP10-074', snippet: "{ fn: 'registerKoReplacementSelf', scope: 'effect', oncePerTurn: true, restDon: { count: 2 }, duration: 'permanent' }" },
       { cardNumber: 'OP13-046', snippet: "{ fn: 'registerKoReplacementSelf', scope: 'effect', oncePerTurn: true, trashFromHand: { count: 1, filter: { typeIncludes: 'Whitebeard Pirates' } }, duration: 'permanent' }" },
+      { cardNumber: 'OP04-082', snippet: "{ fn: 'registerKoReplacementSelf', restLeaderOrNamed: { cardName: 'Corrida Coliseum' }, duration: 'permanent' }" },
+      { cardNumber: 'OP11-110', snippet: "{ fn: 'registerKoReplacementSelf', restLeaderOrNamed: { leaderName: 'Shirahoshi', cardName: 'Fish-Man Island' }, duration: 'permanent' }" },
     ],
   },
   registerKoReplacementAura: {
@@ -1317,6 +1344,7 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'anyOfTypes', type: 'string[]', required: false },
       { name: 'anyOfNames', type: 'string[]', required: false },
       { name: 'anyOfAttributes', type: 'string[]', required: false },
+      { name: 'anyOfColors', type: 'Color[]', required: false, note: 'Restrict to cards whose printed colors include any of these (OR)' },
       { name: 'charactersOnly', type: 'boolean', required: false },
       { name: 'excludeSource', type: 'boolean', required: false },
       { name: 'targetCondition', type: 'IrCondition', required: false },
@@ -1331,6 +1359,7 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'lifeToHand', type: "{ position?: 'top' | 'topOrBottom' }", required: false, note: 'Same as moveCards life → hand' },
       { name: 'trashTrashToDeckBottom', type: '{ count: number }', required: false },
       { name: 'turnTopLifeFace', type: '{ faceUp: boolean }', required: false },
+      { name: 'restTargetAndTrashFromHand', type: '{ filter?: { category?, categories?, maxCurrentPower?, minCurrentPower?, typeIncludes? } }', required: false, note: 'Compound (both required): rest the ally that would be removed (NOT the aura source) AND trash 1 from hand' },
       { name: 'duration', type: 'IrDuration', required: true },
     ],
     covers: [
@@ -1344,6 +1373,7 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       '[Once Per Turn] If your [Trafalgar Law] would be K.O.\'d, you may add 1 card from the top of your Life cards to your hand instead',
       '[Once Per Turn] If your black Character with a base cost of 5 or less would be K.O.\'d by your opponent\'s effect, you may place 3 cards from your trash at the bottom of your deck in any order instead',
       'If your {Egghead} type Character would be K.O.\'d by your opponent\'s effect, you may turn 1 card from the top of your Life cards face-up instead',
+      '[Opponent\'s Turn] If your blue {Type} Character would be removed from the field by your opponent\'s effect, you may rest this Character and trash 1 card from your hand instead',
     ],
     examples: [
       { cardNumber: 'OP13-008', snippet: "{ fn: 'registerKoReplacementAura', scope: 'effect', anyOfTypes: ['Revolutionary Army'], trashSource: true, duration: 'permanent' }" },
@@ -1355,6 +1385,7 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { cardNumber: 'OP12-061', snippet: "{ fn: 'registerKoReplacementAura', oncePerTurn: true, anyOfNames: ['Trafalgar Law'], lifeToHand: { position: 'top' }, duration: 'permanent' }" },
       { cardNumber: 'OP13-060', snippet: "{ fn: 'registerKoReplacementAura', scope: 'effect', anyOfTypes: ['Roger Pirates'], trashSource: true, duration: 'permanent' }" },
       { cardNumber: 'OP15-094', snippet: "{ fn: 'registerKoReplacementAura', scope: 'effect', anyOfTypes: ['Straw Hat Crew'], excludeSource: true, trashSource: true, duration: 'permanent' }" },
+      { cardNumber: 'OP12-048', snippet: "{ fn: 'registerKoReplacementAura', scope: 'effect', effectSourceController: 'opponent', anyOfTypes: ['Navy'], anyOfColors: ['blue'], sourceCondition: { turn: 'opponent' }, restTargetAndTrashFromHand: {}, duration: 'permanent' }" },
     ],
   },
 };

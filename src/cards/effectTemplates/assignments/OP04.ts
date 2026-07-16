@@ -178,7 +178,7 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-118 — PARTIAL: red/cost≥3/other-than-self filters not on keyword aura.
   { cardNumber: 'OP04-118', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'rush', duration: 'permanent' }] } },
 
-  // OP04-119 — [Opponent's Turn] if rested, active allies base cost 5 immune to effects; [On Play] rest this → play green cost≤5 from hand.
+  // OP04-119 — [Opponent's Turn] if rested, active allies base cost 5 immune to effects; [On Play] rest this → play green cost==5 from hand.
   {
     cardNumber: 'OP04-119',
     templates: [
@@ -201,7 +201,7 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
           timing: 'onPlay',
           functions: [
             { fn: 'rest', target: { ref: 'self' }, optional: true },
-            { fn: 'playFromHand', filter: { category: 'character', color: 'green', maxCost: 5 }, ifPrevious: 'previousSelectedAny' },
+            { fn: 'playFromHand', filter: { category: 'character', color: 'green', exactCost: 5 }, ifPrevious: 'previousSelectedAny' },
           ],
         },
       },
@@ -509,18 +509,25 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-082 — PARTIAL: K.O. replacement "rest Leader or Corrida Coliseum" deferred; mapped [On Play] Rebecca line.
+  // OP04-082 (character) Kyros — If this Character would be K.O.'d, you may rest your Leader or
+  //   1 [Corrida Coliseum] instead. [On Play] If your Leader is [Rebecca], K.O. up to 1 opp
+  //   Character cost<=1, then trash top of deck.
   {
     cardNumber: 'OP04-082',
-    templateId: 'ability',
-    params: {
-      timing: 'onPlay',
-      gate: [{ kind: 'leaderName', name: 'Rebecca' }],
-      functions: [
-        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true },
-        { fn: 'trashTopDeck', count: 1 },
-      ],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementSelf', scope: 'any', restLeaderOrNamed: { cardName: 'Corrida Coliseum' }, duration: 'permanent' }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          gate: [{ kind: 'leaderName', name: 'Rebecca' }],
+          functions: [
+            { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true },
+            { fn: 'trashTopDeck', count: 1 },
+          ],
+        },
+      },
+    ],
   },
 
   // OP04-090 (character) Monkey.D.Luffy —

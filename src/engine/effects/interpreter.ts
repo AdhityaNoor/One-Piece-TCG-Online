@@ -859,6 +859,18 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       }
       return { selectedIds: ids, movedIds: [] };
     }
+    case 'preventFieldRemoval': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.preventFieldRemoval({
+          appliesToInstanceId: id,
+          duration: op.duration,
+          ...(op.effectSourceController ? { effectSourceController: op.effectSourceController } : {}),
+          ...(op.condition ? { condition: op.condition } : {}),
+        });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
     case 'negateEffect': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
@@ -1408,6 +1420,27 @@ function runOpList(
       return { suspended: true, bindings: workingBindings };
     }
     if (op.op === 'playFromDeck') {
+      const deckIds = ctx.controllerDeckIds();
+      if (deckIds.length === 0) continue;
+      const eligible = searchEligible(deckIds, op.filter, ctx);
+      if (eligible.length === 0) {
+        ctx.shuffleDeck(ctx.controllerId);
+        workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
+        continue;
+      }
+      ctx.emitChoice({
+        id: `${ctx.sourceInstanceId}__ir-${coords.abilityIndex}-${coords.opIndex}-${i}`,
+        playerId: ctx.controllerId,
+        kind: 'SELECT_CARDS',
+        prompt: op.prompt,
+        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: deckIds },
+        sourceInstanceId: ctx.sourceInstanceId,
+        sourceEffectId: 'ir',
+        resumeState: resumeStateForSuspend(coords, i, workingBindings),
+      });
+      return { suspended: true, bindings: workingBindings };
+    }
+    if (op.op === 'playStageFromDeck') {
       const deckIds = ctx.controllerDeckIds();
       if (deckIds.length === 0) continue;
       const eligible = searchEligible(deckIds, op.filter, ctx);
@@ -1979,7 +2012,7 @@ export function resumeProgram(
 
   const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
   const op = suspendedOpAt(ability, rs);
-  if (!op || (op.op !== 'chooseTargets' && op.op !== 'chooseCost' && op.op !== 'searchTopDeck' && op.op !== 'searchDeck' && op.op !== 'playFromDeck' && op.op !== 'lookLifeAndReorder' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption' && op.op !== 'trashFromHandByCountVar')) return noop(stateWithoutChoice);
+  if (!op || (op.op !== 'chooseTargets' && op.op !== 'chooseCost' && op.op !== 'searchTopDeck' && op.op !== 'searchDeck' && op.op !== 'playFromDeck' && op.op !== 'playStageFromDeck' && op.op !== 'lookLifeAndReorder' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption' && op.op !== 'trashFromHandByCountVar')) return noop(stateWithoutChoice);
 
   const preserveBranch = (bindings: Record<string, string[]>): PendingChoice['resumeState'] => ({
     abilityIndex: rs.abilityIndex,
@@ -2091,6 +2124,14 @@ export function resumeProgram(
   if (op.op === 'playFromDeck') {
     const selection = Array.isArray(response) ? response : [];
     for (const id of selection) ctx.playCharacterFromDeck(id, op.rested === true);
+    ctx.shuffleDeck(ctx.controllerId);
+    const afterPlayBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
+    return continueAfterResolvedOp(program, ability, rs, afterPlayBindings, ctx, defs, actionId, registry);
+  }
+
+  if (op.op === 'playStageFromDeck') {
+    const selection = Array.isArray(response) ? response : [];
+    for (const id of selection) ctx.playStageFromDeck(id);
     ctx.shuffleDeck(ctx.controllerId);
     const afterPlayBindings = withResultBindings(rs.bindings, { selectedIds: selection, movedIds: selection });
     return continueAfterResolvedOp(program, ability, rs, afterPlayBindings, ctx, defs, actionId, registry);

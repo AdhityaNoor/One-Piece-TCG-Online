@@ -195,6 +195,14 @@ function splitAtomicClauses_V2(body: string): string[] {
 function splitJoinedActionClauses_V2(clause: string): string[] {
   if (/\bwould be\b/i.test(clause) && /\binstead\b/i.test(clause)) return [collapseSpaces_V2(clause)];
 
+  const ruleAndGameStart = collapseSpaces_V2(clause).match(/^(\bunder the rules of this game\b.+?\bin your deck)\s+and\s+(at the start of the game,\s+.+)$/i);
+  if (ruleAndGameStart) {
+    return [
+      collapseSpaces_V2(ruleAndGameStart[1]),
+      collapseSpaces_V2(ruleAndGameStart[2]),
+    ];
+  }
+
   const actionAndCondition = collapseSpaces_V2(clause).match(/^(.+?)\s+and,\s+(if\b.+)$/i);
   if (actionAndCondition) {
     return [
@@ -1209,6 +1217,32 @@ function parseActivationCost_V2(text: string): CostAction_V2[] | undefined {
 
   const donMinus = normalized.match(/DON!!\s*[−-]\s*(\d+)\s*:/i);
   if (donMinus) return [{ type: 'DON_MINUS_COST', count: numberValue_V2(Number(donMinus[1])), selectableZones: ['COST_AREA'] }];
+
+  const trashTypedCharacterOrHand = normalized.match(/(?:You may|you may|You can|you can) trash (\d+|a|an|one|two|three) of your \{([^}]+)\} type Characters? or (\d+|a|an|one|two|three) cards? from your hand:?$/i);
+  if (trashTypedCharacterOrHand) {
+    return [{
+      type: 'CHOOSE_ONE_COST',
+      rawText: normalized,
+      options: [
+        [{
+          type: 'TRASH_CARD_COST',
+          selector: {
+            subject: 'CARD',
+            controller: 'PLAYER',
+            zones: ['CHARACTER_AREA'],
+            cardCategories: ['CHARACTER'],
+            types: { kind: 'HAS_ANY_TYPE', values: [trashTypedCharacterOrHand[2]] },
+            quantity: exactly_V2(wordNumber_V2(trashTypedCharacterOrHand[1])),
+            chooser: 'EFFECT_OWNER',
+          },
+        }],
+        [{
+          type: 'TRASH_CARD_COST',
+          selector: handSelector_V2('PLAYER', exactly_V2(wordNumber_V2(trashTypedCharacterOrHand[3]))),
+        }],
+      ],
+    }];
+  }
 
   const trashHand = lower.match(/(?:you may|you can) trash (\d+|a|an|one|two|three) .* from your hand:?$/);
   if (trashHand) {
@@ -2236,6 +2270,58 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
           scope: 'DECK_CONSTRUCTION',
           validFrom: 'DECK_REGISTRATION',
           modifier: { type: 'RULE_MODIFIER', scope: 'DECK_CONSTRUCTION', expression: { rule: 'CANNOT_INCLUDE_COST_OR_MORE', cost: Number(deckConstructionCostLimit[1]) } },
+        },
+      },
+    };
+  }
+
+  const deckConstructionEventCostLimit = normalized.match(/\bunder the rules of this game\b.*cannot include Events with a cost of (\d+) or more in your deck/i);
+  if (deckConstructionEventCostLimit) {
+    return {
+      action: {
+        type: 'MODIFY_DECK_CONSTRUCTION',
+        modifier: {
+          scope: 'DECK_CONSTRUCTION',
+          validFrom: 'DECK_REGISTRATION',
+          modifier: {
+            type: 'RULE_MODIFIER',
+            scope: 'DECK_CONSTRUCTION',
+            expression: {
+              rule: 'CANNOT_INCLUDE_CATEGORY_COST_OR_MORE',
+              cardCategory: 'EVENT',
+              cost: Number(deckConstructionEventCostLimit[1]),
+            },
+          },
+        },
+      },
+    };
+  }
+
+  const gameStartPlayStageFromDeck = normalized.match(/\bat the start of the game,\s*play up to (\d+|a|an|one|two|three) \{([^}]+)\} type Stage cards? from your deck/i);
+  if (gameStartPlayStageFromDeck) {
+    return {
+      action: {
+        type: 'MODIFY_STARTING_SETUP',
+        modifier: {
+          scope: 'GAME_SETUP',
+          validFrom: 'GAME_START',
+          modifier: {
+            type: 'RULE_MODIFIER',
+            scope: 'GAME_SETUP',
+            expression: {
+              operation: 'PLAY_FROM_DECK_AT_GAME_START',
+              selector: {
+                subject: 'CARD',
+                owner: 'PLAYER',
+                zones: ['DECK'],
+                cardCategories: ['STAGE'],
+                types: { kind: 'HAS_ANY_TYPE', values: [gameStartPlayStageFromDeck[2]] },
+                quantity: upTo_V2(wordNumber_V2(gameStartPlayStageFromDeck[1])),
+                chooser: 'EFFECT_OWNER',
+              },
+              destination: { zone: 'STAGE_AREA', owner: 'PLAYER' },
+            },
+          },
         },
       },
     };

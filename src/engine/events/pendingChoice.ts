@@ -107,6 +107,7 @@ export interface PendingChoice {
       abilityId: string;
       timing: import('../../cards/effectCompiler_V2/types_V2').StandardTiming_V2;
       costCounts: number[];
+      costSelectionsByCardId?: Record<string, import('../effects_V2/costs_V2').CostPaymentSelection_V2[]>;
     };
     v2SelectMoveToHand?: {
       sourceInstanceId: string;

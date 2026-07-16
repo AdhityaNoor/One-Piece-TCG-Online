@@ -14,7 +14,7 @@ import { createEmptyEffectRuntimeSidecars_V2, dispatchCardEffectsForTiming_V2, t
 import { validateCostPayments_V2, type CostPaymentSelection_V2 } from './costs_V2';
 import { evaluateGates_V2 } from './gates_V2';
 import { executeResolutionNode_V2, type ResolutionExecutionResult_V2 } from './resolution_V2';
-import type { SelectorContext_V2 } from './selectorResolver_V2';
+import { resolveSelector_V2, type SelectorContext_V2 } from './selectorResolver_V2';
 import { pruneExpiredEffectRuntimeSidecars_V2 } from './sidecarLifecycle_V2';
 
 export interface V2AbilityLookupInput {
@@ -85,8 +85,10 @@ function createV2ActivationCostChoice(input: {
   ability: EffectAbility_V2;
   timing: StandardTiming_V2;
   costCounts: number[];
+  costSelectionsByCardId?: Record<string, CostPaymentSelection_V2[]>;
 }): PendingChoice | null {
-  const total = input.costCounts.reduce((sum, count) => sum + count, 0);
+  const explicitCandidates = input.costSelectionsByCardId ? Object.keys(input.costSelectionsByCardId) : [];
+  const total = explicitCandidates.length > 0 ? 1 : input.costCounts.reduce((sum, count) => sum + count, 0);
   if (total <= 0) return null;
   return {
     id: v2ActivationCostChoiceId(input.sourceInstanceId, input.ability.abilityId, input.state.turnNumber),
@@ -96,9 +98,9 @@ function createV2ActivationCostChoice(input: {
     constraints: {
       min: total,
       max: total,
-      zoneId: 'costArea',
-      filterDescription: 'DON!! cards on your field for a V2 activation cost.',
-      candidateInstanceIds: costAreaDonCandidates(input.state, input.controllerId),
+      zoneId: explicitCandidates.length > 0 ? undefined : 'costArea',
+      filterDescription: explicitCandidates.length > 0 ? 'Cards eligible for this V2 activation cost.' : 'DON!! cards on your field for a V2 activation cost.',
+      candidateInstanceIds: explicitCandidates.length > 0 ? explicitCandidates : costAreaDonCandidates(input.state, input.controllerId),
     },
     sourceInstanceId: input.sourceInstanceId,
     sourceEffectId: 'v2:activationCost',
@@ -111,6 +113,7 @@ function createV2ActivationCostChoice(input: {
         abilityId: input.ability.abilityId,
         timing: input.timing,
         costCounts: input.costCounts,
+        ...(input.costSelectionsByCardId ? { costSelectionsByCardId: input.costSelectionsByCardId } : {}),
       },
     },
   };
@@ -167,6 +170,37 @@ function activationCostSelectionsFromCounts_V2(costCounts: readonly number[], se
     offset += count;
     return selection;
   });
+}
+
+function promptableChooseOneCostSelectionsByCardId_V2(input: {
+  state: GameState;
+  defs: CardDefinitionLookup;
+  runtime: EffectRuntimeBundle_V2;
+  sourceInstanceId: string;
+  controllerId: string;
+  timing: StandardTiming_V2;
+  ability: EffectAbility_V2;
+}): Record<string, CostPaymentSelection_V2[]> | null {
+  const payments = input.ability.activationCost?.payments;
+  if (!payments || payments.length !== 1 || payments[0].type !== 'CHOOSE_ONE_COST') return null;
+  const ctx = createV2SelectorContext(input);
+  const byCardId: Record<string, CostPaymentSelection_V2[]> = {};
+  for (const [optionIndex, option] of payments[0].options.entries()) {
+    if (option.length !== 1 || !('selector' in option[0])) continue;
+    const cost = option[0];
+    const resolved = resolveSelector_V2(ctx, cost.selector);
+    if (resolved.minimum !== 1 || resolved.maximum !== 1) continue;
+    for (const id of resolved.candidateInstanceIds) {
+      if (byCardId[id]) return null;
+      byCardId[id] = [{
+        costIndex: 0,
+        selectedOptionIndex: optionIndex,
+        optionSelections: [{ costIndex: 0, selectedInstanceIds: [id] }],
+        selectedInstanceIds: [],
+      }];
+    }
+  }
+  return Object.keys(byCardId).length > 0 ? byCardId : null;
 }
 
 export function findV2AbilityForTiming(input: V2AbilityLookupInput): EffectAbility_V2 | undefined {
@@ -621,6 +655,10 @@ export function executeV2ActionOverride(input: {
       if (new Set(selectedIds).size !== selectedIds.length) reasons.push('V2 activation-cost selection contains duplicate DON!! cards.');
       if (reasons.length > 0) return { handled: true, ok: false, reasons };
       const stateWithoutChoice = { ...state, pendingChoices: state.pendingChoices.filter((candidate) => candidate.id !== action.choiceId) };
+      const mappedSelections = resume.costSelectionsByCardId?.[selectedIds[0]];
+      if (resume.costSelectionsByCardId && !mappedSelections) {
+        return { handled: true, ok: false, reasons: [`'${selectedIds[0]}' is not mapped to a V2 activation-cost payment.`] };
+      }
       const result = dispatchV2AbilityForTiming({
         state: stateWithoutChoice,
         defs,
@@ -629,7 +667,7 @@ export function executeV2ActionOverride(input: {
         controllerId: action.playerId,
         timing: resume.timing,
         sidecars: sidecars ?? undefined,
-        activationCostSelections: activationCostSelectionsFromCounts_V2(resume.costCounts, selectedIds),
+        activationCostSelections: mappedSelections ?? activationCostSelectionsFromCounts_V2(resume.costCounts, selectedIds),
       });
       const costFailures = result.skippedEffects.filter((effect) => effect.reason === 'COST_PAYMENT_INVALID');
       if (costFailures.length > 0) {
@@ -639,7 +677,34 @@ export function executeV2ActionOverride(input: {
     }
     case 'ACTIVATE_CARD_EFFECT': {
       const reasons = validateActivateCardEffect_V2(state, action, defs, runtime);
-      if (reasons.length > 0) return { handled: true, ok: false, reasons };
+      if (reasons.length > 0) {
+        const source = state.cardsById[action.sourceInstanceId];
+        const ability = findV2AbilityForTiming({ runtime, defs, state, sourceInstanceId: action.sourceInstanceId, timing: 'ACTIVATE_MAIN' });
+        const costSelectionsByCardId = source && ability && action.donInstanceIds.length === 0
+          ? promptableChooseOneCostSelectionsByCardId_V2({
+              state,
+              defs,
+              runtime,
+              sourceInstanceId: action.sourceInstanceId,
+              controllerId: action.playerId,
+              timing: 'ACTIVATE_MAIN',
+              ability,
+            })
+          : null;
+        const choice = source && ability && costSelectionsByCardId
+          ? createV2ActivationCostChoice({
+              state,
+              sourceInstanceId: action.sourceInstanceId,
+              controllerId: action.playerId,
+              ability,
+              timing: 'ACTIVATE_MAIN',
+              costCounts: [],
+              costSelectionsByCardId,
+            })
+          : null;
+        if (choice) return { handled: true, ok: true, state: appendPendingChoiceIfMissing(state, choice), log: [], sidecars: createEmptyEffectRuntimeSidecars_V2(sidecars ?? undefined) };
+        return { handled: true, ok: false, reasons };
+      }
       const applied = applyV2EffectsForAction({ previousState: state, state, defs, runtime, sidecars, action, log: [] });
       return { handled: true, ok: true, state: applied.state, log: applied.log, sidecars: applied.sidecars };
     }

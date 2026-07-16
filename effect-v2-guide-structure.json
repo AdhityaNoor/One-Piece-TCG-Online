@@ -1,0 +1,7724 @@
+{
+  "generatedBy": "scripts/effect-v2/guide-structure.ts",
+  "sourceGuide": "OPTCG_Canonical_Effect_Structure.md",
+  "definitions": [
+    {
+      "name": "EffectDefinition",
+      "kind": "object",
+      "line": 10,
+      "members": [],
+      "fields": [
+        {
+          "name": "id",
+          "typeText": "EffectId",
+          "references": [
+            "EffectId"
+          ]
+        },
+        {
+          "name": "source",
+          "typeText": "EffectSource",
+          "references": [
+            "EffectSource"
+          ]
+        },
+        {
+          "name": "activationZones",
+          "typeText": "Zone[]",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "timing",
+          "typeText": "TimingExpression",
+          "references": [
+            "TimingExpression"
+          ]
+        },
+        {
+          "name": "conditions",
+          "typeText": "ConditionExpression",
+          "references": [
+            "ConditionExpression"
+          ]
+        },
+        {
+          "name": "usageLimit",
+          "typeText": "UsageLimit",
+          "references": [
+            "UsageLimit"
+          ]
+        },
+        {
+          "name": "activationCost",
+          "typeText": "ActivationCost",
+          "references": [
+            "ActivationCost"
+          ]
+        },
+        {
+          "name": "resolution",
+          "typeText": "ResolutionNode",
+          "references": [
+            "ResolutionNode"
+          ]
+        },
+        {
+          "name": "duration",
+          "typeText": "Duration",
+          "references": [
+            "Duration"
+          ]
+        },
+        {
+          "name": "ruleModifier",
+          "typeText": "RuleModifier",
+          "references": [
+            "RuleModifier"
+          ]
+        },
+        {
+          "name": "metadata",
+          "typeText": "{",
+          "references": []
+        },
+        {
+          "name": "sourceCardNumber",
+          "typeText": "string",
+          "references": []
+        },
+        {
+          "name": "effectIndex",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "printedText",
+          "typeText": "string",
+          "references": []
+        },
+        {
+          "name": "normalizedText",
+          "typeText": "string",
+          "references": []
+        },
+        {
+          "name": "parserVersion",
+          "typeText": "string",
+          "references": []
+        }
+      ],
+      "references": [
+        "EffectId",
+        "EffectSource",
+        "Zone",
+        "TimingExpression",
+        "ConditionExpression",
+        "UsageLimit",
+        "ActivationCost",
+        "ResolutionNode",
+        "Duration",
+        "RuleModifier"
+      ],
+      "raw": "EffectDefinition {\n    id: EffectId\n\n    source: EffectSource\n\n    category:\n        AUTO\n        | ACTIVATE\n        | PERMANENT\n        | REPLACEMENT\n\n    applicationMode:\n        ONE_SHOT\n        | CONTINUOUS\n        | DELAYED\n\n    activationZones: Zone[]\n\n    timing?: TimingExpression\n\n    conditions?: ConditionExpression\n\n    usageLimit?: UsageLimit\n\n    optionality:\n        MANDATORY\n        | OPTIONAL\n\n    activationCost?: ActivationCost\n\n    resolution: ResolutionNode\n\n    duration?: Duration\n\n    ruleModifier?: RuleModifier\n\n    metadata?: {\n        sourceCardNumber: string\n        effectIndex: number\n        printedText: string\n        normalizedText?: string\n        parserVersion?: string\n    }\n}"
+    },
+    {
+      "name": "EffectSource",
+      "kind": "object",
+      "line": 61,
+      "members": [],
+      "fields": [
+        {
+          "name": "objectId",
+          "typeText": "CardObjectId",
+          "references": [
+            "CardObjectId"
+          ]
+        },
+        {
+          "name": "physicalCardId",
+          "typeText": "PhysicalCardId",
+          "references": [
+            "PhysicalCardId"
+          ]
+        },
+        {
+          "name": "sourceZone",
+          "typeText": "Zone",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "effectIndex",
+          "typeText": "number",
+          "references": []
+        }
+      ],
+      "references": [
+        "CardObjectId",
+        "PhysicalCardId",
+        "Zone"
+      ],
+      "raw": "EffectSource {\n    objectRef:\n        THIS_CARD\n        | CARD_OBJECT_ID\n        | RULE_OBJECT\n        | GENERATED_EFFECT\n\n    objectId?: CardObjectId\n\n    physicalCardId?: PhysicalCardId\n\n    owner:\n        PLAYER\n        | OPPONENT\n\n    controller:\n        PLAYER\n        | OPPONENT\n\n    sourceZone: Zone\n\n    effectIndex?: number\n}"
+    },
+    {
+      "name": "CardObjectIdentity",
+      "kind": "object",
+      "line": 89,
+      "members": [],
+      "fields": [
+        {
+          "name": "physicalCardId",
+          "typeText": "string",
+          "references": []
+        },
+        {
+          "name": "objectId",
+          "typeText": "string",
+          "references": []
+        },
+        {
+          "name": "zoneChangeVersion",
+          "typeText": "number",
+          "references": []
+        }
+      ],
+      "references": [],
+      "raw": "CardObjectIdentity {\n    physicalCardId: string\n    objectId: string\n    zoneChangeVersion: number\n}"
+    },
+    {
+      "name": "EffectCategory",
+      "kind": "union",
+      "line": 103,
+      "members": [
+        "AUTO",
+        "ACTIVATE",
+        "PERMANENT",
+        "REPLACEMENT"
+      ],
+      "fields": [],
+      "references": [
+        "AUTO",
+        "ACTIVATE",
+        "PERMANENT",
+        "REPLACEMENT"
+      ],
+      "raw": "EffectCategory =\n    AUTO\n    | ACTIVATE\n    | PERMANENT\n    | REPLACEMENT"
+    },
+    {
+      "name": "RuleModifier",
+      "kind": "object",
+      "line": 163,
+      "members": [],
+      "fields": [
+        {
+          "name": "modifier",
+          "typeText": "ModifierExpression",
+          "references": [
+            "ModifierExpression"
+          ]
+        }
+      ],
+      "references": [
+        "ModifierExpression"
+      ],
+      "raw": "RuleModifier {\n    scope:\n        DECK_CONSTRUCTION\n        | CARD_NAME\n        | CARD_COLOR\n        | CARD_TYPE\n        | CARD_ATTRIBUTE\n        | STARTING_LIFE\n        | STARTING_HAND\n        | STARTING_DON\n        | DON_DECK_SIZE\n        | MAIN_DECK_SIZE\n        | CHARACTER_AREA_CAPACITY\n        | STAGE_AREA_CAPACITY\n        | DEFEAT_CONDITION\n        | VICTORY_CONDITION\n        | PLAY_PERMISSION\n        | ATTACK_PERMISSION\n        | GAME_SETUP\n        | GENERAL_RULE\n\n    validFrom:\n        DECK_REGISTRATION\n        | PRE_GAME\n        | GAME_SETUP\n        | GAME_START\n        | ALWAYS\n\n    modifier: ModifierExpression\n}"
+    },
+    {
+      "name": "EffectApplicationMode",
+      "kind": "union",
+      "line": 213,
+      "members": [
+        "ONE_SHOT",
+        "CONTINUOUS",
+        "DELAYED"
+      ],
+      "fields": [],
+      "references": [
+        "ONE_SHOT",
+        "CONTINUOUS",
+        "DELAYED"
+      ],
+      "raw": "EffectApplicationMode =\n    ONE_SHOT\n    | CONTINUOUS\n    | DELAYED"
+    },
+    {
+      "name": "KeywordEffect",
+      "kind": "union",
+      "line": 235,
+      "members": [
+        "RUSH",
+        "RUSH_CHARACTER",
+        "DOUBLE_ATTACK",
+        "BANISH",
+        "BLOCKER",
+        "TRIGGER",
+        "UNBLOCKABLE"
+      ],
+      "fields": [],
+      "references": [
+        "RUSH",
+        "RUSH_CHARACTER",
+        "DOUBLE_ATTACK",
+        "BANISH",
+        "BLOCKER",
+        "TRIGGER",
+        "UNBLOCKABLE"
+      ],
+      "raw": "KeywordEffect =\n    RUSH\n    | RUSH_CHARACTER\n    | DOUBLE_ATTACK\n    | BANISH\n    | BLOCKER\n    | TRIGGER\n    | UNBLOCKABLE"
+    },
+    {
+      "name": "EffectMarker",
+      "kind": "union",
+      "line": 280,
+      "members": [
+        "ACTIVATE_MAIN",
+        "EVENT_MAIN",
+        "EVENT_COUNTER",
+        "ON_PLAY",
+        "WHEN_ATTACKING",
+        "ON_BLOCK",
+        "ON_KO",
+        "ON_OPPONENT_ATTACK",
+        "END_OF_YOUR_TURN",
+        "END_OF_OPPONENT_TURN",
+        "YOUR_TURN",
+        "OPPONENT_TURN",
+        "DON_ATTACHED_THRESHOLD",
+        "DON_MINUS",
+        "ONCE_PER_TURN",
+        "TRASH_INSTRUCTION"
+      ],
+      "fields": [],
+      "references": [
+        "ACTIVATE_MAIN",
+        "EVENT_MAIN",
+        "EVENT_COUNTER",
+        "ON_PLAY",
+        "WHEN_ATTACKING",
+        "ON_BLOCK",
+        "ON_KO",
+        "ON_OPPONENT_ATTACK",
+        "END_OF_YOUR_TURN",
+        "END_OF_OPPONENT_TURN",
+        "YOUR_TURN",
+        "OPPONENT_TURN",
+        "DON_ATTACHED_THRESHOLD",
+        "DON_MINUS",
+        "ONCE_PER_TURN",
+        "TRASH_INSTRUCTION"
+      ],
+      "raw": "EffectMarker =\n    ACTIVATE_MAIN\n    | EVENT_MAIN\n    | EVENT_COUNTER\n\n    | ON_PLAY\n    | WHEN_ATTACKING\n    | ON_BLOCK\n    | ON_KO\n    | ON_OPPONENT_ATTACK\n    | END_OF_YOUR_TURN\n    | END_OF_OPPONENT_TURN\n\n    | YOUR_TURN\n    | OPPONENT_TURN\n\n    | DON_ATTACHED_THRESHOLD\n    | DON_MINUS\n\n    | ONCE_PER_TURN\n    | TRASH_INSTRUCTION"
+    },
+    {
+      "name": "GameState",
+      "kind": "object",
+      "line": 328,
+      "members": [],
+      "fields": [
+        {
+          "name": "gameId",
+          "typeText": "string",
+          "references": []
+        },
+        {
+          "name": "players",
+          "typeText": "{",
+          "references": []
+        },
+        {
+          "name": "player",
+          "typeText": "PlayerState",
+          "references": [
+            "PlayerState"
+          ]
+        },
+        {
+          "name": "opponent",
+          "typeText": "PlayerState",
+          "references": [
+            "PlayerState"
+          ]
+        },
+        {
+          "name": "startingPlayer",
+          "typeText": "PlayerId",
+          "references": [
+            "PlayerId"
+          ]
+        },
+        {
+          "name": "turnPlayer",
+          "typeText": "PlayerId",
+          "references": [
+            "PlayerId"
+          ]
+        },
+        {
+          "name": "nonTurnPlayer",
+          "typeText": "PlayerId",
+          "references": [
+            "PlayerId"
+          ]
+        },
+        {
+          "name": "turnNumber",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "playerTurnNumber",
+          "typeText": "{",
+          "references": []
+        },
+        {
+          "name": "player",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "opponent",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "phase",
+          "typeText": "GamePhase",
+          "references": [
+            "GamePhase"
+          ]
+        },
+        {
+          "name": "battle",
+          "typeText": "BattleState",
+          "references": [
+            "BattleState"
+          ]
+        },
+        {
+          "name": "resolutionQueue",
+          "typeText": "EffectInstance[]",
+          "references": [
+            "EffectInstance"
+          ]
+        },
+        {
+          "name": "pendingAutoEffects",
+          "typeText": "EffectInstance[]",
+          "references": [
+            "EffectInstance"
+          ]
+        },
+        {
+          "name": "pendingRuleProcessing",
+          "typeText": "RuleProcess[]",
+          "references": [
+            "RuleProcess"
+          ]
+        },
+        {
+          "name": "continuousModifiers",
+          "typeText": "ContinuousModifier[]",
+          "references": [
+            "ContinuousModifier"
+          ]
+        },
+        {
+          "name": "replacementEffects",
+          "typeText": "ReplacementEffectInstance[]",
+          "references": [
+            "ReplacementEffectInstance"
+          ]
+        },
+        {
+          "name": "delayedEffects",
+          "typeText": "DelayedEffectInstance[]",
+          "references": [
+            "DelayedEffectInstance"
+          ]
+        },
+        {
+          "name": "eventHistory",
+          "typeText": "GameEvent[]",
+          "references": [
+            "GameEvent"
+          ]
+        },
+        {
+          "name": "currentResolution",
+          "typeText": "ResolutionContext",
+          "references": [
+            "ResolutionContext"
+          ]
+        }
+      ],
+      "references": [
+        "PlayerState",
+        "PlayerId",
+        "GamePhase",
+        "BattleState",
+        "EffectInstance",
+        "RuleProcess",
+        "ContinuousModifier",
+        "ReplacementEffectInstance",
+        "DelayedEffectInstance",
+        "GameEvent",
+        "ResolutionContext"
+      ],
+      "raw": "GameState {\n    gameId: string\n\n    players: {\n        player: PlayerState\n        opponent: PlayerState\n    }\n\n    startingPlayer: PlayerId\n    turnPlayer: PlayerId\n    nonTurnPlayer: PlayerId\n\n    turnNumber: number\n\n    playerTurnNumber: {\n        player: number\n        opponent: number\n    }\n\n    phase: GamePhase\n\n    battle?: BattleState\n\n    resolutionQueue: EffectInstance[]\n\n    pendingAutoEffects: EffectInstance[]\n\n    pendingRuleProcessing: RuleProcess[]\n\n    continuousModifiers: ContinuousModifier[]\n\n    replacementEffects: ReplacementEffectInstance[]\n\n    delayedEffects: DelayedEffectInstance[]\n\n    eventHistory: GameEvent[]\n\n    currentResolution?: ResolutionContext\n}"
+    },
+    {
+      "name": "GamePhase",
+      "kind": "union",
+      "line": 372,
+      "members": [
+        "GAME_SETUP",
+        "REFRESH_PHASE",
+        "DRAW_PHASE",
+        "DON_PHASE",
+        "MAIN_PHASE",
+        "END_PHASE"
+      ],
+      "fields": [],
+      "references": [
+        "GAME_SETUP",
+        "REFRESH_PHASE",
+        "DRAW_PHASE",
+        "DON_PHASE",
+        "MAIN_PHASE",
+        "END_PHASE"
+      ],
+      "raw": "GamePhase =\n    GAME_SETUP\n    | REFRESH_PHASE\n    | DRAW_PHASE\n    | DON_PHASE\n    | MAIN_PHASE\n    | END_PHASE"
+    },
+    {
+      "name": "BattleStep",
+      "kind": "union",
+      "line": 384,
+      "members": [
+        "ATTACK_STEP",
+        "BLOCK_STEP",
+        "COUNTER_STEP",
+        "DAMAGE_STEP",
+        "END_OF_BATTLE"
+      ],
+      "fields": [],
+      "references": [
+        "ATTACK_STEP",
+        "BLOCK_STEP",
+        "COUNTER_STEP",
+        "DAMAGE_STEP",
+        "END_OF_BATTLE"
+      ],
+      "raw": "BattleStep =\n    ATTACK_STEP\n    | BLOCK_STEP\n    | COUNTER_STEP\n    | DAMAGE_STEP\n    | END_OF_BATTLE"
+    },
+    {
+      "name": "PlayerState",
+      "kind": "object",
+      "line": 397,
+      "members": [],
+      "fields": [
+        {
+          "name": "playerId",
+          "typeText": "PlayerId",
+          "references": [
+            "PlayerId"
+          ]
+        },
+        {
+          "name": "leader",
+          "typeText": "LeaderState",
+          "references": [
+            "LeaderState"
+          ]
+        },
+        {
+          "name": "deck",
+          "typeText": "OrderedCardZone",
+          "references": [
+            "OrderedCardZone"
+          ]
+        },
+        {
+          "name": "hand",
+          "typeText": "CardZone",
+          "references": [
+            "CardZone"
+          ]
+        },
+        {
+          "name": "trash",
+          "typeText": "CardZone",
+          "references": [
+            "CardZone"
+          ]
+        },
+        {
+          "name": "life",
+          "typeText": "OrderedCardZone",
+          "references": [
+            "OrderedCardZone"
+          ]
+        },
+        {
+          "name": "donDeck",
+          "typeText": "OrderedDonZone",
+          "references": [
+            "OrderedDonZone"
+          ]
+        },
+        {
+          "name": "costArea",
+          "typeText": "DonZone",
+          "references": [
+            "DonZone"
+          ]
+        },
+        {
+          "name": "characterArea",
+          "typeText": "CharacterState[]",
+          "references": [
+            "CharacterState"
+          ]
+        },
+        {
+          "name": "stageArea",
+          "typeText": "StageState",
+          "references": [
+            "StageState"
+          ]
+        },
+        {
+          "name": "limits",
+          "typeText": "{",
+          "references": []
+        },
+        {
+          "name": "maxCharacters",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "maxStages",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "mainDeckSize",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "donDeckSize",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "turnState",
+          "typeText": "PlayerTurnState",
+          "references": [
+            "PlayerTurnState"
+          ]
+        },
+        {
+          "name": "usageTrackers",
+          "typeText": "UsageTracker[]",
+          "references": [
+            "UsageTracker"
+          ]
+        }
+      ],
+      "references": [
+        "PlayerId",
+        "LeaderState",
+        "OrderedCardZone",
+        "CardZone",
+        "OrderedDonZone",
+        "DonZone",
+        "CharacterState",
+        "StageState",
+        "PlayerTurnState",
+        "UsageTracker"
+      ],
+      "raw": "PlayerState {\n    playerId: PlayerId\n\n    leader: LeaderState\n\n    deck: OrderedCardZone\n    hand: CardZone\n    trash: CardZone\n    life: OrderedCardZone\n\n    donDeck: OrderedDonZone\n    costArea: DonZone\n\n    characterArea: CharacterState[]\n    stageArea?: StageState\n\n    limits: {\n        maxCharacters: number\n        maxStages: number\n        mainDeckSize: number\n        donDeckSize: number\n    }\n\n    turnState: PlayerTurnState\n\n    usageTrackers: UsageTracker[]\n}"
+    },
+    {
+      "name": "DerivedPlayerState",
+      "kind": "object",
+      "line": 431,
+      "members": [],
+      "fields": [
+        {
+          "name": "currentLifeCount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "handCount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "deckCount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "trashCount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "donDeckCount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "activeDonCount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "restedDonCount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "attachedDonCount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "characterCount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "stageCount",
+          "typeText": "number",
+          "references": []
+        }
+      ],
+      "references": [],
+      "raw": "DerivedPlayerState {\n    currentLifeCount: number\n    handCount: number\n    deckCount: number\n    trashCount: number\n\n    donDeckCount: number\n    activeDonCount: number\n    restedDonCount: number\n    attachedDonCount: number\n\n    characterCount: number\n    stageCount: number\n}"
+    },
+    {
+      "name": "LeaderState",
+      "kind": "object",
+      "line": 452,
+      "members": [],
+      "fields": [
+        {
+          "name": "objectId",
+          "typeText": "CardObjectId",
+          "references": [
+            "CardObjectId"
+          ]
+        },
+        {
+          "name": "cardNumber",
+          "typeText": "string",
+          "references": []
+        },
+        {
+          "name": "printedName",
+          "typeText": "string",
+          "references": []
+        },
+        {
+          "name": "effectiveNames",
+          "typeText": "string[]",
+          "references": []
+        },
+        {
+          "name": "printedColors",
+          "typeText": "Color[]",
+          "references": [
+            "Color"
+          ]
+        },
+        {
+          "name": "effectiveColors",
+          "typeText": "Color[]",
+          "references": [
+            "Color"
+          ]
+        },
+        {
+          "name": "printedTypes",
+          "typeText": "string[]",
+          "references": []
+        },
+        {
+          "name": "effectiveTypes",
+          "typeText": "string[]",
+          "references": []
+        },
+        {
+          "name": "printedAttributes",
+          "typeText": "Attribute[]",
+          "references": [
+            "Attribute"
+          ]
+        },
+        {
+          "name": "effectiveAttributes",
+          "typeText": "Attribute[]",
+          "references": [
+            "Attribute"
+          ]
+        },
+        {
+          "name": "printedLife",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "startingLife",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "currentLifeCount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "basePower",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "currentPower",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "attachedDon",
+          "typeText": "DonObjectId[]",
+          "references": [
+            "DonObjectId"
+          ]
+        },
+        {
+          "name": "baseEffects",
+          "typeText": "EffectDefinition[]",
+          "references": [
+            "EffectDefinition"
+          ]
+        },
+        {
+          "name": "gainedEffects",
+          "typeText": "EffectInstance[]",
+          "references": [
+            "EffectInstance"
+          ]
+        },
+        {
+          "name": "invalidatedEffects",
+          "typeText": "EffectId[]",
+          "references": [
+            "EffectId"
+          ]
+        },
+        {
+          "name": "temporaryModifiers",
+          "typeText": "ModifierInstance[]",
+          "references": [
+            "ModifierInstance"
+          ]
+        },
+        {
+          "name": "attackCountThisTurn",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "usageTrackers",
+          "typeText": "UsageTracker[]",
+          "references": [
+            "UsageTracker"
+          ]
+        }
+      ],
+      "references": [
+        "CardObjectId",
+        "Color",
+        "Attribute",
+        "DonObjectId",
+        "EffectDefinition",
+        "EffectInstance",
+        "EffectId",
+        "ModifierInstance",
+        "UsageTracker"
+      ],
+      "raw": "LeaderState {\n    objectId: CardObjectId\n    cardNumber: string\n\n    printedName: string\n    effectiveNames: string[]\n\n    printedColors: Color[]\n    effectiveColors: Color[]\n\n    printedTypes: string[]\n    effectiveTypes: string[]\n\n    printedAttributes: Attribute[]\n    effectiveAttributes: Attribute[]\n\n    printedLife: number\n    startingLife: number\n    currentLifeCount: number\n\n    basePower: number\n    currentPower: number\n\n    state:\n        ACTIVE\n        | RESTED\n\n    attachedDon: DonObjectId[]\n\n    baseEffects: EffectDefinition[]\n    gainedEffects: EffectInstance[]\n    invalidatedEffects: EffectId[]\n\n    temporaryModifiers: ModifierInstance[]\n\n    attackCountThisTurn: number\n    usageTrackers: UsageTracker[]\n}"
+    },
+    {
+      "name": "CardDefinition",
+      "kind": "object",
+      "line": 512,
+      "members": [],
+      "fields": [
+        {
+          "name": "cardNumber",
+          "typeText": "string",
+          "references": []
+        },
+        {
+          "name": "printedName",
+          "typeText": "string",
+          "references": []
+        },
+        {
+          "name": "colors",
+          "typeText": "Color[]",
+          "references": [
+            "Color"
+          ]
+        },
+        {
+          "name": "types",
+          "typeText": "string[]",
+          "references": []
+        },
+        {
+          "name": "attributes",
+          "typeText": "Attribute[]",
+          "references": [
+            "Attribute"
+          ]
+        },
+        {
+          "name": "printedCost",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "printedPower",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "printedCounter",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "printedLife",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "blockNumber",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "baseEffects",
+          "typeText": "EffectDefinition[]",
+          "references": [
+            "EffectDefinition"
+          ]
+        }
+      ],
+      "references": [
+        "Color",
+        "Attribute",
+        "EffectDefinition"
+      ],
+      "raw": "CardDefinition {\n    cardNumber: string\n    cardCategory:\n        LEADER\n        | CHARACTER\n        | EVENT\n        | STAGE\n        | DON\n\n    printedName: string\n\n    colors: Color[]\n    types: string[]\n    attributes: Attribute[]\n\n    printedCost?: number\n    printedPower?: number\n    printedCounter?: number\n    printedLife?: number\n\n    blockNumber?: number\n\n    baseEffects: EffectDefinition[]\n}"
+    },
+    {
+      "name": "CardState",
+      "kind": "object",
+      "line": 541,
+      "members": [],
+      "fields": [
+        {
+          "name": "physicalCardId",
+          "typeText": "PhysicalCardId",
+          "references": [
+            "PhysicalCardId"
+          ]
+        },
+        {
+          "name": "objectId",
+          "typeText": "CardObjectId",
+          "references": [
+            "CardObjectId"
+          ]
+        },
+        {
+          "name": "zoneChangeVersion",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "definition",
+          "typeText": "CardDefinition",
+          "references": [
+            "CardDefinition"
+          ]
+        },
+        {
+          "name": "owner",
+          "typeText": "PlayerId",
+          "references": [
+            "PlayerId"
+          ]
+        },
+        {
+          "name": "controller",
+          "typeText": "PlayerId",
+          "references": [
+            "PlayerId"
+          ]
+        },
+        {
+          "name": "zone",
+          "typeText": "Zone",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "effectiveProperties",
+          "typeText": "{",
+          "references": []
+        },
+        {
+          "name": "names",
+          "typeText": "string[]",
+          "references": []
+        },
+        {
+          "name": "colors",
+          "typeText": "Color[]",
+          "references": [
+            "Color"
+          ]
+        },
+        {
+          "name": "types",
+          "typeText": "string[]",
+          "references": []
+        },
+        {
+          "name": "attributes",
+          "typeText": "Attribute[]",
+          "references": [
+            "Attribute"
+          ]
+        },
+        {
+          "name": "cost",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "power",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "counter",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "life",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "attachedDon",
+          "typeText": "DonObjectId[]",
+          "references": [
+            "DonObjectId"
+          ]
+        },
+        {
+          "name": "gainedEffects",
+          "typeText": "EffectInstance[]",
+          "references": [
+            "EffectInstance"
+          ]
+        },
+        {
+          "name": "invalidatedEffects",
+          "typeText": "EffectId[]",
+          "references": [
+            "EffectId"
+          ]
+        },
+        {
+          "name": "temporaryModifiers",
+          "typeText": "ModifierInstance[]",
+          "references": [
+            "ModifierInstance"
+          ]
+        },
+        {
+          "name": "enteredCurrentZoneAt",
+          "typeText": "GameEventId",
+          "references": [
+            "GameEventId"
+          ]
+        },
+        {
+          "name": "playedTurn",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "attackCountThisTurn",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "usageTrackers",
+          "typeText": "UsageTracker[]",
+          "references": [
+            "UsageTracker"
+          ]
+        }
+      ],
+      "references": [
+        "PhysicalCardId",
+        "CardObjectId",
+        "CardDefinition",
+        "PlayerId",
+        "Zone",
+        "Color",
+        "Attribute",
+        "DonObjectId",
+        "EffectInstance",
+        "EffectId",
+        "ModifierInstance",
+        "GameEventId",
+        "UsageTracker"
+      ],
+      "raw": "CardState {\n    physicalCardId: PhysicalCardId\n    objectId: CardObjectId\n    zoneChangeVersion: number\n\n    definition: CardDefinition\n\n    owner: PlayerId\n    controller: PlayerId\n\n    zone: Zone\n\n    state?:\n        ACTIVE\n        | RESTED\n\n    face:\n        FACE_UP\n        | FACE_DOWN\n\n    effectiveProperties: {\n        names: string[]\n        colors: Color[]\n        types: string[]\n        attributes: Attribute[]\n\n        cost?: number\n        power?: number\n        counter?: number\n        life?: number\n    }\n\n    attachedDon: DonObjectId[]\n\n    gainedEffects: EffectInstance[]\n    invalidatedEffects: EffectId[]\n\n    temporaryModifiers: ModifierInstance[]\n\n    enteredCurrentZoneAt: GameEventId\n\n    playedTurn?: number\n    attackCountThisTurn: number\n\n    usageTrackers: UsageTracker[]\n}"
+    },
+    {
+      "name": "Zone",
+      "kind": "union",
+      "line": 594,
+      "members": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "COST_AREA",
+        "ATTACHED_DON",
+        "HAND",
+        "DECK",
+        "TRASH",
+        "LIFE",
+        "DON_DECK",
+        "RESOLVING_TRIGGER",
+        "RESOLUTION_LIMBO",
+        "NONE"
+      ],
+      "fields": [],
+      "references": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "COST_AREA",
+        "ATTACHED_DON",
+        "HAND",
+        "DECK",
+        "TRASH",
+        "LIFE",
+        "DON_DECK",
+        "RESOLVING_TRIGGER",
+        "RESOLUTION_LIMBO",
+        "NONE"
+      ],
+      "raw": "Zone =\n    LEADER_AREA\n    | CHARACTER_AREA\n    | STAGE_AREA\n    | COST_AREA\n    | ATTACHED_DON\n\n    | HAND\n    | DECK\n    | TRASH\n    | LIFE\n    | DON_DECK\n\n    | RESOLVING_TRIGGER\n    | RESOLUTION_LIMBO\n    | NONE"
+    },
+    {
+      "name": "VirtualZone",
+      "kind": "union",
+      "line": 615,
+      "members": [
+        "FIELD",
+        "OWN_FIELD",
+        "OPPONENT_FIELD",
+        "ALL_AREAS",
+        "OPEN_AREAS",
+        "SECRET_AREAS"
+      ],
+      "fields": [],
+      "references": [
+        "FIELD",
+        "OWN_FIELD",
+        "OPPONENT_FIELD",
+        "ALL_AREAS",
+        "OPEN_AREAS",
+        "SECRET_AREAS"
+      ],
+      "raw": "VirtualZone =\n    FIELD\n    | OWN_FIELD\n    | OPPONENT_FIELD\n    | ALL_AREAS\n    | OPEN_AREAS\n    | SECRET_AREAS"
+    },
+    {
+      "name": "ZoneVisibility",
+      "kind": "union",
+      "line": 627,
+      "members": [
+        "OPEN",
+        "SECRET",
+        "CONDITIONALLY_OPEN"
+      ],
+      "fields": [],
+      "references": [
+        "OPEN",
+        "SECRET",
+        "CONDITIONALLY_OPEN"
+      ],
+      "raw": "ZoneVisibility =\n    OPEN\n    | SECRET\n    | CONDITIONALLY_OPEN"
+    },
+    {
+      "name": "BattleState",
+      "kind": "object",
+      "line": 638,
+      "members": [],
+      "fields": [
+        {
+          "name": "battleId",
+          "typeText": "string",
+          "references": []
+        },
+        {
+          "name": "attackingPlayer",
+          "typeText": "PlayerId",
+          "references": [
+            "PlayerId"
+          ]
+        },
+        {
+          "name": "attacker",
+          "typeText": "CardObjectId",
+          "references": [
+            "CardObjectId"
+          ]
+        },
+        {
+          "name": "originalTarget",
+          "typeText": "CardObjectId",
+          "references": [
+            "CardObjectId"
+          ]
+        },
+        {
+          "name": "currentTarget",
+          "typeText": "CardObjectId",
+          "references": [
+            "CardObjectId"
+          ]
+        },
+        {
+          "name": "blocker",
+          "typeText": "CardObjectId",
+          "references": [
+            "CardObjectId"
+          ]
+        },
+        {
+          "name": "step",
+          "typeText": "BattleStep",
+          "references": [
+            "BattleStep"
+          ]
+        },
+        {
+          "name": "attackerPower",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "targetPower",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "baseDamage",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "currentDamage",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "attackProperties",
+          "typeText": "{",
+          "references": []
+        },
+        {
+          "name": "canAttackLeader",
+          "typeText": "boolean",
+          "references": []
+        },
+        {
+          "name": "canAttackActiveCharacters",
+          "typeText": "boolean",
+          "references": []
+        },
+        {
+          "name": "canAttackRestedCharacters",
+          "typeText": "boolean",
+          "references": []
+        },
+        {
+          "name": "unblockable",
+          "typeText": "boolean",
+          "references": []
+        },
+        {
+          "name": "banish",
+          "typeText": "boolean",
+          "references": []
+        },
+        {
+          "name": "counterPowerAdded",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "battleEvents",
+          "typeText": "GameEventId[]",
+          "references": [
+            "GameEventId"
+          ]
+        }
+      ],
+      "references": [
+        "PlayerId",
+        "CardObjectId",
+        "BattleStep",
+        "GameEventId"
+      ],
+      "raw": "BattleState {\n    battleId: string\n\n    attackingPlayer: PlayerId\n\n    attacker: CardObjectId\n\n    originalTarget: CardObjectId\n    currentTarget: CardObjectId\n\n    blocker?: CardObjectId\n\n    step: BattleStep\n\n    attackerPower: number\n    targetPower: number\n\n    baseDamage: number\n    currentDamage: number\n\n    attackProperties: {\n        canAttackLeader: boolean\n        canAttackActiveCharacters: boolean\n        canAttackRestedCharacters: boolean\n        unblockable: boolean\n        banish: boolean\n    }\n\n    counterPowerAdded: number\n\n    battleEvents: GameEventId[]\n}"
+    },
+    {
+      "name": "TimingExpression",
+      "kind": "union",
+      "line": 677,
+      "members": [
+        "STANDARD_TIMING",
+        "CUSTOM_EVENT",
+        "MANUAL_WINDOW",
+        "REPLACEMENT_WINDOW",
+        "AND",
+        "OR"
+      ],
+      "fields": [],
+      "references": [
+        "STANDARD_TIMING",
+        "CUSTOM_EVENT",
+        "MANUAL_WINDOW",
+        "REPLACEMENT_WINDOW",
+        "AND",
+        "OR"
+      ],
+      "raw": "TimingExpression =\n    STANDARD_TIMING(StandardTiming)\n    | CUSTOM_EVENT(EventPattern)\n    | MANUAL_WINDOW(ManualTiming)\n    | REPLACEMENT_WINDOW(ReplacementPattern)\n    | AND(TimingExpression[])\n    | OR(TimingExpression[])"
+    },
+    {
+      "name": "StandardTiming",
+      "kind": "union",
+      "line": 689,
+      "members": [
+        "ON_PLAY",
+        "WHEN_ATTACKING",
+        "ON_OPPONENT_ATTACK",
+        "ON_BLOCK",
+        "ON_KO",
+        "END_OF_YOUR_TURN",
+        "END_OF_OPPONENT_TURN",
+        "ACTIVATE_MAIN",
+        "EVENT_MAIN",
+        "EVENT_COUNTER",
+        "TRIGGER"
+      ],
+      "fields": [],
+      "references": [
+        "ON_PLAY",
+        "WHEN_ATTACKING",
+        "ON_OPPONENT_ATTACK",
+        "ON_BLOCK",
+        "ON_KO",
+        "END_OF_YOUR_TURN",
+        "END_OF_OPPONENT_TURN",
+        "ACTIVATE_MAIN",
+        "EVENT_MAIN",
+        "EVENT_COUNTER",
+        "TRIGGER"
+      ],
+      "raw": "StandardTiming =\n    ON_PLAY\n    | WHEN_ATTACKING\n    | ON_OPPONENT_ATTACK\n    | ON_BLOCK\n    | ON_KO\n\n    | END_OF_YOUR_TURN\n    | END_OF_OPPONENT_TURN\n\n    | ACTIVATE_MAIN\n    | EVENT_MAIN\n    | EVENT_COUNTER\n\n    | TRIGGER"
+    },
+    {
+      "name": "ManualTiming",
+      "kind": "object",
+      "line": 709,
+      "members": [],
+      "fields": [],
+      "references": [],
+      "raw": "ManualTiming {\n    phase:\n        MAIN_PHASE\n        | COUNTER_STEP\n        | TRIGGER_RESOLUTION\n\n    controller:\n        PLAYER\n        | OPPONENT\n\n    battleRestriction:\n        OUTSIDE_BATTLE\n        | DURING_BATTLE\n        | ANY\n}"
+    },
+    {
+      "name": "EventPattern",
+      "kind": "object",
+      "line": 729,
+      "members": [],
+      "fields": [
+        {
+          "name": "type",
+          "typeText": "GameEventType",
+          "references": [
+            "GameEventType"
+          ]
+        },
+        {
+          "name": "subject",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "cause",
+          "typeText": "EventCause",
+          "references": [
+            "EventCause"
+          ]
+        },
+        {
+          "name": "fromZone",
+          "typeText": "Zone",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "toZone",
+          "typeText": "Zone",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "conditions",
+          "typeText": "ConditionExpression",
+          "references": [
+            "ConditionExpression"
+          ]
+        }
+      ],
+      "references": [
+        "GameEventType",
+        "Selector",
+        "EventCause",
+        "Zone",
+        "ConditionExpression"
+      ],
+      "raw": "EventPattern {\n    type: GameEventType\n\n    subject?: Selector\n\n    actor?:\n        PLAYER\n        | OPPONENT\n        | ANY\n\n    cause?: EventCause\n\n    fromZone?: Zone\n    toZone?: Zone\n\n    conditions?: ConditionExpression\n}"
+    },
+    {
+      "name": "GameEventType",
+      "kind": "union",
+      "line": 751,
+      "members": [
+        "TURN_STARTED",
+        "PHASE_STARTED",
+        "PHASE_ENDED",
+        "CARD_PLAYED",
+        "CARD_ACTIVATED",
+        "EFFECT_ACTIVATED",
+        "EFFECT_RESOLVED",
+        "CARD_MOVED",
+        "CARD_ADDED_TO_HAND",
+        "CARD_ADDED_TO_LIFE",
+        "CARD_TRASHED",
+        "CARD_RETURNED_TO_DECK",
+        "CHARACTER_KOD",
+        "CHARACTER_REMOVED_FROM_FIELD",
+        "CARD_BECAME_ACTIVE",
+        "CARD_BECAME_RESTED",
+        "ATTACK_DECLARED",
+        "ATTACK_TARGET_SELECTED",
+        "BLOCKER_ACTIVATED",
+        "DAMAGE_DEALT",
+        "DAMAGE_TAKEN",
+        "BATTLE_ENDED",
+        "DON_GIVEN",
+        "DON_DETACHED",
+        "DON_RESTED",
+        "DON_SET_ACTIVE",
+        "DON_RETURNED_TO_DON_DECK",
+        "LIFE_REVEALED",
+        "TRIGGER_ACTIVATED"
+      ],
+      "fields": [],
+      "references": [
+        "TURN_STARTED",
+        "PHASE_STARTED",
+        "PHASE_ENDED",
+        "CARD_PLAYED",
+        "CARD_ACTIVATED",
+        "EFFECT_ACTIVATED",
+        "EFFECT_RESOLVED",
+        "CARD_MOVED",
+        "CARD_ADDED_TO_HAND",
+        "CARD_ADDED_TO_LIFE",
+        "CARD_TRASHED",
+        "CARD_RETURNED_TO_DECK",
+        "CHARACTER_KOD",
+        "CHARACTER_REMOVED_FROM_FIELD",
+        "CARD_BECAME_ACTIVE",
+        "CARD_BECAME_RESTED",
+        "ATTACK_DECLARED",
+        "ATTACK_TARGET_SELECTED",
+        "BLOCKER_ACTIVATED",
+        "DAMAGE_DEALT",
+        "DAMAGE_TAKEN",
+        "BATTLE_ENDED",
+        "DON_GIVEN",
+        "DON_DETACHED",
+        "DON_RESTED",
+        "DON_SET_ACTIVE",
+        "DON_RETURNED_TO_DON_DECK",
+        "LIFE_REVEALED",
+        "TRIGGER_ACTIVATED"
+      ],
+      "raw": "GameEventType =\n    TURN_STARTED\n    | PHASE_STARTED\n    | PHASE_ENDED\n\n    | CARD_PLAYED\n    | CARD_ACTIVATED\n    | EFFECT_ACTIVATED\n    | EFFECT_RESOLVED\n\n    | CARD_MOVED\n    | CARD_ADDED_TO_HAND\n    | CARD_ADDED_TO_LIFE\n    | CARD_TRASHED\n    | CARD_RETURNED_TO_DECK\n\n    | CHARACTER_KOD\n    | CHARACTER_REMOVED_FROM_FIELD\n\n    | CARD_BECAME_ACTIVE\n    | CARD_BECAME_RESTED\n\n    | ATTACK_DECLARED\n    | ATTACK_TARGET_SELECTED\n    | BLOCKER_ACTIVATED\n    | DAMAGE_DEALT\n    | DAMAGE_TAKEN\n    | BATTLE_ENDED\n\n    | DON_GIVEN\n    | DON_DETACHED\n    | DON_RESTED\n    | DON_SET_ACTIVE\n    | DON_RETURNED_TO_DON_DECK\n\n    | LIFE_REVEALED\n    | TRIGGER_ACTIVATED"
+    },
+    {
+      "name": "EventCause",
+      "kind": "union",
+      "line": 793,
+      "members": [
+        "RULE",
+        "BATTLE",
+        "DAMAGE",
+        "CARD_PLAY_COST",
+        "CARD_ACTIVATION",
+        "ACTIVATION_COST",
+        "EFFECT",
+        "REPLACEMENT_EFFECT",
+        "REFRESH_PHASE",
+        "DEFEAT_PROCESSING"
+      ],
+      "fields": [],
+      "references": [
+        "RULE",
+        "BATTLE",
+        "DAMAGE",
+        "CARD_PLAY_COST",
+        "CARD_ACTIVATION",
+        "ACTIVATION_COST",
+        "EFFECT",
+        "REPLACEMENT_EFFECT",
+        "REFRESH_PHASE",
+        "DEFEAT_PROCESSING"
+      ],
+      "raw": "EventCause =\n    RULE\n    | BATTLE\n    | DAMAGE\n    | CARD_PLAY_COST\n    | CARD_ACTIVATION\n    | ACTIVATION_COST\n    | EFFECT\n    | REPLACEMENT_EFFECT\n    | REFRESH_PHASE\n    | DEFEAT_PROCESSING"
+    },
+    {
+      "name": "ConditionExpression",
+      "kind": "union",
+      "line": 811,
+      "members": [
+        "TRUE",
+        "FALSE",
+        "PREDICATE",
+        "AND",
+        "OR",
+        "NOT",
+        "ALL",
+        "ANY"
+      ],
+      "fields": [],
+      "references": [
+        "TRUE",
+        "FALSE",
+        "PREDICATE",
+        "AND",
+        "OR",
+        "NOT",
+        "ALL",
+        "ANY"
+      ],
+      "raw": "ConditionExpression =\n    TRUE\n    | FALSE\n\n    | PREDICATE(ConditionPredicate)\n\n    | AND(ConditionExpression[])\n    | OR(ConditionExpression[])\n    | NOT(ConditionExpression)\n\n    | ALL(Selector, ConditionExpression)\n    | ANY(Selector, ConditionExpression)"
+    },
+    {
+      "name": "ConditionPredicate",
+      "kind": "object",
+      "line": 828,
+      "members": [],
+      "fields": [
+        {
+          "name": "left",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        },
+        {
+          "name": "right",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        }
+      ],
+      "references": [
+        "ValueExpression"
+      ],
+      "raw": "ConditionPredicate {\n    left: ValueExpression\n\n    operator:\n        EQUAL\n        | NOT_EQUAL\n        | GREATER_THAN\n        | GREATER_OR_EQUAL\n        | LESS_THAN\n        | LESS_OR_EQUAL\n        | CONTAINS\n        | EXISTS\n        | NOT_EXISTS\n        | MATCHES\n\n    right?: ValueExpression\n}"
+    },
+    {
+      "name": "ConditionType",
+      "kind": "union",
+      "line": 850,
+      "members": [
+        "TURN_IS",
+        "PHASE_IS",
+        "BATTLE_STEP_IS",
+        "SOURCE_IS_ACTIVE",
+        "SOURCE_IS_RESTED",
+        "SOURCE_IS_ATTACKING",
+        "SOURCE_WAS_PLAYED_THIS_TURN",
+        "DON_ATTACHED_COUNT",
+        "DON_ON_FIELD_COUNT",
+        "ACTIVE_DON_COUNT",
+        "RESTED_DON_COUNT",
+        "LIFE_COUNT",
+        "HAND_COUNT",
+        "DECK_COUNT",
+        "TRASH_COUNT",
+        "CHARACTER_COUNT",
+        "CARD_EXISTS",
+        "CARD_COUNT",
+        "ALL_CARDS_MATCH",
+        "NO_CARD_MATCHES",
+        "LEADER_MATCHES",
+        "SOURCE_MATCHES",
+        "EVENT_OCCURRED",
+        "EVENT_OCCURRED_THIS_TURN",
+        "EVENT_OCCURRED_THIS_BATTLE",
+        "EFFECT_HAS_RESOLVED",
+        "ACTION_SUCCEEDED",
+        "PLAYER_TURN_NUMBER",
+        "GAME_TURN_NUMBER"
+      ],
+      "fields": [],
+      "references": [
+        "TURN_IS",
+        "PHASE_IS",
+        "BATTLE_STEP_IS",
+        "SOURCE_IS_ACTIVE",
+        "SOURCE_IS_RESTED",
+        "SOURCE_IS_ATTACKING",
+        "SOURCE_WAS_PLAYED_THIS_TURN",
+        "DON_ATTACHED_COUNT",
+        "DON_ON_FIELD_COUNT",
+        "ACTIVE_DON_COUNT",
+        "RESTED_DON_COUNT",
+        "LIFE_COUNT",
+        "HAND_COUNT",
+        "DECK_COUNT",
+        "TRASH_COUNT",
+        "CHARACTER_COUNT",
+        "CARD_EXISTS",
+        "CARD_COUNT",
+        "ALL_CARDS_MATCH",
+        "NO_CARD_MATCHES",
+        "LEADER_MATCHES",
+        "SOURCE_MATCHES",
+        "EVENT_OCCURRED",
+        "EVENT_OCCURRED_THIS_TURN",
+        "EVENT_OCCURRED_THIS_BATTLE",
+        "EFFECT_HAS_RESOLVED",
+        "ACTION_SUCCEEDED",
+        "PLAYER_TURN_NUMBER",
+        "GAME_TURN_NUMBER"
+      ],
+      "raw": "ConditionType =\n    TURN_IS\n    | PHASE_IS\n    | BATTLE_STEP_IS\n\n    | SOURCE_IS_ACTIVE\n    | SOURCE_IS_RESTED\n    | SOURCE_IS_ATTACKING\n    | SOURCE_WAS_PLAYED_THIS_TURN\n\n    | DON_ATTACHED_COUNT\n    | DON_ON_FIELD_COUNT\n    | ACTIVE_DON_COUNT\n    | RESTED_DON_COUNT\n\n    | LIFE_COUNT\n    | HAND_COUNT\n    | DECK_COUNT\n    | TRASH_COUNT\n    | CHARACTER_COUNT\n\n    | CARD_EXISTS\n    | CARD_COUNT\n    | ALL_CARDS_MATCH\n    | NO_CARD_MATCHES\n\n    | LEADER_MATCHES\n    | SOURCE_MATCHES\n\n    | EVENT_OCCURRED\n    | EVENT_OCCURRED_THIS_TURN\n    | EVENT_OCCURRED_THIS_BATTLE\n\n    | EFFECT_HAS_RESOLVED\n    | ACTION_SUCCEEDED\n\n    | PLAYER_TURN_NUMBER\n    | GAME_TURN_NUMBER"
+    },
+    {
+      "name": "ValueExpression",
+      "kind": "union",
+      "line": 935,
+      "members": [
+        "NUMBER",
+        "BOOLEAN",
+        "STRING",
+        "PROPERTY",
+        "COUNT",
+        "PREVIOUS_RESULT",
+        "ADD",
+        "SUBTRACT",
+        "MULTIPLY",
+        "DIVIDE",
+        "MIN",
+        "MAX",
+        "CLAMP"
+      ],
+      "fields": [],
+      "references": [
+        "NUMBER",
+        "BOOLEAN",
+        "STRING",
+        "PROPERTY",
+        "COUNT",
+        "PREVIOUS_RESULT",
+        "ADD",
+        "SUBTRACT",
+        "MULTIPLY",
+        "DIVIDE",
+        "MIN",
+        "MAX",
+        "CLAMP"
+      ],
+      "raw": "ValueExpression =\n    NUMBER(number)\n    | BOOLEAN(boolean)\n    | STRING(string)\n\n    | PROPERTY(ObjectReference, PropertyName)\n\n    | COUNT(Selector)\n\n    | PREVIOUS_RESULT(ResultReference)\n\n    | ADD(ValueExpression[])\n    | SUBTRACT(ValueExpression, ValueExpression)\n    | MULTIPLY(ValueExpression[])\n    | DIVIDE(ValueExpression, ValueExpression)\n\n    | MIN(ValueExpression[])\n    | MAX(ValueExpression[])\n\n    | CLAMP(ValueExpression, min, max)"
+    },
+    {
+      "name": "UsageLimit",
+      "kind": "object",
+      "line": 979,
+      "members": [],
+      "fields": [
+        {
+          "name": "maximumUses",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "resetsAt",
+          "typeText": "TimingExpression",
+          "references": [
+            "TimingExpression"
+          ]
+        }
+      ],
+      "references": [
+        "TimingExpression"
+      ],
+      "raw": "UsageLimit {\n    maximumUses: number\n\n    period:\n        PER_TURN\n        | PER_BATTLE\n        | PER_GAME\n        | WHILE_IN_CURRENT_ZONE\n        | CUSTOM\n\n    trackerScope:\n        EFFECT_INSTANCE\n        | CARD_OBJECT\n        | PHYSICAL_CARD\n        | PLAYER\n        | CARD_NAME\n\n    resetsAt?: TimingExpression\n\n    consumeWhen:\n        ACTIVATED\n        | COST_PAYMENT_STARTED\n        | COST_PAID\n        | RESOLVED\n}"
+    },
+    {
+      "name": "ActivationCost",
+      "kind": "object",
+      "line": 1024,
+      "members": [],
+      "fields": [
+        {
+          "name": "preconditions",
+          "typeText": "ConditionExpression",
+          "references": [
+            "ConditionExpression"
+          ]
+        },
+        {
+          "name": "payments",
+          "typeText": "CostAction[]",
+          "references": [
+            "CostAction"
+          ]
+        }
+      ],
+      "references": [
+        "ConditionExpression",
+        "CostAction"
+      ],
+      "raw": "ActivationCost {\n    preconditions?: ConditionExpression\n\n    payments: CostAction[]\n\n    optionalPayment:\n        REQUIRED_TO_ACTIVATE\n        | PLAYER_MAY_DECLINE\n\n    executionPolicy:\n        VERIFY_ALL_THEN_PAY_IN_ORDER\n}"
+    },
+    {
+      "name": "CostAction",
+      "kind": "union",
+      "line": 1041,
+      "members": [
+        "REST_DON_COST"
+      ],
+      "fields": [],
+      "references": [
+        "REST_DON_COST"
+      ],
+      "raw": "CostAction =\n    REST_DON_COST {"
+    },
+    {
+      "name": "REST_DON_COST",
+      "kind": "object",
+      "line": 1097,
+      "members": [],
+      "fields": [
+        {
+          "name": "count",
+          "typeText": "1",
+          "references": []
+        }
+      ],
+      "references": [],
+      "raw": "REST_DON_COST {\n    count: 1\n}"
+    },
+    {
+      "name": "DON_MINUS_COST",
+      "kind": "object",
+      "line": 1104,
+      "members": [],
+      "fields": [
+        {
+          "name": "count",
+          "typeText": "2",
+          "references": []
+        },
+        {
+          "name": "selectableZones",
+          "typeText": "[",
+          "references": []
+        }
+      ],
+      "references": [],
+      "raw": "DON_MINUS_COST {\n    count: 2,\n    selectableZones: [\n        LEADER_AREA,\n        CHARACTER_AREA,\n        COST_AREA\n    ]\n}"
+    },
+    {
+      "name": "REST_CARD_COST",
+      "kind": "object",
+      "line": 1116,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "THIS_CARD",
+          "references": [
+            "THIS_CARD"
+          ]
+        }
+      ],
+      "references": [
+        "THIS_CARD"
+      ],
+      "raw": "REST_CARD_COST {\n    selector: THIS_CARD\n}"
+    },
+    {
+      "name": "TRASH_CARD_COST",
+      "kind": "object",
+      "line": 1123,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "{",
+          "references": []
+        },
+        {
+          "name": "controller",
+          "typeText": "PLAYER",
+          "references": [
+            "PLAYER"
+          ]
+        },
+        {
+          "name": "zones",
+          "typeText": "[HAND]",
+          "references": [
+            "HAND"
+          ]
+        },
+        {
+          "name": "quantity",
+          "typeText": "EXACTLY(1)",
+          "references": [
+            "EXACTLY"
+          ]
+        }
+      ],
+      "references": [
+        "PLAYER",
+        "HAND",
+        "EXACTLY"
+      ],
+      "raw": "TRASH_CARD_COST {\n    selector: {\n        controller: PLAYER,\n        zones: [HAND],\n        quantity: EXACTLY(1)\n    }\n}"
+    },
+    {
+      "name": "ResolutionNode",
+      "kind": "union",
+      "line": 1137,
+      "members": [
+        "ACTION",
+        "SEQUENCE",
+        "OPTIONAL"
+      ],
+      "fields": [],
+      "references": [
+        "ACTION",
+        "SEQUENCE",
+        "OPTIONAL"
+      ],
+      "raw": "ResolutionNode =\n    ACTION(Action)\n\n    | SEQUENCE(ResolutionNode[])\n\n    | OPTIONAL {"
+    },
+    {
+      "name": "ActionResult",
+      "kind": "object",
+      "line": 1289,
+      "members": [],
+      "fields": [
+        {
+          "name": "actionId",
+          "typeText": "ActionId",
+          "references": [
+            "ActionId"
+          ]
+        },
+        {
+          "name": "attempted",
+          "typeText": "boolean",
+          "references": []
+        },
+        {
+          "name": "succeeded",
+          "typeText": "boolean",
+          "references": []
+        },
+        {
+          "name": "selectedObjects",
+          "typeText": "ObjectId[]",
+          "references": [
+            "ObjectId"
+          ]
+        },
+        {
+          "name": "affectedObjects",
+          "typeText": "ObjectId[]",
+          "references": [
+            "ObjectId"
+          ]
+        },
+        {
+          "name": "requestedAmount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "completedAmount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "previousZones",
+          "typeText": "Zone[]",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "resultingZones",
+          "typeText": "Zone[]",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "prevented",
+          "typeText": "boolean",
+          "references": []
+        },
+        {
+          "name": "replaced",
+          "typeText": "boolean",
+          "references": []
+        },
+        {
+          "name": "replacementEffectId",
+          "typeText": "EffectId",
+          "references": [
+            "EffectId"
+          ]
+        },
+        {
+          "name": "generatedEvents",
+          "typeText": "GameEventId[]",
+          "references": [
+            "GameEventId"
+          ]
+        }
+      ],
+      "references": [
+        "ActionId",
+        "ObjectId",
+        "Zone",
+        "EffectId",
+        "GameEventId"
+      ],
+      "raw": "ActionResult {\n    actionId: ActionId\n\n    attempted: boolean\n    succeeded: boolean\n\n    selectedObjects: ObjectId[]\n    affectedObjects: ObjectId[]\n\n    requestedAmount?: number\n    completedAmount?: number\n\n    previousZones?: Zone[]\n    resultingZones?: Zone[]\n\n    prevented: boolean\n    replaced: boolean\n\n    replacementEffectId?: EffectId\n\n    generatedEvents: GameEventId[]\n}"
+    },
+    {
+      "name": "Action",
+      "kind": "union",
+      "line": 1327,
+      "members": [
+        "CardAction",
+        "LifeAction",
+        "StateAction",
+        "DonAction",
+        "StatAction",
+        "InformationAction",
+        "EffectAction",
+        "PermissionAction",
+        "BattleAction",
+        "PlayerAction",
+        "RuleAction"
+      ],
+      "fields": [],
+      "references": [
+        "CardAction",
+        "LifeAction",
+        "StateAction",
+        "DonAction",
+        "StatAction",
+        "InformationAction",
+        "EffectAction",
+        "PermissionAction",
+        "BattleAction",
+        "PlayerAction",
+        "RuleAction"
+      ],
+      "raw": "Action =\n    CardAction\n    | LifeAction\n    | StateAction\n    | DonAction\n    | StatAction\n    | InformationAction\n    | EffectAction\n    | PermissionAction\n    | BattleAction\n    | PlayerAction\n    | RuleAction"
+    },
+    {
+      "name": "CardAction",
+      "kind": "union",
+      "line": 1346,
+      "members": [
+        "DRAW_CARD",
+        "MOVE_CARD",
+        "PLAY_CARD",
+        "ACTIVATE_EVENT",
+        "TRASH_CARD",
+        "KO_CARD",
+        "RETURN_CARD",
+        "ADD_CARD_TO_HAND",
+        "PLACE_CARD_IN_DECK",
+        "REVEAL_CARD",
+        "LOOK_AT_CARDS",
+        "SELECT_CARD",
+        "REORDER_CARDS",
+        "SHUFFLE_ZONE"
+      ],
+      "fields": [],
+      "references": [
+        "DRAW_CARD",
+        "MOVE_CARD",
+        "PLAY_CARD",
+        "ACTIVATE_EVENT",
+        "TRASH_CARD",
+        "KO_CARD",
+        "RETURN_CARD",
+        "ADD_CARD_TO_HAND",
+        "PLACE_CARD_IN_DECK",
+        "REVEAL_CARD",
+        "LOOK_AT_CARDS",
+        "SELECT_CARD",
+        "REORDER_CARDS",
+        "SHUFFLE_ZONE"
+      ],
+      "raw": "CardAction =\n    DRAW_CARD\n    | MOVE_CARD\n    | PLAY_CARD\n    | ACTIVATE_EVENT\n    | TRASH_CARD\n    | KO_CARD\n    | RETURN_CARD\n    | ADD_CARD_TO_HAND\n    | PLACE_CARD_IN_DECK\n    | REVEAL_CARD\n    | LOOK_AT_CARDS\n    | SELECT_CARD\n    | REORDER_CARDS\n    | SHUFFLE_ZONE"
+    },
+    {
+      "name": "MOVE_CARD",
+      "kind": "object",
+      "line": 1366,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "from",
+          "typeText": "Zone",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "to",
+          "typeText": "Zone",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "placement",
+          "typeText": "{",
+          "references": []
+        },
+        {
+          "name": "order",
+          "typeText": "{",
+          "references": []
+        },
+        {
+          "name": "face",
+          "typeText": "{",
+          "references": []
+        }
+      ],
+      "references": [
+        "Selector",
+        "Zone"
+      ],
+      "raw": "MOVE_CARD {\n    selector: Selector\n\n    from: Zone\n    to: Zone\n\n    placement?: {\n        TOP\n        | BOTTOM\n        | TOP_OR_BOTTOM\n        | ANY_POSITION\n        | RANDOM\n        | NOT_APPLICABLE\n    }\n\n    order?: {\n        PRESERVE_ORDER\n        | OWNER_CHOOSES\n        | EFFECT_PLAYER_CHOOSES\n        | RANDOM\n    }\n\n    face?: {\n        FACE_UP\n        | FACE_DOWN\n        | PRESERVE\n    }\n\n    cause:\n        DRAW\n        | PLAY\n        | KO\n        | TRASH\n        | RETURN\n        | DAMAGE\n        | COST\n        | EFFECT\n        | RULE\n}"
+    },
+    {
+      "name": "DRAW_CARD",
+      "kind": "object",
+      "line": 1410,
+      "members": [],
+      "fields": [
+        {
+          "name": "player",
+          "typeText": "PlayerReference",
+          "references": [
+            "PlayerReference"
+          ]
+        },
+        {
+          "name": "count",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        }
+      ],
+      "references": [
+        "PlayerReference",
+        "ValueExpression"
+      ],
+      "raw": "DRAW_CARD {\n    player: PlayerReference\n    count: ValueExpression\n}"
+    },
+    {
+      "name": "PLAY_CARD",
+      "kind": "object",
+      "line": 1417,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "controller",
+          "typeText": "PlayerReference",
+          "references": [
+            "PlayerReference"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "PlayerReference"
+      ],
+      "raw": "PLAY_CARD {\n    selector: Selector\n\n    destination:\n        CHARACTER_AREA\n        | STAGE_AREA\n\n    controller: PlayerReference\n\n    state:\n        ACTIVE\n        | RESTED\n\n    triggerOnPlay:\n        ENABLED\n        | DISABLED\n\n    costPolicy:\n        PAY_NORMAL_COST\n        | PLAY_WITHOUT_PAYING_COST\n        | PAY_ALTERNATIVE_COST\n}"
+    },
+    {
+      "name": "KO_CARD",
+      "kind": "object",
+      "line": 1442,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "KO_CARD {\n    selector: Selector\n\n    cause:\n        EFFECT\n        | BATTLE\n        | COST\n}"
+    },
+    {
+      "name": "TRASH_CARD",
+      "kind": "object",
+      "line": 1453,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "treatedAsKO",
+          "typeText": "false",
+          "references": []
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "TRASH_CARD {\n    selector: Selector\n\n    cause:\n        EFFECT\n        | COST\n        | RULE\n\n    treatedAsKO: false\n}"
+    },
+    {
+      "name": "ADD_CARD_TO_HAND",
+      "kind": "object",
+      "line": 1466,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "ADD_CARD_TO_HAND {\n    selector: Selector\n\n    from:\n        DECK\n        | TRASH\n        | LIFE\n        | CHARACTER_AREA\n        | STAGE_AREA\n\n    triggerPolicy:\n        DO_NOT_CHECK_TRIGGER\n}"
+    },
+    {
+      "name": "RETURN_CARD",
+      "kind": "object",
+      "line": 1482,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "RETURN_CARD {\n    selector: Selector\n\n    destination:\n        HAND\n        | DECK\n\n    deckPlacement?:\n        TOP\n        | BOTTOM\n        | TOP_OR_BOTTOM\n\n    owner:\n        CARD_OWNER\n}"
+    },
+    {
+      "name": "SEARCH",
+      "kind": "object",
+      "line": 1506,
+      "members": [],
+      "fields": [
+        {
+          "name": "look",
+          "typeText": "LOOK_AT_CARDS",
+          "references": [
+            "LOOK_AT_CARDS"
+          ]
+        },
+        {
+          "name": "select",
+          "typeText": "SELECT_CARD",
+          "references": [
+            "SELECT_CARD"
+          ]
+        },
+        {
+          "name": "moveSelected",
+          "typeText": "MOVE_CARD",
+          "references": [
+            "MOVE_CARD"
+          ]
+        },
+        {
+          "name": "processRemainder",
+          "typeText": "MOVE_CARD | REORDER_CARDS",
+          "references": [
+            "MOVE_CARD",
+            "REORDER_CARDS"
+          ]
+        }
+      ],
+      "references": [
+        "LOOK_AT_CARDS",
+        "SELECT_CARD",
+        "MOVE_CARD",
+        "REORDER_CARDS"
+      ],
+      "raw": "SEARCH {\n    look: LOOK_AT_CARDS\n    select: SELECT_CARD\n    moveSelected: MOVE_CARD\n    processRemainder: MOVE_CARD | REORDER_CARDS\n}"
+    },
+    {
+      "name": "LOOK_AT_CARDS",
+      "kind": "object",
+      "line": 1517,
+      "members": [],
+      "fields": [
+        {
+          "name": "player",
+          "typeText": "PlayerReference",
+          "references": [
+            "PlayerReference"
+          ]
+        },
+        {
+          "name": "count",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        }
+      ],
+      "references": [
+        "PlayerReference",
+        "ValueExpression"
+      ],
+      "raw": "LOOK_AT_CARDS {\n    player: PlayerReference\n\n    zone:\n        DECK\n        LIFE\n        HAND\n\n    position:\n        TOP\n        BOTTOM\n        ALL\n\n    count: ValueExpression\n\n    visibility:\n        EFFECT_PLAYER_ONLY\n        OWNER_ONLY\n        BOTH_PLAYERS\n}"
+    },
+    {
+      "name": "SELECT_CARD",
+      "kind": "object",
+      "line": 1540,
+      "members": [],
+      "fields": [
+        {
+          "name": "pool",
+          "typeText": "ResultReference",
+          "references": [
+            "ResultReference"
+          ]
+        },
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "ResultReference",
+        "Selector"
+      ],
+      "raw": "SELECT_CARD {\n    pool: ResultReference\n    selector: Selector\n}"
+    },
+    {
+      "name": "REVEAL_CARD",
+      "kind": "object",
+      "line": 1547,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "REVEAL_CARD {\n    selector: Selector\n    viewers:\n        BOTH_PLAYERS\n        PLAYER\n        OPPONENT\n}"
+    },
+    {
+      "name": "REORDER_CARDS",
+      "kind": "object",
+      "line": 1557,
+      "members": [],
+      "fields": [
+        {
+          "name": "cards",
+          "typeText": "ResultReference",
+          "references": [
+            "ResultReference"
+          ]
+        }
+      ],
+      "references": [
+        "ResultReference"
+      ],
+      "raw": "REORDER_CARDS {\n    cards: ResultReference\n\n    destination:\n        TOP_OF_DECK\n        BOTTOM_OF_DECK\n        LIFE\n\n    orderChooser:\n        PLAYER\n        OPPONENT\n        OWNER\n        RANDOM\n}"
+    },
+    {
+      "name": "LifeAction",
+      "kind": "union",
+      "line": 1620,
+      "members": [
+        "ADD_CARD_TO_LIFE",
+        "TAKE_LIFE_TO_HAND",
+        "TRASH_LIFE",
+        "TAKE_DAMAGE",
+        "REVEAL_LIFE",
+        "LOOK_AT_LIFE",
+        "REORDER_LIFE",
+        "TURN_LIFE_FACE_UP",
+        "TURN_LIFE_FACE_DOWN"
+      ],
+      "fields": [],
+      "references": [
+        "ADD_CARD_TO_LIFE",
+        "TAKE_LIFE_TO_HAND",
+        "TRASH_LIFE",
+        "TAKE_DAMAGE",
+        "REVEAL_LIFE",
+        "LOOK_AT_LIFE",
+        "REORDER_LIFE",
+        "TURN_LIFE_FACE_UP",
+        "TURN_LIFE_FACE_DOWN"
+      ],
+      "raw": "LifeAction =\n    ADD_CARD_TO_LIFE\n    | TAKE_LIFE_TO_HAND\n    | TRASH_LIFE\n    | TAKE_DAMAGE\n    | REVEAL_LIFE\n    | LOOK_AT_LIFE\n    | REORDER_LIFE\n    | TURN_LIFE_FACE_UP\n    | TURN_LIFE_FACE_DOWN"
+    },
+    {
+      "name": "ADD_CARD_TO_LIFE",
+      "kind": "object",
+      "line": 1633,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "ADD_CARD_TO_LIFE {\n    selector: Selector\n\n    position:\n        TOP\n        BOTTOM\n\n    face:\n        FACE_UP\n        FACE_DOWN\n}"
+    },
+    {
+      "name": "TAKE_LIFE_TO_HAND",
+      "kind": "object",
+      "line": 1647,
+      "members": [],
+      "fields": [
+        {
+          "name": "player",
+          "typeText": "PlayerReference",
+          "references": [
+            "PlayerReference"
+          ]
+        },
+        {
+          "name": "count",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        }
+      ],
+      "references": [
+        "PlayerReference",
+        "ValueExpression"
+      ],
+      "raw": "TAKE_LIFE_TO_HAND {\n    player: PlayerReference\n\n    position:\n        TOP\n        BOTTOM\n\n    count: ValueExpression\n\n    triggerPolicy:\n        DO_NOT_CHECK_TRIGGER\n}"
+    },
+    {
+      "name": "TAKE_DAMAGE",
+      "kind": "object",
+      "line": 1662,
+      "members": [],
+      "fields": [
+        {
+          "name": "targetPlayer",
+          "typeText": "PlayerReference",
+          "references": [
+            "PlayerReference"
+          ]
+        },
+        {
+          "name": "amount",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        }
+      ],
+      "references": [
+        "PlayerReference",
+        "ValueExpression"
+      ],
+      "raw": "TAKE_DAMAGE {\n    targetPlayer: PlayerReference\n    amount: ValueExpression\n\n    lifeProcessing:\n        CHECK_TRIGGER\n        | BANISH\n        | CUSTOM\n}"
+    },
+    {
+      "name": "TRASH_LIFE",
+      "kind": "object",
+      "line": 1674,
+      "members": [],
+      "fields": [
+        {
+          "name": "player",
+          "typeText": "PlayerReference",
+          "references": [
+            "PlayerReference"
+          ]
+        },
+        {
+          "name": "count",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        },
+        {
+          "name": "activateTrigger",
+          "typeText": "false",
+          "references": []
+        }
+      ],
+      "references": [
+        "PlayerReference",
+        "ValueExpression"
+      ],
+      "raw": "TRASH_LIFE {\n    player: PlayerReference\n\n    position:\n        TOP\n        BOTTOM\n\n    count: ValueExpression\n\n    activateTrigger: false\n}"
+    },
+    {
+      "name": "StateAction",
+      "kind": "union",
+      "line": 1694,
+      "members": [
+        "REST_CARD",
+        "SET_CARD_ACTIVE",
+        "TURN_CARD_FACE_UP",
+        "TURN_CARD_FACE_DOWN"
+      ],
+      "fields": [],
+      "references": [
+        "REST_CARD",
+        "SET_CARD_ACTIVE",
+        "TURN_CARD_FACE_UP",
+        "TURN_CARD_FACE_DOWN"
+      ],
+      "raw": "StateAction =\n    REST_CARD\n    | SET_CARD_ACTIVE\n    | TURN_CARD_FACE_UP\n    | TURN_CARD_FACE_DOWN"
+    },
+    {
+      "name": "REST_CARD",
+      "kind": "object",
+      "line": 1702,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "REST_CARD {\n    selector: Selector\n}"
+    },
+    {
+      "name": "SET_CARD_ACTIVE",
+      "kind": "object",
+      "line": 1708,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "SET_CARD_ACTIVE {\n    selector: Selector\n}"
+    },
+    {
+      "name": "DonAction",
+      "kind": "union",
+      "line": 1731,
+      "members": [
+        "ADD_DON_FROM_DON_DECK",
+        "GIVE_DON",
+        "DETACH_DON",
+        "REST_DON",
+        "SET_DON_ACTIVE",
+        "RETURN_DON_TO_DON_DECK",
+        "MOVE_DON_TO_COST_AREA"
+      ],
+      "fields": [],
+      "references": [
+        "ADD_DON_FROM_DON_DECK",
+        "GIVE_DON",
+        "DETACH_DON",
+        "REST_DON",
+        "SET_DON_ACTIVE",
+        "RETURN_DON_TO_DON_DECK",
+        "MOVE_DON_TO_COST_AREA"
+      ],
+      "raw": "DonAction =\n    ADD_DON_FROM_DON_DECK\n    | GIVE_DON\n    | DETACH_DON\n    | REST_DON\n    | SET_DON_ACTIVE\n    | RETURN_DON_TO_DON_DECK\n    | MOVE_DON_TO_COST_AREA"
+    },
+    {
+      "name": "DonState",
+      "kind": "union",
+      "line": 1742,
+      "members": [
+        "IN_DON_DECK",
+        "ACTIVE",
+        "RESTED",
+        "ATTACHED"
+      ],
+      "fields": [],
+      "references": [
+        "IN_DON_DECK",
+        "ACTIVE",
+        "RESTED",
+        "ATTACHED"
+      ],
+      "raw": "DonState =\n    IN_DON_DECK\n    | ACTIVE\n    | RESTED\n    | ATTACHED"
+    },
+    {
+      "name": "ADD_DON_FROM_DON_DECK",
+      "kind": "object",
+      "line": 1750,
+      "members": [],
+      "fields": [
+        {
+          "name": "player",
+          "typeText": "PlayerReference",
+          "references": [
+            "PlayerReference"
+          ]
+        },
+        {
+          "name": "count",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        },
+        {
+          "name": "destination",
+          "typeText": "COST_AREA",
+          "references": [
+            "COST_AREA"
+          ]
+        }
+      ],
+      "references": [
+        "PlayerReference",
+        "ValueExpression",
+        "COST_AREA"
+      ],
+      "raw": "ADD_DON_FROM_DON_DECK {\n    player: PlayerReference\n\n    count: ValueExpression\n\n    destination: COST_AREA\n\n    state:\n        ACTIVE\n        | RESTED\n}"
+    },
+    {
+      "name": "GIVE_DON",
+      "kind": "object",
+      "line": 1764,
+      "members": [],
+      "fields": [
+        {
+          "name": "donSelector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "target",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "GIVE_DON {\n    donSelector: Selector\n\n    target: Selector\n}"
+    },
+    {
+      "name": "DETACH_DON",
+      "kind": "object",
+      "line": 1772,
+      "members": [],
+      "fields": [
+        {
+          "name": "sourceCard",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "count",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        },
+        {
+          "name": "destination",
+          "typeText": "COST_AREA",
+          "references": [
+            "COST_AREA"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "ValueExpression",
+        "COST_AREA"
+      ],
+      "raw": "DETACH_DON {\n    sourceCard: Selector\n\n    count: ValueExpression\n\n    destination: COST_AREA\n\n    state:\n        RESTED\n        | ACTIVE\n}"
+    },
+    {
+      "name": "RETURN_DON_TO_DON_DECK",
+      "kind": "object",
+      "line": 1786,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "RETURN_DON_TO_DON_DECK {\n    selector: Selector\n}"
+    },
+    {
+      "name": "StatAction",
+      "kind": "union",
+      "line": 1796,
+      "members": [
+        "MODIFY_POWER",
+        "MODIFY_COST",
+        "MODIFY_COUNTER",
+        "MODIFY_LIFE_VALUE",
+        "MODIFY_DAMAGE"
+      ],
+      "fields": [],
+      "references": [
+        "MODIFY_POWER",
+        "MODIFY_COST",
+        "MODIFY_COUNTER",
+        "MODIFY_LIFE_VALUE",
+        "MODIFY_DAMAGE"
+      ],
+      "raw": "StatAction =\n    MODIFY_POWER\n    | MODIFY_COST\n    | MODIFY_COUNTER\n    | MODIFY_LIFE_VALUE\n    | MODIFY_DAMAGE"
+    },
+    {
+      "name": "ModifyStatAction",
+      "kind": "object",
+      "line": 1805,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "value",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        },
+        {
+          "name": "duration",
+          "typeText": "Duration",
+          "references": [
+            "Duration"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "ValueExpression",
+        "Duration"
+      ],
+      "raw": "ModifyStatAction {\n    selector: Selector\n\n    stat:\n        POWER\n        | COST\n        | COUNTER\n        | LIFE_VALUE\n        | DAMAGE\n\n    propertyLayer:\n        CURRENT_VALUE\n        | BASE_VALUE\n        | PRINTED_VALUE\n\n    operation:\n        ADD\n        | SUBTRACT\n        | SET\n        | COPY\n        | SET_TO_ZERO\n\n    value: ValueExpression\n\n    duration: Duration\n}"
+    },
+    {
+      "name": "InformationAction",
+      "kind": "union",
+      "line": 1868,
+      "members": [
+        "MODIFY_NAME",
+        "MODIFY_COLOR",
+        "MODIFY_TYPE",
+        "MODIFY_ATTRIBUTE",
+        "MODIFY_BASE_EFFECT_STATUS"
+      ],
+      "fields": [],
+      "references": [
+        "MODIFY_NAME",
+        "MODIFY_COLOR",
+        "MODIFY_TYPE",
+        "MODIFY_ATTRIBUTE",
+        "MODIFY_BASE_EFFECT_STATUS"
+      ],
+      "raw": "InformationAction =\n    MODIFY_NAME\n    | MODIFY_COLOR\n    | MODIFY_TYPE\n    | MODIFY_ATTRIBUTE\n    | MODIFY_BASE_EFFECT_STATUS"
+    },
+    {
+      "name": "MODIFY_NAME",
+      "kind": "object",
+      "line": 1877,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "names",
+          "typeText": "string[]",
+          "references": []
+        },
+        {
+          "name": "duration",
+          "typeText": "Duration",
+          "references": [
+            "Duration"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "Duration"
+      ],
+      "raw": "MODIFY_NAME {\n    selector: Selector\n\n    operation:\n        ADD_NAME\n        | REPLACE_NAMES\n        | TREAT_AS_ADDITIONAL_NAME\n\n    names: string[]\n\n    duration: Duration\n}"
+    },
+    {
+      "name": "MODIFY_TYPE",
+      "kind": "object",
+      "line": 1892,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "types",
+          "typeText": "string[]",
+          "references": []
+        },
+        {
+          "name": "duration",
+          "typeText": "Duration",
+          "references": [
+            "Duration"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "Duration"
+      ],
+      "raw": "MODIFY_TYPE {\n    selector: Selector\n\n    operation:\n        ADD_TYPE\n        | REMOVE_TYPE\n        | REPLACE_TYPES\n\n    types: string[]\n\n    duration: Duration\n}"
+    },
+    {
+      "name": "EffectAction",
+      "kind": "union",
+      "line": 1911,
+      "members": [
+        "GRANT_KEYWORD",
+        "REMOVE_KEYWORD",
+        "ADD_EFFECT",
+        "REMOVE_GAINED_EFFECT",
+        "INVALIDATE_EFFECTS",
+        "VALIDATE_EFFECTS",
+        "COPY_EFFECT",
+        "CREATE_DELAYED_EFFECT",
+        "CREATE_REPLACEMENT_EFFECT"
+      ],
+      "fields": [],
+      "references": [
+        "GRANT_KEYWORD",
+        "REMOVE_KEYWORD",
+        "ADD_EFFECT",
+        "REMOVE_GAINED_EFFECT",
+        "INVALIDATE_EFFECTS",
+        "VALIDATE_EFFECTS",
+        "COPY_EFFECT",
+        "CREATE_DELAYED_EFFECT",
+        "CREATE_REPLACEMENT_EFFECT"
+      ],
+      "raw": "EffectAction =\n    GRANT_KEYWORD\n    | REMOVE_KEYWORD\n    | ADD_EFFECT\n    | REMOVE_GAINED_EFFECT\n    | INVALIDATE_EFFECTS\n    | VALIDATE_EFFECTS\n    | COPY_EFFECT\n    | CREATE_DELAYED_EFFECT\n    | CREATE_REPLACEMENT_EFFECT"
+    },
+    {
+      "name": "GRANT_KEYWORD",
+      "kind": "object",
+      "line": 1924,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "keyword",
+          "typeText": "KeywordEffect",
+          "references": [
+            "KeywordEffect"
+          ]
+        },
+        {
+          "name": "duration",
+          "typeText": "Duration",
+          "references": [
+            "Duration"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "KeywordEffect",
+        "Duration"
+      ],
+      "raw": "GRANT_KEYWORD {\n    selector: Selector\n    keyword: KeywordEffect\n    duration: Duration\n}"
+    },
+    {
+      "name": "REMOVE_KEYWORD",
+      "kind": "object",
+      "line": 1932,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "keyword",
+          "typeText": "KeywordEffect",
+          "references": [
+            "KeywordEffect"
+          ]
+        },
+        {
+          "name": "duration",
+          "typeText": "Duration",
+          "references": [
+            "Duration"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "KeywordEffect",
+        "Duration"
+      ],
+      "raw": "REMOVE_KEYWORD {\n    selector: Selector\n    keyword: KeywordEffect\n    duration: Duration\n}"
+    },
+    {
+      "name": "ADD_EFFECT",
+      "kind": "object",
+      "line": 1940,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "effect",
+          "typeText": "EffectDefinition",
+          "references": [
+            "EffectDefinition"
+          ]
+        },
+        {
+          "name": "duration",
+          "typeText": "Duration",
+          "references": [
+            "Duration"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "EffectDefinition",
+        "Duration"
+      ],
+      "raw": "ADD_EFFECT {\n    selector: Selector\n    effect: EffectDefinition\n    duration: Duration\n}"
+    },
+    {
+      "name": "INVALIDATE_EFFECTS",
+      "kind": "object",
+      "line": 1948,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "duration",
+          "typeText": "Duration",
+          "references": [
+            "Duration"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "Duration"
+      ],
+      "raw": "INVALIDATE_EFFECTS {\n    selector: Selector\n\n    effectFilter:\n        ALL_EFFECTS\n        | AUTO_EFFECTS\n        | ACTIVATE_EFFECTS\n        | PERMANENT_EFFECTS\n        | KEYWORD_EFFECTS\n        | MATCHING_EFFECT\n\n    duration: Duration\n}"
+    },
+    {
+      "name": "PermissionAction",
+      "kind": "union",
+      "line": 1968,
+      "members": [
+        "PREVENT_ACTION",
+        "ALLOW_ACTION",
+        "PREVENT_SELECTION",
+        "PREVENT_ZONE_CHANGE",
+        "MODIFY_VALID_TARGETS",
+        "MODIFY_PLAY_PERMISSION"
+      ],
+      "fields": [],
+      "references": [
+        "PREVENT_ACTION",
+        "ALLOW_ACTION",
+        "PREVENT_SELECTION",
+        "PREVENT_ZONE_CHANGE",
+        "MODIFY_VALID_TARGETS",
+        "MODIFY_PLAY_PERMISSION"
+      ],
+      "raw": "PermissionAction =\n    PREVENT_ACTION\n    | ALLOW_ACTION\n    | PREVENT_SELECTION\n    | PREVENT_ZONE_CHANGE\n    | MODIFY_VALID_TARGETS\n    | MODIFY_PLAY_PERMISSION"
+    },
+    {
+      "name": "PreventableAction",
+      "kind": "union",
+      "line": 1978,
+      "members": [
+        "DECLARE_ATTACK",
+        "ATTACK_LEADER",
+        "ATTACK_CHARACTER",
+        "ATTACK_ACTIVE_CHARACTER",
+        "ACTIVATE_BLOCKER",
+        "ACTIVATE_EFFECT",
+        "PLAY_CARD",
+        "ACTIVATE_EVENT",
+        "REST_CARD",
+        "SET_CARD_ACTIVE",
+        "KO_CARD",
+        "TRASH_CARD",
+        "RETURN_TO_HAND",
+        "RETURN_TO_DECK",
+        "REMOVE_FROM_FIELD",
+        "SELECT_AS_EFFECT_TARGET",
+        "DEAL_DAMAGE"
+      ],
+      "fields": [],
+      "references": [
+        "DECLARE_ATTACK",
+        "ATTACK_LEADER",
+        "ATTACK_CHARACTER",
+        "ATTACK_ACTIVE_CHARACTER",
+        "ACTIVATE_BLOCKER",
+        "ACTIVATE_EFFECT",
+        "PLAY_CARD",
+        "ACTIVATE_EVENT",
+        "REST_CARD",
+        "SET_CARD_ACTIVE",
+        "KO_CARD",
+        "TRASH_CARD",
+        "RETURN_TO_HAND",
+        "RETURN_TO_DECK",
+        "REMOVE_FROM_FIELD",
+        "SELECT_AS_EFFECT_TARGET",
+        "DEAL_DAMAGE"
+      ],
+      "raw": "PreventableAction =\n    DECLARE_ATTACK\n    | ATTACK_LEADER\n    | ATTACK_CHARACTER\n    | ATTACK_ACTIVE_CHARACTER\n\n    | ACTIVATE_BLOCKER\n    | ACTIVATE_EFFECT\n\n    | PLAY_CARD\n    | ACTIVATE_EVENT\n\n    | REST_CARD\n    | SET_CARD_ACTIVE\n\n    | KO_CARD\n    | TRASH_CARD\n    | RETURN_TO_HAND\n    | RETURN_TO_DECK\n    | REMOVE_FROM_FIELD\n\n    | SELECT_AS_EFFECT_TARGET\n    | DEAL_DAMAGE"
+    },
+    {
+      "name": "PREVENT_ACTION",
+      "kind": "object",
+      "line": 2004,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "action",
+          "typeText": "PreventableAction",
+          "references": [
+            "PreventableAction"
+          ]
+        },
+        {
+          "name": "duration",
+          "typeText": "Duration",
+          "references": [
+            "Duration"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "PreventableAction",
+        "Duration"
+      ],
+      "raw": "PREVENT_ACTION {\n    selector: Selector\n    action: PreventableAction\n\n    causeFilter?:\n        EFFECT\n        | BATTLE\n        | RULE\n        | OPPONENT_EFFECT\n        | OWN_EFFECT\n        | ANY\n\n    duration: Duration\n}"
+    },
+    {
+      "name": "ALLOW_ACTION",
+      "kind": "object",
+      "line": 2021,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "action",
+          "typeText": "PreventableAction",
+          "references": [
+            "PreventableAction"
+          ]
+        },
+        {
+          "name": "duration",
+          "typeText": "Duration",
+          "references": [
+            "Duration"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "PreventableAction",
+        "Duration"
+      ],
+      "raw": "ALLOW_ACTION {\n    selector: Selector\n    action: PreventableAction\n    duration: Duration\n}"
+    },
+    {
+      "name": "PREVENT_ACTION",
+      "kind": "object",
+      "line": 2080,
+      "members": [],
+      "fields": [
+        {
+          "name": "selector",
+          "typeText": "selector",
+          "references": []
+        },
+        {
+          "name": "action",
+          "typeText": "SET_CARD_ACTIVE",
+          "references": [
+            "SET_CARD_ACTIVE"
+          ]
+        },
+        {
+          "name": "causeFilter",
+          "typeText": "REFRESH_PHASE",
+          "references": [
+            "REFRESH_PHASE"
+          ]
+        },
+        {
+          "name": "duration",
+          "typeText": "UNTIL_NEXT_REFRESH_PHASE(refreshOwner)",
+          "references": [
+            "UNTIL_NEXT_REFRESH_PHASE"
+          ]
+        }
+      ],
+      "references": [
+        "SET_CARD_ACTIVE",
+        "REFRESH_PHASE",
+        "UNTIL_NEXT_REFRESH_PHASE"
+      ],
+      "raw": "PREVENT_ACTION {\n    selector: selector\n\n    action: SET_CARD_ACTIVE\n\n    causeFilter: REFRESH_PHASE\n\n    duration: UNTIL_NEXT_REFRESH_PHASE(refreshOwner)\n}"
+    },
+    {
+      "name": "BattleAction",
+      "kind": "union",
+      "line": 2106,
+      "members": [
+        "DECLARE_ATTACK",
+        "CHANGE_ATTACK_TARGET",
+        "ACTIVATE_BLOCKER",
+        "CANCEL_ATTACK",
+        "END_BATTLE",
+        "DEAL_DAMAGE",
+        "SET_DAMAGE",
+        "MODIFY_DAMAGE",
+        "SKIP_BATTLE_STEP"
+      ],
+      "fields": [],
+      "references": [
+        "DECLARE_ATTACK",
+        "CHANGE_ATTACK_TARGET",
+        "ACTIVATE_BLOCKER",
+        "CANCEL_ATTACK",
+        "END_BATTLE",
+        "DEAL_DAMAGE",
+        "SET_DAMAGE",
+        "MODIFY_DAMAGE",
+        "SKIP_BATTLE_STEP"
+      ],
+      "raw": "BattleAction =\n    DECLARE_ATTACK\n    | CHANGE_ATTACK_TARGET\n    | ACTIVATE_BLOCKER\n    | CANCEL_ATTACK\n    | END_BATTLE\n    | DEAL_DAMAGE\n    | SET_DAMAGE\n    | MODIFY_DAMAGE\n    | SKIP_BATTLE_STEP"
+    },
+    {
+      "name": "DECLARE_ATTACK",
+      "kind": "object",
+      "line": 2119,
+      "members": [],
+      "fields": [
+        {
+          "name": "attacker",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "target",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "DECLARE_ATTACK {\n    attacker: Selector\n    target: Selector\n}"
+    },
+    {
+      "name": "CHANGE_ATTACK_TARGET",
+      "kind": "object",
+      "line": 2126,
+      "members": [],
+      "fields": [
+        {
+          "name": "newTarget",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        }
+      ],
+      "references": [
+        "Selector"
+      ],
+      "raw": "CHANGE_ATTACK_TARGET {\n    newTarget: Selector\n}"
+    },
+    {
+      "name": "DEAL_DAMAGE",
+      "kind": "object",
+      "line": 2132,
+      "members": [],
+      "fields": [
+        {
+          "name": "source",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "targetPlayer",
+          "typeText": "PlayerReference",
+          "references": [
+            "PlayerReference"
+          ]
+        },
+        {
+          "name": "amount",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        }
+      ],
+      "references": [
+        "Selector",
+        "PlayerReference",
+        "ValueExpression"
+      ],
+      "raw": "DEAL_DAMAGE {\n    source: Selector\n    targetPlayer: PlayerReference\n    amount: ValueExpression\n}"
+    },
+    {
+      "name": "CANCEL_ATTACK",
+      "kind": "object",
+      "line": 2140,
+      "members": [],
+      "fields": [
+        {
+          "name": "battle",
+          "typeText": "CURRENT_BATTLE",
+          "references": [
+            "CURRENT_BATTLE"
+          ]
+        }
+      ],
+      "references": [
+        "CURRENT_BATTLE"
+      ],
+      "raw": "CANCEL_ATTACK {\n    battle: CURRENT_BATTLE\n}"
+    },
+    {
+      "name": "PlayerAction",
+      "kind": "union",
+      "line": 2150,
+      "members": [
+        "PLAYER_WINS",
+        "PLAYER_LOSES",
+        "OPPONENT_CHOOSES",
+        "PLAYER_CHOOSES"
+      ],
+      "fields": [],
+      "references": [
+        "PLAYER_WINS",
+        "PLAYER_LOSES",
+        "OPPONENT_CHOOSES",
+        "PLAYER_CHOOSES"
+      ],
+      "raw": "PlayerAction =\n    PLAYER_WINS\n    | PLAYER_LOSES\n    | OPPONENT_CHOOSES\n    | PLAYER_CHOOSES"
+    },
+    {
+      "name": "RuleAction",
+      "kind": "union",
+      "line": 2158,
+      "members": [
+        "MODIFY_DEFEAT_CONDITION",
+        "MODIFY_VICTORY_CONDITION",
+        "MODIFY_DECK_CONSTRUCTION",
+        "MODIFY_STARTING_SETUP",
+        "MODIFY_AREA_CAPACITY",
+        "MODIFY_RULE_PERMISSION"
+      ],
+      "fields": [],
+      "references": [
+        "MODIFY_DEFEAT_CONDITION",
+        "MODIFY_VICTORY_CONDITION",
+        "MODIFY_DECK_CONSTRUCTION",
+        "MODIFY_STARTING_SETUP",
+        "MODIFY_AREA_CAPACITY",
+        "MODIFY_RULE_PERMISSION"
+      ],
+      "raw": "RuleAction =\n    MODIFY_DEFEAT_CONDITION\n    | MODIFY_VICTORY_CONDITION\n    | MODIFY_DECK_CONSTRUCTION\n    | MODIFY_STARTING_SETUP\n    | MODIFY_AREA_CAPACITY\n    | MODIFY_RULE_PERMISSION"
+    },
+    {
+      "name": "Duration",
+      "kind": "union",
+      "line": 2172,
+      "members": [
+        "INSTANT",
+        "THIS_BATTLE",
+        "THIS_TURN",
+        "UNTIL_END_OF_CURRENT_TURN",
+        "UNTIL_START_OF_NEXT_TURN",
+        "UNTIL_END_OF_NEXT_TURN",
+        "UNTIL_NEXT_REFRESH_PHASE",
+        "UNTIL_END_OF_NEXT_END_PHASE",
+        "WHILE_SOURCE_VALID",
+        "WHILE_SOURCE_IN_ZONE",
+        "WHILE_SOURCE_STATE",
+        "WHILE_CONDITION",
+        "UNTIL_EVENT",
+        "PERMANENT"
+      ],
+      "fields": [],
+      "references": [
+        "INSTANT",
+        "THIS_BATTLE",
+        "THIS_TURN",
+        "UNTIL_END_OF_CURRENT_TURN",
+        "UNTIL_START_OF_NEXT_TURN",
+        "UNTIL_END_OF_NEXT_TURN",
+        "UNTIL_NEXT_REFRESH_PHASE",
+        "UNTIL_END_OF_NEXT_END_PHASE",
+        "WHILE_SOURCE_VALID",
+        "WHILE_SOURCE_IN_ZONE",
+        "WHILE_SOURCE_STATE",
+        "WHILE_CONDITION",
+        "UNTIL_EVENT",
+        "PERMANENT"
+      ],
+      "raw": "Duration =\n    INSTANT\n\n    | THIS_BATTLE\n    | THIS_TURN\n\n    | UNTIL_END_OF_CURRENT_TURN\n\n    | UNTIL_START_OF_NEXT_TURN(PlayerReference)\n    | UNTIL_END_OF_NEXT_TURN(PlayerReference)\n\n    | UNTIL_NEXT_REFRESH_PHASE(PlayerReference)\n    | UNTIL_END_OF_NEXT_END_PHASE(PlayerReference)\n\n    | WHILE_SOURCE_VALID\n    | WHILE_SOURCE_IN_ZONE(Zone)\n    | WHILE_SOURCE_STATE(CardStateValue)\n    | WHILE_CONDITION(ConditionExpression)\n\n    | UNTIL_EVENT(EventPattern)\n\n    | PERMANENT"
+    },
+    {
+      "name": "Selector",
+      "kind": "object",
+      "line": 2227,
+      "members": [],
+      "fields": [
+        {
+          "name": "zones",
+          "typeText": "Zone[]",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "cardCategories",
+          "typeText": "CardCategory[]",
+          "references": [
+            "CardCategory"
+          ]
+        },
+        {
+          "name": "names",
+          "typeText": "NameFilter[]",
+          "references": [
+            "NameFilter"
+          ]
+        },
+        {
+          "name": "cardNumbers",
+          "typeText": "string[]",
+          "references": []
+        },
+        {
+          "name": "colors",
+          "typeText": "ColorFilter",
+          "references": [
+            "ColorFilter"
+          ]
+        },
+        {
+          "name": "types",
+          "typeText": "TypeFilter",
+          "references": [
+            "TypeFilter"
+          ]
+        },
+        {
+          "name": "attributes",
+          "typeText": "AttributeFilter",
+          "references": [
+            "AttributeFilter"
+          ]
+        },
+        {
+          "name": "cost",
+          "typeText": "NumericPropertyFilter",
+          "references": [
+            "NumericPropertyFilter"
+          ]
+        },
+        {
+          "name": "power",
+          "typeText": "NumericPropertyFilter",
+          "references": [
+            "NumericPropertyFilter"
+          ]
+        },
+        {
+          "name": "counter",
+          "typeText": "NumericPropertyFilter",
+          "references": [
+            "NumericPropertyFilter"
+          ]
+        },
+        {
+          "name": "life",
+          "typeText": "NumericPropertyFilter",
+          "references": [
+            "NumericPropertyFilter"
+          ]
+        },
+        {
+          "name": "states",
+          "typeText": "CardStateValue[]",
+          "references": [
+            "CardStateValue"
+          ]
+        },
+        {
+          "name": "face",
+          "typeText": "FaceState[]",
+          "references": [
+            "FaceState"
+          ]
+        },
+        {
+          "name": "keywords",
+          "typeText": "KeywordFilter",
+          "references": [
+            "KeywordFilter"
+          ]
+        },
+        {
+          "name": "effects",
+          "typeText": "EffectFilter",
+          "references": [
+            "EffectFilter"
+          ]
+        },
+        {
+          "name": "relations",
+          "typeText": "RelationFilter[]",
+          "references": [
+            "RelationFilter"
+          ]
+        },
+        {
+          "name": "history",
+          "typeText": "HistoryFilter[]",
+          "references": [
+            "HistoryFilter"
+          ]
+        },
+        {
+          "name": "quantity",
+          "typeText": "Quantity",
+          "references": [
+            "Quantity"
+          ]
+        },
+        {
+          "name": "ordering",
+          "typeText": "OrderingRule",
+          "references": [
+            "OrderingRule"
+          ]
+        }
+      ],
+      "references": [
+        "Zone",
+        "CardCategory",
+        "NameFilter",
+        "ColorFilter",
+        "TypeFilter",
+        "AttributeFilter",
+        "NumericPropertyFilter",
+        "CardStateValue",
+        "FaceState",
+        "KeywordFilter",
+        "EffectFilter",
+        "RelationFilter",
+        "HistoryFilter",
+        "Quantity",
+        "OrderingRule"
+      ],
+      "raw": "Selector {\n    subject:\n        CARD\n        | DON\n        | PLAYER\n        | EFFECT\n        | EVENT\n        | ACTION_RESULT\n\n    owner?:\n        PLAYER\n        | OPPONENT\n        | ANY\n\n    controller?:\n        PLAYER\n        | OPPONENT\n        | ANY\n\n    zones?: Zone[]\n\n    cardCategories?: CardCategory[]\n\n    names?: NameFilter[]\n\n    cardNumbers?: string[]\n\n    colors?: ColorFilter\n\n    types?: TypeFilter\n\n    attributes?: AttributeFilter\n\n    cost?: NumericPropertyFilter\n    power?: NumericPropertyFilter\n    counter?: NumericPropertyFilter\n    life?: NumericPropertyFilter\n\n    states?: CardStateValue[]\n\n    face?: FaceState[]\n\n    keywords?: KeywordFilter\n\n    effects?: EffectFilter\n\n    baseEffectStatus?:\n        ANY\n        | HAS_BASE_EFFECT\n        | NO_BASE_EFFECT\n\n    relations?: RelationFilter[]\n\n    history?: HistoryFilter[]\n\n    quantity: Quantity\n\n    chooser:\n        EFFECT_OWNER\n        | OPPONENT\n        | CARD_OWNER\n        | CARD_CONTROLLER\n        | RANDOM\n\n    distinctBy?:\n        NONE\n        | CARD_OBJECT\n        | CARD_NUMBER\n        | CARD_NAME\n\n    ordering?: OrderingRule\n}"
+    },
+    {
+      "name": "CardCategory",
+      "kind": "union",
+      "line": 2306,
+      "members": [
+        "LEADER",
+        "CHARACTER",
+        "EVENT",
+        "STAGE",
+        "DON"
+      ],
+      "fields": [],
+      "references": [
+        "LEADER",
+        "CHARACTER",
+        "EVENT",
+        "STAGE",
+        "DON"
+      ],
+      "raw": "CardCategory =\n    LEADER\n    | CHARACTER\n    | EVENT\n    | STAGE\n    | DON"
+    },
+    {
+      "name": "NameFilter",
+      "kind": "union",
+      "line": 2319,
+      "members": [
+        "NAME_EXACT",
+        "NAME_CONTAINS",
+        "NAME_STARTS_WITH",
+        "NAME_NOT",
+        "NAME_EQUALS_REFERENCE"
+      ],
+      "fields": [],
+      "references": [
+        "NAME_EXACT",
+        "NAME_CONTAINS",
+        "NAME_STARTS_WITH",
+        "NAME_NOT",
+        "NAME_EQUALS_REFERENCE"
+      ],
+      "raw": "NameFilter =\n    NAME_EXACT(string)\n    | NAME_CONTAINS(string)\n    | NAME_STARTS_WITH(string)\n    | NAME_NOT(string)\n    | NAME_EQUALS_REFERENCE(ObjectReference)"
+    },
+    {
+      "name": "ColorFilter",
+      "kind": "union",
+      "line": 2332,
+      "members": [
+        "HAS_COLOR",
+        "HAS_ANY_COLOR",
+        "HAS_ALL_COLORS",
+        "ONLY_COLORS",
+        "DOES_NOT_HAVE_COLOR"
+      ],
+      "fields": [],
+      "references": [
+        "HAS_COLOR",
+        "HAS_ANY_COLOR",
+        "HAS_ALL_COLORS",
+        "ONLY_COLORS",
+        "DOES_NOT_HAVE_COLOR"
+      ],
+      "raw": "ColorFilter =\n    HAS_COLOR(Color)\n    | HAS_ANY_COLOR(Color[])\n    | HAS_ALL_COLORS(Color[])\n    | ONLY_COLORS(Color[])\n    | DOES_NOT_HAVE_COLOR(Color)"
+    },
+    {
+      "name": "Color",
+      "kind": "union",
+      "line": 2341,
+      "members": [
+        "RED",
+        "GREEN",
+        "BLUE",
+        "PURPLE",
+        "BLACK",
+        "YELLOW"
+      ],
+      "fields": [],
+      "references": [
+        "RED",
+        "GREEN",
+        "BLUE",
+        "PURPLE",
+        "BLACK",
+        "YELLOW"
+      ],
+      "raw": "Color =\n    RED\n    | GREEN\n    | BLUE\n    | PURPLE\n    | BLACK\n    | YELLOW"
+    },
+    {
+      "name": "TypeFilter",
+      "kind": "union",
+      "line": 2355,
+      "members": [
+        "HAS_TYPE",
+        "TYPE_INCLUDES_TEXT",
+        "HAS_ANY_TYPE",
+        "HAS_ALL_TYPES",
+        "DOES_NOT_HAVE_TYPE"
+      ],
+      "fields": [],
+      "references": [
+        "HAS_TYPE",
+        "TYPE_INCLUDES_TEXT",
+        "HAS_ANY_TYPE",
+        "HAS_ALL_TYPES",
+        "DOES_NOT_HAVE_TYPE"
+      ],
+      "raw": "TypeFilter =\n    HAS_TYPE(string)\n    | TYPE_INCLUDES_TEXT(string)\n    | HAS_ANY_TYPE(string[])\n    | HAS_ALL_TYPES(string[])\n    | DOES_NOT_HAVE_TYPE(string)"
+    },
+    {
+      "name": "Attribute",
+      "kind": "union",
+      "line": 2375,
+      "members": [
+        "SLASH",
+        "STRIKE",
+        "RANGED",
+        "SPECIAL",
+        "WISDOM"
+      ],
+      "fields": [],
+      "references": [
+        "SLASH",
+        "STRIKE",
+        "RANGED",
+        "SPECIAL",
+        "WISDOM"
+      ],
+      "raw": "Attribute =\n    SLASH\n    | STRIKE\n    | RANGED\n    | SPECIAL\n    | WISDOM"
+    },
+    {
+      "name": "AttributeFilter",
+      "kind": "union",
+      "line": 2384,
+      "members": [
+        "HAS_ATTRIBUTE",
+        "HAS_ANY_ATTRIBUTE",
+        "HAS_ALL_ATTRIBUTES",
+        "DOES_NOT_HAVE_ATTRIBUTE"
+      ],
+      "fields": [],
+      "references": [
+        "HAS_ATTRIBUTE",
+        "HAS_ANY_ATTRIBUTE",
+        "HAS_ALL_ATTRIBUTES",
+        "DOES_NOT_HAVE_ATTRIBUTE"
+      ],
+      "raw": "AttributeFilter =\n    HAS_ATTRIBUTE(Attribute)\n    | HAS_ANY_ATTRIBUTE(Attribute[])\n    | HAS_ALL_ATTRIBUTES(Attribute[])\n    | DOES_NOT_HAVE_ATTRIBUTE(Attribute)"
+    },
+    {
+      "name": "NumericPropertyFilter",
+      "kind": "object",
+      "line": 2396,
+      "members": [],
+      "fields": [
+        {
+          "name": "value",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        },
+        {
+          "name": "minimum",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        },
+        {
+          "name": "maximum",
+          "typeText": "ValueExpression",
+          "references": [
+            "ValueExpression"
+          ]
+        }
+      ],
+      "references": [
+        "ValueExpression"
+      ],
+      "raw": "NumericPropertyFilter {\n    propertyLayer:\n        PRINTED\n        | BASE\n        | CURRENT\n\n    comparison:\n        EQUAL\n        | NOT_EQUAL\n        | AT_LEAST\n        | AT_MOST\n        | GREATER_THAN\n        | LESS_THAN\n        | BETWEEN\n\n    value?: ValueExpression\n\n    minimum?: ValueExpression\n    maximum?: ValueExpression\n}"
+    },
+    {
+      "name": "CardStateValue",
+      "kind": "union",
+      "line": 2441,
+      "members": [
+        "ACTIVE",
+        "RESTED",
+        "ATTACKING",
+        "BLOCKING",
+        "PLAYED_THIS_TURN"
+      ],
+      "fields": [],
+      "references": [
+        "ACTIVE",
+        "RESTED",
+        "ATTACKING",
+        "BLOCKING",
+        "PLAYED_THIS_TURN"
+      ],
+      "raw": "CardStateValue =\n    ACTIVE\n    | RESTED\n    | ATTACKING\n    | BLOCKING\n    | PLAYED_THIS_TURN"
+    },
+    {
+      "name": "EffectFilter",
+      "kind": "union",
+      "line": 2456,
+      "members": [
+        "HAS_KEYWORD",
+        "DOES_NOT_HAVE_KEYWORD",
+        "HAS_TIMING",
+        "DOES_NOT_HAVE_TIMING",
+        "HAS_EFFECT_CATEGORY",
+        "HAS_BASE_EFFECT",
+        "HAS_NO_BASE_EFFECT",
+        "EFFECT_TEXT_MATCHES"
+      ],
+      "fields": [],
+      "references": [
+        "HAS_KEYWORD",
+        "DOES_NOT_HAVE_KEYWORD",
+        "HAS_TIMING",
+        "DOES_NOT_HAVE_TIMING",
+        "HAS_EFFECT_CATEGORY",
+        "HAS_BASE_EFFECT",
+        "HAS_NO_BASE_EFFECT",
+        "EFFECT_TEXT_MATCHES"
+      ],
+      "raw": "EffectFilter =\n    HAS_KEYWORD(KeywordEffect)\n    | DOES_NOT_HAVE_KEYWORD(KeywordEffect)\n\n    | HAS_TIMING(StandardTiming)\n    | DOES_NOT_HAVE_TIMING(StandardTiming)\n\n    | HAS_EFFECT_CATEGORY(EffectCategory)\n\n    | HAS_BASE_EFFECT\n    | HAS_NO_BASE_EFFECT\n\n    | EFFECT_TEXT_MATCHES(string)"
+    },
+    {
+      "name": "RelationFilter",
+      "kind": "union",
+      "line": 2476,
+      "members": [
+        "THIS_CARD",
+        "OTHER_THAN_THIS_CARD",
+        "THIS_LEADER",
+        "THIS_CHARACTER",
+        "THIS_STAGE",
+        "ATTACKING_CARD",
+        "ORIGINAL_ATTACK_TARGET",
+        "CURRENT_ATTACK_TARGET",
+        "BLOCKING_CARD",
+        "EFFECT_SOURCE",
+        "EFFECT_OWNER_LEADER",
+        "SELECTED_BY",
+        "PLAYED_BY",
+        "KOD_BY",
+        "TRASHED_BY",
+        "RETURNED_BY",
+        "CARD_THAT_TRIGGERED_THIS_EFFECT",
+        "SAME_NAME_AS",
+        "DIFFERENT_NAME_FROM",
+        "ATTACHED_TO",
+        "HAS_ATTACHED_DON",
+        "CONTROLLED_BY_SAME_PLAYER_AS",
+        "OWNED_BY_SAME_PLAYER_AS"
+      ],
+      "fields": [],
+      "references": [
+        "THIS_CARD",
+        "OTHER_THAN_THIS_CARD",
+        "THIS_LEADER",
+        "THIS_CHARACTER",
+        "THIS_STAGE",
+        "ATTACKING_CARD",
+        "ORIGINAL_ATTACK_TARGET",
+        "CURRENT_ATTACK_TARGET",
+        "BLOCKING_CARD",
+        "EFFECT_SOURCE",
+        "EFFECT_OWNER_LEADER",
+        "SELECTED_BY",
+        "PLAYED_BY",
+        "KOD_BY",
+        "TRASHED_BY",
+        "RETURNED_BY",
+        "CARD_THAT_TRIGGERED_THIS_EFFECT",
+        "SAME_NAME_AS",
+        "DIFFERENT_NAME_FROM",
+        "ATTACHED_TO",
+        "HAS_ATTACHED_DON",
+        "CONTROLLED_BY_SAME_PLAYER_AS",
+        "OWNED_BY_SAME_PLAYER_AS"
+      ],
+      "raw": "RelationFilter =\n    THIS_CARD\n    | OTHER_THAN_THIS_CARD\n\n    | THIS_LEADER\n    | THIS_CHARACTER\n    | THIS_STAGE\n\n    | ATTACKING_CARD\n    | ORIGINAL_ATTACK_TARGET\n    | CURRENT_ATTACK_TARGET\n    | BLOCKING_CARD\n\n    | EFFECT_SOURCE\n    | EFFECT_OWNER_LEADER\n\n    | SELECTED_BY(ResultReference)\n    | PLAYED_BY(ResultReference)\n    | KOD_BY(ResultReference)\n    | TRASHED_BY(ResultReference)\n    | RETURNED_BY(ResultReference)\n\n    | CARD_THAT_TRIGGERED_THIS_EFFECT\n\n    | SAME_NAME_AS(ObjectReference)\n    | DIFFERENT_NAME_FROM(ObjectReference)\n\n    | ATTACHED_TO(ObjectReference)\n    | HAS_ATTACHED_DON\n\n    | CONTROLLED_BY_SAME_PLAYER_AS(ObjectReference)\n    | OWNED_BY_SAME_PLAYER_AS(ObjectReference)"
+    },
+    {
+      "name": "HistoryFilter",
+      "kind": "union",
+      "line": 2515,
+      "members": [
+        "PLAYED_THIS_TURN",
+        "PLAYED_BY_EFFECT",
+        "ATTACKED_THIS_TURN",
+        "BECAME_RESTED_THIS_TURN",
+        "KOD_THIS_TURN",
+        "RETURNED_TO_HAND_THIS_TURN",
+        "SELECTED_PREVIOUSLY"
+      ],
+      "fields": [],
+      "references": [
+        "PLAYED_THIS_TURN",
+        "PLAYED_BY_EFFECT",
+        "ATTACKED_THIS_TURN",
+        "BECAME_RESTED_THIS_TURN",
+        "KOD_THIS_TURN",
+        "RETURNED_TO_HAND_THIS_TURN",
+        "SELECTED_PREVIOUSLY"
+      ],
+      "raw": "HistoryFilter =\n    PLAYED_THIS_TURN\n    | PLAYED_BY_EFFECT\n    | ATTACKED_THIS_TURN\n    | BECAME_RESTED_THIS_TURN\n    | KOD_THIS_TURN\n    | RETURNED_TO_HAND_THIS_TURN\n    | SELECTED_PREVIOUSLY"
+    },
+    {
+      "name": "Quantity",
+      "kind": "union",
+      "line": 2530,
+      "members": [
+        "EXACTLY",
+        "UP_TO",
+        "AT_LEAST",
+        "ALL",
+        "ANY_NUMBER"
+      ],
+      "fields": [],
+      "references": [
+        "EXACTLY",
+        "UP_TO",
+        "AT_LEAST",
+        "ALL",
+        "ANY_NUMBER"
+      ],
+      "raw": "Quantity =\n    EXACTLY(ValueExpression)\n    | UP_TO(ValueExpression)\n    | AT_LEAST(ValueExpression)\n    | ALL\n    | ANY_NUMBER"
+    },
+    {
+      "name": "OrderingRule",
+      "kind": "union",
+      "line": 2550,
+      "members": [
+        "FIELD_ORDER",
+        "DECK_ORDER",
+        "PLAYER_CHOOSES_ORDER",
+        "OWNER_CHOOSES_ORDER",
+        "OPPONENT_CHOOSES_ORDER",
+        "RANDOM_ORDER"
+      ],
+      "fields": [],
+      "references": [
+        "FIELD_ORDER",
+        "DECK_ORDER",
+        "PLAYER_CHOOSES_ORDER",
+        "OWNER_CHOOSES_ORDER",
+        "OPPONENT_CHOOSES_ORDER",
+        "RANDOM_ORDER"
+      ],
+      "raw": "OrderingRule =\n    FIELD_ORDER\n    | DECK_ORDER\n    | PLAYER_CHOOSES_ORDER\n    | OWNER_CHOOSES_ORDER\n    | OPPONENT_CHOOSES_ORDER\n    | RANDOM_ORDER"
+    },
+    {
+      "name": "CompositeSelector",
+      "kind": "union",
+      "line": 2564,
+      "members": [
+        "SELECTOR",
+        "AND",
+        "OR",
+        "NOT",
+        "UNION",
+        "INTERSECTION",
+        "EXCLUDE"
+      ],
+      "fields": [],
+      "references": [
+        "SELECTOR",
+        "AND",
+        "OR",
+        "NOT",
+        "UNION",
+        "INTERSECTION",
+        "EXCLUDE"
+      ],
+      "raw": "CompositeSelector =\n    SELECTOR(Selector)\n\n    | AND(CompositeSelector[])\n    | OR(CompositeSelector[])\n    | NOT(CompositeSelector)\n\n    | UNION(CompositeSelector[])\n    | INTERSECTION(CompositeSelector[])\n    | EXCLUDE("
+    },
+    {
+      "name": "ModifierExpression",
+      "kind": "union",
+      "line": 2620,
+      "members": [
+        "STAT_MODIFIER",
+        "PROPERTY_MODIFIER",
+        "EFFECT_MODIFIER",
+        "PERMISSION_MODIFIER",
+        "RULE_MODIFIER"
+      ],
+      "fields": [],
+      "references": [
+        "STAT_MODIFIER",
+        "PROPERTY_MODIFIER",
+        "EFFECT_MODIFIER",
+        "PERMISSION_MODIFIER",
+        "RULE_MODIFIER"
+      ],
+      "raw": "ModifierExpression =\n    STAT_MODIFIER\n    | PROPERTY_MODIFIER\n    | EFFECT_MODIFIER\n    | PERMISSION_MODIFIER\n    | RULE_MODIFIER"
+    },
+    {
+      "name": "ModifierInstance",
+      "kind": "object",
+      "line": 2629,
+      "members": [],
+      "fields": [
+        {
+          "name": "id",
+          "typeText": "ModifierId",
+          "references": [
+            "ModifierId"
+          ]
+        },
+        {
+          "name": "sourceEffectId",
+          "typeText": "EffectId",
+          "references": [
+            "EffectId"
+          ]
+        },
+        {
+          "name": "sourceObjectId",
+          "typeText": "CardObjectId",
+          "references": [
+            "CardObjectId"
+          ]
+        },
+        {
+          "name": "target",
+          "typeText": "Selector",
+          "references": [
+            "Selector"
+          ]
+        },
+        {
+          "name": "modifier",
+          "typeText": "ModifierExpression",
+          "references": [
+            "ModifierExpression"
+          ]
+        },
+        {
+          "name": "duration",
+          "typeText": "Duration",
+          "references": [
+            "Duration"
+          ]
+        },
+        {
+          "name": "createdAt",
+          "typeText": "GameEventId",
+          "references": [
+            "GameEventId"
+          ]
+        },
+        {
+          "name": "priority",
+          "typeText": "number",
+          "references": []
+        }
+      ],
+      "references": [
+        "ModifierId",
+        "EffectId",
+        "CardObjectId",
+        "Selector",
+        "ModifierExpression",
+        "Duration",
+        "GameEventId"
+      ],
+      "raw": "ModifierInstance {\n    id: ModifierId\n\n    sourceEffectId: EffectId\n    sourceObjectId?: CardObjectId\n\n    target: Selector\n\n    modifier: ModifierExpression\n\n    duration: Duration\n\n    createdAt: GameEventId\n\n    layer:\n        RULE\n        | PRINTED_INFORMATION\n        | BASE_INFORMATION\n        | CURRENT_INFORMATION\n        | POWER\n        | COST\n        | EFFECT\n        | PERMISSION\n        | REPLACEMENT\n\n    priority?: number\n}"
+    },
+    {
+      "name": "GameEvent",
+      "kind": "object",
+      "line": 2663,
+      "members": [],
+      "fields": [
+        {
+          "name": "id",
+          "typeText": "GameEventId",
+          "references": [
+            "GameEventId"
+          ]
+        },
+        {
+          "name": "type",
+          "typeText": "GameEventType",
+          "references": [
+            "GameEventType"
+          ]
+        },
+        {
+          "name": "actor",
+          "typeText": "PlayerId",
+          "references": [
+            "PlayerId"
+          ]
+        },
+        {
+          "name": "sourceObject",
+          "typeText": "ObjectId",
+          "references": [
+            "ObjectId"
+          ]
+        },
+        {
+          "name": "subjectObjects",
+          "typeText": "ObjectId[]",
+          "references": [
+            "ObjectId"
+          ]
+        },
+        {
+          "name": "sourceEffect",
+          "typeText": "EffectId",
+          "references": [
+            "EffectId"
+          ]
+        },
+        {
+          "name": "cause",
+          "typeText": "EventCause",
+          "references": [
+            "EventCause"
+          ]
+        },
+        {
+          "name": "fromZone",
+          "typeText": "Zone",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "toZone",
+          "typeText": "Zone",
+          "references": [
+            "Zone"
+          ]
+        },
+        {
+          "name": "amount",
+          "typeText": "number",
+          "references": []
+        },
+        {
+          "name": "parentEvent",
+          "typeText": "GameEventId",
+          "references": [
+            "GameEventId"
+          ]
+        },
+        {
+          "name": "replacedBy",
+          "typeText": "EffectId",
+          "references": [
+            "EffectId"
+          ]
+        },
+        {
+          "name": "preventedBy",
+          "typeText": "EffectId",
+          "references": [
+            "EffectId"
+          ]
+        },
+        {
+          "name": "timestamp",
+          "typeText": "ResolutionTimestamp",
+          "references": [
+            "ResolutionTimestamp"
+          ]
+        }
+      ],
+      "references": [
+        "GameEventId",
+        "GameEventType",
+        "PlayerId",
+        "ObjectId",
+        "EffectId",
+        "EventCause",
+        "Zone",
+        "ResolutionTimestamp"
+      ],
+      "raw": "GameEvent {\n    id: GameEventId\n\n    type: GameEventType\n\n    actor?: PlayerId\n\n    sourceObject?: ObjectId\n    subjectObjects: ObjectId[]\n\n    sourceEffect?: EffectId\n\n    cause: EventCause\n\n    fromZone?: Zone\n    toZone?: Zone\n\n    amount?: number\n\n    parentEvent?: GameEventId\n\n    replacedBy?: EffectId\n    preventedBy?: EffectId\n\n    timestamp: ResolutionTimestamp\n}"
+    },
+    {
+      "name": "EffectInstance",
+      "kind": "object",
+      "line": 2696,
+      "members": [],
+      "fields": [
+        {
+          "name": "instanceId",
+          "typeText": "EffectInstanceId",
+          "references": [
+            "EffectInstanceId"
+          ]
+        },
+        {
+          "name": "definition",
+          "typeText": "EffectDefinition",
+          "references": [
+            "EffectDefinition"
+          ]
+        },
+        {
+          "name": "sourceSnapshot",
+          "typeText": "EffectSourceSnapshot",
+          "references": [
+            "EffectSourceSnapshot"
+          ]
+        },
+        {
+          "name": "controller",
+          "typeText": "PlayerId",
+          "references": [
+            "PlayerId"
+          ]
+        },
+        {
+          "name": "activationEvent",
+          "typeText": "GameEventId",
+          "references": [
+            "GameEventId"
+          ]
+        },
+        {
+          "name": "selectedObjects",
+          "typeText": "Map<SelectionId, ObjectId[]>",
+          "references": [
+            "Map",
+            "SelectionId",
+            "ObjectId"
+          ]
+        },
+        {
+          "name": "actionResults",
+          "typeText": "Map<ActionId, ActionResult>",
+          "references": [
+            "Map",
+            "ActionId",
+            "ActionResult"
+          ]
+        },
+        {
+          "name": "createdModifiers",
+          "typeText": "ModifierId[]",
+          "references": [
+            "ModifierId"
+          ]
+        },
+        {
+          "name": "createdDelayedEffects",
+          "typeText": "EffectInstanceId[]",
+          "references": [
+            "EffectInstanceId"
+          ]
+        }
+      ],
+      "references": [
+        "EffectInstanceId",
+        "EffectDefinition",
+        "EffectSourceSnapshot",
+        "PlayerId",
+        "GameEventId",
+        "Map",
+        "SelectionId",
+        "ObjectId",
+        "ActionId",
+        "ActionResult",
+        "ModifierId"
+      ],
+      "raw": "EffectInstance {\n    instanceId: EffectInstanceId\n\n    definition: EffectDefinition\n\n    sourceSnapshot: EffectSourceSnapshot\n\n    controller: PlayerId\n\n    activationEvent?: GameEventId\n\n    status:\n        PENDING\n        ACTIVATING\n        PAYING_COST\n        RESOLVING\n        RESOLVED\n        CANCELLED\n        INVALID\n\n    selectedObjects: Map<SelectionId, ObjectId[]>\n\n    actionResults: Map<ActionId, ActionResult>\n\n    createdModifiers: ModifierId[]\n\n    createdDelayedEffects: EffectInstanceId[]\n}"
+    }
+  ],
+  "references": [
+    {
+      "from": "Action",
+      "to": "BattleAction"
+    },
+    {
+      "from": "Action",
+      "to": "CardAction"
+    },
+    {
+      "from": "Action",
+      "to": "DonAction"
+    },
+    {
+      "from": "Action",
+      "to": "EffectAction"
+    },
+    {
+      "from": "Action",
+      "to": "InformationAction"
+    },
+    {
+      "from": "Action",
+      "to": "LifeAction"
+    },
+    {
+      "from": "Action",
+      "to": "PermissionAction"
+    },
+    {
+      "from": "Action",
+      "to": "PlayerAction"
+    },
+    {
+      "from": "Action",
+      "to": "RuleAction"
+    },
+    {
+      "from": "Action",
+      "to": "StatAction"
+    },
+    {
+      "from": "Action",
+      "to": "StateAction"
+    },
+    {
+      "from": "ActionResult",
+      "to": "Zone"
+    },
+    {
+      "from": "ActionResult",
+      "to": "Zone",
+      "field": "previousZones"
+    },
+    {
+      "from": "ActionResult",
+      "to": "Zone",
+      "field": "resultingZones"
+    },
+    {
+      "from": "ActivationCost",
+      "to": "ConditionExpression"
+    },
+    {
+      "from": "ActivationCost",
+      "to": "CostAction"
+    },
+    {
+      "from": "ActivationCost",
+      "to": "CostAction",
+      "field": "payments"
+    },
+    {
+      "from": "ActivationCost",
+      "to": "ConditionExpression",
+      "field": "preconditions"
+    },
+    {
+      "from": "ADD_CARD_TO_HAND",
+      "to": "Selector"
+    },
+    {
+      "from": "ADD_CARD_TO_HAND",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "ADD_CARD_TO_LIFE",
+      "to": "Selector"
+    },
+    {
+      "from": "ADD_CARD_TO_LIFE",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "ADD_DON_FROM_DON_DECK",
+      "to": "PlayerReference"
+    },
+    {
+      "from": "ADD_DON_FROM_DON_DECK",
+      "to": "ValueExpression"
+    },
+    {
+      "from": "ADD_DON_FROM_DON_DECK",
+      "to": "ValueExpression",
+      "field": "count"
+    },
+    {
+      "from": "ADD_DON_FROM_DON_DECK",
+      "to": "PlayerReference",
+      "field": "player"
+    },
+    {
+      "from": "ADD_EFFECT",
+      "to": "Duration"
+    },
+    {
+      "from": "ADD_EFFECT",
+      "to": "EffectDefinition"
+    },
+    {
+      "from": "ADD_EFFECT",
+      "to": "Selector"
+    },
+    {
+      "from": "ADD_EFFECT",
+      "to": "Duration",
+      "field": "duration"
+    },
+    {
+      "from": "ADD_EFFECT",
+      "to": "EffectDefinition",
+      "field": "effect"
+    },
+    {
+      "from": "ADD_EFFECT",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "ALLOW_ACTION",
+      "to": "Duration"
+    },
+    {
+      "from": "ALLOW_ACTION",
+      "to": "PreventableAction"
+    },
+    {
+      "from": "ALLOW_ACTION",
+      "to": "Selector"
+    },
+    {
+      "from": "ALLOW_ACTION",
+      "to": "PreventableAction",
+      "field": "action"
+    },
+    {
+      "from": "ALLOW_ACTION",
+      "to": "Duration",
+      "field": "duration"
+    },
+    {
+      "from": "ALLOW_ACTION",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "BattleAction",
+      "to": "CANCEL_ATTACK"
+    },
+    {
+      "from": "BattleAction",
+      "to": "CHANGE_ATTACK_TARGET"
+    },
+    {
+      "from": "BattleAction",
+      "to": "DEAL_DAMAGE"
+    },
+    {
+      "from": "BattleAction",
+      "to": "DECLARE_ATTACK"
+    },
+    {
+      "from": "BattleState",
+      "to": "BattleStep"
+    },
+    {
+      "from": "BattleState",
+      "to": "BattleStep",
+      "field": "step"
+    },
+    {
+      "from": "CardAction",
+      "to": "ADD_CARD_TO_HAND"
+    },
+    {
+      "from": "CardAction",
+      "to": "DRAW_CARD"
+    },
+    {
+      "from": "CardAction",
+      "to": "KO_CARD"
+    },
+    {
+      "from": "CardAction",
+      "to": "LOOK_AT_CARDS"
+    },
+    {
+      "from": "CardAction",
+      "to": "MOVE_CARD"
+    },
+    {
+      "from": "CardAction",
+      "to": "PLAY_CARD"
+    },
+    {
+      "from": "CardAction",
+      "to": "REORDER_CARDS"
+    },
+    {
+      "from": "CardAction",
+      "to": "RETURN_CARD"
+    },
+    {
+      "from": "CardAction",
+      "to": "REVEAL_CARD"
+    },
+    {
+      "from": "CardAction",
+      "to": "SELECT_CARD"
+    },
+    {
+      "from": "CardAction",
+      "to": "TRASH_CARD"
+    },
+    {
+      "from": "CardDefinition",
+      "to": "Attribute"
+    },
+    {
+      "from": "CardDefinition",
+      "to": "Color"
+    },
+    {
+      "from": "CardDefinition",
+      "to": "EffectDefinition"
+    },
+    {
+      "from": "CardDefinition",
+      "to": "Attribute",
+      "field": "attributes"
+    },
+    {
+      "from": "CardDefinition",
+      "to": "EffectDefinition",
+      "field": "baseEffects"
+    },
+    {
+      "from": "CardDefinition",
+      "to": "Color",
+      "field": "colors"
+    },
+    {
+      "from": "CardState",
+      "to": "Attribute"
+    },
+    {
+      "from": "CardState",
+      "to": "CardDefinition"
+    },
+    {
+      "from": "CardState",
+      "to": "Color"
+    },
+    {
+      "from": "CardState",
+      "to": "EffectInstance"
+    },
+    {
+      "from": "CardState",
+      "to": "ModifierInstance"
+    },
+    {
+      "from": "CardState",
+      "to": "Zone"
+    },
+    {
+      "from": "CardState",
+      "to": "Attribute",
+      "field": "attributes"
+    },
+    {
+      "from": "CardState",
+      "to": "Color",
+      "field": "colors"
+    },
+    {
+      "from": "CardState",
+      "to": "CardDefinition",
+      "field": "definition"
+    },
+    {
+      "from": "CardState",
+      "to": "EffectInstance",
+      "field": "gainedEffects"
+    },
+    {
+      "from": "CardState",
+      "to": "ModifierInstance",
+      "field": "temporaryModifiers"
+    },
+    {
+      "from": "CardState",
+      "to": "Zone",
+      "field": "zone"
+    },
+    {
+      "from": "CHANGE_ATTACK_TARGET",
+      "to": "Selector"
+    },
+    {
+      "from": "CHANGE_ATTACK_TARGET",
+      "to": "Selector",
+      "field": "newTarget"
+    },
+    {
+      "from": "ConditionPredicate",
+      "to": "ValueExpression"
+    },
+    {
+      "from": "ConditionPredicate",
+      "to": "ValueExpression",
+      "field": "left"
+    },
+    {
+      "from": "ConditionPredicate",
+      "to": "ValueExpression",
+      "field": "right"
+    },
+    {
+      "from": "CostAction",
+      "to": "REST_DON_COST"
+    },
+    {
+      "from": "DEAL_DAMAGE",
+      "to": "PlayerReference"
+    },
+    {
+      "from": "DEAL_DAMAGE",
+      "to": "Selector"
+    },
+    {
+      "from": "DEAL_DAMAGE",
+      "to": "ValueExpression"
+    },
+    {
+      "from": "DEAL_DAMAGE",
+      "to": "ValueExpression",
+      "field": "amount"
+    },
+    {
+      "from": "DEAL_DAMAGE",
+      "to": "Selector",
+      "field": "source"
+    },
+    {
+      "from": "DEAL_DAMAGE",
+      "to": "PlayerReference",
+      "field": "targetPlayer"
+    },
+    {
+      "from": "DECLARE_ATTACK",
+      "to": "Selector"
+    },
+    {
+      "from": "DECLARE_ATTACK",
+      "to": "Selector",
+      "field": "attacker"
+    },
+    {
+      "from": "DECLARE_ATTACK",
+      "to": "Selector",
+      "field": "target"
+    },
+    {
+      "from": "DETACH_DON",
+      "to": "Selector"
+    },
+    {
+      "from": "DETACH_DON",
+      "to": "ValueExpression"
+    },
+    {
+      "from": "DETACH_DON",
+      "to": "ValueExpression",
+      "field": "count"
+    },
+    {
+      "from": "DETACH_DON",
+      "to": "Selector",
+      "field": "sourceCard"
+    },
+    {
+      "from": "DonAction",
+      "to": "ADD_DON_FROM_DON_DECK"
+    },
+    {
+      "from": "DonAction",
+      "to": "DETACH_DON"
+    },
+    {
+      "from": "DonAction",
+      "to": "GIVE_DON"
+    },
+    {
+      "from": "DonAction",
+      "to": "RETURN_DON_TO_DON_DECK"
+    },
+    {
+      "from": "DRAW_CARD",
+      "to": "PlayerReference"
+    },
+    {
+      "from": "DRAW_CARD",
+      "to": "ValueExpression"
+    },
+    {
+      "from": "DRAW_CARD",
+      "to": "ValueExpression",
+      "field": "count"
+    },
+    {
+      "from": "DRAW_CARD",
+      "to": "PlayerReference",
+      "field": "player"
+    },
+    {
+      "from": "EffectAction",
+      "to": "ADD_EFFECT"
+    },
+    {
+      "from": "EffectAction",
+      "to": "GRANT_KEYWORD"
+    },
+    {
+      "from": "EffectAction",
+      "to": "INVALIDATE_EFFECTS"
+    },
+    {
+      "from": "EffectAction",
+      "to": "REMOVE_KEYWORD"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "ActivationCost"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "ConditionExpression"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "Duration"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "EffectSource"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "ResolutionNode"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "RuleModifier"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "TimingExpression"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "UsageLimit"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "Zone"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "ActivationCost",
+      "field": "activationCost"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "Zone",
+      "field": "activationZones"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "ConditionExpression",
+      "field": "conditions"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "Duration",
+      "field": "duration"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "ResolutionNode",
+      "field": "resolution"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "RuleModifier",
+      "field": "ruleModifier"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "EffectSource",
+      "field": "source"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "TimingExpression",
+      "field": "timing"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "UsageLimit",
+      "field": "usageLimit"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "ActionResult"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "EffectDefinition"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "ActionResult",
+      "field": "actionResults"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "EffectDefinition",
+      "field": "definition"
+    },
+    {
+      "from": "EffectSource",
+      "to": "Zone"
+    },
+    {
+      "from": "EffectSource",
+      "to": "Zone",
+      "field": "sourceZone"
+    },
+    {
+      "from": "EventPattern",
+      "to": "ConditionExpression"
+    },
+    {
+      "from": "EventPattern",
+      "to": "EventCause"
+    },
+    {
+      "from": "EventPattern",
+      "to": "GameEventType"
+    },
+    {
+      "from": "EventPattern",
+      "to": "Selector"
+    },
+    {
+      "from": "EventPattern",
+      "to": "Zone"
+    },
+    {
+      "from": "EventPattern",
+      "to": "EventCause",
+      "field": "cause"
+    },
+    {
+      "from": "EventPattern",
+      "to": "ConditionExpression",
+      "field": "conditions"
+    },
+    {
+      "from": "EventPattern",
+      "to": "Zone",
+      "field": "fromZone"
+    },
+    {
+      "from": "EventPattern",
+      "to": "Selector",
+      "field": "subject"
+    },
+    {
+      "from": "EventPattern",
+      "to": "Zone",
+      "field": "toZone"
+    },
+    {
+      "from": "EventPattern",
+      "to": "GameEventType",
+      "field": "type"
+    },
+    {
+      "from": "GameEvent",
+      "to": "EventCause"
+    },
+    {
+      "from": "GameEvent",
+      "to": "GameEventType"
+    },
+    {
+      "from": "GameEvent",
+      "to": "Zone"
+    },
+    {
+      "from": "GameEvent",
+      "to": "EventCause",
+      "field": "cause"
+    },
+    {
+      "from": "GameEvent",
+      "to": "Zone",
+      "field": "fromZone"
+    },
+    {
+      "from": "GameEvent",
+      "to": "Zone",
+      "field": "toZone"
+    },
+    {
+      "from": "GameEvent",
+      "to": "GameEventType",
+      "field": "type"
+    },
+    {
+      "from": "GameState",
+      "to": "BattleState"
+    },
+    {
+      "from": "GameState",
+      "to": "EffectInstance"
+    },
+    {
+      "from": "GameState",
+      "to": "GameEvent"
+    },
+    {
+      "from": "GameState",
+      "to": "GamePhase"
+    },
+    {
+      "from": "GameState",
+      "to": "PlayerState"
+    },
+    {
+      "from": "GameState",
+      "to": "BattleState",
+      "field": "battle"
+    },
+    {
+      "from": "GameState",
+      "to": "GameEvent",
+      "field": "eventHistory"
+    },
+    {
+      "from": "GameState",
+      "to": "PlayerState",
+      "field": "opponent"
+    },
+    {
+      "from": "GameState",
+      "to": "EffectInstance",
+      "field": "pendingAutoEffects"
+    },
+    {
+      "from": "GameState",
+      "to": "GamePhase",
+      "field": "phase"
+    },
+    {
+      "from": "GameState",
+      "to": "PlayerState",
+      "field": "player"
+    },
+    {
+      "from": "GameState",
+      "to": "EffectInstance",
+      "field": "resolutionQueue"
+    },
+    {
+      "from": "GIVE_DON",
+      "to": "Selector"
+    },
+    {
+      "from": "GIVE_DON",
+      "to": "Selector",
+      "field": "donSelector"
+    },
+    {
+      "from": "GIVE_DON",
+      "to": "Selector",
+      "field": "target"
+    },
+    {
+      "from": "GRANT_KEYWORD",
+      "to": "Duration"
+    },
+    {
+      "from": "GRANT_KEYWORD",
+      "to": "KeywordEffect"
+    },
+    {
+      "from": "GRANT_KEYWORD",
+      "to": "Selector"
+    },
+    {
+      "from": "GRANT_KEYWORD",
+      "to": "Duration",
+      "field": "duration"
+    },
+    {
+      "from": "GRANT_KEYWORD",
+      "to": "KeywordEffect",
+      "field": "keyword"
+    },
+    {
+      "from": "GRANT_KEYWORD",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "InformationAction",
+      "to": "MODIFY_NAME"
+    },
+    {
+      "from": "InformationAction",
+      "to": "MODIFY_TYPE"
+    },
+    {
+      "from": "INVALIDATE_EFFECTS",
+      "to": "Duration"
+    },
+    {
+      "from": "INVALIDATE_EFFECTS",
+      "to": "Selector"
+    },
+    {
+      "from": "INVALIDATE_EFFECTS",
+      "to": "Duration",
+      "field": "duration"
+    },
+    {
+      "from": "INVALIDATE_EFFECTS",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "KO_CARD",
+      "to": "Selector"
+    },
+    {
+      "from": "KO_CARD",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "LeaderState",
+      "to": "Attribute"
+    },
+    {
+      "from": "LeaderState",
+      "to": "Color"
+    },
+    {
+      "from": "LeaderState",
+      "to": "EffectDefinition"
+    },
+    {
+      "from": "LeaderState",
+      "to": "EffectInstance"
+    },
+    {
+      "from": "LeaderState",
+      "to": "ModifierInstance"
+    },
+    {
+      "from": "LeaderState",
+      "to": "EffectDefinition",
+      "field": "baseEffects"
+    },
+    {
+      "from": "LeaderState",
+      "to": "Attribute",
+      "field": "effectiveAttributes"
+    },
+    {
+      "from": "LeaderState",
+      "to": "Color",
+      "field": "effectiveColors"
+    },
+    {
+      "from": "LeaderState",
+      "to": "EffectInstance",
+      "field": "gainedEffects"
+    },
+    {
+      "from": "LeaderState",
+      "to": "Attribute",
+      "field": "printedAttributes"
+    },
+    {
+      "from": "LeaderState",
+      "to": "Color",
+      "field": "printedColors"
+    },
+    {
+      "from": "LeaderState",
+      "to": "ModifierInstance",
+      "field": "temporaryModifiers"
+    },
+    {
+      "from": "LifeAction",
+      "to": "ADD_CARD_TO_LIFE"
+    },
+    {
+      "from": "LifeAction",
+      "to": "TAKE_DAMAGE"
+    },
+    {
+      "from": "LifeAction",
+      "to": "TAKE_LIFE_TO_HAND"
+    },
+    {
+      "from": "LifeAction",
+      "to": "TRASH_LIFE"
+    },
+    {
+      "from": "LOOK_AT_CARDS",
+      "to": "PlayerReference"
+    },
+    {
+      "from": "LOOK_AT_CARDS",
+      "to": "ValueExpression"
+    },
+    {
+      "from": "LOOK_AT_CARDS",
+      "to": "ValueExpression",
+      "field": "count"
+    },
+    {
+      "from": "LOOK_AT_CARDS",
+      "to": "PlayerReference",
+      "field": "player"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "Duration"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "ModifierExpression"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "Selector"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "Duration",
+      "field": "duration"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "ModifierExpression",
+      "field": "modifier"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "Selector",
+      "field": "target"
+    },
+    {
+      "from": "MODIFY_NAME",
+      "to": "Duration"
+    },
+    {
+      "from": "MODIFY_NAME",
+      "to": "Selector"
+    },
+    {
+      "from": "MODIFY_NAME",
+      "to": "Duration",
+      "field": "duration"
+    },
+    {
+      "from": "MODIFY_NAME",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "MODIFY_TYPE",
+      "to": "Duration"
+    },
+    {
+      "from": "MODIFY_TYPE",
+      "to": "Selector"
+    },
+    {
+      "from": "MODIFY_TYPE",
+      "to": "Duration",
+      "field": "duration"
+    },
+    {
+      "from": "MODIFY_TYPE",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "ModifyStatAction",
+      "to": "Duration"
+    },
+    {
+      "from": "ModifyStatAction",
+      "to": "Selector"
+    },
+    {
+      "from": "ModifyStatAction",
+      "to": "ValueExpression"
+    },
+    {
+      "from": "ModifyStatAction",
+      "to": "Duration",
+      "field": "duration"
+    },
+    {
+      "from": "ModifyStatAction",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "ModifyStatAction",
+      "to": "ValueExpression",
+      "field": "value"
+    },
+    {
+      "from": "MOVE_CARD",
+      "to": "Selector"
+    },
+    {
+      "from": "MOVE_CARD",
+      "to": "Zone"
+    },
+    {
+      "from": "MOVE_CARD",
+      "to": "Zone",
+      "field": "from"
+    },
+    {
+      "from": "MOVE_CARD",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "MOVE_CARD",
+      "to": "Zone",
+      "field": "to"
+    },
+    {
+      "from": "NumericPropertyFilter",
+      "to": "ValueExpression"
+    },
+    {
+      "from": "NumericPropertyFilter",
+      "to": "ValueExpression",
+      "field": "maximum"
+    },
+    {
+      "from": "NumericPropertyFilter",
+      "to": "ValueExpression",
+      "field": "minimum"
+    },
+    {
+      "from": "NumericPropertyFilter",
+      "to": "ValueExpression",
+      "field": "value"
+    },
+    {
+      "from": "PermissionAction",
+      "to": "ALLOW_ACTION"
+    },
+    {
+      "from": "PermissionAction",
+      "to": "PREVENT_ACTION"
+    },
+    {
+      "from": "PLAY_CARD",
+      "to": "PlayerReference"
+    },
+    {
+      "from": "PLAY_CARD",
+      "to": "Selector"
+    },
+    {
+      "from": "PLAY_CARD",
+      "to": "PlayerReference",
+      "field": "controller"
+    },
+    {
+      "from": "PLAY_CARD",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "PlayerState",
+      "to": "LeaderState"
+    },
+    {
+      "from": "PlayerState",
+      "to": "LeaderState",
+      "field": "leader"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "Duration"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "PreventableAction"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "Selector"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "SET_CARD_ACTIVE"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "PreventableAction",
+      "field": "action"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "SET_CARD_ACTIVE",
+      "field": "action"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "Duration",
+      "field": "duration"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "DEAL_DAMAGE"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "DECLARE_ATTACK"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "KO_CARD"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "PLAY_CARD"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "REST_CARD"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "SET_CARD_ACTIVE"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "TRASH_CARD"
+    },
+    {
+      "from": "REMOVE_KEYWORD",
+      "to": "Duration"
+    },
+    {
+      "from": "REMOVE_KEYWORD",
+      "to": "KeywordEffect"
+    },
+    {
+      "from": "REMOVE_KEYWORD",
+      "to": "Selector"
+    },
+    {
+      "from": "REMOVE_KEYWORD",
+      "to": "Duration",
+      "field": "duration"
+    },
+    {
+      "from": "REMOVE_KEYWORD",
+      "to": "KeywordEffect",
+      "field": "keyword"
+    },
+    {
+      "from": "REMOVE_KEYWORD",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "REORDER_CARDS",
+      "to": "ResultReference"
+    },
+    {
+      "from": "REORDER_CARDS",
+      "to": "ResultReference",
+      "field": "cards"
+    },
+    {
+      "from": "REST_CARD",
+      "to": "Selector"
+    },
+    {
+      "from": "REST_CARD",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "RETURN_CARD",
+      "to": "Selector"
+    },
+    {
+      "from": "RETURN_CARD",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "RETURN_DON_TO_DON_DECK",
+      "to": "Selector"
+    },
+    {
+      "from": "RETURN_DON_TO_DON_DECK",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "REVEAL_CARD",
+      "to": "Selector"
+    },
+    {
+      "from": "REVEAL_CARD",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "RuleModifier",
+      "to": "ModifierExpression"
+    },
+    {
+      "from": "RuleModifier",
+      "to": "ModifierExpression",
+      "field": "modifier"
+    },
+    {
+      "from": "SEARCH",
+      "to": "LOOK_AT_CARDS"
+    },
+    {
+      "from": "SEARCH",
+      "to": "MOVE_CARD"
+    },
+    {
+      "from": "SEARCH",
+      "to": "REORDER_CARDS"
+    },
+    {
+      "from": "SEARCH",
+      "to": "SELECT_CARD"
+    },
+    {
+      "from": "SEARCH",
+      "to": "LOOK_AT_CARDS",
+      "field": "look"
+    },
+    {
+      "from": "SEARCH",
+      "to": "MOVE_CARD",
+      "field": "moveSelected"
+    },
+    {
+      "from": "SEARCH",
+      "to": "MOVE_CARD",
+      "field": "processRemainder"
+    },
+    {
+      "from": "SEARCH",
+      "to": "REORDER_CARDS",
+      "field": "processRemainder"
+    },
+    {
+      "from": "SEARCH",
+      "to": "SELECT_CARD",
+      "field": "select"
+    },
+    {
+      "from": "SELECT_CARD",
+      "to": "ResultReference"
+    },
+    {
+      "from": "SELECT_CARD",
+      "to": "Selector"
+    },
+    {
+      "from": "SELECT_CARD",
+      "to": "ResultReference",
+      "field": "pool"
+    },
+    {
+      "from": "SELECT_CARD",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "Selector",
+      "to": "AttributeFilter"
+    },
+    {
+      "from": "Selector",
+      "to": "CardCategory"
+    },
+    {
+      "from": "Selector",
+      "to": "CardStateValue"
+    },
+    {
+      "from": "Selector",
+      "to": "ColorFilter"
+    },
+    {
+      "from": "Selector",
+      "to": "EffectFilter"
+    },
+    {
+      "from": "Selector",
+      "to": "HistoryFilter"
+    },
+    {
+      "from": "Selector",
+      "to": "NameFilter"
+    },
+    {
+      "from": "Selector",
+      "to": "NumericPropertyFilter"
+    },
+    {
+      "from": "Selector",
+      "to": "OrderingRule"
+    },
+    {
+      "from": "Selector",
+      "to": "Quantity"
+    },
+    {
+      "from": "Selector",
+      "to": "RelationFilter"
+    },
+    {
+      "from": "Selector",
+      "to": "TypeFilter"
+    },
+    {
+      "from": "Selector",
+      "to": "Zone"
+    },
+    {
+      "from": "Selector",
+      "to": "AttributeFilter",
+      "field": "attributes"
+    },
+    {
+      "from": "Selector",
+      "to": "CardCategory",
+      "field": "cardCategories"
+    },
+    {
+      "from": "Selector",
+      "to": "ColorFilter",
+      "field": "colors"
+    },
+    {
+      "from": "Selector",
+      "to": "NumericPropertyFilter",
+      "field": "cost"
+    },
+    {
+      "from": "Selector",
+      "to": "NumericPropertyFilter",
+      "field": "counter"
+    },
+    {
+      "from": "Selector",
+      "to": "EffectFilter",
+      "field": "effects"
+    },
+    {
+      "from": "Selector",
+      "to": "HistoryFilter",
+      "field": "history"
+    },
+    {
+      "from": "Selector",
+      "to": "NumericPropertyFilter",
+      "field": "life"
+    },
+    {
+      "from": "Selector",
+      "to": "NameFilter",
+      "field": "names"
+    },
+    {
+      "from": "Selector",
+      "to": "OrderingRule",
+      "field": "ordering"
+    },
+    {
+      "from": "Selector",
+      "to": "NumericPropertyFilter",
+      "field": "power"
+    },
+    {
+      "from": "Selector",
+      "to": "Quantity",
+      "field": "quantity"
+    },
+    {
+      "from": "Selector",
+      "to": "RelationFilter",
+      "field": "relations"
+    },
+    {
+      "from": "Selector",
+      "to": "CardStateValue",
+      "field": "states"
+    },
+    {
+      "from": "Selector",
+      "to": "TypeFilter",
+      "field": "types"
+    },
+    {
+      "from": "Selector",
+      "to": "Zone",
+      "field": "zones"
+    },
+    {
+      "from": "SET_CARD_ACTIVE",
+      "to": "Selector"
+    },
+    {
+      "from": "SET_CARD_ACTIVE",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "StateAction",
+      "to": "REST_CARD"
+    },
+    {
+      "from": "StateAction",
+      "to": "SET_CARD_ACTIVE"
+    },
+    {
+      "from": "TAKE_DAMAGE",
+      "to": "PlayerReference"
+    },
+    {
+      "from": "TAKE_DAMAGE",
+      "to": "ValueExpression"
+    },
+    {
+      "from": "TAKE_DAMAGE",
+      "to": "ValueExpression",
+      "field": "amount"
+    },
+    {
+      "from": "TAKE_DAMAGE",
+      "to": "PlayerReference",
+      "field": "targetPlayer"
+    },
+    {
+      "from": "TAKE_LIFE_TO_HAND",
+      "to": "PlayerReference"
+    },
+    {
+      "from": "TAKE_LIFE_TO_HAND",
+      "to": "ValueExpression"
+    },
+    {
+      "from": "TAKE_LIFE_TO_HAND",
+      "to": "ValueExpression",
+      "field": "count"
+    },
+    {
+      "from": "TAKE_LIFE_TO_HAND",
+      "to": "PlayerReference",
+      "field": "player"
+    },
+    {
+      "from": "TRASH_CARD",
+      "to": "Selector"
+    },
+    {
+      "from": "TRASH_CARD",
+      "to": "Selector",
+      "field": "selector"
+    },
+    {
+      "from": "TRASH_LIFE",
+      "to": "PlayerReference"
+    },
+    {
+      "from": "TRASH_LIFE",
+      "to": "ValueExpression"
+    },
+    {
+      "from": "TRASH_LIFE",
+      "to": "ValueExpression",
+      "field": "count"
+    },
+    {
+      "from": "TRASH_LIFE",
+      "to": "PlayerReference",
+      "field": "player"
+    },
+    {
+      "from": "UsageLimit",
+      "to": "TimingExpression"
+    },
+    {
+      "from": "UsageLimit",
+      "to": "TimingExpression",
+      "field": "resetsAt"
+    }
+  ],
+  "unresolvedReferences": [
+    {
+      "from": "ActionResult",
+      "to": "ActionId"
+    },
+    {
+      "from": "ActionResult",
+      "to": "EffectId"
+    },
+    {
+      "from": "ActionResult",
+      "to": "GameEventId"
+    },
+    {
+      "from": "ActionResult",
+      "to": "ObjectId"
+    },
+    {
+      "from": "ActionResult",
+      "to": "ActionId",
+      "field": "actionId"
+    },
+    {
+      "from": "ActionResult",
+      "to": "ObjectId",
+      "field": "affectedObjects"
+    },
+    {
+      "from": "ActionResult",
+      "to": "GameEventId",
+      "field": "generatedEvents"
+    },
+    {
+      "from": "ActionResult",
+      "to": "EffectId",
+      "field": "replacementEffectId"
+    },
+    {
+      "from": "ActionResult",
+      "to": "ObjectId",
+      "field": "selectedObjects"
+    },
+    {
+      "from": "ADD_DON_FROM_DON_DECK",
+      "to": "COST_AREA"
+    },
+    {
+      "from": "ADD_DON_FROM_DON_DECK",
+      "to": "COST_AREA",
+      "field": "destination"
+    },
+    {
+      "from": "Attribute",
+      "to": "RANGED"
+    },
+    {
+      "from": "Attribute",
+      "to": "SLASH"
+    },
+    {
+      "from": "Attribute",
+      "to": "SPECIAL"
+    },
+    {
+      "from": "Attribute",
+      "to": "STRIKE"
+    },
+    {
+      "from": "Attribute",
+      "to": "WISDOM"
+    },
+    {
+      "from": "AttributeFilter",
+      "to": "DOES_NOT_HAVE_ATTRIBUTE"
+    },
+    {
+      "from": "AttributeFilter",
+      "to": "HAS_ALL_ATTRIBUTES"
+    },
+    {
+      "from": "AttributeFilter",
+      "to": "HAS_ANY_ATTRIBUTE"
+    },
+    {
+      "from": "AttributeFilter",
+      "to": "HAS_ATTRIBUTE"
+    },
+    {
+      "from": "BattleAction",
+      "to": "ACTIVATE_BLOCKER"
+    },
+    {
+      "from": "BattleAction",
+      "to": "END_BATTLE"
+    },
+    {
+      "from": "BattleAction",
+      "to": "MODIFY_DAMAGE"
+    },
+    {
+      "from": "BattleAction",
+      "to": "SET_DAMAGE"
+    },
+    {
+      "from": "BattleAction",
+      "to": "SKIP_BATTLE_STEP"
+    },
+    {
+      "from": "BattleState",
+      "to": "CardObjectId"
+    },
+    {
+      "from": "BattleState",
+      "to": "GameEventId"
+    },
+    {
+      "from": "BattleState",
+      "to": "PlayerId"
+    },
+    {
+      "from": "BattleState",
+      "to": "CardObjectId",
+      "field": "attacker"
+    },
+    {
+      "from": "BattleState",
+      "to": "PlayerId",
+      "field": "attackingPlayer"
+    },
+    {
+      "from": "BattleState",
+      "to": "GameEventId",
+      "field": "battleEvents"
+    },
+    {
+      "from": "BattleState",
+      "to": "CardObjectId",
+      "field": "blocker"
+    },
+    {
+      "from": "BattleState",
+      "to": "CardObjectId",
+      "field": "currentTarget"
+    },
+    {
+      "from": "BattleState",
+      "to": "CardObjectId",
+      "field": "originalTarget"
+    },
+    {
+      "from": "BattleStep",
+      "to": "ATTACK_STEP"
+    },
+    {
+      "from": "BattleStep",
+      "to": "BLOCK_STEP"
+    },
+    {
+      "from": "BattleStep",
+      "to": "COUNTER_STEP"
+    },
+    {
+      "from": "BattleStep",
+      "to": "DAMAGE_STEP"
+    },
+    {
+      "from": "BattleStep",
+      "to": "END_OF_BATTLE"
+    },
+    {
+      "from": "CANCEL_ATTACK",
+      "to": "CURRENT_BATTLE"
+    },
+    {
+      "from": "CANCEL_ATTACK",
+      "to": "CURRENT_BATTLE",
+      "field": "battle"
+    },
+    {
+      "from": "CardAction",
+      "to": "ACTIVATE_EVENT"
+    },
+    {
+      "from": "CardAction",
+      "to": "PLACE_CARD_IN_DECK"
+    },
+    {
+      "from": "CardAction",
+      "to": "SHUFFLE_ZONE"
+    },
+    {
+      "from": "CardCategory",
+      "to": "CHARACTER"
+    },
+    {
+      "from": "CardCategory",
+      "to": "DON"
+    },
+    {
+      "from": "CardCategory",
+      "to": "EVENT"
+    },
+    {
+      "from": "CardCategory",
+      "to": "LEADER"
+    },
+    {
+      "from": "CardCategory",
+      "to": "STAGE"
+    },
+    {
+      "from": "CardState",
+      "to": "CardObjectId"
+    },
+    {
+      "from": "CardState",
+      "to": "DonObjectId"
+    },
+    {
+      "from": "CardState",
+      "to": "EffectId"
+    },
+    {
+      "from": "CardState",
+      "to": "GameEventId"
+    },
+    {
+      "from": "CardState",
+      "to": "PhysicalCardId"
+    },
+    {
+      "from": "CardState",
+      "to": "PlayerId"
+    },
+    {
+      "from": "CardState",
+      "to": "UsageTracker"
+    },
+    {
+      "from": "CardState",
+      "to": "DonObjectId",
+      "field": "attachedDon"
+    },
+    {
+      "from": "CardState",
+      "to": "PlayerId",
+      "field": "controller"
+    },
+    {
+      "from": "CardState",
+      "to": "GameEventId",
+      "field": "enteredCurrentZoneAt"
+    },
+    {
+      "from": "CardState",
+      "to": "EffectId",
+      "field": "invalidatedEffects"
+    },
+    {
+      "from": "CardState",
+      "to": "CardObjectId",
+      "field": "objectId"
+    },
+    {
+      "from": "CardState",
+      "to": "PlayerId",
+      "field": "owner"
+    },
+    {
+      "from": "CardState",
+      "to": "PhysicalCardId",
+      "field": "physicalCardId"
+    },
+    {
+      "from": "CardState",
+      "to": "UsageTracker",
+      "field": "usageTrackers"
+    },
+    {
+      "from": "CardStateValue",
+      "to": "ACTIVE"
+    },
+    {
+      "from": "CardStateValue",
+      "to": "ATTACKING"
+    },
+    {
+      "from": "CardStateValue",
+      "to": "BLOCKING"
+    },
+    {
+      "from": "CardStateValue",
+      "to": "PLAYED_THIS_TURN"
+    },
+    {
+      "from": "CardStateValue",
+      "to": "RESTED"
+    },
+    {
+      "from": "Color",
+      "to": "BLACK"
+    },
+    {
+      "from": "Color",
+      "to": "BLUE"
+    },
+    {
+      "from": "Color",
+      "to": "GREEN"
+    },
+    {
+      "from": "Color",
+      "to": "PURPLE"
+    },
+    {
+      "from": "Color",
+      "to": "RED"
+    },
+    {
+      "from": "Color",
+      "to": "YELLOW"
+    },
+    {
+      "from": "ColorFilter",
+      "to": "DOES_NOT_HAVE_COLOR"
+    },
+    {
+      "from": "ColorFilter",
+      "to": "HAS_ALL_COLORS"
+    },
+    {
+      "from": "ColorFilter",
+      "to": "HAS_ANY_COLOR"
+    },
+    {
+      "from": "ColorFilter",
+      "to": "HAS_COLOR"
+    },
+    {
+      "from": "ColorFilter",
+      "to": "ONLY_COLORS"
+    },
+    {
+      "from": "CompositeSelector",
+      "to": "AND"
+    },
+    {
+      "from": "CompositeSelector",
+      "to": "EXCLUDE"
+    },
+    {
+      "from": "CompositeSelector",
+      "to": "INTERSECTION"
+    },
+    {
+      "from": "CompositeSelector",
+      "to": "NOT"
+    },
+    {
+      "from": "CompositeSelector",
+      "to": "OR"
+    },
+    {
+      "from": "CompositeSelector",
+      "to": "SELECTOR"
+    },
+    {
+      "from": "CompositeSelector",
+      "to": "UNION"
+    },
+    {
+      "from": "ConditionExpression",
+      "to": "ALL"
+    },
+    {
+      "from": "ConditionExpression",
+      "to": "AND"
+    },
+    {
+      "from": "ConditionExpression",
+      "to": "ANY"
+    },
+    {
+      "from": "ConditionExpression",
+      "to": "FALSE"
+    },
+    {
+      "from": "ConditionExpression",
+      "to": "NOT"
+    },
+    {
+      "from": "ConditionExpression",
+      "to": "OR"
+    },
+    {
+      "from": "ConditionExpression",
+      "to": "PREDICATE"
+    },
+    {
+      "from": "ConditionExpression",
+      "to": "TRUE"
+    },
+    {
+      "from": "ConditionType",
+      "to": "ACTION_SUCCEEDED"
+    },
+    {
+      "from": "ConditionType",
+      "to": "ACTIVE_DON_COUNT"
+    },
+    {
+      "from": "ConditionType",
+      "to": "ALL_CARDS_MATCH"
+    },
+    {
+      "from": "ConditionType",
+      "to": "BATTLE_STEP_IS"
+    },
+    {
+      "from": "ConditionType",
+      "to": "CARD_COUNT"
+    },
+    {
+      "from": "ConditionType",
+      "to": "CARD_EXISTS"
+    },
+    {
+      "from": "ConditionType",
+      "to": "CHARACTER_COUNT"
+    },
+    {
+      "from": "ConditionType",
+      "to": "DECK_COUNT"
+    },
+    {
+      "from": "ConditionType",
+      "to": "DON_ATTACHED_COUNT"
+    },
+    {
+      "from": "ConditionType",
+      "to": "DON_ON_FIELD_COUNT"
+    },
+    {
+      "from": "ConditionType",
+      "to": "EFFECT_HAS_RESOLVED"
+    },
+    {
+      "from": "ConditionType",
+      "to": "EVENT_OCCURRED"
+    },
+    {
+      "from": "ConditionType",
+      "to": "EVENT_OCCURRED_THIS_BATTLE"
+    },
+    {
+      "from": "ConditionType",
+      "to": "EVENT_OCCURRED_THIS_TURN"
+    },
+    {
+      "from": "ConditionType",
+      "to": "GAME_TURN_NUMBER"
+    },
+    {
+      "from": "ConditionType",
+      "to": "HAND_COUNT"
+    },
+    {
+      "from": "ConditionType",
+      "to": "LEADER_MATCHES"
+    },
+    {
+      "from": "ConditionType",
+      "to": "LIFE_COUNT"
+    },
+    {
+      "from": "ConditionType",
+      "to": "NO_CARD_MATCHES"
+    },
+    {
+      "from": "ConditionType",
+      "to": "PHASE_IS"
+    },
+    {
+      "from": "ConditionType",
+      "to": "PLAYER_TURN_NUMBER"
+    },
+    {
+      "from": "ConditionType",
+      "to": "RESTED_DON_COUNT"
+    },
+    {
+      "from": "ConditionType",
+      "to": "SOURCE_IS_ACTIVE"
+    },
+    {
+      "from": "ConditionType",
+      "to": "SOURCE_IS_ATTACKING"
+    },
+    {
+      "from": "ConditionType",
+      "to": "SOURCE_IS_RESTED"
+    },
+    {
+      "from": "ConditionType",
+      "to": "SOURCE_MATCHES"
+    },
+    {
+      "from": "ConditionType",
+      "to": "SOURCE_WAS_PLAYED_THIS_TURN"
+    },
+    {
+      "from": "ConditionType",
+      "to": "TRASH_COUNT"
+    },
+    {
+      "from": "ConditionType",
+      "to": "TURN_IS"
+    },
+    {
+      "from": "DETACH_DON",
+      "to": "COST_AREA"
+    },
+    {
+      "from": "DETACH_DON",
+      "to": "COST_AREA",
+      "field": "destination"
+    },
+    {
+      "from": "DonAction",
+      "to": "MOVE_DON_TO_COST_AREA"
+    },
+    {
+      "from": "DonAction",
+      "to": "REST_DON"
+    },
+    {
+      "from": "DonAction",
+      "to": "SET_DON_ACTIVE"
+    },
+    {
+      "from": "DonState",
+      "to": "ACTIVE"
+    },
+    {
+      "from": "DonState",
+      "to": "ATTACHED"
+    },
+    {
+      "from": "DonState",
+      "to": "IN_DON_DECK"
+    },
+    {
+      "from": "DonState",
+      "to": "RESTED"
+    },
+    {
+      "from": "Duration",
+      "to": "INSTANT"
+    },
+    {
+      "from": "Duration",
+      "to": "PERMANENT"
+    },
+    {
+      "from": "Duration",
+      "to": "THIS_BATTLE"
+    },
+    {
+      "from": "Duration",
+      "to": "THIS_TURN"
+    },
+    {
+      "from": "Duration",
+      "to": "UNTIL_END_OF_CURRENT_TURN"
+    },
+    {
+      "from": "Duration",
+      "to": "UNTIL_END_OF_NEXT_END_PHASE"
+    },
+    {
+      "from": "Duration",
+      "to": "UNTIL_END_OF_NEXT_TURN"
+    },
+    {
+      "from": "Duration",
+      "to": "UNTIL_EVENT"
+    },
+    {
+      "from": "Duration",
+      "to": "UNTIL_NEXT_REFRESH_PHASE"
+    },
+    {
+      "from": "Duration",
+      "to": "UNTIL_START_OF_NEXT_TURN"
+    },
+    {
+      "from": "Duration",
+      "to": "WHILE_CONDITION"
+    },
+    {
+      "from": "Duration",
+      "to": "WHILE_SOURCE_IN_ZONE"
+    },
+    {
+      "from": "Duration",
+      "to": "WHILE_SOURCE_STATE"
+    },
+    {
+      "from": "Duration",
+      "to": "WHILE_SOURCE_VALID"
+    },
+    {
+      "from": "EffectAction",
+      "to": "COPY_EFFECT"
+    },
+    {
+      "from": "EffectAction",
+      "to": "CREATE_DELAYED_EFFECT"
+    },
+    {
+      "from": "EffectAction",
+      "to": "CREATE_REPLACEMENT_EFFECT"
+    },
+    {
+      "from": "EffectAction",
+      "to": "REMOVE_GAINED_EFFECT"
+    },
+    {
+      "from": "EffectAction",
+      "to": "VALIDATE_EFFECTS"
+    },
+    {
+      "from": "EffectApplicationMode",
+      "to": "CONTINUOUS"
+    },
+    {
+      "from": "EffectApplicationMode",
+      "to": "DELAYED"
+    },
+    {
+      "from": "EffectApplicationMode",
+      "to": "ONE_SHOT"
+    },
+    {
+      "from": "EffectCategory",
+      "to": "ACTIVATE"
+    },
+    {
+      "from": "EffectCategory",
+      "to": "AUTO"
+    },
+    {
+      "from": "EffectCategory",
+      "to": "PERMANENT"
+    },
+    {
+      "from": "EffectCategory",
+      "to": "REPLACEMENT"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "EffectId"
+    },
+    {
+      "from": "EffectDefinition",
+      "to": "EffectId",
+      "field": "id"
+    },
+    {
+      "from": "EffectFilter",
+      "to": "DOES_NOT_HAVE_KEYWORD"
+    },
+    {
+      "from": "EffectFilter",
+      "to": "DOES_NOT_HAVE_TIMING"
+    },
+    {
+      "from": "EffectFilter",
+      "to": "EFFECT_TEXT_MATCHES"
+    },
+    {
+      "from": "EffectFilter",
+      "to": "HAS_BASE_EFFECT"
+    },
+    {
+      "from": "EffectFilter",
+      "to": "HAS_EFFECT_CATEGORY"
+    },
+    {
+      "from": "EffectFilter",
+      "to": "HAS_KEYWORD"
+    },
+    {
+      "from": "EffectFilter",
+      "to": "HAS_NO_BASE_EFFECT"
+    },
+    {
+      "from": "EffectFilter",
+      "to": "HAS_TIMING"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "ActionId"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "EffectInstanceId"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "EffectSourceSnapshot"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "GameEventId"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "Map"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "ModifierId"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "ObjectId"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "PlayerId"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "SelectionId"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "ActionId",
+      "field": "actionResults"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "Map",
+      "field": "actionResults"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "GameEventId",
+      "field": "activationEvent"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "PlayerId",
+      "field": "controller"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "EffectInstanceId",
+      "field": "createdDelayedEffects"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "ModifierId",
+      "field": "createdModifiers"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "EffectInstanceId",
+      "field": "instanceId"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "Map",
+      "field": "selectedObjects"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "ObjectId",
+      "field": "selectedObjects"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "SelectionId",
+      "field": "selectedObjects"
+    },
+    {
+      "from": "EffectInstance",
+      "to": "EffectSourceSnapshot",
+      "field": "sourceSnapshot"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "ACTIVATE_MAIN"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "DON_ATTACHED_THRESHOLD"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "DON_MINUS"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "END_OF_OPPONENT_TURN"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "END_OF_YOUR_TURN"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "EVENT_COUNTER"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "EVENT_MAIN"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "ON_BLOCK"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "ON_KO"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "ON_OPPONENT_ATTACK"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "ON_PLAY"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "ONCE_PER_TURN"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "OPPONENT_TURN"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "TRASH_INSTRUCTION"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "WHEN_ATTACKING"
+    },
+    {
+      "from": "EffectMarker",
+      "to": "YOUR_TURN"
+    },
+    {
+      "from": "EffectSource",
+      "to": "CardObjectId"
+    },
+    {
+      "from": "EffectSource",
+      "to": "PhysicalCardId"
+    },
+    {
+      "from": "EffectSource",
+      "to": "CardObjectId",
+      "field": "objectId"
+    },
+    {
+      "from": "EffectSource",
+      "to": "PhysicalCardId",
+      "field": "physicalCardId"
+    },
+    {
+      "from": "EventCause",
+      "to": "ACTIVATION_COST"
+    },
+    {
+      "from": "EventCause",
+      "to": "BATTLE"
+    },
+    {
+      "from": "EventCause",
+      "to": "CARD_ACTIVATION"
+    },
+    {
+      "from": "EventCause",
+      "to": "CARD_PLAY_COST"
+    },
+    {
+      "from": "EventCause",
+      "to": "DAMAGE"
+    },
+    {
+      "from": "EventCause",
+      "to": "DEFEAT_PROCESSING"
+    },
+    {
+      "from": "EventCause",
+      "to": "EFFECT"
+    },
+    {
+      "from": "EventCause",
+      "to": "REFRESH_PHASE"
+    },
+    {
+      "from": "EventCause",
+      "to": "REPLACEMENT_EFFECT"
+    },
+    {
+      "from": "EventCause",
+      "to": "RULE"
+    },
+    {
+      "from": "GameEvent",
+      "to": "EffectId"
+    },
+    {
+      "from": "GameEvent",
+      "to": "GameEventId"
+    },
+    {
+      "from": "GameEvent",
+      "to": "ObjectId"
+    },
+    {
+      "from": "GameEvent",
+      "to": "PlayerId"
+    },
+    {
+      "from": "GameEvent",
+      "to": "ResolutionTimestamp"
+    },
+    {
+      "from": "GameEvent",
+      "to": "PlayerId",
+      "field": "actor"
+    },
+    {
+      "from": "GameEvent",
+      "to": "GameEventId",
+      "field": "id"
+    },
+    {
+      "from": "GameEvent",
+      "to": "GameEventId",
+      "field": "parentEvent"
+    },
+    {
+      "from": "GameEvent",
+      "to": "EffectId",
+      "field": "preventedBy"
+    },
+    {
+      "from": "GameEvent",
+      "to": "EffectId",
+      "field": "replacedBy"
+    },
+    {
+      "from": "GameEvent",
+      "to": "EffectId",
+      "field": "sourceEffect"
+    },
+    {
+      "from": "GameEvent",
+      "to": "ObjectId",
+      "field": "sourceObject"
+    },
+    {
+      "from": "GameEvent",
+      "to": "ObjectId",
+      "field": "subjectObjects"
+    },
+    {
+      "from": "GameEvent",
+      "to": "ResolutionTimestamp",
+      "field": "timestamp"
+    },
+    {
+      "from": "GameEventType",
+      "to": "ATTACK_DECLARED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "ATTACK_TARGET_SELECTED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "BATTLE_ENDED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "BLOCKER_ACTIVATED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "CARD_ACTIVATED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "CARD_ADDED_TO_HAND"
+    },
+    {
+      "from": "GameEventType",
+      "to": "CARD_ADDED_TO_LIFE"
+    },
+    {
+      "from": "GameEventType",
+      "to": "CARD_BECAME_ACTIVE"
+    },
+    {
+      "from": "GameEventType",
+      "to": "CARD_BECAME_RESTED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "CARD_MOVED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "CARD_PLAYED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "CARD_RETURNED_TO_DECK"
+    },
+    {
+      "from": "GameEventType",
+      "to": "CARD_TRASHED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "CHARACTER_KOD"
+    },
+    {
+      "from": "GameEventType",
+      "to": "CHARACTER_REMOVED_FROM_FIELD"
+    },
+    {
+      "from": "GameEventType",
+      "to": "DAMAGE_DEALT"
+    },
+    {
+      "from": "GameEventType",
+      "to": "DAMAGE_TAKEN"
+    },
+    {
+      "from": "GameEventType",
+      "to": "DON_DETACHED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "DON_GIVEN"
+    },
+    {
+      "from": "GameEventType",
+      "to": "DON_RESTED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "DON_RETURNED_TO_DON_DECK"
+    },
+    {
+      "from": "GameEventType",
+      "to": "DON_SET_ACTIVE"
+    },
+    {
+      "from": "GameEventType",
+      "to": "EFFECT_ACTIVATED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "EFFECT_RESOLVED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "LIFE_REVEALED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "PHASE_ENDED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "PHASE_STARTED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "TRIGGER_ACTIVATED"
+    },
+    {
+      "from": "GameEventType",
+      "to": "TURN_STARTED"
+    },
+    {
+      "from": "GamePhase",
+      "to": "DON_PHASE"
+    },
+    {
+      "from": "GamePhase",
+      "to": "DRAW_PHASE"
+    },
+    {
+      "from": "GamePhase",
+      "to": "END_PHASE"
+    },
+    {
+      "from": "GamePhase",
+      "to": "GAME_SETUP"
+    },
+    {
+      "from": "GamePhase",
+      "to": "MAIN_PHASE"
+    },
+    {
+      "from": "GamePhase",
+      "to": "REFRESH_PHASE"
+    },
+    {
+      "from": "GameState",
+      "to": "ContinuousModifier"
+    },
+    {
+      "from": "GameState",
+      "to": "DelayedEffectInstance"
+    },
+    {
+      "from": "GameState",
+      "to": "PlayerId"
+    },
+    {
+      "from": "GameState",
+      "to": "ReplacementEffectInstance"
+    },
+    {
+      "from": "GameState",
+      "to": "ResolutionContext"
+    },
+    {
+      "from": "GameState",
+      "to": "RuleProcess"
+    },
+    {
+      "from": "GameState",
+      "to": "ContinuousModifier",
+      "field": "continuousModifiers"
+    },
+    {
+      "from": "GameState",
+      "to": "ResolutionContext",
+      "field": "currentResolution"
+    },
+    {
+      "from": "GameState",
+      "to": "DelayedEffectInstance",
+      "field": "delayedEffects"
+    },
+    {
+      "from": "GameState",
+      "to": "PlayerId",
+      "field": "nonTurnPlayer"
+    },
+    {
+      "from": "GameState",
+      "to": "RuleProcess",
+      "field": "pendingRuleProcessing"
+    },
+    {
+      "from": "GameState",
+      "to": "ReplacementEffectInstance",
+      "field": "replacementEffects"
+    },
+    {
+      "from": "GameState",
+      "to": "PlayerId",
+      "field": "startingPlayer"
+    },
+    {
+      "from": "GameState",
+      "to": "PlayerId",
+      "field": "turnPlayer"
+    },
+    {
+      "from": "HistoryFilter",
+      "to": "ATTACKED_THIS_TURN"
+    },
+    {
+      "from": "HistoryFilter",
+      "to": "BECAME_RESTED_THIS_TURN"
+    },
+    {
+      "from": "HistoryFilter",
+      "to": "KOD_THIS_TURN"
+    },
+    {
+      "from": "HistoryFilter",
+      "to": "PLAYED_BY_EFFECT"
+    },
+    {
+      "from": "HistoryFilter",
+      "to": "PLAYED_THIS_TURN"
+    },
+    {
+      "from": "HistoryFilter",
+      "to": "RETURNED_TO_HAND_THIS_TURN"
+    },
+    {
+      "from": "HistoryFilter",
+      "to": "SELECTED_PREVIOUSLY"
+    },
+    {
+      "from": "InformationAction",
+      "to": "MODIFY_ATTRIBUTE"
+    },
+    {
+      "from": "InformationAction",
+      "to": "MODIFY_BASE_EFFECT_STATUS"
+    },
+    {
+      "from": "InformationAction",
+      "to": "MODIFY_COLOR"
+    },
+    {
+      "from": "KeywordEffect",
+      "to": "BANISH"
+    },
+    {
+      "from": "KeywordEffect",
+      "to": "BLOCKER"
+    },
+    {
+      "from": "KeywordEffect",
+      "to": "DOUBLE_ATTACK"
+    },
+    {
+      "from": "KeywordEffect",
+      "to": "RUSH"
+    },
+    {
+      "from": "KeywordEffect",
+      "to": "RUSH_CHARACTER"
+    },
+    {
+      "from": "KeywordEffect",
+      "to": "TRIGGER"
+    },
+    {
+      "from": "KeywordEffect",
+      "to": "UNBLOCKABLE"
+    },
+    {
+      "from": "LeaderState",
+      "to": "CardObjectId"
+    },
+    {
+      "from": "LeaderState",
+      "to": "DonObjectId"
+    },
+    {
+      "from": "LeaderState",
+      "to": "EffectId"
+    },
+    {
+      "from": "LeaderState",
+      "to": "UsageTracker"
+    },
+    {
+      "from": "LeaderState",
+      "to": "DonObjectId",
+      "field": "attachedDon"
+    },
+    {
+      "from": "LeaderState",
+      "to": "EffectId",
+      "field": "invalidatedEffects"
+    },
+    {
+      "from": "LeaderState",
+      "to": "CardObjectId",
+      "field": "objectId"
+    },
+    {
+      "from": "LeaderState",
+      "to": "UsageTracker",
+      "field": "usageTrackers"
+    },
+    {
+      "from": "LifeAction",
+      "to": "LOOK_AT_LIFE"
+    },
+    {
+      "from": "LifeAction",
+      "to": "REORDER_LIFE"
+    },
+    {
+      "from": "LifeAction",
+      "to": "REVEAL_LIFE"
+    },
+    {
+      "from": "LifeAction",
+      "to": "TURN_LIFE_FACE_DOWN"
+    },
+    {
+      "from": "LifeAction",
+      "to": "TURN_LIFE_FACE_UP"
+    },
+    {
+      "from": "ModifierExpression",
+      "to": "EFFECT_MODIFIER"
+    },
+    {
+      "from": "ModifierExpression",
+      "to": "PERMISSION_MODIFIER"
+    },
+    {
+      "from": "ModifierExpression",
+      "to": "PROPERTY_MODIFIER"
+    },
+    {
+      "from": "ModifierExpression",
+      "to": "RULE_MODIFIER"
+    },
+    {
+      "from": "ModifierExpression",
+      "to": "STAT_MODIFIER"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "CardObjectId"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "EffectId"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "GameEventId"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "ModifierId"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "GameEventId",
+      "field": "createdAt"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "ModifierId",
+      "field": "id"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "EffectId",
+      "field": "sourceEffectId"
+    },
+    {
+      "from": "ModifierInstance",
+      "to": "CardObjectId",
+      "field": "sourceObjectId"
+    },
+    {
+      "from": "NameFilter",
+      "to": "NAME_CONTAINS"
+    },
+    {
+      "from": "NameFilter",
+      "to": "NAME_EQUALS_REFERENCE"
+    },
+    {
+      "from": "NameFilter",
+      "to": "NAME_EXACT"
+    },
+    {
+      "from": "NameFilter",
+      "to": "NAME_NOT"
+    },
+    {
+      "from": "NameFilter",
+      "to": "NAME_STARTS_WITH"
+    },
+    {
+      "from": "OrderingRule",
+      "to": "DECK_ORDER"
+    },
+    {
+      "from": "OrderingRule",
+      "to": "FIELD_ORDER"
+    },
+    {
+      "from": "OrderingRule",
+      "to": "OPPONENT_CHOOSES_ORDER"
+    },
+    {
+      "from": "OrderingRule",
+      "to": "OWNER_CHOOSES_ORDER"
+    },
+    {
+      "from": "OrderingRule",
+      "to": "PLAYER_CHOOSES_ORDER"
+    },
+    {
+      "from": "OrderingRule",
+      "to": "RANDOM_ORDER"
+    },
+    {
+      "from": "PermissionAction",
+      "to": "MODIFY_PLAY_PERMISSION"
+    },
+    {
+      "from": "PermissionAction",
+      "to": "MODIFY_VALID_TARGETS"
+    },
+    {
+      "from": "PermissionAction",
+      "to": "PREVENT_SELECTION"
+    },
+    {
+      "from": "PermissionAction",
+      "to": "PREVENT_ZONE_CHANGE"
+    },
+    {
+      "from": "PlayerAction",
+      "to": "OPPONENT_CHOOSES"
+    },
+    {
+      "from": "PlayerAction",
+      "to": "PLAYER_CHOOSES"
+    },
+    {
+      "from": "PlayerAction",
+      "to": "PLAYER_LOSES"
+    },
+    {
+      "from": "PlayerAction",
+      "to": "PLAYER_WINS"
+    },
+    {
+      "from": "PlayerState",
+      "to": "CardZone"
+    },
+    {
+      "from": "PlayerState",
+      "to": "CharacterState"
+    },
+    {
+      "from": "PlayerState",
+      "to": "DonZone"
+    },
+    {
+      "from": "PlayerState",
+      "to": "OrderedCardZone"
+    },
+    {
+      "from": "PlayerState",
+      "to": "OrderedDonZone"
+    },
+    {
+      "from": "PlayerState",
+      "to": "PlayerId"
+    },
+    {
+      "from": "PlayerState",
+      "to": "PlayerTurnState"
+    },
+    {
+      "from": "PlayerState",
+      "to": "StageState"
+    },
+    {
+      "from": "PlayerState",
+      "to": "UsageTracker"
+    },
+    {
+      "from": "PlayerState",
+      "to": "CharacterState",
+      "field": "characterArea"
+    },
+    {
+      "from": "PlayerState",
+      "to": "DonZone",
+      "field": "costArea"
+    },
+    {
+      "from": "PlayerState",
+      "to": "OrderedCardZone",
+      "field": "deck"
+    },
+    {
+      "from": "PlayerState",
+      "to": "OrderedDonZone",
+      "field": "donDeck"
+    },
+    {
+      "from": "PlayerState",
+      "to": "CardZone",
+      "field": "hand"
+    },
+    {
+      "from": "PlayerState",
+      "to": "OrderedCardZone",
+      "field": "life"
+    },
+    {
+      "from": "PlayerState",
+      "to": "PlayerId",
+      "field": "playerId"
+    },
+    {
+      "from": "PlayerState",
+      "to": "StageState",
+      "field": "stageArea"
+    },
+    {
+      "from": "PlayerState",
+      "to": "CardZone",
+      "field": "trash"
+    },
+    {
+      "from": "PlayerState",
+      "to": "PlayerTurnState",
+      "field": "turnState"
+    },
+    {
+      "from": "PlayerState",
+      "to": "UsageTracker",
+      "field": "usageTrackers"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "REFRESH_PHASE"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "UNTIL_NEXT_REFRESH_PHASE"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "REFRESH_PHASE",
+      "field": "causeFilter"
+    },
+    {
+      "from": "PREVENT_ACTION",
+      "to": "UNTIL_NEXT_REFRESH_PHASE",
+      "field": "duration"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "ACTIVATE_BLOCKER"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "ACTIVATE_EFFECT"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "ACTIVATE_EVENT"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "ATTACK_ACTIVE_CHARACTER"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "ATTACK_CHARACTER"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "ATTACK_LEADER"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "REMOVE_FROM_FIELD"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "RETURN_TO_DECK"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "RETURN_TO_HAND"
+    },
+    {
+      "from": "PreventableAction",
+      "to": "SELECT_AS_EFFECT_TARGET"
+    },
+    {
+      "from": "Quantity",
+      "to": "ALL"
+    },
+    {
+      "from": "Quantity",
+      "to": "ANY_NUMBER"
+    },
+    {
+      "from": "Quantity",
+      "to": "AT_LEAST"
+    },
+    {
+      "from": "Quantity",
+      "to": "EXACTLY"
+    },
+    {
+      "from": "Quantity",
+      "to": "UP_TO"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "ATTACHED_TO"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "ATTACKING_CARD"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "BLOCKING_CARD"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "CARD_THAT_TRIGGERED_THIS_EFFECT"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "CONTROLLED_BY_SAME_PLAYER_AS"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "CURRENT_ATTACK_TARGET"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "DIFFERENT_NAME_FROM"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "EFFECT_OWNER_LEADER"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "EFFECT_SOURCE"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "HAS_ATTACHED_DON"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "KOD_BY"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "ORIGINAL_ATTACK_TARGET"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "OTHER_THAN_THIS_CARD"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "OWNED_BY_SAME_PLAYER_AS"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "PLAYED_BY"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "RETURNED_BY"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "SAME_NAME_AS"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "SELECTED_BY"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "THIS_CARD"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "THIS_CHARACTER"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "THIS_LEADER"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "THIS_STAGE"
+    },
+    {
+      "from": "RelationFilter",
+      "to": "TRASHED_BY"
+    },
+    {
+      "from": "ResolutionNode",
+      "to": "ACTION"
+    },
+    {
+      "from": "ResolutionNode",
+      "to": "OPTIONAL"
+    },
+    {
+      "from": "ResolutionNode",
+      "to": "SEQUENCE"
+    },
+    {
+      "from": "REST_CARD_COST",
+      "to": "THIS_CARD"
+    },
+    {
+      "from": "REST_CARD_COST",
+      "to": "THIS_CARD",
+      "field": "selector"
+    },
+    {
+      "from": "RuleAction",
+      "to": "MODIFY_AREA_CAPACITY"
+    },
+    {
+      "from": "RuleAction",
+      "to": "MODIFY_DECK_CONSTRUCTION"
+    },
+    {
+      "from": "RuleAction",
+      "to": "MODIFY_DEFEAT_CONDITION"
+    },
+    {
+      "from": "RuleAction",
+      "to": "MODIFY_RULE_PERMISSION"
+    },
+    {
+      "from": "RuleAction",
+      "to": "MODIFY_STARTING_SETUP"
+    },
+    {
+      "from": "RuleAction",
+      "to": "MODIFY_VICTORY_CONDITION"
+    },
+    {
+      "from": "Selector",
+      "to": "FaceState"
+    },
+    {
+      "from": "Selector",
+      "to": "KeywordFilter"
+    },
+    {
+      "from": "Selector",
+      "to": "FaceState",
+      "field": "face"
+    },
+    {
+      "from": "Selector",
+      "to": "KeywordFilter",
+      "field": "keywords"
+    },
+    {
+      "from": "StandardTiming",
+      "to": "ACTIVATE_MAIN"
+    },
+    {
+      "from": "StandardTiming",
+      "to": "END_OF_OPPONENT_TURN"
+    },
+    {
+      "from": "StandardTiming",
+      "to": "END_OF_YOUR_TURN"
+    },
+    {
+      "from": "StandardTiming",
+      "to": "EVENT_COUNTER"
+    },
+    {
+      "from": "StandardTiming",
+      "to": "EVENT_MAIN"
+    },
+    {
+      "from": "StandardTiming",
+      "to": "ON_BLOCK"
+    },
+    {
+      "from": "StandardTiming",
+      "to": "ON_KO"
+    },
+    {
+      "from": "StandardTiming",
+      "to": "ON_OPPONENT_ATTACK"
+    },
+    {
+      "from": "StandardTiming",
+      "to": "ON_PLAY"
+    },
+    {
+      "from": "StandardTiming",
+      "to": "TRIGGER"
+    },
+    {
+      "from": "StandardTiming",
+      "to": "WHEN_ATTACKING"
+    },
+    {
+      "from": "StatAction",
+      "to": "MODIFY_COST"
+    },
+    {
+      "from": "StatAction",
+      "to": "MODIFY_COUNTER"
+    },
+    {
+      "from": "StatAction",
+      "to": "MODIFY_DAMAGE"
+    },
+    {
+      "from": "StatAction",
+      "to": "MODIFY_LIFE_VALUE"
+    },
+    {
+      "from": "StatAction",
+      "to": "MODIFY_POWER"
+    },
+    {
+      "from": "StateAction",
+      "to": "TURN_CARD_FACE_DOWN"
+    },
+    {
+      "from": "StateAction",
+      "to": "TURN_CARD_FACE_UP"
+    },
+    {
+      "from": "TimingExpression",
+      "to": "AND"
+    },
+    {
+      "from": "TimingExpression",
+      "to": "CUSTOM_EVENT"
+    },
+    {
+      "from": "TimingExpression",
+      "to": "MANUAL_WINDOW"
+    },
+    {
+      "from": "TimingExpression",
+      "to": "OR"
+    },
+    {
+      "from": "TimingExpression",
+      "to": "REPLACEMENT_WINDOW"
+    },
+    {
+      "from": "TimingExpression",
+      "to": "STANDARD_TIMING"
+    },
+    {
+      "from": "TRASH_CARD_COST",
+      "to": "EXACTLY"
+    },
+    {
+      "from": "TRASH_CARD_COST",
+      "to": "HAND"
+    },
+    {
+      "from": "TRASH_CARD_COST",
+      "to": "PLAYER"
+    },
+    {
+      "from": "TRASH_CARD_COST",
+      "to": "PLAYER",
+      "field": "controller"
+    },
+    {
+      "from": "TRASH_CARD_COST",
+      "to": "EXACTLY",
+      "field": "quantity"
+    },
+    {
+      "from": "TRASH_CARD_COST",
+      "to": "HAND",
+      "field": "zones"
+    },
+    {
+      "from": "TypeFilter",
+      "to": "DOES_NOT_HAVE_TYPE"
+    },
+    {
+      "from": "TypeFilter",
+      "to": "HAS_ALL_TYPES"
+    },
+    {
+      "from": "TypeFilter",
+      "to": "HAS_ANY_TYPE"
+    },
+    {
+      "from": "TypeFilter",
+      "to": "HAS_TYPE"
+    },
+    {
+      "from": "TypeFilter",
+      "to": "TYPE_INCLUDES_TEXT"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "ADD"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "BOOLEAN"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "CLAMP"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "COUNT"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "DIVIDE"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "MAX"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "MIN"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "MULTIPLY"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "NUMBER"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "PREVIOUS_RESULT"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "PROPERTY"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "STRING"
+    },
+    {
+      "from": "ValueExpression",
+      "to": "SUBTRACT"
+    },
+    {
+      "from": "VirtualZone",
+      "to": "ALL_AREAS"
+    },
+    {
+      "from": "VirtualZone",
+      "to": "FIELD"
+    },
+    {
+      "from": "VirtualZone",
+      "to": "OPEN_AREAS"
+    },
+    {
+      "from": "VirtualZone",
+      "to": "OPPONENT_FIELD"
+    },
+    {
+      "from": "VirtualZone",
+      "to": "OWN_FIELD"
+    },
+    {
+      "from": "VirtualZone",
+      "to": "SECRET_AREAS"
+    },
+    {
+      "from": "Zone",
+      "to": "ATTACHED_DON"
+    },
+    {
+      "from": "Zone",
+      "to": "CHARACTER_AREA"
+    },
+    {
+      "from": "Zone",
+      "to": "COST_AREA"
+    },
+    {
+      "from": "Zone",
+      "to": "DECK"
+    },
+    {
+      "from": "Zone",
+      "to": "DON_DECK"
+    },
+    {
+      "from": "Zone",
+      "to": "HAND"
+    },
+    {
+      "from": "Zone",
+      "to": "LEADER_AREA"
+    },
+    {
+      "from": "Zone",
+      "to": "LIFE"
+    },
+    {
+      "from": "Zone",
+      "to": "NONE"
+    },
+    {
+      "from": "Zone",
+      "to": "RESOLUTION_LIMBO"
+    },
+    {
+      "from": "Zone",
+      "to": "RESOLVING_TRIGGER"
+    },
+    {
+      "from": "Zone",
+      "to": "STAGE_AREA"
+    },
+    {
+      "from": "Zone",
+      "to": "TRASH"
+    },
+    {
+      "from": "ZoneVisibility",
+      "to": "CONDITIONALLY_OPEN"
+    },
+    {
+      "from": "ZoneVisibility",
+      "to": "OPEN"
+    },
+    {
+      "from": "ZoneVisibility",
+      "to": "SECRET"
+    }
+  ]
+}

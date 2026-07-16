@@ -694,8 +694,16 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-109 — [On Play] If you have [Camie], draw 2 and trash 2 from hand.
   { cardNumber: 'OP11-109', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfControlsNamed', name: 'Camie' }], functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
 
-  // OP11-110 — [On Play] add 1 top/bottom Life to hand → K.O. up to 1 opp Character cost ≤1. PARTIAL: the K.O.-replacement clause is deferred.
-  { cardNumber: 'OP11-110', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+  // OP11-110 (character) Fukaboshi — If this Character would be K.O.'d, you may rest 1 of your
+  //   [Fish-Man Island] or your [Shirahoshi] Leader instead. [On Play] add 1 top/bottom Life to
+  //   hand → K.O. up to 1 opp Character cost<=1.
+  {
+    cardNumber: 'OP11-110',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementSelf', scope: 'any', restLeaderOrNamed: { leaderName: 'Shirahoshi', cardName: 'Fish-Man Island' }, duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
   // OP11-112 — [Blocker][Opponent's Turn] If Leader [Shirahoshi], this Character +4000.
   { cardNumber: 'OP11-112', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 4000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderName', name: 'Shirahoshi' }] } }] } },

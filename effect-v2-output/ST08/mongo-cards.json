@@ -1,0 +1,2930 @@
+[
+  {
+    "_id": "effects-v2:ST08-001",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-001",
+    "effects": [
+      {
+        "id": "ST08-001#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "PERMANENT",
+        "applicationMode": "CONTINUOUS",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_ENTER_PLAY"
+        },
+        "conditions": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "CURRENT_TURN_PLAYER"
+          },
+          "operator": "EQUAL",
+          "right": {
+            "kind": "EFFECT_OWNER"
+          }
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "GIVE_DON",
+            "donSelector": {
+              "subject": "DON",
+              "owner": "PLAYER",
+              "zones": [
+                "COST_AREA"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "target": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          },
+          "actionId": "ST08-001#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-001",
+          "effectIndex": 0,
+          "printedText": "[Your Turn] When a Character is K.O.'d, give up to 1 rested DON!! card to this Leader.",
+          "normalizedText": "[Your Turn] When a Character is K.O.'d, give up to 1 rested DON!! card to this Leader.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-001:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST08-001:0",
+        "cardNumber": "ST08-001",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Your Turn] When a Character is K.O.'d, give up to 1 rested DON!! card to this Leader.",
+        "effect": {
+          "category": "PERMANENT",
+          "applicationMode": "CONTINUOUS",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_ENTER_PLAY"
+          },
+          "conditions": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "CURRENT_TURN_PLAYER"
+            },
+            "operator": "EQUAL",
+            "right": {
+              "kind": "EFFECT_OWNER"
+            }
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "GIVE_DON",
+              "donSelector": {
+                "subject": "DON",
+                "owner": "PLAYER",
+                "zones": [
+                  "COST_AREA"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "target": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            "actionId": "ST08-001#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-001#0.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-001",
+      "totalAtomicEffects": 1,
+      "parserRecognizedAtomicEffects": 1,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 1,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST08-001#0.0",
+          "cardNumber": "ST08-001",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "When a Character is KO'd, give up to 1 rested DON!! card to this Leader.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-001:0"
+          ],
+          "canonicalAtoms": [
+            "GIVE_DON"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-002",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-002",
+    "effects": [
+      {
+        "id": "ST08-002#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "PERMANENT",
+        "applicationMode": "CONTINUOUS",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_ENTER_PLAY"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "PREVENT_ACTION",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "action": "KO_CARD",
+            "causeFilter": "BATTLE",
+            "duration": {
+              "kind": "PERMANENT"
+            }
+          },
+          "actionId": "ST08-002#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-002",
+          "effectIndex": 0,
+          "printedText": "This Character cannot be K.O.'d in battle by Leaders.",
+          "normalizedText": "This Character cannot be K.O.'d in battle by Leaders.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-002:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST08-002#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ACTIVATE_MAIN"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "REST_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "MODIFY_COST",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "propertyLayer": "CURRENT_VALUE",
+            "operation": "SUBTRACT",
+            "value": {
+              "kind": "NUMBER",
+              "value": 2
+            },
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "ST08-002#1.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-002",
+          "effectIndex": 1,
+          "printedText": "[Activate: Main] You may rest this Character: Give up to 1 of your opponent's Characters −2 cost during this turn.",
+          "normalizedText": "[Activate: Main] You may rest this Character: Give up to 1 of your opponent's Characters −2 cost during this turn.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-002:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST08-002:0",
+        "cardNumber": "ST08-002",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "This Character cannot be K.O.'d in battle by Leaders.",
+        "effect": {
+          "category": "PERMANENT",
+          "applicationMode": "CONTINUOUS",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_ENTER_PLAY"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "PREVENT_ACTION",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "action": "KO_CARD",
+              "causeFilter": "BATTLE",
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "ST08-002#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-002#0.0"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST08-002:1",
+        "cardNumber": "ST08-002",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Activate: Main] You may rest this Character: Give up to 1 of your opponent's Characters −2 cost during this turn.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ACTIVATE_MAIN"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "REST_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_COST",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "SUBTRACT",
+              "value": {
+                "kind": "NUMBER",
+                "value": 2
+              },
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "ST08-002#1.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-002#1.0",
+          "ST08-002#1.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-002",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST08-002#0.0",
+          "cardNumber": "ST08-002",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "This Character cannot be KO'd in battle by Leaders.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-002:0"
+          ],
+          "canonicalAtoms": [
+            "PREVENT_ACTION"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST08-002#1.0",
+          "cardNumber": "ST08-002",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "You may rest this Character:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-002:1"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST08-002#1.1",
+          "cardNumber": "ST08-002",
+          "effectIndex": 1,
+          "atomIndex": 1,
+          "rawText": "Give up to 1 of your opponent's Characters −2 cost during this turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-002:1"
+          ],
+          "canonicalAtoms": [
+            "MODIFY_COST"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-003",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-003",
+    "effects": [],
+    "assignments": [],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-003",
+      "totalAtomicEffects": 0,
+      "parserRecognizedAtomicEffects": 0,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 0,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": []
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-004",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-004",
+    "effects": [
+      {
+        "id": "ST08-004#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ACTIVATE_MAIN"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "REST_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "KO_CARD",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2
+                }
+              }
+            },
+            "cause": "EFFECT"
+          },
+          "actionId": "ST08-004#0.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-004",
+          "effectIndex": 0,
+          "printedText": "[Activate: Main] You may rest this Character: K.O. up to 1 of your opponent's Characters with a cost of 2 or less.",
+          "normalizedText": "[Activate: Main] You may rest this Character: K.O. up to 1 of your opponent's Characters with a cost of 2 or less.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-004:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST08-004:0",
+        "cardNumber": "ST08-004",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Activate: Main] You may rest this Character: K.O. up to 1 of your opponent's Characters with a cost of 2 or less.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ACTIVATE_MAIN"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "REST_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "KO_CARD",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                }
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "ST08-004#0.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-004#0.0",
+          "ST08-004#0.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-004",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST08-004#0.0",
+          "cardNumber": "ST08-004",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may rest this Character:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-004:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST08-004#0.1",
+          "cardNumber": "ST08-004",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "KO up to 1 of your opponent's Characters with a cost of 2 or less.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-004:0"
+          ],
+          "canonicalAtoms": [
+            "KO_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-005",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-005",
+    "effects": [
+      {
+        "id": "ST08-005#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_PLAY"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "TRASH_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "KO_CARD",
+            "selector": {
+              "subject": "CARD",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "ALL"
+              },
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              }
+            },
+            "cause": "EFFECT"
+          },
+          "actionId": "ST08-005#0.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-005",
+          "effectIndex": 0,
+          "printedText": "[On Play] You may trash 1 card from your hand: K.O. all Characters with a cost of 1 or less.",
+          "normalizedText": "[On Play] You may trash 1 card from your hand: K.O. all Characters with a cost of 1 or less.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-005:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST08-005:0",
+        "cardNumber": "ST08-005",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[On Play] You may trash 1 card from your hand: K.O. all Characters with a cost of 1 or less.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_PLAY"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "TRASH_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "HAND"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "KO_CARD",
+              "selector": {
+                "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "ALL"
+                },
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                }
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "ST08-005#0.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-005#0.0",
+          "ST08-005#0.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-005",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST08-005#0.0",
+          "cardNumber": "ST08-005",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may trash 1 card from your hand:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-005:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST08-005#0.1",
+          "cardNumber": "ST08-005",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "KO all Characters with a cost of 1 or less.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-005:0"
+          ],
+          "canonicalAtoms": [
+            "KO_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-006",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-006",
+    "effects": [
+      {
+        "id": "ST08-006#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "PERMANENT",
+        "applicationMode": "CONTINUOUS",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_ENTER_PLAY"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "GRANT_KEYWORD",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "keyword": "BLOCKER",
+            "duration": {
+              "kind": "PERMANENT"
+            }
+          },
+          "actionId": "ST08-006#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-006",
+          "effectIndex": 0,
+          "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+          "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-006:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST08-006#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_PLAY"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "MODIFY_COST",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "propertyLayer": "CURRENT_VALUE",
+            "operation": "SUBTRACT",
+            "value": {
+              "kind": "NUMBER",
+              "value": 4
+            },
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "ST08-006#1.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-006",
+          "effectIndex": 1,
+          "printedText": "[On Play] Give up to 1 of your opponent's Characters −4 cost during this turn.",
+          "normalizedText": "[On Play] Give up to 1 of your opponent's Characters −4 cost during this turn.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-006:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST08-006:0",
+        "cardNumber": "ST08-006",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "effect": {
+          "category": "PERMANENT",
+          "applicationMode": "CONTINUOUS",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_ENTER_PLAY"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "GRANT_KEYWORD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "keyword": "BLOCKER",
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "ST08-006#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-006#0.0"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST08-006:1",
+        "cardNumber": "ST08-006",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[On Play] Give up to 1 of your opponent's Characters −4 cost during this turn.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_PLAY"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_COST",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "SUBTRACT",
+              "value": {
+                "kind": "NUMBER",
+                "value": 4
+              },
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "ST08-006#1.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-006#1.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-006",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST08-006#0.0",
+          "cardNumber": "ST08-006",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "[Blocker]",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-006:0"
+          ],
+          "canonicalAtoms": [
+            "GRANT_KEYWORD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST08-006#1.0",
+          "cardNumber": "ST08-006",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "Give up to 1 of your opponent's Characters −4 cost during this turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-006:1"
+          ],
+          "canonicalAtoms": [
+            "MODIFY_COST"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-007",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-007",
+    "effects": [
+      {
+        "id": "ST08-007#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "PERMANENT",
+        "applicationMode": "CONTINUOUS",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_ENTER_PLAY"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "GRANT_KEYWORD",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "keyword": "BLOCKER",
+            "duration": {
+              "kind": "PERMANENT"
+            }
+          },
+          "actionId": "ST08-007#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-007",
+          "effectIndex": 0,
+          "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+          "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-007:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST08-007#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "TRIGGER"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "PLAY_CARD",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "player": "PLAYER"
+          },
+          "actionId": "ST08-007#1.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-007",
+          "effectIndex": 1,
+          "printedText": "[Trigger] Play this card.",
+          "normalizedText": "[Trigger] Play this card.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-007:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST08-007:0",
+        "cardNumber": "ST08-007",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "effect": {
+          "category": "PERMANENT",
+          "applicationMode": "CONTINUOUS",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_ENTER_PLAY"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "GRANT_KEYWORD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "keyword": "BLOCKER",
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "ST08-007#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-007#0.0"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST08-007:1",
+        "cardNumber": "ST08-007",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Trigger] Play this card.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "TRIGGER"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "PLAY_CARD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "player": "PLAYER"
+            },
+            "actionId": "ST08-007#1.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-007#1.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-007",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST08-007#0.0",
+          "cardNumber": "ST08-007",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "[Blocker]",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-007:0"
+          ],
+          "canonicalAtoms": [
+            "GRANT_KEYWORD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST08-007#1.0",
+          "cardNumber": "ST08-007",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "Play this card.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-007:1"
+          ],
+          "canonicalAtoms": [
+            "PLAY_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-008",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-008",
+    "effects": [
+      {
+        "id": "ST08-008#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_PLAY"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "MODIFY_COST",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "propertyLayer": "CURRENT_VALUE",
+            "operation": "SUBTRACT",
+            "value": {
+              "kind": "NUMBER",
+              "value": 2
+            },
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "ST08-008#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-008",
+          "effectIndex": 0,
+          "printedText": "[On Play] Give up to 1 of your opponent's Characters −2 cost during this turn.",
+          "normalizedText": "[On Play] Give up to 1 of your opponent's Characters −2 cost during this turn.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-008:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST08-008:0",
+        "cardNumber": "ST08-008",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[On Play] Give up to 1 of your opponent's Characters −2 cost during this turn.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_PLAY"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_COST",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "SUBTRACT",
+              "value": {
+                "kind": "NUMBER",
+                "value": 2
+              },
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "ST08-008#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-008#0.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-008",
+      "totalAtomicEffects": 1,
+      "parserRecognizedAtomicEffects": 1,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 1,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST08-008#0.0",
+          "cardNumber": "ST08-008",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "Give up to 1 of your opponent's Characters −2 cost during this turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-008:0"
+          ],
+          "canonicalAtoms": [
+            "MODIFY_COST"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-009",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-009",
+    "effects": [
+      {
+        "id": "ST08-009#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_PLAY"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "DRAW_CARD",
+            "player": "PLAYER",
+            "count": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "actionId": "ST08-009#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-009",
+          "effectIndex": 0,
+          "printedText": "[On Play] If there is a Character with a cost of 0, draw 1 card.",
+          "normalizedText": "[On Play] If there is a Character with a cost of 0, draw 1 card.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-009:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST08-009:0",
+        "cardNumber": "ST08-009",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[On Play] If there is a Character with a cost of 0, draw 1 card.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_PLAY"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "DRAW_CARD",
+              "player": "PLAYER",
+              "count": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "actionId": "ST08-009#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-009#0.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-009",
+      "totalAtomicEffects": 1,
+      "parserRecognizedAtomicEffects": 1,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 1,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST08-009#0.0",
+          "cardNumber": "ST08-009",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "If there is a Character with a cost of 0, draw 1 card.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-009:0"
+          ],
+          "canonicalAtoms": [
+            "DRAW_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-010",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-010",
+    "effects": [],
+    "assignments": [],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-010",
+      "totalAtomicEffects": 0,
+      "parserRecognizedAtomicEffects": 0,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 0,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": []
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-011",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-011",
+    "effects": [],
+    "assignments": [],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-011",
+      "totalAtomicEffects": 0,
+      "parserRecognizedAtomicEffects": 0,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 0,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": []
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-012",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-012",
+    "effects": [],
+    "assignments": [],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-012",
+      "totalAtomicEffects": 0,
+      "parserRecognizedAtomicEffects": 0,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 0,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": []
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-013",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-013",
+    "effects": [
+      {
+        "id": "ST08-013#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "PERMANENT",
+        "applicationMode": "CONTINUOUS",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_ENTER_PLAY"
+        },
+        "conditions": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "ATTACHED_DON_COUNT",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          },
+          "operator": "GREATER_OR_EQUAL",
+          "right": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "SEQUENCE",
+          "nodes": [
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "KO_CARD",
+                "selector": {
+                  "subject": "CARD",
+                  "controller": "OPPONENT",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                },
+                "cause": "EFFECT"
+              },
+              "actionId": "ST08-013#0.0"
+            },
+            {
+              "kind": "IF_ACTION_SUCCEEDED",
+              "actionResult": "ST08-013#0.0",
+              "then": {
+                "kind": "ACTION",
+                "action": {
+                  "type": "KO_CARD",
+                  "selector": {
+                    "subject": "CARD",
+                    "relations": [
+                      "THIS_CARD"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER"
+                  },
+                  "cause": "EFFECT"
+                },
+                "actionId": "ST08-013#0.1"
+              }
+            }
+          ]
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-013",
+          "effectIndex": 0,
+          "printedText": "[DON!! x1] At the end of a battle in which this Character battles your opponent's Character, you may K.O. the opponent’s Character you battled with. If you do, K.O. this Character.",
+          "normalizedText": "[DON!! x1] At the end of a battle in which this Character battles your opponent's Character, you may K.O. the opponent’s Character you battled with. If you do, K.O. this Character.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-013:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST08-013:0",
+        "cardNumber": "ST08-013",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[DON!! x1] At the end of a battle in which this Character battles your opponent's Character, you may K.O. the opponent’s Character you battled with. If you do, K.O. this Character.",
+        "effect": {
+          "category": "PERMANENT",
+          "applicationMode": "CONTINUOUS",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_ENTER_PLAY"
+          },
+          "conditions": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "ATTACHED_DON_COUNT",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "SEQUENCE",
+            "nodes": [
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "KO_CARD",
+                  "selector": {
+                    "subject": "CARD",
+                    "controller": "OPPONENT",
+                    "zones": [
+                      "CHARACTER_AREA"
+                    ],
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER"
+                  },
+                  "cause": "EFFECT"
+                },
+                "actionId": "ST08-013#0.0"
+              },
+              {
+                "kind": "IF_ACTION_SUCCEEDED",
+                "actionResult": "ST08-013#0.0",
+                "then": {
+                  "kind": "ACTION",
+                  "action": {
+                    "type": "KO_CARD",
+                    "selector": {
+                      "subject": "CARD",
+                      "relations": [
+                        "THIS_CARD"
+                      ],
+                      "quantity": {
+                        "kind": "EXACTLY",
+                        "value": {
+                          "kind": "NUMBER",
+                          "value": 1
+                        }
+                      },
+                      "chooser": "EFFECT_OWNER"
+                    },
+                    "cause": "EFFECT"
+                  },
+                  "actionId": "ST08-013#0.1"
+                }
+              }
+            ]
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-013#0.0",
+          "ST08-013#0.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-013",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST08-013#0.0",
+          "cardNumber": "ST08-013",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "At the end of a battle in which this Character battles your opponent's Character, you may KO the opponent’s Character you battled with.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-013:0"
+          ],
+          "canonicalAtoms": [
+            "KO_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST08-013#0.1",
+          "cardNumber": "ST08-013",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "If you do, KO this Character.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-013:0"
+          ],
+          "canonicalAtoms": [
+            "KO_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-014",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-014",
+    "effects": [
+      {
+        "id": "ST08-014#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "EVENT_MAIN"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "ADD_LIFE_TO_HAND_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "LIFE"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "MODIFY_COST",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "propertyLayer": "CURRENT_VALUE",
+            "operation": "SUBTRACT",
+            "value": {
+              "kind": "NUMBER",
+              "value": 7
+            },
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "ST08-014#0.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-014",
+          "effectIndex": 0,
+          "printedText": "[Main] You may add 1 card from the top of your Life cards to your hand: Give up to 1 of your opponent's Characters −7 cost during this turn.",
+          "normalizedText": "[Main] You may add 1 card from the top of your Life cards to your hand: Give up to 1 of your opponent's Characters −7 cost during this turn.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-014:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST08-014#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "TRIGGER"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "MOVE_CARD",
+            "selector": {
+              "subject": "CARD",
+              "owner": "PLAYER",
+              "zones": [
+                "TRASH"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "colors": {
+                "kind": "HAS_ANY_COLOR",
+                "values": [
+                  "BLACK"
+                ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2
+                }
+              }
+            },
+            "to": {
+              "zone": "HAND",
+              "owner": "PLAYER"
+            },
+            "cause": "EFFECT"
+          },
+          "actionId": "ST08-014#1.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-014",
+          "effectIndex": 1,
+          "printedText": "[Trigger] Add up to 1 black Character card with a cost of 2 or less from your trash to your hand.",
+          "normalizedText": "[Trigger] Add up to 1 black Character card with a cost of 2 or less from your trash to your hand.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-014:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST08-014:0",
+        "cardNumber": "ST08-014",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Main] You may add 1 card from the top of your Life cards to your hand: Give up to 1 of your opponent's Characters −7 cost during this turn.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "EVENT_MAIN"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "ADD_LIFE_TO_HAND_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "LIFE"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "ordering": "DECK_ORDER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_COST",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "SUBTRACT",
+              "value": {
+                "kind": "NUMBER",
+                "value": 7
+              },
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "ST08-014#0.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-014#0.0",
+          "ST08-014#0.1"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST08-014:1",
+        "cardNumber": "ST08-014",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Trigger] Add up to 1 black Character card with a cost of 2 or less from your trash to your hand.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "TRIGGER"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "MOVE_CARD",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "TRASH"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "colors": {
+                  "kind": "HAS_ANY_COLOR",
+                  "values": [
+                    "BLACK"
+                  ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                }
+              },
+              "to": {
+                "zone": "HAND",
+                "owner": "PLAYER"
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "ST08-014#1.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-014#1.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-014",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST08-014#0.0",
+          "cardNumber": "ST08-014",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may add 1 card from the top of your Life cards to your hand:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-014:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST08-014#0.1",
+          "cardNumber": "ST08-014",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "Give up to 1 of your opponent's Characters −7 cost during this turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-014:0"
+          ],
+          "canonicalAtoms": [
+            "MODIFY_COST"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST08-014#1.0",
+          "cardNumber": "ST08-014",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "Add up to 1 black Character card with a cost of 2 or less from your trash to your hand.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-014:1"
+          ],
+          "canonicalAtoms": [
+            "MOVE_CARD",
+            "ADD_CARD_TO_HAND"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST08-015",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST08-015",
+    "effects": [
+      {
+        "id": "ST08-015#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "EVENT_MAIN"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "KO_CARD",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2
+                }
+              }
+            },
+            "cause": "EFFECT"
+          },
+          "actionId": "ST08-015#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-015",
+          "effectIndex": 0,
+          "printedText": "[Main] K.O. up to 1 of your opponent's Characters with a cost of 2 or less.",
+          "normalizedText": "[Main] K.O. up to 1 of your opponent's Characters with a cost of 2 or less.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-015:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST08-015#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "TRIGGER"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "DRAW_CARD",
+            "player": "PLAYER",
+            "count": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "actionId": "ST08-015#1.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST08-015",
+          "effectIndex": 1,
+          "printedText": "[Trigger] Draw 1 card.",
+          "normalizedText": "[Trigger] Draw 1 card.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST08-015:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST08-015:0",
+        "cardNumber": "ST08-015",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Main] K.O. up to 1 of your opponent's Characters with a cost of 2 or less.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "EVENT_MAIN"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "KO_CARD",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                }
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "ST08-015#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-015#0.0"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST08-015:1",
+        "cardNumber": "ST08-015",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Trigger] Draw 1 card.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "TRIGGER"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "DRAW_CARD",
+              "player": "PLAYER",
+              "count": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "actionId": "ST08-015#1.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST08-015#1.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST08-015",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST08-015#0.0",
+          "cardNumber": "ST08-015",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "KO up to 1 of your opponent's Characters with a cost of 2 or less.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-015:0"
+          ],
+          "canonicalAtoms": [
+            "KO_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST08-015#1.0",
+          "cardNumber": "ST08-015",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "Draw 1 card.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST08-015:1"
+          ],
+          "canonicalAtoms": [
+            "DRAW_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  }
+]

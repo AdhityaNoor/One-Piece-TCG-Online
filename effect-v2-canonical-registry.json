@@ -1,0 +1,1045 @@
+[
+  {
+    "atom": "DRAW_CARD",
+    "family": "Card movement",
+    "subatoms": [],
+    "references": [
+      "ValueExpression"
+    ],
+    "remark": "Draw one or more cards."
+  },
+  {
+    "atom": "MOVE_CARD",
+    "family": "Card movement",
+    "subatoms": [
+      "selector",
+      "from",
+      "to",
+      "placement",
+      "order",
+      "face",
+      "cause"
+    ],
+    "references": [
+      "Selector",
+      "Zone"
+    ],
+    "remark": "Generic zone movement atom used by return, add-to-hand, place-in-deck, costs, and search results."
+  },
+  {
+    "atom": "PLAY_CARD",
+    "family": "Card movement",
+    "subatoms": [
+      "selector",
+      "destination",
+      "controller",
+      "state",
+      "triggerOnPlay",
+      "costPolicy"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Put a card into play with normal or alternate cost policy."
+  },
+  {
+    "atom": "ACTIVATE_EVENT",
+    "family": "Card movement",
+    "subatoms": [
+      "selector",
+      "player"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Activate an event or referenced event effect."
+  },
+  {
+    "atom": "TRASH_CARD",
+    "family": "Card movement",
+    "subatoms": [
+      "selector",
+      "cause",
+      "treatedAsKO"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Trash selected cards."
+  },
+  {
+    "atom": "KO_CARD",
+    "family": "Card movement",
+    "subatoms": [
+      "selector",
+      "cause"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "K.O. selected cards."
+  },
+  {
+    "atom": "RETURN_CARD",
+    "family": "Card movement",
+    "subatoms": [
+      "selector",
+      "destination",
+      "deckPlacement",
+      "owner"
+    ],
+    "references": [
+      "MOVE_CARD"
+    ],
+    "remark": "Semantic return atom; V2 may store it as MOVE_CARD with cause RETURN/EFFECT."
+  },
+  {
+    "atom": "ADD_CARD_TO_HAND",
+    "family": "Card movement",
+    "subatoms": [
+      "selector",
+      "from",
+      "triggerPolicy"
+    ],
+    "references": [
+      "MOVE_CARD"
+    ],
+    "remark": "Semantic add-to-hand atom; V2 may store it as MOVE_CARD to HAND."
+  },
+  {
+    "atom": "PLACE_CARD_IN_DECK",
+    "family": "Card movement",
+    "subatoms": [
+      "selector",
+      "placement",
+      "order"
+    ],
+    "references": [
+      "MOVE_CARD"
+    ],
+    "remark": "Semantic place-in-deck atom; V2 may store it as MOVE_CARD to DECK."
+  },
+  {
+    "atom": "REVEAL_CARD",
+    "family": "Card movement",
+    "subatoms": [
+      "selector",
+      "viewers"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Reveal selected cards to one or both players."
+  },
+  {
+    "atom": "LOOK_AT_CARDS",
+    "family": "Card movement",
+    "subatoms": [
+      "player",
+      "zone",
+      "position",
+      "count",
+      "visibility"
+    ],
+    "references": [
+      "Selector",
+      "ValueExpression"
+    ],
+    "remark": "Look at cards from deck, life, or hand."
+  },
+  {
+    "atom": "SELECT_CARD",
+    "family": "Card movement",
+    "subatoms": [
+      "pool",
+      "selector"
+    ],
+    "references": [
+      "ResultReference",
+      "Selector"
+    ],
+    "remark": "Select cards from a prior action result."
+  },
+  {
+    "atom": "REORDER_CARDS",
+    "family": "Card movement",
+    "subatoms": [
+      "cards",
+      "destination",
+      "orderChooser"
+    ],
+    "references": [
+      "ResultReference"
+    ],
+    "remark": "Reorder known cards such as search remainder."
+  },
+  {
+    "atom": "SHUFFLE_ZONE",
+    "family": "Card movement",
+    "subatoms": [
+      "player",
+      "zone"
+    ],
+    "references": [
+      "Zone"
+    ],
+    "remark": "Shuffle a zone."
+  },
+  {
+    "atom": "SEARCH",
+    "family": "Composite",
+    "subatoms": [
+      "look",
+      "select",
+      "moveSelected",
+      "processRemainder"
+    ],
+    "references": [
+      "LOOK_AT_CARDS",
+      "SELECT_CARD",
+      "MOVE_CARD",
+      "REORDER_CARDS"
+    ],
+    "remark": "Composite helper only; output should use referenced atomic actions."
+  },
+  {
+    "atom": "ADD_CARD_TO_LIFE",
+    "family": "Life",
+    "subatoms": [
+      "selector",
+      "position",
+      "face"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Add selected cards to life."
+  },
+  {
+    "atom": "TAKE_LIFE_TO_HAND",
+    "family": "Life",
+    "subatoms": [
+      "player",
+      "position",
+      "count",
+      "triggerPolicy"
+    ],
+    "references": [
+      "ValueExpression"
+    ],
+    "remark": "Move life cards to hand without trigger check."
+  },
+  {
+    "atom": "TAKE_DAMAGE",
+    "family": "Life",
+    "subatoms": [
+      "targetPlayer",
+      "amount",
+      "lifeProcessing"
+    ],
+    "references": [
+      "ValueExpression"
+    ],
+    "remark": "Apply damage and life processing."
+  },
+  {
+    "atom": "TRASH_LIFE",
+    "family": "Life",
+    "subatoms": [
+      "player",
+      "position",
+      "count",
+      "activateTrigger"
+    ],
+    "references": [
+      "ValueExpression"
+    ],
+    "remark": "Trash life cards without trigger activation."
+  },
+  {
+    "atom": "REVEAL_LIFE",
+    "family": "Life",
+    "subatoms": [
+      "selector",
+      "viewers"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Reveal life cards."
+  },
+  {
+    "atom": "LOOK_AT_LIFE",
+    "family": "Life",
+    "subatoms": [
+      "player",
+      "position",
+      "count"
+    ],
+    "references": [
+      "ValueExpression"
+    ],
+    "remark": "Look at life cards."
+  },
+  {
+    "atom": "REORDER_LIFE",
+    "family": "Life",
+    "subatoms": [
+      "selector",
+      "orderChooser"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Reorder life cards."
+  },
+  {
+    "atom": "TURN_LIFE_FACE_UP",
+    "family": "Life",
+    "subatoms": [
+      "selector"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Turn life cards face-up."
+  },
+  {
+    "atom": "TURN_LIFE_FACE_DOWN",
+    "family": "Life",
+    "subatoms": [
+      "selector"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Turn life cards face-down."
+  },
+  {
+    "atom": "REST_CARD",
+    "family": "State",
+    "subatoms": [
+      "selector"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Rest selected cards."
+  },
+  {
+    "atom": "SET_CARD_ACTIVE",
+    "family": "State",
+    "subatoms": [
+      "selector"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Set selected cards active."
+  },
+  {
+    "atom": "TURN_CARD_FACE_UP",
+    "family": "State",
+    "subatoms": [
+      "selector"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Turn selected cards face-up."
+  },
+  {
+    "atom": "TURN_CARD_FACE_DOWN",
+    "family": "State",
+    "subatoms": [
+      "selector"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Turn selected cards face-down."
+  },
+  {
+    "atom": "ADD_DON_FROM_DON_DECK",
+    "family": "DON",
+    "subatoms": [
+      "player",
+      "count",
+      "destination",
+      "state"
+    ],
+    "references": [
+      "ValueExpression"
+    ],
+    "remark": "Move DON from DON deck to cost area."
+  },
+  {
+    "atom": "GIVE_DON",
+    "family": "DON",
+    "subatoms": [
+      "donSelector",
+      "target"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Attach/give DON to a card."
+  },
+  {
+    "atom": "DETACH_DON",
+    "family": "DON",
+    "subatoms": [
+      "sourceCard",
+      "count",
+      "destination",
+      "state"
+    ],
+    "references": [
+      "Selector",
+      "ValueExpression"
+    ],
+    "remark": "Detach DON from a card."
+  },
+  {
+    "atom": "REST_DON",
+    "family": "DON",
+    "subatoms": [
+      "selector"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Rest selected DON."
+  },
+  {
+    "atom": "SET_DON_ACTIVE",
+    "family": "DON",
+    "subatoms": [
+      "selector"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Set selected DON active."
+  },
+  {
+    "atom": "RETURN_DON_TO_DON_DECK",
+    "family": "DON",
+    "subatoms": [
+      "selector"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Return selected DON to DON deck."
+  },
+  {
+    "atom": "MOVE_DON_TO_COST_AREA",
+    "family": "DON",
+    "subatoms": [
+      "selector",
+      "state"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Move DON to cost area."
+  },
+  {
+    "atom": "MODIFY_POWER",
+    "family": "Stat",
+    "subatoms": [
+      "selector",
+      "propertyLayer",
+      "operation",
+      "value",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "ValueExpression",
+      "Duration"
+    ],
+    "remark": "Modify power."
+  },
+  {
+    "atom": "SWAP_POWER",
+    "family": "Stat",
+    "subatoms": [
+      "selector",
+      "propertyLayer",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Swap power between selected cards."
+  },
+  {
+    "atom": "MODIFY_COST",
+    "family": "Stat",
+    "subatoms": [
+      "selector",
+      "propertyLayer",
+      "operation",
+      "value",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "ValueExpression",
+      "Duration"
+    ],
+    "remark": "Modify cost."
+  },
+  {
+    "atom": "MODIFY_COUNTER",
+    "family": "Stat",
+    "subatoms": [
+      "selector",
+      "propertyLayer",
+      "operation",
+      "value",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "ValueExpression",
+      "Duration"
+    ],
+    "remark": "Modify counter."
+  },
+  {
+    "atom": "MODIFY_LIFE_VALUE",
+    "family": "Stat",
+    "subatoms": [
+      "selector",
+      "propertyLayer",
+      "operation",
+      "value",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "ValueExpression",
+      "Duration"
+    ],
+    "remark": "Modify life value."
+  },
+  {
+    "atom": "MODIFY_DAMAGE",
+    "family": "Stat",
+    "subatoms": [
+      "selector",
+      "propertyLayer",
+      "operation",
+      "value",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "ValueExpression",
+      "Duration"
+    ],
+    "remark": "Modify damage."
+  },
+  {
+    "atom": "MODIFY_NAME",
+    "family": "Information",
+    "subatoms": [
+      "selector",
+      "operation",
+      "names",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Modify card name."
+  },
+  {
+    "atom": "MODIFY_COLOR",
+    "family": "Information",
+    "subatoms": [
+      "selector",
+      "operation",
+      "colors",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Modify card color."
+  },
+  {
+    "atom": "MODIFY_TYPE",
+    "family": "Information",
+    "subatoms": [
+      "selector",
+      "operation",
+      "types",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Modify card type."
+  },
+  {
+    "atom": "MODIFY_ATTRIBUTE",
+    "family": "Information",
+    "subatoms": [
+      "selector",
+      "operation",
+      "attributes",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Modify card attribute."
+  },
+  {
+    "atom": "MODIFY_BASE_EFFECT_STATUS",
+    "family": "Information",
+    "subatoms": [
+      "selector",
+      "enabled",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Enable/disable base effects."
+  },
+  {
+    "atom": "GRANT_KEYWORD",
+    "family": "Effect modification",
+    "subatoms": [
+      "selector",
+      "keyword",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "KeywordEffect",
+      "Duration"
+    ],
+    "remark": "Grant a keyword."
+  },
+  {
+    "atom": "REMOVE_KEYWORD",
+    "family": "Effect modification",
+    "subatoms": [
+      "selector",
+      "keyword",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "KeywordEffect",
+      "Duration"
+    ],
+    "remark": "Remove a keyword."
+  },
+  {
+    "atom": "ADD_EFFECT",
+    "family": "Effect modification",
+    "subatoms": [
+      "selector",
+      "effect",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "EffectDefinition",
+      "Duration"
+    ],
+    "remark": "Add an effect."
+  },
+  {
+    "atom": "REMOVE_GAINED_EFFECT",
+    "family": "Effect modification",
+    "subatoms": [
+      "selector",
+      "effectFilter",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Remove gained effects."
+  },
+  {
+    "atom": "INVALIDATE_EFFECTS",
+    "family": "Effect modification",
+    "subatoms": [
+      "selector",
+      "effectFilter",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Invalidate effects."
+  },
+  {
+    "atom": "VALIDATE_EFFECTS",
+    "family": "Effect modification",
+    "subatoms": [
+      "selector",
+      "effectFilter",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Validate effects."
+  },
+  {
+    "atom": "COPY_EFFECT",
+    "family": "Effect modification",
+    "subatoms": [
+      "selector",
+      "sourceEffect",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Copy an effect."
+  },
+  {
+    "atom": "CREATE_DELAYED_EFFECT",
+    "family": "Effect modification",
+    "subatoms": [
+      "effect",
+      "duration"
+    ],
+    "references": [
+      "EffectDefinition",
+      "Duration"
+    ],
+    "remark": "Create delayed effect."
+  },
+  {
+    "atom": "CREATE_REPLACEMENT_EFFECT",
+    "family": "Effect modification",
+    "subatoms": [
+      "effect",
+      "duration"
+    ],
+    "references": [
+      "EffectDefinition",
+      "Duration"
+    ],
+    "remark": "Create replacement effect."
+  },
+  {
+    "atom": "PREVENT_ACTION",
+    "family": "Permission",
+    "subatoms": [
+      "selector",
+      "action",
+      "causeFilter",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Prevent a defined action."
+  },
+  {
+    "atom": "ALLOW_ACTION",
+    "family": "Permission",
+    "subatoms": [
+      "selector",
+      "action",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Allow a defined action."
+  },
+  {
+    "atom": "PREVENT_SELECTION",
+    "family": "Permission",
+    "subatoms": [
+      "selector",
+      "action",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Prevent selection."
+  },
+  {
+    "atom": "PREVENT_ZONE_CHANGE",
+    "family": "Permission",
+    "subatoms": [
+      "selector",
+      "action",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Prevent zone changes."
+  },
+  {
+    "atom": "MODIFY_VALID_TARGETS",
+    "family": "Permission",
+    "subatoms": [
+      "selector",
+      "action",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Modify valid targets."
+  },
+  {
+    "atom": "MODIFY_PLAY_PERMISSION",
+    "family": "Permission",
+    "subatoms": [
+      "selector",
+      "action",
+      "duration"
+    ],
+    "references": [
+      "Selector",
+      "Duration"
+    ],
+    "remark": "Modify play permission."
+  },
+  {
+    "atom": "DECLARE_ATTACK",
+    "family": "Battle",
+    "subatoms": [
+      "attacker",
+      "target"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Declare attack."
+  },
+  {
+    "atom": "CHANGE_ATTACK_TARGET",
+    "family": "Battle",
+    "subatoms": [
+      "newTarget"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Change attack target."
+  },
+  {
+    "atom": "ACTIVATE_BLOCKER",
+    "family": "Battle",
+    "subatoms": [
+      "selector"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Activate blocker."
+  },
+  {
+    "atom": "CANCEL_ATTACK",
+    "family": "Battle",
+    "subatoms": [
+      "battle"
+    ],
+    "references": [],
+    "remark": "Cancel current attack."
+  },
+  {
+    "atom": "END_BATTLE",
+    "family": "Battle",
+    "subatoms": [
+      "battle"
+    ],
+    "references": [],
+    "remark": "End current battle."
+  },
+  {
+    "atom": "DEAL_DAMAGE",
+    "family": "Battle",
+    "subatoms": [
+      "source",
+      "targetPlayer",
+      "amount"
+    ],
+    "references": [
+      "Selector",
+      "ValueExpression"
+    ],
+    "remark": "Deal damage."
+  },
+  {
+    "atom": "SET_DAMAGE",
+    "family": "Battle",
+    "subatoms": [
+      "source",
+      "targetPlayer",
+      "amount"
+    ],
+    "references": [
+      "Selector",
+      "ValueExpression"
+    ],
+    "remark": "Set damage."
+  },
+  {
+    "atom": "SKIP_BATTLE_STEP",
+    "family": "Battle",
+    "subatoms": [
+      "step"
+    ],
+    "references": [],
+    "remark": "Skip a battle step."
+  },
+  {
+    "atom": "PLAYER_WINS",
+    "family": "Player and rule",
+    "subatoms": [
+      "player"
+    ],
+    "references": [],
+    "remark": "Player wins."
+  },
+  {
+    "atom": "PLAYER_LOSES",
+    "family": "Player and rule",
+    "subatoms": [
+      "player"
+    ],
+    "references": [],
+    "remark": "Player loses."
+  },
+  {
+    "atom": "PLAYER_CHOOSES",
+    "family": "Player and rule",
+    "subatoms": [
+      "options",
+      "minimumChoices",
+      "maximumChoices"
+    ],
+    "references": [
+      "ResolutionNode"
+    ],
+    "remark": "Player choice node."
+  },
+  {
+    "atom": "OPPONENT_CHOOSES",
+    "family": "Player and rule",
+    "subatoms": [
+      "options",
+      "minimumChoices",
+      "maximumChoices"
+    ],
+    "references": [
+      "ResolutionNode"
+    ],
+    "remark": "Opponent choice node."
+  },
+  {
+    "atom": "RULE_MODIFIER",
+    "family": "Player and rule",
+    "subatoms": [
+      "scope",
+      "validFrom",
+      "modifier"
+    ],
+    "references": [
+      "ModifierExpression"
+    ],
+    "remark": "Modify deck construction, setup, victory, or game rules."
+  },
+  {
+    "atom": "ActivationCost",
+    "family": "Cost",
+    "subatoms": [
+      "preconditions",
+      "payments",
+      "optionalPayment",
+      "executionPolicy"
+    ],
+    "references": [
+      "CostAction",
+      "ConditionExpression"
+    ],
+    "remark": "Activation cost container."
+  },
+  {
+    "atom": "ConditionExpression",
+    "family": "Condition",
+    "subatoms": [
+      "predicate",
+      "and",
+      "or",
+      "not",
+      "any",
+      "all"
+    ],
+    "references": [
+      "Selector",
+      "ValueExpression"
+    ],
+    "remark": "Canonical condition tree."
+  },
+  {
+    "atom": "ValueExpression",
+    "family": "Value",
+    "subatoms": [
+      "number",
+      "boolean",
+      "string",
+      "count",
+      "previousResult",
+      "add",
+      "subtract",
+      "multiply"
+    ],
+    "references": [
+      "Selector"
+    ],
+    "remark": "Canonical value expression tree."
+  },
+  {
+    "atom": "Selector",
+    "family": "Selector",
+    "subatoms": [
+      "subject",
+      "owner",
+      "controller",
+      "zones",
+      "filters",
+      "quantity",
+      "relations",
+      "ordering"
+    ],
+    "references": [],
+    "remark": "Canonical selector tree."
+  }
+]

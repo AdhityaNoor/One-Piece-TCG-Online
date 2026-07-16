@@ -140,6 +140,17 @@ export interface EffectContext {
     effectSourceController?: 'opponent' | 'controller';
     description?: string;
   }): void;
+  /**
+   * Prevent the target Character/Stage from being removed from the field — effect K.O., returned
+   * to hand, or placed at the bottom of the deck — for the given duration. Never blocks battle K.O.
+   */
+  preventFieldRemoval(spec: {
+    appliesToInstanceId: string;
+    duration: ContinuousEffectDuration;
+    effectSourceController?: 'opponent' | 'controller';
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void;
   /** Negate abilities on the target instance for the given duration. */
   negateEffect(spec: {
     appliesToInstanceId: string;
@@ -208,6 +219,8 @@ export interface EffectContext {
   playCharacterFromHand(handInstanceId: string, rested?: boolean): void;
   /** Play a Character from the controller's deck into the Character Area for free (3-7); `rested` plays it rested. Then the caller should shuffle the deck if card text instructs it. */
   playCharacterFromDeck(deckInstanceId: string, rested?: boolean): void;
+  /** Play a Stage from the controller's deck into the Stage area for free (3-8), replacing any existing Stage (3-8-5). Used by "at the start of the game" Leader abilities (5-2-1-5-1). */
+  playStageFromDeck(deckInstanceId: string): void;
   /** Play a Character from the controller's trash into the Character Area for free (3-7); `rested` plays it rested. Raises the 3-7-6-1 overflow choice if it makes a 6th. */
   playCharacterFromTrash(trashInstanceId: string, rested?: boolean): string | null;
   /** Shuffle a player's deck using the serialized seedable RNG state. */
@@ -261,6 +274,7 @@ export interface EffectContext {
   /** Emit a fully-built PendingChoice (the interpreter uses this to suspend; carries its resume point). */
   emitChoice(choice: PendingChoice): void;
 }
+
 
 /**
  * Injected map cardNumber -> curated EffectProgram. Absent entry = the card

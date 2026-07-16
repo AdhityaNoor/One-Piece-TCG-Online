@@ -1,0 +1,888 @@
+[
+  {
+    "_id": "v2:auto:ST28-001:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST28-001",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] If your Leader has the {Land of Wano} type and your opponent has 3 or more Life cards, K.O. up to 1 of your opponent's Characters with a base cost of 5 or less.",
+    "coveredAtomicEffectIds": [
+      "ST28-001#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST28-001#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "COUNT",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
+            "types": {
+              "kind": "TYPE_INCLUDES_TEXT",
+              "values": [
+                "Land of Wano"
+              ]
+            },
+            "quantity": {
+              "kind": "ANY_NUMBER"
+            }
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "KO_CARD",
+          "selector": {
+            "subject": "CARD",
+            "controller": "OPPONENT",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 5
+              }
+            }
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST28-001#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST28-001",
+        "effectIndex": 0,
+        "printedText": "[On Play] If your Leader has the {Land of Wano} type and your opponent has 3 or more Life cards, K.O. up to 1 of your opponent's Characters with a base cost of 5 or less.",
+        "normalizedText": "[On Play] If your Leader has the {Land of Wano} type and your opponent has 3 or more Life cards, K.O. up to 1 of your opponent's Characters with a base cost of 5 or less.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST28-001:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST28-002:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST28-002",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[DON!! x2] This Character gains [Blocker].",
+    "coveredAtomicEffectIds": [
+      "ST28-002#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST28-002#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "ATTACHED_DON_COUNT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 2
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "BLOCKER",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST28-002#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST28-002",
+        "effectIndex": 0,
+        "printedText": "[DON!! x2] This Character gains [Blocker].",
+        "normalizedText": "[DON!! x2] This Character gains [Blocker].",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST28-002:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST28-002:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST28-002",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Your {Land of Wano} type Leader gains [Banish] during this turn.",
+    "coveredAtomicEffectIds": [
+      "ST28-002#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST28-002#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "Land of Wano"
+              ]
+            }
+          },
+          "keyword": "BANISH",
+          "duration": {
+            "kind": "THIS_TURN"
+          }
+        },
+        "actionId": "ST28-002#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST28-002",
+        "effectIndex": 1,
+        "printedText": "[On Play] Your {Land of Wano} type Leader gains [Banish] during this turn.",
+        "normalizedText": "[On Play] Your {Land of Wano} type Leader gains [Banish] during this turn.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST28-002:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST28-003:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST28-003",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] If your Leader has the {Land of Wano} type and your opponent has 3 or less Life cards, play this card.",
+    "coveredAtomicEffectIds": [
+      "ST28-003#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST28-003#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "COUNT",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
+            "types": {
+              "kind": "TYPE_INCLUDES_TEXT",
+              "values": [
+                "Land of Wano"
+              ]
+            },
+            "quantity": {
+              "kind": "ANY_NUMBER"
+            }
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PLAY_CARD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "ST28-003#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST28-003",
+        "effectIndex": 0,
+        "printedText": "[Trigger] If your Leader has the {Land of Wano} type and your opponent has 3 or less Life cards, play this card.",
+        "normalizedText": "[Trigger] If your Leader has the {Land of Wano} type and your opponent has 3 or less Life cards, play this card.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST28-003:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST28-004:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST28-004",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Your Turn] If you have 2 or less Life cards, your Leader gains +1000 power.",
+    "coveredAtomicEffectIds": [
+      "ST28-004#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST28-004#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "conditions": {
+        "kind": "AND",
+        "conditions": [
+          {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "CURRENT_TURN_PLAYER"
+            },
+            "operator": "EQUAL",
+            "right": {
+              "kind": "EFFECT_OWNER"
+            }
+          },
+          {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "COUNT",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "LIFE"
+                ],
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              }
+            },
+            "operator": "LESS_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 2
+            }
+          }
+        ]
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MODIFY_POWER",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "propertyLayer": "CURRENT_VALUE",
+          "operation": "ADD",
+          "value": {
+            "kind": "NUMBER",
+            "value": 1000
+          },
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST28-004#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST28-004",
+        "effectIndex": 0,
+        "printedText": "[Your Turn] If you have 2 or less Life cards, your Leader gains +1000 power.",
+        "normalizedText": "[Your Turn] If you have 2 or less Life cards, your Leader gains +1000 power.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST28-004:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST28-004:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST28-004",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] [Once Per Turn] You may return 2 total of your currently given DON!! cards to your cost area rested: This Character gains [Rush] and +1000 power during this turn.(This card can attack on the turn in which it is played.)",
+    "coveredAtomicEffectIds": [
+      "ST28-004#1.0",
+      "ST28-004#1.1",
+      "ST28-004#1.2"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST28-004#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "RETURN_DON_TO_COST_AREA_COST",
+            "state": "RESTED",
+            "selector": {
+              "subject": "DON",
+              "owner": "PLAYER",
+              "zones": [
+                "ATTACHED_DON"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "relations": [
+                "CURRENTLY_GIVEN"
+              ]
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "GRANT_KEYWORD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "keyword": "RUSH",
+              "duration": {
+                "kind": "INSTANT"
+              }
+            },
+            "actionId": "ST28-004#1.1"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_POWER",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "ADD",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1000
+              },
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "ST28-004#1.2"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "ST28-004",
+        "effectIndex": 1,
+        "printedText": "[Activate: Main] [Once Per Turn] You may return 2 total of your currently given DON!! cards to your cost area rested: This Character gains [Rush] and +1000 power during this turn.(This card can attack on the turn in which it is played.)",
+        "normalizedText": "[Activate: Main] [Once Per Turn] You may return 2 total of your currently given DON!! cards to your cost area rested: This Character gains [Rush] and +1000 power during this turn.(This card can attack on the turn in which it is played.)",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST28-004:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST28-005:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST28-005",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[DON!! x2] [Your Turn] This Character gains +3000 power.",
+    "coveredAtomicEffectIds": [
+      "ST28-005#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST28-005#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "conditions": {
+        "kind": "AND",
+        "conditions": [
+          {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "ATTACHED_DON_COUNT",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 2
+            }
+          },
+          {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "CURRENT_TURN_PLAYER"
+            },
+            "operator": "EQUAL",
+            "right": {
+              "kind": "EFFECT_OWNER"
+            }
+          }
+        ]
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MODIFY_POWER",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "propertyLayer": "CURRENT_VALUE",
+          "operation": "ADD",
+          "value": {
+            "kind": "NUMBER",
+            "value": 3000
+          },
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST28-005#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST28-005",
+        "effectIndex": 0,
+        "printedText": "[DON!! x2] [Your Turn] This Character gains +3000 power.",
+        "normalizedText": "[DON!! x2] [Your Turn] This Character gains +3000 power.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST28-005:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST28-005:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST28-005",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Land of Wano} type card with a cost of 2 or more and add it to your hand. Then, place the rest at the bottom of your deck in any order.",
+    "coveredAtomicEffectIds": [
+      "ST28-005#1.0",
+      "ST28-005#1.1",
+      "ST28-005#1.2"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST28-005#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "LOOK_AT_CARDS",
+              "player": "PLAYER",
+              "source": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "DECK"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              },
+              "count": {
+                "kind": "NUMBER",
+                "value": 5
+              }
+            },
+            "actionId": "ST28-005#1.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "MOVE_CARD",
+              "selector": {
+                "subject": "CARD",
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "Land of Wano"
+                  ]
+                },
+                "owner": "PLAYER",
+                "zones": [
+                  "DECK"
+                ],
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_LEAST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                }
+              },
+              "to": {
+                "zone": "HAND",
+                "owner": "PLAYER"
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "ST28-005#1.1"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "REORDER_CARDS",
+              "selector": {
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "REMAINDER_OF_PREVIOUS_SELECTION"
+                ],
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              },
+              "destination": {
+                "zone": "DECK",
+                "owner": "PLAYER",
+                "position": "BOTTOM"
+              },
+              "orderChooser": "PLAYER"
+            },
+            "actionId": "ST28-005#1.2"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "ST28-005",
+        "effectIndex": 1,
+        "printedText": "[On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Land of Wano} type card with a cost of 2 or more and add it to your hand. Then, place the rest at the bottom of your deck in any order.",
+        "normalizedText": "[On Play] Look at 5 cards from the top of your deck; reveal up to 1 {Land of Wano} type card with a cost of 2 or more and add it to your hand. Then, place the rest at the bottom of your deck in any order.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST28-005:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  }
+]

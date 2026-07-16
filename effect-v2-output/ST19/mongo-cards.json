@@ -1,0 +1,1808 @@
+[
+  {
+    "_id": "effects-v2:ST19-001",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST19-001",
+    "effects": [
+      {
+        "id": "ST19-001#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_PLAY"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "TRASH_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "Navy"
+                  ]
+                },
+                "colors": {
+                  "kind": "HAS_ANY_COLOR",
+                  "values": [
+                    "BLACK"
+                  ]
+                }
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "PREVENT_ACTION",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 4
+                }
+              }
+            },
+            "action": "DECLARE_ATTACK",
+            "duration": {
+              "kind": "UNTIL_END_OF_NEXT_TURN",
+              "player": "OPPONENT"
+            }
+          },
+          "actionId": "ST19-001#0.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST19-001",
+          "effectIndex": 0,
+          "printedText": "[On Play] You may trash 1 black {Navy} type card from your hand: Up to 2 of your opponent's Characters with a cost of 4 or less cannot attack until the end of your opponent's next turn.",
+          "normalizedText": "[On Play] You may trash 1 black {Navy} type card from your hand: Up to 2 of your opponent's Characters with a cost of 4 or less cannot attack until the end of your opponent's next turn.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST19-001:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST19-001:0",
+        "cardNumber": "ST19-001",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[On Play] You may trash 1 black {Navy} type card from your hand: Up to 2 of your opponent's Characters with a cost of 4 or less cannot attack until the end of your opponent's next turn.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_PLAY"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "TRASH_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "HAND"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER",
+                  "types": {
+                    "kind": "HAS_ANY_TYPE",
+                    "values": [
+                      "Navy"
+                    ]
+                  },
+                  "colors": {
+                    "kind": "HAS_ANY_COLOR",
+                    "values": [
+                      "BLACK"
+                    ]
+                  }
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "PREVENT_ACTION",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 4
+                  }
+                }
+              },
+              "action": "DECLARE_ATTACK",
+              "duration": {
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
+              }
+            },
+            "actionId": "ST19-001#0.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST19-001#0.0",
+          "ST19-001#0.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST19-001",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST19-001#0.0",
+          "cardNumber": "ST19-001",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may trash 1 black {Navy} type card from your hand:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-001:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST19-001#0.1",
+          "cardNumber": "ST19-001",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "Up to 2 of your opponent's Characters with a cost of 4 or less cannot attack until the end of your opponent's next turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-001:0"
+          ],
+          "canonicalAtoms": [
+            "PREVENT_ACTION"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST19-002",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST19-002",
+    "effects": [
+      {
+        "id": "ST19-002#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_PLAY"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "TRASH_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "Navy"
+                  ]
+                },
+                "colors": {
+                  "kind": "HAS_ANY_COLOR",
+                  "values": [
+                    "BLACK"
+                  ]
+                }
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "IF",
+          "condition": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "COUNT",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER"
+                ],
+                "types": {
+                  "kind": "TYPE_INCLUDES_TEXT",
+                  "values": [
+                    "Navy"
+                  ]
+                },
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "then": {
+            "kind": "ACTION",
+            "action": {
+              "type": "DRAW_CARD",
+              "player": "PLAYER",
+              "count": {
+                "kind": "NUMBER",
+                "value": 3
+              }
+            },
+            "actionId": "ST19-002#0.1"
+          }
+        },
+        "metadata": {
+          "sourceCardNumber": "ST19-002",
+          "effectIndex": 0,
+          "printedText": "[On Play] You may trash 2 black {Navy} type cards from your hand: If your Leader has the {Navy} type, draw 3 cards.",
+          "normalizedText": "[On Play] You may trash 2 black {Navy} type cards from your hand: If your Leader has the {Navy} type, draw 3 cards.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST19-002:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST19-002:0",
+        "cardNumber": "ST19-002",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[On Play] You may trash 2 black {Navy} type cards from your hand: If your Leader has the {Navy} type, draw 3 cards.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_PLAY"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "TRASH_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "HAND"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 2
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER",
+                  "types": {
+                    "kind": "HAS_ANY_TYPE",
+                    "values": [
+                      "Navy"
+                    ]
+                  },
+                  "colors": {
+                    "kind": "HAS_ANY_COLOR",
+                    "values": [
+                      "BLACK"
+                    ]
+                  }
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "IF",
+            "condition": {
+              "kind": "PREDICATE",
+              "left": {
+                "kind": "COUNT",
+                "selector": {
+                  "subject": "CARD",
+                  "controller": "PLAYER",
+                  "zones": [
+                    "LEADER_AREA"
+                  ],
+                  "cardCategories": [
+                    "LEADER"
+                  ],
+                  "types": {
+                    "kind": "TYPE_INCLUDES_TEXT",
+                    "values": [
+                      "Navy"
+                    ]
+                  },
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  }
+                }
+              },
+              "operator": "GREATER_OR_EQUAL",
+              "right": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "then": {
+              "kind": "ACTION",
+              "action": {
+                "type": "DRAW_CARD",
+                "player": "PLAYER",
+                "count": {
+                  "kind": "NUMBER",
+                  "value": 3
+                }
+              },
+              "actionId": "ST19-002#0.1"
+            }
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST19-002#0.0",
+          "ST19-002#0.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST19-002",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST19-002#0.0",
+          "cardNumber": "ST19-002",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "You may trash 2 black {Navy} type cards from your hand:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-002:0"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST19-002#0.1",
+          "cardNumber": "ST19-002",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "If your Leader has the {Navy} type, draw 3 cards.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-002:0"
+          ],
+          "canonicalAtoms": [
+            "DRAW_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST19-003",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST19-003",
+    "effects": [
+      {
+        "id": "ST19-003#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_PLAY"
+        },
+        "conditions": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "COUNT",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "LEADER_AREA"
+              ],
+              "cardCategories": [
+                "LEADER"
+              ],
+              "names": [
+                {
+                  "kind": "NAME_EXACT",
+                  "value": "Smoker"
+                }
+              ],
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              }
+            }
+          },
+          "operator": "GREATER_OR_EQUAL",
+          "right": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "MODIFY_COST",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "propertyLayer": "CURRENT_VALUE",
+            "operation": "SUBTRACT",
+            "value": {
+              "kind": "NUMBER",
+              "value": 4
+            },
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "ST19-003#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST19-003",
+          "effectIndex": 0,
+          "printedText": "[On Play] If your Leader is [Smoker], give up to 1 of your opponent's Characters −4 cost during this turn.",
+          "normalizedText": "[On Play] If your Leader is [Smoker], give up to 1 of your opponent's Characters −4 cost during this turn.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST19-003:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST19-003#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ACTIVATE_MAIN"
+        },
+        "conditions": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "COUNT",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "states": [
+                "PLAYED_THIS_TURN"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              }
+            }
+          },
+          "operator": "GREATER_OR_EQUAL",
+          "right": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "TRASH_CARD",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "cause": "EFFECT"
+          },
+          "actionId": "ST19-003#1.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST19-003",
+          "effectIndex": 1,
+          "printedText": "[Activate: Main] [Once Per Turn] If this Character was played on this turn, trash up to 1 of your opponent's Characters with a cost of 0.",
+          "normalizedText": "[Activate: Main] [Once Per Turn] If this Character was played on this turn, trash up to 1 of your opponent's Characters with a cost of 0.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST19-003:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST19-003:0",
+        "cardNumber": "ST19-003",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[On Play] If your Leader is [Smoker], give up to 1 of your opponent's Characters −4 cost during this turn.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_PLAY"
+          },
+          "conditions": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "COUNT",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER"
+                ],
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Smoker"
+                  }
+                ],
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_COST",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "SUBTRACT",
+              "value": {
+                "kind": "NUMBER",
+                "value": 4
+              },
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "ST19-003#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST19-003#0.0"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST19-003:1",
+        "cardNumber": "ST19-003",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Activate: Main] [Once Per Turn] If this Character was played on this turn, trash up to 1 of your opponent's Characters with a cost of 0.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ACTIVATE_MAIN"
+          },
+          "conditions": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "COUNT",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "states": [
+                  "PLAYED_THIS_TURN"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                }
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "TRASH_CARD",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "ST19-003#1.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST19-003#1.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST19-003",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST19-003#0.0",
+          "cardNumber": "ST19-003",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "If your Leader is [Smoker], give up to 1 of your opponent's Characters −4 cost during this turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-003:0"
+          ],
+          "canonicalAtoms": [
+            "MODIFY_COST"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST19-003#1.0",
+          "cardNumber": "ST19-003",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "If this Character was played on this turn, trash up to 1 of your opponent's Characters with a cost of 0.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-003:1"
+          ],
+          "canonicalAtoms": [
+            "TRASH_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST19-004",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST19-004",
+    "effects": [
+      {
+        "id": "ST19-004#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "PERMANENT",
+        "applicationMode": "CONTINUOUS",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_ENTER_PLAY"
+        },
+        "conditions": {
+          "kind": "AND",
+          "conditions": [
+            {
+              "kind": "PREDICATE",
+              "left": {
+                "kind": "ATTACHED_DON_COUNT",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              },
+              "operator": "GREATER_OR_EQUAL",
+              "right": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            {
+              "kind": "PREDICATE",
+              "left": {
+                "kind": "CURRENT_TURN_PLAYER"
+              },
+              "operator": "EQUAL",
+              "right": {
+                "kind": "EFFECT_OPPONENT"
+              }
+            }
+          ]
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "MODIFY_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "propertyLayer": "CURRENT_VALUE",
+            "operation": "ADD",
+            "value": {
+              "kind": "NUMBER",
+              "value": 4
+            },
+            "duration": {
+              "kind": "PERMANENT"
+            }
+          },
+          "actionId": "ST19-004#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST19-004",
+          "effectIndex": 0,
+          "printedText": "[DON!! x1] [Opponent's Turn] This Character gains +4 cost.",
+          "normalizedText": "[DON!! x1] [Opponent's Turn] This Character gains +4 cost.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST19-004:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST19-004#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ACTIVATE_MAIN"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "RETURN_CARD_TO_DECK_COST",
+              "position": "BOTTOM",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "TRASH"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "GIVE_DON",
+            "donSelector": {
+              "subject": "DON",
+              "owner": "PLAYER",
+              "zones": [
+                "COST_AREA"
+              ],
+              "states": [
+                "RESTED"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "target": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "LEADER_AREA",
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "LEADER",
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          },
+          "actionId": "ST19-004#1.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST19-004",
+          "effectIndex": 1,
+          "printedText": "[Activate: Main] [Once Per Turn] You may place 1 card from your trash at the bottom of your deck: Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+          "normalizedText": "[Activate: Main] [Once Per Turn] You may place 1 card from your trash at the bottom of your deck: Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST19-004:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST19-004:0",
+        "cardNumber": "ST19-004",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[DON!! x1] [Opponent's Turn] This Character gains +4 cost.",
+        "effect": {
+          "category": "PERMANENT",
+          "applicationMode": "CONTINUOUS",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_ENTER_PLAY"
+          },
+          "conditions": {
+            "kind": "AND",
+            "conditions": [
+              {
+                "kind": "PREDICATE",
+                "left": {
+                  "kind": "ATTACHED_DON_COUNT",
+                  "selector": {
+                    "subject": "CARD",
+                    "relations": [
+                      "THIS_CARD"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER"
+                  }
+                },
+                "operator": "GREATER_OR_EQUAL",
+                "right": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              {
+                "kind": "PREDICATE",
+                "left": {
+                  "kind": "CURRENT_TURN_PLAYER"
+                },
+                "operator": "EQUAL",
+                "right": {
+                  "kind": "EFFECT_OPPONENT"
+                }
+              }
+            ]
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_COST",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "ADD",
+              "value": {
+                "kind": "NUMBER",
+                "value": 4
+              },
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "ST19-004#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST19-004#0.0"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST19-004:1",
+        "cardNumber": "ST19-004",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Activate: Main] [Once Per Turn] You may place 1 card from your trash at the bottom of your deck: Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ACTIVATE_MAIN"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "RETURN_CARD_TO_DECK_COST",
+                "position": "BOTTOM",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "TRASH"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "GIVE_DON",
+              "donSelector": {
+                "subject": "DON",
+                "owner": "PLAYER",
+                "zones": [
+                  "COST_AREA"
+                ],
+                "states": [
+                  "RESTED"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "target": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA",
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER",
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            "actionId": "ST19-004#1.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST19-004#1.0",
+          "ST19-004#1.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST19-004",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST19-004#0.0",
+          "cardNumber": "ST19-004",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "This Character gains +4 cost.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-004:0"
+          ],
+          "canonicalAtoms": [
+            "MODIFY_COST"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST19-004#1.0",
+          "cardNumber": "ST19-004",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "You may place 1 card from your trash at the bottom of your deck:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-004:1"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST19-004#1.1",
+          "cardNumber": "ST19-004",
+          "effectIndex": 1,
+          "atomIndex": 1,
+          "rawText": "Give up to 1 rested DON!! card to your Leader or 1 of your Characters.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-004:1"
+          ],
+          "canonicalAtoms": [
+            "GIVE_DON"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST19-005",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST19-005",
+    "effects": [
+      {
+        "id": "ST19-005#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "PERMANENT",
+        "applicationMode": "CONTINUOUS",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_ENTER_PLAY"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "GRANT_KEYWORD",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "keyword": "BLOCKER",
+            "duration": {
+              "kind": "PERMANENT"
+            }
+          },
+          "actionId": "ST19-005#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST19-005",
+          "effectIndex": 0,
+          "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+          "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST19-005:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST19-005#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ACTIVATE_MAIN"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "RETURN_CARD_TO_DECK_COST",
+              "position": "BOTTOM",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "TRASH"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "MODIFY_COST",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "propertyLayer": "CURRENT_VALUE",
+            "operation": "SUBTRACT",
+            "value": {
+              "kind": "NUMBER",
+              "value": 1
+            },
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "ST19-005#1.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST19-005",
+          "effectIndex": 1,
+          "printedText": "[Activate: Main] [Once Per Turn] You may place 1 card from your trash at the bottom of your deck: Give up to 1 of your opponent's Characters −1 cost during this turn.",
+          "normalizedText": "[Activate: Main] [Once Per Turn] You may place 1 card from your trash at the bottom of your deck: Give up to 1 of your opponent's Characters −1 cost during this turn.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST19-005:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST19-005:0",
+        "cardNumber": "ST19-005",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "effect": {
+          "category": "PERMANENT",
+          "applicationMode": "CONTINUOUS",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_ENTER_PLAY"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "GRANT_KEYWORD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "keyword": "BLOCKER",
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "ST19-005#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST19-005#0.0"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST19-005:1",
+        "cardNumber": "ST19-005",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Activate: Main] [Once Per Turn] You may place 1 card from your trash at the bottom of your deck: Give up to 1 of your opponent's Characters −1 cost during this turn.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ACTIVATE_MAIN"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "RETURN_CARD_TO_DECK_COST",
+                "position": "BOTTOM",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "TRASH"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_COST",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "SUBTRACT",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              },
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "ST19-005#1.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST19-005#1.0",
+          "ST19-005#1.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST19-005",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST19-005#0.0",
+          "cardNumber": "ST19-005",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "[Blocker]",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-005:0"
+          ],
+          "canonicalAtoms": [
+            "GRANT_KEYWORD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST19-005#1.0",
+          "cardNumber": "ST19-005",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "You may place 1 card from your trash at the bottom of your deck:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-005:1"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST19-005#1.1",
+          "cardNumber": "ST19-005",
+          "effectIndex": 1,
+          "atomIndex": 1,
+          "rawText": "Give up to 1 of your opponent's Characters −1 cost during this turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST19-005:1"
+          ],
+          "canonicalAtoms": [
+            "MODIFY_COST"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  }
+]

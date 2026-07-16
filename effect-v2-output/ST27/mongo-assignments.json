@@ -1,0 +1,948 @@
+[
+  {
+    "_id": "v2:auto:ST27-001:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST27-001",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] [Once Per Turn] You may rest 1 of your [Fullalead] cards: If your Leader has the {Blackbeard Pirates} type, this Character gains +4000 power during this turn.",
+    "coveredAtomicEffectIds": [
+      "ST27-001#0.0",
+      "ST27-001#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST27-001#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "LEADER_AREA",
+                "CHARACTER_AREA",
+                "STAGE_AREA"
+              ],
+              "names": [
+                {
+                  "kind": "NAME_EXACT",
+                  "value": "Fullalead"
+                }
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "IF",
+        "condition": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "COUNT",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "LEADER_AREA"
+              ],
+              "cardCategories": [
+                "LEADER"
+              ],
+              "types": {
+                "kind": "TYPE_INCLUDES_TEXT",
+                "values": [
+                  "Blackbeard Pirates"
+                ]
+              },
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              }
+            }
+          },
+          "operator": "GREATER_OR_EQUAL",
+          "right": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "then": {
+          "kind": "ACTION",
+          "action": {
+            "type": "MODIFY_POWER",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "propertyLayer": "CURRENT_VALUE",
+            "operation": "ADD",
+            "value": {
+              "kind": "NUMBER",
+              "value": 4000
+            },
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "ST27-001#0.1"
+        }
+      },
+      "metadata": {
+        "sourceCardNumber": "ST27-001",
+        "effectIndex": 0,
+        "printedText": "[Activate: Main] [Once Per Turn] You may rest 1 of your [Fullalead] cards: If your Leader has the {Blackbeard Pirates} type, this Character gains +4000 power during this turn.",
+        "normalizedText": "[Activate: Main] [Once Per Turn] You may rest 1 of your [Fullalead] cards: If your Leader has the {Blackbeard Pirates} type, this Character gains +4000 power during this turn.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST27-001:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST27-001:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST27-001",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[On K.O.] Draw 1 card.",
+    "coveredAtomicEffectIds": [
+      "ST27-001#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST27-001#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_KO"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "DRAW_CARD",
+          "player": "PLAYER",
+          "count": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "actionId": "ST27-001#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST27-001",
+        "effectIndex": 1,
+        "printedText": "[On K.O.] Draw 1 card.",
+        "normalizedText": "[On K.O.] Draw 1 card.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST27-001:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST27-002:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST27-002",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] You may trash this Character: If your Leader has the {Blackbeard Pirates} type, give up to 1 of your opponent's Characters −1 cost during this turn.",
+    "coveredAtomicEffectIds": [
+      "ST27-002#0.0",
+      "ST27-002#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST27-002#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "TRASH_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "IF",
+        "condition": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "COUNT",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "LEADER_AREA"
+              ],
+              "cardCategories": [
+                "LEADER"
+              ],
+              "types": {
+                "kind": "TYPE_INCLUDES_TEXT",
+                "values": [
+                  "Blackbeard Pirates"
+                ]
+              },
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              }
+            }
+          },
+          "operator": "GREATER_OR_EQUAL",
+          "right": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "then": {
+          "kind": "ACTION",
+          "action": {
+            "type": "MODIFY_COST",
+            "selector": {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "propertyLayer": "CURRENT_VALUE",
+            "operation": "SUBTRACT",
+            "value": {
+              "kind": "NUMBER",
+              "value": 1
+            },
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "ST27-002#0.1"
+        }
+      },
+      "metadata": {
+        "sourceCardNumber": "ST27-002",
+        "effectIndex": 0,
+        "printedText": "[Activate: Main] You may trash this Character: If your Leader has the {Blackbeard Pirates} type, give up to 1 of your opponent's Characters −1 cost during this turn.",
+        "normalizedText": "[Activate: Main] You may trash this Character: If your Leader has the {Blackbeard Pirates} type, give up to 1 of your opponent's Characters −1 cost during this turn.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST27-002:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST27-002:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST27-002",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[On K.O.] Draw 1 card.",
+    "coveredAtomicEffectIds": [
+      "ST27-002#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST27-002#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_KO"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "DRAW_CARD",
+          "player": "PLAYER",
+          "count": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "actionId": "ST27-002#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST27-002",
+        "effectIndex": 1,
+        "printedText": "[On K.O.] Draw 1 card.",
+        "normalizedText": "[On K.O.] Draw 1 card.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST27-002:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST27-003:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST27-003",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+    "coveredAtomicEffectIds": [
+      "ST27-003#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST27-003#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "BLOCKER",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST27-003#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST27-003",
+        "effectIndex": 0,
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST27-003:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST27-003:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST27-003",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[On K.O.] Play up to 1 {Blackbeard Pirates} type Character card with a cost of 5 or less from your trash rested.",
+    "coveredAtomicEffectIds": [
+      "ST27-003#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST27-003#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_KO"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PLAY_CARD",
+          "selector": {
+            "subject": "CARD",
+            "owner": "PLAYER",
+            "zones": [
+              "TRASH"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "Blackbeard Pirates"
+              ]
+            },
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 5
+              }
+            }
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "ST27-003#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST27-003",
+        "effectIndex": 1,
+        "printedText": "[On K.O.] Play up to 1 {Blackbeard Pirates} type Character card with a cost of 5 or less from your trash rested.",
+        "normalizedText": "[On K.O.] Play up to 1 {Blackbeard Pirates} type Character card with a cost of 5 or less from your trash rested.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST27-003:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST27-004:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST27-004",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "If your Leader has the {Blackbeard Pirates} type, this Character gains [Blocker] and +1 cost for every 4 cards in your trash.(After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+    "coveredAtomicEffectIds": [
+      "ST27-004#0.0",
+      "ST27-004#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST27-004#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "COUNT",
+          "selector": {
+            "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
+            "types": {
+              "kind": "TYPE_INCLUDES_TEXT",
+              "values": [
+                "Blackbeard Pirates"
+              ]
+            },
+            "quantity": {
+              "kind": "ANY_NUMBER"
+            }
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "GRANT_KEYWORD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "keyword": "BLOCKER",
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "ST27-004#0.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_COST",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "ADD",
+              "value": {
+                "kind": "MULTIPLY",
+                "values": [
+                  {
+                    "kind": "NUMBER",
+                    "value": 1
+                  },
+                  {
+                    "kind": "FLOOR_DIVIDE",
+                    "left": {
+                      "kind": "COUNT",
+                      "selector": {
+                        "subject": "CARD",
+                        "owner": "PLAYER",
+                        "zones": [
+                          "TRASH"
+                        ],
+                        "quantity": {
+                          "kind": "ANY_NUMBER"
+                        }
+                      }
+                    },
+                    "right": {
+                      "kind": "NUMBER",
+                      "value": 4
+                    }
+                  }
+                ]
+              },
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "ST27-004#0.1"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "ST27-004",
+        "effectIndex": 0,
+        "printedText": "If your Leader has the {Blackbeard Pirates} type, this Character gains [Blocker] and +1 cost for every 4 cards in your trash.(After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "normalizedText": "If your Leader has the {Blackbeard Pirates} type, this Character gains [Blocker] and +1 cost for every 4 cards in your trash.(After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST27-004:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST27-004:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST27-004",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Trash 1 card from your hand.",
+    "coveredAtomicEffectIds": [
+      "ST27-004#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST27-004#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "TRASH_CARD",
+          "selector": {
+            "subject": "CARD",
+            "owner": "PLAYER",
+            "zones": [
+              "HAND"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST27-004#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST27-004",
+        "effectIndex": 1,
+        "printedText": "[On Play] Trash 1 card from your hand.",
+        "normalizedText": "[On Play] Trash 1 card from your hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST27-004:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST27-005:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST27-005",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] You may rest this Character: K.O. up to 1 Character with a cost of 3 or less.",
+    "coveredAtomicEffectIds": [
+      "ST27-005#0.0",
+      "ST27-005#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST27-005#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "KO_CARD",
+          "selector": {
+            "subject": "CARD",
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST27-005#0.1"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST27-005",
+        "effectIndex": 0,
+        "printedText": "[Activate: Main] You may rest this Character: K.O. up to 1 Character with a cost of 3 or less.",
+        "normalizedText": "[Activate: Main] You may rest this Character: K.O. up to 1 Character with a cost of 3 or less.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST27-005:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST27-005:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST27-005",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[On K.O.] Add up to 1 black card from your trash to your hand.",
+    "coveredAtomicEffectIds": [
+      "ST27-005#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST27-005#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_KO"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "owner": "PLAYER",
+            "zones": [
+              "TRASH"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "colors": {
+              "kind": "HAS_ANY_COLOR",
+              "values": [
+                "BLACK"
+              ]
+            }
+          },
+          "to": {
+            "zone": "HAND",
+            "owner": "PLAYER"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST27-005#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST27-005",
+        "effectIndex": 1,
+        "printedText": "[On K.O.] Add up to 1 black card from your trash to your hand.",
+        "normalizedText": "[On K.O.] Add up to 1 black card from your trash to your hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST27-005:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  }
+]

@@ -1,0 +1,1719 @@
+[
+  {
+    "_id": "effects-v2:ST11-001",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST11-001",
+    "effects": [
+      {
+        "id": "ST11-001#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "WHEN_ATTACKING"
+        },
+        "conditions": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "ATTACHED_DON_COUNT",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          },
+          "operator": "GREATER_OR_EQUAL",
+          "right": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "SEQUENCE",
+          "nodes": [
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "REVEAL_CARD",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "DECK"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "ordering": "DECK_ORDER"
+                },
+                "viewers": "BOTH_PLAYERS"
+              },
+              "actionId": "ST11-001#0.0"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "MOVE_CARD",
+                "selector": {
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ],
+                  "quantity": {
+                    "kind": "UP_TO",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  }
+                },
+                "to": {
+                  "zone": "HAND",
+                  "owner": "PLAYER"
+                },
+                "cause": "EFFECT"
+              },
+              "actionId": "ST11-001#0.1"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "REORDER_CARDS",
+                "selector": {
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "REMAINDER_OF_PREVIOUS_SELECTION"
+                  ],
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  }
+                },
+                "destination": {
+                  "zone": "DECK",
+                  "owner": "PLAYER",
+                  "position": "BOTTOM"
+                },
+                "orderChooser": "PLAYER"
+              },
+              "actionId": "ST11-001#0.2"
+            }
+          ]
+        },
+        "metadata": {
+          "sourceCardNumber": "ST11-001",
+          "effectIndex": 0,
+          "printedText": " [DON!! x1] [When Attacking] [Once Per Turn] Reveal 1 card from the top of your deck and add up to 1 {FILM} type card to your hand. Then, place the rest at the bottom of your deck.",
+          "normalizedText": "[DON!! x1] [When Attacking] [Once Per Turn] Reveal 1 card from the top of your deck and add up to 1 {FILM} type card to your hand. Then, place the rest at the bottom of your deck.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST11-001:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST11-001:0",
+        "cardNumber": "ST11-001",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": " [DON!! x1] [When Attacking] [Once Per Turn] Reveal 1 card from the top of your deck and add up to 1 {FILM} type card to your hand. Then, place the rest at the bottom of your deck.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "WHEN_ATTACKING"
+          },
+          "conditions": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "ATTACHED_DON_COUNT",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "SEQUENCE",
+            "nodes": [
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "REVEAL_CARD",
+                  "selector": {
+                    "subject": "CARD",
+                    "owner": "PLAYER",
+                    "zones": [
+                      "DECK"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "ordering": "DECK_ORDER"
+                  },
+                  "viewers": "BOTH_PLAYERS"
+                },
+                "actionId": "ST11-001#0.0"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "MOVE_CARD",
+                  "selector": {
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ],
+                    "quantity": {
+                      "kind": "UP_TO",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    }
+                  },
+                  "to": {
+                    "zone": "HAND",
+                    "owner": "PLAYER"
+                  },
+                  "cause": "EFFECT"
+                },
+                "actionId": "ST11-001#0.1"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "REORDER_CARDS",
+                  "selector": {
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "REMAINDER_OF_PREVIOUS_SELECTION"
+                    ],
+                    "quantity": {
+                      "kind": "ANY_NUMBER"
+                    }
+                  },
+                  "destination": {
+                    "zone": "DECK",
+                    "owner": "PLAYER",
+                    "position": "BOTTOM"
+                  },
+                  "orderChooser": "PLAYER"
+                },
+                "actionId": "ST11-001#0.2"
+              }
+            ]
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST11-001#0.0",
+          "ST11-001#0.1",
+          "ST11-001#0.2"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST11-001",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST11-001#0.0",
+          "cardNumber": "ST11-001",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "Reveal 1 card from the top of your deck",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-001:0"
+          ],
+          "canonicalAtoms": [
+            "REVEAL_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST11-001#0.1",
+          "cardNumber": "ST11-001",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "add up to 1 {FILM} type card to your hand.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-001:0"
+          ],
+          "canonicalAtoms": [
+            "MOVE_CARD",
+            "ADD_CARD_TO_HAND"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST11-001#0.2",
+          "cardNumber": "ST11-001",
+          "effectIndex": 0,
+          "atomIndex": 2,
+          "rawText": "place the rest at the bottom of your deck.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-001:0"
+          ],
+          "canonicalAtoms": [
+            "REORDER_CARDS"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST11-002",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST11-002",
+    "effects": [
+      {
+        "id": "ST11-002#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "PERMANENT",
+        "applicationMode": "CONTINUOUS",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "ON_ENTER_PLAY"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "GRANT_KEYWORD",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "keyword": "BLOCKER",
+            "duration": {
+              "kind": "PERMANENT"
+            }
+          },
+          "actionId": "ST11-002#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST11-002",
+          "effectIndex": 0,
+          "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+          "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST11-002:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST11-002#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "END_OF_YOUR_TURN"
+        },
+        "activationCost": {
+          "payments": [
+            {
+              "type": "TRASH_CARD_COST",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              }
+            }
+          ],
+          "optionalPayment": "REQUIRED_TO_ACTIVATE",
+          "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+        },
+        "optionality": "OPTIONAL",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "SET_CARD_ACTIVE",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "types": {
+                "kind": "HAS_ANY_TYPE",
+                "values": [
+                  "FILM"
+                ]
+              }
+            }
+          },
+          "actionId": "ST11-002#1.1"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST11-002",
+          "effectIndex": 1,
+          "printedText": "[End of Your Turn] You may trash 1 Event from your hand: Set up to 1 of your {FILM} type Characters as active.",
+          "normalizedText": "[End of Your Turn] You may trash 1 Event from your hand: Set up to 1 of your {FILM} type Characters as active.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST11-002:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST11-002:0",
+        "cardNumber": "ST11-002",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "effect": {
+          "category": "PERMANENT",
+          "applicationMode": "CONTINUOUS",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "ON_ENTER_PLAY"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "GRANT_KEYWORD",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "keyword": "BLOCKER",
+              "duration": {
+                "kind": "PERMANENT"
+              }
+            },
+            "actionId": "ST11-002#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST11-002#0.0"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST11-002:1",
+        "cardNumber": "ST11-002",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[End of Your Turn] You may trash 1 Event from your hand: Set up to 1 of your {FILM} type Characters as active.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "END_OF_YOUR_TURN"
+          },
+          "activationCost": {
+            "payments": [
+              {
+                "type": "TRASH_CARD_COST",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "HAND"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              }
+            ],
+            "optionalPayment": "REQUIRED_TO_ACTIVATE",
+            "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+          },
+          "optionality": "OPTIONAL",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "SET_CARD_ACTIVE",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "FILM"
+                  ]
+                }
+              }
+            },
+            "actionId": "ST11-002#1.1"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST11-002#1.0",
+          "ST11-002#1.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST11-002",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST11-002#0.0",
+          "cardNumber": "ST11-002",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "[Blocker]",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-002:0"
+          ],
+          "canonicalAtoms": [
+            "GRANT_KEYWORD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST11-002#1.0",
+          "cardNumber": "ST11-002",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "You may trash 1 Event from your hand:",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-002:1"
+          ],
+          "canonicalAtoms": [
+            "ActivationCost"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser lifted this clause into activationCost."
+        },
+        {
+          "atomicEffectId": "ST11-002#1.1",
+          "cardNumber": "ST11-002",
+          "effectIndex": 1,
+          "atomIndex": 1,
+          "rawText": "Set up to 1 of your {FILM} type Characters as active.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-002:1"
+          ],
+          "canonicalAtoms": [
+            "SET_CARD_ACTIVE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST11-003",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST11-003",
+    "effects": [
+      {
+        "id": "ST11-003#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "EVENT_MAIN"
+        },
+        "conditions": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "COUNT",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "LEADER_AREA"
+              ],
+              "cardCategories": [
+                "LEADER"
+              ],
+              "names": [
+                {
+                  "kind": "NAME_EXACT",
+                  "value": "Uta"
+                }
+              ],
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              }
+            }
+          },
+          "operator": "GREATER_OR_EQUAL",
+          "right": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "CHOOSE",
+          "chooser": "PLAYER",
+          "options": [
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "REST_CARD",
+                "selector": {
+                  "subject": "CARD",
+                  "controller": "OPPONENT",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
+                  "quantity": {
+                    "kind": "UP_TO",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "AT_MOST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 5
+                    }
+                  }
+                }
+              },
+              "actionId": "ST11-003#0.0"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "KO_CARD",
+                "selector": {
+                  "subject": "CARD",
+                  "controller": "OPPONENT",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
+                  "quantity": {
+                    "kind": "UP_TO",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "AT_MOST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 5
+                    }
+                  }
+                },
+                "cause": "EFFECT"
+              },
+              "actionId": "ST11-003#0.1"
+            }
+          ],
+          "minimumChoices": 1,
+          "maximumChoices": 1
+        },
+        "metadata": {
+          "sourceCardNumber": "ST11-003",
+          "effectIndex": 0,
+          "printedText": "[Main] If your Leader is [Uta], choose one:• Rest up to 1 of your opponent's Characters with a cost of 5 or less.• K.O. up to 1 of your opponent's rested Characters with a cost of 5 or less.",
+          "normalizedText": "[Main] If your Leader is [Uta], choose one:• Rest up to 1 of your opponent's Characters with a cost of 5 or less.• K.O. up to 1 of your opponent's rested Characters with a cost of 5 or less.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST11-003:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST11-003:0",
+        "cardNumber": "ST11-003",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Main] If your Leader is [Uta], choose one:• Rest up to 1 of your opponent's Characters with a cost of 5 or less.• K.O. up to 1 of your opponent's rested Characters with a cost of 5 or less.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "EVENT_MAIN"
+          },
+          "conditions": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "COUNT",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER"
+                ],
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Uta"
+                  }
+                ],
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "CHOOSE",
+            "chooser": "PLAYER",
+            "options": [
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "REST_CARD",
+                  "selector": {
+                    "subject": "CARD",
+                    "controller": "OPPONENT",
+                    "zones": [
+                      "CHARACTER_AREA"
+                    ],
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
+                    "quantity": {
+                      "kind": "UP_TO",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER",
+                    "cost": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "AT_MOST",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 5
+                      }
+                    }
+                  }
+                },
+                "actionId": "ST11-003#0.0"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "KO_CARD",
+                  "selector": {
+                    "subject": "CARD",
+                    "controller": "OPPONENT",
+                    "zones": [
+                      "CHARACTER_AREA"
+                    ],
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
+                    "quantity": {
+                      "kind": "UP_TO",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER",
+                    "cost": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "AT_MOST",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 5
+                      }
+                    }
+                  },
+                  "cause": "EFFECT"
+                },
+                "actionId": "ST11-003#0.1"
+              }
+            ],
+            "minimumChoices": 1,
+            "maximumChoices": 1
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST11-003#0.0",
+          "ST11-003#0.1"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST11-003",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST11-003#0.0",
+          "cardNumber": "ST11-003",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "Rest up to 1 of your opponent's Characters with a cost of 5 or less.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-003:0"
+          ],
+          "canonicalAtoms": [
+            "REST_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST11-003#0.1",
+          "cardNumber": "ST11-003",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "KO up to 1 of your opponent's rested Characters with a cost of 5 or less.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-003:0"
+          ],
+          "canonicalAtoms": [
+            "KO_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST11-004",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST11-004",
+    "effects": [
+      {
+        "id": "ST11-004#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "EVENT_MAIN"
+        },
+        "conditions": {
+          "kind": "PREDICATE",
+          "left": {
+            "kind": "COUNT",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "LEADER_AREA"
+              ],
+              "cardCategories": [
+                "LEADER"
+              ],
+              "names": [
+                {
+                  "kind": "NAME_EXACT",
+                  "value": "Uta"
+                }
+              ],
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              }
+            }
+          },
+          "operator": "GREATER_OR_EQUAL",
+          "right": {
+            "kind": "NUMBER",
+            "value": 1
+          }
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "SEQUENCE",
+          "nodes": [
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "LOOK_AT_CARDS",
+                "player": "PLAYER",
+                "source": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "DECK"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 3
+                    }
+                  },
+                  "ordering": "DECK_ORDER"
+                },
+                "count": {
+                  "kind": "NUMBER",
+                  "value": 3
+                }
+              },
+              "actionId": "ST11-004#0.0"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "MOVE_CARD",
+                "selector": {
+                  "subject": "CARD",
+                  "quantity": {
+                    "kind": "UP_TO",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER",
+                  "types": {
+                    "kind": "HAS_ANY_TYPE",
+                    "values": [
+                      "FILM"
+                    ]
+                  },
+                  "names": [
+                    {
+                      "kind": "NAME_NOT",
+                      "value": "New Genesis"
+                    }
+                  ],
+                  "owner": "PLAYER",
+                  "zones": [
+                    "DECK"
+                  ]
+                },
+                "to": {
+                  "zone": "HAND",
+                  "owner": "PLAYER"
+                },
+                "cause": "EFFECT"
+              },
+              "actionId": "ST11-004#0.1"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "SET_DON_ACTIVE",
+                "selector": {
+                  "subject": "DON",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "COST_AREA"
+                  ],
+                  "quantity": {
+                    "kind": "UP_TO",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              },
+              "actionId": "ST11-004#0.2"
+            }
+          ]
+        },
+        "metadata": {
+          "sourceCardNumber": "ST11-004",
+          "effectIndex": 0,
+          "printedText": "[Main] If your Leader is [Uta], look at 3 cards from the top of your deck; reveal up to 1 {FILM} type card other than [New Genesis] and add it to your hand. Then, place the rest at the bottom of your deck in any order and set up to 1 of your DON!! cards as active.",
+          "normalizedText": "[Main] If your Leader is [Uta], look at 3 cards from the top of your deck; reveal up to 1 {FILM} type card other than [New Genesis] and add it to your hand. Then, place the rest at the bottom of your deck in any order and set up to 1 of your DON!! cards as active.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST11-004:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST11-004:0",
+        "cardNumber": "ST11-004",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Main] If your Leader is [Uta], look at 3 cards from the top of your deck; reveal up to 1 {FILM} type card other than [New Genesis] and add it to your hand. Then, place the rest at the bottom of your deck in any order and set up to 1 of your DON!! cards as active.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "EVENT_MAIN"
+          },
+          "conditions": {
+            "kind": "PREDICATE",
+            "left": {
+              "kind": "COUNT",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER"
+                ],
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Uta"
+                  }
+                ],
+                "quantity": {
+                  "kind": "ANY_NUMBER"
+                }
+              }
+            },
+            "operator": "GREATER_OR_EQUAL",
+            "right": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "SEQUENCE",
+            "nodes": [
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "LOOK_AT_CARDS",
+                  "player": "PLAYER",
+                  "source": {
+                    "subject": "CARD",
+                    "owner": "PLAYER",
+                    "zones": [
+                      "DECK"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 3
+                      }
+                    },
+                    "ordering": "DECK_ORDER"
+                  },
+                  "count": {
+                    "kind": "NUMBER",
+                    "value": 3
+                  }
+                },
+                "actionId": "ST11-004#0.0"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "MOVE_CARD",
+                  "selector": {
+                    "subject": "CARD",
+                    "quantity": {
+                      "kind": "UP_TO",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER",
+                    "types": {
+                      "kind": "HAS_ANY_TYPE",
+                      "values": [
+                        "FILM"
+                      ]
+                    },
+                    "names": [
+                      {
+                        "kind": "NAME_NOT",
+                        "value": "New Genesis"
+                      }
+                    ],
+                    "owner": "PLAYER",
+                    "zones": [
+                      "DECK"
+                    ]
+                  },
+                  "to": {
+                    "zone": "HAND",
+                    "owner": "PLAYER"
+                  },
+                  "cause": "EFFECT"
+                },
+                "actionId": "ST11-004#0.1"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "SET_DON_ACTIVE",
+                  "selector": {
+                    "subject": "DON",
+                    "owner": "PLAYER",
+                    "zones": [
+                      "COST_AREA"
+                    ],
+                    "quantity": {
+                      "kind": "UP_TO",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER"
+                  }
+                },
+                "actionId": "ST11-004#0.2"
+              }
+            ]
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST11-004#0.0",
+          "ST11-004#0.1",
+          "ST11-004#0.2"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST11-004",
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 3,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 3,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST11-004#0.0",
+          "cardNumber": "ST11-004",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "If your Leader is [Uta], look at 3 cards from the top of your deck;",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-004:0"
+          ],
+          "canonicalAtoms": [
+            "LOOK_AT_CARDS"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST11-004#0.1",
+          "cardNumber": "ST11-004",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "reveal up to 1 {FILM} type card other than [New Genesis] and add it to your hand.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-004:0"
+          ],
+          "canonicalAtoms": [
+            "MOVE_CARD",
+            "ADD_CARD_TO_HAND"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST11-004#0.2",
+          "cardNumber": "ST11-004",
+          "effectIndex": 0,
+          "atomIndex": 2,
+          "rawText": "place the rest at the bottom of your deck in any order and set up to 1 of your DON!! cards as active.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-004:0"
+          ],
+          "canonicalAtoms": [
+            "SET_DON_ACTIVE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  },
+  {
+    "_id": "effects-v2:ST11-005",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST11-005",
+    "effects": [
+      {
+        "id": "ST11-005#0",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 0
+        },
+        "category": "ACTIVATE",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "HAND",
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "EVENT_MAIN"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "SET_CARD_ACTIVE",
+            "selector": {
+              "subject": "CARD",
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "names": [
+                {
+                  "kind": "NAME_EXACT",
+                  "value": "Uta"
+                }
+              ]
+            }
+          },
+          "actionId": "ST11-005#0.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST11-005",
+          "effectIndex": 0,
+          "printedText": "[Main] Set up to 1 of your [Uta] Leader as active.",
+          "normalizedText": "[Main] Set up to 1 of your [Uta] Leader as active.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST11-005:0",
+          "authoringStatus": "ASSIGNED"
+        }
+      },
+      {
+        "id": "ST11-005#1",
+        "source": {
+          "objectRef": "THIS_CARD",
+          "owner": "PLAYER",
+          "controller": "PLAYER",
+          "sourceZone": "NONE",
+          "effectIndex": 1
+        },
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
+        "activationZones": [
+          "LEADER_AREA",
+          "CHARACTER_AREA",
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
+        ],
+        "timing": {
+          "kind": "STANDARD_TIMING",
+          "timing": "TRIGGER"
+        },
+        "optionality": "MANDATORY",
+        "resolution": {
+          "kind": "ACTION",
+          "action": {
+            "type": "MODIFY_POWER",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "LEADER_AREA",
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "LEADER",
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            },
+            "propertyLayer": "CURRENT_VALUE",
+            "operation": "ADD",
+            "value": {
+              "kind": "NUMBER",
+              "value": 1000
+            },
+            "duration": {
+              "kind": "THIS_TURN"
+            }
+          },
+          "actionId": "ST11-005#1.0"
+        },
+        "metadata": {
+          "sourceCardNumber": "ST11-005",
+          "effectIndex": 1,
+          "printedText": "[Trigger] Up to 1 of your Leader or Character cards gains +1000 power during this turn.",
+          "normalizedText": "[Trigger] Up to 1 of your Leader or Character cards gains +1000 power during this turn.",
+          "parserVersion": "effect-compiler-v2.0.0",
+          "assignmentId": "v2:auto:ST11-005:1",
+          "authoringStatus": "ASSIGNED"
+        }
+      }
+    ],
+    "assignments": [
+      {
+        "assignmentId": "v2:auto:ST11-005:0",
+        "cardNumber": "ST11-005",
+        "effectIndex": 0,
+        "status": "ASSIGNED",
+        "printedText": "[Main] Set up to 1 of your [Uta] Leader as active.",
+        "effect": {
+          "category": "ACTIVATE",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "HAND",
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "EVENT_MAIN"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "SET_CARD_ACTIVE",
+              "selector": {
+                "subject": "CARD",
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Uta"
+                  }
+                ]
+              }
+            },
+            "actionId": "ST11-005#0.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST11-005#0.0"
+        ]
+      },
+      {
+        "assignmentId": "v2:auto:ST11-005:1",
+        "cardNumber": "ST11-005",
+        "effectIndex": 1,
+        "status": "ASSIGNED",
+        "printedText": "[Trigger] Up to 1 of your Leader or Character cards gains +1000 power during this turn.",
+        "effect": {
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
+          "activationZones": [
+            "LEADER_AREA",
+            "CHARACTER_AREA",
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
+          ],
+          "timing": {
+            "kind": "STANDARD_TIMING",
+            "timing": "TRIGGER"
+          },
+          "optionality": "MANDATORY",
+          "resolution": {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_POWER",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA",
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER",
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "ADD",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1000
+              },
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "ST11-005#1.0"
+          }
+        },
+        "coveredAtomicEffectIds": [
+          "ST11-005#1.0"
+        ]
+      }
+    ],
+    "coverage": {
+      "schemaVersion": "op-tcg-effect-v2.0.0",
+      "generatedBy": "effectCompiler_V2",
+      "cardNumber": "ST11-005",
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
+      "parserUnrecognizedAtomicEffects": 0,
+      "assignmentCoveredAtomicEffects": 2,
+      "assignmentPartialAtomicEffects": 0,
+      "assignmentUncoveredAtomicEffects": 0,
+      "coveredAtomicEffects": 2,
+      "partialAtomicEffects": 0,
+      "uncoveredAtomicEffects": 0,
+      "statuses": [
+        {
+          "atomicEffectId": "ST11-005#0.0",
+          "cardNumber": "ST11-005",
+          "effectIndex": 0,
+          "atomIndex": 0,
+          "rawText": "Set up to 1 of your [Uta] Leader as active.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-005:0"
+          ],
+          "canonicalAtoms": [
+            "SET_CARD_ACTIVE"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "ST11-005#1.0",
+          "cardNumber": "ST11-005",
+          "effectIndex": 1,
+          "atomIndex": 0,
+          "rawText": "Up to 1 of your Leader or Character cards gains +1000 power during this turn.",
+          "parserStatus": "recognized",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:ST11-005:1"
+          ],
+          "canonicalAtoms": [
+            "MODIFY_POWER"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        }
+      ]
+    }
+  }
+]

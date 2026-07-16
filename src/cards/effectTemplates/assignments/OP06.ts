@@ -378,15 +378,15 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-057 — [Main] +1000; reveal 1, play cost<=2 Character. PARTIAL: remainder top/bottom placement deferred. [Trigger] play cost<=2 from hand.
+  // OP06-057 — [Main] +1000; reveal 1, play cost==2 Character. PARTIAL: remainder top/bottom placement deferred. [Trigger] play cost==2 from hand.
   {
     cardNumber: 'OP06-057',
     templates: [
       { templateId: 'ability', params: { timing: 'activateMain', functions: [
         { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true },
-        { fn: 'revealTopThen', filter: { category: 'character', maxCost: 2 }, then: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 2 }, maxTargets: 1 }] },
+        { fn: 'revealTopThen', filter: { category: 'character', exactCost: 2 }, then: [{ fn: 'playFromHand', filter: { category: 'character', exactCost: 2 }, maxTargets: 1 }] },
       ] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', maxCost: 2 }, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', exactCost: 2 }, maxTargets: 1 }] } },
     ],
   },
 
@@ -408,14 +408,14 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-060 — [Activate: Main] DON!! −1 + trash this: if Leader {GERMA 66}, play [Vinsmoke Ichiji] cost<=7 from hand or trash.
+  // OP06-060 — [Activate: Main] DON!! −1 + trash this: if Leader {GERMA 66}, play [Vinsmoke Ichiji] cost==7 from hand or trash.
   { cardNumber: 'OP06-060', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }, { kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'GERMA 66' }], functions: [{
     fn: 'chooseOne',
     chooser: 'controller',
     prompt: 'Play Vinsmoke Ichiji from:',
     options: [
-      { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { name: 'Vinsmoke Ichiji', maxCost: 7 } }] },
-      { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { name: 'Vinsmoke Ichiji', maxCost: 7 } }] },
+      { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { name: 'Vinsmoke Ichiji', exactCost: 7 } }] },
+      { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { name: 'Vinsmoke Ichiji', exactCost: 7 } }] },
     ],
   }] } },
 
@@ -443,14 +443,14 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'moveCards', ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfDonAtMostOpponent' }], from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'The Vinsmoke Family', maxPower: 4000 } }, to: { zone: 'hand', player: 'owner' }, optional: true },
   ] } },
 
-  // OP06-064 — [Activate: Main] DON!! −1 + trash this: if Leader {GERMA 66}, play [Vinsmoke Niji] cost<=5 from hand or trash.
+  // OP06-064 — [Activate: Main] DON!! −1 + trash this: if Leader {GERMA 66}, play [Vinsmoke Niji] cost==5 from hand or trash.
   { cardNumber: 'OP06-064', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }, { kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'GERMA 66' }], functions: [{
     fn: 'chooseOne',
     chooser: 'controller',
     prompt: 'Play Vinsmoke Niji from:',
     options: [
-      { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { name: 'Vinsmoke Niji', maxCost: 5 } }] },
-      { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { name: 'Vinsmoke Niji', maxCost: 5 } }] },
+      { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { name: 'Vinsmoke Niji', exactCost: 5 } }] },
+      { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { name: 'Vinsmoke Niji', exactCost: 5 } }] },
     ],
   }] } },
 
@@ -465,28 +465,28 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   }] } },
 
-  // OP06-066 — [Activate: Main] DON!! −1 + trash this: if Leader {GERMA 66}, play [Vinsmoke Yonji] cost<=4 from hand or trash.
+  // OP06-066 — [Activate: Main] DON!! −1 + trash this: if Leader {GERMA 66}, play [Vinsmoke Yonji] cost==4 from hand or trash.
   { cardNumber: 'OP06-066', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }, { kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'GERMA 66' }], functions: [{
     fn: 'chooseOne',
     chooser: 'controller',
     prompt: 'Play Vinsmoke Yonji from:',
     options: [
-      { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { name: 'Vinsmoke Yonji', maxCost: 4 } }] },
-      { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { name: 'Vinsmoke Yonji', maxCost: 4 } }] },
+      { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { name: 'Vinsmoke Yonji', exactCost: 4 } }] },
+      { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { name: 'Vinsmoke Yonji', exactCost: 4 } }] },
     ],
   }] } },
 
   // OP06-067 — static: if your DON!! ≤ opponent's, this Character +1000 (Blocker is card data).
   { cardNumber: 'OP06-067', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfDonAtMostOpponent' }] } }] } },
 
-  // OP06-068 — [Activate: Main] DON!! −1 + trash this: if Leader {GERMA 66}, play [Vinsmoke Reiju] cost<=4 from hand or trash.
+  // OP06-068 — [Activate: Main] DON!! −1 + trash this: if Leader {GERMA 66}, play [Vinsmoke Reiju] cost==4 from hand or trash.
   { cardNumber: 'OP06-068', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 1 }, { kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'GERMA 66' }], functions: [{
     fn: 'chooseOne',
     chooser: 'controller',
     prompt: 'Play Vinsmoke Reiju from:',
     options: [
-      { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { name: 'Vinsmoke Reiju', maxCost: 4 } }] },
-      { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { name: 'Vinsmoke Reiju', maxCost: 4 } }] },
+      { label: 'fromHand', functions: [{ fn: 'playFromHand', filter: { name: 'Vinsmoke Reiju', exactCost: 4 } }] },
+      { label: 'fromTrash', functions: [{ fn: 'playFromTrash', filter: { name: 'Vinsmoke Reiju', exactCost: 4 } }] },
     ],
   }] } },
 

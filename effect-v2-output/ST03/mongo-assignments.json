@@ -1,0 +1,1459 @@
+[
+  {
+    "_id": "v2:auto:ST03-001:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-001",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Activate: Main] [Once Per Turn] DON!! −4 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Return up to 1 Character with a cost of 5 or less to the owner's hand.",
+    "coveredAtomicEffectIds": [
+      "ST03-001#0.0",
+      "ST03-001#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-001#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "DON_MINUS_COST",
+            "count": {
+              "kind": "NUMBER",
+              "value": 4
+            },
+            "selectableZones": [
+              "COST_AREA"
+            ]
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "to": {
+            "zone": "HAND",
+            "owner": "CARD_OWNER"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST03-001#0.1"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-001",
+        "effectIndex": 0,
+        "printedText": "[Activate: Main] [Once Per Turn] DON!! −4 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Return up to 1 Character with a cost of 5 or less to the owner's hand.",
+        "normalizedText": "[Activate: Main] [Once Per Turn] DON!! −4 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Return up to 1 Character with a cost of 5 or less to the owner's hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-001:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-003:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-003",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+    "coveredAtomicEffectIds": [
+      "ST03-003#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-003#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "BLOCKER",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST03-003#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-003",
+        "effectIndex": 0,
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-003:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-003:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-003",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[DON!! x1] [On Block] Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.",
+    "coveredAtomicEffectIds": [
+      "ST03-003#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-003#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_BLOCK"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "ATTACHED_DON_COUNT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "to": {
+            "zone": "DECK",
+            "owner": "CARD_OWNER",
+            "position": "BOTTOM"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST03-003#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-003",
+        "effectIndex": 1,
+        "printedText": "[DON!! x1] [On Block] Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.",
+        "normalizedText": "[DON!! x1] [On Block] Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-003:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-004:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-004",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Add up to 1 {The Seven Warlords of the Sea} or {Thriller Bark Pirates} type Character with a cost of 4 or less other than [Gecko Moria] from your trash to your hand.",
+    "coveredAtomicEffectIds": [
+      "ST03-004#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-004#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "owner": "PLAYER",
+            "zones": [
+              "TRASH"
+            ],
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER",
+            "names": [
+              {
+                "kind": "NAME_NOT",
+                "value": "Gecko Moria"
+              }
+            ],
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "Thriller Bark Pirates",
+                "The Seven Warlords of the Sea"
+              ]
+            },
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 4
+              }
+            }
+          },
+          "to": {
+            "zone": "HAND",
+            "owner": "PLAYER"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST03-004#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-004",
+        "effectIndex": 0,
+        "printedText": "[On Play] Add up to 1 {The Seven Warlords of the Sea} or {Thriller Bark Pirates} type Character with a cost of 4 or less other than [Gecko Moria] from your trash to your hand.",
+        "normalizedText": "[On Play] Add up to 1 {The Seven Warlords of the Sea} or {Thriller Bark Pirates} type Character with a cost of 4 or less other than [Gecko Moria] from your trash to your hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-004:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-005:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-005",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": " [DON!! x1] [When Attacking] Draw 2 cards and trash 2 cards from your hand.",
+    "coveredAtomicEffectIds": [
+      "ST03-005#0.0",
+      "ST03-005#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-005#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "WHEN_ATTACKING"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "ATTACHED_DON_COUNT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "DRAW_CARD",
+              "player": "PLAYER",
+              "count": {
+                "kind": "NUMBER",
+                "value": 2
+              }
+            },
+            "actionId": "ST03-005#0.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "TRASH_CARD",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "cause": "EFFECT"
+            },
+            "actionId": "ST03-005#0.1"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-005",
+        "effectIndex": 0,
+        "printedText": " [DON!! x1] [When Attacking] Draw 2 cards and trash 2 cards from your hand.",
+        "normalizedText": "[DON!! x1] [When Attacking] Draw 2 cards and trash 2 cards from your hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-005:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-007:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-007",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": " [DON!! x1] [Activate: Main] [Once Per Turn] ➁ (You may rest the specified number of DON!! cards in your cost area.): Play up to 1 [Pacifista] with a cost of 4 or less from your deck, then shuffle your deck.",
+    "coveredAtomicEffectIds": [
+      "ST03-007#0.0",
+      "ST03-007#0.1",
+      "ST03-007#0.2"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-007#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ACTIVATE_MAIN"
+      },
+      "conditions": {
+        "kind": "PREDICATE",
+        "left": {
+          "kind": "ATTACHED_DON_COUNT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          }
+        },
+        "operator": "GREATER_OR_EQUAL",
+        "right": {
+          "kind": "NUMBER",
+          "value": 1
+        }
+      },
+      "activationCost": {
+        "payments": [
+          {
+            "type": "REST_DON_COST",
+            "count": {
+              "kind": "NUMBER",
+              "value": 2
+            }
+          }
+        ],
+        "optionalPayment": "REQUIRED_TO_ACTIVATE",
+        "executionPolicy": "VERIFY_ALL_THEN_PAY_IN_ORDER"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PLAY_CARD",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "DECK"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Pacifista"
+                  }
+                ],
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 4
+                  }
+                }
+              },
+              "player": "PLAYER"
+            },
+            "actionId": "ST03-007#0.1"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "SHUFFLE_ZONE",
+              "player": "PLAYER",
+              "zone": "DECK"
+            },
+            "actionId": "ST03-007#0.2"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-007",
+        "effectIndex": 0,
+        "printedText": " [DON!! x1] [Activate: Main] [Once Per Turn] ➁ (You may rest the specified number of DON!! cards in your cost area.): Play up to 1 [Pacifista] with a cost of 4 or less from your deck, then shuffle your deck.",
+        "normalizedText": "[DON!! x1] [Activate: Main] [Once Per Turn] ➁ (You may rest the specified number of DON!! cards in your cost area.): Play up to 1 [Pacifista] with a cost of 4 or less from your deck, then shuffle your deck.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-007:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-008:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-008",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+    "coveredAtomicEffectIds": [
+      "ST03-008#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-008#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "BLOCKER",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST03-008#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-008",
+        "effectIndex": 0,
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-008:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-009:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-009",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Return up to 1 Character with a cost of 7 or less to the owner's hand.",
+    "coveredAtomicEffectIds": [
+      "ST03-009#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-009#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "to": {
+            "zone": "HAND",
+            "owner": "CARD_OWNER"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST03-009#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-009",
+        "effectIndex": 0,
+        "printedText": "[On Play] Return up to 1 Character with a cost of 7 or less to the owner's hand.",
+        "normalizedText": "[On Play] Return up to 1 Character with a cost of 7 or less to the owner's hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-009:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-010:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-010",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Look at 3 cards from the top of your deck and return them to the top or bottom of the deck in any order.",
+    "coveredAtomicEffectIds": [
+      "ST03-010#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-010#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "LOOK_AT_CARDS",
+          "player": "PLAYER",
+          "source": {
+            "subject": "CARD",
+            "owner": "PLAYER",
+            "zones": [
+              "DECK"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
+            },
+            "ordering": "DECK_ORDER"
+          },
+          "count": {
+            "kind": "NUMBER",
+            "value": 3
+          }
+        },
+        "actionId": "ST03-010#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-010",
+        "effectIndex": 0,
+        "printedText": "[On Play] Look at 3 cards from the top of your deck and return them to the top or bottom of the deck in any order.",
+        "normalizedText": "[On Play] Look at 3 cards from the top of your deck and return them to the top or bottom of the deck in any order.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-010:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-010:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-010",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] Play this card.",
+    "coveredAtomicEffectIds": [
+      "ST03-010#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-010#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PLAY_CARD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "ST03-010#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-010",
+        "effectIndex": 1,
+        "printedText": "[Trigger] Play this card.",
+        "normalizedText": "[Trigger] Play this card.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-010:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-013:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-013",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+    "coveredAtomicEffectIds": [
+      "ST03-013#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-013#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "PERMANENT",
+      "applicationMode": "CONTINUOUS",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_ENTER_PLAY"
+      },
+      "optionality": "OPTIONAL",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "GRANT_KEYWORD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "keyword": "BLOCKER",
+          "duration": {
+            "kind": "PERMANENT"
+          }
+        },
+        "actionId": "ST03-013#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-013",
+        "effectIndex": 0,
+        "printedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "normalizedText": "[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-013:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-013:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-013",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] Play this card.",
+    "coveredAtomicEffectIds": [
+      "ST03-013#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-013#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "PLAY_CARD",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "ST03-013#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-013",
+        "effectIndex": 1,
+        "printedText": "[Trigger] Play this card.",
+        "normalizedText": "[Trigger] Play this card.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-013:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-014:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-014",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[On Play] Return up to 1 Character with a cost of 3 or less to the owner's hand.",
+    "coveredAtomicEffectIds": [
+      "ST03-014#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-014#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "ON_PLAY"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "to": {
+            "zone": "HAND",
+            "owner": "CARD_OWNER"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST03-014#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-014",
+        "effectIndex": 0,
+        "printedText": "[On Play] Return up to 1 Character with a cost of 3 or less to the owner's hand.",
+        "normalizedText": "[On Play] Return up to 1 Character with a cost of 3 or less to the owner's hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-014:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-015:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-015",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Main] Return up to 1 Character with a cost of 7 or less to the owner's hand.",
+    "coveredAtomicEffectIds": [
+      "ST03-015#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-015#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "EVENT_MAIN"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "to": {
+            "zone": "HAND",
+            "owner": "CARD_OWNER"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST03-015#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-015",
+        "effectIndex": 0,
+        "printedText": "[Main] Return up to 1 Character with a cost of 7 or less to the owner's hand.",
+        "normalizedText": "[Main] Return up to 1 Character with a cost of 7 or less to the owner's hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-015:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-015:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-015",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] Activate this card's [Main] effect.",
+    "coveredAtomicEffectIds": [
+      "ST03-015#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-015#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "ACTIVATE_EVENT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "ST03-015#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-015",
+        "effectIndex": 1,
+        "printedText": "[Trigger] Activate this card's [Main] effect.",
+        "normalizedText": "[Trigger] Activate this card's [Main] effect.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-015:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-016:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-016",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Counter] Return up to 1 Character with a cost of 3 or less to the owner's hand.",
+    "coveredAtomicEffectIds": [
+      "ST03-016#0.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-016#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "EVENT_COUNTER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "MOVE_CARD",
+          "selector": {
+            "subject": "CARD",
+            "quantity": {
+              "kind": "UP_TO",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "to": {
+            "zone": "HAND",
+            "owner": "CARD_OWNER"
+          },
+          "cause": "EFFECT"
+        },
+        "actionId": "ST03-016#0.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-016",
+        "effectIndex": 0,
+        "printedText": "[Counter] Return up to 1 Character with a cost of 3 or less to the owner's hand.",
+        "normalizedText": "[Counter] Return up to 1 Character with a cost of 3 or less to the owner's hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-016:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-016:1",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-016",
+    "effectIndex": 1,
+    "status": "ASSIGNED",
+    "printedText": "[Trigger] Activate this card's [Counter] effect.",
+    "coveredAtomicEffectIds": [
+      "ST03-016#1.0"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-016#1",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 1
+      },
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "TRIGGER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "ACTION",
+        "action": {
+          "type": "ACTIVATE_EVENT",
+          "selector": {
+            "subject": "CARD",
+            "relations": [
+              "THIS_CARD"
+            ],
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "chooser": "EFFECT_OWNER"
+          },
+          "player": "PLAYER"
+        },
+        "actionId": "ST03-016#1.0"
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-016",
+        "effectIndex": 1,
+        "printedText": "[Trigger] Activate this card's [Counter] effect.",
+        "normalizedText": "[Trigger] Activate this card's [Counter] effect.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-016:1",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  },
+  {
+    "_id": "v2:auto:ST03-017:0",
+    "schemaVersion": "op-tcg-effect-v2.0.0",
+    "compilerVersion": "effect-compiler-v2.0.0",
+    "cardNumber": "ST03-017",
+    "effectIndex": 0,
+    "status": "ASSIGNED",
+    "printedText": "[Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, draw 1 card if you have 3 or less cards in your hand.",
+    "coveredAtomicEffectIds": [
+      "ST03-017#0.0",
+      "ST03-017#0.1"
+    ],
+    "uncoveredNotes": [],
+    "effect": {
+      "id": "ST03-017#0",
+      "source": {
+        "objectRef": "THIS_CARD",
+        "owner": "PLAYER",
+        "controller": "PLAYER",
+        "sourceZone": "NONE",
+        "effectIndex": 0
+      },
+      "category": "ACTIVATE",
+      "applicationMode": "ONE_SHOT",
+      "activationZones": [
+        "HAND",
+        "LEADER_AREA",
+        "CHARACTER_AREA",
+        "STAGE_AREA"
+      ],
+      "timing": {
+        "kind": "STANDARD_TIMING",
+        "timing": "EVENT_COUNTER"
+      },
+      "optionality": "MANDATORY",
+      "resolution": {
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "MODIFY_POWER",
+              "selector": {
+                "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA",
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER",
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "propertyLayer": "CURRENT_VALUE",
+              "operation": "ADD",
+              "value": {
+                "kind": "NUMBER",
+                "value": 4000
+              },
+              "duration": {
+                "kind": "THIS_BATTLE"
+              }
+            },
+            "actionId": "ST03-017#0.0"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "DRAW_CARD",
+              "player": "PLAYER",
+              "count": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            },
+            "actionId": "ST03-017#0.1"
+          }
+        ]
+      },
+      "metadata": {
+        "sourceCardNumber": "ST03-017",
+        "effectIndex": 0,
+        "printedText": "[Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, draw 1 card if you have 3 or less cards in your hand.",
+        "normalizedText": "[Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, draw 1 card if you have 3 or less cards in your hand.",
+        "parserVersion": "effect-compiler-v2.0.0",
+        "assignmentId": "v2:auto:ST03-017:0",
+        "authoringStatus": "ASSIGNED"
+      }
+    }
+  }
+]
