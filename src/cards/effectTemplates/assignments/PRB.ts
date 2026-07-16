@@ -89,8 +89,11 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'PRB02-001', templates: [{ templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderType', type: 'Navy' }] } }] } }, { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 3000 } }, optional: true }, { fn: 'draw', amount: 1, ifGate: [{ kind: 'selfHand', atMost: 6 }], ifPrevious: 'previousSelectedAny' }] } }] },
 
 
-  // PARTIAL: KO-replacement −2000 deferred.
-  { cardNumber: 'PRB02-002', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+  // Closed 2026-07-16 field-removal replacement pass: KO-replacement (self −2000 power, opponent-effect, OPT) via registerKoReplacementSelf.
+  { cardNumber: 'PRB02-002', templates: [
+    { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementSelf', scope: 'effect', oncePerTurn: true, replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'], effectSourceController: 'opponent', giveSelfPowerPenalty: { amount: 2000, duration: 'duringThisTurn' }, duration: 'permanent' }] } },
+    { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+  ] },
 
 
   { cardNumber: 'PRB02-007', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'The Seven Warlords of the Sea', excludeSelfName: true }, remainder: 'bottom' }] } }, { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } }] },
@@ -102,8 +105,14 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'PRB02-013', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Thriller Bark Pirates' }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', maxCost: 4 }, rested: true }, { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' }] } },
 
 
-  // PARTIAL: static Blocker/+4 cost deferred.
-  { cardNumber: 'PRB02-015', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 4 } }, optional: true }] } },
+  // Closed 2026-07-16 conditional keyword/cost aura pass: static [Blocker] + cost aura gated by Blackbeard Pirates leader, via self-named addKeywordAuraControllerCharacters/addCostAuraControllerCharacters.
+  { cardNumber: 'PRB02-015', templates: [
+    { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+      { fn: 'addKeywordAuraControllerCharacters', keyword: 'blocker', duration: 'permanent', anyOfNames: ['Shiryu'], gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }] },
+      { fn: 'addCostAuraControllerCharacters', amount: 4, duration: 'permanent', anyOfNames: ['Shiryu'], gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }] },
+    ] } },
+    { templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 4 } }, optional: true }] } },
+  ] },
 
 
   { cardNumber: 'PRB02-016', templates: [{ templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } }] },
@@ -113,8 +122,8 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'PRB02-010', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], gate: [{ kind: 'leaderType', type: 'Big Mom Pirates' }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Big Mom Pirates', minPower: 6000, maxPower: 8000 }, ifPrevious: 'previousSelectedAny' }] } },
 
 
-  // PARTIAL: static −3 cost in hand deferred; [Blocker] is printed.
-  { cardNumber: 'PRB02-014', templateId: 'ability', params: { timing: 'onEnterPlay', gate: [{ kind: 'selfTrashCount', atLeast: 15 }], functions: [{ fn: 'addCost', target: { ref: 'self' }, amount: -3, duration: 'permanent' }] } },
+  // Closed 2026-07-16 conditional keyword/cost aura pass: static −3 cost in hand (15+ trash) via addCostAuraSameCardInHand; [Blocker] is printed.
+  { cardNumber: 'PRB02-014', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'selfTrashCount', atLeast: 15 }] }] } },
 
 
   // PRB02-018 — [On Play] If face-up Life: play up to 1 [Sabo]/[Ace]/[Luffy] cost≤2 from hand or trash.

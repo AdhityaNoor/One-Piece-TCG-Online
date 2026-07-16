@@ -405,6 +405,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.anyOfTypes !== undefined) ids = ids.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
       if (sel.hasTrigger !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasTrigger === true) === sel.hasTrigger);
       if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
+      if (sel.attribute !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.attributes?.includes(sel.attribute!) === true);
       if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
       if (sel.excludeSelfName) {
         const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
@@ -564,6 +565,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.hasBlocker !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasBlocker === true) === sel.hasBlocker);
       if (sel.hasTrigger !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasTrigger === true) === sel.hasTrigger);
       if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
+      if (sel.attribute !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.attributes?.includes(sel.attribute!) === true);
       if (sel.excludeName !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
       return ids;

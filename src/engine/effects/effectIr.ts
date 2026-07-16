@@ -40,7 +40,7 @@ export type Selector =
   | { sel: 'controllerOrOpponentLifeTop' } // top Life card from either player, de-duplicated only by absent zones
   | { sel: 'controllerDeckTop' }
   | { sel: 'allCharacters'; minCost?: number; maxCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; excludeSelf?: boolean } // any player's Characters
-  | { sel: 'opponentCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; hasTrigger?: boolean; minDonAttached?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; maxCostFromSelfLife?: boolean; maxCostFromOpponentDon?: boolean; maxCostFromSelfDon?: boolean; noBaseEffect?: boolean; excludeName?: string } // optional cost/power (current) + base cost/power + rested/blocker/trigger/given-DON!! filters
+  | { sel: 'opponentCharacters'; minCost?: number; maxCost?: number; exactCost?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; hasTrigger?: boolean; minDonAttached?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; maxCostFromSelfLife?: boolean; maxCostFromOpponentDon?: boolean; maxCostFromSelfDon?: boolean; noBaseEffect?: boolean; excludeName?: string; attribute?: Attribute } // optional cost/power (current) + base cost/power + rested/blocker/trigger/given-DON!!/attribute filters
   | { sel: 'controllerAttachedDon' } // DON!! instance ids currently given to the controller's Leader/Characters/Stages
   | { sel: 'controllerHand'; filter?: SearchFilter; excludeSelf?: boolean } // controller's hand cards matching a filter (for play-from-hand); excludeSelf matters when the source card itself is sitting in hand at resolution time (e.g. a Life [Trigger] "trash 1 -> play this" ability — the source shouldn't be a legal cost for its own "play this" clause)
   | { sel: 'opponentHand'; filter?: SearchFilter } // opponent's hand cards, optionally filtered for effects where the opponent chooses/trashes/plays
@@ -133,6 +133,8 @@ export interface CharacterMoveFilter {
   hasTrigger?: boolean;
   color?: Color;
   name?: string;
+  /** Leader/Character attribute gate (2-5), e.g. "<Slash> attribute Character". */
+  attribute?: Attribute;
   /** Exclude the source card instance (other than this Character). */
   excludeSelf?: boolean;
   /** Exclude cards sharing the source card's printed name. */
@@ -387,6 +389,7 @@ export type AbilityGate =
   | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
   | { kind: 'selfHasCharacterCostAtLeast'; atLeast: number } // "If you have a Character with a cost of N or more"
   | { kind: 'selfCharacterCostCount'; minCost: number; atLeast: number } // "If you have N or more Characters with a cost of M or more"
+  | { kind: 'selfCharacterBaseCostCount'; minBaseCost: number; atLeast: number } // "If you have N or more Characters with a base cost of M or more"
   | { kind: 'anyCharacterCostCount'; minCost: number; atLeast: number } // "If there are N or more Characters with a cost of M or more"
   | { kind: 'selfHasCharacterBasePowerAtLeast'; power: number } // "If you have a Character with a base power of N or more"
   | { kind: 'opponentDonMoreThanSelf' } // "If your opponent has more DON!! cards on their field than you"

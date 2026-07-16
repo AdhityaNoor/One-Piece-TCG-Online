@@ -187,8 +187,13 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP10-035', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
 
 
-  // OP10-037 — [End of Your Turn] Set up to 1 of your {ODYSSEY} Characters active. PARTIAL: the removal-replacement clause is deferred.
-  { cardNumber: 'OP10-037', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { typeIncludes: 'ODYSSEY' } }] } },
+  // OP10-037 — Closed 2026-07-16 field-removal replacement pass: [End of Your Turn] Set up to 1 of your {ODYSSEY}
+  // Characters active, plus the removal-replacement clause (rest 1 of your {ODYSSEY} Characters instead) via
+  // registerKoReplacementSelf's restCharacterFilter.typeIncludes.
+  { cardNumber: 'OP10-037', templates: [
+    { templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { typeIncludes: 'ODYSSEY' } }] } },
+    { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementSelf', scope: 'effect', oncePerTurn: true, replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'], effectSourceController: 'opponent', restCharacter: true, restCharacterFilter: { typeIncludes: 'ODYSSEY' }, duration: 'permanent' }] } },
+  ] },
 
   // OP10-038 — [Opponent's Turn] If you have 2 or more rested Characters, this Character gains +2000 power.
   { cardNumber: 'OP10-038', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }] } }] } },

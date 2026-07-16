@@ -13,8 +13,12 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Turn] If your {Navy} type Character with 7000 base power or less would be removed from the field by
   //   your opponent's effect, you may place 3 cards from your trash at the bottom of your deck in any order
   //   instead.
-  // PARTIAL: replacement-effect clause remains deferred; static SWORD attack permission is mapped.
-  { cardNumber: 'OP11-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent', anyOfTypes: ['SWORD'] }] } },
+  // Closed 2026-07-16 field-removal replacement pass: static SWORD attack permission plus the {Navy}
+  // 7000-base-power-or-less field-removal replacement (trash-to-deck-bottom 3) via registerKoReplacementAura.
+  { cardNumber: 'OP11-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+    { fn: 'addKeywordAuraControllerCharacters', keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent', anyOfTypes: ['SWORD'] },
+    { fn: 'registerKoReplacementAura', scope: 'effect', oncePerTurn: true, replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'], effectSourceController: 'opponent', anyOfTypes: ['Navy'], targetCondition: { maxBasePower: 7000 }, trashTrashToDeckBottom: { count: 3 }, duration: 'permanent' },
+  ] } },
 
   // OP11-002 — [On Play] Give opp Character −1000, then K.O. opp Character with 0 power or less.
   { cardNumber: 'OP11-002', templateId: 'ability', params: { timing: 'onPlay', functions: [
@@ -38,7 +42,7 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP11-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { donAttachedAtLeast: 1 }, effectSourceCategory: 'character', effectSourceWithoutAttribute: 'special' }] } },
 
   // OP11-006 — [DON!! x1] [When Attacking] Give up to 1 opp <Special> Characters −5000 this turn.
-  //   PARTIAL: <Special> attribute filter dropped (see curated entry below).
+  //   Closed 2026-07-16 (see curated entry below).
 
   // ── Triage batch (OP11 expressible). "Choose a cost + reveal opp deck" and "turn Life face-down" families are deferred. ──
   // OP11-007 — [Activate: Main] rest this: If Leader {Navy}, up to 1 {Navy} Character +2000 this turn.
@@ -776,8 +780,8 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // PARTIAL: face-down Life half only on Main; Counter +1000 aura deferred.
   { cardNumber: 'OP11-117', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderName', name: 'Shirahoshi' }], functions: [{ fn: 'turnTopLifeFace', faceUp: true }, { fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { anyOfTypes: ['Neptunian', 'Fish-Man', 'Merfolk'] } }, amount: 1000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousSelectedAny' }] } },
 
-  // PARTIAL: <Special> attribute filter dropped.
-  { cardNumber: 'OP11-006', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -5000, duration: 'duringThisTurn', optional: true }] } },
+  // Closed 2026-07-16: <Special> attribute filter wired into the opponentCharacters selector.
+  { cardNumber: 'OP11-006', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent', filter: { attribute: 'special' } }, amount: -5000, duration: 'duringThisTurn', optional: true }] } },
 
   { cardNumber: 'OP11-077', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, condition: { turn: 'your' }, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 1 }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Big Mom Pirates' } }, amount: 2, duration: 'endOfOpponentsTurn', optional: true }] } },
 

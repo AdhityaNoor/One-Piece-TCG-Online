@@ -295,8 +295,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP04-042 — PARTIAL: <Slash> attribute filter not on target selector; buffs any Character.
-  { cardNumber: 'OP04-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 1 }] } },
+  // OP04-042 — Closed 2026-07-16: <Slash> attribute filter wired into the controllerCharacters selector.
+  { cardNumber: 'OP04-042', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { attribute: 'slash' } }, amount: 3000, duration: 'duringThisTurn', optional: true }, { fn: 'trashTopDeck', count: 1 }] } },
 
   // OP04-043 — [When Attacking] [DON!! x1] Return up to 1 cost≤2 Character to owner's hand or deck bottom.
   { cardNumber: 'OP04-043', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{

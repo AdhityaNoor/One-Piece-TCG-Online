@@ -35,6 +35,7 @@ import {
   putLifeCards,
 } from '../../rules/shared/__tests__/testRig';
 import type { GameState } from '../../state/game';
+import type { EffectOp } from '../effectIr';
 
 function programFor(assignment: CardEffectAssignment) {
   const bindings = 'templates' in assignment ? assignment.templates : [assignment];
@@ -946,7 +947,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
       amount: -3,
       group: { controllerSameDefinitionInHand: true },
     });
-    expect(programs['OP15-021'].abilities.find((a) => a.timing === 'onEnterPlay')?.ops[0].condition?.gate).toEqual([
+    expect((programs['OP15-021'].abilities.find((a) => a.timing === 'onEnterPlay')?.ops[0] as Extract<EffectOp, { op: 'addCostAura' }> | undefined)?.condition?.gate).toEqual([
       { kind: 'selfTrashMatching', category: 'event', atLeast: 4 },
     ]);
     expect(programs['OP15-042'].abilities.map((a) => a.timing)).toEqual(['onPlay', 'onKO']);

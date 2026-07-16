@@ -5,6 +5,7 @@ import { makeCharacterDef, makeEventDef, buildBaseRig, putCharacterInPlay, putDe
 import { computeCurrentCost } from '../../../engine/rules/shared';
 import { buildRegistryFromAssignments } from '../assembler';
 import { buildCuratedEffectRegistry } from '../curatedPrograms';
+import type { GameState } from '../../../engine/state/game';
 
 describe('curated effect template integration with match engine dispatch', () => {
   it('resolves OP06-069 On Play from a saved snapshot whose definition id is not the card number', () => {
@@ -172,7 +173,7 @@ describe('curated effect template integration with match engine dispatch', () =>
       },
     };
     const afterTrashWithParity = executeAction(
-      parityState,
+      parityState as GameState,
       { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: trashChoice.id, response: [spareId] },
       rig.defs,
       registry,

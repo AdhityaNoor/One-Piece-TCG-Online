@@ -38,19 +38,31 @@ export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
   //   If this Character would be removed from the field by your opponent's effect, you may trash 2 cards
   //   from your hand instead.[Activate: Main] [Once Per Turn] You may rest 3 of your DON!! cards and return
   //   1 of your Characters other than this Character to the owner's hand: Set this Character as active.
-  // PARTIAL: removal replacement (trash 2 from hand) deferred; mapped activateMain bounce → setActive.
+  // Closed 2026-07-16 field-removal replacement pass: removal replacement (trash 2 from hand) via
+  // registerKoReplacementSelf; activateMain bounce → setActive is separately mapped.
   {
     cardNumber: 'ST22-005',
-    templateId: 'ability',
-    params: {
-      timing: 'activateMain',
-      oncePerTurn: true,
-      cost: [{ kind: 'restDon', count: 3 }],
-      functions: [
-        { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { excludeSelf: true } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
-        { fn: 'setActiveSelf', ifPrevious: 'previousMovedAny' },
-      ],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          cost: [{ kind: 'restDon', count: 3 }],
+          functions: [
+            { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { excludeSelf: true } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+            { fn: 'setActiveSelf', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{ fn: 'registerKoReplacementSelf', scope: 'effect', replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'], effectSourceController: 'opponent', trashFromHand: { count: 2 }, duration: 'permanent' }],
+        },
+      },
+    ],
   },
 
   // ST22-012 — K.O. replacement (trash 1 from hand, opp effect, OPT) + [When Attacking] reveal top for +1000.

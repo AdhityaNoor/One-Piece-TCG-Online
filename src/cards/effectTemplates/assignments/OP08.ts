@@ -248,7 +248,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-045 (character) Thatch —
   //   If this Character would be removed from the field by your opponent's effect or K.O.'d, trash this
   //   Character and draw 1 card instead.
-  // PARTIAL: draw-1 payoff and non-K.O. field-removal branches deferred; K.O. trash-self proxy mapped.
+  // Closed 2026-07-16 field-removal replacement pass: trashSelfAndDraw + broadened replacementTriggers
+  // (registerKoReplacementSelf's action-kind list now includes trashSelfAndDraw, previously aura-only).
   {
     cardNumber: 'OP08-045',
     templateId: 'ability',
@@ -257,7 +258,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [{
         fn: 'registerKoReplacementSelf',
         scope: 'any',
-        trashSelf: true,
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+        trashSelfAndDraw: { amount: 1 },
         duration: 'permanent',
       }],
     },

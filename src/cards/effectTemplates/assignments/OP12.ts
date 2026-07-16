@@ -382,7 +382,10 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP12-061 — [Once Per Turn] [Trafalgar Law] K.O. replacement (top Life → hand). PARTIAL: activate Main deferred.
+  // OP12-061 — [Once Per Turn] [Trafalgar Law] K.O. replacement (top Life → hand) is fully mapped via registerKoReplacementAura.
+  // PARTIAL: the separate [Activate: Main] DON!!−1 "next play of [Trafalgar Law] cost 4+ is reduced by 2" clause is
+  // still deferred — addNextPlayFromHandCostDiscount's controllerCharactersInHand group only filters by anyOfTypes,
+  // not by card name, so a name-scoped one-shot next-play discount isn't expressible yet without extending that group.
   {
     cardNumber: 'OP12-061',
     templateId: 'ability',
@@ -421,7 +424,9 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-069 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: If Leader {Baroque Works}, up to 1 Leader/Character +2000 battle.
   { cardNumber: 'OP12-069', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
 
-  // OP12-070 — PARTIAL: +1000 per 5 Events in trash and field-removal clause deferred.
+  // OP12-070 — Closed 2026-07-16 field-removal replacement pass: broadened effectSourceController + replacementTriggers.
+  // PARTIAL: the dynamic "+1000 power for every 5 Events in your trash" scaling clause is still deferred — no
+  // generic "scale bonus by dynamic count" op exists yet (see effect-partial-curation-priority.md cluster 5).
   {
     cardNumber: 'OP12-070',
     templateId: 'ability',
@@ -430,6 +435,8 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [{
         fn: 'registerKoReplacementSelf',
         scope: 'effect',
+        effectSourceController: 'opponent',
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
         returnDon: { count: 1 },
         duration: 'permanent',
       }],

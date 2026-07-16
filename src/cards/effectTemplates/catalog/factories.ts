@@ -20,7 +20,7 @@ function koReplacementAction(f: {
   restSource?: true;
   restCharacter?: true;
   restCards?: { count?: number };
-  restCharacterFilter?: { minCost?: number; excludeSourceName?: boolean };
+  restCharacterFilter?: { minCost?: number; excludeSourceName?: boolean; typeIncludes?: string };
   bottomDeckCharacter?: true;
   trashSelfAndDraw?: { amount: number };
   trashTrashToDeckBottom?: { count: number };
@@ -1183,7 +1183,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         ...(f.targetCondition || f.gate ? { condition: { ...(f.targetCondition ?? {}), ...(f.gate ? { gate: f.gate } : {}) } } : {}),
       }];
     case 'addCostAuraControllerCharacters':
-      return [{ op: 'addCostAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
+      return [{ op: 'addCostAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addCostAuraOpponentCharacters':
       return [{ op: 'addCostAura', group: { opponentCharacters: true }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addCostAuraSameCardInHand':

@@ -316,6 +316,11 @@ function evaluateGate(
       return count >= gate.atLeast;
     }
 
+    case 'selfCharacterBaseCostCount': {
+      const count = player.characterArea.cardIds.filter((id) => (defs[state.cardsById[id]?.cardDefinitionId ?? '']?.baseCost ?? -1) >= gate.minBaseCost).length;
+      return count >= gate.atLeast;
+    }
+
     case 'anyCharacterCostCount': {
       const opponentId = getOpponentId(state, ownerId);
       const ids = [...player.characterArea.cardIds, ...state.players[opponentId].characterArea.cardIds];

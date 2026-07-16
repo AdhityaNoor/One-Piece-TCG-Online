@@ -96,8 +96,12 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP14-015', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP14-016 — [DON!! x1][When Attacking] give up to 1 opp Character −2000. PARTIAL: removal-replacement deferred.
-  { cardNumber: 'OP14-016', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+  // OP14-016 — Closed 2026-07-16 field-removal replacement pass: [DON!! x1][When Attacking] give up to 1 opp Character
+  // −2000, plus the {Supernovas} field-removal replacement (Leader −2000 this turn) via registerKoReplacementAura.
+  { cardNumber: 'OP14-016', templates: [
+    { templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+    { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', oncePerTurn: true, replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'], effectSourceController: 'opponent', anyOfTypes: ['Supernovas'], giveLeaderPowerPenalty: { amount: 2000, duration: 'duringThisTurn' }, duration: 'permanent' }] } },
+  ] },
 
   // OP14-017 (event) Chambres — [Main] swap base power of 2 opponent Characters (≤9000 base power) this turn.
   {
@@ -600,8 +604,12 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
       }],
     },
   },
-  // OP14-061 — [When Attacking] DON!! −1: give up to 1 opp Character −2000. PARTIAL: removal-replacement deferred.
-  { cardNumber: 'OP14-061', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+  // OP14-061 — Closed 2026-07-16 field-removal replacement pass: [When Attacking] DON!! −1: give up to 1 opp Character
+  // −2000, plus the {Donquixote Pirates} field-removal replacement (return 1 DON!!) via registerKoReplacementAura.
+  { cardNumber: 'OP14-061', templates: [
+    { templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+    { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementAura', scope: 'effect', oncePerTurn: true, replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'], effectSourceController: 'opponent', anyOfTypes: ['Donquixote Pirates'], returnDon: { count: 1 }, duration: 'permanent' }] } },
+  ] },
 
 
   {

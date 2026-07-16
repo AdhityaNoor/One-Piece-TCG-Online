@@ -2443,18 +2443,29 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Once Per Turn] If your Leader's type includes "Navy" and this Character would be removed from the
   //   field, you may trash 1 card from your hand instead.[Your Turn] [Once Per Turn] When your opponent's
   //   Character is K.O.'d, draw 1 card.
-  // PARTIAL: the "would be removed from the field" replacement clause is deferred (needs a
-  // replacement-effect primitive). The [Your Turn][Once Per Turn] opponent-K.O. draw is curated.
+  // Closed 2026-07-16 field-removal replacement pass: leader-type-gated field-removal replacement
+  // (trash 1 from hand instead) via registerKoReplacementSelf + activationGate.
   {
     cardNumber: 'EB04-044',
-    templateId: 'ability',
-    params: {
-      timing: 'onCharacterKoed',
-      oncePerTurn: true,
-      condition: { turn: 'your' },
-      gate: [{ kind: 'koedCharacterController', player: 'opponent' }],
-      functions: [{ fn: 'draw', amount: 1 }],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{ fn: 'registerKoReplacementSelf', scope: 'effect', oncePerTurn: true, replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'], activationGate: [{ kind: 'leaderType', type: 'Navy' }], trashFromHand: { count: 1 }, duration: 'permanent' }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onCharacterKoed',
+          oncePerTurn: true,
+          condition: { turn: 'your' },
+          gate: [{ kind: 'koedCharacterController', player: 'opponent' }],
+          functions: [{ fn: 'draw', amount: 1 }],
+        },
+      },
+    ],
   },
 
   // EB04-045 — [Activate: Main] rest this: if 2+ Characters cost >=8, Revolutionary Army Leader/Character +1000 this turn.

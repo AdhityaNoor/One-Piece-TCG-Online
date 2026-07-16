@@ -42,6 +42,10 @@ export const ST15_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST15-004 — [On Play] If Leader {Whitebeard Pirates}, give up to 1 opp Character −2000, then add 1 top Life to hand.
   { cardNumber: 'ST15-004', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }, { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } }] } },
 
-  // ST15-005 — static: if Leader {Whitebeard Pirates}, this Character gains [Rush]. PARTIAL: removal-replacement deferred.
-  { cardNumber: 'ST15-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }] } }] } },
+  // ST15-005 — Closed 2026-07-16 field-removal replacement pass: static [Rush] if Leader {Whitebeard Pirates}, plus the
+  // K.O.-replacement (self −2000 power, OPT) via registerKoReplacementSelf.
+  { cardNumber: 'ST15-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+    { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }] } },
+    { fn: 'registerKoReplacementSelf', scope: 'effect', oncePerTurn: true, replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'], effectSourceController: 'opponent', giveSelfPowerPenalty: { amount: 2000, duration: 'duringThisTurn' }, duration: 'permanent' },
+  ] } },
 ];

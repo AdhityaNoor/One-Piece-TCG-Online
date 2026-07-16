@@ -176,9 +176,9 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-026 (character) Koushirou —
   //   [On Play] Set up to 1 of your <Slash> attribute Characters with a cost of 4 or less as active. Then,
   //   you cannot attack a Leader during this turn.
-  //   PARTIAL: <Slash> attribute filter dropped on set-active.
+  //   Closed 2026-07-16: <Slash> attribute filter wired into setActiveControllerCharacter's filter.
   { cardNumber: 'OP06-026', templateId: 'ability', params: { timing: 'onPlay', functions: [
-    { fn: 'setActiveControllerCharacter', filter: { maxCost: 4 }, maxTargets: 1, optional: true },
+    { fn: 'setActiveControllerCharacter', filter: { maxCost: 4, attribute: 'slash' }, maxTargets: 1, optional: true },
     { fn: 'preventAttackAll', duration: 'duringThisTurn', forbiddenTarget: 'leader' },
   ] } },
   // OP06-027 — [On K.O.] Rest up to 1 of your opponent's Characters with a cost of 3 or less.

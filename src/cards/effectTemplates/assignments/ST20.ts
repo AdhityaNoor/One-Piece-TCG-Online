@@ -11,8 +11,12 @@ export const ST20_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'giveDon', count: 1, ifPrevious: 'previousSelectedAny' },
   ] } },
 
-  // ST20-002 — [Trigger] trash 1 → play this card. PARTIAL: the K.O.-replacement is deferred.
-  { cardNumber: 'ST20-002', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
+  // ST20-002 — Closed 2026-07-16 field-removal replacement pass: [Trigger] trash 1 → play this card, plus the
+  // effect-K.O. replacement (trash top Life instead, OPT) via registerKoReplacementSelf.
+  { cardNumber: 'ST20-002', templates: [
+    { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
+    { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'registerKoReplacementSelf', scope: 'effect', oncePerTurn: true, trashLife: { position: 'top' }, duration: 'permanent' }] } },
+  ] },
 
   // ST20-003 — [Trigger] peek 1 of your/opp's top Life, place top or bottom, then add this card to hand.
   { cardNumber: 'ST20-003', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [

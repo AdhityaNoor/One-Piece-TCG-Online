@@ -21,7 +21,7 @@ import type {
   SequenceCondition,
 } from '../../../engine/effects/effectIr';
 import type { ContinuousKeyword, PowerScaleSource, SourceStateCondition } from '../../../engine/state/game';
-import type { CardCategory, Color } from '../../../engine/state/card';
+import type { Attribute, CardCategory, Color } from '../../../engine/state/card';
 
 export const TEMPLATE_IDS = {
   ABILITY: 'ability',
@@ -69,6 +69,8 @@ export interface TargetFilter {
   anyOfTypes?: string[];
   color?: Color;
   name?: string;
+  /** Leader/Character attribute gate (2-5), e.g. "<Slash> attribute Character". */
+  attribute?: Attribute;
   excludeSelf?: boolean;
   /** Target must have at least N DON!! cards given (attached). */
   minDonAttached?: number;
@@ -192,8 +194,8 @@ export type AbilityFunction =
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
   | { fn: 'setActiveSelf' }
   | { fn: 'setActiveControllerLeader' }
-  | { fn: 'setActiveControllerCharacters'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string; color?: Color } }
-  | { fn: 'setActiveControllerCharacter'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string; color?: Color }; maxTargets?: number; optional?: boolean }
+  | { fn: 'setActiveControllerCharacters'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string; color?: Color; attribute?: Attribute } }
+  | { fn: 'setActiveControllerCharacter'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string; color?: Color; attribute?: Attribute }; maxTargets?: number; optional?: boolean }
   | { fn: 'setActiveControllerDon'; maxTargets: number }
   | { fn: 'setActiveControllerDonAtEndOfTurn'; maxTargets: number }
   | { fn: 'restOpponentDonAtStartOfNextMain'; maxTargets?: number }
@@ -234,7 +236,7 @@ export type AbilityFunction =
   // Dynamic aura over ALL the opponent's Characters ("give all of your opponent's Characters -N power").
   | { fn: 'addPowerAuraOpponentCharacters'; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // Continuous cost aura over ALL the controller's Characters (chars only), optionally type-filtered + gated on source state ("all of your {Navy} Characters gain +2 cost").
-  | { fn: 'addCostAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
+  | { fn: 'addCostAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // Continuous cost aura over ALL the opponent's Characters ("give all of your opponent's Characters -N cost").
   | { fn: 'addCostAuraOpponentCharacters'; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // "Give this card in your hand −N cost" while the source is on the field (same cardDefinitionId copies in hand).
@@ -249,7 +251,7 @@ export type AbilityFunction =
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
   | { fn: 'koImmunityChosen'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration }
   // Register optional K.O. replacement on this card ("would be K.O.'d … instead").
-  | { fn: 'registerKoReplacementSelf'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; replacementTriggers?: ('ko' | 'returnToHand' | 'bottomDeck')[]; effectSourceController?: 'opponent' | 'controller'; activationGate?: AbilityGate[]; sourceCondition?: SourceStateCondition; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; trashSelf?: true; trashLife?: { position?: 'top' | 'bottom' | 'topOrBottom' }; trashTrashToDeckBottom?: { count: number }; turnTopLifeFace?: { faceUp: boolean }; bottomDeckCharacter?: true; restCharacter?: true; restCards?: { count?: number }; restCharacterFilter?: { minCost?: number; excludeSourceName?: boolean }; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
+  | { fn: 'registerKoReplacementSelf'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; replacementTriggers?: ('ko' | 'returnToHand' | 'bottomDeck')[]; effectSourceController?: 'opponent' | 'controller'; activationGate?: AbilityGate[]; sourceCondition?: SourceStateCondition; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; trashSelf?: true; trashSource?: true; returnSourceToHand?: true; restSource?: true; trashSelfAndDraw?: { amount: number }; giveSelfPowerPenalty?: { amount: number; duration: IrDuration }; giveLeaderPowerPenalty?: { amount: number; duration: IrDuration }; moveTargetToLifeFaceDown?: true; trashLife?: { position?: 'top' | 'bottom' | 'topOrBottom' }; trashTrashToDeckBottom?: { count: number }; turnTopLifeFace?: { faceUp: boolean }; bottomDeckCharacter?: true; restCharacter?: true; restCards?: { count?: number }; restCharacterFilter?: { minCost?: number; excludeSourceName?: boolean; typeIncludes?: string }; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; duration: IrDuration }
   | { fn: 'registerKoReplacementAura'; scope?: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; replacementTriggers?: ('ko' | 'returnToHand' | 'bottomDeck')[]; effectSourceController?: 'opponent' | 'controller'; effectSourceCategory?: 'leader' | 'character'; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfAttributes?: string[]; charactersOnly?: boolean; excludeSource?: boolean; targetCondition?: IrCondition; sourceCondition?: SourceStateCondition; trashSource?: true; returnSourceToHand?: true; trashFromHand?: { count: number; filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } }; restSource?: true; restCharacter?: true; restCards?: { count?: number }; bottomDeckCharacter?: true; trashSelfAndDraw?: { amount: number }; giveSelfPowerPenalty?: { amount: number; duration: IrDuration }; giveLeaderPowerPenalty?: { amount: number; duration: IrDuration }; moveTargetToLifeFaceDown?: true; returnDon?: { count?: number }; restDon?: { count?: number }; lifeToHand?: { position?: 'top' | 'topOrBottom' }; trashTrashToDeckBottom?: { count: number }; turnTopLifeFace?: { faceUp: boolean }; duration: IrDuration }
   | { fn: 'registerRestReplacementSelf'; oncePerTurn?: boolean; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller'; effectSourceCategory?: 'leader' | 'character'; duration: IrDuration }
   | { fn: 'setBasePowerFromLeader'; target: TargetSpec; duration: IrDuration; condition?: IrCondition; sourceCondition?: SourceStateCondition }

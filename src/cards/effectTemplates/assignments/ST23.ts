@@ -4,10 +4,10 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST23_ASSIGNMENTS: CardEffectAssignment[] = [
-  // ST23-001 — PARTIAL: 10000 current power gate → selfCharacterCurrentPowerCount; hand −4 cost mapped.
+  // ST23-001 — Closed: 10000+ current power gate via selfCharacterCurrentPowerCount; hand −4 cost mapped fully.
   { cardNumber: 'ST23-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -4, duration: 'permanent', gate: [{ kind: 'selfCharacterCurrentPowerCount', power: 10000, atLeast: 1 }] }] } },
 
-  // ST23-002 — PARTIAL: 8000 base power hand discount deferred; [On Play] Leader +2000 mapped.
+  // ST23-002 — Closed: opponent 8000+ base power hand discount via opponentHasCharacterBasePowerAtLeast; [On Play] Leader +2000 mapped.
   {
     cardNumber: 'ST23-002',
     templates: [

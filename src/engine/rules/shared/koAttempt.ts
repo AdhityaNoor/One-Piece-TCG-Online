@@ -74,7 +74,7 @@ function eligibleRestCharacters(
   options: {
     excludeInstanceId?: string;
     sourceInstanceId?: string;
-    filter?: { minCost?: number; excludeSourceName?: boolean };
+    filter?: { minCost?: number; excludeSourceName?: boolean; typeIncludes?: string };
   } = {},
 ): string[] {
   const { excludeInstanceId, sourceInstanceId, filter } = options;
@@ -90,6 +90,7 @@ function eligibleRestCharacters(
     if (!inst || inst.currentZone !== 'characterArea') return false;
     const def = getDefinition(defs, inst);
     if (filter?.minCost !== undefined && (def.baseCost ?? 0) < filter.minCost) return false;
+    if (filter?.typeIncludes && !typeIncludes(def.types, filter.typeIncludes)) return false;
     if (sourceName !== undefined && def.name === sourceName) return false;
     return true;
   });

@@ -346,6 +346,8 @@ export interface KoReplacementCharacterFilter {
   minCost?: number;
   /** Exclude Characters sharing the aura source's printed name (e.g. "other than [Pica]"). */
   excludeSourceName?: boolean;
+  /** Restrict to Characters carrying this tribal type (e.g. "1 of your {ODYSSEY} type Characters"). */
+  typeIncludes?: string;
 }
 
 /** Hand filter for a K.O. replacement that trashes from hand. */

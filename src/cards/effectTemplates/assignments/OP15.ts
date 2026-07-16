@@ -869,7 +869,8 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP15-093 — PARTIAL: [Rush: Character] and <Slash> attribute deferred; mapped as [Rush] on [Monkey.D.Luffy].
+  // OP15-093 — Closed 2026-07-16 [Rush: Character] keyword corrected to canAttackCharactersWhileSummoningSick (was plain rush).
+  //   PARTIAL: granting the <Slash> attribute itself has no engine primitive (no continuous "add attribute" op exists) — still dropped.
   {
     cardNumber: 'OP15-093',
     templateId: 'ability',
@@ -877,7 +878,7 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'activateMain',
       cost: [{ kind: 'trashThis' }],
       gate: [{ kind: 'selfTrashCount', atLeast: 15 }],
-      functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy' } }, keyword: 'rush', duration: 'duringThisTurn', optional: true }],
+      functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy' } }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'duringThisTurn', optional: true }],
     },
   },
   // OP15-094 — field-removal replacement; [Blocker] is engine keyword.
