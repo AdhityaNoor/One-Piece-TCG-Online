@@ -44,6 +44,11 @@ describe('effectCompiler_V2 parser', () => {
     expect(parsed.atomicEffects.map((atom) => atom.canonicalCoverage)).toEqual(['canonical', 'canonical', 'canonical']);
     expect(parsed.atomicEffects[1].parsedAction).toMatchObject({
       type: 'MOVE_CARD',
+      selector: {
+        subject: 'ACTION_RESULT',
+        relations: ['SELECTED_PREVIOUSLY'],
+        types: { kind: 'HAS_ANY_TYPE', values: ['Straw Hat Crew'] },
+      },
       to: { zone: 'HAND', owner: 'PLAYER' },
     });
     expect(parsed.atomicEffects[2].parsedAction).toMatchObject({
@@ -189,6 +194,156 @@ describe('effectCompiler_V2 parser', () => {
     expect(parsed.atomicEffects.at(-1)?.semanticStatus).toBe('safe');
   });
 
+  it('uses exact current cost filters and combined hand/trash source zones', () => {
+    const parsed = parseCardEffect_V2(
+      'OP06-060',
+      '[Activate: Main] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!! deck.) You may trash this Character: If your Leader has the {GERMA 66} type, play up to 1 [Vinsmoke Ichiji] with a cost of 7 from your hand or trash.',
+    );
+
+    expect(parsed.atomicEffects.at(-1)?.parsedAction).toMatchObject({
+      type: 'PLAY_CARD',
+      selector: {
+        owner: 'PLAYER',
+        zones: ['HAND', 'TRASH'],
+        names: [{ kind: 'NAME_EXACT', value: 'Vinsmoke Ichiji' }],
+        cost: { propertyLayer: 'CURRENT', comparison: 'EQUAL', value: { kind: 'NUMBER', value: 7 } },
+      },
+    });
+    expect(parsed.atomicEffects.at(-1)?.semanticStatus).toBe('safe');
+  });
+
+  it('uses exact current power filters when card text does not say base power', () => {
+    const parsed = parseCardEffect_V2(
+      'TEST-POWER-EXACT',
+      '[On Play] K.O. up to 1 of your opponent\'s Characters with 5000 power.',
+    );
+
+    expect(parsed.atomicEffects[0].parsedAction).toMatchObject({
+      type: 'KO_CARD',
+      selector: { power: { propertyLayer: 'CURRENT', comparison: 'EQUAL', value: { kind: 'NUMBER', value: 5000 } } },
+    });
+  });
+
+  it('gates cost-0-or-high Character text with an OR condition', () => {
+    const parsed = parseCardEffect_V2(
+      'EB03-046',
+      '[On Play] If there is a Character with a cost of 0 or with a cost of 8 or more, draw 1 card.',
+    );
+
+    expect(parsed.effects[0]).toMatchObject({
+      conditions: {
+        kind: 'OR',
+        conditions: [
+          { left: { kind: 'COUNT', selector: { zones: ['CHARACTER_AREA'], cost: { comparison: 'EQUAL', value: { kind: 'NUMBER', value: 0 } } } } },
+          { left: { kind: 'COUNT', selector: { zones: ['CHARACTER_AREA'], cost: { comparison: 'AT_LEAST', value: { kind: 'NUMBER', value: 8 } } } } },
+        ],
+      },
+      resolution: { kind: 'ACTION', action: { type: 'DRAW_CARD' } },
+    });
+  });
+
+  it('keeps opponent-scoped cost-0-or-high Character gates opponent scoped', () => {
+    const parsed = parseCardEffect_V2(
+      'OP14-120',
+      '[On Play] Up to 1 of your opponent\'s Characters with a cost of 9 or less cannot attack until the end of your opponent\'s next End Phase. Then, if your opponent has a Character with a cost of 0 or with a cost of 8 or more, draw 1 card.',
+    );
+
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'SEQUENCE',
+      nodes: [
+        { kind: 'ACTION', action: { type: 'PREVENT_ACTION' } },
+        {
+          kind: 'IF',
+          condition: {
+            kind: 'OR',
+            conditions: [
+              { left: { kind: 'COUNT', selector: { controller: 'OPPONENT', cost: { comparison: 'EQUAL', value: { kind: 'NUMBER', value: 0 } } } } },
+              { left: { kind: 'COUNT', selector: { controller: 'OPPONENT', cost: { comparison: 'AT_LEAST', value: { kind: 'NUMBER', value: 8 } } } } },
+            ],
+          },
+          then: { kind: 'ACTION', action: { type: 'DRAW_CARD' } },
+        },
+      ],
+    });
+  });
+
+  it('splits branchy play-name-or-type text into choose-one play actions', () => {
+    const parsed = parseCardEffect_V2(
+      'OP15-073',
+      '[On Play] Play up to 1 [Heavenly Warriors] with a cost of 1 or up to 1 {Vassals} type Character card with a cost of 1 from your hand.',
+    );
+
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'CHOOSE',
+      options: [
+        { kind: 'ACTION', action: { type: 'PLAY_CARD', selector: { zones: ['HAND'], names: [{ kind: 'NAME_EXACT', value: 'Heavenly Warriors' }], cost: { comparison: 'EQUAL', value: { kind: 'NUMBER', value: 1 } } } } },
+        { kind: 'ACTION', action: { type: 'PLAY_CARD', selector: { zones: ['HAND'], types: { kind: 'HAS_ANY_TYPE', values: ['Vassals'] }, cost: { comparison: 'EQUAL', value: { kind: 'NUMBER', value: 1 } } } } },
+      ],
+      minimumChoices: 1,
+      maximumChoices: 1,
+    });
+  });
+
+  it('splits branchy play-except-name-or-named text without merging selectors', () => {
+    const parsed = parseCardEffect_V2(
+      'EB03-042',
+      '[Opponent\'s Turn] [On K.O.] Play up to 1 {Revolutionary Army} type Character card with a cost of 6 or less other than [Koala] or up to 1 [Nico Robin] with a cost of 6 or less from your hand or trash.',
+    );
+
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'CHOOSE',
+      options: [
+        { kind: 'ACTION', action: { type: 'PLAY_CARD', selector: { zones: ['HAND', 'TRASH'], types: { kind: 'HAS_ANY_TYPE', values: ['Revolutionary Army'] }, names: [{ kind: 'NAME_NOT', value: 'Koala' }] } } },
+        { kind: 'ACTION', action: { type: 'PLAY_CARD', selector: { zones: ['HAND', 'TRASH'], names: [{ kind: 'NAME_EXACT', value: 'Nico Robin' }] } } },
+      ],
+    });
+  });
+
+  it('splits branchy play-type-or-named text with shared filters', () => {
+    const parsed = parseCardEffect_V2(
+      'EB02-059',
+      '[Counter] Up to 1 of your Leader or Character cards gains +1000 power during this battle. Then, if you have 1 or less Life cards, play up to 1 of your yellow {Straw Hat Crew} type Character cards or [Sanji] with a cost of 5 or less from your hand.',
+    );
+
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'SEQUENCE',
+      nodes: [
+        { kind: 'ACTION', action: { type: 'MODIFY_POWER' } },
+        {
+          kind: 'IF',
+          then: {
+            kind: 'ACTION',
+            action: {
+              type: 'PLAYER_CHOOSES',
+            options: [
+                { kind: 'ACTION', action: { type: 'PLAY_CARD', selector: { zones: ['HAND'], types: { values: ['Straw Hat Crew'] }, colors: { values: ['YELLOW'] }, cost: { comparison: 'AT_MOST', value: { kind: 'NUMBER', value: 5 } } } } },
+                { kind: 'ACTION', action: { type: 'PLAY_CARD', selector: { zones: ['HAND'], names: [{ kind: 'NAME_EXACT', value: 'Sanji' }], cost: { comparison: 'AT_MOST', value: { kind: 'NUMBER', value: 5 } } } } },
+            ],
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it('parses dynamic DON-count cost filters in branchy play text', () => {
+    const parsed = parseCardEffect_V2(
+      'OP11-022',
+      '[Activate: Main] [Once Per Turn] You may rest 1 of your DON!! cards and turn 1 card from the top of your Life cards face-up: Play up to 1 {Neptunian} type Character card or [Megalo] with a cost equal to or less than the number of DON!! cards on your field from your hand.',
+    );
+
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'ACTION',
+      action: {
+        type: 'PLAYER_CHOOSES',
+        options: [
+          { kind: 'ACTION', action: { type: 'PLAY_CARD', selector: { types: { values: ['Neptunian'] }, cost: { comparison: 'AT_MOST', value: { kind: 'COUNT', selector: { subject: 'DON', zones: ['COST_AREA'] } } } } } },
+          { kind: 'ACTION', action: { type: 'PLAY_CARD', selector: { names: [{ kind: 'NAME_EXACT', value: 'Megalo' }], cost: { comparison: 'AT_MOST', value: { kind: 'COUNT', selector: { subject: 'DON', zones: ['COST_AREA'] } } } } } },
+        ],
+      },
+    });
+  });
+
   it('preserves without-counter filters in counter rule modifiers', () => {
     const parsed = parseCardEffect_V2(
       'EB01-001',
@@ -259,7 +414,7 @@ describe('effectCompiler_V2 parser', () => {
     expect(parsed.atomicEffects[0]).toMatchObject({
       coverage: 'coveredByParser',
       semanticStatus: 'needsAudit',
-      semanticIssues: ['Card movement/action selector has no source zone or prior-result relation.'],
+      semanticIssues: ['Selector references a previous selected/action-result card without a previous action binding.'],
     });
   });
 
@@ -346,6 +501,10 @@ describe('effectCompiler_V2 parser', () => {
       'EB02-013',
       '[On Play] If you have 3 or more DON!! cards on your field, look at 7 cards from the top of your deck; reveal up to 1 [Zou] and add it to your hand. Then, place the rest at the bottom of your deck in any order and play up to 1 [Zou] from your hand.',
     );
+    const directDeckSearch = parseCardEffect_V2(
+      'OP01-098',
+      '[On Play] Reveal up to 1 [Artificial Devil Fruit SMILE] from your deck and add it to your hand. Then, shuffle your deck.',
+    );
 
     expect(parsed.effects[0].optionality).toBe('MANDATORY');
     expect(parsed.effects[0].conditions).toMatchObject({
@@ -355,11 +514,24 @@ describe('effectCompiler_V2 parser', () => {
     });
     expect(parsed.atomicEffects[1].parsedAction).toMatchObject({
       type: 'MOVE_CARD',
-      selector: { names: [{ kind: 'NAME_EXACT', value: 'Zou' }] },
+      selector: {
+        subject: 'ACTION_RESULT',
+        relations: ['SELECTED_PREVIOUSLY'],
+        names: [{ kind: 'NAME_EXACT', value: 'Zou' }],
+      },
     });
     expect(parsed.atomicEffects[3].parsedAction).toMatchObject({
       type: 'PLAY_CARD',
       selector: { names: [{ kind: 'NAME_EXACT', value: 'Zou' }] },
+    });
+    expect(directDeckSearch.atomicEffects[0].parsedAction).toMatchObject({
+      type: 'MOVE_CARD',
+      selector: {
+        subject: 'CARD',
+        owner: 'PLAYER',
+        zones: ['DECK'],
+        names: [{ kind: 'NAME_EXACT', value: 'Artificial Devil Fruit SMILE' }],
+      },
     });
     expect(parsed.warnings).toEqual([]);
   });
@@ -374,6 +546,8 @@ describe('effectCompiler_V2 parser', () => {
     expect(parsed.atomicEffects[1].parsedAction).toMatchObject({
       type: 'MOVE_CARD',
       selector: {
+        subject: 'ACTION_RESULT',
+        relations: ['SELECTED_PREVIOUSLY'],
         types: { kind: 'HAS_ANY_TYPE', values: ['Straw Hat Crew'] },
         names: [{ kind: 'NAME_NOT', value: 'Nami' }],
       },
@@ -764,9 +938,19 @@ describe('effectCompiler_V2 parser', () => {
       'OP15-014',
       "If this Character would be K.O.'d, you may trash 1 Event from your hand instead.",
     );
+    const exactBasePower = parseCardEffect_V2(
+      'ST30-009',
+      "If your Character with 6000 base power would be removed from the field by your opponent's effect, you may trash this Character and draw 1 card instead.",
+    );
+    const namedExcludedLife = parseCardEffect_V2(
+      'OP11-101',
+      '[Blocker][Once Per Turn] If your {Supernovas} type Character other than [Capone"Gang"Bege] would be removed from the field by your opponent\'s effect, you may add it to the top of your Life cards face-down instead.',
+    );
+    const replacementAction = (parsed: ReturnType<typeof parseCardEffect_V2>) =>
+      parsed.atomicEffects.find((atom) => atom.parsedAction?.type === 'CREATE_REPLACEMENT_EFFECT')?.parsedAction;
 
-    for (const parsed of [leaderPower, restCards, returnDon, trashThis, lifeToHand]) {
-      expect(parsed.atomicEffects[0].parsedAction).toMatchObject({
+    for (const parsed of [leaderPower, restCards, returnDon, trashThis, lifeToHand, exactBasePower, namedExcludedLife]) {
+      expect(replacementAction(parsed)).toMatchObject({
         type: 'CREATE_REPLACEMENT_EFFECT',
         effect: {
           optionality: 'OPTIONAL',
@@ -788,16 +972,73 @@ describe('effectCompiler_V2 parser', () => {
       effect: { resolution: { kind: 'ACTION', action: { type: 'MODIFY_POWER' } } },
     });
     expect(restCards.atomicEffects[0].parsedAction).toMatchObject({
-      effect: { resolution: { kind: 'ACTION', action: { type: 'REST_CARD' } } },
+      effect: {
+        timing: {
+          subject: {
+            zones: ['CHARACTER_AREA'],
+            cardCategories: ['CHARACTER'],
+            quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } },
+            power: { propertyLayer: 'BASE', comparison: 'AT_MOST', value: { kind: 'NUMBER', value: 7000 } },
+          },
+        },
+        resolution: {
+          kind: 'ACTION',
+          action: {
+            type: 'REST_CARD',
+            selector: { quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 2 } } },
+          },
+        },
+      },
     });
     expect(returnDon.atomicEffects[0].parsedAction).toMatchObject({
       effect: { resolution: { kind: 'ACTION', action: { type: 'RETURN_DON_TO_DON_DECK' } } },
     });
     expect(trashThis.atomicEffects[0].parsedAction).toMatchObject({
-      effect: { resolution: { kind: 'ACTION', action: { type: 'TRASH_CARD' } } },
+      effect: {
+        timing: {
+          subject: {
+            zones: ['CHARACTER_AREA'],
+            cardCategories: ['CHARACTER'],
+            types: { kind: 'HAS_ANY_TYPE', values: ['Straw Hat Crew'] },
+            relations: ['EXCLUDE_THIS_CARD'],
+          },
+        },
+        resolution: { kind: 'ACTION', action: { type: 'TRASH_CARD' } },
+      },
     });
     expect(lifeToHand.atomicEffects[0].parsedAction).toMatchObject({
-      effect: { resolution: { kind: 'ACTION', action: { type: 'MOVE_CARD' } } },
+      effect: {
+        timing: {
+          subject: {
+            power: { propertyLayer: 'BASE', comparison: 'AT_MOST', value: { kind: 'NUMBER', value: 7000 } },
+          },
+        },
+        resolution: { kind: 'ACTION', action: { type: 'MOVE_CARD' } },
+      },
+    });
+    expect(exactBasePower.atomicEffects[0].parsedAction).toMatchObject({
+      effect: {
+        timing: {
+          subject: {
+            power: { propertyLayer: 'BASE', comparison: 'EQUAL', value: { kind: 'NUMBER', value: 6000 } },
+          },
+        },
+        resolution: { kind: 'SEQUENCE' },
+      },
+    });
+    expect(replacementAction(namedExcludedLife)).toMatchObject({
+      effect: {
+        timing: {
+          subject: {
+            zones: ['CHARACTER_AREA'],
+            cardCategories: ['CHARACTER'],
+            types: { kind: 'HAS_ANY_TYPE', values: ['Supernovas'] },
+            names: [{ kind: 'NAME_NOT', value: 'Capone"Gang"Bege' }],
+          },
+          sourceSelector: { subject: 'EFFECT', controller: 'OPPONENT' },
+        },
+        resolution: { kind: 'ACTION', action: { type: 'ADD_CARD_TO_LIFE' } },
+      },
     });
   });
 

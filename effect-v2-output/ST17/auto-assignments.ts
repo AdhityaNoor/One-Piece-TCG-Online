@@ -159,6 +159,12 @@ export const ST17_AUTO_ASSIGNMENTS_V2 = [
             "type": "MOVE_CARD",
             "selector": {
               "subject": "CARD",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
               "quantity": {
                 "kind": "UP_TO",
                 "value": {
@@ -166,7 +172,15 @@ export const ST17_AUTO_ASSIGNMENTS_V2 = [
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 4
+                }
+              }
             },
             "to": {
               "zone": "HAND",
@@ -240,15 +254,17 @@ export const ST17_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "REMAINDER_OF_PREVIOUS_SELECTION"
+                ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1
                   }
-                },
-                "chooser": "EFFECT_OWNER"
+                }
               },
               "to": {
                 "zone": "DECK",

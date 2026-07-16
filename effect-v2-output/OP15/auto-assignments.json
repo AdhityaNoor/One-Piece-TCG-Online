@@ -1128,11 +1128,9 @@
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
@@ -1145,7 +1143,7 @@
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -1459,7 +1457,7 @@
             "chooser": "EFFECT_OWNER",
             "power": {
               "propertyLayer": "BASE",
-              "comparison": "EQUAL",
+              "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
                 "value": 6000
@@ -3200,6 +3198,15 @@
               "type": "PREVENT_ACTION",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "states": [
+                  "RESTED"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -3284,7 +3291,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -3299,16 +3305,16 @@
                     "East Blue"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "colors": {
                   "kind": "HAS_ANY_COLOR",
                   "values": [
                     "BLUE"
                   ]
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",
@@ -4155,24 +4161,22 @@
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
-                    "value": 2
+                    "value": 1
                   }
                 },
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -4327,7 +4331,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -4348,16 +4351,16 @@
                     "value": "The Outcome Will Tell Us Who's Strong and Who's Weak"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "colors": {
                   "kind": "HAS_ANY_COLOR",
                   "values": [
                     "BLUE"
                   ]
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",
@@ -4701,6 +4704,14 @@
               "values": [
                 "Dressrosa"
               ]
+            },
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
             }
           },
           "player": "PLAYER"
@@ -4770,7 +4781,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -4785,9 +4795,9 @@
                     "Dressrosa"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -5251,7 +5261,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -5266,9 +5275,9 @@
                     "Dressrosa"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -6040,7 +6049,7 @@
               "eventType": "CARD_WOULD_MOVE",
               "subject": {
                 "subject": "CARD",
-                "controller": "OPPONENT",
+                "controller": "PLAYER",
                 "zones": [
                   "CHARACTER_AREA"
                 ],
@@ -6057,7 +6066,7 @@
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -6227,7 +6236,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -6242,9 +6250,9 @@
                     "Dressrosa"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -6423,6 +6431,12 @@
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "STAGE_AREA"
+                ],
+                "cardCategories": [
+                  "STAGE"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -8336,11 +8350,9 @@
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
@@ -8353,7 +8365,7 @@
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -8853,43 +8865,91 @@
       },
       "optionality": "MANDATORY",
       "resolution": {
-        "kind": "ACTION",
-        "action": {
-          "type": "PLAY_CARD",
-          "selector": {
-            "subject": "CARD",
-            "owner": "PLAYER",
-            "zones": [
-              "HAND"
-            ],
-            "quantity": {
-              "kind": "UP_TO",
-              "value": {
-                "kind": "NUMBER",
-                "value": 1
-              }
+        "kind": "CHOOSE",
+        "chooser": "PLAYER",
+        "options": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PLAY_CARD",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Heavenly Warriors"
+                  }
+                ],
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                }
+              },
+              "player": "PLAYER"
             },
-            "chooser": "EFFECT_OWNER",
-            "names": [
-              {
-                "kind": "NAME_EXACT",
-                "value": "Heavenly Warriors"
-              }
-            ],
-            "types": {
-              "kind": "HAS_ANY_TYPE",
-              "values": [
-                "Vassals"
-              ]
-            }
+            "actionId": "OP15-073#1.0"
           },
-          "player": "PLAYER"
-        },
-        "actionId": "OP15-073#1.0"
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PLAY_CARD",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "Vassals"
+                  ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                }
+              },
+              "player": "PLAYER"
+            },
+            "actionId": "OP15-073#1.1"
+          }
+        ],
+        "minimumChoices": 1,
+        "maximumChoices": 1
       }
     },
     "coveredAtomicEffectIds": [
-      "OP15-073#1.0"
+      "OP15-073#1.0",
+      "OP15-073#1.1"
     ]
   },
   {
@@ -10806,6 +10866,12 @@
               "type": "GRANT_KEYWORD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
@@ -11186,11 +11252,9 @@
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
@@ -11203,7 +11267,7 @@
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -11723,8 +11787,11 @@
               "eventType": "CARD_WOULD_MOVE",
               "subject": {
                 "subject": "CARD",
-                "relations": [
-                  "THIS_CARD"
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
@@ -11733,7 +11800,16 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "Straw Hat Crew"
+                  ]
+                },
+                "relations": [
+                  "EXCLUDE_THIS_CARD"
+                ]
               },
               "fromZone": "CHARACTER_AREA",
               "sourceSelector": {
@@ -12392,6 +12468,12 @@
               "eventType": "CARD_WOULD_MOVE",
               "subject": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
@@ -12405,9 +12487,28 @@
                   "values": [
                     "Sky Island"
                   ]
+                },
+                "power": {
+                  "propertyLayer": "BASE",
+                  "comparison": "AT_LEAST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 6000
+                  }
                 }
               },
-              "fromZone": "CHARACTER_AREA"
+              "fromZone": "CHARACTER_AREA",
+              "conditions": {
+                "kind": "PREDICATE",
+                "left": {
+                  "kind": "MOVE_CAUSE"
+                },
+                "operator": "EQUAL",
+                "right": {
+                  "kind": "STRING",
+                  "value": "EFFECT"
+                }
+              }
             }
           },
           "duration": {
@@ -12784,7 +12885,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -12805,9 +12905,9 @@
                     "value": "Mont Blanc Noland"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -13329,11 +13429,9 @@
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
@@ -13346,7 +13444,7 @@
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -13524,7 +13622,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -13539,9 +13636,9 @@
                     "Sky Island"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {

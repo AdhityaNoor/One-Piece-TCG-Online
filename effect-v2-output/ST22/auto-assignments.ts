@@ -129,7 +129,6 @@ export const ST22_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -150,9 +149,9 @@ export const ST22_AUTO_ASSIGNMENTS_V2 = [
                     "value": "Izo"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -1651,6 +1650,12 @@ export const ST22_AUTO_ASSIGNMENTS_V2 = [
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1658,7 +1663,15 @@ export const ST22_AUTO_ASSIGNMENTS_V2 = [
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
+                  }
+                }
               },
               "to": {
                 "zone": "DECK",
@@ -1706,6 +1719,12 @@ export const ST22_AUTO_ASSIGNMENTS_V2 = [
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -1713,7 +1732,15 @@ export const ST22_AUTO_ASSIGNMENTS_V2 = [
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
+            }
           },
           "to": {
             "zone": "HAND",

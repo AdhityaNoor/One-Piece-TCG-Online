@@ -111,7 +111,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 8000
+                }
+              }
             }
           }
         ],
@@ -278,7 +286,15 @@
                   "value": 2
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 8000
+                }
+              }
             }
           }
         ],
@@ -542,7 +558,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 8000
+                }
+              }
             }
           }
         ],
@@ -756,7 +780,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 8000
+                }
+              }
             }
           }
         ],
@@ -869,7 +901,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 8000
+                }
+              }
             }
           }
         ],
@@ -900,7 +940,7 @@
             "chooser": "EFFECT_OWNER",
             "power": {
               "propertyLayer": "BASE",
-              "comparison": "EQUAL",
+              "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
                 "value": 2000
@@ -955,7 +995,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 8000
+                }
+              }
             }
           }
         ],
@@ -1051,7 +1099,7 @@
             "chooser": "EFFECT_OWNER",
             "power": {
               "propertyLayer": "BASE",
-              "comparison": "EQUAL",
+              "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
                 "value": 2000
@@ -1246,7 +1294,7 @@
             "chooser": "EFFECT_OWNER",
             "power": {
               "propertyLayer": "BASE",
-              "comparison": "EQUAL",
+              "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
                 "value": 8000
@@ -1333,7 +1381,7 @@
               "eventType": "CARD_WOULD_MOVE",
               "subject": {
                 "subject": "CARD",
-                "controller": "OPPONENT",
+                "controller": "PLAYER",
                 "zones": [
                   "CHARACTER_AREA"
                 ],
@@ -1419,7 +1467,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 8000
+                }
+              }
             }
           }
         ],
@@ -1551,7 +1607,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 8000
+                }
+              }
             }
           }
         ],
@@ -1778,6 +1842,12 @@
               "eventType": "CARD_WOULD_BE_KO",
               "subject": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
@@ -1790,6 +1860,12 @@
                   "kind": "HAS_ANY_TYPE",
                   "values": [
                     "Red-Haired Pirates"
+                  ]
+                },
+                "colors": {
+                  "kind": "HAS_ANY_COLOR",
+                  "values": [
+                    "RED"
                   ]
                 }
               }
@@ -1964,7 +2040,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 8000
+                }
+              }
             }
           }
         ],
@@ -2597,7 +2681,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -2612,9 +2695,9 @@
                     "Impel Down"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -3455,7 +3538,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -3470,9 +3552,9 @@
                     "Impel Down"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -3899,11 +3981,9 @@
             "subject": "CARD",
             "controller": "PLAYER",
             "zones": [
-              "LEADER_AREA",
               "CHARACTER_AREA"
             ],
             "cardCategories": [
-              "LEADER",
               "CHARACTER"
             ],
             "quantity": {
@@ -6228,7 +6308,10 @@
             "action": {
               "type": "PLAY_CARD",
               "selector": {
-                "subject": "CARD",
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -6242,6 +6325,14 @@
                   "values": [
                     "Impel Down"
                   ]
+                },
+                "power": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 6000
+                  }
                 }
               },
               "player": "PLAYER"
@@ -6588,7 +6679,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -6609,9 +6699,9 @@
                     "value": "Koby"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -6987,7 +7077,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -7002,9 +7091,9 @@
                     "Navy"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -7522,7 +7611,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -7537,9 +7625,9 @@
                     "Impel Down"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -8154,7 +8242,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -8169,9 +8256,9 @@
                     "Navy"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -8294,7 +8381,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -8309,9 +8395,9 @@
                     "Navy"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -8450,16 +8536,43 @@
     "status": "ASSIGNED",
     "printedText": "When a {Land of Wano} type Character card is played from your trash, that Character gains [Rush] during this turn.(This card can attack on the turn in which it is played.)",
     "effect": {
-      "category": "PERMANENT",
-      "applicationMode": "CONTINUOUS",
+      "category": "AUTO",
+      "applicationMode": "ONE_SHOT",
       "activationZones": [
         "LEADER_AREA",
         "CHARACTER_AREA",
-        "STAGE_AREA"
+        "STAGE_AREA",
+        "HAND",
+        "LIFE",
+        "TRASH"
       ],
       "timing": {
-        "kind": "STANDARD_TIMING",
-        "timing": "ON_ENTER_PLAY"
+        "kind": "CUSTOM_EVENT",
+        "eventType": "CARD_PLAYED",
+        "actor": "PLAYER",
+        "subject": {
+          "subject": "CARD",
+          "owner": "PLAYER",
+          "zones": [
+            "TRASH"
+          ],
+          "cardCategories": [
+            "CHARACTER"
+          ],
+          "types": {
+            "kind": "HAS_ANY_TYPE",
+            "values": [
+              "Land of Wano"
+            ]
+          },
+          "quantity": {
+            "kind": "EXACTLY",
+            "value": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          }
+        }
       },
       "optionality": "MANDATORY",
       "resolution": {
@@ -8852,7 +8965,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -8867,9 +8979,9 @@
                     "Land of Wano"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -9116,7 +9228,15 @@
                   "kind": "NAME_EXACT",
                   "value": "Kouzuki Momonosuke"
                 }
-              ]
+              ],
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 9
+                }
+              }
             },
             "player": "PLAYER"
           },
@@ -9717,7 +9837,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -9738,9 +9857,9 @@
                     "value": "Nami"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -10515,6 +10634,14 @@
               "values": [
                 "BLACK"
               ]
+            },
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 8
+              }
             }
           },
           "player": "PLAYER"
@@ -11050,7 +11177,8 @@
                 "subject": "CARD",
                 "owner": "PLAYER",
                 "zones": [
-                  "HAND"
+                  "HAND",
+                  "TRASH"
                 ],
                 "quantity": {
                   "kind": "UP_TO",
@@ -11466,6 +11594,14 @@
                   "values": [
                     "Blackbeard Pirates"
                   ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
                 }
               },
               "player": "PLAYER"
@@ -13064,7 +13200,15 @@
             "quantity": {
               "kind": "ALL"
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "power": {
+              "propertyLayer": "CURRENT",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 8000
+              }
+            }
           },
           "propertyLayer": "CURRENT_VALUE",
           "operation": "SET",
@@ -13140,7 +13284,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -13161,9 +13304,9 @@
                     "value": "Monkey.D.Luffy"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {

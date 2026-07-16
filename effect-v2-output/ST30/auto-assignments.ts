@@ -182,7 +182,9 @@ export const ST30_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -191,9 +193,17 @@ export const ST30_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "power": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 6000
+                  }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -345,7 +355,15 @@ export const ST30_AUTO_ASSIGNMENTS_V2 = [
                   "value": 2
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 6000
+                }
+              }
             }
           }
         ],
@@ -438,7 +456,15 @@ export const ST30_AUTO_ASSIGNMENTS_V2 = [
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 6000
+                }
+              }
             }
           }
         ],
@@ -678,7 +704,15 @@ export const ST30_AUTO_ASSIGNMENTS_V2 = [
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "power": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 6000
+                }
+              }
             }
           }
         ],
@@ -808,7 +842,7 @@ export const ST30_AUTO_ASSIGNMENTS_V2 = [
               "eventType": "CARD_WOULD_MOVE",
               "subject": {
                 "subject": "CARD",
-                "controller": "OPPONENT",
+                "controller": "PLAYER",
                 "zones": [
                   "CHARACTER_AREA"
                 ],
@@ -1041,7 +1075,7 @@ export const ST30_AUTO_ASSIGNMENTS_V2 = [
               "eventType": "CARD_WOULD_MOVE",
               "subject": {
                 "subject": "CARD",
-                "controller": "OPPONENT",
+                "controller": "PLAYER",
                 "zones": [
                   "CHARACTER_AREA"
                 ],
@@ -1717,7 +1751,9 @@ export const ST30_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1726,9 +1762,17 @@ export const ST30_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "power": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 6000
+                  }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {

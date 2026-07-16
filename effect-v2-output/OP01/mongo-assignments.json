@@ -278,6 +278,12 @@
               "type": "SET_CARD_ACTIVE",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -292,6 +298,14 @@
                     "Straw Hat Crew",
                     "Supernovas"
                   ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
+                  }
                 }
               }
             },
@@ -1494,7 +1508,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1515,9 +1528,9 @@
                     "value": "Nami"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -2973,7 +2986,9 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -2988,9 +3003,9 @@
                     "Straw Hat Crew"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -4183,6 +4198,12 @@
           "type": "SET_CARD_ACTIVE",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -4196,6 +4217,14 @@
               "values": [
                 "The Akazaya Nine"
               ]
+            },
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
             }
           }
         },
@@ -4314,7 +4343,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -4329,9 +4357,9 @@
                     "Land of Wano"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -4465,6 +4493,12 @@
             "type": "SET_CARD_ACTIVE",
             "selector": {
               "subject": "CARD",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
               "quantity": {
                 "kind": "UP_TO",
                 "value": {
@@ -4478,6 +4512,14 @@
                 "values": [
                   "Land of Wano"
                 ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 3
+                }
               }
             }
           },
@@ -6321,6 +6363,12 @@
           "type": "SET_CARD_ACTIVE",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -6334,6 +6382,14 @@
               "values": [
                 "Land of Wano"
               ]
+            },
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
             }
           }
         },
@@ -6813,6 +6869,10 @@
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "owner": "OPPONENT",
+                "zones": [
+                  "LIFE"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -6824,7 +6884,7 @@
               },
               "to": {
                 "zone": "DECK",
-                "owner": "OPPONENT",
+                "owner": "CARD_OWNER",
                 "position": "BOTTOM"
               },
               "cause": "EFFECT"
@@ -7293,6 +7353,12 @@
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -7300,7 +7366,15 @@
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 7
+              }
+            }
           },
           "to": {
             "zone": "DECK",
@@ -7364,6 +7438,12 @@
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -7371,7 +7451,15 @@
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
+            }
           },
           "to": {
             "zone": "DECK",
@@ -8850,7 +8938,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -8865,9 +8952,9 @@
                     "Baroque Works"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -9135,6 +9222,15 @@
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "states": [
+                  "ACTIVE"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -9142,7 +9238,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 3
+                  }
+                }
               },
               "to": {
                 "zone": "HAND",
@@ -9207,6 +9311,12 @@
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -9214,7 +9324,15 @@
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 4
+              }
+            }
           },
           "to": {
             "zone": "HAND",
@@ -9681,6 +9799,12 @@
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -9688,7 +9812,15 @@
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 5
+              }
+            }
           },
           "to": {
             "zone": "HAND",
@@ -9780,7 +9912,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -9801,9 +9932,9 @@
                     "value": "Baroque Works"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -10099,15 +10230,14 @@
             "type": "KO_CARD",
             "selector": {
               "subject": "CARD",
-              "relations": [
-                "THIS_CARD"
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
               ],
               "quantity": {
-                "kind": "EXACTLY",
-                "value": {
-                  "kind": "NUMBER",
-                  "value": 1
-                }
+                "kind": "ALL"
               },
               "chooser": "EFFECT_OWNER"
             },
@@ -10547,6 +10677,12 @@
           "type": "PREVENT_ACTION",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "EXACTLY",
               "value": {
@@ -10555,18 +10691,18 @@
               }
             },
             "chooser": "EFFECT_OWNER",
-            "types": {
-              "kind": "HAS_ANY_TYPE",
-              "values": [
-                "Kurozumi Clan"
-              ]
-            },
             "names": [
               {
                 "kind": "NAME_EXACT",
                 "value": "Kurozumi Semimaru"
               }
-            ]
+            ],
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "Kurozumi Clan"
+              ]
+            }
           },
           "action": "KO_CARD",
           "causeFilter": "BATTLE",
@@ -12016,7 +12152,10 @@
             "action": {
               "type": "PLAY_CARD",
               "selector": {
-                "subject": "CARD",
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -12030,6 +12169,14 @@
                   "values": [
                     "SMILE"
                   ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 3
+                  }
                 }
               },
               "player": "PLAYER"

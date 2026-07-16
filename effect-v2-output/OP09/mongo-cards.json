@@ -244,7 +244,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -259,16 +258,16 @@
                       "Red-Haired Pirates"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
-                  ],
                   "colors": {
                     "kind": "HAS_ANY_COLOR",
                     "values": [
                       "RED"
                     ]
-                  }
+                  },
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ]
                 },
                 "to": {
                   "zone": "HAND",
@@ -371,7 +370,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -386,16 +384,16 @@
                         "Red-Haired Pirates"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
-                    ],
                     "colors": {
                       "kind": "HAS_ANY_COLOR",
                       "values": [
                         "RED"
                       ]
-                    }
+                    },
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ]
                   },
                   "to": {
                     "zone": "HAND",
@@ -2768,8 +2766,12 @@
                 "eventType": "CARD_WOULD_BE_KO",
                 "subject": {
                   "subject": "CARD",
-                  "relations": [
-                    "THIS_CARD"
+                  "controller": "PLAYER",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
                   ],
                   "quantity": {
                     "kind": "EXACTLY",
@@ -2778,7 +2780,13 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "names": [
+                    {
+                      "kind": "NAME_EXACT",
+                      "value": "Bonk Punch"
+                    }
+                  ]
                 },
                 "conditions": {
                   "kind": "PREDICATE",
@@ -2882,8 +2890,12 @@
                   "eventType": "CARD_WOULD_BE_KO",
                   "subject": {
                     "subject": "CARD",
-                    "relations": [
-                      "THIS_CARD"
+                    "controller": "PLAYER",
+                    "zones": [
+                      "CHARACTER_AREA"
+                    ],
+                    "cardCategories": [
+                      "CHARACTER"
                     ],
                     "quantity": {
                       "kind": "EXACTLY",
@@ -2892,7 +2904,13 @@
                         "value": 1
                       }
                     },
-                    "chooser": "EFFECT_OWNER"
+                    "chooser": "EFFECT_OWNER",
+                    "names": [
+                      {
+                        "kind": "NAME_EXACT",
+                        "value": "Bonk Punch"
+                      }
+                    ]
                   },
                   "conditions": {
                     "kind": "PREDICATE",
@@ -3645,15 +3663,7 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER",
-              "power": {
-                "propertyLayer": "BASE",
-                "comparison": "EQUAL",
-                "value": {
-                  "kind": "NUMBER",
-                  "value": 6000
-                }
-              }
+              "chooser": "EFFECT_OWNER"
             },
             "cause": "EFFECT"
           },
@@ -3792,15 +3802,7 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER",
-                "power": {
-                  "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
-                  "value": {
-                    "kind": "NUMBER",
-                    "value": 6000
-                  }
-                }
+                "chooser": "EFFECT_OWNER"
               },
               "cause": "EFFECT"
             },
@@ -4634,7 +4636,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -4655,16 +4656,16 @@
                       "value": "Come On!! We'll Fight You!!"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
-                  ],
                   "colors": {
                     "kind": "HAS_ANY_COLOR",
                     "values": [
                       "RED"
                     ]
-                  }
+                  },
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ]
                 },
                 "to": {
                   "zone": "HAND",
@@ -4811,7 +4812,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -4832,16 +4832,16 @@
                         "value": "Come On!! We'll Fight You!!"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
-                    ],
                     "colors": {
                       "kind": "HAS_ANY_COLOR",
                       "values": [
                         "RED"
                       ]
-                    }
+                    },
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ]
                   },
                   "to": {
                     "zone": "HAND",
@@ -8325,7 +8325,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -8346,9 +8345,9 @@
                       "value": "Dracule Mihawk"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -8475,7 +8474,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -8496,9 +8494,9 @@
                         "value": "Dracule Mihawk"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -9046,7 +9044,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -9067,9 +9064,9 @@
                       "value": "Lim"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -9228,7 +9225,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -9249,9 +9245,9 @@
                         "value": "Lim"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -11190,7 +11186,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -11206,9 +11201,9 @@
                       "Whitebeard Pirates"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -11335,7 +11330,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -11351,9 +11345,9 @@
                         "Whitebeard Pirates"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -12654,7 +12648,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -12663,16 +12656,16 @@
                     }
                   },
                   "chooser": "EFFECT_OWNER",
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
-                  ],
                   "colors": {
                     "kind": "HAS_ANY_COLOR",
                     "values": [
                       "BLUE"
                     ]
-                  }
+                  },
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ]
                 },
                 "to": {
                   "zone": "HAND",
@@ -12775,7 +12768,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -12784,16 +12776,16 @@
                       }
                     },
                     "chooser": "EFFECT_OWNER",
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
-                    ],
                     "colors": {
                       "kind": "HAS_ANY_COLOR",
                       "values": [
                         "BLUE"
                       ]
-                    }
+                    },
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ]
                   },
                   "to": {
                     "zone": "HAND",
@@ -13483,7 +13475,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -13498,9 +13489,9 @@
                       "value": "Richie"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -13633,7 +13624,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -13648,9 +13638,9 @@
                         "value": "Richie"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -14055,7 +14045,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -14077,9 +14066,9 @@
                       "value": "Mr.3"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -14183,7 +14172,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -14205,9 +14193,9 @@
                         "value": "Mr.3"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -14388,7 +14376,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -14403,9 +14390,9 @@
                       "Cross Guild"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -14563,7 +14550,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -14578,9 +14564,9 @@
                         "Cross Guild"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -14868,6 +14854,12 @@
             "type": "MOVE_CARD",
             "selector": {
               "subject": "CARD",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
               "quantity": {
                 "kind": "UP_TO",
                 "value": {
@@ -14875,7 +14867,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 3
+                }
+              }
             },
             "to": {
               "zone": "HAND",
@@ -14984,6 +14984,12 @@
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -14991,7 +14997,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 3
+                  }
+                }
               },
               "to": {
                 "zone": "HAND",
@@ -15015,10 +15029,10 @@
       "parserRecognizedAtomicEffects": 2,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 2,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 2,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -15045,12 +15059,9 @@
           "atomIndex": 0,
           "rawText": "Return up to 1 Character with a cost of 3 or less to the owner's hand.",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:OP09-058:1"
           ],
@@ -15059,8 +15070,7 @@
             "ADD_CARD_TO_HAND"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         }
       ]
     }
@@ -17670,7 +17680,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -17686,10 +17695,6 @@
                       "Straw Hat Crew"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
-                  ],
                   "cost": {
                     "propertyLayer": "CURRENT",
                     "comparison": "AT_LEAST",
@@ -17697,7 +17702,11 @@
                       "kind": "NUMBER",
                       "value": 2
                     }
-                  }
+                  },
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ]
                 },
                 "to": {
                   "zone": "HAND",
@@ -17800,7 +17809,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -17816,10 +17824,6 @@
                         "Straw Hat Crew"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
-                    ],
                     "cost": {
                       "propertyLayer": "CURRENT",
                       "comparison": "AT_LEAST",
@@ -17827,7 +17831,11 @@
                         "kind": "NUMBER",
                         "value": 2
                       }
-                    }
+                    },
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ]
                   },
                   "to": {
                     "zone": "HAND",
@@ -24565,7 +24573,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -24580,9 +24587,9 @@
                       "Blackbeard Pirates"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -24714,7 +24721,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -24729,9 +24735,9 @@
                         "Blackbeard Pirates"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -24932,7 +24938,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -24953,9 +24958,9 @@
                       "value": "My Era...Begins!!"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -25108,7 +25113,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -25129,9 +25133,9 @@
                         "value": "My Era...Begins!!"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -26244,7 +26248,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -26259,9 +26262,9 @@
                       "Blackbeard Pirates"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -26404,7 +26407,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -26419,9 +26421,9 @@
                         "Blackbeard Pirates"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -27242,7 +27244,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -27251,9 +27252,9 @@
                     }
                   },
                   "chooser": "EFFECT_OWNER",
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -27443,7 +27444,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -27452,9 +27452,9 @@
                       }
                     },
                     "chooser": "EFFECT_OWNER",
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -31949,7 +31949,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -31964,9 +31963,9 @@
                       "value": "Dereshi!"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -32114,7 +32113,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -32129,9 +32127,9 @@
                         "value": "Dereshi!"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {

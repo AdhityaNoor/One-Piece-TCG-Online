@@ -340,7 +340,6 @@ export const ST18_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -355,16 +354,16 @@ export const ST18_AUTO_ASSIGNMENTS_V2 = [
                     "Straw Hat Crew"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "colors": {
                   "kind": "HAS_ANY_COLOR",
                   "values": [
                     "PURPLE"
                   ]
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",

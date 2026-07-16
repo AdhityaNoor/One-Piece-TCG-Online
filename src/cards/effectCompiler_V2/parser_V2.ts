@@ -28,6 +28,7 @@ import {
   type EffectCategory_V2,
   type EffectDefinition_V2,
   type KeywordEffect_V2,
+  type NumericComparison_V2,
   type ParsedAtomicEffect_V2,
   type ParsedEffect_V2,
   type ResolutionNode_V2,
@@ -575,6 +576,59 @@ function buildAlternateResolutionEffect_V2(
     };
   };
 
+  const playEitherFromSource = body.match(/^play up to (\d+) (.+?) or up to (\d+) (.+) from your (hand(?: or trash)?)/i);
+  if (playEitherFromSource) {
+    const sourceText = `from your ${playEitherFromSource[5]}`;
+    const firstText = `Play up to ${playEitherFromSource[1]} ${playEitherFromSource[2]} ${sourceText}.`;
+    const secondText = `Play up to ${playEitherFromSource[3]} ${playEitherFromSource[4]} ${sourceText}.`;
+    const firstAction = parseAtomicAction_V2(firstText).action;
+    const secondAction = parseAtomicAction_V2(secondText).action;
+    if (firstAction?.type === 'PLAY_CARD' && secondAction?.type === 'PLAY_CARD') {
+      const firstAtom = parsedAtomForAction_V2(cardNumber, effectIndex, 0, tags, firstText, firstAction);
+      const secondAtom = parsedAtomForAction_V2(cardNumber, effectIndex, 1, tags, secondText, secondAction);
+      return {
+        effect: baseEffect({
+          kind: 'CHOOSE',
+          chooser: 'PLAYER',
+          options: [
+            actionNode_V2(firstAction, firstAtom.id),
+            actionNode_V2(secondAction, secondAtom.id),
+          ],
+          minimumChoices: 1,
+          maximumChoices: 1,
+        }),
+        atoms: [firstAtom, secondAtom],
+      };
+    }
+  }
+
+  const playTypeOrNamedFromSource = body.match(/^play up to (\d+) (.+?) or \[([^\]]+)\] with (a cost .+) from your (hand(?: or trash)?)/i);
+  if (playTypeOrNamedFromSource) {
+    const sourceText = `from your ${playTypeOrNamedFromSource[5]}`;
+    const sharedFilter = `with ${playTypeOrNamedFromSource[4]}`;
+    const firstText = `Play up to ${playTypeOrNamedFromSource[1]} ${playTypeOrNamedFromSource[2]} ${sharedFilter} ${sourceText}.`;
+    const secondText = `Play up to ${playTypeOrNamedFromSource[1]} [${playTypeOrNamedFromSource[3]}] ${sharedFilter} ${sourceText}.`;
+    const firstAction = parseAtomicAction_V2(firstText).action;
+    const secondAction = parseAtomicAction_V2(secondText).action;
+    if (firstAction?.type === 'PLAY_CARD' && secondAction?.type === 'PLAY_CARD') {
+      const firstAtom = parsedAtomForAction_V2(cardNumber, effectIndex, 0, tags, firstText, firstAction);
+      const secondAtom = parsedAtomForAction_V2(cardNumber, effectIndex, 1, tags, secondText, secondAction);
+      return {
+        effect: baseEffect({
+          kind: 'CHOOSE',
+          chooser: 'PLAYER',
+          options: [
+            actionNode_V2(firstAction, firstAtom.id),
+            actionNode_V2(secondAction, secondAtom.id),
+          ],
+          minimumChoices: 1,
+          maximumChoices: 1,
+        }),
+        atoms: [firstAtom, secondAtom],
+      };
+    }
+  }
+
   if (/instead of drawing 1 card/.test(lower) && /total of 4 or less cards in your life area and hand/.test(lower)) {
     const drawAction: Action_V2 = { type: 'DRAW_CARD', player: 'PLAYER', count: numberValue_V2(1) };
     const lifeAction: Action_V2 = {
@@ -635,22 +689,28 @@ function generatedEffectDefinition_V2(id: string, action: Action_V2, printedText
   };
 }
 
+function replacementConditionText_V2(text: string): string {
+  const condition = text.match(/\bif\b(.+?)\byou may\b/i);
+  return condition ? `If ${collapseSpaces_V2(condition[1])}` : text;
+}
+
 function replacementTimingEvent_V2(eventType: 'CARD_WOULD_BE_KO' | 'CARD_WOULD_MOVE' | 'CARD_WOULD_REST', text: string): TimingExpression_V2 {
-  const sourceSelector = preventionSourceSelectorFromText_V2(text);
-  const effectCause = /by .*effects?|opponent'?s effects?|opponent'?s effect/i.test(text);
+  const conditionText = replacementConditionText_V2(text);
+  const sourceSelector = preventionSourceSelectorFromText_V2(conditionText);
+  const effectCause = /by .*effects?|opponent'?s effects?|opponent'?s effect|by your opponent\b/i.test(conditionText);
   const eventCause =
     eventType === 'CARD_WOULD_BE_KO'
-      ? /would be (?:ko'?d|k\.o\.'?d)[^.]*by .*effects?/i.test(text)
+      ? /would be (?:ko'?d|k\.o\.'?d)[^.]*by .*effects?/i.test(conditionText)
       : eventType === 'CARD_WOULD_REST'
-        ? /\bwould be rested\b/i.test(text) && effectCause
+        ? /\bwould be rested\b/i.test(conditionText) && effectCause
         : effectCause;
   return {
     kind: 'CUSTOM_EVENT',
     eventType,
-    subject: selectorFromText_V2(text),
+    subject: selectorFromText_V2(conditionText),
     ...(eventType === 'CARD_WOULD_MOVE' ? { fromZone: 'CHARACTER_AREA' as const } : {}),
     ...(eventCause && sourceSelector ? { sourceSelector } : {}),
-    conditions: /in battle/i.test(text) && eventType === 'CARD_WOULD_BE_KO'
+    conditions: /in battle/i.test(conditionText) && eventType === 'CARD_WOULD_BE_KO'
       ? {
           kind: 'PREDICATE',
           left: { kind: 'KO_CAUSE' },
@@ -743,7 +803,7 @@ function selectorFromText_V2(text: string): Selector_V2 {
     }
     return withEachLeaderAndCharacterLimit_V2(selector, text);
   }
-  if (/\bthis (?:card|character|leader) would\b/i.test(text)) return selfSelector_V2();
+  if (/\bthis (?:card|character|leader) would\b/i.test(text) && !/\bother than this Character\b/i.test(text)) return selfSelector_V2();
   if (/\b(?:all of your|your) opponent'?s? .*characters?|opponent'?s? leader|opponent'?s? character/i.test(text)) {
     if (/leader (?:or|and) character/i.test(text)) return leaderOrCharacterSelector_V2('OPPONENT', quantity);
     if (/opponent'?s Leader\b/i.test(text) && !/character/i.test(text)) {
@@ -758,12 +818,29 @@ function selectorFromText_V2(text: string): Selector_V2 {
     }
     return withTextFilters_V2(opponentCharacterSelector_V2(quantity), text);
   }
-  if (/this (card|character|leader)/i.test(text)) return selfSelector_V2();
+  if (/this (card|character|leader)/i.test(text) && !/\bother than this Character\b/i.test(text)) return selfSelector_V2();
   if (/\bthat (?:card|character)\b/i.test(text)) return { subject: 'ACTION_RESULT', relations: ['PREVIOUS_ACTION_TARGET'], quantity: exactly_V2(1) };
+  if (/\brevealed cards?\b/i.test(text)) return { subject: 'ACTION_RESULT', relations: ['PREVIOUS_ACTION_TARGET'], quantity };
+  if (/\b(?:the rest|the remainder|them)\b/i.test(text) && /\b(?:top|bottom) of (?:your|the owner'?s|their) deck\b/i.test(text)) {
+    return { subject: 'ACTION_RESULT', relations: ['REMAINDER_OF_PREVIOUS_SELECTION'], quantity };
+  }
   if (/^it gains\b/i.test(collapseSpaces_V2(text))) return { subject: 'ACTION_RESULT', relations: ['PREVIOUS_ACTION_TARGET'], quantity: exactly_V2(1) };
   if (/\bthe selected Character will not become active\b/i.test(text)) return { subject: 'ACTION_RESULT', relations: ['PREVIOUS_ACTION_TARGET'], quantity: exactly_V2(1) };
   if (/\bselected (?:card|character|characters|cards)\b|\bchosen character\b|\bKO it\b|\bK\.O\. it\b/i.test(text)) {
     return { subject: 'ACTION_RESULT', relations: ['SELECTED_PREVIOUSLY'], quantity: exactly_V2(1) };
+  }
+  if (/\b(?:any of your|one of your|your) Characters?\b/i.test(text) && !/\bLeader (?:or|and) Character\b/i.test(text) && !/\bCharacter cards? from\b/i.test(text)) {
+    const selector = withTextFilters_V2({
+      subject: 'CARD',
+      controller: 'PLAYER',
+      zones: ['CHARACTER_AREA'],
+      cardCategories: ['CHARACTER'],
+      quantity,
+      chooser: 'EFFECT_OWNER',
+    }, text);
+    return /\bother than this Character\b/i.test(text)
+      ? { ...selector, relations: [...(selector.relations ?? []), 'EXCLUDE_THIS_CARD'] }
+      : selector;
   }
   if (/\b(?:your |this )?Leader(?:'s)?\b/i.test(text) && /\b(?:and|or)\b.*\bCharacters?\b|\bCharacters?\b.*\b(?:and|or)\b.*\bLeader\b/i.test(text)) {
     return withEachLeaderAndCharacterLimit_V2(withTextFilters_V2(leaderOrCharacterSelector_V2('PLAYER', quantity), text), text);
@@ -802,6 +879,39 @@ function selectorFromText_V2(text: string): Selector_V2 {
     }, text);
   }
   if (/your (leader|character)|leader or character/i.test(text)) return withTextFilters_V2(leaderOrCharacterSelector_V2('PLAYER', quantity), text);
+  if (/\b(?:of )?your opponent'?s Stages?\b|\bopponent'?s Stages?\b/i.test(text)) {
+    return withTextFilters_V2({
+      subject: 'CARD',
+      controller: 'OPPONENT',
+      zones: ['STAGE_AREA'],
+      cardCategories: ['STAGE'],
+      quantity,
+      chooser: 'EFFECT_OWNER',
+    }, text);
+  }
+  if (/\bStages?\b/i.test(text) && !/\bStage cards? from\b/i.test(text)) {
+    return withTextFilters_V2({
+      subject: 'CARD',
+      zones: ['STAGE_AREA'],
+      cardCategories: ['STAGE'],
+      quantity,
+      chooser: 'EFFECT_OWNER',
+    }, text);
+  }
+  if (/\b(?:active|rested)?\s*Characters?\b/i.test(text) && !/\bCharacter cards? from\b/i.test(text)) {
+    const selector = withTextFilters_V2({
+      subject: 'CARD',
+      zones: ['CHARACTER_AREA'],
+      cardCategories: ['CHARACTER'],
+      ...(/\byour opponent'?s Characters?\b/i.test(text) ? { controller: 'OPPONENT' as const } : /\byour Characters?\b/i.test(text) ? { controller: 'PLAYER' as const } : {}),
+      ...(/\bactive Characters?\b/i.test(text) ? { states: ['ACTIVE'] as const } : /\brested Characters?\b/i.test(text) ? { states: ['RESTED'] as const } : {}),
+      quantity,
+      chooser: 'EFFECT_OWNER',
+    }, text);
+    return /\bother than this Character\b/i.test(text)
+      ? { ...selector, relations: [...(selector.relations ?? []), 'EXCLUDE_THIS_CARD'] }
+      : selector;
+  }
   return {
     subject: 'CARD',
     quantity,
@@ -906,12 +1016,19 @@ function uniqueStrings_V2(values: string[]): string[] {
   return [...new Set(values)];
 }
 
+function baseEffectStatusFromText_V2(text: string): Selector_V2['baseEffectStatus'] | undefined {
+  if (/\bwith no base effects?\b|\bwithout (?:a )?base effects?\b/i.test(text)) return 'NO_BASE_EFFECT';
+  if (/\bwith (?:a )?base effects?\b/i.test(text)) return 'HAS_BASE_EFFECT';
+  return undefined;
+}
+
 function withTextFilters_V2(selector: Selector_V2, text: string): Selector_V2 {
   const names = bracketCardNameFiltersFromText_V2(text);
   const types = typeNamesFromText_V2(text);
   const colors = colorsFromText_V2(text);
   const numericFilters = numericFiltersFromText_V2(text);
-  if (names.length === 0 && types.length === 0 && colors.length === 0 && !numericFilters.cost && !numericFilters.power) return selector;
+  const baseEffectStatus = baseEffectStatusFromText_V2(text);
+  if (names.length === 0 && types.length === 0 && colors.length === 0 && !numericFilters.cost && !numericFilters.power && !baseEffectStatus) return selector;
   return {
     ...selector,
     ...(names.length > 0
@@ -938,6 +1055,7 @@ function withTextFilters_V2(selector: Selector_V2, text: string): Selector_V2 {
           },
         }
       : {}),
+    ...(baseEffectStatus ? { baseEffectStatus } : {}),
     ...numericFilters,
   };
 }
@@ -945,6 +1063,21 @@ function withTextFilters_V2(selector: Selector_V2, text: string): Selector_V2 {
 function numericFiltersFromText_V2(text: string): Pick<Selector_V2, 'cost' | 'power'> {
   const filters: Pick<Selector_V2, 'cost' | 'power'> = {};
   const costPropertyLayer = /\bbase cost\b|\bwith a base cost\b/i.test(text) ? 'BASE' : 'CURRENT';
+  if (/\bcost equal to or less than the number of DON!! cards on your field\b/i.test(text)) {
+    filters.cost = {
+      propertyLayer: costPropertyLayer,
+      comparison: 'AT_MOST',
+      value: {
+        kind: 'COUNT',
+        selector: {
+          subject: 'DON',
+          owner: 'PLAYER',
+          zones: ['COST_AREA'],
+          quantity: { kind: 'ANY_NUMBER' },
+        },
+      },
+    };
+  }
   const costAtMost = text.match(/\bcost(?: of)? (\d+) or less\b/i);
   if (costAtMost) {
     filters.cost = { propertyLayer: costPropertyLayer, comparison: 'AT_MOST', value: numberValue_V2(Number(costAtMost[1])) };
@@ -970,6 +1103,14 @@ function numericFiltersFromText_V2(text: string): Pick<Selector_V2, 'cost' | 'po
       values: [numberValue_V2(Number(costEither[1])), numberValue_V2(Number(costEither[2]))],
     };
   }
+  const costExact = text.match(/\b(?:with )?(?:a )?cost(?: of)? (\d+)\b(?!\s*(?:or|to)\b)/i);
+  if (costExact) {
+    filters.cost = {
+      propertyLayer: costPropertyLayer,
+      comparison: 'EQUAL',
+      value: numberValue_V2(Number(costExact[1])),
+    };
+  }
   const powerAtMost = text.match(/\b(\d+) (base )?power or less\b|\bwith (\d+) (base )?power or less\b/i);
   if (powerAtMost) {
     filters.power = {
@@ -978,12 +1119,20 @@ function numericFiltersFromText_V2(text: string): Pick<Selector_V2, 'cost' | 'po
       value: numberValue_V2(Number(powerAtMost[1] ?? powerAtMost[3])),
     };
   }
-  const powerExact = text.match(/\bwith (\d+) base power\b|\bwith a base power of (\d+)\b/i);
+  const powerExact = text.match(/\bwith (\d+) base power\b(?!\s*or\b)|\bwith a base power of (\d+)\b(?!\s*or\b)/i);
   if (powerExact) {
     filters.power = {
       propertyLayer: 'BASE',
       comparison: 'EQUAL',
       value: numberValue_V2(Number(powerExact[1] ?? powerExact[2])),
+    };
+  }
+  const currentPowerExact = text.match(/\bwith (\d+) power\b(?!\s*or\b)|\bwith a power of (\d+)\b(?!\s*or\b)/i);
+  if (currentPowerExact) {
+    filters.power = {
+      propertyLayer: 'CURRENT',
+      comparison: 'EQUAL',
+      value: numberValue_V2(Number(currentPowerExact[1] ?? currentPowerExact[2])),
     };
   }
   const powerAtLeast = text.match(/\b(\d+) (base )?power or more\b|\bwith (\d+) (base )?power or more\b/i);
@@ -1686,6 +1835,45 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
   const keywordTag = KEYWORD_TAGS_V2[normalized];
   if (keywordTag) {
     return { action: { type: 'GRANT_KEYWORD', selector: selfSelector_V2(), keyword: keywordTag, duration: { kind: 'PERMANENT' } } };
+  }
+
+  const playEitherFromSource = normalized.match(/^play up to (\d+) (.+?) or up to (\d+) (.+) from your (hand(?: or trash)?)/i);
+  if (playEitherFromSource) {
+    const sourceText = `from your ${playEitherFromSource[5]}`;
+    const firstText = `Play up to ${playEitherFromSource[1]} ${playEitherFromSource[2]} ${sourceText}.`;
+    const secondText = `Play up to ${playEitherFromSource[3]} ${playEitherFromSource[4]} ${sourceText}.`;
+    const firstAction = parseAtomicAction_V2(firstText).action;
+    const secondAction = parseAtomicAction_V2(secondText).action;
+    if (firstAction?.type === 'PLAY_CARD' && secondAction?.type === 'PLAY_CARD') {
+      return {
+        action: {
+          type: 'PLAYER_CHOOSES',
+          options: [actionNode_V2(firstAction), actionNode_V2(secondAction)],
+          minimumChoices: 1,
+          maximumChoices: 1,
+        },
+      };
+    }
+  }
+
+  const playTypeOrNamedFromSource = normalized.match(/^play up to (\d+) (.+?) or \[([^\]]+)\] with (a cost .+) from your (hand(?: or trash)?)/i);
+  if (playTypeOrNamedFromSource) {
+    const sourceText = `from your ${playTypeOrNamedFromSource[5]}`;
+    const sharedFilter = `with ${playTypeOrNamedFromSource[4]}`;
+    const firstText = `Play up to ${playTypeOrNamedFromSource[1]} ${playTypeOrNamedFromSource[2]} ${sharedFilter} ${sourceText}.`;
+    const secondText = `Play up to ${playTypeOrNamedFromSource[1]} [${playTypeOrNamedFromSource[3]}] ${sharedFilter} ${sourceText}.`;
+    const firstAction = parseAtomicAction_V2(firstText).action;
+    const secondAction = parseAtomicAction_V2(secondText).action;
+    if (firstAction?.type === 'PLAY_CARD' && secondAction?.type === 'PLAY_CARD') {
+      return {
+        action: {
+          type: 'PLAYER_CHOOSES',
+          options: [actionNode_V2(firstAction), actionNode_V2(secondAction)],
+          minimumChoices: 1,
+          maximumChoices: 1,
+        },
+      };
+    }
   }
 
   const timingForReplacement = replacementTimingFromText_V2(original);
@@ -2987,6 +3175,17 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     };
   }
 
+  const playFromHandOrTrash = lower.match(/play up to (\d+) .* from your hand or trash/);
+  if (playFromHandOrTrash) {
+    return {
+      action: {
+        type: 'PLAY_CARD',
+        selector: withTextFilters_V2({ subject: 'CARD', owner: 'PLAYER', zones: ['HAND', 'TRASH'], quantity: upTo_V2(Number(playFromHandOrTrash[1])), chooser: 'EFFECT_OWNER' }, normalized),
+        player: 'PLAYER',
+      },
+    };
+  }
+
   const playFromHand = lower.match(/play up to (\d+) .* from your hand/);
   if (playFromHand) {
     return {
@@ -3036,7 +3235,12 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     return {
       action: {
         type: 'PLAY_CARD',
-        selector: { ...selectorFromText_V2(normalized), quantity: upTo_V2(Number(playGeneric[1])) },
+        selector: withTextFilters_V2({
+          subject: 'ACTION_RESULT',
+          relations: ['SELECTED_PREVIOUSLY'],
+          quantity: upTo_V2(Number(playGeneric[1])),
+          chooser: 'EFFECT_OWNER',
+        }, normalized),
         player: 'PLAYER',
       },
     };
@@ -3057,7 +3261,7 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     return {
       action: {
         type: 'PLAY_CARD',
-        selector: withTextFilters_V2({ subject: 'CARD', quantity: upTo_V2(Number(playNamedNoZone[1])), chooser: 'EFFECT_OWNER' }, normalized),
+        selector: withTextFilters_V2({ subject: 'ACTION_RESULT', relations: ['SELECTED_PREVIOUSLY'], quantity: upTo_V2(Number(playNamedNoZone[1])), chooser: 'EFFECT_OWNER' }, normalized),
         player: 'PLAYER',
       },
     };
@@ -3066,10 +3270,21 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
   const deckSearchToHand = lower.match(/\b(?:reveal|add) (up to )?(\d+|a|an|one|two|three) .*?(?:and )?add (?:it|them|that card|those cards)?\s*to your hand|\badd (up to )?(\d+|a|an|one|two|three) .* from (?:the top cards of )?your deck to your hand/);
   if (deckSearchToHand) {
     const amount = wordNumber_V2(deckSearchToHand[2] ?? deckSearchToHand[4] ?? '1');
+    const directDeckSearch = /\bfrom (?:the top cards of )?your deck\b/i.test(normalized);
+    const deckSelector = deckSearchSelector_V2(normalized);
+    const { subject: _subject, owner: _owner, zones: _zones, ...searchFilters } = deckSelector;
     return {
       action: {
         type: 'MOVE_CARD',
-        selector: { ...deckSearchSelector_V2(normalized), quantity: deckSearchToHand[1] || deckSearchToHand[3] ? upTo_V2(amount) : exactly_V2(amount) },
+        selector: directDeckSearch
+          ? { ...deckSelector, quantity: deckSearchToHand[1] || deckSearchToHand[3] ? upTo_V2(amount) : exactly_V2(amount) }
+          : {
+              ...searchFilters,
+              subject: 'ACTION_RESULT',
+              relations: ['SELECTED_PREVIOUSLY'],
+              quantity: deckSearchToHand[1] || deckSearchToHand[3] ? upTo_V2(amount) : exactly_V2(amount),
+              chooser: 'EFFECT_OWNER',
+            },
         to: { zone: 'HAND', owner: 'PLAYER' },
         cause: 'EFFECT',
       },
@@ -3129,6 +3344,12 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
 
   if (/add it to the top of your life cards? face-down instead/.test(lower)) {
     if (/would be removed from the field/.test(originalLower)) {
+      const timing = replacementTimingFromText_V2(original) ?? {
+        kind: 'CUSTOM_EVENT' as const,
+        eventType: 'CARD_WOULD_MOVE' as const,
+        fromZone: 'CHARACTER_AREA' as const,
+        ...(preventionSourceSelectorFromText_V2(original) ? { sourceSelector: preventionSourceSelectorFromText_V2(original) } : {}),
+      };
       const replacementAction: Action_V2 = {
         type: 'ADD_CARD_TO_LIFE',
         selector: { subject: 'ACTION_RESULT', relations: ['REPLACED_REMOVED_CARD'], quantity: exactly_V2(1) },
@@ -3141,12 +3362,8 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
           type: 'CREATE_REPLACEMENT_EFFECT',
           effect: {
             ...generatedEffectDefinition_V2('replacement:removed-card-to-life-face-down', replacementAction, original, 'REPLACEMENT'),
-            timing: {
-              kind: 'CUSTOM_EVENT',
-              eventType: 'CARD_WOULD_MOVE',
-              fromZone: 'CHARACTER_AREA',
-              ...(preventionSourceSelectorFromText_V2(original) ? { sourceSelector: preventionSourceSelectorFromText_V2(original) } : {}),
-            },
+            timing,
+            optionality: optionalityFromText_V2(original),
           },
           duration: { kind: 'WHILE_SOURCE_VALID' },
         },
@@ -3296,6 +3513,18 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     };
   }
 
+  const handToDeckBottom = lower.match(/place (\d+|a|an|one|two|three) cards? from your hand at the bottom of your deck/);
+  if (handToDeckBottom) {
+    return {
+      action: {
+        type: 'MOVE_CARD',
+        selector: handSelector_V2('PLAYER', exactly_V2(wordNumber_V2(handToDeckBottom[1]))),
+        to: { zone: 'DECK', owner: 'PLAYER', position: 'BOTTOM' },
+        cause: 'EFFECT',
+      },
+    };
+  }
+
   if (/opponent returns all cards in their hand to their deck/.test(lower)) {
     return {
       action: {
@@ -3355,6 +3584,18 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     };
   }
 
+  const opponentLifeToOwnerDeckBottom = lower.match(/place up to (\d+|a|an|one|two|three) cards? from your opponent'?s life (?:area|cards?) at the bottom of (?:the )?owner'?s deck/);
+  if (opponentLifeToOwnerDeckBottom) {
+    return {
+      action: {
+        type: 'MOVE_CARD',
+        selector: { subject: 'CARD', owner: 'OPPONENT', zones: ['LIFE'], quantity: upTo_V2(wordNumber_V2(opponentLifeToOwnerDeckBottom[1])), chooser: 'EFFECT_OWNER' },
+        to: { zone: 'DECK', owner: 'CARD_OWNER', position: 'BOTTOM' },
+        cause: 'EFFECT',
+      },
+    };
+  }
+
   if (!/\bthe rest\b/.test(lower) && /\b(place|return)(?:s)? .* (?:at|to|on) the bottom of (?:the )?owner'?s? deck|\b(place|return)(?:s)? .* at the bottom of your deck|\bto the bottom of (?:the )?owner'?s? deck/.test(lower)) {
     if (/all of your characters except this character/.test(lower)) {
       return {
@@ -3374,6 +3615,18 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
         type: 'MOVE_CARD',
         selector: selectorFromText_V2(normalized),
         to: { zone: 'DECK', owner: ownerFromText_V2(normalized), position: 'BOTTOM' },
+        cause: 'EFFECT',
+      },
+    };
+  }
+
+  const previousSelectionToDeckTop = lower.match(/place (\d+|a|an|one|two|three) (?:cards? )?at the top of your deck/);
+  if (previousSelectionToDeckTop) {
+    return {
+      action: {
+        type: 'MOVE_CARD',
+        selector: { subject: 'ACTION_RESULT', relations: ['SELECTED_PREVIOUSLY'], quantity: exactly_V2(wordNumber_V2(previousSelectionToDeckTop[1])), chooser: 'EFFECT_OWNER' },
+        to: { zone: 'DECK', owner: 'PLAYER', position: 'TOP' },
         cause: 'EFFECT',
       },
     };
@@ -3735,9 +3988,11 @@ function semanticIssuesForParsedAtom_V2(
   text: string,
   parsed: { action?: Action_V2; costs?: CostAction_V2[] },
   context: { previousActionId?: string } = {},
+  timing?: TimingExpression_V2,
 ): string[] {
   const issues: string[] = [];
   const selectors = collectSelectorsFromValue_V2(parsed.action ?? parsed.costs);
+  if (timing) collectSelectorsFromValue_V2(timing, selectors);
 
   if (/\bbase cost\b|\bwith a base cost\b/i.test(text) && selectors.some((selector) => selector.cost?.propertyLayer === 'CURRENT')) {
     issues.push('Text says base cost, but at least one parsed selector still uses CURRENT cost.');
@@ -3755,7 +4010,9 @@ function semanticIssuesForParsedAtom_V2(
     issues.push('Result-dependent text has no previous action binding.');
   }
 
-  if (selectors.some((selector) => selector.subject === 'ACTION_RESULT' && selector.relations?.some((relation) => relation === 'SELECTED_PREVIOUSLY' || relation === 'PREVIOUS_ACTION_TARGET')) && !context.previousActionId) {
+  const hasEventScopedSubject = parsed.action?.type === 'CREATE_REPLACEMENT_EFFECT'
+    || Boolean(timing && collectSelectorsFromValue_V2(timing).some((selector) => selector.subject !== 'ACTION_RESULT'));
+  if (selectors.some((selector) => selector.subject === 'ACTION_RESULT' && selector.relations?.some((relation) => relation === 'SELECTED_PREVIOUSLY' || relation === 'PREVIOUS_ACTION_TARGET')) && !context.previousActionId && !hasEventScopedSubject) {
     issues.push('Selector references a previous selected/action-result card without a previous action binding.');
   }
 
@@ -3874,6 +4131,37 @@ function detectInlineTiming_V2(body: string): TimingExpression_V2 | undefined {
   }
   if (/this effect can be activated when you play a character with a \[trigger\]/i.test(body)) {
     return { kind: 'CUSTOM_EVENT', eventType: 'CARD_PLAYED', actor: 'PLAYER', conditions: { kind: 'PREDICATE', left: { kind: 'PLAYED_CARD_KEYWORD' }, operator: 'EQUAL', right: { kind: 'STRING', value: 'TRIGGER' } } };
+  }
+  const typedCharacterPlayedFromTrash = body.match(/\bwhen a \{([^}]+)\} type Character card is played from your trash\b/i);
+  if (typedCharacterPlayedFromTrash) {
+    return {
+      kind: 'CUSTOM_EVENT',
+      eventType: 'CARD_PLAYED',
+      actor: 'PLAYER',
+      subject: {
+        subject: 'CARD',
+        owner: 'PLAYER',
+        zones: ['TRASH'],
+        cardCategories: ['CHARACTER'],
+        types: { kind: 'HAS_ANY_TYPE', values: [typedCharacterPlayedFromTrash[1]] },
+        quantity: exactly_V2(1),
+      },
+    };
+  }
+  if (/\bwhen you play a Character with no base effects? from your hand\b/i.test(body)) {
+    return {
+      kind: 'CUSTOM_EVENT',
+      eventType: 'CARD_PLAYED',
+      actor: 'PLAYER',
+      subject: {
+        subject: 'CARD',
+        owner: 'PLAYER',
+        zones: ['HAND'],
+        cardCategories: ['CHARACTER'],
+        baseEffectStatus: 'NO_BASE_EFFECT',
+        quantity: exactly_V2(1),
+      },
+    };
   }
   if (/this effect can be activated when you only have characters with a type including "([^"]+)"/i.test(body)) {
     return { kind: 'CUSTOM_EVENT', eventType: 'ACTIVATION_WINDOW_OPENED', actor: 'PLAYER' };
@@ -4026,6 +4314,34 @@ function detectInlineConditions_V2(body: string): ConditionExpression_V2[] {
       },
       operator: 'GREATER_OR_EQUAL',
       right: numberValue_V2(Number(eventTrashCount[1])),
+    });
+  }
+
+  const characterCostZeroOrHigh = body.match(/\bif (there is|your opponent has) a Character with a cost of 0 or with a cost of (\d+) or more/i);
+  if (characterCostZeroOrHigh) {
+    const controller = characterCostZeroOrHigh[1].toLowerCase() === 'your opponent has' ? 'OPPONENT' : undefined;
+    const characterCostCondition = (comparison: NumericComparison_V2, value: number): ConditionExpression_V2 => ({
+      kind: 'PREDICATE',
+      left: {
+        kind: 'COUNT',
+        selector: {
+          subject: 'CARD',
+          ...(controller ? { controller } : {}),
+          zones: ['CHARACTER_AREA'],
+          cardCategories: ['CHARACTER'],
+          cost: { propertyLayer: 'CURRENT', comparison, value: numberValue_V2(value) },
+          quantity: { kind: 'ANY_NUMBER' },
+        },
+      },
+      operator: 'GREATER_OR_EQUAL',
+      right: numberValue_V2(1),
+    });
+    conditions.push({
+      kind: 'OR',
+      conditions: [
+        characterCostCondition('EQUAL', 0),
+        characterCostCondition('AT_LEAST', Number(characterCostZeroOrHigh[2])),
+      ],
     });
   }
 
@@ -4397,7 +4713,7 @@ function detectInlineConditions_V2(body: string): ConditionExpression_V2[] {
   }
 
   const opponentCharacterCost = body.match(/\bif your opponent has a Character with a cost of (\d+)(?: or with a cost of (\d+) or more| or (more|less))?/i);
-  if (opponentCharacterCost) {
+  if (opponentCharacterCost && !opponentCharacterCost[2]) {
     const selector: Selector_V2 = {
       subject: 'CARD',
       controller: 'OPPONENT',
@@ -4405,15 +4721,11 @@ function detectInlineConditions_V2(body: string): ConditionExpression_V2[] {
       cardCategories: ['CHARACTER'],
       quantity: { kind: 'ANY_NUMBER' },
     };
-    if (opponentCharacterCost[2]) {
-      selector.relations = [`COST_EQUALS_${opponentCharacterCost[1]}_OR_AT_LEAST_${opponentCharacterCost[2]}`];
-    } else {
-      selector.cost = {
-        propertyLayer: 'CURRENT',
-        comparison: opponentCharacterCost[3]?.toLowerCase() === 'more' ? 'AT_LEAST' : opponentCharacterCost[3]?.toLowerCase() === 'less' ? 'AT_MOST' : 'EQUAL',
-        value: numberValue_V2(Number(opponentCharacterCost[1])),
-      };
-    }
+    selector.cost = {
+      propertyLayer: 'CURRENT',
+      comparison: opponentCharacterCost[3]?.toLowerCase() === 'more' ? 'AT_LEAST' : opponentCharacterCost[3]?.toLowerCase() === 'less' ? 'AT_MOST' : 'EQUAL',
+      value: numberValue_V2(Number(opponentCharacterCost[1])),
+    };
     conditions.push({
       kind: 'PREDICATE',
       left: { kind: 'COUNT', selector },
@@ -4500,6 +4812,7 @@ function buildEffectDefinition_V2(cardNumber: string, effectIndex: number, segme
     .filter((clause) => !isInlineTimingOnlyClause_V2(clause) && !isPureConditionClause_V2(clause));
   const keywordTagClauses = tags.filter((tag) => tag in KEYWORD_TAGS_V2);
   const atomClauses = bodyClauses.length > 0 ? [...keywordTagClauses, ...bodyClauses] : keywordTagClauses;
+  const inlineTiming = detectInlineTiming_V2(body);
   const atoms: ParsedAtomicEffect_V2[] = [];
   const activationCosts: CostAction_V2[] = [];
   const resolutionNodes: ResolutionNode_V2[] = [];
@@ -4512,7 +4825,7 @@ function buildEffectDefinition_V2(cardNumber: string, effectIndex: number, segme
     const canonicalClassification = classifyUnrecognizedTextAgainstCanonical_V2(parsed.unrecognizedKind, clause);
     const atomId = `${cardNumber}#${effectIndex}.${atomIndex}`;
     atomIndex += 1;
-    const semanticIssues = semanticIssuesForParsedAtom_V2(clause, parsed, { previousActionId: lastActionId });
+    const semanticIssues = semanticIssuesForParsedAtom_V2(clause, parsed, { previousActionId: lastActionId }, inlineTiming);
     atoms.push({
       id: atomId,
       cardNumber,
@@ -4608,7 +4921,6 @@ function buildEffectDefinition_V2(cardNumber: string, effectIndex: number, segme
     ...tagInfo.conditions,
     ...leadingConditions,
   ]);
-  const inlineTiming = detectInlineTiming_V2(body);
   const category = inlineTiming ? 'AUTO' : tagInfo.category;
   const timing = tagInfo.timing ?? 'ON_ENTER_PLAY';
   const resolution = sequence_V2(groupConsecutiveConditionals_V2(resolutionNodes));

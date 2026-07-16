@@ -690,7 +690,10 @@ export const ST12_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "PLAY_CARD",
               "selector": {
-                "subject": "CARD",
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -698,7 +701,15 @@ export const ST12_AUTO_ASSIGNMENTS_V2 = [
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                }
               },
               "player": "PLAYER"
             },
@@ -1068,7 +1079,10 @@ export const ST12_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "PLAY_CARD",
               "selector": {
-                "subject": "CARD",
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1076,7 +1090,15 @@ export const ST12_AUTO_ASSIGNMENTS_V2 = [
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                }
               },
               "player": "PLAYER"
             },
@@ -1417,7 +1439,10 @@ export const ST12_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "PLAY_CARD",
               "selector": {
-                "subject": "CARD",
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1425,7 +1450,15 @@ export const ST12_AUTO_ASSIGNMENTS_V2 = [
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                }
               },
               "player": "PLAYER"
             },

@@ -910,7 +910,9 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -919,16 +921,24 @@
                     }
                   },
                   "chooser": "EFFECT_OWNER",
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
-                  ],
                   "colors": {
                     "kind": "HAS_ANY_COLOR",
                     "values": [
                       "RED"
                     ]
-                  }
+                  },
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "EQUAL",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ]
                 },
                 "to": {
                   "zone": "HAND",
@@ -1031,7 +1041,9 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -1040,16 +1052,24 @@
                       }
                     },
                     "chooser": "EFFECT_OWNER",
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
-                    ],
                     "colors": {
                       "kind": "HAS_ANY_COLOR",
                       "values": [
                         "RED"
                       ]
-                    }
+                    },
+                    "cost": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "EQUAL",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ]
                   },
                   "to": {
                     "zone": "HAND",
@@ -1778,6 +1798,14 @@
                 "values": [
                   "RED"
                 ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
               }
             },
             "player": "PLAYER"
@@ -1868,6 +1896,14 @@
                   "values": [
                     "RED"
                   ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
                 }
               },
               "player": "PLAYER"
@@ -2865,6 +2901,14 @@
                 "values": [
                   "RED"
                 ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
               }
             },
             "propertyLayer": "CURRENT_VALUE",
@@ -2960,6 +3004,14 @@
                   "values": [
                     "RED"
                   ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
                 }
               },
               "propertyLayer": "CURRENT_VALUE",
@@ -3092,6 +3144,14 @@
                 "values": [
                   "RED"
                 ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
               }
             },
             "propertyLayer": "CURRENT_VALUE",
@@ -3166,6 +3226,14 @@
                   "values": [
                     "RED"
                   ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
                 }
               },
               "propertyLayer": "CURRENT_VALUE",
@@ -4582,7 +4650,9 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -4597,9 +4667,9 @@
                       "Whitebeard Pirates"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -4757,7 +4827,9 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -4772,9 +4844,9 @@
                         "Whitebeard Pirates"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -5875,16 +5947,38 @@
           "sourceZone": "NONE",
           "effectIndex": 0
         },
-        "category": "PERMANENT",
-        "applicationMode": "CONTINUOUS",
+        "category": "AUTO",
+        "applicationMode": "ONE_SHOT",
         "activationZones": [
           "LEADER_AREA",
           "CHARACTER_AREA",
-          "STAGE_AREA"
+          "STAGE_AREA",
+          "HAND",
+          "LIFE",
+          "TRASH"
         ],
         "timing": {
-          "kind": "STANDARD_TIMING",
-          "timing": "ON_ENTER_PLAY"
+          "kind": "CUSTOM_EVENT",
+          "eventType": "CARD_PLAYED",
+          "actor": "PLAYER",
+          "subject": {
+            "subject": "CARD",
+            "owner": "PLAYER",
+            "zones": [
+              "HAND"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
+            "baseEffectStatus": "NO_BASE_EFFECT",
+            "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            }
+          }
         },
         "optionality": "MANDATORY",
         "resolution": {
@@ -5928,16 +6022,38 @@
         "status": "ASSIGNED",
         "printedText": "[Once Per Turn] When you play a Character with no base effect from your hand, if you have 3 or less Characters, set up to 2 of your DON!! cards as active.",
         "effect": {
-          "category": "PERMANENT",
-          "applicationMode": "CONTINUOUS",
+          "category": "AUTO",
+          "applicationMode": "ONE_SHOT",
           "activationZones": [
             "LEADER_AREA",
             "CHARACTER_AREA",
-            "STAGE_AREA"
+            "STAGE_AREA",
+            "HAND",
+            "LIFE",
+            "TRASH"
           ],
           "timing": {
-            "kind": "STANDARD_TIMING",
-            "timing": "ON_ENTER_PLAY"
+            "kind": "CUSTOM_EVENT",
+            "eventType": "CARD_PLAYED",
+            "actor": "PLAYER",
+            "subject": {
+              "subject": "CARD",
+              "owner": "PLAYER",
+              "zones": [
+                "HAND"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "baseEffectStatus": "NO_BASE_EFFECT",
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              }
+            }
           },
           "optionality": "MANDATORY",
           "resolution": {
@@ -6469,6 +6585,14 @@
                     "values": [
                       "GREEN"
                     ]
+                  },
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "EQUAL",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 3
+                    }
                   }
                 },
                 "player": "PLAYER"
@@ -6612,6 +6736,14 @@
                       "values": [
                         "GREEN"
                       ]
+                    },
+                    "cost": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "EQUAL",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 3
+                      }
                     }
                   },
                   "player": "PLAYER"
@@ -7487,7 +7619,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 3
+                }
+              }
             },
             "player": "PLAYER"
           },
@@ -7572,7 +7712,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 3
+                  }
+                }
               },
               "player": "PLAYER"
             },
@@ -7718,7 +7866,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -7739,9 +7886,9 @@
                       "value": "Nami"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -7858,7 +8005,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -7879,9 +8025,9 @@
                         "value": "Nami"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -12226,7 +12372,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -12241,9 +12386,9 @@
                       "The Seven Warlords of the Sea"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -12347,7 +12492,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -12362,9 +12506,9 @@
                         "The Seven Warlords of the Sea"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -12547,7 +12691,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -12568,16 +12711,16 @@
                       "value": "Buggy"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
-                  ],
                   "colors": {
                     "kind": "HAS_ANY_COLOR",
                     "values": [
                       "BLUE"
                     ]
-                  }
+                  },
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ]
                 },
                 "to": {
                   "zone": "HAND",
@@ -12680,7 +12823,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -12701,16 +12843,16 @@
                         "value": "Buggy"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
-                    ],
                     "colors": {
                       "kind": "HAS_ANY_COLOR",
                       "values": [
                         "BLUE"
                       ]
-                    }
+                    },
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ]
                   },
                   "to": {
                     "zone": "HAND",
@@ -13407,6 +13549,12 @@
                 "type": "MOVE_CARD",
                 "selector": {
                   "subject": "CARD",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -13414,7 +13562,15 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "AT_MOST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 4
+                    }
+                  }
                 },
                 "to": {
                   "zone": "HAND",
@@ -13518,6 +13674,12 @@
                   "type": "MOVE_CARD",
                   "selector": {
                     "subject": "CARD",
+                    "zones": [
+                      "CHARACTER_AREA"
+                    ],
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -13525,7 +13687,15 @@
                         "value": 1
                       }
                     },
-                    "chooser": "EFFECT_OWNER"
+                    "chooser": "EFFECT_OWNER",
+                    "cost": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "AT_MOST",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 4
+                      }
+                    }
                   },
                   "to": {
                     "zone": "HAND",
@@ -13578,10 +13748,10 @@
       "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 3,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 3,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -13610,12 +13780,9 @@
           "atomIndex": 1,
           "rawText": "Return up to 1 Character with a cost of 4 or less to the owner's hand.",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:OP02-062:1"
           ],
@@ -13624,8 +13791,7 @@
             "ADD_CARD_TO_HAND"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         },
         {
           "atomicEffectId": "OP02-062#1.2",
@@ -13702,6 +13868,14 @@
                 "values": [
                   "BLUE"
                 ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
               }
             },
             "to": {
@@ -13769,6 +13943,14 @@
                   "values": [
                     "BLUE"
                   ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
                 }
               },
               "to": {
@@ -13910,6 +14092,12 @@
                 "type": "MOVE_CARD",
                 "selector": {
                   "subject": "CARD",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -13917,7 +14105,15 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "AT_MOST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 2
+                    }
+                  }
                 },
                 "to": {
                   "zone": "DECK",
@@ -14049,6 +14245,12 @@
                   "type": "MOVE_CARD",
                   "selector": {
                     "subject": "CARD",
+                    "zones": [
+                      "CHARACTER_AREA"
+                    ],
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -14056,7 +14258,15 @@
                         "value": 1
                       }
                     },
-                    "chooser": "EFFECT_OWNER"
+                    "chooser": "EFFECT_OWNER",
+                    "cost": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "AT_MOST",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 2
+                      }
+                    }
                   },
                   "to": {
                     "zone": "DECK",
@@ -14112,10 +14322,10 @@
       "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 3,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 3,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -14144,12 +14354,9 @@
           "atomIndex": 1,
           "rawText": "Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:OP02-064:0"
           ],
@@ -14158,8 +14365,7 @@
             "PLACE_CARD_IN_DECK"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         },
         {
           "atomicEffectId": "OP02-064#0.2",
@@ -14922,6 +15128,12 @@
             "type": "MOVE_CARD",
             "selector": {
               "subject": "CARD",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
               "quantity": {
                 "kind": "UP_TO",
                 "value": {
@@ -14929,7 +15141,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 4
+                }
+              }
             },
             "to": {
               "zone": "HAND",
@@ -15033,6 +15253,12 @@
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -15040,7 +15266,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 4
+                  }
+                }
               },
               "to": {
                 "zone": "HAND",
@@ -15113,10 +15347,10 @@
       "parserRecognizedAtomicEffects": 2,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 2,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 2,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -15126,12 +15360,9 @@
           "atomIndex": 0,
           "rawText": "Return up to 1 Character with a cost of 4 or less to the owner's hand.",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:OP02-067:0"
           ],
@@ -15140,8 +15371,7 @@
             "ADD_CARD_TO_HAND"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         },
         {
           "atomicEffectId": "OP02-067#1.0",
@@ -15293,6 +15523,12 @@
             "type": "MOVE_CARD",
             "selector": {
               "subject": "CARD",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
               "quantity": {
                 "kind": "UP_TO",
                 "value": {
@@ -15300,7 +15536,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2
+                }
+              }
             },
             "to": {
               "zone": "HAND",
@@ -15436,6 +15680,12 @@
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -15443,7 +15693,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                }
               },
               "to": {
                 "zone": "HAND",
@@ -15467,10 +15725,10 @@
       "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 3,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 3,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -15518,12 +15776,9 @@
           "atomIndex": 0,
           "rawText": "Return up to 1 Character with a cost of 2 or less to the owner's hand.",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:OP02-068:1"
           ],
@@ -15532,8 +15787,7 @@
             "ADD_CARD_TO_HAND"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         }
       ]
     }
@@ -15675,6 +15929,12 @@
             "type": "MOVE_CARD",
             "selector": {
               "subject": "CARD",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
               "quantity": {
                 "kind": "UP_TO",
                 "value": {
@@ -15682,7 +15942,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 7
+                }
+              }
             },
             "to": {
               "zone": "HAND",
@@ -15827,6 +16095,12 @@
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -15834,7 +16108,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 7
+                  }
+                }
               },
               "to": {
                 "zone": "HAND",
@@ -15858,10 +16140,10 @@
       "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 3,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 3,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -15909,12 +16191,9 @@
           "atomIndex": 0,
           "rawText": "Return up to 1 Character with a cost of 7 or less to the owner's hand.",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:OP02-069:1"
           ],
@@ -15923,8 +16202,7 @@
             "ADD_CARD_TO_HAND"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         }
       ]
     }
@@ -18516,7 +18794,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -18537,16 +18814,16 @@
                       "value": "Hannyabal"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
-                  ],
                   "colors": {
                     "kind": "HAS_ANY_COLOR",
                     "values": [
                       "PURPLE"
                     ]
-                  }
+                  },
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ]
                 },
                 "to": {
                   "zone": "HAND",
@@ -18649,7 +18926,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -18670,16 +18946,16 @@
                         "value": "Hannyabal"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
-                    ],
                     "colors": {
                       "kind": "HAS_ANY_COLOR",
                       "values": [
                         "PURPLE"
                       ]
-                    }
+                    },
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ]
                   },
                   "to": {
                     "zone": "HAND",
@@ -21008,7 +21284,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -21023,9 +21298,9 @@
                       "Impel Down"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -21168,7 +21443,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -21183,9 +21457,9 @@
                         "Impel Down"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -26127,7 +26401,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 0
+                }
+              }
             },
             "cause": "EFFECT"
           },
@@ -26212,7 +26494,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 0
+                  }
+                }
               },
               "cause": "EFFECT"
             },
@@ -26749,6 +27039,13 @@
             "type": "KO_CARD",
             "selector": {
               "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "STAGE_AREA"
+              ],
+              "cardCategories": [
+                "STAGE"
+              ],
               "quantity": {
                 "kind": "UP_TO",
                 "value": {
@@ -26756,7 +27053,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 3
+                }
+              }
             },
             "cause": "EFFECT"
           },
@@ -26909,6 +27214,13 @@
               "type": "KO_CARD",
               "selector": {
                 "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "STAGE_AREA"
+                ],
+                "cardCategories": [
+                  "STAGE"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -26916,7 +27228,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 3
+                  }
+                }
               },
               "cause": "EFFECT"
             },
@@ -26936,10 +27256,10 @@
       "parserRecognizedAtomicEffects": 4,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 4,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 4,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -27004,12 +27324,9 @@
           "atomIndex": 0,
           "rawText": "KO up to 1 of your opponent's Stages with a cost of 3 or less.",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:OP02-118:1"
           ],
@@ -27017,8 +27334,7 @@
             "KO_CARD"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         }
       ]
     }
@@ -27427,11 +27743,9 @@
               "subject": "CARD",
               "controller": "PLAYER",
               "zones": [
-                "LEADER_AREA",
                 "CHARACTER_AREA"
               ],
               "cardCategories": [
-                "LEADER",
                 "CHARACTER"
               ],
               "quantity": {
@@ -27509,11 +27823,9 @@
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
@@ -27716,7 +28028,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 0
+                }
+              }
             },
             "cause": "EFFECT"
           },
@@ -27840,7 +28160,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 0
+                  }
+                }
               },
               "cause": "EFFECT"
             },

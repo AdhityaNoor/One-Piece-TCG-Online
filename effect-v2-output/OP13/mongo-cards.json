@@ -1245,11 +1245,9 @@
               "subject": "CARD",
               "controller": "PLAYER",
               "zones": [
-                "LEADER_AREA",
                 "CHARACTER_AREA"
               ],
               "cardCategories": [
-                "LEADER",
                 "CHARACTER"
               ],
               "quantity": {
@@ -1408,11 +1406,9 @@
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
@@ -2260,7 +2256,6 @@
                 "eventType": "CARD_WOULD_BE_KO",
                 "subject": {
                   "subject": "CARD",
-                  "controller": "OPPONENT",
                   "zones": [
                     "CHARACTER_AREA"
                   ],
@@ -2391,7 +2386,6 @@
                   "eventType": "CARD_WOULD_BE_KO",
                   "subject": {
                     "subject": "CARD",
-                    "controller": "OPPONENT",
                     "zones": [
                       "CHARACTER_AREA"
                     ],
@@ -2742,7 +2736,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -2758,10 +2751,6 @@
                       "Alabasta"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
-                  ],
                   "cost": {
                     "propertyLayer": "CURRENT",
                     "comparison": "AT_LEAST",
@@ -2769,7 +2758,11 @@
                       "kind": "NUMBER",
                       "value": 2
                     }
-                  }
+                  },
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ]
                 },
                 "to": {
                   "zone": "HAND",
@@ -2872,7 +2865,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -2888,10 +2880,6 @@
                         "Alabasta"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
-                    ],
                     "cost": {
                       "propertyLayer": "CURRENT",
                       "comparison": "AT_LEAST",
@@ -2899,7 +2887,11 @@
                         "kind": "NUMBER",
                         "value": 2
                       }
-                    }
+                    },
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ]
                   },
                   "to": {
                     "zone": "HAND",
@@ -3691,7 +3683,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -3700,10 +3691,6 @@
                     }
                   },
                   "chooser": "EFFECT_OWNER",
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
-                  ],
                   "cost": {
                     "propertyLayer": "CURRENT",
                     "comparison": "AT_LEAST",
@@ -3711,7 +3698,11 @@
                       "kind": "NUMBER",
                       "value": 3
                     }
-                  }
+                  },
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ]
                 },
                 "to": {
                   "zone": "HAND",
@@ -3844,7 +3835,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -3853,10 +3843,6 @@
                       }
                     },
                     "chooser": "EFFECT_OWNER",
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
-                    ],
                     "cost": {
                       "propertyLayer": "CURRENT",
                       "comparison": "AT_LEAST",
@@ -3864,7 +3850,11 @@
                         "kind": "NUMBER",
                         "value": 3
                       }
-                    }
+                    },
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ]
                   },
                   "to": {
                     "zone": "HAND",
@@ -4068,7 +4058,6 @@
                 "eventType": "CARD_WOULD_MOVE",
                 "subject": {
                   "subject": "CARD",
-                  "controller": "OPPONENT",
                   "zones": [
                     "CHARACTER_AREA"
                   ],
@@ -4208,7 +4197,6 @@
                   "eventType": "CARD_WOULD_MOVE",
                   "subject": {
                     "subject": "CARD",
-                    "controller": "OPPONENT",
                     "zones": [
                       "CHARACTER_AREA"
                     ],
@@ -5574,7 +5562,7 @@
               "chooser": "EFFECT_OWNER",
               "power": {
                 "propertyLayer": "BASE",
-                "comparison": "EQUAL",
+                "comparison": "AT_MOST",
                 "value": {
                   "kind": "NUMBER",
                   "value": 2000
@@ -5671,7 +5659,7 @@
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 2000
@@ -5813,6 +5801,12 @@
                 "type": "PREVENT_ACTION",
                 "selector": {
                   "subject": "CARD",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
                   "quantity": {
                     "kind": "EXACTLY",
                     "value": {
@@ -5820,7 +5814,15 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "BASE",
+                    "comparison": "AT_LEAST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 5
+                    }
+                  }
                 },
                 "action": "PLAY_CARD",
                 "duration": {
@@ -5961,6 +5963,12 @@
                   "type": "PREVENT_ACTION",
                   "selector": {
                     "subject": "CARD",
+                    "zones": [
+                      "CHARACTER_AREA"
+                    ],
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
                     "quantity": {
                       "kind": "EXACTLY",
                       "value": {
@@ -5968,7 +5976,15 @@
                         "value": 1
                       }
                     },
-                    "chooser": "EFFECT_OWNER"
+                    "chooser": "EFFECT_OWNER",
+                    "cost": {
+                      "propertyLayer": "BASE",
+                      "comparison": "AT_LEAST",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 5
+                      }
+                    }
                   },
                   "action": "PLAY_CARD",
                   "duration": {
@@ -11767,7 +11783,7 @@
                 "eventType": "CARD_WOULD_BE_KO",
                 "subject": {
                   "subject": "CARD",
-                  "controller": "OPPONENT",
+                  "controller": "PLAYER",
                   "zones": [
                     "CHARACTER_AREA"
                   ],
@@ -11898,7 +11914,7 @@
                   "eventType": "CARD_WOULD_BE_KO",
                   "subject": {
                     "subject": "CARD",
-                    "controller": "OPPONENT",
+                    "controller": "PLAYER",
                     "zones": [
                       "CHARACTER_AREA"
                     ],
@@ -14602,6 +14618,12 @@
             "type": "MOVE_CARD",
             "selector": {
               "subject": "CARD",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
               "quantity": {
                 "kind": "UP_TO",
                 "value": {
@@ -14609,7 +14631,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 6
+                }
+              }
             },
             "to": {
               "zone": "HAND",
@@ -14730,6 +14760,12 @@
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -14737,7 +14773,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 6
+                  }
+                }
               },
               "to": {
                 "zone": "HAND",
@@ -14801,10 +14845,10 @@
       "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 3,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 3,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -14833,12 +14877,9 @@
           "atomIndex": 1,
           "rawText": "Return up to 1 Character with a cost of 6 or less to the owner's hand.",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:OP13-059:0"
           ],
@@ -14847,8 +14888,7 @@
             "ADD_CARD_TO_HAND"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         },
         {
           "atomicEffectId": "OP13-059#1.0",
@@ -14951,7 +14991,7 @@
                 "eventType": "CARD_WOULD_BE_KO",
                 "subject": {
                   "subject": "CARD",
-                  "controller": "OPPONENT",
+                  "controller": "PLAYER",
                   "zones": [
                     "CHARACTER_AREA"
                   ],
@@ -15082,7 +15122,7 @@
                   "eventType": "CARD_WOULD_BE_KO",
                   "subject": {
                     "subject": "CARD",
-                    "controller": "OPPONENT",
+                    "controller": "PLAYER",
                     "zones": [
                       "CHARACTER_AREA"
                     ],
@@ -15502,15 +15542,7 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER",
-              "power": {
-                "propertyLayer": "BASE",
-                "comparison": "EQUAL",
-                "value": {
-                  "kind": "NUMBER",
-                  "value": 3000
-                }
-              }
+              "chooser": "EFFECT_OWNER"
             },
             "to": {
               "zone": "HAND",
@@ -15615,15 +15647,7 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER",
-                "power": {
-                  "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
-                  "value": {
-                    "kind": "NUMBER",
-                    "value": 3000
-                  }
-                }
+                "chooser": "EFFECT_OWNER"
               },
               "to": {
                 "zone": "HAND",
@@ -15988,11 +16012,9 @@
               "subject": "CARD",
               "controller": "PLAYER",
               "zones": [
-                "LEADER_AREA",
                 "CHARACTER_AREA"
               ],
               "cardCategories": [
-                "LEADER",
                 "CHARACTER"
               ],
               "quantity": {
@@ -16171,11 +16193,9 @@
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
@@ -16474,7 +16494,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -16495,9 +16514,9 @@
                       "value": "Shanks"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -16601,7 +16620,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -16622,9 +16640,9 @@
                         "value": "Shanks"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -18052,7 +18070,7 @@
               "chooser": "EFFECT_OWNER",
               "power": {
                 "propertyLayer": "BASE",
-                "comparison": "EQUAL",
+                "comparison": "AT_MOST",
                 "value": {
                   "kind": "NUMBER",
                   "value": 3000
@@ -18141,7 +18159,7 @@
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 3000
@@ -19473,7 +19491,7 @@
               "chooser": "EFFECT_OWNER",
               "power": {
                 "propertyLayer": "BASE",
-                "comparison": "EQUAL",
+                "comparison": "AT_MOST",
                 "value": {
                   "kind": "NUMBER",
                   "value": 4000
@@ -19618,7 +19636,7 @@
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 4000
@@ -21464,6 +21482,14 @@
                     "values": [
                       "Five Elders"
                     ]
+                  },
+                  "power": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "EQUAL",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 5000
+                    }
                   }
                 },
                 "player": "PLAYER"
@@ -21613,6 +21639,14 @@
                       "values": [
                         "Five Elders"
                       ]
+                    },
+                    "power": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "EQUAL",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 5000
+                      }
                     }
                   },
                   "player": "PLAYER"
@@ -21872,7 +21906,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -21887,9 +21920,9 @@
                       "Five Elders"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -22070,7 +22103,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -22085,9 +22117,9 @@
                         "Five Elders"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -22736,7 +22768,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -22757,9 +22788,9 @@
                       "value": "Saint Shalria"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -22881,7 +22912,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -22902,9 +22932,9 @@
                         "value": "Saint Shalria"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -24336,6 +24366,14 @@
                 "values": [
                   "Mary Geoise"
                 ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
               }
             },
             "player": "PLAYER"
@@ -24420,6 +24458,14 @@
                   "values": [
                     "Mary Geoise"
                   ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
                 }
               },
               "player": "PLAYER"
@@ -25289,7 +25335,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -25310,9 +25355,9 @@
                       "value": "The Five Elders Are at Your Service!!!"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -25465,7 +25510,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -25486,9 +25530,9 @@
                         "value": "The Five Elders Are at Your Service!!!"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -26108,6 +26152,13 @@
               "type": "KO_CARD",
               "selector": {
                 "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "STAGE_AREA"
+                ],
+                "cardCategories": [
+                  "STAGE"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -26115,7 +26166,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 7
+                  }
+                }
               },
               "cause": "EFFECT"
             },
@@ -26303,6 +26362,13 @@
                 "type": "KO_CARD",
                 "selector": {
                   "subject": "CARD",
+                  "controller": "OPPONENT",
+                  "zones": [
+                    "STAGE_AREA"
+                  ],
+                  "cardCategories": [
+                    "STAGE"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -26310,7 +26376,15 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "EQUAL",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 7
+                    }
+                  }
                 },
                 "cause": "EFFECT"
               },
@@ -26423,10 +26497,10 @@
       "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 3,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 3,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -26455,12 +26529,9 @@
           "atomIndex": 1,
           "rawText": "If your Leader is [Imu], KO up to 1 of your opponent's Stages with a cost of 7.",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:OP13-098:0"
           ],
@@ -26468,8 +26539,7 @@
             "KO_CARD"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         },
         {
           "atomicEffectId": "OP13-098#1.0",
@@ -26681,6 +26751,23 @@
                 "values": [
                   "BLACK"
                 ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "COUNT",
+                  "selector": {
+                    "subject": "DON",
+                    "owner": "PLAYER",
+                    "zones": [
+                      "COST_AREA"
+                    ],
+                    "quantity": {
+                      "kind": "ANY_NUMBER"
+                    }
+                  }
+                }
               }
             },
             "player": "PLAYER"
@@ -26872,6 +26959,23 @@
                   "values": [
                     "BLACK"
                   ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "COUNT",
+                    "selector": {
+                      "subject": "DON",
+                      "owner": "PLAYER",
+                      "zones": [
+                        "COST_AREA"
+                      ],
+                      "quantity": {
+                        "kind": "ANY_NUMBER"
+                      }
+                    }
+                  }
                 }
               },
               "player": "PLAYER"
@@ -30039,7 +30143,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -30054,9 +30157,9 @@
                       "value": "Lilith"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -30216,7 +30319,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -30231,9 +30333,9 @@
                         "value": "Lilith"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -31346,7 +31448,9 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -31361,9 +31465,9 @@
                       "Supernovas"
                     ]
                   },
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
                   ]
                 },
                 "to": {
@@ -31521,7 +31625,9 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -31536,9 +31642,9 @@
                         "Supernovas"
                       ]
                     },
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
                     ]
                   },
                   "to": {
@@ -32185,6 +32291,12 @@
                 "type": "PREVENT_ACTION",
                 "selector": {
                   "subject": "CARD",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
                   "quantity": {
                     "kind": "EXACTLY",
                     "value": {
@@ -32192,7 +32304,15 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "BASE",
+                    "comparison": "AT_LEAST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 5
+                    }
+                  }
                 },
                 "action": "PLAY_CARD",
                 "duration": {
@@ -32324,6 +32444,12 @@
                   "type": "PREVENT_ACTION",
                   "selector": {
                     "subject": "CARD",
+                    "zones": [
+                      "CHARACTER_AREA"
+                    ],
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
                     "quantity": {
                       "kind": "EXACTLY",
                       "value": {
@@ -32331,7 +32457,15 @@
                         "value": 1
                       }
                     },
-                    "chooser": "EFFECT_OWNER"
+                    "chooser": "EFFECT_OWNER",
+                    "cost": {
+                      "propertyLayer": "BASE",
+                      "comparison": "AT_LEAST",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 5
+                      }
+                    }
                   },
                   "action": "PLAY_CARD",
                   "duration": {

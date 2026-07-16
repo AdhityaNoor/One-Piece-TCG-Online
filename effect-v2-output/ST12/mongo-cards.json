@@ -1805,7 +1805,10 @@
               "action": {
                 "type": "PLAY_CARD",
                 "selector": {
-                  "subject": "CARD",
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -1813,7 +1816,15 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "EQUAL",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 2
+                    }
+                  }
                 },
                 "player": "PLAYER"
               },
@@ -1954,7 +1965,10 @@
                 "action": {
                   "type": "PLAY_CARD",
                   "selector": {
-                    "subject": "CARD",
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ],
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -1962,7 +1976,15 @@
                         "value": 1
                       }
                     },
-                    "chooser": "EFFECT_OWNER"
+                    "chooser": "EFFECT_OWNER",
+                    "cost": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "EQUAL",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 2
+                      }
+                    }
                   },
                   "player": "PLAYER"
                 },
@@ -2047,10 +2069,10 @@
       "parserRecognizedAtomicEffects": 4,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 4,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 4,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -2079,12 +2101,9 @@
           "atomIndex": 1,
           "rawText": "play up to 1 Character card with a cost of 2.",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:ST12-010:0"
           ],
@@ -2092,8 +2111,7 @@
             "PLAY_CARD"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         },
         {
           "atomicEffectId": "ST12-010#0.2",
@@ -2708,7 +2726,10 @@
               "action": {
                 "type": "PLAY_CARD",
                 "selector": {
-                  "subject": "CARD",
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -2716,7 +2737,15 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "EQUAL",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 2
+                    }
+                  }
                 },
                 "player": "PLAYER"
               },
@@ -2893,7 +2922,10 @@
                 "action": {
                   "type": "PLAY_CARD",
                   "selector": {
-                    "subject": "CARD",
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ],
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -2901,7 +2933,15 @@
                         "value": 1
                       }
                     },
-                    "chooser": "EFFECT_OWNER"
+                    "chooser": "EFFECT_OWNER",
+                    "cost": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "EQUAL",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 2
+                      }
+                    }
                   },
                   "player": "PLAYER"
                 },
@@ -2947,10 +2987,10 @@
       "parserRecognizedAtomicEffects": 5,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 5,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 5,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -3017,12 +3057,9 @@
           "atomIndex": 1,
           "rawText": "play up to 1 Character card with a cost of 2 rested.",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:ST12-013:1"
           ],
@@ -3030,8 +3067,7 @@
             "PLAY_CARD"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         },
         {
           "atomicEffectId": "ST12-013#1.2",
@@ -3804,7 +3840,10 @@
               "action": {
                 "type": "PLAY_CARD",
                 "selector": {
-                  "subject": "CARD",
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -3812,7 +3851,15 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "EQUAL",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 2
+                    }
+                  }
                 },
                 "player": "PLAYER"
               },
@@ -3918,7 +3965,10 @@
                 "action": {
                   "type": "PLAY_CARD",
                   "selector": {
-                    "subject": "CARD",
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ],
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -3926,7 +3976,15 @@
                         "value": 1
                       }
                     },
-                    "chooser": "EFFECT_OWNER"
+                    "chooser": "EFFECT_OWNER",
+                    "cost": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "EQUAL",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 2
+                      }
+                    }
                   },
                   "player": "PLAYER"
                 },
@@ -3972,10 +4030,10 @@
       "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 3,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 3,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -4004,12 +4062,9 @@
           "atomIndex": 1,
           "rawText": "reveal 1 card from the top of your deck, play up to 1 Character card with a cost of 2,",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:ST12-017:0"
           ],
@@ -4017,8 +4072,7 @@
             "PLAY_CARD"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         },
         {
           "atomicEffectId": "ST12-017#0.2",

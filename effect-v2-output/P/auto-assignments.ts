@@ -218,6 +218,12 @@ export const P_AUTO_ASSIGNMENTS_V2 = [
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -225,7 +231,15 @@ export const P_AUTO_ASSIGNMENTS_V2 = [
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
+            }
           },
           "to": {
             "zone": "DECK",
@@ -853,6 +867,12 @@ export const P_AUTO_ASSIGNMENTS_V2 = [
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
@@ -1827,6 +1847,14 @@ export const P_AUTO_ASSIGNMENTS_V2 = [
               "values": [
                 "Cross Guild"
               ]
+            },
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 5
+              }
             }
           },
           "player": "PLAYER"

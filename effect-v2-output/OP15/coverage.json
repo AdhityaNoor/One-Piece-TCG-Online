@@ -2967,10 +2967,10 @@
     "parserRecognizedAtomicEffects": 4,
     "parserUnrecognizedAtomicEffects": 0,
     "assignmentCoveredAtomicEffects": 4,
-    "assignmentPartialAtomicEffects": 1,
+    "assignmentPartialAtomicEffects": 0,
     "assignmentUncoveredAtomicEffects": 0,
     "coveredAtomicEffects": 4,
-    "partialAtomicEffects": 1,
+    "partialAtomicEffects": 0,
     "uncoveredAtomicEffects": 0,
     "statuses": [
       {
@@ -3037,12 +3037,9 @@
         "atomIndex": 3,
         "rawText": "Return up to 1 Stage to the owner's hand.",
         "parserStatus": "recognized",
-        "semanticStatus": "needsAudit",
-        "semanticIssues": [
-          "Card movement/action selector has no source zone or prior-result relation."
-        ],
+        "semanticStatus": "safe",
         "assignmentStatus": "assigned",
-        "status": "partial",
+        "status": "covered",
         "coveredByAssignmentIds": [
           "v2:auto:OP15-054:0"
         ],
@@ -3051,8 +3048,7 @@
           "ADD_CARD_TO_HAND"
         ],
         "canonicalCoverage": "canonical",
-        "canonicalRemark": "Parser emitted a canonical V2 atom.",
-        "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
       }
     ]
   },
@@ -4240,13 +4236,13 @@
     "schemaVersion": "op-tcg-effect-v2.0.0",
     "generatedBy": "effectCompiler_V2",
     "cardNumber": "OP15-073",
-    "totalAtomicEffects": 2,
-    "parserRecognizedAtomicEffects": 2,
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
     "parserUnrecognizedAtomicEffects": 0,
-    "assignmentCoveredAtomicEffects": 2,
+    "assignmentCoveredAtomicEffects": 3,
     "assignmentPartialAtomicEffects": 0,
     "assignmentUncoveredAtomicEffects": 0,
-    "coveredAtomicEffects": 2,
+    "coveredAtomicEffects": 3,
     "partialAtomicEffects": 0,
     "uncoveredAtomicEffects": 0,
     "statuses": [
@@ -4274,9 +4270,26 @@
         "cardNumber": "OP15-073",
         "effectIndex": 1,
         "atomIndex": 0,
-        "rawText": "Play up to 1 [Heavenly Warriors] with a cost of 1 or up to 1 {Vassals} type Character card with a cost of 1 from your hand.",
+        "rawText": "Play up to 1 [Heavenly Warriors] with a cost of 1 from your hand.",
         "parserStatus": "recognized",
-        "semanticStatus": "safe",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP15-073:1"
+        ],
+        "canonicalAtoms": [
+          "PLAY_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP15-073#1.1",
+        "cardNumber": "OP15-073",
+        "effectIndex": 1,
+        "atomIndex": 1,
+        "rawText": "Play up to 1 {Vassals} type Character card with a cost of 1 from your hand.",
+        "parserStatus": "recognized",
         "assignmentStatus": "assigned",
         "status": "covered",
         "coveredByAssignmentIds": [

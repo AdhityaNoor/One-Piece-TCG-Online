@@ -353,7 +353,7 @@ export const ST23_AUTO_ASSIGNMENTS_V2 = [
               "chooser": "EFFECT_OWNER",
               "power": {
                 "propertyLayer": "BASE",
-                "comparison": "EQUAL",
+                "comparison": "AT_MOST",
                 "value": {
                   "kind": "NUMBER",
                   "value": 4000

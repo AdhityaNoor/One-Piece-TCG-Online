@@ -318,7 +318,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -340,9 +339,9 @@
                     "value": "Jewelry Bonney"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -630,15 +629,7 @@
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER",
-            "power": {
-              "propertyLayer": "BASE",
-              "comparison": "EQUAL",
-              "value": {
-                "kind": "NUMBER",
-                "value": 5000
-              }
-            }
+            "chooser": "EFFECT_OWNER"
           },
           "action": "DECLARE_ATTACK",
           "duration": {
@@ -731,7 +722,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -746,9 +736,9 @@
                     "value": "Lulucia Kingdom"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -1429,7 +1419,15 @@
             "quantity": {
               "kind": "ALL"
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "BASE",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 1
+              }
+            }
           },
           "propertyLayer": "CURRENT_VALUE",
           "operation": "ADD",
@@ -2264,6 +2262,12 @@
               "type": "PREVENT_ACTION",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
@@ -4536,6 +4540,12 @@
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -4543,7 +4553,15 @@
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 5
+              }
+            }
           },
           "to": {
             "zone": "HAND",
@@ -4665,7 +4683,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -4680,9 +4697,9 @@
                     "value": "Sanji"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -5602,7 +5619,7 @@
             "chooser": "EFFECT_OWNER",
             "power": {
               "propertyLayer": "BASE",
-              "comparison": "EQUAL",
+              "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
                 "value": 6000
@@ -6223,7 +6240,6 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -6238,9 +6254,9 @@
                     "Foxy Pirates"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -6958,7 +6974,8 @@
             "subject": "CARD",
             "owner": "PLAYER",
             "zones": [
-              "HAND"
+              "HAND",
+              "TRASH"
             ],
             "quantity": {
               "kind": "UP_TO",
@@ -7280,6 +7297,12 @@
               "eventType": "CARD_WOULD_BE_KO",
               "subject": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
@@ -7287,7 +7310,21 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "colors": {
+                  "kind": "HAS_ANY_COLOR",
+                  "values": [
+                    "BLACK"
+                  ]
+                },
+                "cost": {
+                  "propertyLayer": "BASE",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
+                  }
+                }
               },
               "sourceSelector": {
                 "subject": "EFFECT",
@@ -7898,7 +7935,8 @@
             "subject": "CARD",
             "owner": "PLAYER",
             "zones": [
-              "HAND"
+              "HAND",
+              "TRASH"
             ],
             "quantity": {
               "kind": "UP_TO",

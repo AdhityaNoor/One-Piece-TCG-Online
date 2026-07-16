@@ -766,7 +766,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -775,10 +774,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_LEAST",
@@ -786,7 +781,11 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 4
                   }
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",
@@ -1339,7 +1338,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1354,9 +1352,9 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "value": "Zou"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -1736,7 +1734,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1757,9 +1754,9 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "value": "Nami"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -2111,7 +2108,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -2120,10 +2116,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_LEAST",
@@ -2131,7 +2123,11 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 4
                   }
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",
@@ -2613,6 +2609,12 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -2620,7 +2622,15 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                }
               },
               "to": {
                 "zone": "HAND",
@@ -2755,7 +2765,10 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
               "action": {
                 "type": "PLAY_CARD",
                 "selector": {
-                  "subject": "CARD",
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -2763,7 +2776,15 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "AT_MOST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 2
+                    }
+                  }
                 },
                 "player": "PLAYER"
               },
@@ -3025,7 +3046,9 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -3034,9 +3057,17 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -3086,7 +3117,15 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                }
               },
               "player": "PLAYER"
             },
@@ -3309,7 +3348,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -3318,10 +3356,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_LEAST",
@@ -3329,7 +3363,11 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 4
                   }
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",
@@ -3497,7 +3535,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -3512,9 +3549,9 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "value": "Galley-La Company"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -3849,7 +3886,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -3864,9 +3900,9 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "Straw Hat Crew"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -4187,7 +4223,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -4196,10 +4231,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_LEAST",
@@ -4207,7 +4238,11 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 4
                   }
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",
@@ -5271,7 +5306,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -5280,10 +5314,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_LEAST",
@@ -5291,7 +5321,11 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 4
                   }
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",
@@ -6287,7 +6321,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -6296,10 +6329,6 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_LEAST",
@@ -6307,7 +6336,11 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 4
                   }
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",
@@ -6482,49 +6515,89 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "then": {
               "kind": "ACTION",
               "action": {
-                "type": "PLAY_CARD",
-                "selector": {
-                  "subject": "CARD",
-                  "owner": "PLAYER",
-                  "zones": [
-                    "HAND"
-                  ],
-                  "quantity": {
-                    "kind": "UP_TO",
-                    "value": {
-                      "kind": "NUMBER",
-                      "value": 1
+                "type": "PLAYER_CHOOSES",
+                "options": [
+                  {
+                    "kind": "ACTION",
+                    "action": {
+                      "type": "PLAY_CARD",
+                      "selector": {
+                        "subject": "CARD",
+                        "owner": "PLAYER",
+                        "zones": [
+                          "HAND"
+                        ],
+                        "quantity": {
+                          "kind": "UP_TO",
+                          "value": {
+                            "kind": "NUMBER",
+                            "value": 1
+                          }
+                        },
+                        "chooser": "EFFECT_OWNER",
+                        "types": {
+                          "kind": "HAS_ANY_TYPE",
+                          "values": [
+                            "Straw Hat Crew"
+                          ]
+                        },
+                        "colors": {
+                          "kind": "HAS_ANY_COLOR",
+                          "values": [
+                            "YELLOW"
+                          ]
+                        },
+                        "cost": {
+                          "propertyLayer": "CURRENT",
+                          "comparison": "AT_MOST",
+                          "value": {
+                            "kind": "NUMBER",
+                            "value": 5
+                          }
+                        }
+                      },
+                      "player": "PLAYER"
                     }
                   },
-                  "chooser": "EFFECT_OWNER",
-                  "names": [
-                    {
-                      "kind": "NAME_EXACT",
-                      "value": "Sanji"
-                    }
-                  ],
-                  "types": {
-                    "kind": "HAS_ANY_TYPE",
-                    "values": [
-                      "Straw Hat Crew"
-                    ]
-                  },
-                  "colors": {
-                    "kind": "HAS_ANY_COLOR",
-                    "values": [
-                      "YELLOW"
-                    ]
-                  },
-                  "cost": {
-                    "propertyLayer": "CURRENT",
-                    "comparison": "AT_MOST",
-                    "value": {
-                      "kind": "NUMBER",
-                      "value": 5
+                  {
+                    "kind": "ACTION",
+                    "action": {
+                      "type": "PLAY_CARD",
+                      "selector": {
+                        "subject": "CARD",
+                        "owner": "PLAYER",
+                        "zones": [
+                          "HAND"
+                        ],
+                        "quantity": {
+                          "kind": "UP_TO",
+                          "value": {
+                            "kind": "NUMBER",
+                            "value": 1
+                          }
+                        },
+                        "chooser": "EFFECT_OWNER",
+                        "names": [
+                          {
+                            "kind": "NAME_EXACT",
+                            "value": "Sanji"
+                          }
+                        ],
+                        "cost": {
+                          "propertyLayer": "CURRENT",
+                          "comparison": "AT_MOST",
+                          "value": {
+                            "kind": "NUMBER",
+                            "value": 5
+                          }
+                        }
+                      },
+                      "player": "PLAYER"
                     }
                   }
-                },
-                "player": "PLAYER"
+                ],
+                "minimumChoices": 1,
+                "maximumChoices": 1
               },
               "actionId": "EB02-059#0.1"
             }

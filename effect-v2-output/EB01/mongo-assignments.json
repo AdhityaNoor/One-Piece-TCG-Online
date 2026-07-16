@@ -1140,7 +1140,10 @@
             "action": {
               "type": "PLAY_CARD",
               "selector": {
-                "subject": "CARD",
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1154,6 +1157,14 @@
                   "values": [
                     "Animal"
                   ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 3
+                  }
                 }
               },
               "player": "PLAYER"
@@ -1252,7 +1263,7 @@
             "chooser": "EFFECT_OWNER",
             "power": {
               "propertyLayer": "BASE",
-              "comparison": "EQUAL",
+              "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
                 "value": 6000
@@ -1333,7 +1344,7 @@
             "chooser": "EFFECT_OWNER",
             "power": {
               "propertyLayer": "BASE",
-              "comparison": "EQUAL",
+              "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
                 "value": 5000
@@ -2197,7 +2208,9 @@
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -2212,9 +2225,9 @@
                     "Donquixote Pirates"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -2871,6 +2884,12 @@
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -2878,7 +2897,15 @@
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
+            }
           },
           "to": {
             "zone": "HAND",
@@ -3308,6 +3335,12 @@
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -3315,7 +3348,15 @@
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
+            }
           },
           "to": {
             "zone": "DECK",
@@ -3471,15 +3512,17 @@
                   "action": {
                     "type": "MOVE_CARD",
                     "selector": {
-                      "subject": "CARD",
+                      "subject": "ACTION_RESULT",
+                      "relations": [
+                        "PREVIOUS_ACTION_TARGET"
+                      ],
                       "quantity": {
                         "kind": "EXACTLY",
                         "value": {
                           "kind": "NUMBER",
                           "value": 1
                         }
-                      },
-                      "chooser": "EFFECT_OWNER"
+                      }
                     },
                     "to": {
                       "zone": "DECK",
@@ -3548,6 +3591,12 @@
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -3555,7 +3604,15 @@
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 8
+              }
+            }
           },
           "to": {
             "zone": "HAND",
@@ -3971,7 +4028,8 @@
               "subject": "CARD",
               "owner": "PLAYER",
               "zones": [
-                "HAND"
+                "HAND",
+                "TRASH"
               ],
               "quantity": {
                 "kind": "UP_TO",
@@ -3992,6 +4050,14 @@
                 "values": [
                   "Water Seven"
                 ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 5
+                }
               }
             },
             "player": "PLAYER"
@@ -5107,7 +5173,15 @@
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 0
+              }
+            }
           },
           "cause": "EFFECT"
         },
@@ -5705,7 +5779,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 0
+                  }
+                }
               },
               "cause": "EFFECT"
             },
@@ -7367,7 +7449,8 @@
                 "subject": "CARD",
                 "owner": "PLAYER",
                 "zones": [
-                  "HAND"
+                  "HAND",
+                  "TRASH"
                 ],
                 "quantity": {
                   "kind": "UP_TO",

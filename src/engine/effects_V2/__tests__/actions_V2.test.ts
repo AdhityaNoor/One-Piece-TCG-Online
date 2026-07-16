@@ -525,6 +525,65 @@ describe('V2 actions', () => {
     expect(reorderedLife.state.players.p1.lifeArea.cardIds).toEqual(['l1', 'l2']);
   });
 
+  it('updates V2 look-buffer bindings after playing a selected looked card', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      animal: def('animal', { types: ['Animal'], baseCost: 3 }),
+      other: def('other', { types: ['East Blue'], baseCost: 2 }),
+      third: def('third', { types: ['Animal'], baseCost: 5 }),
+    };
+    const withDeck = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, deck: { ...state.players.p1.deck, cardIds: ['animal-old', 'other-old', 'third-old', 'deck-rest'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'animal-old': instance('animal-old', 'animal', 'p1', 'deck'),
+        'other-old': instance('other-old', 'other', 'p1', 'deck'),
+        'third-old': instance('third-old', 'third', 'p1', 'deck'),
+        'deck-rest': instance('deck-rest', 'other', 'p1', 'deck'),
+      },
+    };
+    const ctx = { state: withDeck, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+    const looked = executeAction_V2(ctx, {
+      type: 'LOOK_AT_CARDS',
+      player: 'PLAYER',
+      source: { subject: 'CARD', owner: 'PLAYER', zones: ['DECK'], ordering: 'DECK_ORDER' },
+      count: { kind: 'NUMBER', value: 3 },
+    }, 'look-for-play');
+
+    const played = executeAction_V2({ ...ctx, bindings: looked.bindings }, {
+      type: 'PLAY_CARD',
+      selector: {
+        subject: 'ACTION_RESULT',
+        relations: ['SELECTED_PREVIOUSLY'],
+        types: { kind: 'HAS_ANY_TYPE', values: ['Animal'] },
+        cost: { propertyLayer: 'CURRENT', comparison: 'AT_MOST', value: { kind: 'NUMBER', value: 3 } },
+        quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+      },
+      player: 'PLAYER',
+    }, 'play-looked-card');
+    const playedId = played.playedInstanceIds[0];
+
+    expect(playedId).toBeDefined();
+    expect(played.bindings?.selectedObjects.PLAYED_SOURCE_PREVIOUSLY).toEqual(['animal-old']);
+    expect(played.bindings?.selectedObjects.SELECTED_PREVIOUSLY).toEqual([playedId]);
+    expect(played.bindings?.selectedObjects.REMAINDER_OF_PREVIOUS_SELECTION).toEqual(['other-old', 'third-old']);
+
+    const reordered = executeAction_V2({ ...ctx, state: played.state, bindings: played.bindings }, {
+      type: 'REORDER_CARDS',
+      selector: { subject: 'ACTION_RESULT', relations: ['REMAINDER_OF_PREVIOUS_SELECTION'], quantity: { kind: 'ANY_NUMBER' } },
+      destination: { zone: 'DECK', owner: 'PLAYER', position: 'BOTTOM' },
+      orderChooser: 'PLAYER',
+    }, 'reorder-after-play');
+
+    expect(reordered.state.players.p1.characterArea.cardIds).toContain(playedId);
+    expect(reordered.state.players.p1.deck.cardIds).toEqual(['deck-rest', 'other-old', 'third-old']);
+  });
+
   it('executes GIVE_DON by resting DON and attaching it to the target', () => {
     const state = createSampleGameState();
     const defs: CardDefinitionLookup = {

@@ -486,16 +486,23 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   the start of the game, play up to 1 {Mary Geoise} type Stage card from your deck.[Activate: Main]
   //   [Once Per Turn] You may trash 1 of your {Celestial Dragons} type Characters or 1 card from your hand:
   //   Draw 1 card.
-  // PARTIAL: deck construction and start-of-game Stage play remain deferred.
-  { cardNumber: 'OP13-079', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{
-    fn: 'chooseOne',
-    chooser: 'controller',
-    prompt: 'Choose a card to trash.',
-    options: [
-      { label: 'character', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'Celestial Dragons' } }, to: { zone: 'trash', player: 'owner' }, minTargets: 1, maxTargets: 1 }, { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }] },
-      { label: 'hand', functions: [{ fn: 'trashFromHand', count: 1 }, { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }] },
+  // PARTIAL: deck-construction restriction ("cannot include Events cost 2+") remains deferred — no
+  // deck-validation hook exists yet for Leader-specific deck-construction restrictions.
+  {
+    cardNumber: 'OP13-079',
+    templates: [
+      { templateId: 'ability', params: { timing: 'startOfGame', functions: [{ fn: 'playStageFromDeck', filter: { category: 'stage', typeIncludes: 'Mary Geoise' }, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Choose a card to trash.',
+        options: [
+          { label: 'character', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'Celestial Dragons' } }, to: { zone: 'trash', player: 'owner' }, minTargets: 1, maxTargets: 1 }, { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }] },
+          { label: 'hand', functions: [{ fn: 'trashFromHand', count: 1 }, { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }] },
+        ],
+      }] } },
     ],
-  }] } },
+  },
 
   // OP13-080 (character) St. Ethanbaron V. Nusjuro —
   //   If you have 7 or more cards in your trash, this Character cannot be removed from the field by your
@@ -823,7 +830,7 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
-  // OP13-120 — [Activate: Main] [OPT] Character +2 cost until end of opp next turn, then give 1 rested DON!!.
+  // OP13-120 -- [Activate: Main] [OPT] Character +2 cost until end of opp next turn, then give 1 rested DON!!.
   { cardNumber: 'OP13-120', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
     { fn: 'addCost', target: { group: 'characters', player: 'controller' }, amount: 2, duration: 'endOfOpponentsTurn', optional: true },
     { fn: 'giveDon', count: 1, ifPrevious: 'previousSelectedAny' },

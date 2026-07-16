@@ -88,3 +88,5 @@ pnpm-debug.log*
 graphify-out/
 
 .history/
+
+coverage.json

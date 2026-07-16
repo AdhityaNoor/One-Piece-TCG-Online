@@ -215,6 +215,12 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
               "type": "ADD_CARD_TO_LIFE",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -476,7 +482,15 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
                 "value": 2
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 5
+              }
+            }
           },
           "player": "PLAYER",
           "position": "TOP",
@@ -567,7 +581,10 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
@@ -727,7 +744,15 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 5
+              }
+            }
           },
           "player": "PLAYER",
           "position": "TOP",
@@ -843,7 +868,15 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
                 "kind": "NAME_EXACT",
                 "value": "Monkey.D.Luffy"
               }
-            ]
+            ],
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 2
+              }
+            }
           },
           "player": "PLAYER"
         },
@@ -1540,7 +1573,6 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1563,10 +1595,6 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
                     "value": "Monkey.D.Luffy"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -1574,7 +1602,11 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 5
                   }
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",
@@ -1972,7 +2004,10 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
@@ -2414,7 +2449,6 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -2437,10 +2471,6 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
                     "value": "Monkey.D.Luffy"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -2448,7 +2478,11 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 5
                   }
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",

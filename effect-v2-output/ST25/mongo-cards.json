@@ -910,6 +910,12 @@
                 "eventType": "CARD_WOULD_MOVE",
                 "subject": {
                   "subject": "CARD",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
                   "quantity": {
                     "kind": "EXACTLY",
                     "value": {
@@ -1142,6 +1148,12 @@
                   "eventType": "CARD_WOULD_MOVE",
                   "subject": {
                     "subject": "CARD",
+                    "zones": [
+                      "CHARACTER_AREA"
+                    ],
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
                     "quantity": {
                       "kind": "EXACTLY",
                       "value": {

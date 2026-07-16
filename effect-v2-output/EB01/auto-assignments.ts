@@ -909,7 +909,10 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "PLAY_CARD",
               "selector": {
-                "subject": "CARD",
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -923,6 +926,14 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                   "values": [
                     "Animal"
                   ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 3
+                  }
                 }
               },
               "player": "PLAYER"
@@ -1003,7 +1014,7 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
             "chooser": "EFFECT_OWNER",
             "power": {
               "propertyLayer": "BASE",
-              "comparison": "EQUAL",
+              "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
                 "value": 6000
@@ -1064,7 +1075,7 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
             "chooser": "EFFECT_OWNER",
             "power": {
               "propertyLayer": "BASE",
-              "comparison": "EQUAL",
+              "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
                 "value": 5000
@@ -1765,7 +1776,9 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1780,9 +1793,9 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                     "Donquixote Pirates"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -2302,6 +2315,12 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -2309,7 +2328,15 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
+            }
           },
           "to": {
             "zone": "HAND",
@@ -2659,6 +2686,12 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -2666,7 +2699,15 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
+            }
           },
           "to": {
             "zone": "DECK",
@@ -2800,15 +2841,17 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                   "action": {
                     "type": "MOVE_CARD",
                     "selector": {
-                      "subject": "CARD",
+                      "subject": "ACTION_RESULT",
+                      "relations": [
+                        "PREVIOUS_ACTION_TARGET"
+                      ],
                       "quantity": {
                         "kind": "EXACTLY",
                         "value": {
                           "kind": "NUMBER",
                           "value": 1
                         }
-                      },
-                      "chooser": "EFFECT_OWNER"
+                      }
                     },
                     "to": {
                       "zone": "DECK",
@@ -2859,6 +2902,12 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
           "type": "MOVE_CARD",
           "selector": {
             "subject": "CARD",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -2866,7 +2915,15 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "AT_MOST",
+              "value": {
+                "kind": "NUMBER",
+                "value": 8
+              }
+            }
           },
           "to": {
             "zone": "HAND",
@@ -3201,7 +3258,8 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
               "subject": "CARD",
               "owner": "PLAYER",
               "zones": [
-                "HAND"
+                "HAND",
+                "TRASH"
               ],
               "quantity": {
                 "kind": "UP_TO",
@@ -3222,6 +3280,14 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                 "values": [
                   "Water Seven"
                 ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 5
+                }
               }
             },
             "player": "PLAYER"
@@ -4097,7 +4163,15 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 0
+              }
+            }
           },
           "cause": "EFFECT"
         },
@@ -4595,7 +4669,15 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 0
+                  }
+                }
               },
               "cause": "EFFECT"
             },
@@ -5877,7 +5959,8 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                 "subject": "CARD",
                 "owner": "PLAYER",
                 "zones": [
-                  "HAND"
+                  "HAND",
+                  "TRASH"
                 ],
                 "quantity": {
                   "kind": "UP_TO",

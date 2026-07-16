@@ -132,6 +132,7 @@ export interface Selector_V2 {
   life?: NumericPropertyFilter_V2;
   states?: ('ACTIVE' | 'RESTED' | 'ATTACKING' | 'BLOCKING' | 'PLAYED_THIS_TURN')[];
   keywords?: { kind: 'HAS_KEYWORD' | 'DOES_NOT_HAVE_KEYWORD'; value: KeywordEffect_V2 };
+  baseEffectStatus?: 'ANY' | 'HAS_BASE_EFFECT' | 'NO_BASE_EFFECT';
   relations?: string[];
   instanceIds?: string[];
   quantity?: Quantity_V2;

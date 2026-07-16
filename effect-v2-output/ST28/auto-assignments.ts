@@ -663,7 +663,6 @@ export const ST28_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -678,10 +677,6 @@ export const ST28_AUTO_ASSIGNMENTS_V2 = [
                     "Land of Wano"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_LEAST",
@@ -689,7 +684,11 @@ export const ST28_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 2
                   }
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",

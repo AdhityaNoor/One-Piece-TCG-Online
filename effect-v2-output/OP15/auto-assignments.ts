@@ -1133,11 +1133,9 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
@@ -1150,7 +1148,7 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -1464,7 +1462,7 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
             "chooser": "EFFECT_OWNER",
             "power": {
               "propertyLayer": "BASE",
-              "comparison": "EQUAL",
+              "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
                 "value": 6000
@@ -3205,6 +3203,15 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               "type": "PREVENT_ACTION",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "states": [
+                  "RESTED"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -3289,7 +3296,6 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -3304,16 +3310,16 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                     "East Blue"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "colors": {
                   "kind": "HAS_ANY_COLOR",
                   "values": [
                     "BLUE"
                   ]
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",
@@ -4160,24 +4166,22 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
-                    "value": 2
+                    "value": 1
                   }
                 },
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -4332,7 +4336,6 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -4353,16 +4356,16 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                     "value": "The Outcome Will Tell Us Who's Strong and Who's Weak"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
-                ],
                 "colors": {
                   "kind": "HAS_ANY_COLOR",
                   "values": [
                     "BLUE"
                   ]
-                }
+                },
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
+                ]
               },
               "to": {
                 "zone": "HAND",
@@ -4706,6 +4709,14 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               "values": [
                 "Dressrosa"
               ]
+            },
+            "cost": {
+              "propertyLayer": "CURRENT",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 3
+              }
             }
           },
           "player": "PLAYER"
@@ -4775,7 +4786,6 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -4790,9 +4800,9 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                     "Dressrosa"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -5256,7 +5266,6 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -5271,9 +5280,9 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                     "Dressrosa"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -6045,7 +6054,7 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               "eventType": "CARD_WOULD_MOVE",
               "subject": {
                 "subject": "CARD",
-                "controller": "OPPONENT",
+                "controller": "PLAYER",
                 "zones": [
                   "CHARACTER_AREA"
                 ],
@@ -6062,7 +6071,7 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -6232,7 +6241,6 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -6247,9 +6255,9 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                     "Dressrosa"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -6428,6 +6436,12 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               "type": "MOVE_CARD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "STAGE_AREA"
+                ],
+                "cardCategories": [
+                  "STAGE"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -8341,11 +8355,9 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
@@ -8358,7 +8370,7 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -8858,43 +8870,91 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
       },
       "optionality": "MANDATORY",
       "resolution": {
-        "kind": "ACTION",
-        "action": {
-          "type": "PLAY_CARD",
-          "selector": {
-            "subject": "CARD",
-            "owner": "PLAYER",
-            "zones": [
-              "HAND"
-            ],
-            "quantity": {
-              "kind": "UP_TO",
-              "value": {
-                "kind": "NUMBER",
-                "value": 1
-              }
+        "kind": "CHOOSE",
+        "chooser": "PLAYER",
+        "options": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PLAY_CARD",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Heavenly Warriors"
+                  }
+                ],
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                }
+              },
+              "player": "PLAYER"
             },
-            "chooser": "EFFECT_OWNER",
-            "names": [
-              {
-                "kind": "NAME_EXACT",
-                "value": "Heavenly Warriors"
-              }
-            ],
-            "types": {
-              "kind": "HAS_ANY_TYPE",
-              "values": [
-                "Vassals"
-              ]
-            }
+            "actionId": "OP15-073#1.0"
           },
-          "player": "PLAYER"
-        },
-        "actionId": "OP15-073#1.0"
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PLAY_CARD",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "HAND"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "Vassals"
+                  ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                }
+              },
+              "player": "PLAYER"
+            },
+            "actionId": "OP15-073#1.1"
+          }
+        ],
+        "minimumChoices": 1,
+        "maximumChoices": 1
       }
     },
     "coveredAtomicEffectIds": [
-      "OP15-073#1.0"
+      "OP15-073#1.0",
+      "OP15-073#1.1"
     ]
   },
   {
@@ -10811,6 +10871,12 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               "type": "GRANT_KEYWORD",
               "selector": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
@@ -11191,11 +11257,9 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
@@ -11208,7 +11272,7 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -11728,8 +11792,11 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               "eventType": "CARD_WOULD_MOVE",
               "subject": {
                 "subject": "CARD",
-                "relations": [
-                  "THIS_CARD"
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
@@ -11738,7 +11805,16 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "Straw Hat Crew"
+                  ]
+                },
+                "relations": [
+                  "EXCLUDE_THIS_CARD"
+                ]
               },
               "fromZone": "CHARACTER_AREA",
               "sourceSelector": {
@@ -12397,6 +12473,12 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               "eventType": "CARD_WOULD_MOVE",
               "subject": {
                 "subject": "CARD",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
@@ -12410,9 +12492,28 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                   "values": [
                     "Sky Island"
                   ]
+                },
+                "power": {
+                  "propertyLayer": "BASE",
+                  "comparison": "AT_LEAST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 6000
+                  }
                 }
               },
-              "fromZone": "CHARACTER_AREA"
+              "fromZone": "CHARACTER_AREA",
+              "conditions": {
+                "kind": "PREDICATE",
+                "left": {
+                  "kind": "MOVE_CAUSE"
+                },
+                "operator": "EQUAL",
+                "right": {
+                  "kind": "STRING",
+                  "value": "EFFECT"
+                }
+              }
             }
           },
           "duration": {
@@ -12789,7 +12890,6 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -12810,9 +12910,9 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                     "value": "Mont Blanc Noland"
                   }
                 ],
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {
@@ -13334,11 +13434,9 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "subject": "CARD",
                 "controller": "PLAYER",
                 "zones": [
-                  "LEADER_AREA",
                   "CHARACTER_AREA"
                 ],
                 "cardCategories": [
-                  "LEADER",
                   "CHARACTER"
                 ],
                 "quantity": {
@@ -13351,7 +13449,7 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "chooser": "EFFECT_OWNER",
                 "power": {
                   "propertyLayer": "BASE",
-                  "comparison": "EQUAL",
+                  "comparison": "AT_MOST",
                   "value": {
                     "kind": "NUMBER",
                     "value": 7000
@@ -13529,7 +13627,6 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
             "action": {
               "type": "MOVE_CARD",
               "selector": {
-                "subject": "CARD",
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -13544,9 +13641,9 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                     "Sky Island"
                   ]
                 },
-                "owner": "PLAYER",
-                "zones": [
-                  "DECK"
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "SELECTED_PREVIOUSLY"
                 ]
               },
               "to": {

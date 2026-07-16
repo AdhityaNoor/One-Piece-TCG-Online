@@ -418,6 +418,12 @@
                 "type": "ADD_CARD_TO_LIFE",
                 "selector": {
                   "subject": "CARD",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -605,6 +611,12 @@
                   "type": "ADD_CARD_TO_LIFE",
                   "selector": {
                     "subject": "CARD",
+                    "zones": [
+                      "CHARACTER_AREA"
+                    ],
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -975,7 +987,15 @@
                   "value": 2
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 5
+                }
+              }
             },
             "player": "PLAYER",
             "position": "TOP",
@@ -1162,7 +1182,15 @@
                     "value": 2
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
+                  }
+                }
               },
               "player": "PLAYER",
               "position": "TOP",
@@ -1336,7 +1364,10 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ],
                   "quantity": {
                     "kind": "EXACTLY",
                     "value": {
@@ -1464,7 +1495,10 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ],
                     "quantity": {
                       "kind": "EXACTLY",
                       "value": {
@@ -1520,10 +1554,10 @@
       "parserRecognizedAtomicEffects": 4,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 4,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 4,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -1571,12 +1605,9 @@
           "atomIndex": 2,
           "rawText": "place 1 card at the top of your deck",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:ST13-004:0"
           ],
@@ -1585,8 +1616,7 @@
             "PLACE_CARD_IN_DECK"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         },
         {
           "atomicEffectId": "ST13-004#0.3",
@@ -1738,7 +1768,15 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 5
+                }
+              }
             },
             "player": "PLAYER",
             "position": "TOP",
@@ -1871,7 +1909,15 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
+                  }
+                }
               },
               "player": "PLAYER",
               "position": "TOP",
@@ -2077,7 +2123,15 @@
                   "kind": "NAME_EXACT",
                   "value": "Monkey.D.Luffy"
                 }
-              ]
+              ],
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "EQUAL",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2
+                }
+              }
             },
             "player": "PLAYER"
           },
@@ -2197,7 +2251,15 @@
                     "kind": "NAME_EXACT",
                     "value": "Monkey.D.Luffy"
                   }
-                ]
+                ],
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 2
+                  }
+                }
               },
               "player": "PLAYER"
             },
@@ -4079,7 +4141,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -4102,10 +4163,6 @@
                       "value": "Monkey.D.Luffy"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
-                  ],
                   "cost": {
                     "propertyLayer": "CURRENT",
                     "comparison": "AT_MOST",
@@ -4113,7 +4170,11 @@
                       "kind": "NUMBER",
                       "value": 5
                     }
-                  }
+                  },
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ]
                 },
                 "to": {
                   "zone": "HAND",
@@ -4216,7 +4277,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -4239,10 +4299,6 @@
                         "value": "Monkey.D.Luffy"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
-                    ],
                     "cost": {
                       "propertyLayer": "CURRENT",
                       "comparison": "AT_MOST",
@@ -4250,7 +4306,11 @@
                         "kind": "NUMBER",
                         "value": 5
                       }
-                    }
+                    },
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ]
                   },
                   "to": {
                     "zone": "HAND",
@@ -5189,7 +5249,10 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ],
                   "quantity": {
                     "kind": "EXACTLY",
                     "value": {
@@ -5341,7 +5404,10 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ],
                     "quantity": {
                       "kind": "EXACTLY",
                       "value": {
@@ -5396,10 +5462,10 @@
       "parserRecognizedAtomicEffects": 4,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 4,
-      "assignmentPartialAtomicEffects": 1,
+      "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 4,
-      "partialAtomicEffects": 1,
+      "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -5447,12 +5513,9 @@
           "atomIndex": 1,
           "rawText": "place 1 at the top of your deck",
           "parserStatus": "recognized",
-          "semanticStatus": "needsAudit",
-          "semanticIssues": [
-            "Card movement/action selector has no source zone or prior-result relation."
-          ],
+          "semanticStatus": "safe",
           "assignmentStatus": "assigned",
-          "status": "partial",
+          "status": "covered",
           "coveredByAssignmentIds": [
             "v2:auto:ST13-016:1"
           ],
@@ -5461,8 +5524,7 @@
             "PLACE_CARD_IN_DECK"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom.",
-          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
         },
         {
           "atomicEffectId": "ST13-016#1.2",
@@ -6477,7 +6539,6 @@
               "action": {
                 "type": "MOVE_CARD",
                 "selector": {
-                  "subject": "CARD",
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -6500,10 +6561,6 @@
                       "value": "Monkey.D.Luffy"
                     }
                   ],
-                  "owner": "PLAYER",
-                  "zones": [
-                    "DECK"
-                  ],
                   "cost": {
                     "propertyLayer": "CURRENT",
                     "comparison": "AT_MOST",
@@ -6511,7 +6568,11 @@
                       "kind": "NUMBER",
                       "value": 5
                     }
-                  }
+                  },
+                  "subject": "ACTION_RESULT",
+                  "relations": [
+                    "SELECTED_PREVIOUSLY"
+                  ]
                 },
                 "to": {
                   "zone": "HAND",
@@ -6668,7 +6729,6 @@
                 "action": {
                   "type": "MOVE_CARD",
                   "selector": {
-                    "subject": "CARD",
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -6691,10 +6751,6 @@
                         "value": "Monkey.D.Luffy"
                       }
                     ],
-                    "owner": "PLAYER",
-                    "zones": [
-                      "DECK"
-                    ],
                     "cost": {
                       "propertyLayer": "CURRENT",
                       "comparison": "AT_MOST",
@@ -6702,7 +6758,11 @@
                         "kind": "NUMBER",
                         "value": 5
                       }
-                    }
+                    },
+                    "subject": "ACTION_RESULT",
+                    "relations": [
+                      "SELECTED_PREVIOUSLY"
+                    ]
                   },
                   "to": {
                     "zone": "HAND",

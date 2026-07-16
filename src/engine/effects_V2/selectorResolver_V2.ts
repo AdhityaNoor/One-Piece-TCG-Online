@@ -3,6 +3,7 @@ import type { GameState } from '../state/game';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import type { EffectRuntimeBundle_V2 } from './runtime_V2';
 import { computeCurrentCost, computeCurrentPower, hasContinuousKeyword } from '../rules/shared/power';
+import { cardHasNoBaseEffect } from '../effects/cardHasNoBaseEffect';
 import type {
   CardCategory_V2,
   Color_V2,
@@ -219,6 +220,23 @@ function hasType(def: CardDefinition, required: string): boolean {
   return def.types.some((type) => type.toLowerCase().split(/[\/,]+/).some((part) => part.trim().includes(needle)));
 }
 
+function matchesBaseEffectStatus(def: CardDefinition, status: Selector_V2['baseEffectStatus']): boolean {
+  if (!status || status === 'ANY') return true;
+  const hasNoBaseEffect = cardHasNoBaseEffect(def);
+  return status === 'NO_BASE_EFFECT' ? hasNoBaseEffect : !hasNoBaseEffect;
+}
+
+function matchesNameFilters(def: CardDefinition, names: Selector_V2['names']): boolean {
+  if (!names?.length) return true;
+  const exactNames = names.filter((name) => name.kind === 'NAME_EXACT').map((name) => name.value);
+  const containsNames = names.filter((name) => name.kind === 'NAME_CONTAINS').map((name) => name.value.toLowerCase());
+  const excludedNames = names.filter((name) => name.kind === 'NAME_NOT').map((name) => name.value);
+  if (excludedNames.includes(def.name)) return false;
+  if (exactNames.length > 0 && !exactNames.includes(def.name)) return false;
+  if (containsNames.length > 0 && !containsNames.some((name) => def.name.toLowerCase().includes(name))) return false;
+  return true;
+}
+
 function matchesSelector(ctx: SelectorContext_V2, selector: Selector_V2, instanceId: string): boolean {
   const inst = ctx.state.cardsById[instanceId];
   const def = defOf(ctx, instanceId);
@@ -230,9 +248,8 @@ function matchesSelector(ctx: SelectorContext_V2, selector: Selector_V2, instanc
   const forceIncludeSource = selector.relations?.includes('INCLUDE_THIS_CARD') && isSourceCard;
 
   if (!forceIncludeSource && selector.cardCategories?.length && !selector.cardCategories.includes(CATEGORY_TO_V2[def.category])) return false;
-  if (!forceIncludeSource && selector.names?.some((name) => name.kind === 'NAME_EXACT' && def.name !== name.value)) return false;
-  if (!forceIncludeSource && selector.names?.some((name) => name.kind === 'NAME_CONTAINS' && !def.name.toLowerCase().includes(name.value.toLowerCase()))) return false;
-  if (!forceIncludeSource && selector.names?.some((name) => name.kind === 'NAME_NOT' && def.name === name.value)) return false;
+  if (!forceIncludeSource && !matchesBaseEffectStatus(def, selector.baseEffectStatus)) return false;
+  if (!forceIncludeSource && !matchesNameFilters(def, selector.names)) return false;
 
   if (selector.colors) {
     const colors = def.colors.map((color) => COLOR_TO_V2[color]);

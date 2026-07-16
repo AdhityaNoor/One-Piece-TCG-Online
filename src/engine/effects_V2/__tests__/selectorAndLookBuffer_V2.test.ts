@@ -136,6 +136,92 @@ describe('V2 selector resolver and look buffer', () => {
     expect(resolved.candidateInstanceIds).toEqual(['c3', 'c4']);
   });
 
+  it('resolves multiple exact name filters as alternatives with exclusions', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { name: 'Leader', category: 'leader', basePower: 5000 }),
+      sabo: def('sabo', { name: 'Sabo', baseCost: 2 }),
+      ace: def('ace', { name: 'Portgas.D.Ace', baseCost: 2 }),
+      luffy: def('luffy', { name: 'Monkey.D.Luffy', baseCost: 2 }),
+      nami: def('nami', { name: 'Nami', baseCost: 2 }),
+    };
+    const withHand = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, hand: { ...state.players.p1.hand, cardIds: ['sabo-id', 'ace-id', 'luffy-id', 'nami-id'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'sabo-id': { ...instance('sabo-id', 'sabo'), currentZone: 'hand' as const },
+        'ace-id': { ...instance('ace-id', 'ace'), currentZone: 'hand' as const },
+        'luffy-id': { ...instance('luffy-id', 'luffy'), currentZone: 'hand' as const },
+        'nami-id': { ...instance('nami-id', 'nami'), currentZone: 'hand' as const },
+      },
+    };
+
+    const resolved = resolveSelector_V2(
+      { state: withHand, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' },
+      {
+        subject: 'CARD',
+        owner: 'PLAYER',
+        zones: ['HAND'],
+        names: [
+          { kind: 'NAME_EXACT', value: 'Sabo' },
+          { kind: 'NAME_EXACT', value: 'Portgas.D.Ace' },
+          { kind: 'NAME_EXACT', value: 'Monkey.D.Luffy' },
+          { kind: 'NAME_NOT', value: 'Nami' },
+        ],
+        quantity: { kind: 'ALL' },
+      },
+    );
+
+    expect(resolved.candidateInstanceIds).toEqual(['sabo-id', 'ace-id', 'luffy-id']);
+  });
+
+  it('resolves baseEffectStatus filters using the engine no-base-effect helper', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { name: 'Leader', category: 'leader', basePower: 5000 }),
+      vanilla: def('vanilla', { text: '' }),
+      keywordOnly: def('keywordOnly', { text: '[Rush] (This card can attack on the turn in which it is played.)', hasRush: true }),
+      effectful: def('effectful', { text: '[On Play] Draw 1 card.' }),
+      trigger: def('trigger', { text: '[Trigger] Draw 1 card.', hasTrigger: true }),
+    };
+    const withCharacters = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, characterArea: { ...state.players.p1.characterArea, cardIds: ['vanilla-id', 'keyword-id', 'effect-id', 'trigger-id'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'vanilla-id': { ...instance('vanilla-id', 'vanilla'), currentZone: 'characterArea' as const },
+        'keyword-id': { ...instance('keyword-id', 'keywordOnly'), currentZone: 'characterArea' as const },
+        'effect-id': { ...instance('effect-id', 'effectful'), currentZone: 'characterArea' as const },
+        'trigger-id': { ...instance('trigger-id', 'trigger'), currentZone: 'characterArea' as const },
+      },
+    };
+    const ctx = { state: withCharacters, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+
+    expect(resolveSelector_V2(ctx, {
+      subject: 'CARD',
+      controller: 'PLAYER',
+      zones: ['CHARACTER_AREA'],
+      cardCategories: ['CHARACTER'],
+      baseEffectStatus: 'NO_BASE_EFFECT',
+      quantity: { kind: 'ALL' },
+    }).candidateInstanceIds).toEqual(['vanilla-id', 'keyword-id']);
+    expect(resolveSelector_V2(ctx, {
+      subject: 'CARD',
+      controller: 'PLAYER',
+      zones: ['CHARACTER_AREA'],
+      cardCategories: ['CHARACTER'],
+      baseEffectStatus: 'HAS_BASE_EFFECT',
+      quantity: { kind: 'ALL' },
+    }).candidateInstanceIds).toEqual(['effect-id', 'trigger-id']);
+  });
+
   it('excludes the source card when EXCLUDE_THIS_CARD is present', () => {
     const state = createSampleGameState();
     const defs: CardDefinitionLookup = {

@@ -7,12 +7,14 @@ import { mintRuntimeInstanceId } from '../rules/shared/mintInstance';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 import type { CardInstance } from '../state/card';
 import type { GameState } from '../state/game';
+import { selectFromLookBuffer_V2, type LookBuffer_V2 } from './lookBuffer_V2';
 import { resolveSelector_V2, selectResolvedCandidateIds_V2, type SelectorContext_V2 } from './selectorResolver_V2';
 
 export interface PlayCardsResult_V2 {
   state: GameState;
   log: GameLogEntry[];
   playedInstanceIds: string[];
+  bindings?: import('./selectorResolver_V2').EffectBindings_V2;
 }
 
 function opponentOf(state: GameState, playerId: string): string {
@@ -216,9 +218,26 @@ export function playCards_V2(
   }
 
   if (playedInstanceIds.length === 0) return { state: ctx.state, log: [], playedInstanceIds: [] };
+  const existingBuffer = ctx.bindings?.actionResults.LOOK_BUFFER_V2 as LookBuffer_V2 | undefined;
+  const updatedBuffer = existingBuffer ? selectFromLookBuffer_V2(existingBuffer, selectedIds) : undefined;
+  const selectedObjects = {
+    ...(ctx.bindings?.selectedObjects ?? {}),
+    SELECTED_PREVIOUSLY: playedInstanceIds,
+    PREVIOUS_ACTION_TARGET: playedInstanceIds,
+    PLAYED_SOURCE_PREVIOUSLY: selectedIds,
+    ...(updatedBuffer ? {
+      LOOKED_AT_PREVIOUSLY: updatedBuffer.lookedInstanceIds,
+      REMAINDER_OF_PREVIOUS_SELECTION: updatedBuffer.remainingInstanceIds,
+    } : {}),
+  };
+  const actionResults = {
+    ...(ctx.bindings?.actionResults ?? {}),
+    ...(updatedBuffer ? { LOOK_BUFFER_V2: updatedBuffer } : {}),
+  };
   return {
     state: { ...state, log: [...state.log, ...logger.log] },
     log: logger.log,
     playedInstanceIds,
+    bindings: { selectedObjects, actionResults },
   };
 }

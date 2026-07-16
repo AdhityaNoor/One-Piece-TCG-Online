@@ -2,9 +2,30 @@ import { describe, expect, it } from 'vitest';
 import { createPreGameState } from '../createPreGameState';
 import { validateChooseGoingFirst, executeChooseGoingFirst } from '../applyChooseGoingFirst';
 import { validateMulliganDecision, executeMulliganDecision } from '../applyMulliganDecision';
+import { advanceStartOfGameEffects } from '../advanceStartOfGameEffects';
 import type { GameState } from '../../state/game';
 import type { ChooseGoingFirstAction, MulliganDecisionAction } from '../../actions/action';
 import { makePlayerSetupInput, makeDeckOf } from './fixtures';
+
+/**
+ * executeChooseGoingFirst (5-2-1-5) no longer deals opening hands itself —
+ * it now only decides going-first/second and parks setupState at
+ * 'awaitingStartOfGameLeaderEffect' (5-2-1-5-1). advanceStartOfGameEffects
+ * drains that stage (a no-op with an empty registry, since no card here has
+ * a startOfGame ability) and deals hands (5-2-1-6). The real dispatcher
+ * (actions/dispatch.ts) chains these two automatically via
+ * advanceAutomaticPhases; these lower-level setup tests chain them
+ * explicitly to keep testing the setup functions directly.
+ */
+function chooseGoingFirstAndDealHands(state: GameState, action: ChooseGoingFirstAction) {
+  const chosen = executeChooseGoingFirst(state, action);
+  const advanced = advanceStartOfGameEffects(chosen.state, {}, {}, action.actionId);
+  return {
+    state: advanced.state,
+    log: [...chosen.log, ...advanced.log],
+    pendingChoices: advanced.state.pendingChoices,
+  };
+}
 
 function freshInputs() {
   return {
@@ -99,7 +120,7 @@ describe('validateChooseGoingFirst / executeChooseGoingFirst', () => {
     const validation = validateChooseGoingFirst(state, chooseGoingFirstAction('p1', true));
     expect(validation.legal).toBe(true);
 
-    const { state: next, log, pendingChoices } = executeChooseGoingFirst(state, chooseGoingFirstAction('p1', true));
+    const { state: next, log, pendingChoices } = chooseGoingFirstAndDealHands(state, chooseGoingFirstAction('p1', true));
     expect(next.players.p1.hand.cardIds).toHaveLength(5);
     expect(next.players.p2.hand.cardIds).toHaveLength(5);
     expect(next.players.p1.deck.cardIds).toHaveLength(45);
@@ -141,7 +162,7 @@ describe('validateChooseGoingFirst / executeChooseGoingFirst', () => {
 describe('validateMulliganDecision / executeMulliganDecision', () => {
   function afterGoingFirstChosen() {
     const pregame = buildPreGame('p1');
-    return executeChooseGoingFirst(pregame, chooseGoingFirstAction('p1', true)).state;
+    return chooseGoingFirstAndDealHands(pregame, chooseGoingFirstAction('p1', true)).state;
   }
 
   it('rejects the going-second player acting before the going-first player decides', () => {
@@ -223,7 +244,7 @@ describe('validateMulliganDecision / executeMulliganDecision', () => {
 describe('full setup flow — end to end', () => {
   function runFullFlow(seed: string): GameState {
     const pregame = buildPreGame('p1', seed);
-    const afterChoice = executeChooseGoingFirst(pregame, chooseGoingFirstAction('p1', true)).state;
+    const afterChoice = chooseGoingFirstAndDealHands(pregame, chooseGoingFirstAction('p1', true)).state;
     const afterP1Mulligan = executeMulliganDecision(afterChoice, mulliganAction('p1', true)).state;
     return executeMulliganDecision(afterP1Mulligan, mulliganAction('p2', false)).state;
   }
@@ -243,7 +264,7 @@ describe('full setup flow — end to end', () => {
     // steps after setup are pure, so replaying them must be byte-identical.
     const pregame = buildPreGame('p1', 'replay-seed');
     const replay = (s: GameState): GameState => {
-      const afterChoice = executeChooseGoingFirst(s, chooseGoingFirstAction('p1', true)).state;
+      const afterChoice = chooseGoingFirstAndDealHands(s, chooseGoingFirstAction('p1', true)).state;
       const afterP1 = executeMulliganDecision(afterChoice, mulliganAction('p1', true)).state;
       return executeMulliganDecision(afterP1, mulliganAction('p2', false)).state;
     };

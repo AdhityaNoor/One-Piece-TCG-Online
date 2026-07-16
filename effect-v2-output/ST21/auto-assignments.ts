@@ -645,7 +645,7 @@ export const ST21_AUTO_ASSIGNMENTS_V2 = [
             },
             "power": {
               "propertyLayer": "BASE",
-              "comparison": "EQUAL",
+              "comparison": "AT_MOST",
               "value": {
                 "kind": "NUMBER",
                 "value": 4000

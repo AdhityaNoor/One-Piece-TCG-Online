@@ -70,8 +70,18 @@ export function advanceAutomaticPhases(state: GameState, defs: CardDefinitionLoo
         log.push(...result.log);
         break;
       }
+      case 'setup': {
+        // Only the 'awaitingStartOfGameLeaderEffect' stage does automatic work
+        // here (5-2-1-5-1); advanceStartOfGameEffects itself is a no-op for
+        // the other two setup stages ('awaitingGoingFirstChoice' /
+        // 'awaitingMulliganDecision'), matching this function's existing
+        // "no-op outside handled phases/stages" contract.
+        const result = advanceStartOfGameEffects(current, defs, registry, null);
+        current = result.state;
+        log.push(...result.log);
+        return { state: current, log };
+      }
       case 'main':
-      case 'setup':
         return { state: current, log };
       default:
         return { state: current, log };
