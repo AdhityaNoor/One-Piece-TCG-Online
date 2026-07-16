@@ -4,3 +4,4 @@ export * from './setupExecuteResult';
 export * from './createPreGameState';
 export * from './applyChooseGoingFirst';
 export * from './applyMulliganDecision';
+export * from './advanceStartOfGameEffects';

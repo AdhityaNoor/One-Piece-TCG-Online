@@ -17,6 +17,7 @@ import { runDrawPhase } from './runDrawPhase';
 import { runDonPhase } from './runDonPhase';
 import { runEndPhaseAndHandoff } from './runEndPhaseAndHandoff';
 import { fireStartOfTurnReactions } from '../../effects/fireTiming';
+import { advanceStartOfGameEffects } from '../../setup/advanceStartOfGameEffects';
 
 export interface AdvanceAutomaticPhasesResult {
   state: GameState;
