@@ -29,6 +29,13 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
           "type": "MODIFY_COUNTER",
           "selector": {
             "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "CHARACTER_AREA"
+            ],
+            "cardCategories": [
+              "CHARACTER"
+            ],
             "quantity": {
               "kind": "ALL"
             },
@@ -38,6 +45,14 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
               "values": [
                 "Land of Wano"
               ]
+            },
+            "counter": {
+              "propertyLayer": "BASE",
+              "comparison": "EQUAL",
+              "value": {
+                "kind": "NUMBER",
+                "value": 0
+              }
             }
           },
           "propertyLayer": "CURRENT_VALUE",

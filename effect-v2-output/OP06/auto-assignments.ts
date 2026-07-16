@@ -7757,6 +7757,24 @@ export const OP06_AUTO_ASSIGNMENTS_V2 = [
               "kind": "NUMBER",
               "value": 2
             }
+          },
+          {
+            "type": "TRASH_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "owner": "PLAYER",
+              "zones": [
+                "HAND"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
           }
         ],
         "optionalPayment": "REQUIRED_TO_ACTIVATE",
@@ -9429,6 +9447,23 @@ export const OP06_AUTO_ASSIGNMENTS_V2 = [
             "count": {
               "kind": "NUMBER",
               "value": 1
+            }
+          },
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
             }
           }
         ],

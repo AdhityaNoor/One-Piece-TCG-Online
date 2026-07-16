@@ -3731,7 +3731,11 @@ function collectSelectorsFromValue_V2(value: unknown, selectors: Selector_V2[] =
   return selectors;
 }
 
-function semanticIssuesForParsedAtom_V2(text: string, parsed: { action?: Action_V2; costs?: CostAction_V2[] }): string[] {
+function semanticIssuesForParsedAtom_V2(
+  text: string,
+  parsed: { action?: Action_V2; costs?: CostAction_V2[] },
+  context: { previousActionId?: string } = {},
+): string[] {
   const issues: string[] = [];
   const selectors = collectSelectorsFromValue_V2(parsed.action ?? parsed.costs);
 
@@ -3745,6 +3749,24 @@ function semanticIssuesForParsedAtom_V2(text: string, parsed: { action?: Action_
 
   if (/\bwin the game instead of losing\b/i.test(text) && parsed.action?.type === 'PLAYER_WINS') {
     issues.push('Replacement/victory-condition text was parsed as an immediate PLAYER_WINS action.');
+  }
+
+  if (/\b(?:if you do|if you did|this way|if they do not)\b/i.test(text) && !context.previousActionId) {
+    issues.push('Result-dependent text has no previous action binding.');
+  }
+
+  if (selectors.some((selector) => selector.subject === 'ACTION_RESULT' && selector.relations?.some((relation) => relation === 'SELECTED_PREVIOUSLY' || relation === 'PREVIOUS_ACTION_TARGET')) && !context.previousActionId) {
+    issues.push('Selector references a previous selected/action-result card without a previous action binding.');
+  }
+
+  const action = parsed.action;
+  if (action && ['MOVE_CARD', 'TRASH_CARD', 'KO_CARD', 'PLAY_CARD', 'REVEAL_CARD'].includes(action.type)) {
+    const sourceSelector = 'selector' in action ? action.selector : undefined;
+    if (sourceSelector?.subject === 'CARD'
+      && !sourceSelector.zones?.length
+      && !sourceSelector.relations?.some((relation) => relation === 'THIS_CARD' || relation === 'SELECTED_PREVIOUSLY' || relation === 'PREVIOUS_ACTION_TARGET' || relation === 'REMAINDER_OF_PREVIOUS_SELECTION')) {
+      issues.push('Card movement/action selector has no source zone or prior-result relation.');
+    }
   }
 
   return issues;
@@ -4490,7 +4512,7 @@ function buildEffectDefinition_V2(cardNumber: string, effectIndex: number, segme
     const canonicalClassification = classifyUnrecognizedTextAgainstCanonical_V2(parsed.unrecognizedKind, clause);
     const atomId = `${cardNumber}#${effectIndex}.${atomIndex}`;
     atomIndex += 1;
-    const semanticIssues = semanticIssuesForParsedAtom_V2(clause, parsed);
+    const semanticIssues = semanticIssuesForParsedAtom_V2(clause, parsed, { previousActionId: lastActionId });
     atoms.push({
       id: atomId,
       cardNumber,

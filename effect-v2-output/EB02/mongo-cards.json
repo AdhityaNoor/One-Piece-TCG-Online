@@ -7015,10 +7015,10 @@
       "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 3,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 3,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -7066,9 +7066,12 @@
           "atomIndex": 1,
           "rawText": "return up to 1 Character with a cost of 1 or less to the owner's hand.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:EB02-024:1"
           ],
@@ -7077,7 +7080,8 @@
             "ADD_CARD_TO_HAND"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         }
       ]
     }
@@ -7431,10 +7435,10 @@
       "parserRecognizedAtomicEffects": 4,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 4,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 4,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -7482,9 +7486,12 @@
           "atomIndex": 2,
           "rawText": "play up to 1 Character card with a cost of 2 or less rested.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:EB02-025:0"
           ],
@@ -7492,7 +7499,8 @@
             "PLAY_CARD"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         },
         {
           "atomicEffectId": "EB02-025#0.3",

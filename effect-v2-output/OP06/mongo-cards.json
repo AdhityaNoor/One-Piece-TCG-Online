@@ -699,10 +699,10 @@
       "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 3,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 3,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -731,9 +731,12 @@
           "atomIndex": 1,
           "rawText": "play up to 1 {Revolutionary Army} type Character card with 5000 power or less.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:OP06-003:0"
           ],
@@ -741,7 +744,8 @@
             "PLAY_CARD"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         },
         {
           "atomicEffectId": "OP06-003#0.2",
@@ -12071,10 +12075,10 @@
       "parserRecognizedAtomicEffects": 1,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 1,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 1,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -12084,9 +12088,12 @@
           "atomIndex": 0,
           "rawText": "Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:OP06-046:0"
           ],
@@ -12095,7 +12102,8 @@
             "PLACE_CARD_IN_DECK"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         }
       ]
     }
@@ -13444,10 +13452,10 @@
       "parserRecognizedAtomicEffects": 1,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 1,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 1,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -13457,9 +13465,12 @@
           "atomIndex": 0,
           "rawText": "Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:OP06-053:0"
           ],
@@ -13468,7 +13479,8 @@
             "PLACE_CARD_IN_DECK"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         }
       ]
     }
@@ -14569,10 +14581,10 @@
       "parserRecognizedAtomicEffects": 4,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 4,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 4,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -14601,9 +14613,12 @@
           "atomIndex": 1,
           "rawText": "reveal 1 card from the top of your deck, play up to 1 Character card with a cost of 2,",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:OP06-057:0"
           ],
@@ -14611,7 +14626,8 @@
             "PLAY_CARD"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         },
         {
           "atomicEffectId": "OP06-057#0.2",
@@ -14885,10 +14901,10 @@
       "parserRecognizedAtomicEffects": 2,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 2,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 2,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 2,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 2,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -14898,9 +14914,12 @@
           "atomIndex": 0,
           "rawText": "Place up to 2 Characters with a cost of 6 or less at the bottom of the owner's deck in any order.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:OP06-058:0"
           ],
@@ -14909,7 +14928,8 @@
             "PLACE_CARD_IN_DECK"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         },
         {
           "atomicEffectId": "OP06-058#1.0",
@@ -14918,9 +14938,12 @@
           "atomIndex": 0,
           "rawText": "Place up to 1 Character with a cost of 5 or less at the bottom of the owner's deck.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:OP06-058:1"
           ],
@@ -14929,7 +14952,8 @@
             "PLACE_CARD_IN_DECK"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         }
       ]
     }
@@ -21529,10 +21553,10 @@
       "parserRecognizedAtomicEffects": 2,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 2,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 2,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -21561,9 +21585,12 @@
           "atomIndex": 1,
           "rawText": "KO up to 1 Character with a cost of 2 or less.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:OP06-081:0"
           ],
@@ -21571,7 +21598,8 @@
             "KO_CARD"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         }
       ]
     }

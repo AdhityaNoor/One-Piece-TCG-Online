@@ -16106,10 +16106,10 @@
       "parserRecognizedAtomicEffects": 4,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 4,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 4,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -16157,9 +16157,12 @@
           "atomIndex": 2,
           "rawText": "return up to 1 Character with 6000 base power to the owner's hand.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:OP14-058:0"
           ],
@@ -16168,7 +16171,8 @@
             "ADD_CARD_TO_HAND"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         },
         {
           "atomicEffectId": "OP14-058#1.0",
@@ -16457,10 +16461,10 @@
       "parserRecognizedAtomicEffects": 2,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 2,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 2,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -16489,9 +16493,12 @@
           "atomIndex": 0,
           "rawText": "Return up to 1 Character with a cost of 4 or less to the owner's hand.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:OP14-059:1"
           ],
@@ -16500,7 +16507,8 @@
             "ADD_CARD_TO_HAND"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         }
       ]
     }

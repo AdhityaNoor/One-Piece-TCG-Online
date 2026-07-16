@@ -450,10 +450,10 @@
       "parserRecognizedAtomicEffects": 2,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 2,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 2,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -482,9 +482,12 @@
           "atomIndex": 1,
           "rawText": "If your Leader has the {The Seven Warlords of the Sea} type, return up to 1 Character with a cost of 4 or less to the owner's hand.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:ST17-002:0"
           ],
@@ -493,7 +496,8 @@
             "ADD_CARD_TO_HAND"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         }
       ]
     }
@@ -689,10 +693,10 @@
       "parserRecognizedAtomicEffects": 2,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 2,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 2,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -721,9 +725,12 @@
           "atomIndex": 1,
           "rawText": "place them at the top of your deck in any order.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:ST17-003:0"
           ],
@@ -732,7 +739,8 @@
             "PLACE_CARD_IN_DECK"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         }
       ]
     }

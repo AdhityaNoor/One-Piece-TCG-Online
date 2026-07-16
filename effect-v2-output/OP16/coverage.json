@@ -3158,10 +3158,10 @@
     "parserRecognizedAtomicEffects": 5,
     "parserUnrecognizedAtomicEffects": 0,
     "assignmentCoveredAtomicEffects": 5,
-    "assignmentPartialAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 1,
     "assignmentUncoveredAtomicEffects": 0,
     "coveredAtomicEffects": 5,
-    "partialAtomicEffects": 0,
+    "partialAtomicEffects": 1,
     "uncoveredAtomicEffects": 0,
     "statuses": [
       {
@@ -3209,9 +3209,12 @@
         "atomIndex": 2,
         "rawText": "play up to 2 {Impel Down} type Character cards with 6000 power or less.",
         "parserStatus": "recognized",
-        "semanticStatus": "safe",
+        "semanticStatus": "needsAudit",
+        "semanticIssues": [
+          "Card movement/action selector has no source zone or prior-result relation."
+        ],
         "assignmentStatus": "assigned",
-        "status": "covered",
+        "status": "partial",
         "coveredByAssignmentIds": [
           "v2:auto:OP16-059:0"
         ],
@@ -3219,7 +3222,8 @@
           "PLAY_CARD"
         ],
         "canonicalCoverage": "canonical",
-        "canonicalRemark": "Parser emitted a canonical V2 atom."
+        "canonicalRemark": "Parser emitted a canonical V2 atom.",
+        "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
       },
       {
         "atomicEffectId": "OP16-059#0.3",
@@ -4583,10 +4587,10 @@
     "parserRecognizedAtomicEffects": 1,
     "parserUnrecognizedAtomicEffects": 0,
     "assignmentCoveredAtomicEffects": 1,
-    "assignmentPartialAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 1,
     "assignmentUncoveredAtomicEffects": 0,
     "coveredAtomicEffects": 1,
-    "partialAtomicEffects": 0,
+    "partialAtomicEffects": 1,
     "uncoveredAtomicEffects": 0,
     "statuses": [
       {
@@ -4596,9 +4600,12 @@
         "atomIndex": 0,
         "rawText": "When a {Land of Wano} type Character card is played from your trash, that Character gains [Rush] during this turn.",
         "parserStatus": "recognized",
-        "semanticStatus": "safe",
+        "semanticStatus": "needsAudit",
+        "semanticIssues": [
+          "Selector references a previous selected/action-result card without a previous action binding."
+        ],
         "assignmentStatus": "assigned",
-        "status": "covered",
+        "status": "partial",
         "coveredByAssignmentIds": [
           "v2:auto:OP16-079:0"
         ],
@@ -4606,7 +4613,8 @@
           "GRANT_KEYWORD"
         ],
         "canonicalCoverage": "canonical",
-        "canonicalRemark": "Parser emitted a canonical V2 atom."
+        "canonicalRemark": "Parser emitted a canonical V2 atom.",
+        "trackingRemark": "Selector references a previous selected/action-result card without a previous action binding."
       }
     ]
   },

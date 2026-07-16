@@ -1,8 +1,10 @@
 /**
- * 5-2-1-4, 5-2-1-5, 5-2-1-6 (opening hands only). The deciding player picks
- * going first or second; both players then immediately draw a 5-card
- * opening hand and a mulligan PendingChoice is queued for whoever goes
- * first (5-2-1-6 resolves first-player-then-second-player, in that order).
+ * 5-2-1-4, 5-2-1-5 (going-first decision only). The deciding player picks
+ * going first or second; execution then hands off to
+ * setup/advanceStartOfGameEffects.ts (via the dispatcher's unconditional
+ * advanceAutomaticPhases call, mirroring the phase-cascade convention) to
+ * process 5-2-1-5-1 "at the start of the game" Leader effects before
+ * dealOpeningHandsAndQueueMulligan (below) deals 5-2-1-6 opening hands.
  */
 import type { GameState } from '../state/game';
 import type { ChooseGoingFirstAction, ValidationResult } from '../actions/action';
@@ -58,11 +60,57 @@ export function executeChooseGoingFirst(state: GameState, action: ChooseGoingFir
     visibility: 'public',
   });
 
-  // TODO (blueprint Known Limitations): 5-2-1-5-1 "at the start of the game"
-  // Leader effects, and the 5-2-1-5-2 reshuffle that follows if a deck
-  // changed as a result, are NOT processed here — no effect-template
-  // execution model exists yet. Opening hands are dealt as if no such effect
-  // exists; revisit once effect templates land.
+  const players = { ...state.players };
+  for (const player of Object.values(state.players)) {
+    players[player.playerId] = { ...player, hasGoneFirst: player.playerId === goingFirstPlayerId };
+  }
+
+  // 5-2-1-5-1: "at the start of the game" Leader effects (e.g. Imu/OP13-079's
+  // Mary Geoise Stage search) fire next, before opening hands are dealt —
+  // handled by setup/advanceStartOfGameEffects.ts via the dispatcher's
+  // unconditional advanceAutomaticPhases call right after this executes
+  // (actions/dispatch.ts), which also deals opening hands and queues the
+  // mulligan choice (dealOpeningHandsAndQueueMulligan below) once the queue
+  // drains. Order between two players' own simultaneous start-of-game
+  // effects is unspecified by the rules; this queues going-first player
+  // first, then going-second, mirroring the mulligan-decision order below.
+  const newState: GameState = {
+    ...state,
+    players,
+    setupState: {
+      decidingPlayerId: setupState.decidingPlayerId,
+      stage: 'awaitingStartOfGameLeaderEffect',
+      goingFirstPlayerId,
+      goingSecondPlayerId,
+      startOfGameEffectQueue: [goingFirstPlayerId, goingSecondPlayerId],
+    },
+    pendingChoices: state.pendingChoices.filter((c) => c.id !== `${setupState.decidingPlayerId}__choose-going-first`),
+    log: [...state.log, ...newLog],
+  };
+
+  return { state: newState, log: newLog, pendingChoices: [] };
+}
+
+/**
+ * 5-2-1-6 (opening hands + mulligan queueing). Split out of
+ * executeChooseGoingFirst so setup/advanceStartOfGameEffects.ts can call it
+ * once every player's 5-2-1-5-1 "start of the game" effect (if any) has
+ * resolved — see that file for the queue-draining logic that calls this.
+ */
+export function dealOpeningHandsAndQueueMulligan(state: GameState, goingFirstPlayerId: string, goingSecondPlayerId: string, actionId: string | null): SetupExecuteResult {
+  const newLog: GameLogEntry[] = [];
+  let sequence = state.log.length;
+  const pushLog = (entry: DraftLogEntry): void => {
+    sequence += 1;
+    newLog.push({
+      id: `setup-log-${sequence}`,
+      sequence,
+      turnNumber: 0,
+      phase: 'setup',
+      causedByActionId: actionId,
+      ...entry,
+    });
+  };
 
   const players = { ...state.players };
   // The Zone helpers (and the inline slices below) only move ids between
@@ -75,7 +123,6 @@ export function executeChooseGoingFirst(state: GameState, action: ChooseGoingFir
     const remaining = player.deck.cardIds.slice(5);
     players[player.playerId] = {
       ...player,
-      hasGoneFirst: player.playerId === goingFirstPlayerId,
       deck: { ...player.deck, cardIds: remaining },
       hand: { ...player.hand, cardIds: [...player.hand.cardIds, ...dealt] },
     };
@@ -108,12 +155,12 @@ export function executeChooseGoingFirst(state: GameState, action: ChooseGoingFir
     cardsById,
     activePlayerId: goingFirstPlayerId, // 5-2-1-6: mulligan decisions begin with the player going first
     setupState: {
-      decidingPlayerId: setupState.decidingPlayerId,
+      decidingPlayerId: state.setupState?.decidingPlayerId ?? goingFirstPlayerId,
       stage: 'awaitingMulliganDecision',
       goingFirstPlayerId,
       goingSecondPlayerId,
     },
-    pendingChoices: [...state.pendingChoices.filter((c) => c.id !== `${setupState.decidingPlayerId}__choose-going-first`), mulliganChoice],
+    pendingChoices: [...state.pendingChoices, mulliganChoice],
     log: [...state.log, ...newLog],
   };
 

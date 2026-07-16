@@ -224,6 +224,45 @@ describe('effectCompiler_V2 parser', () => {
     expect(parsed.atomicEffects[0].semanticStatus).toBe('safe');
   });
 
+  it('marks result-dependent text unsafe when no previous action exists', () => {
+    const parsed = parseCardEffect_V2(
+      'TEST-ORPHAN-RESULT',
+      '[On Play] If you do, draw 1 card.',
+    );
+
+    expect(parsed.atomicEffects[0]).toMatchObject({
+      coverage: 'coveredByParser',
+      semanticStatus: 'needsAudit',
+      semanticIssues: ['Result-dependent text has no previous action binding.'],
+    });
+  });
+
+  it('marks previous-selection references unsafe when no previous selection exists', () => {
+    const parsed = parseCardEffect_V2(
+      'TEST-ORPHAN-SELECTED',
+      'The selected Character gains +1000 power during this turn.',
+    );
+
+    expect(parsed.atomicEffects[0]).toMatchObject({
+      coverage: 'coveredByParser',
+      semanticStatus: 'needsAudit',
+      semanticIssues: ['Selector references a previous selected/action-result card without a previous action binding.'],
+    });
+  });
+
+  it('marks movement selectors unsafe when the source zone is missing', () => {
+    const parsed = parseCardEffect_V2(
+      'TEST-MISSING-ZONE',
+      '[On Play] Play up to 1 [Zou].',
+    );
+
+    expect(parsed.atomicEffects[0]).toMatchObject({
+      coverage: 'coveredByParser',
+      semanticStatus: 'needsAudit',
+      semanticIssues: ['Card movement/action selector has no source zone or prior-result relation.'],
+    });
+  });
+
   it('does not split trigger-filter cost text into a separate timing segment', () => {
     const parsed = parseCardEffect_V2(
       'TEST-TRIGGER-COST',

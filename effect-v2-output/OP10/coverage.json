@@ -2286,10 +2286,10 @@
     "parserRecognizedAtomicEffects": 1,
     "parserUnrecognizedAtomicEffects": 0,
     "assignmentCoveredAtomicEffects": 1,
-    "assignmentPartialAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 1,
     "assignmentUncoveredAtomicEffects": 0,
     "coveredAtomicEffects": 1,
-    "partialAtomicEffects": 0,
+    "partialAtomicEffects": 1,
     "uncoveredAtomicEffects": 0,
     "statuses": [
       {
@@ -2299,9 +2299,12 @@
         "atomIndex": 0,
         "rawText": "Return up to 1 Character with a cost of 5 or less to the owner's hand.",
         "parserStatus": "recognized",
-        "semanticStatus": "safe",
+        "semanticStatus": "needsAudit",
+        "semanticIssues": [
+          "Card movement/action selector has no source zone or prior-result relation."
+        ],
         "assignmentStatus": "assigned",
-        "status": "covered",
+        "status": "partial",
         "coveredByAssignmentIds": [
           "v2:auto:OP10-046:0"
         ],
@@ -2310,7 +2313,8 @@
           "ADD_CARD_TO_HAND"
         ],
         "canonicalCoverage": "canonical",
-        "canonicalRemark": "Parser emitted a canonical V2 atom."
+        "canonicalRemark": "Parser emitted a canonical V2 atom.",
+        "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
       }
     ]
   },
@@ -2555,10 +2559,10 @@
     "parserRecognizedAtomicEffects": 2,
     "parserUnrecognizedAtomicEffects": 0,
     "assignmentCoveredAtomicEffects": 2,
-    "assignmentPartialAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 1,
     "assignmentUncoveredAtomicEffects": 0,
     "coveredAtomicEffects": 2,
-    "partialAtomicEffects": 0,
+    "partialAtomicEffects": 1,
     "uncoveredAtomicEffects": 0,
     "statuses": [
       {
@@ -2587,9 +2591,12 @@
         "atomIndex": 0,
         "rawText": "Place up to 1 Character with a cost of 1 or less at the bottom of the owner's deck.",
         "parserStatus": "recognized",
-        "semanticStatus": "safe",
+        "semanticStatus": "needsAudit",
+        "semanticIssues": [
+          "Card movement/action selector has no source zone or prior-result relation."
+        ],
         "assignmentStatus": "assigned",
-        "status": "covered",
+        "status": "partial",
         "coveredByAssignmentIds": [
           "v2:auto:OP10-052:1"
         ],
@@ -2598,7 +2605,8 @@
           "PLACE_CARD_IN_DECK"
         ],
         "canonicalCoverage": "canonical",
-        "canonicalRemark": "Parser emitted a canonical V2 atom."
+        "canonicalRemark": "Parser emitted a canonical V2 atom.",
+        "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
       }
     ]
   },
@@ -3103,10 +3111,10 @@
     "parserRecognizedAtomicEffects": 3,
     "parserUnrecognizedAtomicEffects": 0,
     "assignmentCoveredAtomicEffects": 3,
-    "assignmentPartialAtomicEffects": 0,
+    "assignmentPartialAtomicEffects": 1,
     "assignmentUncoveredAtomicEffects": 0,
     "coveredAtomicEffects": 3,
-    "partialAtomicEffects": 0,
+    "partialAtomicEffects": 1,
     "uncoveredAtomicEffects": 0,
     "statuses": [
       {
@@ -3155,9 +3163,12 @@
         "atomIndex": 0,
         "rawText": "Return up to 1 Character with a cost of 2 or less to the owner's hand.",
         "parserStatus": "recognized",
-        "semanticStatus": "safe",
+        "semanticStatus": "needsAudit",
+        "semanticIssues": [
+          "Card movement/action selector has no source zone or prior-result relation."
+        ],
         "assignmentStatus": "assigned",
-        "status": "covered",
+        "status": "partial",
         "coveredByAssignmentIds": [
           "v2:auto:OP10-061:1"
         ],
@@ -3166,7 +3177,8 @@
           "ADD_CARD_TO_HAND"
         ],
         "canonicalCoverage": "canonical",
-        "canonicalRemark": "Parser emitted a canonical V2 atom."
+        "canonicalRemark": "Parser emitted a canonical V2 atom.",
+        "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
       }
     ]
   },

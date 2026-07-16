@@ -14801,10 +14801,10 @@
       "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 3,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 3,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -14833,9 +14833,12 @@
           "atomIndex": 1,
           "rawText": "Return up to 1 Character with a cost of 6 or less to the owner's hand.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:OP13-059:0"
           ],
@@ -14844,7 +14847,8 @@
             "ADD_CARD_TO_HAND"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         },
         {
           "atomicEffectId": "OP13-059#1.0",
@@ -26419,10 +26423,10 @@
       "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
       "assignmentCoveredAtomicEffects": 3,
-      "assignmentPartialAtomicEffects": 0,
+      "assignmentPartialAtomicEffects": 1,
       "assignmentUncoveredAtomicEffects": 0,
       "coveredAtomicEffects": 3,
-      "partialAtomicEffects": 0,
+      "partialAtomicEffects": 1,
       "uncoveredAtomicEffects": 0,
       "statuses": [
         {
@@ -26451,9 +26455,12 @@
           "atomIndex": 1,
           "rawText": "If your Leader is [Imu], KO up to 1 of your opponent's Stages with a cost of 7.",
           "parserStatus": "recognized",
-          "semanticStatus": "safe",
+          "semanticStatus": "needsAudit",
+          "semanticIssues": [
+            "Card movement/action selector has no source zone or prior-result relation."
+          ],
           "assignmentStatus": "assigned",
-          "status": "covered",
+          "status": "partial",
           "coveredByAssignmentIds": [
             "v2:auto:OP13-098:0"
           ],
@@ -26461,7 +26468,8 @@
             "KO_CARD"
           ],
           "canonicalCoverage": "canonical",
-          "canonicalRemark": "Parser emitted a canonical V2 atom."
+          "canonicalRemark": "Parser emitted a canonical V2 atom.",
+          "trackingRemark": "Card movement/action selector has no source zone or prior-result relation."
         },
         {
           "atomicEffectId": "OP13-098#1.0",

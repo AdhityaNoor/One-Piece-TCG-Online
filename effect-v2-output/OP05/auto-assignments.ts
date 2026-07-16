@@ -3302,6 +3302,23 @@ export const OP05_AUTO_ASSIGNMENTS_V2 = [
               "kind": "NUMBER",
               "value": 1
             }
+          },
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
           }
         ],
         "optionalPayment": "REQUIRED_TO_ACTIVATE",
@@ -3377,6 +3394,23 @@ export const OP05_AUTO_ASSIGNMENTS_V2 = [
             "count": {
               "kind": "NUMBER",
               "value": 1
+            }
+          },
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
             }
           }
         ],
@@ -8392,6 +8426,42 @@ export const OP05_AUTO_ASSIGNMENTS_V2 = [
               "kind": "NUMBER",
               "value": 1
             }
+          },
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          },
+          {
+            "type": "RETURN_CARD_TO_DECK_COST",
+            "position": "BOTTOM",
+            "selector": {
+              "subject": "CARD",
+              "owner": "PLAYER",
+              "zones": [
+                "TRASH"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
           }
         ],
         "optionalPayment": "REQUIRED_TO_ACTIVATE",
@@ -8475,6 +8545,44 @@ export const OP05_AUTO_ASSIGNMENTS_V2 = [
             "count": {
               "kind": "NUMBER",
               "value": 1
+            }
+          },
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
+          },
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
             }
           }
         ],

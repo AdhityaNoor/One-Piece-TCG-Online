@@ -1917,6 +1917,23 @@ export const OP03_AUTO_ASSIGNMENTS_V2 = [
               "kind": "NUMBER",
               "value": 2
             }
+          },
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "relations": [
+                "THIS_CARD"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
+            }
           }
         ],
         "optionalPayment": "REQUIRED_TO_ACTIVATE",
@@ -2071,6 +2088,39 @@ export const OP03_AUTO_ASSIGNMENTS_V2 = [
             "count": {
               "kind": "NUMBER",
               "value": 3
+            }
+          },
+          {
+            "type": "REST_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "controller": "PLAYER",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2
+                }
+              },
+              "chooser": "EFFECT_OWNER",
+              "types": {
+                "kind": "HAS_ANY_TYPE",
+                "values": [
+                  "East Blue"
+                ]
+              },
+              "colors": {
+                "kind": "HAS_ANY_COLOR",
+                "values": [
+                  "BLUE"
+                ]
+              }
             }
           }
         ],
@@ -3992,8 +4042,20 @@ export const OP03_AUTO_ASSIGNMENTS_V2 = [
       "resolution": {
         "kind": "ACTION",
         "action": {
-          "type": "PLAYER_WINS",
-          "player": "PLAYER"
+          "type": "MODIFY_VICTORY_CONDITION",
+          "modifier": {
+            "scope": "VICTORY_CONDITION",
+            "validFrom": "ALWAYS",
+            "modifier": {
+              "type": "RULE_MODIFIER",
+              "scope": "DECK_OUT_REPLACEMENT",
+              "expression": {
+                "operation": "WIN_INSTEAD_OF_LOSE",
+                "event": "PLAYER_DECK_REDUCED_TO_ZERO",
+                "player": "PLAYER"
+              }
+            }
+          }
         },
         "actionId": "OP03-040#0.0"
       }
@@ -7400,6 +7462,24 @@ export const OP03_AUTO_ASSIGNMENTS_V2 = [
             "count": {
               "kind": "NUMBER",
               "value": 2
+            }
+          },
+          {
+            "type": "TRASH_CARD_COST",
+            "selector": {
+              "subject": "CARD",
+              "owner": "PLAYER",
+              "zones": [
+                "HAND"
+              ],
+              "quantity": {
+                "kind": "EXACTLY",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "chooser": "EFFECT_OWNER"
             }
           }
         ],
