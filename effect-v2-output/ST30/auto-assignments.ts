@@ -464,7 +464,10 @@ export const ST30_AUTO_ASSIGNMENTS_V2 = [
                   "kind": "NUMBER",
                   "value": 6000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -712,7 +715,10 @@ export const ST30_AUTO_ASSIGNMENTS_V2 = [
                   "kind": "NUMBER",
                   "value": 6000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],

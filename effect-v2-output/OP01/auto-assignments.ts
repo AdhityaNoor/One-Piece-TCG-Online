@@ -88,6 +88,9 @@ export const OP01_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
+                "relations": [
+                  "DIFFERENT_COLOR_THAN_RETURNED_PREVIOUSLY"
+                ],
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -2894,7 +2897,7 @@ export const OP01_AUTO_ASSIGNMENTS_V2 = [
               "selector": {
                 "subject": "ACTION_RESULT",
                 "relations": [
-                  "SELECTED_PREVIOUSLY"
+                  "REVEALED_PREVIOUSLY"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
@@ -5031,7 +5034,7 @@ export const OP01_AUTO_ASSIGNMENTS_V2 = [
               "selector": {
                 "subject": "ACTION_RESULT",
                 "relations": [
-                  "SELECTED_PREVIOUSLY"
+                  "REVEALED_PREVIOUSLY"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
@@ -5040,9 +5043,26 @@ export const OP01_AUTO_ASSIGNMENTS_V2 = [
                     "value": 1
                   }
                 },
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "states": [
                   "RESTED"
-                ]
+                ],
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "The Seven Warlords of the Sea"
+                  ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 4
+                  }
+                }
               },
               "player": "PLAYER"
             },

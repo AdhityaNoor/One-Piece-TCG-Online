@@ -42,19 +42,14 @@ export function RankBadge({ rank, division, inPlacement = false, size = 'md', ti
       style={{
         width: box,
         height: box,
-        borderRadius: Math.round(box * 0.22),
-        border: `1px solid ${muted ? 'rgba(255,255,255,0.14)' : style.ring}`,
-        background: muted
-          ? 'rgba(255,255,255,0.04)'
-          : `radial-gradient(circle at 50% 35%, ${style.glow}, rgba(3,9,24,0.55) 78%)`,
-        boxShadow: muted ? 'none' : `0 0 12px ${style.glow}, inset 0 0 8px rgba(0,0,0,0.35)`,
+        background: 'transparent',
       }}
     >
       <span
         aria-hidden
         style={{
-          width: '72%',
-          height: '72%',
+          width: '88%',
+          height: '88%',
           backgroundColor: muted ? 'rgba(255,255,255,0.3)' : style.color,
           WebkitMaskImage: `url("${resolved.path}")`,
           maskImage: `url("${resolved.path}")`,

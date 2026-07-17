@@ -242,7 +242,8 @@ export const ST23_AUTO_ASSIGNMENTS_V2 = [
             "value": 2000
           },
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "ST23-002#1.0"

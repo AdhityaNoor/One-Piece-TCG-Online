@@ -1011,7 +1011,11 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cardCategories": [
+                    "EVENT",
+                    "STAGE"
+                  ]
                 },
                 "cause": "EFFECT"
               }
@@ -2355,6 +2359,9 @@
               }
             },
             "chooser": "EFFECT_OWNER",
+            "relations": [
+              "DIFFERENT_COLOR_THAN_RETURNED_PREVIOUSLY"
+            ],
             "cost": {
               "propertyLayer": "CURRENT",
               "comparison": "AT_MOST",
@@ -3449,7 +3456,7 @@
                 "selector": {
                   "subject": "ACTION_RESULT",
                   "relations": [
-                    "PREVIOUS_ACTION_TARGET"
+                    "REVEALED_PREVIOUSLY"
                   ],
                   "cost": {
                     "propertyLayer": "CURRENT",
@@ -3514,7 +3521,7 @@
                     "selector": {
                       "subject": "ACTION_RESULT",
                       "relations": [
-                        "PREVIOUS_ACTION_TARGET"
+                        "REVEALED_PREVIOUSLY"
                       ],
                       "quantity": {
                         "kind": "EXACTLY",

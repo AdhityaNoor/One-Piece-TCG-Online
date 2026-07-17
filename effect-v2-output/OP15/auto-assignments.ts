@@ -185,7 +185,11 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               "quantity": {
                 "kind": "ANY_NUMBER"
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT",
+                "STAGE"
+              ]
             }
           }
         ],
@@ -352,7 +356,10 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cardCategories": [
+                    "CHARACTER"
+                  ]
                 },
                 "cause": "EFFECT"
               }
@@ -1778,7 +1785,10 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cardCategories": [
+                    "EVENT"
+                  ]
                 },
                 "cause": "EFFECT"
               }
@@ -2389,7 +2399,8 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "value": 8000
               },
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP15-020#0.1"
@@ -3658,7 +3669,8 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
           },
           "action": "REST_CARD",
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP15-029#0.0"
@@ -5412,7 +5424,10 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT"
+              ]
             }
           }
         ],
@@ -5701,7 +5716,10 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT"
+              ]
             }
           }
         ],
@@ -6537,7 +6555,8 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               },
               "keyword": "BLOCKER",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP15-055#0.1"
@@ -6820,7 +6839,11 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT",
+                "STAGE"
+              ]
             }
           }
         ],
@@ -7326,7 +7349,8 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
               },
               "keyword": "BLOCKER",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP15-060#1.1"
@@ -7878,7 +7902,7 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "selector": {
                   "subject": "ACTION_RESULT",
                   "relations": [
-                    "PREVIOUS_ACTION_TARGET"
+                    "REVEALED_PREVIOUSLY"
                   ],
                   "cost": {
                     "propertyLayer": "CURRENT",
@@ -9069,7 +9093,8 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                   "value": 2
                 },
                 "duration": {
-                  "kind": "INSTANT"
+                  "kind": "UNTIL_END_OF_NEXT_TURN",
+                  "player": "OPPONENT"
                 }
               },
               "actionId": "OP15-074#0.2"
@@ -12338,7 +12363,8 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
           },
           "action": "DECLARE_ATTACK",
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP15-097#0.0"
@@ -15080,7 +15106,8 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 1
                   }
-                }
+                },
+                "chooser": "EFFECT_OWNER"
               },
               "to": {
                 "zone": "HAND",
@@ -15232,6 +15259,29 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
           {
             "kind": "ACTION",
             "action": {
+              "type": "REVEAL_CARD",
+              "selector": {
+                "subject": "CARD",
+                "owner": "PLAYER",
+                "zones": [
+                  "LIFE"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "ordering": "DECK_ORDER"
+              },
+              "viewers": "BOTH_PLAYERS"
+            },
+            "actionId": "OP15-119#0.1"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
               "type": "MODIFY_POWER",
               "selector": {
                 "subject": "CARD",
@@ -15257,14 +15307,15 @@ export const OP15_AUTO_ASSIGNMENTS_V2 = [
                 "kind": "THIS_TURN"
               }
             },
-            "actionId": "OP15-119#0.1"
+            "actionId": "OP15-119#0.2"
           }
         ]
       }
     },
     "coveredAtomicEffectIds": [
       "OP15-119#0.0",
-      "OP15-119#0.1"
+      "OP15-119#0.1",
+      "OP15-119#0.2"
     ]
   }
 ] satisfies readonly EffectAssignment_V2[];

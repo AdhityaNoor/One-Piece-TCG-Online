@@ -2973,13 +2973,13 @@
     "schemaVersion": "op-tcg-effect-v2.0.0",
     "generatedBy": "effectCompiler_V2",
     "cardNumber": "OP16-056",
-    "totalAtomicEffects": 2,
-    "parserRecognizedAtomicEffects": 2,
+    "totalAtomicEffects": 3,
+    "parserRecognizedAtomicEffects": 3,
     "parserUnrecognizedAtomicEffects": 0,
-    "assignmentCoveredAtomicEffects": 2,
+    "assignmentCoveredAtomicEffects": 3,
     "assignmentPartialAtomicEffects": 0,
     "assignmentUncoveredAtomicEffects": 0,
-    "coveredAtomicEffects": 2,
+    "coveredAtomicEffects": 3,
     "partialAtomicEffects": 0,
     "uncoveredAtomicEffects": 0,
     "statuses": [
@@ -3007,7 +3007,7 @@
         "cardNumber": "OP16-056",
         "effectIndex": 0,
         "atomIndex": 1,
-        "rawText": "Draw 2 cards, and up to 1 of your opponent's Characters with a cost of 9 or less cannot attack until the end of your opponent's next End Phase.",
+        "rawText": "Draw 2 cards",
         "parserStatus": "recognized",
         "semanticStatus": "safe",
         "assignmentStatus": "assigned",
@@ -3017,6 +3017,25 @@
         ],
         "canonicalAtoms": [
           "DRAW_CARD"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP16-056#0.2",
+        "cardNumber": "OP16-056",
+        "effectIndex": 0,
+        "atomIndex": 2,
+        "rawText": "up to 1 of your opponent's Characters with a cost of 9 or less cannot attack until the end of your opponent's next End Phase.",
+        "parserStatus": "recognized",
+        "semanticStatus": "safe",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP16-056:0"
+        ],
+        "canonicalAtoms": [
+          "PREVENT_ACTION"
         ],
         "canonicalCoverage": "canonical",
         "canonicalRemark": "Parser emitted a canonical V2 atom."

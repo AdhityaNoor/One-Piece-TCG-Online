@@ -5703,7 +5703,8 @@
                     "kind": "NUMBER",
                     "value": 1
                   }
-                }
+                },
+                "chooser": "EFFECT_OWNER"
               },
               "to": {
                 "zone": "HAND",

@@ -45,7 +45,11 @@
               "quantity": {
                 "kind": "ANY_NUMBER"
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT",
+                "STAGE"
+              ]
             }
           }
         ],
@@ -1362,7 +1366,10 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT"
+              ]
             }
           }
         ],
@@ -2075,7 +2082,10 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT"
+              ]
             }
           }
         ],
@@ -8539,7 +8549,10 @@
                   "kind": "NUMBER",
                   "value": 5
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],

@@ -515,6 +515,77 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     }
   }
 
+  if (choice.sourceEffectId?.startsWith('v2:')) {
+    if (choice.kind === 'SELECT_OPTION') {
+      const options = choice.constraints.options ?? [];
+      return (
+        <ChoicePromptShell title="Choose V2 Option">
+          <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+          {errorBanner}
+          <ChoicePromptActionList>
+            {options.map((option, index) => (
+              <ChoicePromptOption
+                key={`${option.label}-${index}`}
+                onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: index })}
+              >
+                {option.label}
+              </ChoicePromptOption>
+            ))}
+          </ChoicePromptActionList>
+        </ChoicePromptShell>
+      );
+    }
+
+    if (choice.kind === 'SELECT_CARDS') {
+      const candidateIds = choice.constraints.candidateInstanceIds ?? [];
+      const visibleIds = choice.constraints.visibleInstanceIds ?? candidateIds;
+      const candidates = visibleIds.map((id) => buildCardView(defs, state, images, id));
+      const { min, max } = choice.constraints;
+      const count = selectedIrIds.length;
+      const canConfirm = count >= min && count <= max;
+      const selectLabel = min === max ? `Select ${max}` : `Select ${min}-${max}`;
+
+      const toggle = (instanceId: string): void => {
+        setSelectedIrIds((prev) => {
+          if (prev.includes(instanceId)) return prev.filter((id) => id !== instanceId);
+          if (max === 1) return [instanceId];
+          if (prev.length >= max) return prev;
+          return [...prev, instanceId];
+        });
+      };
+
+      return (
+        <ChoicePromptShell title="Choose V2 Cards" maxWidthClassName="max-w-5xl">
+          <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+          <div className="flex items-center justify-between gap-3">
+            <ChoicePromptMeta>{selectLabel}</ChoicePromptMeta>
+            <ChoicePromptMeta>{count}/{max} selected</ChoicePromptMeta>
+          </div>
+          {errorBanner}
+          {candidates.length > 0 ? (
+            <ChoicePromptInset>
+              <CardChoiceGallery
+                cards={candidates}
+                selectableIds={new Set(candidateIds)}
+                selectedOrder={selectedIrIds}
+                max={max}
+                onToggle={toggle}
+              />
+            </ChoicePromptInset>
+          ) : (
+            <ChoicePromptMessage>No eligible cards - confirm to continue.</ChoicePromptMessage>
+          )}
+          <ChoicePromptOption
+            disabled={!canConfirm}
+            onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: selectedIrIds })}
+          >
+            {min === 0 && count === 0 ? 'Decline' : `Confirm (${count}/${max})`}
+          </ChoicePromptOption>
+        </ChoicePromptShell>
+      );
+    }
+  }
+
   // Generic interpreter-suspended choice (chooseTargets / searchTopDeck). The
   // candidates are explicit instance ids; the choosing player may see them all
   // (their own search look, or visible target Characters), so we build a

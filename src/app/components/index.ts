@@ -13,6 +13,7 @@ export * from './CardTile';
 export * from './CardDetailModal';
 export * from './DeckListSummary';
 export * from './DeckFormatBadge';
+export * from './RankBadge';
 export * from './SetLibrarySelect';
 export * from './OpSelect';
 export * from './ScreenShell';

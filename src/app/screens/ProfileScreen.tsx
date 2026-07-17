@@ -57,22 +57,24 @@ export function ProfileScreen() {
 
   return (
     <GameCanvasScreen onBack={goBack} dense>
-      <div className="grid h-full min-h-0 gap-4 overflow-y-auto px-3 py-2 lg:grid-cols-[17rem_minmax(0,1fr)] lg:overflow-hidden">
-        <aside className="min-h-0 border border-gold/30 bg-black/45 p-4 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
+      <div className="grid h-full min-h-0 gap-4 overflow-y-auto px-3 py-2 lg:grid-cols-[24rem_minmax(0,1fr)] lg:overflow-hidden">
+        <aside className="min-h-0 border border-gold/30 bg-black/45 p-5 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
           <ProfileHeader />
-          <ProfileNavigation sections={visibleSections} current={section} onChange={setSection} />
         </aside>
 
-        <section className="min-h-[28rem] overflow-y-auto border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4 shadow-[0_14px_0_rgba(1,5,16,0.5)] sm:p-5">
-          {!backendConfigured ? (
-            <EmptyState title="Backend Missing" body="Set VITE_API_BASE_URL to use player profiles." />
-          ) : profile.status === 'loading' ? (
-            <EmptyState title="Loading Profile" body="Fetching profile sections." />
-          ) : profile.status === 'error' ? (
-            <EmptyState title="Profile Unavailable" body={profile.error ?? 'Could not load this profile.'} />
-          ) : (
-            <ProfileSection section={section} />
-          )}
+        <section className="flex min-h-[28rem] min-w-0 flex-col overflow-hidden border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] shadow-[0_14px_0_rgba(1,5,16,0.5)]">
+          <ProfileNavigation sections={visibleSections} current={section} onChange={setSection} />
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+            {!backendConfigured ? (
+              <EmptyState title="Backend Missing" body="Set VITE_API_BASE_URL to use player profiles." />
+            ) : profile.status === 'loading' ? (
+              <EmptyState title="Loading Profile" body="Fetching profile sections." />
+            ) : profile.status === 'error' ? (
+              <EmptyState title="Profile Unavailable" body={profile.error ?? 'Could not load this profile.'} />
+            ) : (
+              <ProfileSection section={section} />
+            )}
+          </div>
         </section>
       </div>
     </GameCanvasScreen>
@@ -111,7 +113,7 @@ function ProfileHeader() {
         disabled={!isOwner}
         onClick={() => setBannerPickerOpen(true)}
         aria-label={isOwner ? 'Change banner' : undefined}
-        className={['group relative block h-20 w-full', isOwner ? 'cursor-pointer' : 'cursor-default'].join(' ')}
+        className={['group relative block h-28 w-full', isOwner ? 'cursor-pointer' : 'cursor-default'].join(' ')}
         style={{ background: bannerGradient }}
       >
         {isOwner && (
@@ -120,25 +122,25 @@ function ProfileHeader() {
           </span>
         )}
       </button>
-      <div className="relative -mt-8 p-4 pt-0 text-center">
+      <div className="relative -mt-12 p-5 pt-0 text-center">
         <button
           type="button"
           disabled={!isOwner}
           onClick={() => setAvatarPickerOpen(true)}
           aria-label={isOwner ? 'Change profile photo' : undefined}
           className={[
-            'group relative mx-auto flex h-16 w-16 items-center justify-center overflow-hidden border-2 border-gold bg-[#050914]',
+            'group relative mx-auto flex h-24 w-24 items-center justify-center overflow-hidden border-2 border-gold bg-[#050914]',
             isOwner ? 'cursor-pointer' : 'cursor-default',
           ].join(' ')}
         >
           <img src={avatarUrl} alt="" draggable={false} className="h-full w-full object-contain p-1" />
           {isOwner && (
-            <span className="absolute inset-0 hidden items-center justify-center bg-black/55 text-[8px] font-black uppercase tracking-[0.12em] text-white group-hover:flex">
+            <span className="absolute inset-0 hidden items-center justify-center bg-black/55 text-[9px] font-black uppercase tracking-[0.12em] text-white group-hover:flex">
               Change
             </span>
           )}
         </button>
-        <h2 className="mt-3 truncate font-display text-xl font-black uppercase tracking-[0.1em] text-white">{profile.displayName}</h2>
+        <h2 className="mt-4 truncate font-display text-2xl font-black uppercase tracking-[0.1em] text-white">{profile.displayName}</h2>
         <p className="mt-1 truncate text-xs font-bold uppercase tracking-[0.14em] text-white/50">@{profile.username}</p>
         {profile.statusMessage && <p className="mt-3 text-sm leading-5 text-slate-200/75">{profile.statusMessage}</p>}
         <div className="mt-4 flex items-center gap-3 border border-white/10 bg-black/25 p-3 text-left">
@@ -146,7 +148,7 @@ function ProfileHeader() {
             rank={ranked?.rank}
             division={ranked?.division}
             inPlacement={ranked?.inPlacement ?? !ranked}
-            size="md"
+            size="lg"
           />
           <div className="min-w-0">
             <p className="truncate text-[10px] font-black uppercase tracking-[0.2em] text-gold">{ranked?.rankName ?? 'Unranked'}</p>
@@ -278,30 +280,30 @@ function ProfileNavigation({
   onChange: (section: ProfileSectionId) => void;
 }) {
   return (
-    <nav className="mt-4 grid gap-2" aria-label="Profile sections">
-      <div className="lg:hidden">
-        <OpSelect
-          value={current}
-          options={sections.map((id) => ({ value: id, label: SECTION_LABELS[id] }))}
-          onChange={(value) => onChange(value as ProfileSectionId)}
-          buttonClassName="min-h-11"
-        />
-      </div>
-      <div className="hidden gap-2 lg:grid">
-        {sections.map((id) => (
+    <nav
+      className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/10 bg-black/30 px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      aria-label="Profile sections"
+    >
+      {sections.map((id) => {
+        const active = current === id;
+        return (
           <button
             key={id}
             type="button"
+            role="tab"
+            aria-selected={active}
             onClick={() => onChange(id)}
             className={[
-              'border px-3 py-2 text-left text-[11px] font-black uppercase tracking-[0.14em] transition',
-              current === id ? 'border-gold bg-gold/15 text-white' : 'border-white/10 bg-white/[0.04] text-white/55 hover:border-gold/45 hover:text-gold',
+              'relative whitespace-nowrap border-b-2 px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] transition',
+              active
+                ? 'border-gold text-white'
+                : 'border-transparent text-white/50 hover:text-gold',
             ].join(' ')}
           >
             {SECTION_LABELS[id]}
           </button>
-        ))}
-      </div>
+        );
+      })}
     </nav>
   );
 }
@@ -765,4 +767,3 @@ function formatDate(value: string | null): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleDateString();
 }
-

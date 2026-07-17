@@ -2245,13 +2245,30 @@ export const OP10_AUTO_ASSIGNMENTS_V2 = [
               "selector": {
                 "subject": "ACTION_RESULT",
                 "relations": [
-                  "SELECTED_PREVIOUSLY"
+                  "REVEALED_PREVIOUSLY"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1
+                  }
+                },
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "Supernovas"
+                  ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
                   }
                 }
               },
@@ -7306,7 +7323,10 @@ export const OP10_AUTO_ASSIGNMENTS_V2 = [
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT"
+              ]
             }
           }
         ],
@@ -12511,6 +12531,9 @@ export const OP10_AUTO_ASSIGNMENTS_V2 = [
                 "zones": [
                   "COST_AREA"
                 ],
+                "states": [
+                  "RESTED"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -12522,8 +12545,15 @@ export const OP10_AUTO_ASSIGNMENTS_V2 = [
               },
               "target": {
                 "subject": "CARD",
+                "controller": "PLAYER",
+                "zones": [
+                  "LEADER_AREA"
+                ],
+                "cardCategories": [
+                  "LEADER"
+                ],
                 "quantity": {
-                  "kind": "UP_TO",
+                  "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1

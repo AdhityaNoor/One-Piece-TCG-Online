@@ -5836,13 +5836,30 @@
                 "selector": {
                   "subject": "ACTION_RESULT",
                   "relations": [
-                    "SELECTED_PREVIOUSLY"
+                    "REVEALED_PREVIOUSLY"
                   ],
                   "quantity": {
                     "kind": "EXACTLY",
                     "value": {
                       "kind": "NUMBER",
                       "value": 1
+                    }
+                  },
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
+                  "types": {
+                    "kind": "HAS_ANY_TYPE",
+                    "values": [
+                      "Supernovas"
+                    ]
+                  },
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "AT_MOST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 5
                     }
                   }
                 },
@@ -5969,13 +5986,30 @@
                   "selector": {
                     "subject": "ACTION_RESULT",
                     "relations": [
-                      "SELECTED_PREVIOUSLY"
+                      "REVEALED_PREVIOUSLY"
                     ],
                     "quantity": {
                       "kind": "EXACTLY",
                       "value": {
                         "kind": "NUMBER",
                         "value": 1
+                      }
+                    },
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
+                    "types": {
+                      "kind": "HAS_ANY_TYPE",
+                      "values": [
+                        "Supernovas"
+                      ]
+                    },
+                    "cost": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "AT_MOST",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 5
                       }
                     }
                   },
@@ -19584,7 +19618,10 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cardCategories": [
+                  "EVENT"
+                ]
               }
             }
           ],
@@ -19731,7 +19768,10 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cardCategories": [
+                    "EVENT"
+                  ]
                 }
               }
             ],
@@ -33583,6 +33623,9 @@
                   "zones": [
                     "COST_AREA"
                   ],
+                  "states": [
+                    "RESTED"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -33594,8 +33637,15 @@
                 },
                 "target": {
                   "subject": "CARD",
+                  "controller": "PLAYER",
+                  "zones": [
+                    "LEADER_AREA"
+                  ],
+                  "cardCategories": [
+                    "LEADER"
+                  ],
                   "quantity": {
-                    "kind": "UP_TO",
+                    "kind": "EXACTLY",
                     "value": {
                       "kind": "NUMBER",
                       "value": 1
@@ -33692,6 +33742,9 @@
                     "zones": [
                       "COST_AREA"
                     ],
+                    "states": [
+                      "RESTED"
+                    ],
                     "quantity": {
                       "kind": "UP_TO",
                       "value": {
@@ -33703,8 +33756,15 @@
                   },
                   "target": {
                     "subject": "CARD",
+                    "controller": "PLAYER",
+                    "zones": [
+                      "LEADER_AREA"
+                    ],
+                    "cardCategories": [
+                      "LEADER"
+                    ],
                     "quantity": {
-                      "kind": "UP_TO",
+                      "kind": "EXACTLY",
                       "value": {
                         "kind": "NUMBER",
                         "value": 1

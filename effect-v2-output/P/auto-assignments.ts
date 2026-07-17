@@ -2041,7 +2041,10 @@ export const P_AUTO_ASSIGNMENTS_V2 = [
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],

@@ -316,6 +316,7 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
+                "baseEffectStatus": "NO_BASE_EFFECT",
                 "power": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -797,6 +798,7 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
+                "baseEffectStatus": "NO_BASE_EFFECT",
                 "power": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -1369,22 +1371,56 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
       "resolution": {
         "kind": "ACTION",
         "action": {
-          "type": "REST_DON",
-          "selector": {
-            "subject": "DON",
-            "owner": "OPPONENT",
-            "zones": [
-              "COST_AREA"
-            ],
-            "quantity": {
-              "kind": "UP_TO",
-              "value": {
-                "kind": "NUMBER",
-                "value": 1
-              }
+          "type": "REST_MIXED_TARGETS",
+          "quantity": {
+            "kind": "UP_TO",
+            "value": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "selectors": [
+            {
+              "subject": "DON",
+              "owner": "OPPONENT",
+              "zones": [
+                "COST_AREA"
+              ],
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              },
+              "chooser": "EFFECT_OWNER"
             },
-            "chooser": "EFFECT_OWNER"
-          }
+            {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              },
+              "chooser": "EFFECT_OWNER",
+              "types": {
+                "kind": "HAS_ANY_TYPE",
+                "values": [
+                  "SMILE",
+                  "Animal"
+                ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 3
+                }
+              }
+            }
+          ]
         },
         "actionId": "EB03-012#0.1"
       }
@@ -1568,6 +1604,9 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
             "zones": [
               "COST_AREA"
             ],
+            "states": [
+              "RESTED"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -1579,14 +1618,27 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
           },
           "target": {
             "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
             "quantity": {
-              "kind": "UP_TO",
+              "kind": "EXACTLY",
               "value": {
                 "kind": "NUMBER",
-                "value": 2
+                "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "attributes": {
+              "kind": "HAS_ATTRIBUTE",
+              "values": [
+                "SLASH"
+              ]
+            }
           }
         },
         "actionId": "EB03-014#0.1"
@@ -1859,6 +1911,9 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
             "zones": [
               "COST_AREA"
             ],
+            "states": [
+              "RESTED"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -1870,8 +1925,15 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
           },
           "target": {
             "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
             "quantity": {
-              "kind": "UP_TO",
+              "kind": "EXACTLY",
               "value": {
                 "kind": "NUMBER",
                 "value": 1
@@ -2003,7 +2065,8 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
               },
               "action": "REST_CARD",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "EB03-017#0.1"
@@ -2778,18 +2841,11 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
               "type": "PREVENT_ACTION",
               "selector": {
                 "subject": "CARD",
-                "zones": [
-                  "CHARACTER_AREA"
-                ],
                 "cardCategories": [
                   "CHARACTER"
                 ],
                 "quantity": {
-                  "kind": "EXACTLY",
-                  "value": {
-                    "kind": "NUMBER",
-                    "value": 1
-                  }
+                  "kind": "ANY_NUMBER"
                 },
                 "chooser": "EFFECT_OWNER"
               },
@@ -3032,11 +3088,14 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
             "zones": [
               "COST_AREA"
             ],
+            "states": [
+              "RESTED"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
                 "kind": "NUMBER",
-                "value": 1
+                "value": 2
               }
             },
             "chooser": "EFFECT_OWNER"
@@ -3053,12 +3112,22 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
               "CHARACTER"
             ],
             "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 2
+              }
+            },
+            "perCardCategoryQuantity": {
               "kind": "UP_TO",
               "value": {
                 "kind": "NUMBER",
                 "value": 1
               }
             },
+            "relations": [
+              "REQUIRES_LEADER_AND_CHARACTER"
+            ],
             "chooser": "EFFECT_OWNER"
           }
         },
@@ -4030,7 +4099,8 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
             "value": 1000
           },
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "EB03-037#0.0"
@@ -4260,6 +4330,7 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
+                "baseEffectStatus": "NO_BASE_EFFECT",
                 "power": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -6083,6 +6154,9 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
                 "zones": [
                   "COST_AREA"
                 ],
+                "states": [
+                  "RESTED"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -6102,7 +6176,7 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
                   "LEADER"
                 ],
                 "quantity": {
-                  "kind": "UP_TO",
+                  "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1
@@ -6701,6 +6775,9 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
             "zones": [
               "COST_AREA"
             ],
+            "states": [
+              "RESTED"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -6712,11 +6789,18 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
           },
           "target": {
             "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
             "quantity": {
-              "kind": "UP_TO",
+              "kind": "EXACTLY",
               "value": {
                 "kind": "NUMBER",
-                "value": 3
+                "value": 1
               }
             },
             "chooser": "EFFECT_OWNER",
@@ -7328,22 +7412,49 @@ export const EB03_AUTO_ASSIGNMENTS_V2 = [
           {
             "kind": "ACTION",
             "action": {
-              "type": "REST_DON",
-              "selector": {
-                "subject": "DON",
-                "owner": "OPPONENT",
-                "zones": [
-                  "COST_AREA"
-                ],
-                "quantity": {
-                  "kind": "UP_TO",
-                  "value": {
-                    "kind": "NUMBER",
-                    "value": 1
-                  }
+              "type": "REST_MIXED_TARGETS",
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "selectors": [
+                {
+                  "subject": "DON",
+                  "owner": "OPPONENT",
+                  "zones": [
+                    "COST_AREA"
+                  ],
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  },
+                  "chooser": "EFFECT_OWNER"
                 },
-                "chooser": "EFFECT_OWNER"
-              }
+                {
+                  "subject": "CARD",
+                  "controller": "OPPONENT",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  },
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "AT_MOST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 4
+                    }
+                  }
+                }
+              ]
             },
             "actionId": "EB03-061#0.1"
           }

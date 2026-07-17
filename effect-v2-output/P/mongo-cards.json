@@ -5489,7 +5489,10 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cardCategories": [
+                  "CHARACTER"
+                ]
               }
             }
           ],
@@ -5623,7 +5626,10 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cardCategories": [
+                    "CHARACTER"
+                  ]
                 }
               }
             ],

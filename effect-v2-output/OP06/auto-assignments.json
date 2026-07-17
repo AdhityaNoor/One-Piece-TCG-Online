@@ -1783,22 +1783,49 @@
           {
             "kind": "ACTION",
             "action": {
-              "type": "REST_DON",
-              "selector": {
-                "subject": "DON",
-                "owner": "OPPONENT",
-                "zones": [
-                  "COST_AREA"
-                ],
-                "quantity": {
-                  "kind": "UP_TO",
-                  "value": {
-                    "kind": "NUMBER",
-                    "value": 1
-                  }
+              "type": "REST_MIXED_TARGETS",
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "selectors": [
+                {
+                  "subject": "DON",
+                  "owner": "OPPONENT",
+                  "zones": [
+                    "COST_AREA"
+                  ],
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  },
+                  "chooser": "EFFECT_OWNER"
                 },
-                "chooser": "EFFECT_OWNER"
-              }
+                {
+                  "subject": "CARD",
+                  "controller": "OPPONENT",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  },
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "AT_MOST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 3
+                    }
+                  }
+                }
+              ]
             },
             "actionId": "OP06-020#0.1"
           },
@@ -3467,22 +3494,41 @@
           {
             "kind": "ACTION",
             "action": {
-              "type": "REST_DON",
-              "selector": {
-                "subject": "DON",
-                "owner": "OPPONENT",
-                "zones": [
-                  "COST_AREA"
-                ],
-                "quantity": {
-                  "kind": "UP_TO",
-                  "value": {
-                    "kind": "NUMBER",
-                    "value": 2
-                  }
+              "type": "REST_MIXED_TARGETS",
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 2
+                }
+              },
+              "selectors": [
+                {
+                  "subject": "DON",
+                  "owner": "OPPONENT",
+                  "zones": [
+                    "COST_AREA"
+                  ],
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  },
+                  "chooser": "EFFECT_OWNER"
                 },
-                "chooser": "EFFECT_OWNER"
-              }
+                {
+                  "subject": "CARD",
+                  "controller": "OPPONENT",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  },
+                  "chooser": "EFFECT_OWNER"
+                }
+              ]
             },
             "actionId": "OP06-035#1.0"
           },
@@ -6006,6 +6052,7 @@
                 "GERMA 66"
               ]
             },
+            "distinctBy": "CARD_NAME",
             "power": {
               "propertyLayer": "CURRENT",
               "comparison": "AT_MOST",

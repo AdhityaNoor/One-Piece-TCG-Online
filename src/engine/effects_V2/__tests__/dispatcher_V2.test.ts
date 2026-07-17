@@ -345,4 +345,102 @@ describe('V2 effect dispatcher', () => {
     expect(activateResult.executedEffects.map((entry) => entry.abilityId)).toEqual(['TEST-LEADER#activate']);
     expect(eventResult.executedEffects.map((entry) => entry.abilityId)).toEqual(['TEST-LEADER#event']);
   });
+
+  it('dispatches gained V2 effects from sidecars and honors gained-effect removals', () => {
+    const state = createSampleGameState();
+    const sourceInstanceId = state.players.p1.leaderInstanceId;
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001'),
+      'TEST-LEADER': def('TEST-LEADER'),
+    };
+    const withLeader = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, deck: { ...state.players.p1.deck, cardIds: ['draw-card'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        [sourceInstanceId]: {
+          ...state.cardsById[sourceInstanceId],
+          cardDefinitionId: 'TEST-LEADER',
+          ownerId: 'p1',
+          controllerId: 'p1',
+        },
+        'draw-card': {
+          instanceId: 'draw-card',
+          cardDefinitionId: 'TEST-LEADER',
+          ownerId: 'p1',
+          controllerId: 'p1',
+          currentZone: 'deck' as const,
+          orientation: null,
+          faceState: 'faceDown' as const,
+          donAttached: [],
+          appliedContinuousEffectIds: [],
+          oncePerTurnUsed: [],
+          summoningSick: false,
+          revealedTo: [],
+        },
+      },
+    };
+    const gainedEffect = effect('gained:draw', {
+      kind: 'ACTION',
+      action: { type: 'DRAW_CARD', player: 'PLAYER', count: { kind: 'NUMBER', value: 1 } },
+    }, 'ACTIVATE_MAIN');
+    const gainedRecord = {
+      id: 'grant',
+      sourceInstanceId,
+      controllerId: 'p1',
+      selector: { subject: 'CARD' as const, relations: ['INSTANCE_ID'], instanceIds: [sourceInstanceId] },
+      selectedInstanceIds: [sourceInstanceId],
+      effect: gainedEffect,
+      duration: { kind: 'THIS_TURN' as const },
+      createdAtTurn: withLeader.turnNumber,
+      status: 'ACTIVE' as const,
+    };
+    const emptyRuntime: EffectRuntimeBundle_V2 = {
+      programsByCardNumber: {},
+      compatibilityWarnings: [],
+      summary: { cardCount: 0, assignmentCount: 0, v2AbilityCount: 0, legacyAbilityCount: 0, legacyWarningCount: 0 },
+    };
+
+    const executed = dispatchCardEffectsForTiming_V2({
+      state: withLeader,
+      defs,
+      runtime: emptyRuntime,
+      sourceInstanceId,
+      controllerId: 'p1',
+      timing: { kind: 'STANDARD_TIMING', timing: 'ACTIVATE_MAIN' },
+      sidecars: { gainedEffects: [gainedRecord] },
+    });
+
+    expect(executed.executedEffects).toEqual([{ abilityId: 'gained:draw', cardNumber: 'TEST-LEADER', sourceInstanceId }]);
+    expect(executed.state.players.p1.hand.cardIds).toEqual(['draw-card']);
+
+    const removed = dispatchCardEffectsForTiming_V2({
+      state: withLeader,
+      defs,
+      runtime: emptyRuntime,
+      sourceInstanceId,
+      controllerId: 'p1',
+      timing: { kind: 'STANDARD_TIMING', timing: 'ACTIVATE_MAIN' },
+      sidecars: {
+        gainedEffects: [gainedRecord],
+        gainedEffectRemovals: [{
+          id: 'remove',
+          sourceInstanceId,
+          controllerId: 'p1',
+          selector: { subject: 'CARD', relations: ['INSTANCE_ID'], instanceIds: [sourceInstanceId] },
+          selectedInstanceIds: [sourceInstanceId],
+          effectFilter: 'ALL_EFFECTS',
+          duration: { kind: 'THIS_TURN' },
+          createdAtTurn: withLeader.turnNumber,
+          status: 'ACTIVE',
+        }],
+      },
+    });
+
+    expect(removed.executedEffects).toEqual([]);
+    expect(removed.state.players.p1.hand.cardIds).toEqual([]);
+  });
 });

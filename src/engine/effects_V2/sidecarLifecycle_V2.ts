@@ -70,9 +70,12 @@ export function pruneExpiredEffectRuntimeSidecars_V2(
     permissionEffects: keepDurationRecords(state, sidecars.permissionEffects),
     statModifiers: keepDurationRecords(state, sidecars.statModifiers),
     keywordModifiers: keepDurationRecords(state, sidecars.keywordModifiers),
+    cardPropertyModifiers: keepDurationRecords(state, sidecars.cardPropertyModifiers),
     counterModifiers: keepDurationRecords(state, sidecars.counterModifiers),
     effectInvalidations: keepDurationRecords(state, sidecars.effectInvalidations),
     activatedEvents: sidecars.activatedEvents,
+    gainedEffects: keepDurationRecords(state, sidecars.gainedEffects),
+    gainedEffectRemovals: keepDurationRecords(state, sidecars.gainedEffectRemovals),
     choicePrompts: sidecars.choicePrompts,
     lookBuffers: sidecars.lookBuffers,
   };

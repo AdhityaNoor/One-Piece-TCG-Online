@@ -88,6 +88,8 @@ export function timing_V2(timing: StandardTiming_V2): TimingExpression_V2 {
 }
 
 export function durationFromText_V2(text: string): Duration_V2 {
+  if (/until the end of your opponent'?s next End Phase/i.test(text)) return { kind: 'UNTIL_END_OF_NEXT_TURN', player: 'OPPONENT' };
+  if (/until the end of your next End Phase/i.test(text)) return { kind: 'UNTIL_END_OF_NEXT_TURN', player: 'PLAYER' };
   if (/until the end of your opponent'?s next turn/i.test(text)) return { kind: 'UNTIL_END_OF_NEXT_TURN', player: 'OPPONENT' };
   if (/until the end of your next turn/i.test(text)) return { kind: 'UNTIL_END_OF_NEXT_TURN', player: 'PLAYER' };
   if (/during this battle/i.test(text)) return { kind: 'THIS_BATTLE' };

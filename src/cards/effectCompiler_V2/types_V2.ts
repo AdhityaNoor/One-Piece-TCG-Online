@@ -232,6 +232,7 @@ export type Action_V2 =
   | { type: 'TURN_LIFE_FACE_UP' | 'TURN_LIFE_FACE_DOWN'; selector: Selector_V2 }
   | { type: 'REST_CARD'; selector: Selector_V2 }
   | { type: 'SET_CARD_ACTIVE'; selector: Selector_V2 }
+  | { type: 'REST_MIXED_TARGETS'; selectors: Selector_V2[]; quantity: Quantity_V2 }
   | { type: 'TURN_CARD_FACE_UP' | 'TURN_CARD_FACE_DOWN'; selector: Selector_V2 }
   | { type: 'ADD_DON_FROM_DON_DECK'; player: PlayerReference_V2; count: ValueExpression_V2; destination: 'COST_AREA'; state: 'ACTIVE' | 'RESTED' }
   | { type: 'GIVE_DON'; donSelector: Selector_V2; target: Selector_V2 }
@@ -277,7 +278,7 @@ export type ResolutionNode_V2 =
   | { kind: 'REPEAT'; count: ValueExpression_V2; node: ResolutionNode_V2 }
   | { kind: 'REPLACEMENT'; timing: TimingExpression_V2; node: ResolutionNode_V2 }
   | { kind: 'DELAY'; timing: TimingExpression_V2; node: ResolutionNode_V2; expiration?: Duration_V2 }
-  | { kind: 'CREATE_CONTINUOUS_EFFECT'; modifier: ModifierExpression_V2; duration: Duration_V2 }
+  | { kind: 'CREATE_CONTINUOUS_EFFECT'; modifier: ModifierExpression_V2; duration: Duration_V2; selector?: Selector_V2 }
   | { kind: 'NO_OP' };
 
 export type ModifierExpression_V2 =

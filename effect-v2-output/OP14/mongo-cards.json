@@ -5000,18 +5000,11 @@
                 "type": "PREVENT_ACTION",
                 "selector": {
                   "subject": "CARD",
-                  "zones": [
-                    "CHARACTER_AREA"
-                  ],
                   "cardCategories": [
                     "CHARACTER"
                   ],
                   "quantity": {
-                    "kind": "EXACTLY",
-                    "value": {
-                      "kind": "NUMBER",
-                      "value": 1
-                    }
+                    "kind": "ANY_NUMBER"
                   },
                   "chooser": "EFFECT_OWNER"
                 },
@@ -5172,18 +5165,11 @@
                   "type": "PREVENT_ACTION",
                   "selector": {
                     "subject": "CARD",
-                    "zones": [
-                      "CHARACTER_AREA"
-                    ],
                     "cardCategories": [
                       "CHARACTER"
                     ],
                     "quantity": {
-                      "kind": "EXACTLY",
-                      "value": {
-                        "kind": "NUMBER",
-                        "value": 1
-                      }
+                      "kind": "ANY_NUMBER"
                     },
                     "chooser": "EFFECT_OWNER"
                   },
@@ -5931,18 +5917,11 @@
                 "type": "PREVENT_ACTION",
                 "selector": {
                   "subject": "CARD",
-                  "zones": [
-                    "CHARACTER_AREA"
-                  ],
                   "cardCategories": [
                     "CHARACTER"
                   ],
                   "quantity": {
-                    "kind": "EXACTLY",
-                    "value": {
-                      "kind": "NUMBER",
-                      "value": 1
-                    }
+                    "kind": "ANY_NUMBER"
                   },
                   "chooser": "EFFECT_OWNER"
                 },
@@ -6072,18 +6051,11 @@
                   "type": "PREVENT_ACTION",
                   "selector": {
                     "subject": "CARD",
-                    "zones": [
-                      "CHARACTER_AREA"
-                    ],
                     "cardCategories": [
                       "CHARACTER"
                     ],
                     "quantity": {
-                      "kind": "EXACTLY",
-                      "value": {
-                        "kind": "NUMBER",
-                        "value": 1
-                      }
+                      "kind": "ANY_NUMBER"
                     },
                     "chooser": "EFFECT_OWNER"
                   },
@@ -7394,7 +7366,8 @@
               "value": 2000
             },
             "duration": {
-              "kind": "INSTANT"
+              "kind": "UNTIL_END_OF_NEXT_TURN",
+              "player": "OPPONENT"
             }
           },
           "actionId": "OP14-029#1.1"
@@ -7608,7 +7581,8 @@
                 "value": 2000
               },
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP14-029#1.1"
@@ -8281,7 +8255,8 @@
             },
             "action": "REST_CARD",
             "duration": {
-              "kind": "INSTANT"
+              "kind": "UNTIL_END_OF_NEXT_TURN",
+              "player": "OPPONENT"
             }
           },
           "actionId": "OP14-033#0.0"
@@ -8454,7 +8429,8 @@
               },
               "action": "REST_CARD",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP14-033#0.0"
@@ -12293,7 +12269,7 @@
                   "selector": {
                     "subject": "ACTION_RESULT",
                     "relations": [
-                      "PREVIOUS_ACTION_TARGET"
+                      "REVEALED_PREVIOUSLY"
                     ],
                     "types": {
                       "kind": "TYPE_INCLUDES_TEXT",
@@ -12453,7 +12429,7 @@
                     "selector": {
                       "subject": "ACTION_RESULT",
                       "relations": [
-                        "PREVIOUS_ACTION_TARGET"
+                        "REVEALED_PREVIOUSLY"
                       ],
                       "types": {
                         "kind": "TYPE_INCLUDES_TEXT",
@@ -15407,29 +15383,59 @@
         },
         "optionality": "MANDATORY",
         "resolution": {
-          "kind": "ACTION",
-          "action": {
-            "type": "INVALIDATE_EFFECTS",
-            "selector": {
-              "subject": "CARD",
-              "relations": [
-                "THIS_CARD"
-              ],
-              "quantity": {
-                "kind": "EXACTLY",
-                "value": {
-                  "kind": "NUMBER",
-                  "value": 1
+          "kind": "SEQUENCE",
+          "nodes": [
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "PREVENT_ACTION",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                },
+                "action": "DECLARE_ATTACK",
+                "duration": {
+                  "kind": "PERMANENT"
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "actionId": "OP14-056#0.0"
             },
-            "effectFilter": "ALL_EFFECTS",
-            "duration": {
-              "kind": "THIS_TURN"
+            {
+              "kind": "ACTION",
+              "action": {
+                "type": "INVALIDATE_EFFECTS",
+                "selector": {
+                  "subject": "CARD",
+                  "relations": [
+                    "THIS_CARD"
+                  ],
+                  "quantity": {
+                    "kind": "EXACTLY",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "chooser": "EFFECT_OWNER"
+                },
+                "effectFilter": "ALL_EFFECTS",
+                "duration": {
+                  "kind": "THIS_TURN"
+                }
+              },
+              "actionId": "OP14-056#0.1"
             }
-          },
-          "actionId": "OP14-056#0.0"
+          ]
         },
         "metadata": {
           "sourceCardNumber": "OP14-056",
@@ -15463,33 +15469,64 @@
           },
           "optionality": "MANDATORY",
           "resolution": {
-            "kind": "ACTION",
-            "action": {
-              "type": "INVALIDATE_EFFECTS",
-              "selector": {
-                "subject": "CARD",
-                "relations": [
-                  "THIS_CARD"
-                ],
-                "quantity": {
-                  "kind": "EXACTLY",
-                  "value": {
-                    "kind": "NUMBER",
-                    "value": 1
+            "kind": "SEQUENCE",
+            "nodes": [
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "PREVENT_ACTION",
+                  "selector": {
+                    "subject": "CARD",
+                    "relations": [
+                      "THIS_CARD"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER"
+                  },
+                  "action": "DECLARE_ATTACK",
+                  "duration": {
+                    "kind": "PERMANENT"
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "actionId": "OP14-056#0.0"
               },
-              "effectFilter": "ALL_EFFECTS",
-              "duration": {
-                "kind": "THIS_TURN"
+              {
+                "kind": "ACTION",
+                "action": {
+                  "type": "INVALIDATE_EFFECTS",
+                  "selector": {
+                    "subject": "CARD",
+                    "relations": [
+                      "THIS_CARD"
+                    ],
+                    "quantity": {
+                      "kind": "EXACTLY",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "chooser": "EFFECT_OWNER"
+                  },
+                  "effectFilter": "ALL_EFFECTS",
+                  "duration": {
+                    "kind": "THIS_TURN"
+                  }
+                },
+                "actionId": "OP14-056#0.1"
               }
-            },
-            "actionId": "OP14-056#0.0"
+            ]
           }
         },
         "coveredAtomicEffectIds": [
-          "OP14-056#0.0"
+          "OP14-056#0.0",
+          "OP14-056#0.1"
         ]
       }
     ],
@@ -15497,13 +15534,13 @@
       "schemaVersion": "op-tcg-effect-v2.0.0",
       "generatedBy": "effectCompiler_V2",
       "cardNumber": "OP14-056",
-      "totalAtomicEffects": 1,
-      "parserRecognizedAtomicEffects": 1,
+      "totalAtomicEffects": 2,
+      "parserRecognizedAtomicEffects": 2,
       "parserUnrecognizedAtomicEffects": 0,
-      "assignmentCoveredAtomicEffects": 1,
+      "assignmentCoveredAtomicEffects": 2,
       "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
-      "coveredAtomicEffects": 1,
+      "coveredAtomicEffects": 2,
       "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
@@ -15512,7 +15549,26 @@
           "cardNumber": "OP14-056",
           "effectIndex": 0,
           "atomIndex": 0,
-          "rawText": "This Character cannot attack.When a card is trashed from your hand by an effect, this Character's effect is negated during this turn.",
+          "rawText": "This Character cannot attack.",
+          "parserStatus": "recognized",
+          "semanticStatus": "safe",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:OP14-056:0"
+          ],
+          "canonicalAtoms": [
+            "PREVENT_ACTION"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "OP14-056#0.1",
+          "cardNumber": "OP14-056",
+          "effectIndex": 0,
+          "atomIndex": 1,
+          "rawText": "When a card is trashed from your hand by an effect, this Character's effect is negated during this turn.",
           "parserStatus": "recognized",
           "semanticStatus": "safe",
           "assignmentStatus": "assigned",
@@ -18914,7 +18970,8 @@
                 },
                 "action": "REST_CARD",
                 "duration": {
-                  "kind": "INSTANT"
+                  "kind": "UNTIL_END_OF_NEXT_TURN",
+                  "player": "OPPONENT"
                 }
               },
               "actionId": "OP14-069#0.2"
@@ -19076,7 +19133,8 @@
                   },
                   "action": "REST_CARD",
                   "duration": {
-                    "kind": "INSTANT"
+                    "kind": "UNTIL_END_OF_NEXT_TURN",
+                    "player": "OPPONENT"
                   }
                 },
                 "actionId": "OP14-069#0.2"
@@ -23035,7 +23093,8 @@
               "value": 4
             },
             "duration": {
-              "kind": "INSTANT"
+              "kind": "UNTIL_END_OF_NEXT_TURN",
+              "player": "OPPONENT"
             }
           },
           "actionId": "OP14-082#0.0"
@@ -23176,7 +23235,8 @@
                 "value": 4
               },
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP14-082#0.0"
@@ -27748,7 +27808,8 @@
               "value": 3
             },
             "duration": {
-              "kind": "INSTANT"
+              "kind": "UNTIL_END_OF_NEXT_TURN",
+              "player": "OPPONENT"
             }
           },
           "actionId": "OP14-098#0.0"
@@ -27949,7 +28010,8 @@
                 "value": 3
               },
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP14-098#0.0"
@@ -32033,7 +32095,8 @@
             },
             "action": "DECLARE_ATTACK",
             "duration": {
-              "kind": "INSTANT"
+              "kind": "UNTIL_END_OF_NEXT_TURN",
+              "player": "OPPONENT"
             }
           },
           "actionId": "OP14-111#1.0"
@@ -32175,7 +32238,8 @@
               },
               "action": "DECLARE_ATTACK",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP14-111#1.0"
@@ -35260,7 +35324,8 @@
             },
             "action": "REST_CARD",
             "duration": {
-              "kind": "PERMANENT"
+              "kind": "UNTIL_END_OF_NEXT_TURN",
+              "player": "OPPONENT"
             }
           },
           "actionId": "OP14-119#0.0"
@@ -35432,7 +35497,8 @@
               },
               "action": "REST_CARD",
               "duration": {
-                "kind": "PERMANENT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP14-119#0.0"
@@ -35670,7 +35736,8 @@
                 },
                 "action": "DECLARE_ATTACK",
                 "duration": {
-                  "kind": "INSTANT"
+                  "kind": "UNTIL_END_OF_NEXT_TURN",
+                  "player": "OPPONENT"
                 }
               },
               "actionId": "OP14-120#0.0"
@@ -35914,7 +35981,8 @@
                   },
                   "action": "DECLARE_ATTACK",
                   "duration": {
-                    "kind": "INSTANT"
+                    "kind": "UNTIL_END_OF_NEXT_TURN",
+                    "player": "OPPONENT"
                   }
                 },
                 "actionId": "OP14-120#0.0"

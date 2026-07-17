@@ -2,6 +2,7 @@ import type { CardDefinition } from '../state/card';
 import type { GameState } from '../state/game';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import type { EffectRuntimeBundle_V2 } from './runtime_V2';
+import type { EffectRuntimeSidecars_V2 } from './dispatcher_V2';
 import { computeCurrentCost, computeCurrentPower, hasContinuousKeyword } from '../rules/shared/power';
 import { cardHasNoBaseEffect } from '../effects/cardHasNoBaseEffect';
 import type {
@@ -15,6 +16,7 @@ import type {
   ValueExpression_V2,
   Zone_V2,
 } from '../../cards/effectCompiler_V2/types_V2';
+import type { CardPropertyModifierRecord_V2 } from './modifiers_V2';
 
 export interface EffectBindings_V2 {
   selectedObjects: Record<string, string[]>;
@@ -27,6 +29,7 @@ export interface SelectorContext_V2 {
   sourceInstanceId: string;
   controllerId: string;
   runtime?: EffectRuntimeBundle_V2;
+  sidecars?: EffectRuntimeSidecars_V2;
   currentTiming?: import('../../cards/effectCompiler_V2/types_V2').TimingExpression_V2;
   bindings?: EffectBindings_V2;
 }
@@ -66,6 +69,27 @@ const KEYWORD_TO_LEGACY: Partial<Record<KeywordEffect_V2, Parameters<typeof hasC
   UNBLOCKABLE: 'unblockable',
   CAN_ATTACK_ACTIVE: 'canAttackActive',
 };
+
+function hasPrintedKeyword_V2(def: CardDefinition, keyword: KeywordEffect_V2): boolean {
+  switch (keyword) {
+    case 'RUSH':
+      return def.hasRush;
+    case 'RUSH_CHARACTER':
+      return false;
+    case 'DOUBLE_ATTACK':
+      return def.hasDoubleAttack;
+    case 'BANISH':
+      return Boolean(def.hasBanish);
+    case 'BLOCKER':
+      return def.hasBlocker;
+    case 'TRIGGER':
+      return def.hasTrigger;
+    case 'UNBLOCKABLE':
+      return def.isUnblockable;
+    case 'CAN_ATTACK_ACTIVE':
+      return false;
+  }
+}
 
 function opponentOf(state: GameState, playerId: string): string {
   return Object.keys(state.players).find((id) => id !== playerId) ?? playerId;
@@ -215,25 +239,121 @@ function compareNumber(actual: number | undefined, filter: NumericPropertyFilter
   }
 }
 
-function hasType(def: CardDefinition, required: string): boolean {
-  const needle = required.toLowerCase();
-  return def.types.some((type) => type.toLowerCase().split(/[\/,]+/).some((part) => part.trim().includes(needle)));
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
-function matchesBaseEffectStatus(def: CardDefinition, status: Selector_V2['baseEffectStatus']): boolean {
+function propertyModifierAppliesToInstance_V2(ctx: SelectorContext_V2, record: CardPropertyModifierRecord_V2, instanceId: string): boolean {
+  if (record.status !== 'ACTIVE') return false;
+  const sidecarsWithoutPropertyModifiers = ctx.sidecars
+    ? { ...ctx.sidecars, cardPropertyModifiers: [] }
+    : undefined;
+  const resolved = resolveSelector_V2({
+    ...ctx,
+    sourceInstanceId: record.sourceInstanceId,
+    controllerId: record.controllerId,
+    sidecars: sidecarsWithoutPropertyModifiers,
+  }, record.selector);
+  return resolved.candidateInstanceIds.includes(instanceId);
+}
+
+function cardPropertyModifiersForInstance_V2(ctx: SelectorContext_V2, instanceId: string): CardPropertyModifierRecord_V2[] {
+  return (ctx.sidecars?.cardPropertyModifiers ?? []).filter((record) => propertyModifierAppliesToInstance_V2(ctx, record, instanceId));
+}
+
+function effectiveNames_V2(def: CardDefinition, modifiers: readonly CardPropertyModifierRecord_V2[]): string[] {
+  let names = [def.name];
+  for (const record of modifiers) {
+    if (record.property !== 'NAME') continue;
+    if (record.operation === 'REPLACE_NAMES') names = [...record.values];
+    else names = uniqueStrings([...names, ...record.values]);
+  }
+  return names;
+}
+
+function effectiveColors_V2(def: CardDefinition, modifiers: readonly CardPropertyModifierRecord_V2[]): Color_V2[] {
+  let colors = def.colors.map((color) => COLOR_TO_V2[color]);
+  for (const record of modifiers) {
+    if (record.property !== 'COLOR') continue;
+    if (record.operation === 'REPLACE_COLORS') colors = [...record.values];
+    else if (record.operation === 'ADD_COLOR') colors = uniqueStrings([...colors, ...record.values]) as Color_V2[];
+    else colors = colors.filter((color) => !record.values.includes(color));
+  }
+  return colors;
+}
+
+function effectiveTypes_V2(def: CardDefinition, modifiers: readonly CardPropertyModifierRecord_V2[]): string[] {
+  let types = [...def.types];
+  for (const record of modifiers) {
+    if (record.property !== 'TYPE') continue;
+    if (record.operation === 'REPLACE_TYPES') types = [...record.values];
+    else if (record.operation === 'ADD_TYPE') types = uniqueStrings([...types, ...record.values]);
+    else types = types.filter((type) => !record.values.some((removed) => removed.toLowerCase() === type.toLowerCase()));
+  }
+  return types;
+}
+
+function effectiveAttributes_V2(def: CardDefinition, modifiers: readonly CardPropertyModifierRecord_V2[]): string[] {
+  let attributes = def.attributes?.map((attr) => attr.toUpperCase()) ?? [];
+  for (const record of modifiers) {
+    if (record.property !== 'ATTRIBUTE') continue;
+    if (record.operation === 'REPLACE_ATTRIBUTES') attributes = [...record.values];
+    else if (record.operation === 'ADD_ATTRIBUTE') attributes = uniqueStrings([...attributes, ...record.values]);
+    else attributes = attributes.filter((attr) => !(record.values as readonly string[]).includes(attr));
+  }
+  return attributes;
+}
+
+function effectiveHasNoBaseEffect_V2(def: CardDefinition, modifiers: readonly CardPropertyModifierRecord_V2[]): boolean {
+  let hasNoBaseEffect = cardHasNoBaseEffect(def);
+  for (const record of modifiers) {
+    if (record.property !== 'BASE_EFFECT_STATUS') continue;
+    hasNoBaseEffect = !record.enabled;
+  }
+  return hasNoBaseEffect;
+}
+
+function hasEffectiveType(types: readonly string[], required: string): boolean {
+  const needle = required.toLowerCase();
+  return types.some((type) => type.toLowerCase().split(/[\/,]+/).some((part) => part.trim().includes(needle)));
+}
+
+function matchesBaseEffectStatus(hasNoBaseEffect: boolean, status: Selector_V2['baseEffectStatus']): boolean {
   if (!status || status === 'ANY') return true;
-  const hasNoBaseEffect = cardHasNoBaseEffect(def);
   return status === 'NO_BASE_EFFECT' ? hasNoBaseEffect : !hasNoBaseEffect;
 }
 
-function matchesNameFilters(def: CardDefinition, names: Selector_V2['names']): boolean {
+function matchesNameFilters(effectiveNames: readonly string[], names: Selector_V2['names']): boolean {
   if (!names?.length) return true;
   const exactNames = names.filter((name) => name.kind === 'NAME_EXACT').map((name) => name.value);
   const containsNames = names.filter((name) => name.kind === 'NAME_CONTAINS').map((name) => name.value.toLowerCase());
   const excludedNames = names.filter((name) => name.kind === 'NAME_NOT').map((name) => name.value);
-  if (excludedNames.includes(def.name)) return false;
-  if (exactNames.length > 0 && !exactNames.includes(def.name)) return false;
-  if (containsNames.length > 0 && !containsNames.some((name) => def.name.toLowerCase().includes(name))) return false;
+  if (excludedNames.some((name) => effectiveNames.includes(name))) return false;
+  if (exactNames.length > 0 && !exactNames.some((name) => effectiveNames.includes(name))) return false;
+  if (containsNames.length > 0 && !containsNames.some((name) => effectiveNames.some((effective) => effective.toLowerCase().includes(name)))) return false;
+  return true;
+}
+
+function boundDefsForRelation(ctx: SelectorContext_V2, relation: string): CardDefinition[] {
+  const ids = ctx.bindings?.selectedObjects[relation] ?? [];
+  return ids.flatMap((id) => {
+    const def = defOf(ctx, id);
+    return def ? [def] : [];
+  });
+}
+
+function matchesRelationalFilters(ctx: SelectorContext_V2, selector: Selector_V2, def: CardDefinition): boolean {
+  const relations = selector.relations ?? [];
+  if (relations.includes('SAME_NAME_AS_TRASHED_PREVIOUSLY')) {
+    const trashedDefs = boundDefsForRelation(ctx, 'TRASHED_PREVIOUSLY');
+    if (trashedDefs.length === 0 || !trashedDefs.some((trashed) => trashed.name === def.name)) return false;
+  }
+  if (relations.includes('DIFFERENT_COLOR_THAN_RETURNED_PREVIOUSLY')) {
+    const returnedDefs = boundDefsForRelation(ctx, 'RETURNED_PREVIOUSLY');
+    const returnedColors = returnedDefs.flatMap((returned) => returned.colors.map((color) => COLOR_TO_V2[color]));
+    const candidateColors = def.colors.map((color) => COLOR_TO_V2[color]);
+    if (returnedColors.length === 0 || !candidateColors.some((color) => !returnedColors.includes(color))) return false;
+  }
   return true;
 }
 
@@ -241,6 +361,12 @@ function matchesSelector(ctx: SelectorContext_V2, selector: Selector_V2, instanc
   const inst = ctx.state.cardsById[instanceId];
   const def = defOf(ctx, instanceId);
   if (!inst || !def) return false;
+  const propertyModifiers = cardPropertyModifiersForInstance_V2(ctx, instanceId);
+  const names = effectiveNames_V2(def, propertyModifiers);
+  const colors = effectiveColors_V2(def, propertyModifiers);
+  const types = effectiveTypes_V2(def, propertyModifiers);
+  const attributes = effectiveAttributes_V2(def, propertyModifiers);
+  const hasNoBaseEffect = effectiveHasNoBaseEffect_V2(def, propertyModifiers);
 
   const isSourceCard = instanceId === ctx.sourceInstanceId;
   if (selector.relations?.includes('THIS_CARD') && !isSourceCard) return false;
@@ -248,25 +374,24 @@ function matchesSelector(ctx: SelectorContext_V2, selector: Selector_V2, instanc
   const forceIncludeSource = selector.relations?.includes('INCLUDE_THIS_CARD') && isSourceCard;
 
   if (!forceIncludeSource && selector.cardCategories?.length && !selector.cardCategories.includes(CATEGORY_TO_V2[def.category])) return false;
-  if (!forceIncludeSource && !matchesBaseEffectStatus(def, selector.baseEffectStatus)) return false;
-  if (!forceIncludeSource && !matchesNameFilters(def, selector.names)) return false;
+  if (!forceIncludeSource && !matchesBaseEffectStatus(hasNoBaseEffect, selector.baseEffectStatus)) return false;
+  if (!forceIncludeSource && !matchesNameFilters(names, selector.names)) return false;
+  if (!forceIncludeSource && !matchesRelationalFilters(ctx, selector, def)) return false;
 
   if (selector.colors) {
-    const colors = def.colors.map((color) => COLOR_TO_V2[color]);
     if (!forceIncludeSource && selector.colors.kind === 'HAS_COLOR' && !colors.includes(selector.colors.values[0])) return false;
     if (!forceIncludeSource && selector.colors.kind === 'HAS_ANY_COLOR' && !selector.colors.values.some((color) => colors.includes(color))) return false;
     if (!forceIncludeSource && selector.colors.kind === 'HAS_ALL_COLORS' && !selector.colors.values.every((color) => colors.includes(color))) return false;
   }
 
   if (selector.types) {
-    if (!forceIncludeSource && selector.types.kind === 'HAS_TYPE' && !selector.types.values.every((type) => hasType(def, type))) return false;
-    if (!forceIncludeSource && selector.types.kind === 'HAS_ANY_TYPE' && !selector.types.values.some((type) => hasType(def, type))) return false;
-    if (!forceIncludeSource && selector.types.kind === 'TYPE_INCLUDES_TEXT' && !selector.types.values.some((type) => hasType(def, type))) return false;
+    if (!forceIncludeSource && selector.types.kind === 'HAS_TYPE' && !selector.types.values.every((type) => hasEffectiveType(types, type))) return false;
+    if (!forceIncludeSource && selector.types.kind === 'HAS_ANY_TYPE' && !selector.types.values.some((type) => hasEffectiveType(types, type))) return false;
+    if (!forceIncludeSource && selector.types.kind === 'TYPE_INCLUDES_TEXT' && !selector.types.values.some((type) => hasEffectiveType(types, type))) return false;
   }
 
   if (selector.attributes?.values.length) {
-    const attrs = def.attributes?.map((attr) => attr.toUpperCase()) ?? [];
-    if (!forceIncludeSource && !selector.attributes.values.some((attr) => attrs.includes(attr))) return false;
+    if (!forceIncludeSource && !selector.attributes.values.some((attr) => attributes.includes(attr))) return false;
   }
 
   const currentCost = computeCurrentCost(ctx.defs, ctx.state, instanceId);
@@ -282,7 +407,8 @@ function matchesSelector(ctx: SelectorContext_V2, selector: Selector_V2, instanc
 
   if (selector.keywords) {
     const keyword = KEYWORD_TO_LEGACY[selector.keywords.value];
-    const hasKeyword = keyword ? hasContinuousKeyword(ctx.defs, ctx.state, instanceId, keyword) : false;
+    const hasKeyword = hasPrintedKeyword_V2(def, selector.keywords.value)
+      || (keyword ? hasContinuousKeyword(ctx.defs, ctx.state, instanceId, keyword) : false);
     if (!forceIncludeSource && selector.keywords.kind === 'HAS_KEYWORD' && !hasKeyword) return false;
     if (!forceIncludeSource && selector.keywords.kind === 'DOES_NOT_HAVE_KEYWORD' && hasKeyword) return false;
   }
@@ -306,8 +432,26 @@ export function resolveSelector_V2(ctx: SelectorContext_V2, selector: Selector_V
 
 export function selectResolvedCandidateIds_V2(ctx: SelectorContext_V2, resolved: ResolvedSelector_V2): string[] {
   const maximum = resolved.maximum < 0 ? resolved.candidateInstanceIds.length : resolved.maximum;
+  const distinctBy = resolved.selector.distinctBy;
+  const acceptsDistinct = (id: string, selectedIds: string[]): boolean => {
+    if (!distinctBy || distinctBy === 'NONE' || distinctBy === 'CARD_OBJECT') return true;
+    const def = defOf(ctx, id);
+    const key = distinctBy === 'CARD_NUMBER' ? def?.cardNumber : def?.name;
+    if (!key) return true;
+    return !selectedIds.some((selectedId) => {
+      const selectedDef = defOf(ctx, selectedId);
+      const selectedKey = distinctBy === 'CARD_NUMBER' ? selectedDef?.cardNumber : selectedDef?.name;
+      return selectedKey === key;
+    });
+  };
   if (!resolved.perCardCategory || resolved.perCardCategory.maximum < 0) {
-    return resolved.candidateInstanceIds.slice(0, maximum);
+    const selectedIds: string[] = [];
+    for (const id of resolved.candidateInstanceIds) {
+      if (selectedIds.length >= maximum) break;
+      if (!acceptsDistinct(id, selectedIds)) continue;
+      selectedIds.push(id);
+    }
+    return selectedIds;
   }
 
   const selectedIds: string[] = [];
@@ -319,6 +463,7 @@ export function selectResolvedCandidateIds_V2(ctx: SelectorContext_V2, resolved:
     if (!category) continue;
     const selectedForCategory = selectedByCategory[category] ?? 0;
     if (selectedForCategory >= resolved.perCardCategory.maximum) continue;
+    if (!acceptsDistinct(id, selectedIds)) continue;
     selectedByCategory[category] = selectedForCategory + 1;
     selectedIds.push(id);
   }

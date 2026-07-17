@@ -4592,7 +4592,8 @@ export const OP05_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 1
                   }
-                }
+                },
+                "chooser": "EFFECT_OWNER"
               },
               "to": {
                 "zone": "HAND",

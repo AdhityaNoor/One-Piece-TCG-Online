@@ -11637,6 +11637,9 @@
                 "zones": [
                   "COST_AREA"
                 ],
+                "states": [
+                  "RESTED"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -11656,7 +11659,7 @@
                   "LEADER"
                 ],
                 "quantity": {
-                  "kind": "UP_TO",
+                  "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1

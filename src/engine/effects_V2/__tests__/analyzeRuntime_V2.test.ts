@@ -43,7 +43,7 @@ describe('analyzeEffectPrograms_V2', () => {
     expect(summary.byPrimitive['action:DRAW_CARD']).toMatchObject({ count: 1, status: 'implemented' });
     expect(summary.byPrimitive['node:SEQUENCE']).toMatchObject({ count: 1, status: 'implemented' });
     expect(summary.byPrimitive['action:REORDER_CARDS']).toMatchObject({ count: 1, status: 'implemented' });
-    expect(summary.byPrimitive['action:SET_DAMAGE']).toMatchObject({ count: 1, status: 'planned' });
-    expect(summary.plannedUsages).toBeGreaterThan(0);
+    expect(summary.byPrimitive['action:SET_DAMAGE']).toMatchObject({ count: 1, status: 'implemented' });
+    expect(summary.plannedUsages).toBe(0);
   });
 });

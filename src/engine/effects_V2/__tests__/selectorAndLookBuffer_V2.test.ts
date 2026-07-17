@@ -9,6 +9,7 @@ import {
   reorderLifeArea_V2,
   selectFromLookBuffer_V2,
 } from '../lookBuffer_V2';
+import { createEmptyEffectRuntimeSidecars_V2 } from '../dispatcher_V2';
 import { resolveSelector_V2, selectResolvedCandidateIds_V2 } from '../selectorResolver_V2';
 
 function def(id: string, patch: Partial<CardDefinition>): CardDefinition {
@@ -220,6 +221,111 @@ describe('V2 selector resolver and look buffer', () => {
       baseEffectStatus: 'HAS_BASE_EFFECT',
       quantity: { kind: 'ALL' },
     }).candidateInstanceIds).toEqual(['effect-id', 'trigger-id']);
+  });
+
+  it('resolves selectors against active V2 card-property modifiers', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { name: 'Leader', category: 'leader', basePower: 5000 }),
+      target: def('target', { name: 'Tony Tony.Chopper', colors: ['green'], types: ['Animal'], attributes: ['strike'], text: '[On Play] Draw 1 card.' }),
+    };
+    const targetId = 'target-id';
+    const withTarget = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, characterArea: { ...state.players.p1.characterArea, cardIds: [targetId] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        [targetId]: { ...instance(targetId, 'target'), currentZone: 'characterArea' as const },
+      },
+    };
+    const sidecars = createEmptyEffectRuntimeSidecars_V2({
+      cardPropertyModifiers: [
+        {
+          id: 'name',
+          sourceInstanceId: 'p1-leader',
+          controllerId: 'p1',
+          selector: { subject: 'CARD', relations: ['INSTANCE_ID'], instanceIds: [targetId] },
+          property: 'NAME',
+          operation: 'TREAT_AS_ADDITIONAL_NAME',
+          values: ['Monkey.D.Luffy'],
+          duration: { kind: 'THIS_TURN' },
+          createdAtTurn: withTarget.turnNumber,
+          status: 'ACTIVE',
+        },
+        {
+          id: 'color',
+          sourceInstanceId: 'p1-leader',
+          controllerId: 'p1',
+          selector: { subject: 'CARD', relations: ['INSTANCE_ID'], instanceIds: [targetId] },
+          property: 'COLOR',
+          operation: 'ADD_COLOR',
+          values: ['RED'],
+          duration: { kind: 'THIS_TURN' },
+          createdAtTurn: withTarget.turnNumber,
+          status: 'ACTIVE',
+        },
+        {
+          id: 'type',
+          sourceInstanceId: 'p1-leader',
+          controllerId: 'p1',
+          selector: { subject: 'CARD', relations: ['INSTANCE_ID'], instanceIds: [targetId] },
+          property: 'TYPE',
+          operation: 'ADD_TYPE',
+          values: ['Straw Hat Crew'],
+          duration: { kind: 'THIS_TURN' },
+          createdAtTurn: withTarget.turnNumber,
+          status: 'ACTIVE',
+        },
+        {
+          id: 'attribute',
+          sourceInstanceId: 'p1-leader',
+          controllerId: 'p1',
+          selector: { subject: 'CARD', relations: ['INSTANCE_ID'], instanceIds: [targetId] },
+          property: 'ATTRIBUTE',
+          operation: 'REPLACE_ATTRIBUTES',
+          values: ['SPECIAL'],
+          duration: { kind: 'THIS_TURN' },
+          createdAtTurn: withTarget.turnNumber,
+          status: 'ACTIVE',
+        },
+        {
+          id: 'base-effect',
+          sourceInstanceId: 'p1-leader',
+          controllerId: 'p1',
+          selector: { subject: 'CARD', relations: ['INSTANCE_ID'], instanceIds: [targetId] },
+          property: 'BASE_EFFECT_STATUS',
+          operation: 'SET_BASE_EFFECT_ENABLED',
+          enabled: false,
+          duration: { kind: 'THIS_TURN' },
+          createdAtTurn: withTarget.turnNumber,
+          status: 'ACTIVE',
+        },
+      ],
+    });
+    const ctx = { state: withTarget, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1', sidecars };
+
+    expect(resolveSelector_V2(ctx, {
+      subject: 'CARD',
+      controller: 'PLAYER',
+      zones: ['CHARACTER_AREA'],
+      names: [{ kind: 'NAME_EXACT', value: 'Monkey.D.Luffy' }],
+      colors: { kind: 'HAS_COLOR', values: ['RED'] },
+      types: { kind: 'HAS_ANY_TYPE', values: ['Straw Hat Crew'] },
+      attributes: { kind: 'HAS_ATTRIBUTE', values: ['SPECIAL'] },
+      baseEffectStatus: 'NO_BASE_EFFECT',
+      quantity: { kind: 'ALL' },
+    }).candidateInstanceIds).toEqual([targetId]);
+
+    expect(resolveSelector_V2(ctx, {
+      subject: 'CARD',
+      controller: 'PLAYER',
+      zones: ['CHARACTER_AREA'],
+      attributes: { kind: 'HAS_ATTRIBUTE', values: ['STRIKE'] },
+      quantity: { kind: 'ALL' },
+    }).candidateInstanceIds).toEqual([]);
   });
 
   it('excludes the source card when EXCLUDE_THIS_CARD is present', () => {

@@ -10,6 +10,7 @@ import type { SelectorContext_V2 } from './selectorResolver_V2';
 import {
   effectCandidateFromDefinition_V2,
   isEffectInvalidated_V2,
+  type CardPropertyModifierRecord_V2,
   type EffectCandidate_V2,
   type EffectInvalidationRecord_V2,
   type KeywordModifierRecord_V2,
@@ -18,6 +19,7 @@ import {
 import type { ChoicePromptRecord_V2 } from './choices_V2';
 import type { DelayedEffectRecord_V2 } from './delayedEffects_V2';
 import type { ActivatedEventRecord_V2 } from './eventActivation_V2';
+import { gainedEffectMatchesRemoval_V2, type GainedEffectRecord_V2, type GainedEffectRemovalRecord_V2 } from './gainedEffects_V2';
 import type { LookBuffer_V2 } from './lookBuffer_V2';
 import type { PermissionEffectRecord_V2 } from './permissions_V2';
 import type { ReplacementEffectRecord_V2 } from './replacements_V2';
@@ -28,9 +30,12 @@ export interface EffectRuntimeSidecars_V2 {
   permissionEffects: PermissionEffectRecord_V2[];
   statModifiers: StatModifierRecord_V2[];
   keywordModifiers: KeywordModifierRecord_V2[];
+  cardPropertyModifiers: CardPropertyModifierRecord_V2[];
   counterModifiers: StatModifierRecord_V2[];
   effectInvalidations: EffectInvalidationRecord_V2[];
   activatedEvents: ActivatedEventRecord_V2[];
+  gainedEffects: GainedEffectRecord_V2[];
+  gainedEffectRemovals: GainedEffectRemovalRecord_V2[];
   choicePrompts: ChoicePromptRecord_V2[];
   lookBuffers: LookBuffer_V2[];
 }
@@ -74,9 +79,12 @@ export function createEmptyEffectRuntimeSidecars_V2(input?: Partial<EffectRuntim
     permissionEffects: [...(input?.permissionEffects ?? [])],
     statModifiers: [...(input?.statModifiers ?? [])],
     keywordModifiers: [...(input?.keywordModifiers ?? [])],
+    cardPropertyModifiers: [...(input?.cardPropertyModifiers ?? [])],
     counterModifiers: [...(input?.counterModifiers ?? [])],
     effectInvalidations: [...(input?.effectInvalidations ?? [])],
     activatedEvents: [...(input?.activatedEvents ?? [])],
+    gainedEffects: [...(input?.gainedEffects ?? [])],
+    gainedEffectRemovals: [...(input?.gainedEffectRemovals ?? [])],
     choicePrompts: [...(input?.choicePrompts ?? [])],
     lookBuffers: [...(input?.lookBuffers ?? [])],
   };
@@ -89,9 +97,12 @@ function mergeSidecars(sidecars: EffectRuntimeSidecars_V2, result: ResolutionExe
     permissionEffects: [...sidecars.permissionEffects, ...(result.permissionEffects ?? [])],
     statModifiers: [...sidecars.statModifiers, ...(result.statModifiers ?? [])],
     keywordModifiers: [...sidecars.keywordModifiers, ...(result.keywordModifiers ?? [])],
+    cardPropertyModifiers: [...sidecars.cardPropertyModifiers, ...(result.cardPropertyModifiers ?? [])],
     counterModifiers: [...sidecars.counterModifiers, ...(result.counterModifiers ?? [])],
     effectInvalidations: [...sidecars.effectInvalidations, ...(result.effectInvalidations ?? [])],
     activatedEvents: [...sidecars.activatedEvents, ...(result.activatedEvents ?? [])],
+    gainedEffects: [...sidecars.gainedEffects, ...(result.gainedEffects ?? [])],
+    gainedEffectRemovals: [...sidecars.gainedEffectRemovals, ...(result.gainedEffectRemovals ?? [])],
     choicePrompts: [...sidecars.choicePrompts, ...(result.choicePrompts ?? [])],
     lookBuffers: [...sidecars.lookBuffers, ...(result.lookBuffers ?? [])],
   };
@@ -127,6 +138,25 @@ function candidateForAbility_V2(input: V2EffectDispatchInput, ability: EffectAbi
   };
 }
 
+function abilityFromEffectDefinition_V2(effect: import('../../cards/effectCompiler_V2/types_V2').EffectDefinition_V2): EffectAbility_V2 {
+  return {
+    abilityId: effect.id,
+    timing: effect.timing ?? { kind: 'STANDARD_TIMING', timing: 'ON_ENTER_PLAY' },
+    ...(effect.conditions ? { gates: [effect.conditions] } : {}),
+    ...(effect.activationCost ? { activationCost: effect.activationCost } : {}),
+    ...(effect.usageLimit?.maximumUses === 1 && effect.usageLimit.period === 'PER_TURN' ? { oncePerTurn: true } : {}),
+    optionalActivate: effect.optionality === 'OPTIONAL',
+    resolution: effect.resolution,
+  };
+}
+
+function gainedAbilitiesForSource_V2(sidecars: EffectRuntimeSidecars_V2, sourceInstanceId: string): { ability: EffectAbility_V2; effect: import('../../cards/effectCompiler_V2/types_V2').EffectDefinition_V2 }[] {
+  return sidecars.gainedEffects
+    .filter((record) => record.status === 'ACTIVE' && record.selectedInstanceIds.includes(sourceInstanceId))
+    .filter((record) => !sidecars.gainedEffectRemovals.some((removal) => gainedEffectMatchesRemoval_V2(record, removal)))
+    .map((record) => ({ ability: abilityFromEffectDefinition_V2(record.effect), effect: record.effect }));
+}
+
 export function dispatchCardEffectsForTiming_V2(input: V2EffectDispatchInput): V2EffectDispatchResult {
   const source = input.state.cardsById[input.sourceInstanceId];
   const def = source ? input.defs[source.cardDefinitionId] : undefined;
@@ -140,13 +170,24 @@ export function dispatchCardEffectsForTiming_V2(input: V2EffectDispatchInput): V
   const skippedEffects: V2EffectDispatchSkippedEffect[] = [];
   const unsupportedReasons: string[] = [];
 
-  if (!program || !source || !def) {
+  if (!source || !def) {
     return { state, log, sidecars, executedEffects, skippedEffects };
   }
 
-  for (const ability of program.abilities) {
+  for (const entry of [
+    ...(program?.abilities ?? []).map((ability) => ({ ability, effect: program?.canonicalEffects.find((candidate) => candidate.id === ability.abilityId) })),
+    ...gainedAbilitiesForSource_V2(sidecars, input.sourceInstanceId),
+  ]) {
+    const { ability } = entry;
     if (!timingMatches_V2(ability, input.timing)) continue;
-    const candidate = candidateForAbility_V2({ ...input, state }, ability);
+    const candidate = entry.effect
+      ? effectCandidateFromDefinition_V2({
+        effect: entry.effect,
+        sourceInstanceId: input.sourceInstanceId,
+        controllerId: input.controllerId,
+        sourceOwnerId: source.ownerId,
+      })
+      : candidateForAbility_V2({ ...input, state }, ability);
     if (!candidate) {
       skippedEffects.push({ abilityId: ability.abilityId, cardNumber, sourceInstanceId: input.sourceInstanceId, reason: 'UNSUPPORTED_TIMING' });
       continue;
@@ -162,6 +203,7 @@ export function dispatchCardEffectsForTiming_V2(input: V2EffectDispatchInput): V
       sourceInstanceId: input.sourceInstanceId,
       controllerId: input.controllerId,
       runtime: input.runtime,
+      sidecars,
       currentTiming: input.timing,
       bindings,
     };
@@ -188,8 +230,18 @@ export function dispatchCardEffectsForTiming_V2(input: V2EffectDispatchInput): V
       const paid = payCosts_V2(ctx, ability.activationCost.payments, input.activationCostSelections ?? [], ability.abilityId);
       state = paid.state;
       log = [...log, ...paid.log];
-      currentCtx = { ...ctx, state };
+      bindings = {
+        selectedObjects: {
+          ...(bindings?.selectedObjects ?? {}),
+          ...(paid.bindings?.selectedObjects ?? {}),
+        },
+        actionResults: {
+          ...(bindings?.actionResults ?? {}),
+          ...(paid.bindings?.actionResults ?? {}),
+        },
+      };
       sidecars = mergeSidecars(sidecars, paid);
+      currentCtx = { ...ctx, state, sidecars, bindings };
     }
     const result = executeResolutionNode_V2(currentCtx, ability.resolution, ability.abilityId);
     state = result.state;
@@ -230,9 +282,12 @@ export function dispatchCardEffectsForTiming_V2(input: V2EffectDispatchInput): V
     permissionEffects: sidecars.permissionEffects,
     statModifiers: sidecars.statModifiers,
     keywordModifiers: sidecars.keywordModifiers,
+    cardPropertyModifiers: sidecars.cardPropertyModifiers,
     counterModifiers: sidecars.counterModifiers,
     effectInvalidations: sidecars.effectInvalidations,
     activatedEvents: sidecars.activatedEvents,
+    gainedEffects: sidecars.gainedEffects,
+    gainedEffectRemovals: sidecars.gainedEffectRemovals,
     choicePrompts: sidecars.choicePrompts,
     lookBuffers: sidecars.lookBuffers,
     bindings,

@@ -1251,7 +1251,7 @@
               "selector": {
                 "subject": "ACTION_RESULT",
                 "relations": [
-                  "PREVIOUS_ACTION_TARGET"
+                  "REVEALED_PREVIOUSLY"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",

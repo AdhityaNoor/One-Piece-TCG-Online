@@ -5,7 +5,7 @@ import { createActionLogger } from '../rules/shared/actionLogger';
 import { payDonMinus } from '../effects/abilityCost';
 import { createSeededRng } from '../rng';
 import type { CostAction_V2, Duration_V2, ValueExpression_V2 } from '../../cards/effectCompiler_V2/types_V2';
-import { resolveSelector_V2, type ResolvedSelector_V2, type SelectorContext_V2 } from './selectorResolver_V2';
+import { resolveSelector_V2, type EffectBindings_V2, type ResolvedSelector_V2, type SelectorContext_V2 } from './selectorResolver_V2';
 
 export interface CostPaymentSelection_V2 {
   costIndex: number;
@@ -24,6 +24,12 @@ export interface CostPaymentResult_V2 {
   state: GameState;
   log: GameLogEntry[];
   paidInstanceIds: string[];
+  bindings?: EffectBindings_V2;
+}
+
+function appendBinding(bucket: Record<string, string[]>, key: string, ids: readonly string[]): void {
+  if (ids.length === 0) return;
+  bucket[key] = [...(bucket[key] ?? []), ...ids];
 }
 
 function selectedForCost(selections: readonly CostPaymentSelection_V2[], index: number): string[] {
@@ -439,6 +445,8 @@ export function payCosts_V2(
   const logger = createActionLogger(ctx.state, actionId);
   let working = ctx.state;
   const paidInstanceIds: string[] = [];
+  const selectedObjects: Record<string, string[]> = { ...(ctx.bindings?.selectedObjects ?? {}) };
+  const actionResults: Record<string, unknown> = { ...(ctx.bindings?.actionResults ?? {}) };
 
   for (const [index, cost] of costs.entries()) {
     const selected = selectedForCost(selections, index);
@@ -446,16 +454,22 @@ export function payCosts_V2(
       case 'DON_MINUS_COST':
         working = payDonMinus(working, ctx.controllerId, selected, logger);
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
         break;
       case 'REST_DON_COST':
       case 'REST_CARD_COST':
         for (const id of selected) working = moveCostCard(working, id, 'rest');
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'RESTED_PREVIOUSLY', selected);
         break;
       case 'TRASH_CARD_COST':
       case 'KO_CARD_COST':
         for (const id of selected) working = moveCostCard(working, id, 'trash');
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'TRASHED_PREVIOUSLY', selected);
+        actionResults['trashed-card-count'] = Number(actionResults['trashed-card-count'] ?? 0) + selected.length;
         break;
       case 'MODIFY_POWER_COST': {
         const value = fixedNumber(cost.value);
@@ -465,6 +479,7 @@ export function payCosts_V2(
           working = applyPowerCostModifier(working, ctx.sourceInstanceId, ctx.controllerId, id, amount, cost.duration);
         }
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
         break;
       }
       case 'GIVE_DON_COST': {
@@ -474,44 +489,66 @@ export function payCosts_V2(
           working = attachDonCost(working, id, targetId);
         }
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
         break;
       }
       case 'PLAY_CARD_COST':
         for (const id of selected) working = playCostCard(working, id, cost.state);
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'PLAYED_SOURCE_PREVIOUSLY', selected);
         break;
       case 'RETURN_CARD_TO_HAND_COST':
         for (const id of selected) working = moveCostCard(working, id, 'hand');
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'RETURNED_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'RETURNED_TO_HAND_PREVIOUSLY', selected);
         break;
       case 'RETURN_CARD_TO_DECK_COST':
         for (const id of selected) working = moveCostCard(working, id, cost.position === 'TOP' ? 'deckTop' : 'deckBottom');
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'RETURNED_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'RETURNED_TO_DECK_PREVIOUSLY', selected);
         break;
       case 'RETURN_CARD_TO_DECK_AND_SHUFFLE_COST':
         for (const id of selected) working = moveCostCard(working, id, 'deckBottom');
         working = shuffleDecksForSelectedOwners(working, selected);
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'RETURNED_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'RETURNED_TO_DECK_PREVIOUSLY', selected);
         break;
       case 'RETURN_DON_TO_DON_DECK_COST':
         for (const id of selected) working = moveCostCard(working, id, 'donDeck');
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'RETURNED_PREVIOUSLY', selected);
         break;
       case 'RETURN_DON_TO_COST_AREA_COST':
         for (const id of selected) working = returnDonToCostAreaCost(working, id, cost.state);
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'RETURNED_PREVIOUSLY', selected);
         break;
       case 'ADD_CARD_TO_LIFE_COST':
         for (const id of selected) working = addCardToLifeCost(working, id, cost.position, cost.face);
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
         break;
       case 'ADD_LIFE_TO_HAND_COST':
         for (const id of selected) working = moveCostCard(working, id, 'lifeToHand');
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'RETURNED_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'RETURNED_TO_HAND_PREVIOUSLY', selected);
         break;
       case 'TRASH_LIFE_COST':
         for (const id of selected) working = moveCostCard(working, id, 'lifeToTrash');
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'TRASHED_PREVIOUSLY', selected);
         break;
       case 'TURN_LIFE_FACE_UP_COST':
       case 'TURN_LIFE_FACE_DOWN_COST':
@@ -527,10 +564,13 @@ export function payCosts_V2(
           };
         }
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
         break;
       case 'REVEAL_CARD_COST':
         for (const id of selected) working = moveCostCard(working, id, 'reveal');
         paidInstanceIds.push(...selected);
+        appendBinding(selectedObjects, 'COST_PAID_PREVIOUSLY', selected);
+        appendBinding(selectedObjects, 'REVEALED_PREVIOUSLY', selected);
         break;
       case 'CHOOSE_ONE_COST':
         {
@@ -541,6 +581,10 @@ export function payCosts_V2(
           const result = payCosts_V2({ ...ctx, state: working }, option, selection?.optionSelections ?? [], actionId);
           working = result.state;
           paidInstanceIds.push(...result.paidInstanceIds);
+          for (const [key, ids] of Object.entries(result.bindings?.selectedObjects ?? {})) {
+            appendBinding(selectedObjects, key, ids);
+          }
+          Object.assign(actionResults, result.bindings?.actionResults ?? {});
         }
         break;
       case 'RAW_COST':
@@ -560,5 +604,19 @@ export function payCosts_V2(
   }
 
   const state = { ...working, log: [...working.log, ...logger.log] };
-  return { state, log: logger.log, paidInstanceIds };
+  return {
+    state,
+    log: logger.log,
+    paidInstanceIds,
+    bindings: {
+      selectedObjects: {
+        ...selectedObjects,
+        ...(paidInstanceIds.length ? {
+          SELECTED_PREVIOUSLY: paidInstanceIds,
+          PREVIOUS_ACTION_TARGET: paidInstanceIds,
+        } : {}),
+      },
+      actionResults,
+    },
+  };
 }

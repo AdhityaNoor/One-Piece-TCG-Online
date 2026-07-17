@@ -9446,6 +9446,9 @@ export const OP11_AUTO_ASSIGNMENTS_V2 = [
                 "zones": [
                   "COST_AREA"
                 ],
+                "states": [
+                  "RESTED"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -9465,7 +9468,7 @@ export const OP11_AUTO_ASSIGNMENTS_V2 = [
                   "LEADER"
                 ],
                 "quantity": {
-                  "kind": "UP_TO",
+                  "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1

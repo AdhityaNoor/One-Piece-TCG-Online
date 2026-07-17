@@ -1929,18 +1929,11 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
               "type": "PREVENT_ACTION",
               "selector": {
                 "subject": "CARD",
-                "zones": [
-                  "CHARACTER_AREA"
-                ],
                 "cardCategories": [
                   "CHARACTER"
                 ],
                 "quantity": {
-                  "kind": "EXACTLY",
-                  "value": {
-                    "kind": "NUMBER",
-                    "value": 1
-                  }
+                  "kind": "ANY_NUMBER"
                 },
                 "chooser": "EFFECT_OWNER"
               },
@@ -2212,18 +2205,11 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
               "type": "PREVENT_ACTION",
               "selector": {
                 "subject": "CARD",
-                "zones": [
-                  "CHARACTER_AREA"
-                ],
                 "cardCategories": [
                   "CHARACTER"
                 ],
                 "quantity": {
-                  "kind": "EXACTLY",
-                  "value": {
-                    "kind": "NUMBER",
-                    "value": 1
-                  }
+                  "kind": "ANY_NUMBER"
                 },
                 "chooser": "EFFECT_OWNER"
               },
@@ -2847,7 +2833,8 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
             "value": 2000
           },
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP14-029#1.1"
@@ -3093,7 +3080,8 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
           },
           "action": "REST_CARD",
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP14-033#0.0"
@@ -4650,7 +4638,7 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
                 "selector": {
                   "subject": "ACTION_RESULT",
                   "relations": [
-                    "PREVIOUS_ACTION_TARGET"
+                    "REVEALED_PREVIOUSLY"
                   ],
                   "types": {
                     "kind": "TYPE_INCLUDES_TEXT",
@@ -5740,33 +5728,64 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
       },
       "optionality": "MANDATORY",
       "resolution": {
-        "kind": "ACTION",
-        "action": {
-          "type": "INVALIDATE_EFFECTS",
-          "selector": {
-            "subject": "CARD",
-            "relations": [
-              "THIS_CARD"
-            ],
-            "quantity": {
-              "kind": "EXACTLY",
-              "value": {
-                "kind": "NUMBER",
-                "value": 1
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PREVENT_ACTION",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "action": "DECLARE_ATTACK",
+              "duration": {
+                "kind": "PERMANENT"
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "actionId": "OP14-056#0.0"
           },
-          "effectFilter": "ALL_EFFECTS",
-          "duration": {
-            "kind": "THIS_TURN"
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "INVALIDATE_EFFECTS",
+              "selector": {
+                "subject": "CARD",
+                "relations": [
+                  "THIS_CARD"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER"
+              },
+              "effectFilter": "ALL_EFFECTS",
+              "duration": {
+                "kind": "THIS_TURN"
+              }
+            },
+            "actionId": "OP14-056#0.1"
           }
-        },
-        "actionId": "OP14-056#0.0"
+        ]
       }
     },
     "coveredAtomicEffectIds": [
-      "OP14-056#0.0"
+      "OP14-056#0.0",
+      "OP14-056#0.1"
     ]
   },
   {
@@ -7084,7 +7103,8 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
               },
               "action": "REST_CARD",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP14-069#0.2"
@@ -8551,7 +8571,8 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
             "value": 4
           },
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP14-082#0.0"
@@ -10369,7 +10390,8 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
             "value": 3
           },
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP14-098#0.0"
@@ -11954,7 +11976,8 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
           },
           "action": "DECLARE_ATTACK",
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP14-111#1.0"
@@ -13204,7 +13227,8 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
           },
           "action": "REST_CARD",
           "duration": {
-            "kind": "PERMANENT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP14-119#0.0"
@@ -13359,7 +13383,8 @@ export const OP14_AUTO_ASSIGNMENTS_V2 = [
               },
               "action": "DECLARE_ATTACK",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP14-120#0.0"

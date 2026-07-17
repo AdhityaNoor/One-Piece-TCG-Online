@@ -47,6 +47,7 @@ describe('effectCompiler_V2 parser', () => {
       selector: {
         subject: 'ACTION_RESULT',
         relations: ['SELECTED_PREVIOUSLY'],
+        chooser: 'EFFECT_OWNER',
         types: { kind: 'HAS_ANY_TYPE', values: ['Straw Hat Crew'] },
       },
       to: { zone: 'HAND', owner: 'PLAYER' },
@@ -77,6 +78,56 @@ describe('effectCompiler_V2 parser', () => {
     });
   });
 
+  it('keeps Event or Stage category filters on any-number hand-trash costs', () => {
+    const parsed = parseCardEffect_V2(
+      'OP15-002',
+      "[On Your Opponent's Attack] You may trash any number of Event or Stage cards from your hand. This Leader gains +1000 power during this battle for every card trashed.",
+    );
+
+    expect(parsed.effects[0].activationCost?.payments[0]).toMatchObject({
+      type: 'TRASH_CARD_COST',
+      selector: {
+        owner: 'PLAYER',
+        zones: ['HAND'],
+        cardCategories: ['EVENT', 'STAGE'],
+        quantity: { kind: 'ANY_NUMBER' },
+      },
+    });
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'ACTION',
+      action: {
+        type: 'MODIFY_POWER',
+        value: {
+          kind: 'MULTIPLY',
+          values: [
+            { kind: 'NUMBER', value: 1000 },
+            { kind: 'PREVIOUS_RESULT', resultId: 'trashed-card-count' },
+          ],
+        },
+      },
+    });
+  });
+
+  it('keeps Event or Stage category filters on split one-card hand-trash costs', () => {
+    const parsed = parseCardEffect_V2(
+      'OP15-057',
+      "[On Your Opponent's Attack] You may rest this Stage and trash 1 Event or Stage card from your hand: Up to 1 of your Leader or Character cards gains +2000 power during this battle.",
+    );
+
+    expect(parsed.effects[0].activationCost?.payments).toEqual([
+      expect.objectContaining({ type: 'REST_CARD_COST' }),
+      expect.objectContaining({
+        type: 'TRASH_CARD_COST',
+        selector: expect.objectContaining({
+          owner: 'PLAYER',
+          zones: ['HAND'],
+          cardCategories: ['EVENT', 'STAGE'],
+          quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } },
+        }),
+      }),
+    ]);
+  });
+
   it('keeps typed hand-trash payments when an activation cost is split after another cost', () => {
     const parsed = parseCardEffect_V2(
       'ST05-005',
@@ -94,6 +145,79 @@ describe('effectCompiler_V2 parser', () => {
     expect(parsed.effects[0].resolution).toMatchObject({
       kind: 'IF',
       then: { kind: 'ACTION', action: { type: 'ADD_DON_FROM_DON_DECK' } },
+    });
+  });
+
+  it('parses mixed DON-or-Character rest targets with one shared quantity cap', () => {
+    const typed = parseCardEffect_V2(
+      'EB03-012',
+      "[Activate: Main] You may rest this Character: Rest up to 1 of your opponent's DON!! cards or {Animal} or {SMILE} type Characters with a cost of 3 or less.",
+    );
+    const total = parseCardEffect_V2(
+      'OP06-035',
+      "[On Play] Rest up to a total of 2 of your opponent's Characters or DON!! cards. Then, add 1 card from the top of your Life cards to your hand.",
+    );
+
+    expect(typed.effects[0].resolution).toMatchObject({
+      kind: 'ACTION',
+      action: {
+        type: 'REST_MIXED_TARGETS',
+        quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+        selectors: [
+          { subject: 'DON', owner: 'OPPONENT', zones: ['COST_AREA'] },
+          {
+            subject: 'CARD',
+            controller: 'OPPONENT',
+            zones: ['CHARACTER_AREA'],
+            cardCategories: ['CHARACTER'],
+            types: { kind: 'HAS_ANY_TYPE' },
+            cost: { propertyLayer: 'CURRENT', comparison: 'AT_MOST', value: { kind: 'NUMBER', value: 3 } },
+          },
+        ],
+      },
+    });
+    const typedAction = typed.effects[0].resolution.kind === 'ACTION' ? typed.effects[0].resolution.action : null;
+    expect(typedAction?.type === 'REST_MIXED_TARGETS' ? typedAction.selectors[1].types?.values : []).toEqual(expect.arrayContaining(['Animal', 'SMILE']));
+    expect(total.effects[0].resolution).toMatchObject({
+      kind: 'SEQUENCE',
+      nodes: [
+        {
+          kind: 'ACTION',
+          action: {
+            type: 'REST_MIXED_TARGETS',
+            quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 2 } },
+          },
+        },
+        { kind: 'ACTION', action: { type: 'MOVE_CARD' } },
+      ],
+    });
+  });
+
+  it('keeps cannot-attack clauses when they are joined to negation, static, or draw effects', () => {
+    const negated = parseCardEffect_V2(
+      'OP09-093',
+      "[Blocker] [Activate: Main] [Once Per Turn] If your Leader has the {Blackbeard Pirates} type and this Character was played on this turn, negate the effect of up to 1 of your opponent's Leader during this turn. Then, negate the effect of up to 1 of your opponent's Characters and that Character cannot attack until the end of your opponent's next turn.",
+    );
+    const staticText = parseCardEffect_V2(
+      'OP14-056',
+      "This Character cannot attack.When a card is trashed from your hand by an effect, this Character's effect is negated during this turn.",
+    );
+    const drawAndPrevent = parseCardEffect_V2(
+      'OP16-056',
+      "[Activate: Main] You may trash this Character: Draw 2 cards, and up to 1 of your opponent's Characters with a cost of 9 or less cannot attack until the end of your opponent's next End Phase.",
+    );
+
+    const preventActions = [negated, staticText, drawAndPrevent].flatMap((parsed) =>
+      parsed.atomicEffects.map((atom) => atom.parsedAction).filter((action) => action?.type === 'PREVENT_ACTION'),
+    );
+    expect(preventActions).toHaveLength(3);
+    expect(preventActions.every((action) => action?.type === 'PREVENT_ACTION' && action.action === 'DECLARE_ATTACK')).toBe(true);
+    expect(drawAndPrevent.effects[0].resolution).toMatchObject({
+      kind: 'SEQUENCE',
+      nodes: [
+        { kind: 'ACTION', action: { type: 'DRAW_CARD' } },
+        { kind: 'ACTION', action: { type: 'PREVENT_ACTION', duration: { kind: 'UNTIL_END_OF_NEXT_TURN', player: 'OPPONENT' } } },
+      ],
     });
   });
 
@@ -457,6 +581,24 @@ describe('effectCompiler_V2 parser', () => {
     });
   });
 
+  it('marks prior-result add-to-life selections with an explicit chooser', () => {
+    const parsed = parseCardEffect_V2(
+      'TEST-LOOK-TO-LIFE',
+      '[On Play] Look at 3 cards from the top of your deck; add up to 1 card to the top of your Life cards. Then, place the rest at the bottom of your deck in any order.',
+    );
+
+    expect(parsed.atomicEffects[1].parsedAction).toMatchObject({
+      type: 'ADD_CARD_TO_LIFE',
+      selector: {
+        subject: 'ACTION_RESULT',
+        relations: ['SELECTED_PREVIOUSLY'],
+        quantity: { kind: 'UP_TO' },
+        chooser: 'EFFECT_OWNER',
+      },
+      position: 'TOP',
+    });
+  });
+
   it('keeps referenced timing tags inside activate-this-card effect text', () => {
     const parsed = parseCardEffect_V2('TEST-ACTIVATE-REF', "[Trigger] Activate this card's [Main] effect.");
 
@@ -517,6 +659,7 @@ describe('effectCompiler_V2 parser', () => {
       selector: {
         subject: 'ACTION_RESULT',
         relations: ['SELECTED_PREVIOUSLY'],
+        chooser: 'EFFECT_OWNER',
         names: [{ kind: 'NAME_EXACT', value: 'Zou' }],
       },
     });
@@ -548,6 +691,7 @@ describe('effectCompiler_V2 parser', () => {
       selector: {
         subject: 'ACTION_RESULT',
         relations: ['SELECTED_PREVIOUSLY'],
+        chooser: 'EFFECT_OWNER',
         types: { kind: 'HAS_ANY_TYPE', values: ['Straw Hat Crew'] },
         names: [{ kind: 'NAME_NOT', value: 'Nami' }],
       },
@@ -640,6 +784,16 @@ describe('effectCompiler_V2 parser', () => {
           zones: ['LEADER_AREA'],
           names: [{ kind: 'NAME_EXACT', value: 'Sanji' }],
         },
+      },
+    });
+    expect(parsed.atomicEffects[0].parsedAction).toMatchObject({
+      type: 'ACTIVATE_EVENT',
+      selector: {
+        owner: 'PLAYER',
+        zones: ['TRASH'],
+        cardCategories: ['EVENT'],
+        quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+        cost: { propertyLayer: 'CURRENT', comparison: 'AT_MOST', value: { kind: 'NUMBER', value: 7 } },
       },
     });
   });
@@ -777,6 +931,28 @@ describe('effectCompiler_V2 parser', () => {
       type: 'SWAP_POWER',
       selector: { subject: 'ACTION_RESULT', relations: ['SELECTED_PREVIOUSLY'] },
       propertyLayer: 'BASE_VALUE',
+    });
+  });
+
+  it('parses attack redirection to this Leader or a typed Character as a promptable selector', () => {
+    const parsed = parseCardEffect_V2(
+      'OP16-080',
+      "[On Your Opponent's Attack] [Once Per Turn] You may trash 1 card with a [Trigger] from your hand: Change the target of that attack to this Leader or to one of your {Blackbeard Pirates} type Character cards.",
+    );
+
+    const redirect = parsed.atomicEffects.find((atom) => atom.parsedAction?.type === 'CHANGE_ATTACK_TARGET')?.parsedAction;
+    expect(redirect).toMatchObject({
+      type: 'CHANGE_ATTACK_TARGET',
+      newTarget: {
+        subject: 'CARD',
+        controller: 'PLAYER',
+        zones: ['LEADER_AREA', 'CHARACTER_AREA'],
+        cardCategories: ['LEADER', 'CHARACTER'],
+        relations: ['INCLUDE_THIS_CARD'],
+        types: { kind: 'HAS_ANY_TYPE', values: ['Blackbeard Pirates'] },
+        quantity: { kind: 'EXACTLY', value: { value: 1 } },
+        chooser: 'EFFECT_OWNER',
+      },
     });
   });
 
@@ -1430,6 +1606,10 @@ describe('effectCompiler_V2 parser', () => {
       'OP15-065',
       '[On Play] Reveal 1 card from the top of your deck. If the revealed card has a cost of 2 or less, add up to 1 DON!! card from your DON!! deck and rest it.',
     );
+    const revealedThenPrompt = parseCardEffect_V2(
+      'EB01-029',
+      "[Counter] Reveal 1 card from the top of your deck. If the revealed card has a cost of 4 or more, return up to 1 of your Characters to the owner's hand. Then, place the revealed card at the bottom of your deck.",
+    );
     const typedPowerPresence = parseCardEffect_V2(
       'OP15-102',
       'If you have a {Sky Island} type Character with 7000 power or more, give this card in your hand -3 cost.',
@@ -1497,9 +1677,28 @@ describe('effectCompiler_V2 parser', () => {
           kind: 'IF',
           condition: {
             kind: 'PREDICATE',
-            left: { kind: 'COUNT', selector: { subject: 'ACTION_RESULT', relations: ['PREVIOUS_ACTION_TARGET'], cost: { comparison: 'AT_MOST', value: { value: 2 } } } },
+            left: { kind: 'COUNT', selector: { subject: 'ACTION_RESULT', relations: ['REVEALED_PREVIOUSLY'], cost: { comparison: 'AT_MOST', value: { value: 2 } } } },
           },
           then: { kind: 'ACTION', action: { type: 'ADD_DON_FROM_DON_DECK', state: 'RESTED' } },
+        },
+      ],
+    });
+    expect(revealedThenPrompt.effects[0].resolution).toMatchObject({
+      kind: 'SEQUENCE',
+      nodes: [
+        { kind: 'ACTION', action: { type: 'REVEAL_CARD' } },
+        {
+          kind: 'IF',
+          condition: {
+            left: { kind: 'COUNT', selector: { subject: 'ACTION_RESULT', relations: ['REVEALED_PREVIOUSLY'], cost: { comparison: 'AT_LEAST', value: { value: 4 } } } },
+          },
+          then: {
+            kind: 'SEQUENCE',
+            nodes: [
+              { kind: 'ACTION', action: { type: 'MOVE_CARD', selector: { cardCategories: ['CHARACTER'] } } },
+              { kind: 'ACTION', action: { type: 'MOVE_CARD', selector: { subject: 'ACTION_RESULT', relations: ['REVEALED_PREVIOUSLY'] } } },
+            ],
+          },
         },
       ],
     });
@@ -1602,6 +1801,80 @@ describe('effectCompiler_V2 parser', () => {
         target: {
           zones: ['LEADER_AREA', 'CHARACTER_AREA'],
           cardCategories: ['LEADER', 'CHARACTER'],
+        },
+      },
+    });
+  });
+
+  it('keeps GIVE_DON amount separate from a single Leader recipient', () => {
+    const parsed = parseCardEffect_V2(
+      'EB02-049',
+      '[On Play] Give up to 2 rested DON!! cards to 1 of your Leader.',
+    );
+
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'ACTION',
+      action: {
+        type: 'GIVE_DON',
+        donSelector: {
+          states: ['RESTED'],
+          quantity: { kind: 'UP_TO', value: { value: 2 } },
+        },
+        target: {
+          zones: ['LEADER_AREA'],
+          cardCategories: ['LEADER'],
+          quantity: { kind: 'EXACTLY', value: { value: 1 } },
+        },
+      },
+    });
+  });
+
+  it('keeps GIVE_DON amount separate from typed Leader recipient filters', () => {
+    const parsed = parseCardEffect_V2(
+      'EB03-057',
+      '[On Play] Give up to 3 rested DON!! cards to your {Land of Wano} type Leader.',
+    );
+
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'ACTION',
+      action: {
+        type: 'GIVE_DON',
+        donSelector: {
+          states: ['RESTED'],
+          quantity: { kind: 'UP_TO', value: { value: 3 } },
+        },
+        target: {
+          zones: ['LEADER_AREA'],
+          cardCategories: ['LEADER'],
+          quantity: { kind: 'EXACTLY', value: { value: 1 } },
+          types: { kind: 'HAS_ANY_TYPE', values: ['Land of Wano'] },
+        },
+      },
+    });
+  });
+
+  it('parses Leader-and-Character each DON attachment as multi-recipient distribution', () => {
+    const parsed = parseCardEffect_V2(
+      'OP13-042',
+      '[Blocker] [On Play] Draw 2 cards and trash 1 card from your hand. Then, give your Leader and 1 Character up to 2 rested DON!! cards each.',
+    );
+
+    const nodes = parsed.effects[0].resolution.kind === 'SEQUENCE' ? parsed.effects[0].resolution.nodes : [];
+    const giveDon = nodes.find((node) => node.kind === 'ACTION' && node.action.type === 'GIVE_DON');
+
+    expect(giveDon).toMatchObject({
+      kind: 'ACTION',
+      action: {
+        type: 'GIVE_DON',
+        donSelector: {
+          states: ['RESTED'],
+          quantity: { kind: 'UP_TO', value: { value: 4 } },
+        },
+        target: {
+          zones: ['LEADER_AREA', 'CHARACTER_AREA'],
+          cardCategories: ['LEADER', 'CHARACTER'],
+          quantity: { kind: 'EXACTLY', value: { value: 2 } },
+          relations: ['REQUIRES_LEADER_AND_CHARACTER'],
         },
       },
     });
@@ -2030,6 +2303,24 @@ describe('effectCompiler_V2 parser', () => {
     });
   });
 
+  it('parses play restrictions as candidate-card selectors, not field-target selectors', () => {
+    const parsed = parseCardEffect_V2(
+      'OP13-118',
+      '[On Play] If your Leader is multicolored, set up to 4 of your DON!! cards as active. Then, you cannot play Character cards with a base cost of 5 or more during this turn.',
+    );
+
+    expect(parsed.atomicEffects.at(-1)?.parsedAction).toMatchObject({
+      type: 'PREVENT_ACTION',
+      action: 'PLAY_CARD',
+      selector: {
+        subject: 'CARD',
+        cardCategories: ['CHARACTER'],
+        zones: undefined,
+        cost: { propertyLayer: 'BASE', comparison: 'AT_LEAST', value: { kind: 'NUMBER', value: 5 } },
+      },
+    });
+  });
+
   it('does not split condition conjunctions before keyword grants', () => {
     const parsed = parseCardEffect_V2(
       'EB02-061',
@@ -2113,6 +2404,139 @@ describe('effectCompiler_V2 parser', () => {
         },
         { kind: 'IF', condition: { kind: 'AND' }, then: { kind: 'ACTION', action: { type: 'MODIFY_POWER', selector: { zones: ['LEADER_AREA'] }, value: { value: 7000 } } } },
         { kind: 'IF', then: { kind: 'ACTION', action: { type: 'MODIFY_POWER', value: { value: 1000 } } } },
+      ],
+    });
+  });
+
+  it('keeps revealed-card filters when playing that card', () => {
+    const parsed = parseCardEffect_V2(
+      'OP12-058',
+      '[Main] If your Leader\'s type includes "Whitebeard Pirates", reveal 1 card from the top of your deck. If that card is a Character card with a type including "Whitebeard Pirates" and a cost of 9 or less, you may play that card. If you do, that Character gains [Rush] during this turn.',
+    );
+
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'SEQUENCE',
+      nodes: [
+        { kind: 'ACTION', action: { type: 'REVEAL_CARD' } },
+        {
+          kind: 'ACTION',
+          action: {
+            type: 'PLAY_CARD',
+            selector: {
+              subject: 'ACTION_RESULT',
+              relations: ['REVEALED_PREVIOUSLY'],
+              cardCategories: ['CHARACTER'],
+              types: { kind: 'TYPE_INCLUDES_TEXT', values: ['Whitebeard Pirates'] },
+              cost: { comparison: 'AT_MOST', value: { value: 9 } },
+            },
+          },
+        },
+        { kind: 'IF_ACTION_SUCCEEDED', then: { kind: 'ACTION', action: { type: 'GRANT_KEYWORD', selector: { relations: ['PREVIOUS_ACTION_TARGET'] } } } },
+      ],
+    });
+  });
+
+  it('keeps no-base-effect filters on play selectors', () => {
+    const fromHand = parseCardEffect_V2(
+      'EB02-022',
+      '[On Play] If you have 2 or less Characters with 5000 power or more, play up to 1 Character card with 6000 power or less and no base effect from your hand.',
+    );
+    const fromTrash = parseCardEffect_V2(
+      'EB03-039',
+      '[On Play] If your Leader has the {Animal Kingdom Pirates} type, draw 1 card and trash 1 card from your hand. Then, play up to 1 Character card with 6000 power or less and no base effect from your trash.',
+    );
+
+    expect(fromHand.effects[0].resolution).toMatchObject({
+      kind: 'ACTION',
+      action: {
+        type: 'PLAY_CARD',
+        selector: {
+          zones: ['HAND'],
+          power: { comparison: 'AT_MOST', value: { value: 6000 } },
+          baseEffectStatus: 'NO_BASE_EFFECT',
+        },
+      },
+    });
+    expect(fromTrash.effects[0].resolution).toMatchObject({
+      kind: 'SEQUENCE',
+      nodes: [
+        { kind: 'ACTION', action: { type: 'DRAW_CARD' } },
+        { kind: 'ACTION', action: { type: 'TRASH_CARD' } },
+        {
+          kind: 'ACTION',
+          action: {
+            type: 'PLAY_CARD',
+            selector: {
+              zones: ['TRASH'],
+              power: { comparison: 'AT_MOST', value: { value: 6000 } },
+              baseEffectStatus: 'NO_BASE_EFFECT',
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it('marks different-card-name play selectors as distinct by card name', () => {
+    const parsed = parseCardEffect_V2(
+      'OP06-062',
+      '[On Play] DON!! -1 (You may return the specified number of DON!! cards from your field to your DON!! deck.) You may trash 2 cards from your hand: Play up to 4 {GERMA 66} type Character cards with different card names and 4000 power or less from your trash.',
+    );
+
+    expect(parsed.effects[0].resolution).toMatchObject({
+      kind: 'ACTION',
+      action: {
+        type: 'PLAY_CARD',
+        selector: {
+          zones: ['TRASH'],
+          types: { values: ['GERMA 66'] },
+          power: { comparison: 'AT_MOST', value: { value: 4000 } },
+          distinctBy: 'CARD_NAME',
+        },
+      },
+    });
+  });
+
+  it('emits relational play filters for prior trashed/returned cards', () => {
+    const sameNameAsTrashed = parseCardEffect_V2(
+      'EB02-039',
+      '[Main] You may trash 1 {GERMA 66} type Character card with 4000 power or less from your hand: If the number of DON!! cards on your field is equal to or less than the number on your opponent\'s field, play up to 1 Character card with 5000 to 7000 power and the same card name as the trashed card from your trash.',
+    );
+    const differentColorThanReturned = parseCardEffect_V2(
+      'OP01-002',
+      "[Activate: Main] [Once Per Turn] If you have 5 Characters, return 1 of your Characters to the owner's hand. Then, play up to 1 Character with a cost of 5 or less from your hand that is a different color than the returned Character.",
+    );
+
+    expect(sameNameAsTrashed.atomicEffects.at(-1)).toMatchObject({
+      semanticStatus: 'safe',
+    });
+    expect(sameNameAsTrashed.effects[0].resolution).toMatchObject({
+      kind: 'ACTION',
+      action: {
+        type: 'PLAY_CARD',
+        selector: {
+          zones: ['TRASH'],
+          relations: ['SAME_NAME_AS_TRASHED_PREVIOUSLY'],
+        },
+      },
+    });
+    expect(differentColorThanReturned.atomicEffects.at(-1)).toMatchObject({
+      semanticStatus: 'safe',
+    });
+    expect(differentColorThanReturned.effects[0].resolution).toMatchObject({
+      kind: 'SEQUENCE',
+      nodes: [
+        {},
+        {
+          kind: 'ACTION',
+          action: {
+            type: 'PLAY_CARD',
+            selector: {
+              zones: ['HAND'],
+              relations: ['DIFFERENT_COLOR_THAN_RETURNED_PREVIOUSLY'],
+            },
+          },
+        },
       ],
     });
   });

@@ -984,7 +984,10 @@
                   "kind": "NUMBER",
                   "value": 8000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -1045,7 +1048,8 @@
                 "value": 2000
               },
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP16-009#0.2"
@@ -1810,7 +1814,10 @@
                   "kind": "NUMBER",
                   "value": 8000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -1990,7 +1997,10 @@
                   "kind": "NUMBER",
                   "value": 8000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -2260,7 +2270,10 @@
                       "kind": "NUMBER",
                       "value": 6000
                     }
-                  }
+                  },
+                  "cardCategories": [
+                    "CHARACTER"
+                  ]
                 },
                 "cause": "EFFECT"
               }
@@ -2793,7 +2806,8 @@
                     "kind": "NUMBER",
                     "value": 1
                   }
-                }
+                },
+                "chooser": "EFFECT_OWNER"
               },
               "to": {
                 "zone": "HAND",
@@ -4008,7 +4022,8 @@
           },
           "action": "REST_CARD",
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP16-032#1.0"
@@ -4571,6 +4586,9 @@
                   "zones": [
                     "COST_AREA"
                   ],
+                  "states": [
+                    "RESTED"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -4590,10 +4608,10 @@
                     "LEADER"
                   ],
                   "quantity": {
-                    "kind": "UP_TO",
+                    "kind": "EXACTLY",
                     "value": {
                       "kind": "NUMBER",
-                      "value": 3
+                      "value": 1
                     }
                   },
                   "chooser": "EFFECT_OWNER"
@@ -7368,7 +7386,8 @@
     "printedText": "[Activate: Main] You may trash this Character: Draw 2 cards, and up to 1 of your opponent's Characters with a cost of 9 or less cannot attack until the end of your opponent's next End Phase.",
     "coveredAtomicEffectIds": [
       "OP16-056#0.0",
-      "OP16-056#0.1"
+      "OP16-056#0.1",
+      "OP16-056#0.2"
     ],
     "uncoveredNotes": [],
     "effect": {
@@ -7417,16 +7436,59 @@
       },
       "optionality": "OPTIONAL",
       "resolution": {
-        "kind": "ACTION",
-        "action": {
-          "type": "DRAW_CARD",
-          "player": "PLAYER",
-          "count": {
-            "kind": "NUMBER",
-            "value": 2
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "DRAW_CARD",
+              "player": "PLAYER",
+              "count": {
+                "kind": "NUMBER",
+                "value": 2
+              }
+            },
+            "actionId": "OP16-056#0.1"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PREVENT_ACTION",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 9
+                  }
+                }
+              },
+              "action": "DECLARE_ATTACK",
+              "duration": {
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
+              }
+            },
+            "actionId": "OP16-056#0.2"
           }
-        },
-        "actionId": "OP16-056#0.1"
+        ]
       },
       "metadata": {
         "sourceCardNumber": "OP16-056",
@@ -8073,7 +8135,8 @@
               "values": [
                 "Admiral"
               ]
-            }
+            },
+            "distinctBy": "CARD_NAME"
           },
           "player": "PLAYER"
         },
@@ -8465,7 +8528,8 @@
             "value": 6000
           },
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP16-065#0.1"
@@ -9708,7 +9772,8 @@
               },
               "keyword": "BLOCKER",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP16-073#1.2"
@@ -10835,9 +10900,24 @@
           "type": "CHANGE_ATTACK_TARGET",
           "newTarget": {
             "subject": "CARD",
-            "relations": [
-              "THIS_CARD"
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
             ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "relations": [
+              "INCLUDE_THIS_CARD"
+            ],
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "Blackbeard Pirates"
+              ]
+            },
             "quantity": {
               "kind": "EXACTLY",
               "value": {
@@ -11328,7 +11408,10 @@
                   "kind": "NUMBER",
                   "value": 8
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -12337,7 +12420,10 @@
                   "kind": "NUMBER",
                   "value": 8
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -16751,7 +16837,8 @@
                     "kind": "NUMBER",
                     "value": 1
                   }
-                }
+                },
+                "chooser": "EFFECT_OWNER"
               },
               "player": "PLAYER",
               "position": "TOP",

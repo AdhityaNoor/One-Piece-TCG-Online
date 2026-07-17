@@ -64,6 +64,19 @@
       "optionality": "MANDATORY",
       "resolution": {
         "kind": "CREATE_CONTINUOUS_EFFECT",
+        "selector": {
+          "subject": "CARD",
+          "controller": "PLAYER",
+          "zones": [
+            "CHARACTER_AREA"
+          ],
+          "cardCategories": [
+            "CHARACTER"
+          ],
+          "quantity": {
+            "kind": "ALL"
+          }
+        },
         "modifier": {
           "type": "STAT_MODIFIER",
           "stat": "POWER",
@@ -194,6 +207,9 @@
                   }
                 },
                 "chooser": "EFFECT_OWNER",
+                "relations": [
+                  "DIFFERENT_COLOR_THAN_RETURNED_PREVIOUSLY"
+                ],
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -3837,7 +3853,7 @@
               "selector": {
                 "subject": "ACTION_RESULT",
                 "relations": [
-                  "SELECTED_PREVIOUSLY"
+                  "REVEALED_PREVIOUSLY"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
@@ -6515,7 +6531,7 @@
               "selector": {
                 "subject": "ACTION_RESULT",
                 "relations": [
-                  "SELECTED_PREVIOUSLY"
+                  "REVEALED_PREVIOUSLY"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
@@ -6524,9 +6540,26 @@
                     "value": 1
                   }
                 },
+                "cardCategories": [
+                  "CHARACTER"
+                ],
                 "states": [
                   "RESTED"
-                ]
+                ],
+                "types": {
+                  "kind": "HAS_ANY_TYPE",
+                  "values": [
+                    "The Seven Warlords of the Sea"
+                  ]
+                },
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 4
+                  }
+                }
               },
               "player": "PLAYER"
             },

@@ -3546,6 +3546,7 @@ export const OP02_AUTO_ASSIGNMENTS_V2 = [
                   }
                 },
                 "chooser": "EFFECT_OWNER",
+                "baseEffectStatus": "NO_BASE_EFFECT",
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -3728,6 +3729,7 @@ export const OP02_AUTO_ASSIGNMENTS_V2 = [
               }
             },
             "chooser": "EFFECT_OWNER",
+            "baseEffectStatus": "NO_BASE_EFFECT",
             "cost": {
               "propertyLayer": "CURRENT",
               "comparison": "AT_MOST",

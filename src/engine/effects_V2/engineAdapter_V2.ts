@@ -1,11 +1,18 @@
 import type { EffectAbility_V2 } from '../../cards/effectCompiler_V2/effectIr_V2';
-import type { ActivationCost_V2, CostAction_V2, StandardTiming_V2, TimingExpression_V2 } from '../../cards/effectCompiler_V2/types_V2';
+import type { ActivationCost_V2, Action_V2, CostAction_V2, Selector_V2, StandardTiming_V2, TimingExpression_V2 } from '../../cards/effectCompiler_V2/types_V2';
 import type { GameAction } from '../actions';
 import type { ActivateCardEffectAction, ActivateCounterEventAction, ActivateEventMainAction, ActivateOnOpponentsAttackAction } from '../actions/action';
 import { executeActivateCounterEvent } from '../actions/handlers/activateCounterEvent';
 import { executeActivateEventMain } from '../actions/handlers/activateEventMain';
+import { executePlayCharacter, validatePlayCharacter } from '../actions/handlers/playCharacter';
+import { executePlayStage, validatePlayStage } from '../actions/handlers/playStage';
+import { executeDeclareAttack, validateDeclareAttack } from '../rules/battle/declareAttack';
+import { executeActivateBlocker, validateActivateBlocker } from '../rules/battle/activateBlocker';
+import { executePassStep, validatePassStep } from '../rules/battle/passStep';
+import { validateChooseGoingFirst, executeChooseGoingFirst, dealOpeningHandsAndQueueMulligan } from '../setup/applyChooseGoingFirst';
 import type { CardDefinitionLookup } from '../rules/shared';
-import { computeCurrentCost } from '../rules/shared/power';
+import { computeCurrentCost, computeCurrentPower, hasContinuousKeyword } from '../rules/shared/power';
+import { createActionLogger } from '../rules/shared/actionLogger';
 import type { GameLogEntry } from '../logs/logEntry';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { GameState } from '../state/game';
@@ -16,6 +23,10 @@ import { evaluateGates_V2 } from './gates_V2';
 import { executeResolutionNode_V2, type ResolutionExecutionResult_V2 } from './resolution_V2';
 import { resolveSelector_V2, type SelectorContext_V2 } from './selectorResolver_V2';
 import { pruneExpiredEffectRuntimeSidecars_V2 } from './sidecarLifecycle_V2';
+import { v2ActionPreventionReasons, v2PlayPreventionReasons, v2ZoneChangePreventionReasons } from './permissions_V2';
+import { applyLifeDamage_V2 } from './damage_V2';
+import { applyDamageModifiers_V2 } from './damageModifiers_V2';
+import { hasProjectedKeywordWithV2 } from './projectionAdapter_V2';
 
 export interface V2AbilityLookupInput {
   runtime: EffectRuntimeBundle_V2;
@@ -132,12 +143,120 @@ function mergeSidecarsFromResolution_V2(sidecars: EffectRuntimeSidecars_V2 | nul
     permissionEffects: [...base.permissionEffects, ...(result.permissionEffects ?? [])],
     statModifiers: [...base.statModifiers, ...(result.statModifiers ?? [])],
     keywordModifiers: [...base.keywordModifiers, ...(result.keywordModifiers ?? [])],
+    cardPropertyModifiers: [...base.cardPropertyModifiers, ...(result.cardPropertyModifiers ?? [])],
     counterModifiers: [...base.counterModifiers, ...(result.counterModifiers ?? [])],
     effectInvalidations: [...base.effectInvalidations, ...(result.effectInvalidations ?? [])],
     activatedEvents: [...base.activatedEvents, ...(result.activatedEvents ?? [])],
+    gainedEffects: [...base.gainedEffects, ...(result.gainedEffects ?? [])],
+    gainedEffectRemovals: [...base.gainedEffectRemovals, ...(result.gainedEffectRemovals ?? [])],
     choicePrompts: [...base.choicePrompts, ...(result.choicePrompts ?? [])],
     lookBuffers: [...base.lookBuffers, ...(result.lookBuffers ?? [])],
   };
+}
+
+function startingSetupPlayActionFromModifier_V2(modifier: unknown): Extract<Action_V2, { type: 'PLAY_CARD' }> | null {
+  const expression = typeof modifier === 'object' && modifier
+    && 'modifier' in modifier
+    && typeof (modifier as { modifier?: unknown }).modifier === 'object'
+    && (modifier as { modifier?: { expression?: unknown } }).modifier
+      ? (modifier as { modifier: { expression?: unknown } }).modifier.expression
+      : null;
+  if (!expression || typeof expression !== 'object') return null;
+  const record = expression as { operation?: unknown; selector?: unknown };
+  if (record.operation !== 'PLAY_FROM_DECK_AT_GAME_START' || !record.selector || typeof record.selector !== 'object') return null;
+  return {
+    type: 'PLAY_CARD',
+    selector: record.selector as Selector_V2,
+    player: 'PLAYER',
+  };
+}
+
+export function advanceStartOfGameEffects_V2(input: {
+  state: GameState;
+  defs: CardDefinitionLookup;
+  runtime: EffectRuntimeBundle_V2;
+  sidecars: EffectRuntimeSidecars_V2 | null;
+  actionId: string | null;
+}): V2ActionEffectResult {
+  const setupState = input.state.setupState;
+  if (!setupState || setupState.stage !== 'awaitingStartOfGameLeaderEffect') {
+    return {
+      state: input.state,
+      log: [],
+      sidecars: input.sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
+    };
+  }
+  if (input.state.pendingChoices.length > 0) {
+    return {
+      state: input.state,
+      log: [],
+      sidecars: input.sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
+    };
+  }
+
+  let state = input.state;
+  let sidecars = input.sidecars ?? createEmptyEffectRuntimeSidecars_V2();
+  let log: GameLogEntry[] = [];
+  let queue = setupState.startOfGameEffectQueue ?? [];
+
+  while (queue.length > 0) {
+    const playerId = queue[0];
+    queue = queue.slice(1);
+    const player = state.players[playerId];
+    const leaderInstance = player ? state.cardsById[player.leaderInstanceId] : undefined;
+    if (!leaderInstance) continue;
+
+    const dispatched = dispatchV2AbilityForTiming({
+      state,
+      defs: input.defs,
+      runtime: input.runtime,
+      sourceInstanceId: leaderInstance.instanceId,
+      controllerId: playerId,
+      timing: 'ON_ENTER_PLAY',
+      sidecars,
+    });
+    state = dispatched.state;
+    sidecars = dispatched.sidecars;
+    log = [...log, ...dispatched.log];
+
+    const setupPlayActions = dispatched.sidecars.permissionEffects
+      .filter((effect) => effect.kind === 'MODIFY_STARTING_SETUP' && effect.sourceInstanceId === leaderInstance.instanceId)
+      .map((effect) => startingSetupPlayActionFromModifier_V2(effect.modifier))
+      .filter((action): action is Extract<Action_V2, { type: 'PLAY_CARD' }> => Boolean(action));
+
+    for (const playAction of setupPlayActions) {
+      const ctx: SelectorContext_V2 = {
+        state,
+        defs: input.defs,
+        runtime: input.runtime,
+        sidecars,
+        sourceInstanceId: leaderInstance.instanceId,
+        controllerId: playerId,
+        currentTiming: { kind: 'STANDARD_TIMING', timing: 'ON_ENTER_PLAY' },
+        bindings: { selectedObjects: {}, actionResults: {} },
+      };
+      const result = executeResolutionNode_V2(ctx, { kind: 'ACTION', action: playAction }, input.actionId);
+      state = result.state;
+      log = [...log, ...result.log];
+      sidecars = mergeSidecarsFromResolution_V2(sidecars, result);
+      if (state.pendingChoices.length > 0) {
+        return {
+          state: {
+            ...state,
+            setupState: { ...setupState, startOfGameEffectQueue: queue },
+          },
+          log,
+          sidecars,
+        };
+      }
+    }
+  }
+
+  if (!setupState.goingFirstPlayerId || !setupState.goingSecondPlayerId) {
+    throw new Error('advanceStartOfGameEffects_V2: goingFirstPlayerId/goingSecondPlayerId must be set before dealing opening hands.');
+  }
+  const dealt = dealOpeningHandsAndQueueMulligan(state, setupState.goingFirstPlayerId, setupState.goingSecondPlayerId, input.actionId);
+  return { state: dealt.state, log: [...log, ...dealt.log], sidecars };
 }
 
 function isSelfCardCost_V2(payment: CostAction_V2): payment is Extract<CostAction_V2, { type: 'REST_CARD_COST' }> {
@@ -411,6 +530,291 @@ function withOnOpponentsAttackUsage_V2(state: GameState, action: ActivateOnOppon
   };
 }
 
+function validateManualPlayPermission_V2(input: {
+  state: GameState;
+  defs: CardDefinitionLookup;
+  runtime: EffectRuntimeBundle_V2;
+  sidecars: EffectRuntimeSidecars_V2 | null;
+  playerId: string;
+  handCardInstanceId: string;
+}): string[] {
+  const ctx: SelectorContext_V2 = {
+    state: input.state,
+    defs: input.defs,
+    runtime: input.runtime,
+    sidecars: input.sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
+    sourceInstanceId: input.handCardInstanceId,
+    controllerId: input.playerId,
+    bindings: { selectedObjects: {}, actionResults: {} },
+  };
+  return v2PlayPreventionReasons({
+    ctx,
+    permissionEffects: ctx.sidecars?.permissionEffects ?? [],
+    playerId: input.playerId,
+    candidateInstanceId: input.handCardInstanceId,
+    cause: 'MANUAL',
+  });
+}
+
+function validateManualActionPermission_V2(input: {
+  state: GameState;
+  defs: CardDefinitionLookup;
+  runtime: EffectRuntimeBundle_V2;
+  sidecars: EffectRuntimeSidecars_V2 | null;
+  sourceInstanceId: string;
+  controllerId: string;
+  action: string;
+  candidateInstanceId: string;
+  cause?: string;
+}): string[] {
+  const ctx: SelectorContext_V2 = {
+    state: input.state,
+    defs: input.defs,
+    runtime: input.runtime,
+    sidecars: input.sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
+    sourceInstanceId: input.sourceInstanceId,
+    controllerId: input.controllerId,
+    bindings: { selectedObjects: {}, actionResults: {} },
+  };
+  return v2ActionPreventionReasons({
+    ctx,
+    permissionEffects: ctx.sidecars?.permissionEffects ?? [],
+    action: input.action,
+    candidateInstanceId: input.candidateInstanceId,
+    cause: input.cause,
+  });
+}
+
+function v2BattleKoPreventionReasons(input: {
+  state: GameState;
+  defs: CardDefinitionLookup;
+  runtime: EffectRuntimeBundle_V2;
+  sidecars: EffectRuntimeSidecars_V2 | null;
+  attackerInstanceId: string;
+  targetInstanceId: string;
+}): string[] {
+  const attacker = input.state.cardsById[input.attackerInstanceId];
+  if (!attacker) return [];
+  const ctx: SelectorContext_V2 = {
+    state: input.state,
+    defs: input.defs,
+    runtime: input.runtime,
+    sidecars: input.sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
+    sourceInstanceId: input.attackerInstanceId,
+    controllerId: attacker.controllerId,
+    bindings: { selectedObjects: {}, actionResults: {} },
+  };
+  return [
+    ...v2ActionPreventionReasons({
+      ctx,
+      permissionEffects: ctx.sidecars?.permissionEffects ?? [],
+      action: 'KO_CARD',
+      candidateInstanceId: input.targetInstanceId,
+      cause: 'BATTLE',
+    }),
+    ...v2ZoneChangePreventionReasons({
+      ctx,
+      permissionEffects: ctx.sidecars?.permissionEffects ?? [],
+      candidateInstanceId: input.targetInstanceId,
+      toZone: 'TRASH',
+      cause: 'BATTLE',
+    }),
+  ];
+}
+
+function resolveV2BattleKoPreventedPassStep(input: {
+  state: GameState;
+  defs: CardDefinitionLookup;
+  runtime: EffectRuntimeBundle_V2;
+  sidecars: EffectRuntimeSidecars_V2 | null;
+  action: Extract<GameAction, { type: 'PASS_STEP' }>;
+  reasons: readonly string[];
+}): V2ActionOverrideResult {
+  const battle = input.state.currentBattle;
+  if (!battle) return { handled: true, ok: false, reasons: ['PASS_STEP requires an in-progress Battle.'] };
+  const attackerId = battle.attackerInstanceId;
+  const targetId = battle.targetInstanceId;
+  const attackerPower = computeCurrentPower(input.defs, input.state, attackerId);
+  const targetPower = computeCurrentPower(input.defs, input.state, targetId);
+  const logger = createActionLogger(input.state, input.action.actionId);
+  logger.push({
+    actorPlayerId: input.action.playerId,
+    type: 'PHASE_CHANGED',
+    message: `${input.action.playerId} declined to activate any further Counters - Counter Step ends (7-1-3 -> 7-1-4).`,
+    data: { step: 'damage' },
+    relatedCardInstanceIds: [],
+    visibility: 'public',
+  });
+  logger.push({
+    actorPlayerId: input.state.activePlayerId,
+    type: 'DAMAGE_DEALT',
+    message: `Damage Step: ${attackerPower} (attacker) vs ${targetPower} (defender) (7-1-4).`,
+    data: { attackerInstanceId: attackerId, targetInstanceId: targetId, attackerPower, targetPower },
+    relatedCardInstanceIds: [attackerId, targetId],
+    visibility: 'public',
+  });
+  logger.push({
+    actorPlayerId: input.state.activePlayerId,
+    type: 'DAMAGE_DEALT',
+    message: `'${targetId}' cannot be K.O.'d in battle by a V2 permission effect - it survives.`,
+    data: { targetInstanceId: targetId, koPrevented: true, v2Reasons: [...input.reasons] },
+    relatedCardInstanceIds: [targetId],
+    visibility: 'public',
+  });
+  logger.push({
+    actorPlayerId: input.state.activePlayerId,
+    type: 'PHASE_CHANGED',
+    message: 'End of Battle (7-1-5) - battle-only power bonuses expire, control returns to the Main Phase.',
+    data: { step: 'endOfBattle' },
+    relatedCardInstanceIds: [],
+    visibility: 'public',
+  });
+  const state = {
+    ...input.state,
+    currentBattle: null,
+    continuousEffects: input.state.continuousEffects.filter((effect) => effect.duration !== 'duringThisBattle'),
+    log: [...input.state.log, ...logger.log],
+  };
+  return {
+    handled: true,
+    ok: true,
+    state,
+    log: logger.log,
+    sidecars: pruneExpiredEffectRuntimeSidecars_V2(state, input.sidecars ?? createEmptyEffectRuntimeSidecars_V2()),
+  };
+}
+
+function resolveV2LeaderBattleDamagePassStep(input: {
+  state: GameState;
+  defs: CardDefinitionLookup;
+  runtime: EffectRuntimeBundle_V2;
+  sidecars: EffectRuntimeSidecars_V2 | null;
+  action: Extract<GameAction, { type: 'PASS_STEP' }>;
+}): V2ActionOverrideResult | null {
+  const battle = input.state.currentBattle;
+  if (!battle || battle.step !== 'counter') return null;
+  const target = input.state.cardsById[battle.targetInstanceId];
+  const attacker = input.state.cardsById[battle.attackerInstanceId];
+  if (!target || !attacker || target.currentZone !== 'leaderArea') return null;
+
+  const defendingPlayerId = opponentOfState(input.state, input.state.activePlayerId);
+  if (!defendingPlayerId) return null;
+
+  const attackerPower = computeCurrentPower(input.defs, input.state, battle.attackerInstanceId);
+  const targetPower = computeCurrentPower(input.defs, input.state, battle.targetInstanceId);
+  const logger = createActionLogger(input.state, input.action.actionId);
+  logger.push({
+    actorPlayerId: input.action.playerId,
+    type: 'PHASE_CHANGED',
+    message: `${input.action.playerId} declined to activate any further Counters - Counter Step ends (7-1-3 -> 7-1-4).`,
+    data: { step: 'damage' },
+    relatedCardInstanceIds: [],
+    visibility: 'public',
+  });
+  logger.push({
+    actorPlayerId: input.state.activePlayerId,
+    type: 'DAMAGE_DEALT',
+    message: `Damage Step: ${attackerPower} (attacker) vs ${targetPower} (defender) (7-1-4).`,
+    data: { attackerInstanceId: battle.attackerInstanceId, targetInstanceId: battle.targetInstanceId, attackerPower, targetPower },
+    relatedCardInstanceIds: [battle.attackerInstanceId, battle.targetInstanceId],
+    visibility: 'public',
+  });
+
+  let state: GameState = {
+    ...input.state,
+    currentBattle: { ...battle, step: 'damage' },
+    log: [...input.state.log, ...logger.log],
+  };
+  let log: GameLogEntry[] = [...logger.log];
+
+  if (attackerPower >= targetPower) {
+    const attackerDef = input.defs[attacker.cardDefinitionId];
+    const ctx: SelectorContext_V2 = {
+      state,
+      defs: input.defs,
+      runtime: input.runtime,
+      sidecars: input.sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
+      sourceInstanceId: battle.attackerInstanceId,
+      controllerId: attacker.controllerId,
+      bindings: { selectedObjects: {}, actionResults: {} },
+    };
+    const hasV2DoubleAttack = hasProjectedKeywordWithV2(input.defs, state, battle.attackerInstanceId, 'doubleAttack', { sidecars: ctx.sidecars });
+    const baseHitCount = (hasV2DoubleAttack ?? (attackerDef?.hasDoubleAttack || hasContinuousKeyword(input.defs, state, battle.attackerInstanceId, 'doubleAttack'))) ? 2 : 1;
+    const hitCount = applyDamageModifiers_V2({
+      ctx,
+      sidecars: ctx.sidecars,
+      sourceIds: [battle.attackerInstanceId],
+      baseAmount: baseHitCount,
+    });
+    if (hitCount > 0) {
+      const damaged = applyLifeDamage_V2({
+        state,
+        actorPlayerId: input.state.activePlayerId,
+        targetPlayerId: defendingPlayerId,
+        amount: { kind: 'NUMBER', value: hitCount },
+        processing: (hasProjectedKeywordWithV2(input.defs, state, battle.attackerInstanceId, 'banish', { sidecars: ctx.sidecars })
+          ?? (attackerDef?.hasBanish || hasContinuousKeyword(input.defs, state, battle.attackerInstanceId, 'banish')))
+          ? 'BANISH'
+          : 'CHECK_TRIGGER',
+        actionId: input.action.actionId,
+      });
+      state = damaged.state;
+      log = [...log, ...damaged.log];
+    } else {
+      const zeroLogger = createActionLogger(state, input.action.actionId);
+      zeroLogger.push({
+        actorPlayerId: input.state.activePlayerId,
+        type: 'DAMAGE_DEALT',
+        message: 'The attack dealt 0 damage after V2 damage modifiers.',
+        data: { attackerInstanceId: battle.attackerInstanceId, targetInstanceId: battle.targetInstanceId, hitCount },
+        relatedCardInstanceIds: [battle.attackerInstanceId, battle.targetInstanceId],
+        visibility: 'public',
+      });
+      state = { ...state, log: [...state.log, ...zeroLogger.log] };
+      log = [...log, ...zeroLogger.log];
+    }
+  } else {
+    const failLogger = createActionLogger(state, input.action.actionId);
+    failLogger.push({
+      actorPlayerId: input.state.activePlayerId,
+      type: 'DAMAGE_DEALT',
+      message: 'Attack failed - attacker power was less than the defender\'s (7-1-4).',
+      data: { succeeded: false },
+      relatedCardInstanceIds: [battle.attackerInstanceId, battle.targetInstanceId],
+      visibility: 'public',
+    });
+    state = { ...state, log: [...state.log, ...failLogger.log] };
+    log = [...log, ...failLogger.log];
+  }
+
+  if (!state.gameOver) {
+    const endLogger = createActionLogger(state, input.action.actionId);
+    endLogger.push({
+      actorPlayerId: input.state.activePlayerId,
+      type: 'PHASE_CHANGED',
+      message: 'End of Battle (7-1-5) - battle-only power bonuses expire, control returns to the Main Phase.',
+      data: { step: 'endOfBattle' },
+      relatedCardInstanceIds: [],
+      visibility: 'public',
+    });
+    state = { ...state, log: [...state.log, ...endLogger.log] };
+    log = [...log, ...endLogger.log];
+  }
+
+  state = {
+    ...state,
+    currentBattle: null,
+    continuousEffects: state.continuousEffects.filter((effect) => effect.duration !== 'duringThisBattle'),
+  };
+  return {
+    handled: true,
+    ok: true,
+    state,
+    log,
+    sidecars: pruneExpiredEffectRuntimeSidecars_V2(state, input.sidecars ?? createEmptyEffectRuntimeSidecars_V2()),
+  };
+}
+
 export function executeV2ActionOverride(input: {
   state: GameState;
   defs: CardDefinitionLookup;
@@ -420,17 +824,148 @@ export function executeV2ActionOverride(input: {
 }): V2ActionOverrideResult {
   const { state, defs, runtime, sidecars, action } = input;
   switch (action.type) {
+    case 'CHOOSE_GOING_FIRST': {
+      const validation = validateChooseGoingFirst(state, action);
+      if (!validation.legal) return { handled: true, ok: false, reasons: validation.reasons };
+      const chosen = executeChooseGoingFirst(state, action);
+      const advanced = advanceStartOfGameEffects_V2({
+        state: chosen.state,
+        defs,
+        runtime,
+        sidecars,
+        actionId: action.actionId,
+      });
+      return {
+        handled: true,
+        ok: true,
+        state: advanced.state,
+        log: [...chosen.log, ...advanced.log],
+        sidecars: advanced.sidecars,
+      };
+    }
+    case 'PLAY_CHARACTER': {
+      const baseValidation = validatePlayCharacter(state, action, defs);
+      const permissionReasons = validateManualPlayPermission_V2({
+        state,
+        defs,
+        runtime,
+        sidecars,
+        playerId: action.playerId,
+        handCardInstanceId: action.handCardInstanceId,
+      });
+      const reasons = [...baseValidation.reasons, ...permissionReasons];
+      if (reasons.length > 0) return { handled: true, ok: false, reasons };
+      const base = executePlayCharacter(state, action, defs, {});
+      const applied = applyV2EffectsForAction({ previousState: state, state: base.state, defs, runtime, sidecars, action, log: base.log });
+      return { handled: true, ok: true, state: applied.state, log: [...base.log, ...applied.log], sidecars: applied.sidecars };
+    }
+    case 'PLAY_STAGE': {
+      const baseValidation = validatePlayStage(state, action, defs);
+      const permissionReasons = validateManualPlayPermission_V2({
+        state,
+        defs,
+        runtime,
+        sidecars,
+        playerId: action.playerId,
+        handCardInstanceId: action.handCardInstanceId,
+      });
+      const reasons = [...baseValidation.reasons, ...permissionReasons];
+      if (reasons.length > 0) return { handled: true, ok: false, reasons };
+      const base = executePlayStage(state, action, defs, {});
+      const applied = applyV2EffectsForAction({ previousState: state, state: base.state, defs, runtime, sidecars, action, log: base.log });
+      return { handled: true, ok: true, state: applied.state, log: [...base.log, ...applied.log], sidecars: applied.sidecars };
+    }
+    case 'DECLARE_ATTACK': {
+      const baseValidation = validateDeclareAttack(state, action, defs);
+      const permissionReasons = validateManualActionPermission_V2({
+        state,
+        defs,
+        runtime,
+        sidecars,
+        sourceInstanceId: action.attackerInstanceId,
+        controllerId: action.playerId,
+        action: 'DECLARE_ATTACK',
+        candidateInstanceId: action.attackerInstanceId,
+      });
+      const reasons = [...baseValidation.reasons, ...permissionReasons];
+      if (reasons.length > 0) return { handled: true, ok: false, reasons };
+      const base = executeDeclareAttack(state, action, defs, {});
+      const applied = applyV2EffectsForAction({ previousState: state, state: base.state, defs, runtime, sidecars, action, log: base.log });
+      return { handled: true, ok: true, state: applied.state, log: [...base.log, ...applied.log], sidecars: applied.sidecars };
+    }
+    case 'PASS_STEP': {
+      const baseValidation = validatePassStep(state, action, defs);
+      if (!baseValidation.legal) return { handled: true, ok: false, reasons: baseValidation.reasons };
+      const battle = state.currentBattle;
+      if (battle?.step === 'counter') {
+        const target = state.cardsById[battle.targetInstanceId];
+        const attackerPower = computeCurrentPower(defs, state, battle.attackerInstanceId);
+        const targetPower = computeCurrentPower(defs, state, battle.targetInstanceId);
+        if (target?.currentZone === 'characterArea' && attackerPower >= targetPower) {
+          const permissionReasons = v2BattleKoPreventionReasons({
+            state,
+            defs,
+            runtime,
+            sidecars,
+            attackerInstanceId: battle.attackerInstanceId,
+            targetInstanceId: battle.targetInstanceId,
+          });
+          if (permissionReasons.length > 0) {
+            return resolveV2BattleKoPreventedPassStep({ state, defs, runtime, sidecars, action, reasons: permissionReasons });
+          }
+        }
+        const v2LeaderDamage = resolveV2LeaderBattleDamagePassStep({ state, defs, runtime, sidecars, action });
+        if (v2LeaderDamage) return v2LeaderDamage;
+      }
+      const base = executePassStep(state, action, defs, {});
+      const applied = applyV2EffectsForAction({ previousState: state, state: base.state, defs, runtime, sidecars, action, log: base.log });
+      return { handled: true, ok: true, state: applied.state, log: [...base.log, ...applied.log], sidecars: applied.sidecars };
+    }
+    case 'ACTIVATE_BLOCKER': {
+      const baseValidation = validateActivateBlocker(state, action, defs);
+      if (!baseValidation.legal) return { handled: true, ok: false, reasons: baseValidation.reasons };
+      const base = executeActivateBlocker(state, action, defs, {});
+      const applied = applyV2EffectsForAction({ previousState: state, state: base.state, defs, runtime, sidecars, action, log: base.log });
+      return { handled: true, ok: true, state: applied.state, log: [...base.log, ...applied.log], sidecars: applied.sidecars };
+    }
     case 'RESOLVE_PENDING_CHOICE': {
       const choice = state.pendingChoices.find((candidate) => candidate.id === action.choiceId);
       if (
         choice?.sourceEffectId !== 'v2:activationCost'
         && choice?.sourceEffectId !== 'v2:selectMoveToHand'
         && choice?.sourceEffectId !== 'v2:selectActionTarget'
+        && choice?.sourceEffectId !== 'v2:selectGiveDon'
         && choice?.sourceEffectId !== 'v2:chooseOption'
+        && choice?.sourceEffectId !== 'v2:optionalResolution'
         && choice?.sourceEffectId !== 'v2:reorderCards'
         && choice?.sourceEffectId !== 'v2:selectPlayCard'
       ) return { handled: false };
       if (choice.playerId !== action.playerId) return { handled: true, ok: false, reasons: [`Choice '${choice.id}' belongs to '${choice.playerId}', not '${action.playerId}'.`] };
+      if (choice.sourceEffectId === 'v2:optionalResolution') {
+        const resume = choice.resumeState?.v2OptionalResolution;
+        if (!resume) return { handled: true, ok: false, reasons: [`Choice '${choice.id}' is missing V2 optional resume data.`] };
+        if (typeof action.response !== 'boolean') return { handled: true, ok: false, reasons: ['A V2 optional effect choice expects a yes/no response.'] };
+        const stateWithoutChoice = { ...state, pendingChoices: state.pendingChoices.filter((candidate) => candidate.id !== action.choiceId) };
+        const ctx: SelectorContext_V2 = {
+          state: stateWithoutChoice,
+          defs,
+          runtime,
+          sidecars: sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
+          sourceInstanceId: resume.sourceInstanceId,
+          controllerId: resume.controllerId,
+          currentTiming: resume.timing,
+          bindings: resume.bindings,
+        };
+        const nodes = action.response ? [resume.node, ...resume.remainingNodes] : resume.remainingNodes;
+        const result = executeResolutionNode_V2(ctx, { kind: 'SEQUENCE', nodes }, null);
+        return {
+          handled: true,
+          ok: true,
+          state: result.state,
+          log: result.log,
+          sidecars: mergeSidecarsFromResolution_V2(sidecars, result),
+        };
+      }
       if (choice.sourceEffectId === 'v2:chooseOption') {
         const resume = choice.resumeState?.v2ChooseOption;
         if (!resume) return { handled: true, ok: false, reasons: [`Choice '${choice.id}' is missing V2 option resume data.`] };
@@ -444,6 +979,7 @@ export function executeV2ActionOverride(input: {
           state: stateWithoutChoice,
           defs,
           runtime,
+          sidecars: sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
           sourceInstanceId: resume.sourceInstanceId,
           controllerId: resume.controllerId,
           currentTiming: resume.timing,
@@ -477,6 +1013,7 @@ export function executeV2ActionOverride(input: {
           state: stateWithoutChoice,
           defs,
           runtime,
+          sidecars: sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
           sourceInstanceId: resume.sourceInstanceId,
           controllerId: resume.controllerId,
           currentTiming: resume.timing,
@@ -547,6 +1084,7 @@ export function executeV2ActionOverride(input: {
           state: stateWithoutChoice,
           defs,
           runtime,
+          sidecars: sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
           sourceInstanceId: resume.sourceInstanceId,
           controllerId: resume.controllerId,
           currentTiming: resume.timing,
@@ -560,6 +1098,69 @@ export function executeV2ActionOverride(input: {
           },
         };
         const result = executeResolutionNode_V2(ctx, { kind: 'SEQUENCE', nodes: [...(playNode ? [playNode] : []), ...resume.remainingNodes] }, null);
+        const mergedSidecars = mergeSidecarsFromResolution_V2(sidecars, result);
+        const continued = advanceStartOfGameEffects_V2({
+          state: result.state,
+          defs,
+          runtime,
+          sidecars: mergedSidecars,
+          actionId: null,
+        });
+        return {
+          handled: true,
+          ok: true,
+          state: continued.state,
+          log: [...result.log, ...continued.log],
+          sidecars: continued.sidecars,
+        };
+      }
+      if (choice.sourceEffectId === 'v2:selectGiveDon') {
+        const resume = choice.resumeState?.v2SelectGiveDon;
+        if (!resume) return { handled: true, ok: false, reasons: [`Choice '${choice.id}' is missing V2 GIVE_DON resume data.`] };
+        if (!Array.isArray(action.response)) return { handled: true, ok: false, reasons: ['A V2 GIVE_DON choice expects selected card ids.'] };
+        const selectedIds = action.response;
+        const candidateSet = new Set(choice.constraints.candidateInstanceIds ?? []);
+        const reasons: string[] = [];
+        if (selectedIds.length < choice.constraints.min || selectedIds.length > choice.constraints.max) {
+          reasons.push(`Select between ${choice.constraints.min} and ${choice.constraints.max} card(s) for this V2 GIVE_DON effect.`);
+        }
+        if (new Set(selectedIds).size !== selectedIds.length) reasons.push('V2 GIVE_DON selection contains duplicate cards.');
+        for (const id of selectedIds) {
+          if (!candidateSet.has(id)) reasons.push(`'${id}' is not eligible for this V2 GIVE_DON effect.`);
+        }
+        if (reasons.length > 0) return { handled: true, ok: false, reasons };
+        const stateWithoutChoice = { ...state, pendingChoices: state.pendingChoices.filter((candidate) => candidate.id !== action.choiceId) };
+        const selectedSelector = {
+          ...(resume.targetField === 'donSelector' ? resume.giveDonAction.donSelector : resume.giveDonAction.target),
+          subject: resume.targetField === 'donSelector' ? 'DON' as const : 'CARD' as const,
+          relations: undefined,
+          instanceIds: selectedIds,
+          quantity: { kind: 'EXACTLY' as const, value: { kind: 'NUMBER' as const, value: selectedIds.length } },
+        };
+        const selectedAction = resume.targetField === 'donSelector'
+          ? { ...resume.giveDonAction, donSelector: selectedSelector }
+          : { ...resume.giveDonAction, target: selectedSelector };
+        const selectedNode = selectedIds.length > 0
+          ? { kind: 'ACTION' as const, action: selectedAction }
+          : null;
+        const ctx: SelectorContext_V2 = {
+          state: stateWithoutChoice,
+          defs,
+          runtime,
+          sidecars: sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
+          sourceInstanceId: resume.sourceInstanceId,
+          controllerId: resume.controllerId,
+          currentTiming: resume.timing,
+          bindings: {
+            selectedObjects: {
+              ...resume.bindings.selectedObjects,
+              SELECTED_PREVIOUSLY: selectedIds,
+              PREVIOUS_ACTION_TARGET: selectedIds,
+            },
+            actionResults: resume.bindings.actionResults,
+          },
+        };
+        const result = executeResolutionNode_V2(ctx, { kind: 'SEQUENCE', nodes: [...(selectedNode ? [selectedNode] : []), ...resume.remainingNodes] }, null);
         return {
           handled: true,
           ok: true,
@@ -587,7 +1188,9 @@ export function executeV2ActionOverride(input: {
         const selectedSelector = {
           ...(resume.targetField === 'newTarget' && resume.action.type === 'CHANGE_ATTACK_TARGET'
             ? resume.action.newTarget
-            : 'selector' in resume.action
+            : resume.targetField === 'mixedTargets'
+              ? { subject: 'CARD' as const }
+              : 'selector' in resume.action
               ? resume.action.selector
               : { subject: 'CARD' as const }),
           subject: 'CARD' as const,
@@ -597,6 +1200,8 @@ export function executeV2ActionOverride(input: {
         };
         const selectedAction = resume.targetField === 'newTarget' && resume.action.type === 'CHANGE_ATTACK_TARGET'
           ? { ...resume.action, newTarget: selectedSelector }
+          : resume.targetField === 'mixedTargets' && resume.action.type === 'REST_MIXED_TARGETS'
+            ? { ...resume.action, selectors: [selectedSelector], quantity: selectedSelector.quantity }
           : { ...resume.action, selector: selectedSelector };
         const selectedNode = selectedIds.length > 0
           ? { kind: 'ACTION' as const, action: selectedAction as typeof resume.action }
@@ -605,6 +1210,7 @@ export function executeV2ActionOverride(input: {
           state: stateWithoutChoice,
           defs,
           runtime,
+          sidecars: sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
           sourceInstanceId: resume.sourceInstanceId,
           controllerId: resume.controllerId,
           currentTiming: resume.timing,
@@ -678,6 +1284,7 @@ export function executeV2ActionOverride(input: {
           state: stateWithoutChoice,
           defs,
           runtime,
+          sidecars: sidecars ?? createEmptyEffectRuntimeSidecars_V2(),
           sourceInstanceId: resume.sourceInstanceId,
           controllerId: resume.controllerId,
           currentTiming: resume.timing,

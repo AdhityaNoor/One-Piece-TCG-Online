@@ -413,7 +413,11 @@
                 "quantity": {
                   "kind": "ANY_NUMBER"
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cardCategories": [
+                  "EVENT",
+                  "STAGE"
+                ]
               }
             }
           ],
@@ -571,7 +575,11 @@
                   "quantity": {
                     "kind": "ANY_NUMBER"
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cardCategories": [
+                    "EVENT",
+                    "STAGE"
+                  ]
                 }
               }
             ],
@@ -821,7 +829,10 @@
                         "value": 1
                       }
                     },
-                    "chooser": "EFFECT_OWNER"
+                    "chooser": "EFFECT_OWNER",
+                    "cardCategories": [
+                      "CHARACTER"
+                    ]
                   },
                   "cause": "EFFECT"
                 }
@@ -1048,7 +1059,10 @@
                           "value": 1
                         }
                       },
-                      "chooser": "EFFECT_OWNER"
+                      "chooser": "EFFECT_OWNER",
+                      "cardCategories": [
+                        "CHARACTER"
+                      ]
                     },
                     "cause": "EFFECT"
                   }
@@ -4429,7 +4443,10 @@
                         "value": 1
                       }
                     },
-                    "chooser": "EFFECT_OWNER"
+                    "chooser": "EFFECT_OWNER",
+                    "cardCategories": [
+                      "EVENT"
+                    ]
                   },
                   "cause": "EFFECT"
                 }
@@ -4607,7 +4624,10 @@
                           "value": 1
                         }
                       },
-                      "chooser": "EFFECT_OWNER"
+                      "chooser": "EFFECT_OWNER",
+                      "cardCategories": [
+                        "EVENT"
+                      ]
                     },
                     "cause": "EFFECT"
                   }
@@ -6010,7 +6030,8 @@
                   "value": 8000
                 },
                 "duration": {
-                  "kind": "INSTANT"
+                  "kind": "UNTIL_END_OF_NEXT_TURN",
+                  "player": "OPPONENT"
                 }
               },
               "actionId": "OP15-020#0.1"
@@ -6176,7 +6197,8 @@
                     "value": 8000
                   },
                   "duration": {
-                    "kind": "INSTANT"
+                    "kind": "UNTIL_END_OF_NEXT_TURN",
+                    "player": "OPPONENT"
                   }
                 },
                 "actionId": "OP15-020#0.1"
@@ -9395,7 +9417,8 @@
             },
             "action": "REST_CARD",
             "duration": {
-              "kind": "INSTANT"
+              "kind": "UNTIL_END_OF_NEXT_TURN",
+              "player": "OPPONENT"
             }
           },
           "actionId": "OP15-029#0.0"
@@ -9466,7 +9489,8 @@
               },
               "action": "REST_CARD",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP15-029#0.0"
@@ -14073,7 +14097,10 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cardCategories": [
+                  "EVENT"
+                ]
               }
             }
           ],
@@ -14192,7 +14219,10 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cardCategories": [
+                    "EVENT"
+                  ]
                 }
               }
             ],
@@ -14937,7 +14967,10 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cardCategories": [
+                  "EVENT"
+                ]
               }
             }
           ],
@@ -15079,7 +15112,10 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cardCategories": [
+                    "EVENT"
+                  ]
                 }
               }
             ],
@@ -17079,7 +17115,8 @@
                 },
                 "keyword": "BLOCKER",
                 "duration": {
-                  "kind": "INSTANT"
+                  "kind": "UNTIL_END_OF_NEXT_TURN",
+                  "player": "OPPONENT"
                 }
               },
               "actionId": "OP15-055#0.1"
@@ -17166,7 +17203,8 @@
                   },
                   "keyword": "BLOCKER",
                   "duration": {
-                    "kind": "INSTANT"
+                    "kind": "UNTIL_END_OF_NEXT_TURN",
+                    "player": "OPPONENT"
                   }
                 },
                 "actionId": "OP15-055#0.1"
@@ -17778,7 +17816,11 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cardCategories": [
+                  "EVENT",
+                  "STAGE"
+                ]
               }
             }
           ],
@@ -17958,7 +18000,11 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cardCategories": [
+                    "EVENT",
+                    "STAGE"
+                  ]
                 }
               }
             ],
@@ -19057,7 +19103,8 @@
                 },
                 "keyword": "BLOCKER",
                 "duration": {
-                  "kind": "INSTANT"
+                  "kind": "UNTIL_END_OF_NEXT_TURN",
+                  "player": "OPPONENT"
                 }
               },
               "actionId": "OP15-060#1.1"
@@ -19271,7 +19318,8 @@
                   },
                   "keyword": "BLOCKER",
                   "duration": {
-                    "kind": "INSTANT"
+                    "kind": "UNTIL_END_OF_NEXT_TURN",
+                    "player": "OPPONENT"
                   }
                 },
                 "actionId": "OP15-060#1.1"
@@ -20687,7 +20735,7 @@
                   "selector": {
                     "subject": "ACTION_RESULT",
                     "relations": [
-                      "PREVIOUS_ACTION_TARGET"
+                      "REVEALED_PREVIOUSLY"
                     ],
                     "cost": {
                       "propertyLayer": "CURRENT",
@@ -20798,7 +20846,7 @@
                     "selector": {
                       "subject": "ACTION_RESULT",
                       "relations": [
-                        "PREVIOUS_ACTION_TARGET"
+                        "REVEALED_PREVIOUSLY"
                       ],
                       "cost": {
                         "propertyLayer": "CURRENT",
@@ -23702,7 +23750,8 @@
                     "value": 2
                   },
                   "duration": {
-                    "kind": "INSTANT"
+                    "kind": "UNTIL_END_OF_NEXT_TURN",
+                    "player": "OPPONENT"
                   }
                 },
                 "actionId": "OP15-074#0.2"
@@ -23899,7 +23948,8 @@
                       "value": 2
                     },
                     "duration": {
-                      "kind": "INSTANT"
+                      "kind": "UNTIL_END_OF_NEXT_TURN",
+                      "player": "OPPONENT"
                     }
                   },
                   "actionId": "OP15-074#0.2"
@@ -32272,7 +32322,8 @@
             },
             "action": "DECLARE_ATTACK",
             "duration": {
-              "kind": "INSTANT"
+              "kind": "UNTIL_END_OF_NEXT_TURN",
+              "player": "OPPONENT"
             }
           },
           "actionId": "OP15-097#0.0"
@@ -32418,7 +32469,8 @@
               },
               "action": "DECLARE_ATTACK",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP15-097#0.0"
@@ -39317,7 +39369,8 @@
                       "kind": "NUMBER",
                       "value": 1
                     }
-                  }
+                  },
+                  "chooser": "EFFECT_OWNER"
                 },
                 "to": {
                   "zone": "HAND",
@@ -39582,7 +39635,8 @@
                         "kind": "NUMBER",
                         "value": 1
                       }
-                    }
+                    },
+                    "chooser": "EFFECT_OWNER"
                   },
                   "to": {
                     "zone": "HAND",
@@ -39894,6 +39948,29 @@
             {
               "kind": "ACTION",
               "action": {
+                "type": "REVEAL_CARD",
+                "selector": {
+                  "subject": "CARD",
+                  "owner": "PLAYER",
+                  "zones": [
+                    "LIFE"
+                  ],
+                  "quantity": {
+                    "kind": "UP_TO",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 1
+                    }
+                  },
+                  "ordering": "DECK_ORDER"
+                },
+                "viewers": "BOTH_PLAYERS"
+              },
+              "actionId": "OP15-119#0.1"
+            },
+            {
+              "kind": "ACTION",
+              "action": {
                 "type": "MODIFY_POWER",
                 "selector": {
                   "subject": "CARD",
@@ -39919,7 +39996,7 @@
                   "kind": "THIS_TURN"
                 }
               },
-              "actionId": "OP15-119#0.1"
+              "actionId": "OP15-119#0.2"
             }
           ]
         },
@@ -40021,6 +40098,29 @@
               {
                 "kind": "ACTION",
                 "action": {
+                  "type": "REVEAL_CARD",
+                  "selector": {
+                    "subject": "CARD",
+                    "owner": "PLAYER",
+                    "zones": [
+                      "LIFE"
+                    ],
+                    "quantity": {
+                      "kind": "UP_TO",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 1
+                      }
+                    },
+                    "ordering": "DECK_ORDER"
+                  },
+                  "viewers": "BOTH_PLAYERS"
+                },
+                "actionId": "OP15-119#0.1"
+              },
+              {
+                "kind": "ACTION",
+                "action": {
                   "type": "MODIFY_POWER",
                   "selector": {
                     "subject": "CARD",
@@ -40046,14 +40146,15 @@
                     "kind": "THIS_TURN"
                   }
                 },
-                "actionId": "OP15-119#0.1"
+                "actionId": "OP15-119#0.2"
               }
             ]
           }
         },
         "coveredAtomicEffectIds": [
           "OP15-119#0.0",
-          "OP15-119#0.1"
+          "OP15-119#0.1",
+          "OP15-119#0.2"
         ]
       }
     ],
@@ -40061,13 +40162,13 @@
       "schemaVersion": "op-tcg-effect-v2.0.0",
       "generatedBy": "effectCompiler_V2",
       "cardNumber": "OP15-119",
-      "totalAtomicEffects": 2,
-      "parserRecognizedAtomicEffects": 2,
+      "totalAtomicEffects": 3,
+      "parserRecognizedAtomicEffects": 3,
       "parserUnrecognizedAtomicEffects": 0,
-      "assignmentCoveredAtomicEffects": 2,
+      "assignmentCoveredAtomicEffects": 3,
       "assignmentPartialAtomicEffects": 0,
       "assignmentUncoveredAtomicEffects": 0,
-      "coveredAtomicEffects": 2,
+      "coveredAtomicEffects": 3,
       "partialAtomicEffects": 0,
       "uncoveredAtomicEffects": 0,
       "statuses": [
@@ -40076,7 +40177,7 @@
           "cardNumber": "OP15-119",
           "effectIndex": 0,
           "atomIndex": 0,
-          "rawText": "If you have 6 or more DON!! cards on your field, this Character gains [Rush].When your opponent activates an Event or [Blocker], reveal up to 1 card from the top of your Life cards.",
+          "rawText": "If you have 6 or more DON!! cards on your field, this Character gains [Rush].",
           "parserStatus": "recognized",
           "semanticStatus": "safe",
           "assignmentStatus": "assigned",
@@ -40095,6 +40196,25 @@
           "cardNumber": "OP15-119",
           "effectIndex": 0,
           "atomIndex": 1,
+          "rawText": "When your opponent activates an Event or [Blocker], reveal up to 1 card from the top of your Life cards.",
+          "parserStatus": "recognized",
+          "semanticStatus": "safe",
+          "assignmentStatus": "assigned",
+          "status": "covered",
+          "coveredByAssignmentIds": [
+            "v2:auto:OP15-119:0"
+          ],
+          "canonicalAtoms": [
+            "REVEAL_CARD"
+          ],
+          "canonicalCoverage": "canonical",
+          "canonicalRemark": "Parser emitted a canonical V2 atom."
+        },
+        {
+          "atomicEffectId": "OP15-119#0.2",
+          "cardNumber": "OP15-119",
+          "effectIndex": 0,
+          "atomIndex": 2,
           "rawText": "This Character gains +1000 power during this turn per 1 cost on the revealed card.",
           "parserStatus": "recognized",
           "semanticStatus": "safe",

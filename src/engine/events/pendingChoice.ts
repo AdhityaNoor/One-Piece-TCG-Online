@@ -131,6 +131,17 @@ export interface PendingChoice {
         actionResults: Record<string, unknown>;
       };
     };
+    v2OptionalResolution?: {
+      sourceInstanceId: string;
+      controllerId: string;
+      timing: import('../../cards/effectCompiler_V2/types_V2').TimingExpression_V2;
+      node: import('../../cards/effectCompiler_V2/types_V2').ResolutionNode_V2;
+      remainingNodes: import('../../cards/effectCompiler_V2/types_V2').ResolutionNode_V2[];
+      bindings: {
+        selectedObjects: Record<string, string[]>;
+        actionResults: Record<string, unknown>;
+      };
+    };
     v2ReorderCards?: {
       sourceInstanceId: string;
       controllerId: string;
@@ -158,7 +169,19 @@ export interface PendingChoice {
       controllerId: string;
       timing: import('../../cards/effectCompiler_V2/types_V2').TimingExpression_V2;
       action: import('../../cards/effectCompiler_V2/types_V2').Action_V2;
-      targetField: 'selector' | 'newTarget';
+      targetField: 'selector' | 'newTarget' | 'mixedTargets';
+      remainingNodes: import('../../cards/effectCompiler_V2/types_V2').ResolutionNode_V2[];
+      bindings: {
+        selectedObjects: Record<string, string[]>;
+        actionResults: Record<string, unknown>;
+      };
+    };
+    v2SelectGiveDon?: {
+      sourceInstanceId: string;
+      controllerId: string;
+      timing: import('../../cards/effectCompiler_V2/types_V2').TimingExpression_V2;
+      giveDonAction: Extract<import('../../cards/effectCompiler_V2/types_V2').Action_V2, { type: 'GIVE_DON' }>;
+      targetField: 'donSelector' | 'target';
       remainingNodes: import('../../cards/effectCompiler_V2/types_V2').ResolutionNode_V2[];
       bindings: {
         selectedObjects: Record<string, string[]>;

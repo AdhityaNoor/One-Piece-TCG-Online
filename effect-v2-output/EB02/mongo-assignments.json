@@ -596,6 +596,9 @@
                 "zones": [
                   "COST_AREA"
                 ],
+                "states": [
+                  "RESTED"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -615,7 +618,7 @@
                   "LEADER"
                 ],
                 "quantity": {
-                  "kind": "UP_TO",
+                  "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1
@@ -1356,6 +1359,9 @@
                 "zones": [
                   "COST_AREA"
                 ],
+                "states": [
+                  "RESTED"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1375,7 +1381,7 @@
                   "LEADER"
                 ],
                 "quantity": {
-                  "kind": "UP_TO",
+                  "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1
@@ -2983,6 +2989,7 @@
               }
             },
             "chooser": "EFFECT_OWNER",
+            "baseEffectStatus": "NO_BASE_EFFECT",
             "power": {
               "propertyLayer": "CURRENT",
               "comparison": "AT_MOST",
@@ -5081,7 +5088,10 @@
                   "kind": "NUMBER",
                   "value": 4000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -5106,7 +5116,10 @@
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "relations": [
+              "SAME_NAME_AS_TRASHED_PREVIOUSLY"
+            ]
           },
           "player": "PLAYER"
         },
@@ -6269,6 +6282,9 @@
             "zones": [
               "COST_AREA"
             ],
+            "states": [
+              "RESTED"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -6288,10 +6304,10 @@
               "LEADER"
             ],
             "quantity": {
-              "kind": "UP_TO",
+              "kind": "EXACTLY",
               "value": {
                 "kind": "NUMBER",
-                "value": 2
+                "value": 1
               }
             },
             "chooser": "EFFECT_OWNER"

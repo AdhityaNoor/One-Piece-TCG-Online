@@ -994,9 +994,7 @@
         "coveredByAssignmentIds": [
           "v2:auto:OP06-020:0"
         ],
-        "canonicalAtoms": [
-          "REST_DON"
-        ],
+        "canonicalAtoms": [],
         "canonicalCoverage": "canonical",
         "canonicalRemark": "Parser emitted a canonical V2 atom."
       },
@@ -1829,9 +1827,7 @@
         "coveredByAssignmentIds": [
           "v2:auto:OP06-035:1"
         ],
-        "canonicalAtoms": [
-          "REST_DON"
-        ],
+        "canonicalAtoms": [],
         "canonicalCoverage": "canonical",
         "canonicalRemark": "Parser emitted a canonical V2 atom."
       },

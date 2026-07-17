@@ -471,7 +471,8 @@ export const EB04_AUTO_ASSIGNMENTS_V2 = [
             "value": 7000
           },
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "EB04-004#0.0"
@@ -700,7 +701,8 @@ export const EB04_AUTO_ASSIGNMENTS_V2 = [
             "value": 2000
           },
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "EB04-007#0.0"
@@ -1600,6 +1602,9 @@ export const EB04_AUTO_ASSIGNMENTS_V2 = [
             "zones": [
               "COST_AREA"
             ],
+            "states": [
+              "RESTED"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -1611,8 +1616,15 @@ export const EB04_AUTO_ASSIGNMENTS_V2 = [
           },
           "target": {
             "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
             "quantity": {
-              "kind": "UP_TO",
+              "kind": "EXACTLY",
               "value": {
                 "kind": "NUMBER",
                 "value": 1
@@ -3611,7 +3623,8 @@ export const EB04_AUTO_ASSIGNMENTS_V2 = [
             },
             "action": "DECLARE_ATTACK",
             "duration": {
-              "kind": "INSTANT"
+              "kind": "UNTIL_END_OF_NEXT_TURN",
+              "player": "OPPONENT"
             }
           },
           "actionId": "EB04-028#0.1"
@@ -8429,7 +8442,8 @@ export const EB04_AUTO_ASSIGNMENTS_V2 = [
                 "value": 2000
               },
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "EB04-061#1.1"
@@ -8454,7 +8468,8 @@ export const EB04_AUTO_ASSIGNMENTS_V2 = [
               },
               "keyword": "BLOCKER",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "EB04-061#1.2"

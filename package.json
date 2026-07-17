@@ -23,6 +23,7 @@
     "triage:clusters": "node scripts/effect-triage-clusters.mjs",
     "effects:v2": "tsx scripts/effect-v2/run.ts",
     "effects:v2:uncovered": "tsx scripts/effect-v2/uncovered.ts",
+    "effects:v2:audit": "tsx scripts/effect-v2/audit.ts",
     "audit:curation": "tsx scripts/curation-audit/run.ts",
     "scan:partials": "tsx scripts/partial-curation-scan/run.ts",
     "capability:doc": "tsx scripts/capability-doc/run.ts",

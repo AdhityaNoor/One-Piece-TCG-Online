@@ -17,6 +17,7 @@ import { create } from 'zustand';
 import type { CpuDifficulty } from '../../ai';
 import { GENERIC_DON_CARD_DEFINITION } from '../../cards/decks/genericDonCard';
 import type { SavedDeck } from '../../cards/decks/savedDeck';
+import type { DeckConstructionEntry } from '../../cards/decks/deckValidation';
 import type { GameAction } from '../../engine/actions';
 import { validateAction, executeAction } from '../../engine/actions';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
@@ -26,6 +27,7 @@ import { buildCuratedEffectRegistry } from '../../cards/effectTemplates';
 import { buildV2EffectRuntimeRegistry } from '../../cards/effectCompiler_V2/runtimeCatalog_V2';
 import type { EffectRuntimeBundle_V2 } from '../../engine/effects_V2/runtime_V2';
 import { createEmptyEffectRuntimeSidecars_V2, type EffectRuntimeSidecars_V2 } from '../../engine/effects_V2/dispatcher_V2';
+import { validateDeckConstruction_V2 } from '../../engine/effects_V2/deckConstruction_V2';
 import {
   applyV2EffectsForAction,
   executeV2ActionOverride,
@@ -58,6 +60,18 @@ function buildV2RuntimeFromDefs(defs: CardDefinitionLookup): EffectRuntimeBundle
   const result = buildV2EffectRuntimeRegistry(defs);
   console.info(`[effects:v2] loaded ${result.summary.v2AbilityCount} native V2 abilities for ${result.summary.cardCount} cards.`);
   return result.runtime;
+}
+
+function savedDeckMainEntries(deck: SavedDeck): DeckConstructionEntry[] {
+  return deck.cards.map((snapshot) => ({
+    definition: snapshot.definition,
+    quantity: snapshot.quantity,
+  }));
+}
+
+function validateSavedDeckConstruction_V2(deck: SavedDeck, runtime: EffectRuntimeBundle_V2): string[] {
+  return validateDeckConstruction_V2(deck.leader.definition, savedDeckMainEntries(deck), runtime).reasons
+    .map((reason) => `${deck.name}: ${reason}`);
 }
 
 /** Fixed, stable player ids for the local hotseat match — both sides are the same human, alternating. */
@@ -397,6 +411,36 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   startMatch(deckA, deckB, presentation) {
     const p1Input = savedDeckToPlayerSetupInput(deckA, PLAYER_A_ID);
     const p2Input = savedDeckToPlayerSetupInput(deckB, PLAYER_B_ID);
+    const defs = buildCardDefinitionLookup([deckA, deckB]);
+    const v2EffectRuntime = buildV2RuntimeFromDefs(defs);
+
+    if (EFFECT_RUNTIME_MODE === 'v2' && v2EffectRuntime) {
+      const v2DeckReasons = [
+        ...validateSavedDeckConstruction_V2(deckA, v2EffectRuntime),
+        ...validateSavedDeckConstruction_V2(deckB, v2EffectRuntime),
+      ];
+      if (v2DeckReasons.length > 0) {
+        set({
+          state: null,
+          defs: {},
+          registry: {},
+          v2EffectRuntime: null,
+          v2EffectSidecars: null,
+          cardImagesByDefinitionId: {},
+          startedWithDeckIds: null,
+          startError: v2DeckReasons,
+          localPlayerId: null,
+          playerNames: {},
+          cpuPlayerIds: [],
+          cpuDifficulty: 'normal',
+          cpuDebug: false,
+          playTestMode: false,
+          onlineMode: false,
+          onlineSendIntent: null,
+        });
+        return { ok: false, reasons: v2DeckReasons };
+      }
+    }
 
     const isCpu = presentation?.mode === 'cpu';
     const localPlayerId = presentation?.localPlayerId ?? (isCpu ? PLAYER_A_ID : null);
@@ -448,8 +492,6 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       return { ok: false, reasons: result.reasons };
     }
 
-    const defs = buildCardDefinitionLookup([deckA, deckB]);
-    const v2EffectRuntime = buildV2RuntimeFromDefs(defs);
     set({
       state: result.state,
       defs,

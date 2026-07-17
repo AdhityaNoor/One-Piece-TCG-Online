@@ -311,6 +311,7 @@
                   }
                 },
                 "chooser": "EFFECT_OWNER",
+                "baseEffectStatus": "NO_BASE_EFFECT",
                 "power": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -792,6 +793,7 @@
                   }
                 },
                 "chooser": "EFFECT_OWNER",
+                "baseEffectStatus": "NO_BASE_EFFECT",
                 "power": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -1364,22 +1366,56 @@
       "resolution": {
         "kind": "ACTION",
         "action": {
-          "type": "REST_DON",
-          "selector": {
-            "subject": "DON",
-            "owner": "OPPONENT",
-            "zones": [
-              "COST_AREA"
-            ],
-            "quantity": {
-              "kind": "UP_TO",
-              "value": {
-                "kind": "NUMBER",
-                "value": 1
-              }
+          "type": "REST_MIXED_TARGETS",
+          "quantity": {
+            "kind": "UP_TO",
+            "value": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "selectors": [
+            {
+              "subject": "DON",
+              "owner": "OPPONENT",
+              "zones": [
+                "COST_AREA"
+              ],
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              },
+              "chooser": "EFFECT_OWNER"
             },
-            "chooser": "EFFECT_OWNER"
-          }
+            {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              },
+              "chooser": "EFFECT_OWNER",
+              "types": {
+                "kind": "HAS_ANY_TYPE",
+                "values": [
+                  "SMILE",
+                  "Animal"
+                ]
+              },
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 3
+                }
+              }
+            }
+          ]
         },
         "actionId": "EB03-012#0.1"
       }
@@ -1563,6 +1599,9 @@
             "zones": [
               "COST_AREA"
             ],
+            "states": [
+              "RESTED"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -1574,14 +1613,27 @@
           },
           "target": {
             "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
             "quantity": {
-              "kind": "UP_TO",
+              "kind": "EXACTLY",
               "value": {
                 "kind": "NUMBER",
-                "value": 2
+                "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "attributes": {
+              "kind": "HAS_ATTRIBUTE",
+              "values": [
+                "SLASH"
+              ]
+            }
           }
         },
         "actionId": "EB03-014#0.1"
@@ -1854,6 +1906,9 @@
             "zones": [
               "COST_AREA"
             ],
+            "states": [
+              "RESTED"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -1865,8 +1920,15 @@
           },
           "target": {
             "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
             "quantity": {
-              "kind": "UP_TO",
+              "kind": "EXACTLY",
               "value": {
                 "kind": "NUMBER",
                 "value": 1
@@ -1998,7 +2060,8 @@
               },
               "action": "REST_CARD",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "EB03-017#0.1"
@@ -2773,18 +2836,11 @@
               "type": "PREVENT_ACTION",
               "selector": {
                 "subject": "CARD",
-                "zones": [
-                  "CHARACTER_AREA"
-                ],
                 "cardCategories": [
                   "CHARACTER"
                 ],
                 "quantity": {
-                  "kind": "EXACTLY",
-                  "value": {
-                    "kind": "NUMBER",
-                    "value": 1
-                  }
+                  "kind": "ANY_NUMBER"
                 },
                 "chooser": "EFFECT_OWNER"
               },
@@ -3027,11 +3083,14 @@
             "zones": [
               "COST_AREA"
             ],
+            "states": [
+              "RESTED"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
                 "kind": "NUMBER",
-                "value": 1
+                "value": 2
               }
             },
             "chooser": "EFFECT_OWNER"
@@ -3048,12 +3107,22 @@
               "CHARACTER"
             ],
             "quantity": {
+              "kind": "EXACTLY",
+              "value": {
+                "kind": "NUMBER",
+                "value": 2
+              }
+            },
+            "perCardCategoryQuantity": {
               "kind": "UP_TO",
               "value": {
                 "kind": "NUMBER",
                 "value": 1
               }
             },
+            "relations": [
+              "REQUIRES_LEADER_AND_CHARACTER"
+            ],
             "chooser": "EFFECT_OWNER"
           }
         },
@@ -4025,7 +4094,8 @@
             "value": 1000
           },
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "EB03-037#0.0"
@@ -4255,6 +4325,7 @@
                   }
                 },
                 "chooser": "EFFECT_OWNER",
+                "baseEffectStatus": "NO_BASE_EFFECT",
                 "power": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -6078,6 +6149,9 @@
                 "zones": [
                   "COST_AREA"
                 ],
+                "states": [
+                  "RESTED"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -6097,7 +6171,7 @@
                   "LEADER"
                 ],
                 "quantity": {
-                  "kind": "UP_TO",
+                  "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1
@@ -6696,6 +6770,9 @@
             "zones": [
               "COST_AREA"
             ],
+            "states": [
+              "RESTED"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -6707,11 +6784,18 @@
           },
           "target": {
             "subject": "CARD",
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA"
+            ],
+            "cardCategories": [
+              "LEADER"
+            ],
             "quantity": {
-              "kind": "UP_TO",
+              "kind": "EXACTLY",
               "value": {
                 "kind": "NUMBER",
-                "value": 3
+                "value": 1
               }
             },
             "chooser": "EFFECT_OWNER",
@@ -7323,22 +7407,49 @@
           {
             "kind": "ACTION",
             "action": {
-              "type": "REST_DON",
-              "selector": {
-                "subject": "DON",
-                "owner": "OPPONENT",
-                "zones": [
-                  "COST_AREA"
-                ],
-                "quantity": {
-                  "kind": "UP_TO",
-                  "value": {
-                    "kind": "NUMBER",
-                    "value": 1
-                  }
+              "type": "REST_MIXED_TARGETS",
+              "quantity": {
+                "kind": "UP_TO",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              },
+              "selectors": [
+                {
+                  "subject": "DON",
+                  "owner": "OPPONENT",
+                  "zones": [
+                    "COST_AREA"
+                  ],
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  },
+                  "chooser": "EFFECT_OWNER"
                 },
-                "chooser": "EFFECT_OWNER"
-              }
+                {
+                  "subject": "CARD",
+                  "controller": "OPPONENT",
+                  "zones": [
+                    "CHARACTER_AREA"
+                  ],
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
+                  "quantity": {
+                    "kind": "ANY_NUMBER"
+                  },
+                  "chooser": "EFFECT_OWNER",
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "AT_MOST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 4
+                    }
+                  }
+                }
+              ]
             },
             "actionId": "EB03-061#0.1"
           }

@@ -92,7 +92,8 @@ export const ST11_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 1
                   }
-                }
+                },
+                "chooser": "EFFECT_OWNER"
               },
               "to": {
                 "zone": "HAND",
@@ -220,7 +221,10 @@ export const ST11_AUTO_ASSIGNMENTS_V2 = [
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT"
+              ]
             }
           }
         ],

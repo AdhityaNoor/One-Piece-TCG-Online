@@ -485,7 +485,10 @@ export const PRB02_AUTO_ASSIGNMENTS_V2 = [
                   "kind": "NUMBER",
                   "value": 6000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -2459,7 +2462,8 @@ export const PRB02_AUTO_ASSIGNMENTS_V2 = [
           },
           "action": "DECLARE_ATTACK",
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "PRB02-017#0.1"

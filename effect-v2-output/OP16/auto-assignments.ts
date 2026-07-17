@@ -793,7 +793,10 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
                   "kind": "NUMBER",
                   "value": 8000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -854,7 +857,8 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
                 "value": 2000
               },
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP16-009#0.2"
@@ -1480,7 +1484,10 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
                   "kind": "NUMBER",
                   "value": 8000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -1620,7 +1627,10 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
                   "kind": "NUMBER",
                   "value": 8000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -1831,7 +1841,10 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
                       "kind": "NUMBER",
                       "value": 6000
                     }
-                  }
+                  },
+                  "cardCategories": [
+                    "CHARACTER"
+                  ]
                 },
                 "cause": "EFFECT"
               }
@@ -2262,7 +2275,8 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 1
                   }
-                }
+                },
+                "chooser": "EFFECT_OWNER"
               },
               "to": {
                 "zone": "HAND",
@@ -3219,7 +3233,8 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
           },
           "action": "REST_CARD",
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP16-032#1.0"
@@ -3680,6 +3695,9 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
                   "zones": [
                     "COST_AREA"
                   ],
+                  "states": [
+                    "RESTED"
+                  ],
                   "quantity": {
                     "kind": "UP_TO",
                     "value": {
@@ -3699,10 +3717,10 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
                     "LEADER"
                   ],
                   "quantity": {
-                    "kind": "UP_TO",
+                    "kind": "EXACTLY",
                     "value": {
                       "kind": "NUMBER",
-                      "value": 3
+                      "value": 1
                     }
                   },
                   "chooser": "EFFECT_OWNER"
@@ -5987,21 +6005,65 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
       },
       "optionality": "OPTIONAL",
       "resolution": {
-        "kind": "ACTION",
-        "action": {
-          "type": "DRAW_CARD",
-          "player": "PLAYER",
-          "count": {
-            "kind": "NUMBER",
-            "value": 2
+        "kind": "SEQUENCE",
+        "nodes": [
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "DRAW_CARD",
+              "player": "PLAYER",
+              "count": {
+                "kind": "NUMBER",
+                "value": 2
+              }
+            },
+            "actionId": "OP16-056#0.1"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PREVENT_ACTION",
+              "selector": {
+                "subject": "CARD",
+                "controller": "OPPONENT",
+                "zones": [
+                  "CHARACTER_AREA"
+                ],
+                "cardCategories": [
+                  "CHARACTER"
+                ],
+                "quantity": {
+                  "kind": "UP_TO",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                },
+                "chooser": "EFFECT_OWNER",
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "AT_MOST",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 9
+                  }
+                }
+              },
+              "action": "DECLARE_ATTACK",
+              "duration": {
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
+              }
+            },
+            "actionId": "OP16-056#0.2"
           }
-        },
-        "actionId": "OP16-056#0.1"
+        ]
       }
     },
     "coveredAtomicEffectIds": [
       "OP16-056#0.0",
-      "OP16-056#0.1"
+      "OP16-056#0.1",
+      "OP16-056#0.2"
     ]
   },
   {
@@ -6503,7 +6565,8 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
               "values": [
                 "Admiral"
               ]
-            }
+            },
+            "distinctBy": "CARD_NAME"
           },
           "player": "PLAYER"
         },
@@ -6815,7 +6878,8 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
             "value": 6000
           },
           "duration": {
-            "kind": "INSTANT"
+            "kind": "UNTIL_END_OF_NEXT_TURN",
+            "player": "OPPONENT"
           }
         },
         "actionId": "OP16-065#0.1"
@@ -7817,7 +7881,8 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
               },
               "keyword": "BLOCKER",
               "duration": {
-                "kind": "INSTANT"
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
               }
             },
             "actionId": "OP16-073#1.2"
@@ -8725,9 +8790,24 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
           "type": "CHANGE_ATTACK_TARGET",
           "newTarget": {
             "subject": "CARD",
-            "relations": [
-              "THIS_CARD"
+            "controller": "PLAYER",
+            "zones": [
+              "LEADER_AREA",
+              "CHARACTER_AREA"
             ],
+            "cardCategories": [
+              "LEADER",
+              "CHARACTER"
+            ],
+            "relations": [
+              "INCLUDE_THIS_CARD"
+            ],
+            "types": {
+              "kind": "HAS_ANY_TYPE",
+              "values": [
+                "Blackbeard Pirates"
+              ]
+            },
             "quantity": {
               "kind": "EXACTLY",
               "value": {
@@ -9118,7 +9198,10 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
                   "kind": "NUMBER",
                   "value": 8
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -9947,7 +10030,10 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
                   "kind": "NUMBER",
                   "value": 8
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -13420,7 +13506,8 @@ export const OP16_AUTO_ASSIGNMENTS_V2 = [
                     "kind": "NUMBER",
                     "value": 1
                   }
-                }
+                },
+                "chooser": "EFFECT_OWNER"
               },
               "player": "PLAYER",
               "position": "TOP",

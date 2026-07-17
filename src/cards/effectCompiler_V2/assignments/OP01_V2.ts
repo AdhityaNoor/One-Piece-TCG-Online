@@ -34,6 +34,13 @@ export const OP01_ASSIGNMENTS_V2: readonly EffectAssignment_V2[] = [
       optionality: 'MANDATORY',
       resolution: {
         kind: 'CREATE_CONTINUOUS_EFFECT',
+        selector: {
+          subject: 'CARD',
+          controller: 'PLAYER',
+          zones: ['CHARACTER_AREA'],
+          cardCategories: ['CHARACTER'],
+          quantity: { kind: 'ALL' },
+        },
         modifier: {
           type: 'STAT_MODIFIER',
           stat: 'POWER',

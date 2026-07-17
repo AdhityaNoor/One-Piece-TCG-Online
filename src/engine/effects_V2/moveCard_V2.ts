@@ -6,12 +6,14 @@ import type { CardInstance } from '../state/card';
 import type { GameState } from '../state/game';
 import type { PlayerState } from '../state/player';
 import type { Zone } from '../state/zone';
-import { resolveSelector_V2, selectResolvedCandidateIds_V2, type SelectorContext_V2 } from './selectorResolver_V2';
+import { v2ZoneChangePreventionReasons } from './permissions_V2';
+import { resolveSelector_V2, selectResolvedCandidateIds_V2, type EffectBindings_V2, type SelectorContext_V2 } from './selectorResolver_V2';
 
 export interface MoveCardsResult_V2 {
   state: GameState;
   log: GameLogEntry[];
   movedInstanceIds: string[];
+  bindings?: EffectBindings_V2;
 }
 
 type ZoneKey_V2 = keyof Pick<PlayerState, 'deck' | 'donDeck' | 'hand' | 'characterArea' | 'stageArea' | 'costArea' | 'trash' | 'lifeArea'>;
@@ -188,7 +190,15 @@ export function moveCards_V2(
   if (!zoneKey) return { state: ctx.state, log: [], movedInstanceIds: [] };
 
   const resolved = resolveSelector_V2(ctx, action.selector);
-  const selectedIds = selectResolvedCandidateIds_V2(ctx, resolved);
+  const selectedIds = selectResolvedCandidateIds_V2(ctx, resolved).filter((instanceId) =>
+    v2ZoneChangePreventionReasons({
+      ctx,
+      permissionEffects: ctx.sidecars?.permissionEffects ?? [],
+      candidateInstanceId: instanceId,
+      toZone: action.to.zone,
+      cause: action.cause,
+    }).length === 0,
+  );
   let state = ctx.state;
   const movedInstanceIds: string[] = [];
 
@@ -219,5 +229,18 @@ export function moveCards_V2(
     state: { ...state, log: [...state.log, ...logger.log] },
     log: logger.log,
     movedInstanceIds,
+    bindings: {
+      selectedObjects: {
+        ...(ctx.bindings?.selectedObjects ?? {}),
+        MOVED_PREVIOUSLY: movedInstanceIds,
+        SELECTED_PREVIOUSLY: movedInstanceIds,
+        PREVIOUS_ACTION_TARGET: movedInstanceIds,
+        ...(action.to.zone === 'TRASH' ? { TRASHED_PREVIOUSLY: movedInstanceIds } : {}),
+        ...(action.to.zone === 'HAND' || action.to.zone === 'DECK' ? { RETURNED_PREVIOUSLY: movedInstanceIds } : {}),
+        ...(action.to.zone === 'HAND' ? { RETURNED_TO_HAND_PREVIOUSLY: movedInstanceIds } : {}),
+        ...(action.to.zone === 'DECK' ? { RETURNED_TO_DECK_PREVIOUSLY: movedInstanceIds } : {}),
+      },
+      actionResults: ctx.bindings?.actionResults ?? {},
+    },
   };
 }

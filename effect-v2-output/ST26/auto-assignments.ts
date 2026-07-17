@@ -240,22 +240,49 @@ export const ST26_AUTO_ASSIGNMENTS_V2 = [
       "resolution": {
         "kind": "ACTION",
         "action": {
-          "type": "REST_DON",
-          "selector": {
-            "subject": "DON",
-            "owner": "OPPONENT",
-            "zones": [
-              "COST_AREA"
-            ],
-            "quantity": {
-              "kind": "UP_TO",
-              "value": {
-                "kind": "NUMBER",
-                "value": 1
-              }
+          "type": "REST_MIXED_TARGETS",
+          "quantity": {
+            "kind": "UP_TO",
+            "value": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "selectors": [
+            {
+              "subject": "DON",
+              "owner": "OPPONENT",
+              "zones": [
+                "COST_AREA"
+              ],
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              },
+              "chooser": "EFFECT_OWNER"
             },
-            "chooser": "EFFECT_OWNER"
-          }
+            {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              },
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 1
+                }
+              }
+            }
+          ]
         },
         "actionId": "ST26-002#1.1"
       }
@@ -500,7 +527,8 @@ export const ST26_AUTO_ASSIGNMENTS_V2 = [
               "value": 7000
             },
             "duration": {
-              "kind": "INSTANT"
+              "kind": "UNTIL_END_OF_NEXT_TURN",
+              "player": "OPPONENT"
             }
           },
           "actionId": "ST26-005#1.1"

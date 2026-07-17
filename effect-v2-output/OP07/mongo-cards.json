@@ -12404,7 +12404,7 @@
                 "selector": {
                   "subject": "ACTION_RESULT",
                   "relations": [
-                    "SELECTED_PREVIOUSLY"
+                    "REVEALED_PREVIOUSLY"
                   ],
                   "quantity": {
                     "kind": "EXACTLY",
@@ -12413,9 +12413,26 @@
                       "value": 1
                     }
                   },
+                  "cardCategories": [
+                    "CHARACTER"
+                  ],
                   "states": [
                     "RESTED"
-                  ]
+                  ],
+                  "types": {
+                    "kind": "HAS_ANY_TYPE",
+                    "values": [
+                      "The Seven Warlords of the Sea"
+                    ]
+                  },
+                  "cost": {
+                    "propertyLayer": "CURRENT",
+                    "comparison": "AT_MOST",
+                    "value": {
+                      "kind": "NUMBER",
+                      "value": 4
+                    }
+                  }
                 },
                 "player": "PLAYER"
               },
@@ -12523,7 +12540,7 @@
                   "selector": {
                     "subject": "ACTION_RESULT",
                     "relations": [
-                      "SELECTED_PREVIOUSLY"
+                      "REVEALED_PREVIOUSLY"
                     ],
                     "quantity": {
                       "kind": "EXACTLY",
@@ -12532,9 +12549,26 @@
                         "value": 1
                       }
                     },
+                    "cardCategories": [
+                      "CHARACTER"
+                    ],
                     "states": [
                       "RESTED"
-                    ]
+                    ],
+                    "types": {
+                      "kind": "HAS_ANY_TYPE",
+                      "values": [
+                        "The Seven Warlords of the Sea"
+                      ]
+                    },
+                    "cost": {
+                      "propertyLayer": "CURRENT",
+                      "comparison": "AT_MOST",
+                      "value": {
+                        "kind": "NUMBER",
+                        "value": 4
+                      }
+                    }
                   },
                   "player": "PLAYER"
                 },

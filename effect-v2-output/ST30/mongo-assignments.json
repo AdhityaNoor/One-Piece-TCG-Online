@@ -574,7 +574,10 @@
                   "kind": "NUMBER",
                   "value": 6000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -902,7 +905,10 @@
                   "kind": "NUMBER",
                   "value": 6000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],

@@ -3,6 +3,7 @@ import type { CardDefinition, CardInstance } from '../../state/card';
 import { createSampleGameState } from '../../state/__fixtures__/sampleGameState';
 import type { CardDefinitionLookup } from '../../rules/shared';
 import { executeAction_V2 } from '../actions_V2';
+import { createEmptyEffectRuntimeSidecars_V2, dispatchCardEffectsForTiming_V2 } from '../dispatcher_V2';
 import { isEffectInvalidated_V2 } from '../modifiers_V2';
 
 function def(id: string, patch: Partial<CardDefinition> = {}): CardDefinition {
@@ -354,6 +355,53 @@ describe('V2 actions', () => {
     expect(result.log[0]).toMatchObject({ type: 'CARD_MOVED', data: { movedInstanceIds: ['hand-1'], to: { zone: 'TRASH' } } });
   });
 
+  it('skips native V2 K.O. when PREVENT_ACTION blocks K.O. for the target', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      card: def('card'),
+    };
+    const withCharacter = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, characterArea: { ...state.players.p1.characterArea, cardIds: ['char-1'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'char-1': { ...instance('char-1', 'card', 'p1', 'characterArea'), orientation: 'active' as const },
+      },
+    };
+    const ctx = {
+      state: withCharacter,
+      defs,
+      sourceInstanceId: 'p1-leader',
+      controllerId: 'p1',
+      sidecars: createEmptyEffectRuntimeSidecars_V2({
+        permissionEffects: [{
+          id: 'prevent-ko',
+          kind: 'PREVENT_ACTION',
+          sourceInstanceId: 'p1-leader',
+          controllerId: 'p1',
+          selector: { subject: 'CARD', controller: 'PLAYER', zones: ['CHARACTER_AREA'] },
+          action: 'KO_CARD',
+          duration: { kind: 'THIS_TURN' },
+          createdAtTurn: withCharacter.turnNumber,
+          status: 'ACTIVE',
+        }],
+      }),
+    };
+    const result = executeAction_V2(ctx, {
+      type: 'KO_CARD',
+      selector: { subject: 'CARD', controller: 'PLAYER', zones: ['CHARACTER_AREA'] },
+      cause: 'EFFECT',
+    }, 'ko-prevented-test');
+
+    expect(result.state.players.p1.characterArea.cardIds).toEqual(['char-1']);
+    expect(result.state.players.p1.trash.cardIds).toEqual([]);
+    expect(result.log).toEqual([]);
+  });
+
   it('executes rest and set-active actions for cards and DON', () => {
     const state = createSampleGameState();
     const defs: CardDefinitionLookup = {
@@ -396,6 +444,154 @@ describe('V2 actions', () => {
       selector: { subject: 'DON', owner: 'PLAYER', zones: ['COST_AREA'] },
     }, 'active-don-test');
     expect(active.state.cardsById['don-1'].donRested).toBe(false);
+  });
+
+  it('skips native V2 rest when PREVENT_ACTION blocks resting for the target', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      card: def('card'),
+    };
+    const withCharacter = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, characterArea: { ...state.players.p1.characterArea, cardIds: ['char-1'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'char-1': { ...instance('char-1', 'card', 'p1', 'characterArea'), orientation: 'active' as const },
+      },
+    };
+    const ctx = {
+      state: withCharacter,
+      defs,
+      sourceInstanceId: 'p1-leader',
+      controllerId: 'p1',
+      sidecars: createEmptyEffectRuntimeSidecars_V2({
+        permissionEffects: [{
+          id: 'prevent-rest',
+          kind: 'PREVENT_ACTION',
+          sourceInstanceId: 'p1-leader',
+          controllerId: 'p1',
+          selector: { subject: 'CARD', controller: 'PLAYER', zones: ['CHARACTER_AREA'] },
+          action: 'REST_CARD',
+          duration: { kind: 'THIS_TURN' },
+          createdAtTurn: withCharacter.turnNumber,
+          status: 'ACTIVE',
+        }],
+      }),
+    };
+
+    const result = executeAction_V2(ctx, {
+      type: 'REST_CARD',
+      selector: { subject: 'CARD', controller: 'PLAYER', zones: ['CHARACTER_AREA'] },
+    }, 'rest-prevented-test');
+
+    expect(result.state.cardsById['char-1'].orientation).toBe('active');
+    expect(result.log).toEqual([]);
+  });
+
+  it('skips native V2 movement when PREVENT_ZONE_CHANGE blocks removing the card from field', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      card: def('card'),
+    };
+    const withCharacter = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, characterArea: { ...state.players.p1.characterArea, cardIds: ['char-1'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'char-1': { ...instance('char-1', 'card', 'p1', 'characterArea'), orientation: 'active' as const },
+      },
+    };
+    const ctx = {
+      state: withCharacter,
+      defs,
+      sourceInstanceId: 'p2-leader',
+      controllerId: 'p2',
+      sidecars: createEmptyEffectRuntimeSidecars_V2({
+        permissionEffects: [{
+          id: 'prevent-remove',
+          kind: 'PREVENT_ZONE_CHANGE',
+          sourceInstanceId: 'p1-leader',
+          controllerId: 'p1',
+          selector: { subject: 'CARD', controller: 'PLAYER', zones: ['CHARACTER_AREA'] },
+          action: 'REMOVE_FROM_FIELD',
+          sourceSelector: { subject: 'EFFECT', controller: 'OPPONENT', quantity: { kind: 'ANY_NUMBER' } },
+          duration: { kind: 'THIS_TURN' },
+          createdAtTurn: withCharacter.turnNumber,
+          status: 'ACTIVE',
+        }],
+      }),
+    };
+
+    const result = executeAction_V2(ctx, {
+      type: 'MOVE_CARD',
+      selector: { subject: 'CARD', controller: 'OPPONENT', zones: ['CHARACTER_AREA'] },
+      to: { zone: 'HAND', owner: 'CARD_OWNER' },
+      cause: 'EFFECT',
+    }, 'remove-prevented-test');
+
+    expect(result.state.players.p1.characterArea.cardIds).toEqual(['char-1']);
+    expect(result.state.players.p1.hand.cardIds).toEqual([]);
+    expect(result.log).toEqual([]);
+  });
+
+  it('skips native V2 SELECT candidates blocked by PREVENT_SELECTION', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      card: def('card'),
+    };
+    const withCharacters = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, characterArea: { ...state.players.p1.characterArea, cardIds: ['char-1', 'char-2'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'char-1': { ...instance('char-1', 'card', 'p1', 'characterArea'), orientation: 'active' as const },
+        'char-2': { ...instance('char-2', 'card', 'p1', 'characterArea'), orientation: 'active' as const },
+      },
+    };
+    const ctx = {
+      state: withCharacters,
+      defs,
+      sourceInstanceId: 'p1-leader',
+      controllerId: 'p1',
+      sidecars: createEmptyEffectRuntimeSidecars_V2({
+        permissionEffects: [{
+          id: 'prevent-select-char-1',
+          kind: 'PREVENT_SELECTION',
+          sourceInstanceId: 'p1-leader',
+          controllerId: 'p1',
+          selector: { subject: 'CARD', relations: ['INSTANCE_ID'], instanceIds: ['char-1'] },
+          duration: { kind: 'THIS_TURN' },
+          createdAtTurn: withCharacters.turnNumber,
+          status: 'ACTIVE',
+        }],
+      }),
+    };
+
+    const result = executeAction_V2(ctx, {
+      type: 'SELECT',
+      selectionId: 'TEST_SELECTION',
+      selector: {
+        subject: 'CARD',
+        controller: 'PLAYER',
+        zones: ['CHARACTER_AREA'],
+        quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } },
+      },
+    }, 'select-prevented-test');
+
+    expect(result.bindings?.selectedObjects.TEST_SELECTION).toEqual(['char-2']);
+    expect(result.bindings?.selectedObjects.SELECTED_PREVIOUSLY).toEqual(['char-2']);
   });
 
   it('executes native V2 life, reveal, and DON-return utility actions', () => {
@@ -443,6 +639,20 @@ describe('V2 actions', () => {
       viewers: 'BOTH_PLAYERS',
     }, 'reveal-test');
     expect(revealed.state.cardsById['deck-1'].revealedTo).toBe('all');
+    expect(revealed.bindings?.selectedObjects.REVEALED_PREVIOUSLY).toEqual(['deck-1']);
+    expect(revealed.bindings?.selectedObjects.PREVIOUS_ACTION_TARGET).toEqual(['deck-1']);
+
+    const cardFaceUp = executeAction_V2({ ...ctx, state: revealed.state }, {
+      type: 'TURN_CARD_FACE_UP',
+      selector: { subject: 'CARD', owner: 'PLAYER', zones: ['DECK'], quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } } },
+    }, 'card-face-up-test');
+    expect(cardFaceUp.state.cardsById['deck-1']).toMatchObject({ faceState: 'faceUp', revealedTo: 'all' });
+
+    const cardFaceDown = executeAction_V2({ ...ctx, state: cardFaceUp.state }, {
+      type: 'TURN_CARD_FACE_DOWN',
+      selector: { subject: 'CARD', owner: 'PLAYER', zones: ['DECK'], quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } } },
+    }, 'card-face-down-test');
+    expect(cardFaceDown.state.cardsById['deck-1']).toMatchObject({ faceState: 'faceDown', revealedTo: [] });
 
     const faceDown = executeAction_V2({ ...ctx, state: added.state }, {
       type: 'TURN_LIFE_FACE_DOWN',
@@ -619,6 +829,130 @@ describe('V2 actions', () => {
     });
   });
 
+  it('executes DETACH_DON by moving attached DON back to the cost area', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      don: def('don', { category: 'don', colors: [], baseCost: undefined, basePower: undefined, attributes: undefined }),
+    };
+    const withAttachedDon = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, costArea: { ...state.players.p1.costArea, cardIds: [] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'p1-leader': { ...state.cardsById['p1-leader'], donAttached: ['don-1', 'don-2'] },
+        'don-1': { ...instance('don-1', 'don', 'p1', 'costArea'), donRested: true },
+        'don-2': { ...instance('don-2', 'don', 'p1', 'costArea'), donRested: true },
+      },
+    };
+    const ctx = { state: withAttachedDon, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+    const result = executeAction_V2(ctx, {
+      type: 'DETACH_DON',
+      sourceCard: { subject: 'CARD', relations: ['THIS_CARD'] },
+      count: { kind: 'NUMBER', value: 1 },
+      destination: 'COST_AREA',
+      state: 'ACTIVE',
+    }, 'detach-don-test');
+
+    expect(result.state.cardsById['p1-leader'].donAttached).toEqual(['don-2']);
+    expect(result.state.players.p1.costArea.cardIds).toEqual(['don-1']);
+    expect(result.state.cardsById['don-1']).toMatchObject({ currentZone: 'costArea', donRested: false, revealedTo: 'all' });
+    expect(result.log[0]).toMatchObject({
+      type: 'DON_RETURNED',
+      data: { action: 'DETACH_DON', donInstanceIds: ['don-1'], destination: 'COST_AREA', state: 'ACTIVE' },
+    });
+  });
+
+  it('executes MOVE_DON_TO_COST_AREA for attached DON selectors', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      don: def('don', { category: 'don', colors: [], baseCost: undefined, basePower: undefined, attributes: undefined }),
+    };
+    const withAttachedDon = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, costArea: { ...state.players.p1.costArea, cardIds: [] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'p1-leader': { ...state.cardsById['p1-leader'], donAttached: ['don-1', 'don-2'] },
+        'don-1': { ...instance('don-1', 'don', 'p1', 'costArea'), donRested: true },
+        'don-2': { ...instance('don-2', 'don', 'p1', 'costArea'), donRested: true },
+      },
+    };
+    const ctx = { state: withAttachedDon, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+    const result = executeAction_V2(ctx, {
+      type: 'MOVE_DON_TO_COST_AREA',
+      selector: {
+        subject: 'DON',
+        owner: 'PLAYER',
+        zones: ['ATTACHED_DON'],
+        quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 2 } },
+      },
+      state: 'RESTED',
+    }, 'move-don-cost-area-test');
+
+    expect(result.state.cardsById['p1-leader'].donAttached).toEqual([]);
+    expect(result.state.players.p1.costArea.cardIds).toEqual(['don-1', 'don-2']);
+    expect(result.state.cardsById['don-1']).toMatchObject({ currentZone: 'costArea', donRested: true });
+    expect(result.state.cardsById['don-2']).toMatchObject({ currentZone: 'costArea', donRested: true });
+    expect(result.log[0]).toMatchObject({
+      type: 'DON_RETURNED',
+      data: { action: 'MOVE_DON_TO_COST_AREA', donInstanceIds: ['don-1', 'don-2'], state: 'RESTED' },
+    });
+  });
+
+  it('executes GIVE_DON across multiple selected targets in selected order', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      char: def('char', { category: 'character', basePower: 5000, baseCost: 3 }),
+      don: def('don', { category: 'don', colors: [], baseCost: undefined, basePower: undefined, attributes: undefined }),
+    };
+    const withDonAndCharacter = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: {
+          ...state.players.p1,
+          costArea: { ...state.players.p1.costArea, cardIds: ['don-1', 'don-2', 'don-3', 'don-4'] },
+          characterArea: { ...state.players.p1.characterArea, cardIds: ['char-1'] },
+        },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'don-1': { ...instance('don-1', 'don', 'p1', 'costArea'), donRested: false },
+        'don-2': { ...instance('don-2', 'don', 'p1', 'costArea'), donRested: false },
+        'don-3': { ...instance('don-3', 'don', 'p1', 'costArea'), donRested: false },
+        'don-4': { ...instance('don-4', 'don', 'p1', 'costArea'), donRested: false },
+        'char-1': instance('char-1', 'char', 'p1', 'characterArea'),
+      },
+    };
+    const ctx = { state: withDonAndCharacter, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+    const result = executeAction_V2(ctx, {
+      type: 'GIVE_DON',
+      donSelector: { subject: 'DON', owner: 'PLAYER', zones: ['COST_AREA'], quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 4 } } },
+      target: {
+        subject: 'CARD',
+        owner: 'PLAYER',
+        zones: ['LEADER_AREA', 'CHARACTER_AREA'],
+        quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 2 } },
+      },
+    }, 'give-don-multi-target-test');
+
+    expect(result.state.cardsById['p1-leader'].donAttached).toEqual(['don-1', 'don-3']);
+    expect(result.state.cardsById['char-1'].donAttached).toEqual(['don-2', 'don-4']);
+    expect(result.log[0]).toMatchObject({
+      type: 'DON_GIVEN',
+      data: { donInstanceIds: ['don-1', 'don-2', 'don-3', 'don-4'], targetInstanceIds: ['p1-leader', 'char-1'] },
+    });
+  });
+
   it('executes PLAY_CARD by minting a fresh Character instance into play', () => {
     const state = createSampleGameState();
     const defs: CardDefinitionLookup = {
@@ -665,6 +999,46 @@ describe('V2 actions', () => {
       type: 'CARD_PLAYED',
       data: { from: 'hand', to: 'characterArea', oldInstanceId: 'hand-char', newInstanceId: 'rt-7', via: 'V2_EFFECT' },
     });
+  });
+
+  it('auto-selects distinct card names for V2 PLAY_CARD selectors', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      a1: def('a1', { name: 'Duplicate', category: 'character', basePower: 4000 }),
+      a2: def('a2', { name: 'Duplicate', category: 'character', basePower: 4000 }),
+      b: def('b', { name: 'Different', category: 'character', basePower: 4000 }),
+    };
+    const withTrash = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, trash: { ...state.players.p1.trash, cardIds: ['trash-a1', 'trash-a2', 'trash-b'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'trash-a1': instance('trash-a1', 'a1', 'p1', 'trash'),
+        'trash-a2': instance('trash-a2', 'a2', 'p1', 'trash'),
+        'trash-b': instance('trash-b', 'b', 'p1', 'trash'),
+      },
+    };
+    const ctx = { state: withTrash, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+
+    const result = executeAction_V2(ctx, {
+      type: 'PLAY_CARD',
+      selector: {
+        subject: 'CARD',
+        owner: 'PLAYER',
+        zones: ['TRASH'],
+        cardCategories: ['CHARACTER'],
+        quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 3 } },
+        distinctBy: 'CARD_NAME',
+      },
+      player: 'PLAYER',
+    }, 'play-distinct-names');
+
+    const playedDefs = result.state.players.p1.characterArea.cardIds.map((id) => result.state.cardsById[id].cardDefinitionId);
+    expect(playedDefs).toEqual(['a1', 'b']);
   });
 
   it('executes PLAY_CARD for Stage by replacing the previous Stage', () => {
@@ -840,6 +1214,38 @@ describe('V2 actions', () => {
       data: { permissionEffectId: 'p1-leader:permission:MODIFY_RULE_PERMISSION:1:0', kind: 'MODIFY_RULE_PERMISSION' },
     });
 
+    const areaCapacity = executeAction_V2(ctx, {
+      type: 'MODIFY_AREA_CAPACITY',
+      modifier: {
+        scope: 'CHARACTER_AREA_CAPACITY',
+        validFrom: 'ALWAYS',
+        modifier: { type: 'RULE_MODIFIER', scope: 'CHARACTER_AREA_CAPACITY', expression: { operation: 'SET_CAPACITY', value: 6 } },
+      },
+    }, 'area-capacity-test');
+
+    expect(areaCapacity.permissionEffects?.[0]).toMatchObject({
+      id: 'p1-leader:permission:MODIFY_AREA_CAPACITY:1:0',
+      kind: 'MODIFY_AREA_CAPACITY',
+      modifier: { scope: 'CHARACTER_AREA_CAPACITY', modifier: { type: 'RULE_MODIFIER' } },
+      duration: { kind: 'PERMANENT' },
+    });
+
+    const victory = executeAction_V2(ctx, {
+      type: 'MODIFY_VICTORY_CONDITION',
+      modifier: {
+        scope: 'VICTORY_CONDITION',
+        validFrom: 'ALWAYS',
+        modifier: { type: 'RULE_MODIFIER', scope: 'VICTORY_CONDITION', expression: { operation: 'WIN_IF_CONDITION' } },
+      },
+    }, 'victory-test');
+
+    expect(victory.permissionEffects?.[0]).toMatchObject({
+      id: 'p1-leader:permission:MODIFY_VICTORY_CONDITION:1:0',
+      kind: 'MODIFY_VICTORY_CONDITION',
+      modifier: { scope: 'VICTORY_CONDITION', modifier: { type: 'RULE_MODIFIER' } },
+      duration: { kind: 'PERMANENT' },
+    });
+
     const preventAction = executeAction_V2(ctx, {
       type: 'PREVENT_ACTION',
       selector: { subject: 'CARD', owner: 'OPPONENT', zones: ['CHARACTER_AREA'], quantity: { kind: 'ANY_NUMBER' } },
@@ -855,6 +1261,233 @@ describe('V2 actions', () => {
       duration: { kind: 'THIS_TURN' },
       status: 'ACTIVE',
     });
+
+    const preventSelection = executeAction_V2(ctx, {
+      type: 'PREVENT_SELECTION',
+      selector: { subject: 'CARD', owner: 'OPPONENT', zones: ['CHARACTER_AREA'], quantity: { kind: 'ANY_NUMBER' } },
+      duration: { kind: 'THIS_TURN' },
+    }, 'prevent-selection-test');
+
+    expect(preventSelection.permissionEffects?.[0]).toMatchObject({
+      id: 'p1-leader:permission:PREVENT_SELECTION:1:0',
+      kind: 'PREVENT_SELECTION',
+      selector: { subject: 'CARD', owner: 'OPPONENT', zones: ['CHARACTER_AREA'] },
+      duration: { kind: 'THIS_TURN' },
+      status: 'ACTIVE',
+    });
+  });
+
+  it('executes card-property modifier actions as serializable sidecar registrations', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+    };
+    const ctx = { state, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+    const selector = { subject: 'CARD' as const, relations: ['THIS_CARD'], quantity: { kind: 'EXACTLY' as const, value: { kind: 'NUMBER' as const, value: 1 } } };
+
+    const name = executeAction_V2(ctx, {
+      type: 'MODIFY_NAME',
+      selector,
+      operation: 'TREAT_AS_ADDITIONAL_NAME',
+      names: ['Monkey.D.Luffy'],
+      duration: { kind: 'THIS_TURN' },
+    }, 'modify-name-test');
+    expect(name.cardPropertyModifiers?.[0]).toMatchObject({
+      id: 'p1-leader:card-property:NAME:1:0',
+      property: 'NAME',
+      operation: 'TREAT_AS_ADDITIONAL_NAME',
+      values: ['Monkey.D.Luffy'],
+    });
+
+    const color = executeAction_V2(ctx, {
+      type: 'MODIFY_COLOR',
+      selector,
+      operation: 'ADD_COLOR',
+      colors: ['RED'],
+      duration: { kind: 'THIS_TURN' },
+    }, 'modify-color-test');
+    expect(color.cardPropertyModifiers?.[0]).toMatchObject({ property: 'COLOR', operation: 'ADD_COLOR', values: ['RED'] });
+
+    const type = executeAction_V2(ctx, {
+      type: 'MODIFY_TYPE',
+      selector,
+      operation: 'ADD_TYPE',
+      types: ['Straw Hat Crew'],
+      duration: { kind: 'THIS_TURN' },
+    }, 'modify-type-test');
+    expect(type.cardPropertyModifiers?.[0]).toMatchObject({ property: 'TYPE', operation: 'ADD_TYPE', values: ['Straw Hat Crew'] });
+
+    const attribute = executeAction_V2(ctx, {
+      type: 'MODIFY_ATTRIBUTE',
+      selector,
+      operation: 'REPLACE_ATTRIBUTES',
+      attributes: ['SPECIAL'],
+      duration: { kind: 'THIS_TURN' },
+    }, 'modify-attribute-test');
+    expect(attribute.cardPropertyModifiers?.[0]).toMatchObject({ property: 'ATTRIBUTE', operation: 'REPLACE_ATTRIBUTES', values: ['SPECIAL'] });
+
+    const baseEffect = executeAction_V2(ctx, {
+      type: 'MODIFY_BASE_EFFECT_STATUS',
+      selector,
+      enabled: false,
+      duration: { kind: 'THIS_TURN' },
+    }, 'modify-base-effect-test');
+    expect(baseEffect.cardPropertyModifiers?.[0]).toMatchObject({ property: 'BASE_EFFECT_STATUS', operation: 'SET_BASE_EFFECT_ENABLED', enabled: false });
+  });
+
+  it('executes ADD_EFFECT and REMOVE_GAINED_EFFECT as serializable sidecar registrations', () => {
+    const state = createSampleGameState();
+    const targetId = 'target';
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      target: def('target', { category: 'character' }),
+    };
+    const withTarget = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, characterArea: { ...state.players.p1.characterArea, cardIds: [targetId] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        [targetId]: { ...instance(targetId, 'target', 'p1', 'characterArea'), orientation: 'active' as const },
+      },
+    };
+    const ctx = { state: withTarget, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+    const selector = { subject: 'CARD' as const, relations: ['INSTANCE_ID'], instanceIds: [targetId], quantity: { kind: 'EXACTLY' as const, value: { kind: 'NUMBER' as const, value: 1 } } };
+    const gainedEffect = {
+      id: 'gained:draw',
+      source: { objectRef: 'GENERATED_EFFECT' as const, owner: 'PLAYER' as const, controller: 'PLAYER' as const, sourceZone: 'CHARACTER_AREA' as const },
+      category: 'ACTIVATE' as const,
+      applicationMode: 'ONE_SHOT' as const,
+      activationZones: ['CHARACTER_AREA' as const],
+      timing: { kind: 'STANDARD_TIMING' as const, timing: 'ACTIVATE_MAIN' as const },
+      optionality: 'MANDATORY' as const,
+      resolution: { kind: 'ACTION' as const, action: { type: 'DRAW_CARD' as const, player: 'PLAYER' as const, count: { kind: 'NUMBER' as const, value: 1 } } },
+      metadata: { sourceCardNumber: 'TEST', effectIndex: 0, printedText: 'Draw 1 card.', authoringStatus: 'ASSIGNED' as const },
+    };
+
+    const added = executeAction_V2(ctx, {
+      type: 'ADD_EFFECT',
+      selector,
+      effect: gainedEffect,
+      duration: { kind: 'THIS_TURN' },
+    }, 'add-effect-test');
+    expect(added.gainedEffects?.[0]).toMatchObject({
+      id: 'p1-leader:gained-effect:gained:draw:1:0',
+      selectedInstanceIds: [targetId],
+      effect: { id: 'gained:draw' },
+      duration: { kind: 'THIS_TURN' },
+    });
+
+    const removed = executeAction_V2(ctx, {
+      type: 'REMOVE_GAINED_EFFECT',
+      selector,
+      effectFilter: 'ALL_EFFECTS',
+      duration: { kind: 'THIS_TURN' },
+    }, 'remove-gained-effect-test');
+    expect(removed.gainedEffectRemovals?.[0]).toMatchObject({
+      id: 'p1-leader:remove-gained-effect:1:0',
+      selectedInstanceIds: [targetId],
+      effectFilter: 'ALL_EFFECTS',
+    });
+  });
+
+  it('executes COPY_EFFECT by granting copied runtime effects to selected targets', () => {
+    const state = createSampleGameState();
+    const sourceCardId = 'copy-source';
+    const targetId = 'copy-target';
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      'SRC-001': def('SRC-001', { category: 'character', cardNumber: 'SRC-001' }),
+      'TARGET-001': def('TARGET-001', { category: 'character', cardNumber: 'TARGET-001' }),
+      card: def('card'),
+    };
+    const withCards = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: {
+          ...state.players.p1,
+          deck: { ...state.players.p1.deck, cardIds: ['deck-1'] },
+          characterArea: { ...state.players.p1.characterArea, cardIds: [sourceCardId, targetId] },
+        },
+      },
+      cardsById: {
+        ...state.cardsById,
+        [sourceCardId]: { ...instance(sourceCardId, 'SRC-001', 'p1', 'characterArea'), orientation: 'active' as const, faceState: 'faceUp' as const, revealedTo: 'all' as const },
+        [targetId]: { ...instance(targetId, 'TARGET-001', 'p1', 'characterArea'), orientation: 'active' as const, faceState: 'faceUp' as const, revealedTo: 'all' as const },
+        'deck-1': instance('deck-1', 'card', 'p1', 'deck'),
+      },
+    };
+    const copiedEffect = {
+      id: 'SRC-001#onPlay',
+      source: { objectRef: 'THIS_CARD' as const, owner: 'CARD_OWNER' as const, controller: 'CARD_CONTROLLER' as const, sourceZone: 'CHARACTER_AREA' as const, effectIndex: 0 },
+      category: 'AUTO' as const,
+      applicationMode: 'ONE_SHOT' as const,
+      activationZones: ['CHARACTER_AREA' as const],
+      timing: { kind: 'STANDARD_TIMING' as const, timing: 'ON_PLAY' as const },
+      optionality: 'MANDATORY' as const,
+      resolution: { kind: 'ACTION' as const, action: { type: 'DRAW_CARD' as const, player: 'PLAYER' as const, count: { kind: 'NUMBER' as const, value: 1 } } },
+      metadata: { sourceCardNumber: 'SRC-001', effectIndex: 0, printedText: '[On Play] Draw 1 card.', authoringStatus: 'ASSIGNED' as const },
+    };
+    const runtime = {
+      programsByCardNumber: {
+        'SRC-001': {
+          schemaVersion: 'op-tcg-effect-v2.0.0' as const,
+          cardNumber: 'SRC-001',
+          canonicalEffects: [copiedEffect],
+          abilities: [{
+            abilityId: copiedEffect.id,
+            timing: copiedEffect.timing,
+            optionalActivate: false,
+            resolution: copiedEffect.resolution,
+          }],
+        },
+        'TARGET-001': {
+          schemaVersion: 'op-tcg-effect-v2.0.0' as const,
+          cardNumber: 'TARGET-001',
+          canonicalEffects: [],
+          abilities: [],
+        },
+      },
+      compatibilityWarnings: [],
+      summary: { cardCount: 2, assignmentCount: 1, v2AbilityCount: 1 },
+    };
+    const ctx = { state: withCards, defs, runtime, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+
+    const copied = executeAction_V2(ctx, {
+      type: 'COPY_EFFECT',
+      selector: { subject: 'CARD', relations: ['INSTANCE_ID'], instanceIds: [targetId], quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } } },
+      sourceEffect: { subject: 'CARD', relations: ['INSTANCE_ID'], instanceIds: [sourceCardId], quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } } },
+      duration: { kind: 'THIS_TURN' },
+    }, 'copy-effect-test');
+
+    expect(copied.gainedEffects?.[0]).toMatchObject({
+      sourceInstanceId: 'p1-leader',
+      selectedInstanceIds: [targetId],
+      effect: {
+        id: 'SRC-001#onPlay:copy:p1-leader:0',
+        timing: { kind: 'STANDARD_TIMING', timing: 'ON_PLAY' },
+      },
+    });
+
+    const dispatched = dispatchCardEffectsForTiming_V2({
+      state: copied.state,
+      defs,
+      runtime,
+      sourceInstanceId: targetId,
+      controllerId: 'p1',
+      timing: { kind: 'STANDARD_TIMING', timing: 'ON_PLAY' },
+      sidecars: { gainedEffects: copied.gainedEffects },
+    });
+
+    expect(dispatched.executedEffects).toEqual([{
+      abilityId: 'SRC-001#onPlay:copy:p1-leader:0',
+      cardNumber: 'TARGET-001',
+      sourceInstanceId: targetId,
+    }]);
+    expect(dispatched.state.players.p1.hand.cardIds).toContain('deck-1');
   });
 
   it('executes CREATE_DELAYED_EFFECT as a serializable sidecar registration', () => {
@@ -1023,6 +1656,133 @@ describe('V2 actions', () => {
     });
   });
 
+  it('executes SET_DAMAGE as fixed direct damage', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      life: def('life'),
+    };
+    const withLife = {
+      ...state,
+      players: {
+        ...state.players,
+        p2: { ...state.players.p2, lifeArea: { ...state.players.p2.lifeArea, cardIds: ['life-1', 'life-2'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'life-1': instance('life-1', 'life', 'p2', 'lifeArea'),
+        'life-2': instance('life-2', 'life', 'p2', 'lifeArea'),
+      },
+    };
+    const ctx = { state: withLife, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+    const result = executeAction_V2(ctx, {
+      type: 'SET_DAMAGE',
+      source: { subject: 'CARD', relations: ['THIS_CARD'] },
+      targetPlayer: 'OPPONENT',
+      amount: { kind: 'NUMBER', value: 2 },
+    }, 'set-damage-test');
+
+    expect(result.state.players.p2.lifeArea.cardIds).toEqual([]);
+    expect(result.state.players.p2.hand.cardIds).toEqual(['life-2', 'life-1']);
+    expect(result.log.filter((entry) => entry.type === 'DAMAGE_DEALT')).toHaveLength(2);
+  });
+
+  it('registers MODIFY_DAMAGE and applies matching sidecars to direct damage', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      life: def('life'),
+    };
+    const withLife = {
+      ...state,
+      players: {
+        ...state.players,
+        p2: { ...state.players.p2, lifeArea: { ...state.players.p2.lifeArea, cardIds: ['life-1', 'life-2'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'life-1': instance('life-1', 'life', 'p2', 'lifeArea'),
+        'life-2': instance('life-2', 'life', 'p2', 'lifeArea'),
+      },
+    };
+    const ctx = { state: withLife, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+    const modifier = executeAction_V2(ctx, {
+      type: 'MODIFY_DAMAGE',
+      selector: { subject: 'CARD', relations: ['THIS_CARD'] },
+      propertyLayer: 'CURRENT_VALUE',
+      operation: 'ADD',
+      value: { kind: 'NUMBER', value: 1 },
+      duration: { kind: 'THIS_TURN' },
+    }, 'damage-modifier-test');
+
+    expect(modifier.statModifiers?.[0]).toMatchObject({
+      id: 'p1-leader:stat:DAMAGE:1:0',
+      stat: 'DAMAGE',
+      operation: 'ADD',
+      value: { kind: 'NUMBER', value: 1 },
+    });
+
+    const damaged = executeAction_V2({
+      ...ctx,
+      sidecars: createEmptyEffectRuntimeSidecars_V2({ statModifiers: modifier.statModifiers }),
+    }, {
+      type: 'DEAL_DAMAGE',
+      source: { subject: 'CARD', relations: ['THIS_CARD'] },
+      targetPlayer: 'OPPONENT',
+      amount: { kind: 'NUMBER', value: 1 },
+    }, 'modified-damage-test');
+
+    expect(damaged.state.players.p2.lifeArea.cardIds).toEqual([]);
+    expect(damaged.state.players.p2.hand.cardIds).toEqual(['life-2', 'life-1']);
+    expect(damaged.log.filter((entry) => entry.type === 'DAMAGE_DEALT')).toHaveLength(2);
+  });
+
+  it('does not apply MODIFY_DAMAGE when the damage source does not match', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      life: def('life'),
+      other: def('other', { category: 'character' }),
+    };
+    const withLifeAndOtherSource = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, characterArea: { ...state.players.p1.characterArea, cardIds: ['other-source'] } },
+        p2: { ...state.players.p2, lifeArea: { ...state.players.p2.lifeArea, cardIds: ['life-1', 'life-2'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'other-source': instance('other-source', 'other', 'p1', 'characterArea'),
+        'life-1': instance('life-1', 'life', 'p2', 'lifeArea'),
+        'life-2': instance('life-2', 'life', 'p2', 'lifeArea'),
+      },
+    };
+    const ctx = { state: withLifeAndOtherSource, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+    const modifier = executeAction_V2(ctx, {
+      type: 'MODIFY_DAMAGE',
+      selector: { subject: 'CARD', relations: ['THIS_CARD'] },
+      propertyLayer: 'CURRENT_VALUE',
+      operation: 'ADD',
+      value: { kind: 'NUMBER', value: 1 },
+      duration: { kind: 'THIS_TURN' },
+    }, 'damage-modifier-miss-test');
+
+    const damaged = executeAction_V2({
+      ...ctx,
+      sidecars: createEmptyEffectRuntimeSidecars_V2({ statModifiers: modifier.statModifiers }),
+    }, {
+      type: 'DEAL_DAMAGE',
+      source: { subject: 'CARD', relations: ['INSTANCE_ID'], instanceIds: ['other-source'] },
+      targetPlayer: 'OPPONENT',
+      amount: { kind: 'NUMBER', value: 1 },
+    }, 'unmodified-damage-test');
+
+    expect(damaged.state.players.p2.lifeArea.cardIds).toEqual(['life-2']);
+    expect(damaged.state.players.p2.hand.cardIds).toEqual(['life-1']);
+    expect(damaged.log.filter((entry) => entry.type === 'DAMAGE_DEALT')).toHaveLength(1);
+  });
+
   it('executes stat modifiers as serializable sidecar registrations', () => {
     const state = createSampleGameState();
     const defs: CardDefinitionLookup = {
@@ -1130,6 +1890,85 @@ describe('V2 actions', () => {
     });
   });
 
+  it('executes DECLARE_ATTACK from V2 effect selectors', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader', basePower: 5000 }),
+    };
+    const attackReady = {
+      ...state,
+      turnNumber: 3,
+      currentPhase: 'main' as const,
+      activePlayerId: 'p1',
+      cardsById: {
+        ...state.cardsById,
+        [state.players.p1.leaderInstanceId]: {
+          ...state.cardsById[state.players.p1.leaderInstanceId],
+          orientation: 'active' as const,
+        },
+      },
+    };
+    const ctx = { state: attackReady, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+
+    const result = executeAction_V2(ctx, {
+      type: 'DECLARE_ATTACK',
+      attacker: { subject: 'CARD', relations: ['THIS_CARD'], quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } } },
+      target: { subject: 'CARD', owner: 'OPPONENT', zones: ['LEADER_AREA'], quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } } },
+    }, 'declare-attack-v2-effect-test');
+
+    expect(result.state.currentBattle).toMatchObject({
+      attackerInstanceId: state.players.p1.leaderInstanceId,
+      targetInstanceId: state.players.p2.leaderInstanceId,
+    });
+    expect(result.state.cardsById[state.players.p1.leaderInstanceId].orientation).toBe('rested');
+    expect(result.log[0]).toMatchObject({ type: 'ATTACK_DECLARED', causedByActionId: 'declare-attack-v2-effect-test' });
+  });
+
+  it('executes ACTIVATE_BLOCKER from V2 effect selectors', () => {
+    const state = createSampleGameState();
+    const blockerId = 'p2-blocker';
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader', basePower: 5000 }),
+      blocker: def('blocker', { category: 'character', basePower: 5000, hasBlocker: true }),
+    };
+    const battle = {
+      ...state,
+      turnNumber: 3,
+      currentPhase: 'main' as const,
+      activePlayerId: 'p1',
+      currentBattle: {
+        attackerInstanceId: state.players.p1.leaderInstanceId,
+        targetInstanceId: state.players.p2.leaderInstanceId,
+        originalTargetInstanceId: state.players.p2.leaderInstanceId,
+        step: 'block' as const,
+        blockerUsed: false,
+        battlePowerBonuses: {},
+      },
+      players: {
+        ...state.players,
+        p2: { ...state.players.p2, characterArea: { ...state.players.p2.characterArea, cardIds: [blockerId] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        [blockerId]: { ...instance(blockerId, 'blocker', 'p2', 'characterArea'), orientation: 'active' as const, faceState: 'faceUp' as const, revealedTo: 'all' as const },
+      },
+    };
+    const ctx = { state: battle, defs, sourceInstanceId: 'p2-leader', controllerId: 'p2' };
+
+    const result = executeAction_V2(ctx, {
+      type: 'ACTIVATE_BLOCKER',
+      selector: { subject: 'CARD', controller: 'PLAYER', zones: ['CHARACTER_AREA'], keywords: { kind: 'HAS_KEYWORD', value: 'BLOCKER' }, quantity: { kind: 'EXACTLY', value: { kind: 'NUMBER', value: 1 } } },
+    }, 'activate-blocker-v2-effect-test');
+
+    expect(result.state.currentBattle).toMatchObject({
+      targetInstanceId: blockerId,
+      step: 'counter',
+      blockerUsed: true,
+    });
+    expect(result.state.cardsById[blockerId].orientation).toBe('rested');
+    expect(result.log[0]).toMatchObject({ type: 'BLOCKER_ACTIVATED', causedByActionId: 'activate-blocker-v2-effect-test' });
+  });
+
   it('executes CHANGE_ATTACK_TARGET by updating the current battle target', () => {
     const state = createSampleGameState();
     const defs: CardDefinitionLookup = {
@@ -1181,6 +2020,89 @@ describe('V2 actions', () => {
         previousTargetInstanceId: state.players.p1.leaderInstanceId,
       },
     });
+  });
+
+  it('executes CANCEL_ATTACK and END_BATTLE by clearing the current battle', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+    };
+    const battling = {
+      ...state,
+      continuousEffects: [{
+        id: 'battle-effect',
+        sourceInstanceId: 'p1-leader',
+        duration: 'duringThisBattle' as const,
+        modifier: { kind: 'power' as const, amount: 1000 },
+        createdAtTurn: state.turnNumber,
+      }],
+      currentBattle: {
+        attackerInstanceId: 'p1-leader',
+        targetInstanceId: 'p2-leader',
+        originalTargetInstanceId: 'p2-leader',
+        step: 'block' as const,
+        blockerUsed: false,
+        battlePowerBonuses: {},
+      },
+    };
+    const ctx = { state: battling, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+
+    const cancelled = executeAction_V2(ctx, { type: 'CANCEL_ATTACK', battle: 'CURRENT_BATTLE' }, 'cancel-test');
+    expect(cancelled.state.currentBattle).toBeNull();
+    expect(cancelled.state.continuousEffects).toEqual([]);
+    expect(cancelled.log[0]).toMatchObject({ type: 'EFFECT_RESOLVED', data: { action: 'CANCEL_ATTACK' } });
+
+    const ended = executeAction_V2({ ...ctx, state: battling }, { type: 'END_BATTLE', battle: 'CURRENT_BATTLE' }, 'end-test');
+    expect(ended.state.currentBattle).toBeNull();
+    expect(ended.state.continuousEffects).toEqual([]);
+    expect(ended.log[0]).toMatchObject({ type: 'EFFECT_RESOLVED', data: { action: 'END_BATTLE' } });
+  });
+
+  it('executes SKIP_BATTLE_STEP for block, counter, and damage steps', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader', basePower: 5000 }),
+      target: def('target', { category: 'character', basePower: 1000 }),
+    };
+    const targetId = 'p2-target';
+    const battle = {
+      attackerInstanceId: 'p1-leader',
+      targetInstanceId: targetId,
+      originalTargetInstanceId: targetId,
+      step: 'block' as const,
+      blockerUsed: false,
+      battlePowerBonuses: {},
+    };
+    const battling = {
+      ...state,
+      activePlayerId: 'p1',
+      currentBattle: battle,
+      players: {
+        ...state.players,
+        p2: { ...state.players.p2, characterArea: { ...state.players.p2.characterArea, cardIds: [targetId] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        [targetId]: { ...instance(targetId, 'target', 'p2', 'characterArea'), orientation: 'rested' as const },
+      },
+    };
+    const ctx = { state: battling, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+
+    const skippedBlock = executeAction_V2(ctx, { type: 'SKIP_BATTLE_STEP', step: 'BLOCK_STEP' }, 'skip-block-test');
+    expect(skippedBlock.state.currentBattle).toMatchObject({ step: 'counter' });
+
+    const skippedCounter = executeAction_V2(
+      { ...ctx, state: { ...battling, currentBattle: { ...battle, step: 'counter' as const } } },
+      { type: 'SKIP_BATTLE_STEP', step: 'COUNTER_STEP' },
+      'skip-counter-test',
+    );
+    expect(skippedCounter.state.currentBattle).toBeNull();
+    expect(skippedCounter.state.players.p2.trash.cardIds).toContain(targetId);
+    expect(skippedCounter.log.some((entry) => entry.type === 'CHARACTER_KO')).toBe(true);
+
+    const skippedDamage = executeAction_V2(ctx, { type: 'SKIP_BATTLE_STEP', step: 'DAMAGE_STEP' }, 'skip-damage-test');
+    expect(skippedDamage.state.currentBattle).toBeNull();
+    expect(skippedDamage.state.players.p2.characterArea.cardIds).toContain(targetId);
   });
 
   it('executes ACTIVATE_EVENT as a serializable native V2 activation record', () => {
@@ -1359,5 +2281,96 @@ describe('V2 actions', () => {
       category: 'AUTO',
       timing: 'ON_PLAY',
     }, result.effectInvalidations ?? [])).toBe(false);
+  });
+
+  it('filters play candidates by same name as a previously trashed card', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      matching: def('matching', { name: 'Charlotte Pudding' }),
+      other: def('other', { name: 'Sanji' }),
+    };
+    const withTrash = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, trash: { ...state.players.p1.trash, cardIds: ['matching-trash', 'other-trash', 'trashed-cost'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'matching-trash': instance('matching-trash', 'matching', 'p1', 'trash'),
+        'other-trash': instance('other-trash', 'other', 'p1', 'trash'),
+        'trashed-cost': instance('trashed-cost', 'matching', 'p1', 'trash'),
+      },
+    };
+
+    const result = executeAction_V2({
+      state: withTrash,
+      defs,
+      sourceInstanceId: 'p1-leader',
+      controllerId: 'p1',
+      bindings: { selectedObjects: { TRASHED_PREVIOUSLY: ['trashed-cost'] }, actionResults: {} },
+    }, {
+      type: 'PLAY_CARD',
+      player: 'PLAYER',
+      selector: {
+        subject: 'CARD',
+        owner: 'PLAYER',
+        zones: ['TRASH'],
+        cardCategories: ['CHARACTER'],
+        relations: ['SAME_NAME_AS_TRASHED_PREVIOUSLY'],
+        quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+      },
+    });
+
+    expect(result.bindings?.selectedObjects.PLAYED_SOURCE_PREVIOUSLY).toEqual(['matching-trash']);
+    expect(result.bindings?.selectedObjects.SELECTED_PREVIOUSLY).toHaveLength(1);
+    expect(result.state.players.p1.trash.cardIds).toContain('other-trash');
+  });
+
+  it('filters play candidates by different color than a previously returned Character', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      returned: def('returned', { name: 'Returned Character', colors: ['blue'] }),
+      blue: def('blue', { name: 'Blue Candidate', colors: ['blue'] }),
+      red: def('red', { name: 'Red Candidate', colors: ['red'] }),
+    };
+    const withHand = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, hand: { ...state.players.p1.hand, cardIds: ['blue-hand', 'red-hand', 'returned-char'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'blue-hand': instance('blue-hand', 'blue', 'p1', 'hand'),
+        'red-hand': instance('red-hand', 'red', 'p1', 'hand'),
+        'returned-char': instance('returned-char', 'returned', 'p1', 'hand'),
+      },
+    };
+
+    const result = executeAction_V2({
+      state: withHand,
+      defs,
+      sourceInstanceId: 'p1-leader',
+      controllerId: 'p1',
+      bindings: { selectedObjects: { RETURNED_PREVIOUSLY: ['returned-char'] }, actionResults: {} },
+    }, {
+      type: 'PLAY_CARD',
+      player: 'PLAYER',
+      selector: {
+        subject: 'CARD',
+        owner: 'PLAYER',
+        zones: ['HAND'],
+        cardCategories: ['CHARACTER'],
+        relations: ['DIFFERENT_COLOR_THAN_RETURNED_PREVIOUSLY'],
+        quantity: { kind: 'UP_TO', value: { kind: 'NUMBER', value: 1 } },
+      },
+    });
+
+    expect(result.bindings?.selectedObjects.PLAYED_SOURCE_PREVIOUSLY).toEqual(['red-hand']);
+    expect(result.bindings?.selectedObjects.SELECTED_PREVIOUSLY).toHaveLength(1);
+    expect(result.state.players.p1.hand.cardIds).toContain('blue-hand');
   });
 });

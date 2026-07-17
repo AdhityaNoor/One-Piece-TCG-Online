@@ -963,13 +963,27 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
               "selector": {
                 "subject": "ACTION_RESULT",
                 "relations": [
-                  "SELECTED_PREVIOUSLY"
+                  "REVEALED_PREVIOUSLY"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1
+                  }
+                },
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Sabo"
+                  }
+                ],
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
                   }
                 }
               },
@@ -1282,13 +1296,27 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
               "selector": {
                 "subject": "ACTION_RESULT",
                 "relations": [
-                  "SELECTED_PREVIOUSLY"
+                  "REVEALED_PREVIOUSLY"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1
+                  }
+                },
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Portgas.D.Ace"
+                  }
+                ],
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
                   }
                 }
               },
@@ -1723,13 +1751,27 @@ export const ST13_AUTO_ASSIGNMENTS_V2 = [
               "selector": {
                 "subject": "ACTION_RESULT",
                 "relations": [
-                  "SELECTED_PREVIOUSLY"
+                  "REVEALED_PREVIOUSLY"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1
+                  }
+                },
+                "names": [
+                  {
+                    "kind": "NAME_EXACT",
+                    "value": "Monkey.D.Luffy"
+                  }
+                ],
+                "cost": {
+                  "propertyLayer": "CURRENT",
+                  "comparison": "EQUAL",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 5
                   }
                 }
               },

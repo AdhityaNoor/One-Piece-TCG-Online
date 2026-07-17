@@ -362,7 +362,7 @@ export const ST22_AUTO_ASSIGNMENTS_V2 = [
                 "selector": {
                   "subject": "ACTION_RESULT",
                   "relations": [
-                    "PREVIOUS_ACTION_TARGET"
+                    "REVEALED_PREVIOUSLY"
                   ],
                   "types": {
                     "kind": "TYPE_INCLUDES_TEXT",
@@ -663,7 +663,7 @@ export const ST22_AUTO_ASSIGNMENTS_V2 = [
                 "selector": {
                   "subject": "ACTION_RESULT",
                   "relations": [
-                    "PREVIOUS_ACTION_TARGET"
+                    "REVEALED_PREVIOUSLY"
                   ],
                   "types": {
                     "kind": "TYPE_INCLUDES_TEXT",
@@ -791,7 +791,7 @@ export const ST22_AUTO_ASSIGNMENTS_V2 = [
                 "selector": {
                   "subject": "ACTION_RESULT",
                   "relations": [
-                    "PREVIOUS_ACTION_TARGET"
+                    "REVEALED_PREVIOUSLY"
                   ],
                   "types": {
                     "kind": "TYPE_INCLUDES_TEXT",
@@ -1197,7 +1197,7 @@ export const ST22_AUTO_ASSIGNMENTS_V2 = [
                 "selector": {
                   "subject": "ACTION_RESULT",
                   "relations": [
-                    "PREVIOUS_ACTION_TARGET"
+                    "REVEALED_PREVIOUSLY"
                   ],
                   "types": {
                     "kind": "TYPE_INCLUDES_TEXT",
@@ -1472,7 +1472,7 @@ export const ST22_AUTO_ASSIGNMENTS_V2 = [
                 "selector": {
                   "subject": "ACTION_RESULT",
                   "relations": [
-                    "PREVIOUS_ACTION_TARGET"
+                    "REVEALED_PREVIOUSLY"
                   ],
                   "types": {
                     "kind": "TYPE_INCLUDES_TEXT",

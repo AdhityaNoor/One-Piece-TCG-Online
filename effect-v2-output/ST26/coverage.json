@@ -119,9 +119,7 @@
         "coveredByAssignmentIds": [
           "v2:auto:ST26-002:1"
         ],
-        "canonicalAtoms": [
-          "REST_DON"
-        ],
+        "canonicalAtoms": [],
         "canonicalCoverage": "canonical",
         "canonicalRemark": "Parser emitted a canonical V2 atom."
       }

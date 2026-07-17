@@ -75,6 +75,8 @@ describe('V2 costs', () => {
     expect(paid.state.players.p1.lifeArea.cardIds).toEqual([]);
     expect(paid.state.players.p1.hand.cardIds).toEqual(['life-1']);
     expect(paid.state.cardsById['life-1']).toMatchObject({ currentZone: 'hand' });
+    expect(paid.bindings?.selectedObjects.RETURNED_PREVIOUSLY).toEqual(['life-1']);
+    expect(paid.bindings?.selectedObjects.RETURNED_TO_HAND_PREVIOUSLY).toEqual(['life-1']);
   });
 
   it('pays selector-based return-card-to-bottom-deck costs', () => {
@@ -302,6 +304,50 @@ describe('V2 costs', () => {
     expect(paid.state.players.p1.stageArea.cardIds).toEqual(['noah-1']);
     expect(paid.state.players.p1.trash.cardIds[0]).toBe('fish-1');
     expect(paid.paidInstanceIds).toEqual(['fish-1']);
+  });
+
+  it('binds trashed-card-count after trash-card cost payments', () => {
+    const state = createSampleGameState();
+    const defs: CardDefinitionLookup = {
+      'OP01-001': def('OP01-001', { category: 'leader' }),
+      event: def('event', { category: 'event' }),
+      stage: def('stage', { category: 'stage' }),
+      character: def('character', { category: 'character' }),
+    };
+    const withHand = {
+      ...state,
+      players: {
+        ...state.players,
+        p1: { ...state.players.p1, hand: { ...state.players.p1.hand, cardIds: ['event-1', 'stage-1', 'char-1'] } },
+      },
+      cardsById: {
+        ...state.cardsById,
+        'event-1': instance('event-1', 'event', 'hand'),
+        'stage-1': instance('stage-1', 'stage', 'hand'),
+        'char-1': instance('char-1', 'character', 'hand'),
+      },
+    };
+    const cost: CostAction_V2 = {
+      type: 'TRASH_CARD_COST',
+      selector: {
+        subject: 'CARD',
+        owner: 'PLAYER',
+        zones: ['HAND'],
+        cardCategories: ['EVENT', 'STAGE'],
+        quantity: { kind: 'ANY_NUMBER' },
+      },
+    };
+    const ctx = { state: withHand, defs, sourceInstanceId: 'p1-leader', controllerId: 'p1' };
+
+    expect(validateCostPayments_V2(ctx, [cost], [{ costIndex: 0, selectedInstanceIds: ['event-1', 'stage-1'] }])).toEqual({ legal: true, reasons: [] });
+    expect(validateCostPayments_V2(ctx, [cost], [{ costIndex: 0, selectedInstanceIds: ['char-1'] }]).legal).toBe(false);
+
+    const paid = payCosts_V2(ctx, [cost], [{ costIndex: 0, selectedInstanceIds: ['event-1', 'stage-1'] }]);
+
+    expect(paid.bindings?.selectedObjects.TRASHED_PREVIOUSLY).toEqual(['event-1', 'stage-1']);
+    expect(paid.bindings?.actionResults['trashed-card-count']).toBe(2);
+    expect(paid.state.players.p1.trash.cardIds).toEqual(['stage-1', 'event-1']);
+    expect(paid.state.players.p1.hand.cardIds).toEqual(['char-1']);
   });
 
   it('pays temporary power modifier costs', () => {

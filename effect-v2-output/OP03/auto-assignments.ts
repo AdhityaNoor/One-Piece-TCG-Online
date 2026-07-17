@@ -35,7 +35,11 @@ export const OP03_AUTO_ASSIGNMENTS_V2 = [
               "quantity": {
                 "kind": "ANY_NUMBER"
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT",
+                "STAGE"
+              ]
             }
           }
         ],
@@ -1092,7 +1096,10 @@ export const OP03_AUTO_ASSIGNMENTS_V2 = [
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT"
+              ]
             }
           }
         ],
@@ -1665,7 +1672,10 @@ export const OP03_AUTO_ASSIGNMENTS_V2 = [
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "EVENT"
+              ]
             }
           }
         ],
@@ -6769,7 +6779,10 @@ export const OP03_AUTO_ASSIGNMENTS_V2 = [
                   "kind": "NUMBER",
                   "value": 5
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],

@@ -3258,22 +3258,49 @@ export const OP09_AUTO_ASSIGNMENTS_V2 = [
       "resolution": {
         "kind": "ACTION",
         "action": {
-          "type": "REST_DON",
-          "selector": {
-            "subject": "DON",
-            "owner": "OPPONENT",
-            "zones": [
-              "COST_AREA"
-            ],
-            "quantity": {
-              "kind": "UP_TO",
-              "value": {
-                "kind": "NUMBER",
-                "value": 1
-              }
+          "type": "REST_MIXED_TARGETS",
+          "quantity": {
+            "kind": "UP_TO",
+            "value": {
+              "kind": "NUMBER",
+              "value": 1
+            }
+          },
+          "selectors": [
+            {
+              "subject": "DON",
+              "owner": "OPPONENT",
+              "zones": [
+                "COST_AREA"
+              ],
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              },
+              "chooser": "EFFECT_OWNER"
             },
-            "chooser": "EFFECT_OWNER"
-          }
+            {
+              "subject": "CARD",
+              "controller": "OPPONENT",
+              "zones": [
+                "CHARACTER_AREA"
+              ],
+              "cardCategories": [
+                "CHARACTER"
+              ],
+              "quantity": {
+                "kind": "ANY_NUMBER"
+              },
+              "chooser": "EFFECT_OWNER",
+              "cost": {
+                "propertyLayer": "CURRENT",
+                "comparison": "AT_MOST",
+                "value": {
+                  "kind": "NUMBER",
+                  "value": 6
+                }
+              }
+            }
+          ]
         },
         "actionId": "OP09-036#0.0"
       }
@@ -8896,6 +8923,31 @@ export const OP09_AUTO_ASSIGNMENTS_V2 = [
               }
             },
             "actionId": "OP09-093#0.2"
+          },
+          {
+            "kind": "ACTION",
+            "action": {
+              "type": "PREVENT_ACTION",
+              "selector": {
+                "subject": "ACTION_RESULT",
+                "relations": [
+                  "PREVIOUS_ACTION_TARGET"
+                ],
+                "quantity": {
+                  "kind": "EXACTLY",
+                  "value": {
+                    "kind": "NUMBER",
+                    "value": 1
+                  }
+                }
+              },
+              "action": "DECLARE_ATTACK",
+              "duration": {
+                "kind": "UNTIL_END_OF_NEXT_TURN",
+                "player": "OPPONENT"
+              }
+            },
+            "actionId": "OP09-093#0.3"
           }
         ]
       }
@@ -8903,7 +8955,8 @@ export const OP09_AUTO_ASSIGNMENTS_V2 = [
     "coveredAtomicEffectIds": [
       "OP09-093#0.0",
       "OP09-093#0.1",
-      "OP09-093#0.2"
+      "OP09-093#0.2",
+      "OP09-093#0.3"
     ]
   },
   {

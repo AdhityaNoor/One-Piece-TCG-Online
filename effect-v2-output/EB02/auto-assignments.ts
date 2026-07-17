@@ -486,6 +486,9 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                 "zones": [
                   "COST_AREA"
                 ],
+                "states": [
+                  "RESTED"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -505,7 +508,7 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                   "LEADER"
                 ],
                 "quantity": {
-                  "kind": "UP_TO",
+                  "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1
@@ -1106,6 +1109,9 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                 "zones": [
                   "COST_AREA"
                 ],
+                "states": [
+                  "RESTED"
+                ],
                 "quantity": {
                   "kind": "UP_TO",
                   "value": {
@@ -1125,7 +1131,7 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                   "LEADER"
                 ],
                 "quantity": {
-                  "kind": "UP_TO",
+                  "kind": "EXACTLY",
                   "value": {
                     "kind": "NUMBER",
                     "value": 1
@@ -2414,6 +2420,7 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
               }
             },
             "chooser": "EFFECT_OWNER",
+            "baseEffectStatus": "NO_BASE_EFFECT",
             "power": {
               "propertyLayer": "CURRENT",
               "comparison": "AT_MOST",
@@ -4131,7 +4138,10 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                   "kind": "NUMBER",
                   "value": 4000
                 }
-              }
+              },
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
@@ -4156,7 +4166,10 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
                 "value": 1
               }
             },
-            "chooser": "EFFECT_OWNER"
+            "chooser": "EFFECT_OWNER",
+            "relations": [
+              "SAME_NAME_AS_TRASHED_PREVIOUSLY"
+            ]
           },
           "player": "PLAYER"
         },
@@ -5100,6 +5113,9 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
             "zones": [
               "COST_AREA"
             ],
+            "states": [
+              "RESTED"
+            ],
             "quantity": {
               "kind": "UP_TO",
               "value": {
@@ -5119,10 +5135,10 @@ export const EB02_AUTO_ASSIGNMENTS_V2 = [
               "LEADER"
             ],
             "quantity": {
-              "kind": "UP_TO",
+              "kind": "EXACTLY",
               "value": {
                 "kind": "NUMBER",
-                "value": 2
+                "value": 1
               }
             },
             "chooser": "EFFECT_OWNER"

@@ -1764,9 +1764,7 @@
         "coveredByAssignmentIds": [
           "v2:auto:OP09-036:0"
         ],
-        "canonicalAtoms": [
-          "REST_DON"
-        ],
+        "canonicalAtoms": [],
         "canonicalCoverage": "canonical",
         "canonicalRemark": "Parser emitted a canonical V2 atom."
       }
@@ -4954,13 +4952,13 @@
     "schemaVersion": "op-tcg-effect-v2.0.0",
     "generatedBy": "effectCompiler_V2",
     "cardNumber": "OP09-093",
-    "totalAtomicEffects": 3,
-    "parserRecognizedAtomicEffects": 3,
+    "totalAtomicEffects": 4,
+    "parserRecognizedAtomicEffects": 4,
     "parserUnrecognizedAtomicEffects": 0,
-    "assignmentCoveredAtomicEffects": 3,
+    "assignmentCoveredAtomicEffects": 4,
     "assignmentPartialAtomicEffects": 0,
     "assignmentUncoveredAtomicEffects": 0,
-    "coveredAtomicEffects": 3,
+    "coveredAtomicEffects": 4,
     "partialAtomicEffects": 0,
     "uncoveredAtomicEffects": 0,
     "statuses": [
@@ -5007,7 +5005,7 @@
         "cardNumber": "OP09-093",
         "effectIndex": 0,
         "atomIndex": 2,
-        "rawText": "negate the effect of up to 1 of your opponent's Characters and that Character cannot attack until the end of your opponent's next turn.",
+        "rawText": "negate the effect of up to 1 of your opponent's Characters until the end of your opponent's next turn",
         "parserStatus": "recognized",
         "semanticStatus": "safe",
         "assignmentStatus": "assigned",
@@ -5017,6 +5015,25 @@
         ],
         "canonicalAtoms": [
           "INVALIDATE_EFFECTS"
+        ],
+        "canonicalCoverage": "canonical",
+        "canonicalRemark": "Parser emitted a canonical V2 atom."
+      },
+      {
+        "atomicEffectId": "OP09-093#0.3",
+        "cardNumber": "OP09-093",
+        "effectIndex": 0,
+        "atomIndex": 3,
+        "rawText": "that Character cannot attack until the end of your opponent's next turn.",
+        "parserStatus": "recognized",
+        "semanticStatus": "safe",
+        "assignmentStatus": "assigned",
+        "status": "covered",
+        "coveredByAssignmentIds": [
+          "v2:auto:OP09-093:0"
+        ],
+        "canonicalAtoms": [
+          "PREVENT_ACTION"
         ],
         "canonicalCoverage": "canonical",
         "canonicalRemark": "Parser emitted a canonical V2 atom."

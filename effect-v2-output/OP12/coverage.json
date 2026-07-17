@@ -2024,9 +2024,7 @@
         "coveredByAssignmentIds": [
           "v2:auto:OP12-037:0"
         ],
-        "canonicalAtoms": [
-          "REST_DON"
-        ],
+        "canonicalAtoms": [],
         "canonicalCoverage": "canonical",
         "canonicalRemark": "Parser emitted a canonical V2 atom."
       },

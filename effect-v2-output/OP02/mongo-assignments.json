@@ -4456,6 +4456,7 @@
                   }
                 },
                 "chooser": "EFFECT_OWNER",
+                "baseEffectStatus": "NO_BASE_EFFECT",
                 "cost": {
                   "propertyLayer": "CURRENT",
                   "comparison": "AT_MOST",
@@ -4697,6 +4698,7 @@
               }
             },
             "chooser": "EFFECT_OWNER",
+            "baseEffectStatus": "NO_BASE_EFFECT",
             "cost": {
               "propertyLayer": "CURRENT",
               "comparison": "AT_MOST",

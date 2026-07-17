@@ -802,7 +802,11 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cardCategories": [
+                    "EVENT",
+                    "STAGE"
+                  ]
                 },
                 "cause": "EFFECT"
               }
@@ -1906,6 +1910,9 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
               }
             },
             "chooser": "EFFECT_OWNER",
+            "relations": [
+              "DIFFERENT_COLOR_THAN_RETURNED_PREVIOUSLY"
+            ],
             "cost": {
               "propertyLayer": "CURRENT",
               "comparison": "AT_MOST",
@@ -2778,7 +2785,7 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                 "selector": {
                   "subject": "ACTION_RESULT",
                   "relations": [
-                    "PREVIOUS_ACTION_TARGET"
+                    "REVEALED_PREVIOUSLY"
                   ],
                   "cost": {
                     "propertyLayer": "CURRENT",
@@ -2843,7 +2850,7 @@ export const EB01_AUTO_ASSIGNMENTS_V2 = [
                     "selector": {
                       "subject": "ACTION_RESULT",
                       "relations": [
-                        "PREVIOUS_ACTION_TARGET"
+                        "REVEALED_PREVIOUSLY"
                       ],
                       "quantity": {
                         "kind": "EXACTLY",

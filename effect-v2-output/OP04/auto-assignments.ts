@@ -1040,7 +1040,7 @@ export const OP04_AUTO_ASSIGNMENTS_V2 = [
               "selector": {
                 "subject": "ACTION_RESULT",
                 "relations": [
-                  "PREVIOUS_ACTION_TARGET"
+                  "REVEALED_PREVIOUSLY"
                 ],
                 "quantity": {
                   "kind": "EXACTLY",

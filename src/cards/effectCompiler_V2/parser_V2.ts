@@ -20,8 +20,10 @@ import {
 import {
   EFFECT_SCHEMA_VERSION_V2,
   type Action_V2,
+  type Attribute_V2,
   type AtomicCoverageStatus_V2,
   type CardEffectCoverageReport_V2,
+  type CardCategory_V2,
   type Color_V2,
   type ConditionExpression_V2,
   type CostAction_V2,
@@ -183,7 +185,7 @@ function splitAtomicClauses_V2(body: string): string[] {
   return punctuationSafe
     .replace(/K\.O\./gi, 'KO')
     .replace(/\([^)]*\)/g, ' ')
-    .split(/(?<=[.;:])\s+|(?<=[.;:])(?=If\b)|\bThen,\s+|,\s*then\s+/i)
+    .split(/(?<=[.;:])\s+|(?<=[.;:])(?=(?:If|When|This|Your|Up to)\b)|\bThen,\s+|,\s*then\s+/i)
     .map((clause) => collapseSpaces_V2(clause
       .replace(/__TAG_COLON__/g, ':')
       .replace(/__TAG_DOT__/g, '.')
@@ -249,6 +251,16 @@ function splitJoinedActionClauses_V2(clause: string): string[] {
     ];
   }
   const negateAndGiveThatCard = collapseSpaces_V2(clause);
+  const negateAndCannotAttackSplit = negateAndGiveThatCard.search(/\s+and\s+that Character cannot attack\b/i);
+  if (negateAndCannotAttackSplit > 0 && /\bnegate the effects? of\b/i.test(negateAndGiveThatCard)) {
+    const first = negateAndGiveThatCard.slice(0, negateAndCannotAttackSplit);
+    const second = negateAndGiveThatCard.slice(negateAndCannotAttackSplit).replace(/^\s+and\s+/i, '');
+    const duration = second.match(/\b(during this turn|during this battle|until the end of your opponent'?s next (?:turn|End Phase)|until the end of your next turn)\b/i)?.[1] ?? '';
+    return [
+      collapseSpaces_V2(`${first} ${duration}`),
+      collapseSpaces_V2(second),
+    ];
+  }
   const negateAndGiveSplit = negateAndGiveThatCard.search(/\s+and\s+give that card\b/i);
   if (negateAndGiveSplit > 0 && /\bnegate the effects? of\b/i.test(negateAndGiveThatCard)) {
     const first = negateAndGiveThatCard.slice(0, negateAndGiveSplit);
@@ -268,6 +280,7 @@ function splitJoinedActionClauses_V2(clause: string): string[] {
     /\s+and\s+(?=trash \d+\b)/i,
     /\s+and\s+(?=it gains \+\d+\s+cost\b)/i,
     /(?:,\s+)?and\s+(?=draw \d+\b)/i,
+    /(?:,\s+)?and\s+(?=up to \d+ of your opponent'?s Characters? .*cannot attack\b)/i,
     /\s+and\s+(?=that card gains\b)/i,
     /\s+and\s+(?=give that card\b)/i,
     /\s+and\s+(?=(?:this|your|that) [^,.;]*gains\s+\[[^\]]+\])/i,
@@ -820,7 +833,7 @@ function selectorFromText_V2(text: string): Selector_V2 {
   }
   if (/this (card|character|leader)/i.test(text) && !/\bother than this Character\b/i.test(text)) return selfSelector_V2();
   if (/\bthat (?:card|character)\b/i.test(text)) return { subject: 'ACTION_RESULT', relations: ['PREVIOUS_ACTION_TARGET'], quantity: exactly_V2(1) };
-  if (/\brevealed cards?\b/i.test(text)) return { subject: 'ACTION_RESULT', relations: ['PREVIOUS_ACTION_TARGET'], quantity };
+  if (/\brevealed cards?\b/i.test(text)) return { subject: 'ACTION_RESULT', relations: ['REVEALED_PREVIOUSLY'], quantity };
   if (/\b(?:the rest|the remainder|them)\b/i.test(text) && /\b(?:top|bottom) of (?:your|the owner'?s|their) deck\b/i.test(text)) {
     return { subject: 'ACTION_RESULT', relations: ['REMAINDER_OF_PREVIOUS_SELECTION'], quantity };
   }
@@ -937,6 +950,16 @@ function preventionSourceSelectorFromText_V2(text: string): Selector_V2 | undefi
   return undefined;
 }
 
+function playRestrictionSelectorFromText_V2(text: string): Selector_V2 {
+  const selector = selectorFromText_V2(text);
+  const textNamesPlaySource = /\bfrom (?:your|their|the owner'?s|the opponent'?s) (?:hand|deck|trash|life|don!! deck)\b/i.test(text);
+  return {
+    ...selector,
+    ...(textNamesPlaySource ? {} : { zones: undefined }),
+    quantity: { kind: 'ANY_NUMBER' },
+  };
+}
+
 function effectControllerFromText_V2(text: string): 'PLAYER' | 'OPPONENT' {
   return /\byour opponent'?s\b/i.test(text) ? 'OPPONENT' : 'PLAYER';
 }
@@ -1017,9 +1040,31 @@ function uniqueStrings_V2(values: string[]): string[] {
 }
 
 function baseEffectStatusFromText_V2(text: string): Selector_V2['baseEffectStatus'] | undefined {
-  if (/\bwith no base effects?\b|\bwithout (?:a )?base effects?\b/i.test(text)) return 'NO_BASE_EFFECT';
+  if (/\bwith no base effects?\b|\bwithout (?:a )?base effects?\b|\bno base effects?\b/i.test(text)) return 'NO_BASE_EFFECT';
   if (/\bwith (?:a )?base effects?\b/i.test(text)) return 'HAS_BASE_EFFECT';
   return undefined;
+}
+
+function cardCategoriesFromText_V2(text: string): CardCategory_V2[] {
+  const categories: CardCategory_V2[] = [];
+  if (/\bevent or stage cards?\b/i.test(text)) categories.push('EVENT', 'STAGE');
+  else {
+    if (/\bevent cards?\b|\bevents?\b/i.test(text)) categories.push('EVENT');
+    if (/\bstage cards?\b|\bstages?\b/i.test(text)) categories.push('STAGE');
+  }
+  if (/\bcharacter cards?\b|\bcharacters?\b/i.test(text)) categories.push('CHARACTER');
+  if (/\bleader cards?\b|\bleaders?\b/i.test(text)) categories.push('LEADER');
+  if (/\bdon!! cards?\b/i.test(text)) categories.push('DON');
+  return uniqueStrings_V2(categories) as CardCategory_V2[];
+}
+
+function withCardCategoriesFromText_V2(selector: Selector_V2, text: string): Selector_V2 {
+  const categories = cardCategoriesFromText_V2(text);
+  if (categories.length === 0) return selector;
+  return {
+    ...selector,
+    cardCategories: uniqueStrings_V2([...(selector.cardCategories ?? []), ...categories]) as CardCategory_V2[],
+  };
 }
 
 function withTextFilters_V2(selector: Selector_V2, text: string): Selector_V2 {
@@ -1028,7 +1073,12 @@ function withTextFilters_V2(selector: Selector_V2, text: string): Selector_V2 {
   const colors = colorsFromText_V2(text);
   const numericFilters = numericFiltersFromText_V2(text);
   const baseEffectStatus = baseEffectStatusFromText_V2(text);
-  if (names.length === 0 && types.length === 0 && colors.length === 0 && !numericFilters.cost && !numericFilters.power && !baseEffectStatus) return selector;
+  const distinctBy = /\bdifferent card names?\b/i.test(text) ? 'CARD_NAME' : undefined;
+  const relationalRelations = [
+    ...(/\bsame card name as the trashed card\b/i.test(text) ? ['SAME_NAME_AS_TRASHED_PREVIOUSLY'] : []),
+    ...(/\bdifferent color than the returned Character\b/i.test(text) ? ['DIFFERENT_COLOR_THAN_RETURNED_PREVIOUSLY'] : []),
+  ];
+  if (names.length === 0 && types.length === 0 && colors.length === 0 && !numericFilters.cost && !numericFilters.power && !baseEffectStatus && !distinctBy && relationalRelations.length === 0) return selector;
   return {
     ...selector,
     ...(names.length > 0
@@ -1056,6 +1106,8 @@ function withTextFilters_V2(selector: Selector_V2, text: string): Selector_V2 {
         }
       : {}),
     ...(baseEffectStatus ? { baseEffectStatus } : {}),
+    ...(distinctBy ? { distinctBy } : {}),
+    ...(relationalRelations.length ? { relations: uniqueStrings_V2([...(selector.relations ?? []), ...relationalRelations]) } : {}),
     ...numericFilters,
   };
 }
@@ -1434,7 +1486,10 @@ function parseActivationCost_V2(text: string): CostAction_V2[] | undefined {
   if (trashHand) {
     return [{
       type: 'TRASH_CARD_COST',
-      selector: withTextFilters_V2(handSelector_V2('PLAYER', exactly_V2(wordNumber_V2(trashHand[1]))), normalized),
+      selector: withCardCategoriesFromText_V2(
+        withTextFilters_V2(handSelector_V2('PLAYER', exactly_V2(wordNumber_V2(trashHand[1]))), normalized),
+        normalized,
+      ),
     }];
   }
 
@@ -1442,7 +1497,10 @@ function parseActivationCost_V2(text: string): CostAction_V2[] | undefined {
   if (colonTrashHand) {
     return [{
       type: 'TRASH_CARD_COST',
-      selector: withTextFilters_V2(handSelector_V2('PLAYER', exactly_V2(wordNumber_V2(colonTrashHand[1]))), normalized),
+      selector: withCardCategoriesFromText_V2(
+        withTextFilters_V2(handSelector_V2('PLAYER', exactly_V2(wordNumber_V2(colonTrashHand[1]))), normalized),
+        normalized,
+      ),
     }];
   }
 
@@ -1450,7 +1508,11 @@ function parseActivationCost_V2(text: string): CostAction_V2[] | undefined {
   if (restDonCost) return [{ type: 'REST_DON_COST', count: numberValue_V2(wordNumber_V2(restDonCost[1])) }];
 
   if (/(?:you may|you can) trash any number .* from your hand:?\.?$/.test(lower)) {
-    return [{ type: 'TRASH_CARD_COST', selector: withTextFilters_V2(handSelector_V2('PLAYER', { kind: 'ANY_NUMBER' }), normalized) }];
+    const selector = withCardCategoriesFromText_V2(withTextFilters_V2(handSelector_V2('PLAYER', { kind: 'ANY_NUMBER' }), normalized), normalized);
+    return [{
+      type: 'TRASH_CARD_COST',
+      selector,
+    }];
   }
 
   if (/(?:you may|you can) rest this (character|leader|stage):?$/.test(lower)) return [{ type: 'REST_CARD_COST', selector: selfSelector_V2() }];
@@ -2280,7 +2342,7 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
       return {
         action: {
           type: 'PREVENT_ACTION',
-          selector: selectorFromText_V2(normalized),
+          selector: playRestrictionSelectorFromText_V2(normalized),
           action: 'PLAY_CARD',
           ...(preventionSourceSelectorFromText_V2(normalized) ? { sourceSelector: preventionSourceSelectorFromText_V2(normalized) } : {}),
           duration: durationFromText_V2(normalized),
@@ -2324,6 +2386,33 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
           ...opponentCharacterSelector_V2(upTo_V2(wordNumber_V2(restCharacterWithDonGiven[1]))),
           relations: [`HAS_ATTACHED_DON_AT_LEAST_${attachedDonCount}`],
         },
+      },
+    };
+  }
+
+  const restOpponentDonOrCharacters = lower.match(/rest up to (?:a total of )?(\d+|a|an|one|two|three) of your opponent'?s (?:.*don!! cards?.*or .*characters?|.*characters?.*or .*don!! cards?)/);
+  if (restOpponentDonOrCharacters) {
+    return {
+      action: {
+        type: 'REST_MIXED_TARGETS',
+        quantity: upTo_V2(wordNumber_V2(restOpponentDonOrCharacters[1])),
+        selectors: [
+          {
+            subject: 'DON',
+            owner: 'OPPONENT',
+            zones: ['COST_AREA'],
+            quantity: { kind: 'ANY_NUMBER' },
+            chooser: 'EFFECT_OWNER',
+          },
+          withTextFilters_V2({
+            subject: 'CARD',
+            controller: 'OPPONENT',
+            zones: ['CHARACTER_AREA'],
+            cardCategories: ['CHARACTER'],
+            quantity: { kind: 'ANY_NUMBER' },
+            chooser: 'EFFECT_OWNER',
+          }, normalized),
+        ],
       },
     };
   }
@@ -2450,6 +2539,24 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
   }
 
   if (/\bchange the target of that attack to\b/.test(lower)) {
+    const thisLeaderOrTypedCharacter = normalized.match(/change the target of that attack to this Leader or to one of your \{([^}]+)\} type Character cards?/i);
+    if (thisLeaderOrTypedCharacter) {
+      return {
+        action: {
+          type: 'CHANGE_ATTACK_TARGET',
+          newTarget: {
+            subject: 'CARD',
+            controller: 'PLAYER',
+            zones: ['LEADER_AREA', 'CHARACTER_AREA'],
+            cardCategories: ['LEADER', 'CHARACTER'],
+            relations: ['INCLUDE_THIS_CARD'],
+            types: { kind: 'HAS_ANY_TYPE', values: [thisLeaderOrTypedCharacter[1]] },
+            quantity: exactly_V2(1),
+            chooser: 'EFFECT_OWNER',
+          },
+        },
+      };
+    }
     return {
       action: {
         type: 'CHANGE_ATTACK_TARGET',
@@ -2718,7 +2825,10 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     return {
       action: {
         type: 'TRASH_CARD',
-        selector: withTextFilters_V2(handSelector_V2('PLAYER', exactly_V2(wordNumber_V2(trashTypedHand[1]))), normalized),
+        selector: withCardCategoriesFromText_V2(
+          withTextFilters_V2(handSelector_V2('PLAYER', exactly_V2(wordNumber_V2(trashTypedHand[1]))), normalized),
+          trashTypedHand[0],
+        ),
         cause: 'EFFECT',
       },
     };
@@ -2862,7 +2972,7 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     return {
       action: {
         type: 'TRASH_CARD',
-        selector: { subject: 'ACTION_RESULT', relations: ['SELECTED_PREVIOUSLY'], quantity: exactly_V2(1) },
+        selector: { subject: 'ACTION_RESULT', relations: ['REVEALED_PREVIOUSLY'], quantity: exactly_V2(1) },
         cause: 'EFFECT',
       },
     };
@@ -3133,11 +3243,19 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     return { action: { type: 'PLAY_CARD', selector: selfSelector_V2(), player: 'PLAYER' } };
   }
 
-  if (/\bif that card is\b.*\bmay play that card\b/.test(lower)) {
+  if (originalLower.includes('if that card is') && originalLower.includes('may play that card')) {
+    const selector = withTextFilters_V2({
+      subject: 'ACTION_RESULT',
+      relations: ['REVEALED_PREVIOUSLY'],
+      quantity: exactly_V2(1),
+      ...(Boolean(/\bcharacter card\b/.test(originalLower)) ? { cardCategories: ['CHARACTER'] as const } : {}),
+      ...(Boolean(/type including/i.test(original)) ? { types: { kind: 'TYPE_INCLUDES_TEXT' as const, values: typeNamesFromText_V2(original) } } : {}),
+      ...(Boolean(/rested/.test(lower)) ? { states: ['RESTED'] as const } : {}),
+    }, original);
     return {
       action: {
         type: 'PLAY_CARD',
-        selector: { subject: 'ACTION_RESULT', relations: ['SELECTED_PREVIOUSLY'], quantity: exactly_V2(1), ...(Boolean(/rested/.test(lower)) ? { states: ['RESTED'] as const } : {}) },
+        selector,
         player: 'PLAYER',
       },
     };
@@ -3322,7 +3440,7 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     return {
       action: {
         type: 'MOVE_CARD',
-        selector: { subject: 'ACTION_RESULT', relations: ['SELECTED_PREVIOUSLY'], quantity: upTo_V2(wordNumber_V2(resultToHand[1])) },
+        selector: { subject: 'ACTION_RESULT', relations: ['SELECTED_PREVIOUSLY'], quantity: upTo_V2(wordNumber_V2(resultToHand[1])), chooser: 'EFFECT_OWNER' },
         to: { zone: 'HAND', owner: 'PLAYER' },
         cause: 'EFFECT',
       },
@@ -3334,7 +3452,7 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     return {
       action: {
         type: 'ADD_CARD_TO_LIFE',
-        selector: { subject: 'ACTION_RESULT', relations: ['SELECTED_PREVIOUSLY'], quantity: upTo_V2(wordNumber_V2(resultToLife[1])) },
+        selector: { subject: 'ACTION_RESULT', relations: ['SELECTED_PREVIOUSLY'], quantity: upTo_V2(wordNumber_V2(resultToLife[1])), chooser: 'EFFECT_OWNER' },
         player: 'PLAYER',
         position: resultToLife[2].toUpperCase() as 'TOP' | 'BOTTOM',
         face: /face-up/.test(lower) ? 'FACE_UP' : 'FACE_DOWN',
@@ -3747,6 +3865,64 @@ function parseAtomicAction_V2(text: string, options: { allowActivationCost?: boo
     };
   }
 
+  const giveDonToLeader = normalized.match(/give up to (\d+) (active |rested )?DON!! cards? to (?:(up to )?(\d+) of )?your (?:<([^>]+)> attribute )?(?:\{([^}]+)\} type )?Leader/i);
+  if (giveDonToLeader) {
+    const targetCount = giveDonToLeader[4] ? Number(giveDonToLeader[4]) : 1;
+    const attribute = giveDonToLeader[5]?.toUpperCase() as Attribute_V2 | undefined;
+    return {
+      action: {
+        type: 'GIVE_DON',
+        donSelector: {
+          subject: 'DON',
+          owner: 'PLAYER',
+          zones: ['COST_AREA'],
+          ...(giveDonToLeader[2] ? { states: [giveDonToLeader[2].trim().toUpperCase() as 'ACTIVE' | 'RESTED'] } : {}),
+          quantity: upTo_V2(Number(giveDonToLeader[1])),
+          chooser: 'EFFECT_OWNER',
+        },
+        target: {
+          subject: 'CARD',
+          controller: 'PLAYER',
+          zones: ['LEADER_AREA'],
+          cardCategories: ['LEADER'],
+          quantity: giveDonToLeader[3] ? upTo_V2(targetCount) : exactly_V2(targetCount),
+          chooser: 'EFFECT_OWNER',
+          ...(attribute ? { attributes: { kind: 'HAS_ATTRIBUTE' as const, values: [attribute] } } : {}),
+          ...(giveDonToLeader[6] ? { types: { kind: 'HAS_ANY_TYPE' as const, values: [giveDonToLeader[6]] } } : {}),
+        },
+      },
+    };
+  }
+
+  const giveDonToLeaderAndCharacterEach = normalized.match(/give your Leader and (\d+) Character up to (\d+) (active |rested )?DON!! cards? each/i);
+  if (giveDonToLeaderAndCharacterEach) {
+    const characterCount = Number(giveDonToLeaderAndCharacterEach[1]);
+    const donPerTarget = Number(giveDonToLeaderAndCharacterEach[2]);
+    return {
+      action: {
+        type: 'GIVE_DON',
+        donSelector: {
+          subject: 'DON',
+          owner: 'PLAYER',
+          zones: ['COST_AREA'],
+          ...(giveDonToLeaderAndCharacterEach[3] ? { states: [giveDonToLeaderAndCharacterEach[3].trim().toUpperCase() as 'ACTIVE' | 'RESTED'] } : {}),
+          quantity: upTo_V2(donPerTarget * (1 + characterCount)),
+          chooser: 'EFFECT_OWNER',
+        },
+        target: {
+          subject: 'CARD',
+          controller: 'PLAYER',
+          zones: ['LEADER_AREA', 'CHARACTER_AREA'],
+          cardCategories: ['LEADER', 'CHARACTER'],
+          quantity: exactly_V2(1 + characterCount),
+          perCardCategoryQuantity: upTo_V2(Math.max(1, characterCount)),
+          relations: ['REQUIRES_LEADER_AND_CHARACTER'],
+          chooser: 'EFFECT_OWNER',
+        },
+      },
+    };
+  }
+
   const giveDon = lower.match(/give .*up to (\d+) .*don!!|give this character up to (\d+) .*don!!/);
   if (giveDon) {
     const count = Number(giveDon[1] ?? giveDon[2]);
@@ -4004,6 +4180,16 @@ function semanticIssuesForParsedAtom_V2(
 
   if (/\bwin the game instead of losing\b/i.test(text) && parsed.action?.type === 'PLAYER_WINS') {
     issues.push('Replacement/victory-condition text was parsed as an immediate PLAYER_WINS action.');
+  }
+
+  if (/\bsame card name as the trashed card\b/i.test(text)
+    && !selectors.some((selector) => selector.relations?.includes('SAME_NAME_AS_TRASHED_PREVIOUSLY'))) {
+    issues.push('Text requires matching the same card name as a previously trashed card, but V2 has no enforced same-name-as-trashed binding yet.');
+  }
+
+  if (/\bdifferent color than the returned Character\b/i.test(text)
+    && !selectors.some((selector) => selector.relations?.includes('DIFFERENT_COLOR_THAN_RETURNED_PREVIOUSLY'))) {
+    issues.push('Text requires a different color than a previously returned Character, but V2 has no enforced different-color-than-returned binding yet.');
   }
 
   if (/\b(?:if you do|if you did|this way|if they do not)\b/i.test(text) && !context.previousActionId) {
@@ -4742,7 +4928,7 @@ function detectInlineConditions_V2(body: string): ConditionExpression_V2[] {
         kind: 'COUNT',
         selector: {
           subject: 'ACTION_RESULT',
-          relations: ['PREVIOUS_ACTION_TARGET'],
+          relations: ['REVEALED_PREVIOUSLY'],
           types: { kind: 'TYPE_INCLUDES_TEXT', values: [thatCardType[1]] },
           quantity: exactly_V2(1),
         },
@@ -4760,7 +4946,7 @@ function detectInlineConditions_V2(body: string): ConditionExpression_V2[] {
         kind: 'COUNT',
         selector: {
           subject: 'ACTION_RESULT',
-          relations: ['PREVIOUS_ACTION_TARGET'],
+          relations: ['REVEALED_PREVIOUSLY'],
           cost: {
             propertyLayer: 'CURRENT',
             comparison: revealedCardCost[2].toLowerCase() === 'less' ? 'AT_MOST' : 'AT_LEAST',

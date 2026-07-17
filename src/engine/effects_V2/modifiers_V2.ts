@@ -3,6 +3,8 @@ import type {
   EffectCategory_V2,
   EffectDefinition_V2,
   EffectFilter_V2,
+  Attribute_V2,
+  Color_V2,
   KeywordEffect_V2,
   PlayerReference_V2,
   Selector_V2,
@@ -36,6 +38,68 @@ export interface KeywordModifierRecord_V2 {
   createdAtTurn: number;
   status: 'ACTIVE';
 }
+
+export type CardPropertyModifierRecord_V2 =
+  | {
+      id: string;
+      sourceInstanceId: string;
+      controllerId: string;
+      selector: Selector_V2;
+      property: 'NAME';
+      operation: 'ADD_NAME' | 'REPLACE_NAMES' | 'TREAT_AS_ADDITIONAL_NAME';
+      values: string[];
+      duration: Duration_V2;
+      createdAtTurn: number;
+      status: 'ACTIVE';
+    }
+  | {
+      id: string;
+      sourceInstanceId: string;
+      controllerId: string;
+      selector: Selector_V2;
+      property: 'COLOR';
+      operation: 'ADD_COLOR' | 'REMOVE_COLOR' | 'REPLACE_COLORS';
+      values: Color_V2[];
+      duration: Duration_V2;
+      createdAtTurn: number;
+      status: 'ACTIVE';
+    }
+  | {
+      id: string;
+      sourceInstanceId: string;
+      controllerId: string;
+      selector: Selector_V2;
+      property: 'TYPE';
+      operation: 'ADD_TYPE' | 'REMOVE_TYPE' | 'REPLACE_TYPES';
+      values: string[];
+      duration: Duration_V2;
+      createdAtTurn: number;
+      status: 'ACTIVE';
+    }
+  | {
+      id: string;
+      sourceInstanceId: string;
+      controllerId: string;
+      selector: Selector_V2;
+      property: 'ATTRIBUTE';
+      operation: 'ADD_ATTRIBUTE' | 'REMOVE_ATTRIBUTE' | 'REPLACE_ATTRIBUTES';
+      values: Attribute_V2[];
+      duration: Duration_V2;
+      createdAtTurn: number;
+      status: 'ACTIVE';
+    }
+  | {
+      id: string;
+      sourceInstanceId: string;
+      controllerId: string;
+      selector: Selector_V2;
+      property: 'BASE_EFFECT_STATUS';
+      operation: 'SET_BASE_EFFECT_ENABLED';
+      enabled: boolean;
+      duration: Duration_V2;
+      createdAtTurn: number;
+      status: 'ACTIVE';
+    };
 
 export interface EffectInvalidationRecord_V2 {
   id: string;
@@ -109,6 +173,43 @@ export function createKeywordModifierRecord_V2(args: {
     createdAtTurn: args.turnNumber,
     status: 'ACTIVE',
   };
+}
+
+export function createCardPropertyModifierRecord_V2(args: {
+  sourceInstanceId: string;
+  controllerId: string;
+  selector: Selector_V2;
+  property: CardPropertyModifierRecord_V2['property'];
+  operation: CardPropertyModifierRecord_V2['operation'];
+  values?: string[] | Color_V2[] | Attribute_V2[];
+  enabled?: boolean;
+  duration: Duration_V2;
+  turnNumber: number;
+  existingCount: number;
+}): CardPropertyModifierRecord_V2 {
+  const base = {
+    id: `${args.sourceInstanceId}:card-property:${args.property}:${args.turnNumber}:${args.existingCount}`,
+    sourceInstanceId: args.sourceInstanceId,
+    controllerId: args.controllerId,
+    selector: args.selector,
+    duration: args.duration,
+    createdAtTurn: args.turnNumber,
+    status: 'ACTIVE' as const,
+  };
+  if (args.property === 'BASE_EFFECT_STATUS') {
+    return {
+      ...base,
+      property: 'BASE_EFFECT_STATUS',
+      operation: 'SET_BASE_EFFECT_ENABLED',
+      enabled: Boolean(args.enabled),
+    };
+  }
+  return {
+    ...base,
+    property: args.property,
+    operation: args.operation,
+    values: [...(args.values ?? [])],
+  } as CardPropertyModifierRecord_V2;
 }
 
 export function createEffectInvalidationRecord_V2(args: {

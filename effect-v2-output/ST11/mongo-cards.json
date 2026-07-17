@@ -95,7 +95,8 @@
                       "kind": "NUMBER",
                       "value": 1
                     }
-                  }
+                  },
+                  "chooser": "EFFECT_OWNER"
                 },
                 "to": {
                   "zone": "HAND",
@@ -229,7 +230,8 @@
                         "kind": "NUMBER",
                         "value": 1
                       }
-                    }
+                    },
+                    "chooser": "EFFECT_OWNER"
                   },
                   "to": {
                     "zone": "HAND",
@@ -448,7 +450,10 @@
                     "value": 1
                   }
                 },
-                "chooser": "EFFECT_OWNER"
+                "chooser": "EFFECT_OWNER",
+                "cardCategories": [
+                  "EVENT"
+                ]
               }
             }
           ],
@@ -586,7 +591,10 @@
                       "value": 1
                     }
                   },
-                  "chooser": "EFFECT_OWNER"
+                  "chooser": "EFFECT_OWNER",
+                  "cardCategories": [
+                    "EVENT"
+                  ]
                 }
               }
             ],

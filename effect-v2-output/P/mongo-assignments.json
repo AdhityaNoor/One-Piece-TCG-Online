@@ -2572,7 +2572,10 @@
                   "value": 1
                 }
               },
-              "chooser": "EFFECT_OWNER"
+              "chooser": "EFFECT_OWNER",
+              "cardCategories": [
+                "CHARACTER"
+              ]
             }
           }
         ],
