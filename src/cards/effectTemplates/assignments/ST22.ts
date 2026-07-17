@@ -8,8 +8,13 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // ST22-001 — PARTIAL: reveal-from-hand cost deferred; mapped draw 1 on activateMain oncePerTurn.
-  { cardNumber: 'ST22-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfHandMatching', typeIncludes: 'Whitebeard Pirates', atLeast: 1 }], functions: [{ fn: 'draw', amount: 1 }] } },
+  // ST22-001 — reveal 1 {Whitebeard Pirates} from hand: draw 1, then place the revealed card on top of deck.
+  { cardNumber: 'ST22-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'optionalRevealTypeFromHand', filter: { typeIncludes: 'Whitebeard Pirates' }, prompt: 'You may reveal 1 {Whitebeard Pirates} type card from your hand.', then: [
+      { fn: 'draw', amount: 1 },
+      { fn: 'movePreviousSelection', to: { zone: 'deck', player: 'owner', position: 'top' } },
+    ] },
+  ] } },
 
   // ST22-002 — [On Play] Look 5, reveal up to 1 {Whitebeard Pirates} to hand, rest to bottom (other than [Izo]).
   //   [On Your Opponent's Attack] You may trash this Character: draw 1, place 1 card from hand at bottom of deck.
@@ -118,7 +123,18 @@ export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST22-016 — [Trigger] Draw 1. PARTIAL: the reveal-conditional [Counter] buff is deferred.
   { cardNumber: 'ST22-016', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
 
-  // ST22-017 — [Trigger] Return up to 1 Character cost ≤3 to hand. PARTIAL: the reveal-from-hand [Main] is deferred.
-  { cardNumber: 'ST22-017', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  // ST22-017 — [Main] reveal 2 {Whitebeard Pirates}: draw 1, bottom-deck up to 1 cost≤5 Character. [Trigger] return cost≤3 Character to hand.
+  {
+    cardNumber: 'ST22-017',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'optionalRevealTypeFromHand', count: 2, filter: { typeIncludes: 'Whitebeard Pirates' }, prompt: 'You may reveal 2 {Whitebeard Pirates} type cards from your hand.', then: [
+          { fn: 'draw', amount: 1 },
+          { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 5 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true },
+        ] },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+    ],
+  },
 
 ];

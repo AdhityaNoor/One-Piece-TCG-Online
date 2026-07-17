@@ -6,7 +6,7 @@
  * createPortal so the popup escapes the board's overflow-hidden chain and
  * sits above all board content via z-index.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cqh } from './boardScale';
 import { CountBadge } from './CountBadge';
@@ -76,8 +76,25 @@ export function DonStack({ label, playerId, cards, direction, selectable, select
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
 
+  // Resting/activating DON!! changes this pile's length, which grows or shrinks
+  // the stacked span. When that boundary shifts under a stationary cursor the
+  // browser fires a synthetic `mouseenter` — with no real hover intent — and
+  // the popup's full-screen backdrop would pop open and lock the board. Ignore
+  // auto-open for a short settle window after the pile's contents change so
+  // only a genuine (post-settle) hover opens the popup.
+  const suppressUntilRef = useRef(0);
+  const prevLenRef = useRef(cards.length);
+  useEffect(() => {
+    if (cards.length !== prevLenRef.current) {
+      prevLenRef.current = cards.length;
+      suppressUntilRef.current = Date.now() + 300;
+      setExpanded(false);
+    }
+  }, [cards.length]);
+
   function handleEnter() {
     if (cooldownRef.current) return;
+    if (Date.now() < suppressUntilRef.current) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     const portalEl = document.getElementById('board-overlay-root');
     if (wrapperRef.current && portalEl) {

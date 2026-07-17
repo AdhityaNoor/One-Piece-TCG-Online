@@ -484,8 +484,13 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP16-030', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true }] } }, { templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'setActiveControllerCharacter', filter: { color: 'green', maxCost: 5 } }] } }] },
 
 
-  // PARTIAL: DON×1 +1000 per unique ally name deferred.
-  { cardNumber: 'OP16-034', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Impel Down' }, remainder: 'bottom' }] } },
+  {
+    cardNumber: 'OP16-034',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelfScaling', per: 'controllerCharacterDistinctNames', step: 1, amountPer: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Impel Down' }, remainder: 'bottom' }] } },
+    ],
+  },
 
 
   { cardNumber: 'OP16-039', templates: [{ templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy' } }, keyword: 'doubleAttack', duration: 'duringThisTurn', optional: true }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true, maxTargets: 2, ifGate: [{ kind: 'leaderType', type: 'Impel Down' }] }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent' }, optional: true }] } }] },
@@ -688,8 +693,8 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   cards on your field, play up to 1 [Kouzuki Momonosuke] with a cost of 9 from your trash.
   { cardNumber: 'OP16-084', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'selfDonFieldCount', atLeast: 9 }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', name: 'Kouzuki Momonosuke', exactCost: 9 } }] } },
 
-  // OP16-085 — [Blocker][On Play] Play {Land of Wano} cost ≤6 from trash (exclude-[Momonosuke] dropped).
-  { cardNumber: 'OP16-085', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Land of Wano', maxCost: 6 } }] } },
+  // OP16-085 — [Blocker][On Play] Play {Land of Wano} cost ≤6 from trash other than [Kouzuki Momonosuke].
+  { cardNumber: 'OP16-085', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Land of Wano', maxCost: 6, excludeCardNames: ['Kouzuki Momonosuke'] } }] } },
 
   { cardNumber: 'OP16-089', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, duration: 'duringThisTurn', optional: true }] } },
 

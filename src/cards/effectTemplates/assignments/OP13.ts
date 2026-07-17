@@ -7,21 +7,26 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // OP13-001 — PARTIAL: variable DON rest → scaling +2000 deferred; mapped rest-1-DON → +2000 Straw Hat Crew battle buff.
+  // OP13-001 — rest any number of active DON!!; +2000 battle power per rested DON!!.
   {
     cardNumber: 'OP13-001',
     templateId: 'ability',
     params: {
       timing: 'onOpponentsAttack',
       condition: { donAttachedAtLeast: 1 },
-      cost: [{ kind: 'restDon', count: 1 }],
-      functions: [{
-        fn: 'addPower',
-        target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Straw Hat Crew' } },
-        amount: 2000,
-        duration: 'duringThisBattle',
-        optional: true,
-      }],
+      gate: [{ kind: 'selfActiveDonCount', atMost: 5 }],
+      functions: [
+        { fn: 'restControllerDon', maxTargets: -1, optional: true },
+        {
+          fn: 'addPower',
+          target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Straw Hat Crew' } },
+          amount: 0,
+          amountPer: 2000,
+          duration: 'duringThisBattle',
+          optional: true,
+          ifPrevious: 'previousSelectedAny',
+        },
+      ],
     },
   },
 

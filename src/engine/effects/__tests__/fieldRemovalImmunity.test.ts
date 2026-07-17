@@ -13,6 +13,8 @@ import { cannotBeRemovedFromFieldByEffect } from '../../rules/shared/power';
 import { EffectContextImpl } from '../effectContext';
 import { runTimings } from '../interpreter';
 import { buildRegistryFromAssignments } from '../../../cards/effectTemplates/assembler';
+import { EB_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/EB';
+import { OP02_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/OP02';
 import { OP13_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/OP13';
 import {
   buildBaseRig,
@@ -20,6 +22,7 @@ import {
   makeEventDef,
   nextTestId,
   putCharacterInPlay,
+  putDon,
 } from '../../rules/shared/__tests__/testRig';
 import type { ContinuousEffectRecord, GameState } from '../../state/game';
 import type { Rig } from '../../rules/shared/__tests__/testRig';
@@ -135,6 +138,32 @@ describe('cannotBeRemovedFromFieldByEffect: direct checker', () => {
     const rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
     expect(cannotBeRemovedFromFieldByEffect(rig.state, 'nonexistent', undefined, rig.defs)).toBe(false);
   });
+
+  it('supports dynamic grouped immunity for matching controller Characters only', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    const source = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardNumber: 'SRC', colors: ['yellow'], types: ['Scientist'] }));
+    const protectedScientist = putCharacterInPlay(source.rig, 'p1', makeCharacterDef({ cardNumber: 'SCI-Y', colors: ['yellow'], types: ['Scientist'] }));
+    const wrongColor = putCharacterInPlay(protectedScientist.rig, 'p1', makeCharacterDef({ cardNumber: 'SCI-B', colors: ['blue'], types: ['Scientist'] }));
+    const wrongType = putCharacterInPlay(wrongColor.rig, 'p1', makeCharacterDef({ cardNumber: 'OTHER-Y', colors: ['yellow'], types: ['Straw Hat Crew'] }));
+    const oppSource = putCharacterInPlay(wrongType.rig, 'p2', oppSourceDef);
+    rig = oppSource.rig;
+
+    const state = withFieldRemovalImmunity(rig.state, {
+      sourceInstanceId: source.instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'yellow Scientist field-removal immunity',
+      fieldRemovalImmunityModifier: {
+        appliesToGroup: { ownLeaderAndCharacters: true, charactersOnly: true, anyOfTypes: ['Scientist'], anyOfColors: ['yellow'] },
+        effectSourceController: 'opponent',
+        condition: { gate: [{ kind: 'selfLife', atMost: 2 }] },
+      },
+    });
+
+    expect(cannotBeRemovedFromFieldByEffect(state, protectedScientist.instanceId, oppSource.instanceId, rig.defs)).toBe(true);
+    expect(cannotBeRemovedFromFieldByEffect(state, wrongColor.instanceId, oppSource.instanceId, rig.defs)).toBe(false);
+    expect(cannotBeRemovedFromFieldByEffect(state, wrongType.instanceId, oppSource.instanceId, rig.defs)).toBe(false);
+  });
 });
 
 describe('EffectContextImpl: field-removal immunity blocks koApply/returnToHand/moveToBottomDeck', () => {
@@ -238,5 +267,69 @@ describe('OP13 field-removal-immunity cards wire preventFieldRemoval into onEnte
     ctx.koApply(selfId);
     // Trash count is still below 7 (only the filler + K.O. moves happened), so removal proceeds.
     expect(ctx.state().cardsById[selfId]!.currentZone).toBe('trash');
+  });
+});
+
+describe('OP02-027 all-DON-rested field-removal immunity', () => {
+  it('blocks opponent effect removal only while all field DON!! are rested', () => {
+    const inuarashiDef = makeCharacterDef({ cardDefinitionId: 'OP02-027', cardNumber: 'OP02-027', baseCost: 3 });
+    const oppSourceDef = makeCharacterDef({ cardDefinitionId: nextTestId('opp-src-op02-027'), cardNumber: 'TEST-OPP-SRC-OP02', baseCost: 3 });
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    ({ rig } = putDon(rig, 'p1', 2, { rested: true }));
+    const activeDon = putDon(rig, 'p1', 1, { rested: false });
+    rig = activeDon.rig;
+    const inuarashi = putCharacterInPlay(rig, 'p1', inuarashiDef);
+    const registry = buildRegistryFromAssignments([OP02_ASSIGNMENTS.find((a) => a.cardNumber === 'OP02-027')!]);
+    const fired = runTimings(registry['OP02-027'], ['onEnterPlay'], inuarashi.rig.state, inuarashi.instanceId, inuarashi.rig.defs, null, registry);
+
+    const withOppSource = putCharacterInPlay({ state: fired.state, defs: inuarashi.rig.defs }, 'p2', oppSourceDef);
+    const activeCtx = new EffectContextImpl(withOppSource.rig.state, withOppSource.instanceId, withOppSource.rig.defs, null);
+    activeCtx.koApply(inuarashi.instanceId);
+    expect(activeCtx.state().cardsById[inuarashi.instanceId]!.currentZone).toBe('trash');
+
+    const restedState: GameState = {
+      ...withOppSource.rig.state,
+      cardsById: {
+        ...withOppSource.rig.state.cardsById,
+        [activeDon.donIds[0]]: { ...withOppSource.rig.state.cardsById[activeDon.donIds[0]], donRested: true },
+      },
+    };
+    const restedCtx = new EffectContextImpl(restedState, withOppSource.instanceId, withOppSource.rig.defs, null);
+    restedCtx.koApply(inuarashi.instanceId);
+    expect(restedCtx.state().cardsById[inuarashi.instanceId]!.currentZone).toBe('characterArea');
+  });
+});
+
+describe('filtered field-removal-immunity aura assignments', () => {
+  it('EB04-057 protects yellow {Scientist} Characters from opponent effect removal at 2 or less Life', () => {
+    const vegapunkDef = makeCharacterDef({ cardDefinitionId: 'EB04-057', cardNumber: 'EB04-057', colors: ['yellow'], types: ['Scientist'] });
+    const scientistDef = makeCharacterDef({ cardDefinitionId: 'SCI-Y-ASSIGN', cardNumber: 'SCI-Y-ASSIGN', colors: ['yellow'], types: ['Scientist'] });
+    const otherDef = makeCharacterDef({ cardDefinitionId: 'SCI-B-ASSIGN', cardNumber: 'SCI-B-ASSIGN', colors: ['blue'], types: ['Scientist'] });
+    const oppSourceDef = makeCharacterDef({ cardDefinitionId: nextTestId('opp-src-def-eb'), cardNumber: 'TEST-OPP-SRC-EB', baseCost: 3 });
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    const source = putCharacterInPlay(rig, 'p1', vegapunkDef);
+    const protectedScientist = putCharacterInPlay(source.rig, 'p1', scientistDef);
+    const wrongColor = putCharacterInPlay(protectedScientist.rig, 'p1', otherDef);
+    rig = wrongColor.rig;
+
+    const entry = EB_ASSIGNMENTS.find((a) => a.cardNumber === 'EB04-057')!;
+    const registry = buildRegistryFromAssignments([entry]);
+    const fired = runTimings(registry['EB04-057'], ['onEnterPlay'], rig.state, source.instanceId, rig.defs, null, registry);
+    const record = fired.state.continuousEffects.find((ce) => ce.fieldRemovalImmunityModifier?.appliesToGroup);
+
+    expect(record?.fieldRemovalImmunityModifier?.appliesToGroup).toMatchObject({
+      ownLeaderAndCharacters: true,
+      charactersOnly: true,
+      anyOfTypes: ['Scientist'],
+      anyOfColors: ['yellow'],
+    });
+    expect(record?.fieldRemovalImmunityModifier?.effectSourceController).toBe('opponent');
+
+    const withOpp = putCharacterInPlay({ state: fired.state, defs: rig.defs }, 'p2', oppSourceDef);
+    const ctx = new EffectContextImpl(withOpp.rig.state, withOpp.instanceId, withOpp.rig.defs, null);
+    ctx.koApply(protectedScientist.instanceId);
+    ctx.koApply(wrongColor.instanceId);
+    expect(ctx.state().cardsById[protectedScientist.instanceId]!.currentZone).toBe('characterArea');
+    expect(ctx.state().cardsById[wrongColor.instanceId]!.currentZone).toBe('trash');
   });
 });

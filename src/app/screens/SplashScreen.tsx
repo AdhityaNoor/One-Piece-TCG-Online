@@ -64,10 +64,6 @@ export function SplashScreen({ progress }: SplashScreenProps) {
         </div>
       </div>
 
-      {/* Bottom accent */}
-      <div className="absolute inset-x-0 bottom-0 flex justify-center pb-6">
-        <div className="h-2 w-40 border-x-2 border-gold/35 bg-[linear-gradient(90deg,_transparent,_rgba(217,164,65,0.85),_transparent)]" />
-      </div>
     </div>
   );
 }

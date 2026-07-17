@@ -19,7 +19,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="relative flex h-dvh w-full flex-col overflow-hidden bg-[#071126] font-body text-white">
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-30 grayscale" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,_rgba(255,211,74,0.18),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.2)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,_rgba(255,211,74,0.18),_transparent_24%)]" />
       <AppHeader />
       <div className="relative min-h-0 flex-1">{children}</div>
     </div>

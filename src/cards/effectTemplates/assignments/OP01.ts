@@ -337,14 +337,13 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-068 — [Your Turn] [Double Attack] if 5+ cards in hand
   { cardNumber: 'OP01-068', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent', condition: { turn: 'your', gate: [{ kind: 'selfHand', atLeast: 5 }] } }] } },
 
-  // OP01-067 — [Banish] is templated. PARTIAL: [DON!! x1] blue Event hand cost −1 deferred (no typed hand cost aura).
+  // OP01-067 — [Banish]. [DON!! x1] blue Events in hand get -1 cost.
   {
     cardNumber: 'OP01-067',
-    templateId: 'ability',
-    params: {
-      timing: 'onEnterPlay',
-      functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'permanent' }],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraControllerHandCards', amount: -1, duration: 'permanent', filter: { category: 'event', color: 'blue' }, sourceCondition: { donAttachedAtLeast: 1 } }] } },
+    ],
   },
 
   // OP01-069 — [On K.O.] Play up to 1 [Smiley] from your deck, then shuffle.

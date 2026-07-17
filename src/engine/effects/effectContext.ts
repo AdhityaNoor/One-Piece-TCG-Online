@@ -23,7 +23,7 @@ import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { createSeededRng } from '../rng/seededRng';
 import { effectLogDataForSource } from '../logs/effectLogData';
 import type { EffectContext } from './effectTemplate';
-import type { SearchPickDestination, SearchRemainderDestination } from './effectIr';
+import type { RemovedFromFieldDestination, SearchPickDestination, SearchRemainderDestination } from './effectIr';
 
 export class EffectContextImpl implements EffectContext {
   readonly sourceInstanceId: string;
@@ -46,6 +46,7 @@ export class EffectContextImpl implements EffectContext {
     targetInstanceId: string;
     removedControllerId: string;
     effectControllerId: string;
+    removedToZone: RemovedFromFieldDestination;
   }[] = [];
   /** Event instance ids queued for nested [Main] activation; drained after the main program finishes. */
   private readonly pendingEventActivations: string[] = [];
@@ -58,7 +59,7 @@ export class EffectContextImpl implements EffectContext {
 
   private static readonly FIELD_ZONES = new Set(['leaderArea', 'characterArea', 'stageArea']);
 
-  private recordFieldRemoval(targetInstanceId: string, fromZone: CardInstance['currentZone']): void {
+  private recordFieldRemoval(targetInstanceId: string, fromZone: CardInstance['currentZone'], toZone: RemovedFromFieldDestination): void {
     if (!EffectContextImpl.FIELD_ZONES.has(fromZone)) return;
     const inst = this.working.cardsById[targetInstanceId];
     if (!inst) return;
@@ -66,6 +67,7 @@ export class EffectContextImpl implements EffectContext {
       targetInstanceId,
       removedControllerId: inst.controllerId,
       effectControllerId: this.controllerId,
+      removedToZone: toZone,
     });
   }
 
@@ -277,6 +279,7 @@ export class EffectContextImpl implements EffectContext {
     duration: ContinuousEffectDuration;
     sourceCondition?: SourceStateCondition;
     condition?: ContinuousPowerCondition;
+    scale?: import('../state/game').PowerScale;
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -290,6 +293,7 @@ export class EffectContextImpl implements EffectContext {
         amount: spec.amount,
         ...(spec.sourceCondition ? { sourceCondition: spec.sourceCondition } : {}),
         ...(spec.condition ? { condition: spec.condition } : {}),
+        ...(spec.scale ? { scale: spec.scale } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -342,6 +346,7 @@ export class EffectContextImpl implements EffectContext {
     duration: ContinuousEffectDuration;
     sourceCondition?: SourceStateCondition;
     condition?: ContinuousPowerCondition;
+    scale?: import('../state/game').PowerScale;
     description?: string;
     usesRemaining?: number;
   }): void {
@@ -357,6 +362,7 @@ export class EffectContextImpl implements EffectContext {
         amount: spec.amount,
         ...(spec.sourceCondition ? { sourceCondition: spec.sourceCondition } : {}),
         ...(spec.condition ? { condition: spec.condition } : {}),
+        ...(spec.scale ? { scale: spec.scale } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -375,6 +381,7 @@ export class EffectContextImpl implements EffectContext {
     amount: number;
     duration: ContinuousEffectDuration;
     condition?: ContinuousPowerCondition;
+    scale?: import('../state/game').PowerScale;
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -387,6 +394,7 @@ export class EffectContextImpl implements EffectContext {
         appliesToInstanceId: spec.appliesToInstanceId,
         amount: spec.amount,
         ...(spec.condition ? { condition: spec.condition } : {}),
+        ...(spec.scale ? { scale: spec.scale } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -922,7 +930,8 @@ export class EffectContextImpl implements EffectContext {
   }
 
   preventFieldRemoval(spec: {
-    appliesToInstanceId: string;
+    appliesToInstanceId?: string;
+    appliesToGroup?: PowerAuraGroup;
     duration: ContinuousEffectDuration;
     effectSourceController?: 'opponent' | 'controller';
     condition?: ContinuousPowerCondition;
@@ -935,7 +944,8 @@ export class EffectContextImpl implements EffectContext {
       duration: spec.duration,
       description: spec.description ?? 'cannot be removed from the field by effects',
       fieldRemovalImmunityModifier: {
-        appliesToInstanceId: spec.appliesToInstanceId,
+        ...(spec.appliesToInstanceId ? { appliesToInstanceId: spec.appliesToInstanceId } : {}),
+        ...(spec.appliesToGroup ? { appliesToGroup: spec.appliesToGroup } : {}),
         ...(spec.effectSourceController ? { effectSourceController: spec.effectSourceController } : {}),
         ...(spec.condition ? { condition: spec.condition } : {}),
       },
@@ -944,9 +954,9 @@ export class EffectContextImpl implements EffectContext {
     this.logger.push({
       actorPlayerId: this.controllerId,
       type: 'EFFECT_RESOLVED',
-      message: `${spec.appliesToInstanceId} cannot be removed from the field by effects (${record.description}).`,
+      message: `${spec.appliesToInstanceId ?? 'matching cards'} cannot be removed from the field by effects (${record.description}).`,
       data: { continuousEffectId: record.id, duration: spec.duration },
-      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      relatedCardInstanceIds: spec.appliesToInstanceId ? [spec.appliesToInstanceId] : [],
       visibility: 'public',
     });
   }
@@ -1279,7 +1289,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [targetInstanceId],
       visibility: 'public',
     });
-    this.recordFieldRemoval(targetInstanceId, fromZone);
+    this.recordFieldRemoval(targetInstanceId, fromZone, 'trash');
     this.koed.push({ targetInstanceId, cause: 'effect', sourceInstanceId: this.sourceInstanceId });
   }
 
@@ -1308,7 +1318,7 @@ export class EffectContextImpl implements EffectContext {
     return drained;
   }
 
-  takeFieldRemovals(): { targetInstanceId: string; removedControllerId: string; effectControllerId: string }[] {
+  takeFieldRemovals(): { targetInstanceId: string; removedControllerId: string; effectControllerId: string; removedToZone: RemovedFromFieldDestination }[] {
     const drained = [...this.fieldRemovals];
     this.fieldRemovals.length = 0;
     return drained;
@@ -1390,7 +1400,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [targetInstanceId],
       visibility: 'public',
     });
-    this.recordFieldRemoval(targetInstanceId, fromZone);
+    this.recordFieldRemoval(targetInstanceId, fromZone, 'hand');
   }
 
   moveToBottomDeck(instanceId: string): void {
@@ -1439,7 +1449,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: 'public',
     });
-    this.recordFieldRemoval(instanceId, fromZone);
+    this.recordFieldRemoval(instanceId, fromZone, 'deck');
   }
 
   moveToTopDeck(instanceId: string): void {
@@ -1474,7 +1484,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: 'public',
     });
-    this.recordFieldRemoval(instanceId, fromZone);
+    this.recordFieldRemoval(instanceId, fromZone, 'deck');
   }
 
   moveToLifeTop(instanceId: string, faceUp = false): void {
@@ -1516,6 +1526,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: faceUp ? 'public' : { visibleTo: [inst.ownerId] },
     });
+    this.recordFieldRemoval(instanceId, fromZone, 'life');
   }
 
   moveToLifeBottom(instanceId: string, faceUp = false): void {
@@ -1550,6 +1561,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: faceUp ? 'public' : { visibleTo: [inst.ownerId] },
     });
+    this.recordFieldRemoval(instanceId, fromZone, 'life');
   }
 
   turnLifeFace(instanceId: string, faceUp: boolean): void {
@@ -2232,7 +2244,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: { visibleTo: [inst.ownerId] },
     });
-    this.recordFieldRemoval(instanceId, fromZone);
+    this.recordFieldRemoval(instanceId, fromZone, 'hand');
   }
 
   trashCard(instanceId: string): void {
@@ -2264,7 +2276,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: 'public',
     });
-    if (EffectContextImpl.FIELD_ZONES.has(fromZone)) this.recordFieldRemoval(instanceId, fromZone);
+    if (EffectContextImpl.FIELD_ZONES.has(fromZone)) this.recordFieldRemoval(instanceId, fromZone, 'trash');
     if (fromZone === 'hand') {
       this.handTrashed.push({ ownerId: inst.ownerId, count: 1, effectSourceInstanceId: this.sourceInstanceId });
     }

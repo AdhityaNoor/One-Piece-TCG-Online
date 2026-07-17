@@ -257,7 +257,6 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB01-030 — PARTIAL: stage-to-deck uses any controller Stage, not only this card.
   {
     cardNumber: 'EB01-030',
     templates: [
@@ -266,7 +265,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'activateMain',
           functions: [
-            { fn: 'moveCards', from: { zone: 'stages', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+            { fn: 'moveSelfToBottomDeck' },
             { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1, ifPrevious: 'previousMovedAny' },
             { fn: 'draw', amount: 2, ifPrevious: 'previousMovedAny' },
           ],
@@ -669,7 +668,6 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // EB02-023 — PARTIAL: "returned to hand" destination filter deferred; mapped onRemovedFromField + searchTopDeck 3.
   {
     cardNumber: 'EB02-023',
     templateId: 'ability',
@@ -681,6 +679,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
         { kind: 'removedFromFieldCategory', category: 'character' },
         { kind: 'removedFromFieldController', player: 'opponent' },
         { kind: 'removedByEffectController', player: 'controller' },
+        { kind: 'removedToZone', zone: 'hand' },
       ],
       functions: [{ fn: 'searchTopDeck', look: 3, pick: 3, reveal: false, destination: 'deckTopOrBottom' }],
     },
@@ -1080,13 +1079,13 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // EB03-004 — PARTIAL: "no Characters with 6000 base power or more" gate deferred.
+  // EB03-004 — [Opponent's Turn] If Leader multicolored and no Characters with 6000 base power or more, this Character +4000.
   {
     cardNumber: 'EB03-004',
     templateId: 'ability',
     params: {
       timing: 'onEnterPlay',
-      functions: [{ fn: 'addPowerSelf', amount: 4000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderMulticolor' }] } }],
+      functions: [{ fn: 'addPowerSelf', amount: 4000, duration: 'permanent', condition: { turn: 'opponent', gate: [{ kind: 'leaderMulticolor' }, { kind: 'selfCharacterBasePowerCount', power: 6000, atMost: 0 }] } }],
     },
   },
 
@@ -1329,9 +1328,14 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // EB04-057 — [DON!! x1] this Character gains [Blocker].
-  //   PARTIAL: the "if 2 or less Life, your yellow {Scientist} Characters cannot be removed by opponent's effects" is deferred (filtered KO/removal-immunity aura; koImmunityControllerCharactersAll has no type/color filter).
-  { cardNumber: 'EB04-057', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+  // EB04-057 — If 2 or less Life, yellow {Scientist} Characters cannot be removed by opponent's effects. [DON!! x1] this Character gains [Blocker].
+  {
+    cardNumber: 'EB04-057',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventFieldRemovalAuraControllerCharacters', duration: 'permanent', anyOfTypes: ['Scientist'], anyOfColors: ['yellow'], effectSourceController: 'opponent', gate: [{ kind: 'selfLife', atMost: 2 }] }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+    ],
+  },
 
   // EB04-059 — PARTIAL: "fewer Characters than opponent" dual-K.O. Main deferred; mapped [Trigger] draw 2 trash 1.
   {
@@ -2509,17 +2513,31 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // EB04-048 — PARTIAL: +1000/+2 cost per 5 trash (dynamic scaling) deferred; mapped [On Play] trash 1 Character: draw 1.
+  // EB04-048 — if Leader is {CP}, +1000 power/+2 cost per 5 trash; [On Play] trash 1 Character: draw 1.
   {
     cardNumber: 'EB04-048',
-    templateId: 'ability',
-    params: {
-      timing: 'onPlay',
-      functions: [
-        { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
-        { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
-      ],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [
+            { fn: 'addPowerSelfScaling', per: 'controllerTrash', step: 5, amountPer: 1000, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'CP' }] } },
+            { fn: 'addCost', target: { ref: 'self' }, amount: 0, scale: { per: 'controllerTrash', step: 5, amountPer: 2 }, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'CP' }] } },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+            { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
   },
 
   // EB04-049 — (Event) [Main] trash 2 from top of deck: K.O. up to 1 opp Character base cost 5 or less. [Trigger] Activate [Main].

@@ -314,13 +314,12 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP15-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, minDonAttached: 1 } }, optional: true }] } },
 
   // OP15-032 — [On Play] Rest up to 1 opp Character.
-  //   [Activate: Main] You may trash this Character: if Leader {Straw Hat Crew}, set up to 1 of your Characters base cost ≤8 as active.
-  //   PARTIAL: setActiveControllerCharacter only filters current cost, not base cost.
+  //   [Activate: Main] You may trash this Character: if Leader {Straw Hat Crew}, set up to 1 of your Characters base cost <=8 as active.
   {
     cardNumber: 'OP15-032',
     templates: [
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true }] } },
-      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'setActiveControllerCharacter', filter: { maxCost: 8 }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'setActiveControllerCharacter', filter: { maxBaseCost: 8 }, optional: true }] } },
     ],
   },
 

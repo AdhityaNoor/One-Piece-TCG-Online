@@ -32,7 +32,7 @@ export const ST27_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST27-003 — [Blocker][On K.O.] Play up to 1 {Blackbeard Pirates} cost ≤5 from trash rested.
   { cardNumber: 'ST27-003', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Blackbeard Pirates', maxCost: 5 }, rested: true }] } },
 
-  // ST27-004 — PARTIAL: +1 cost per 4 trash → flat +1 at 4+ trash; [On Play] trash 1 from hand mapped.
+  // ST27-004 — gains Blocker and +1 cost per 4 trash if Leader is {Blackbeard Pirates}; [On Play] trash 1.
   {
     cardNumber: 'ST27-004',
     templates: [
@@ -42,7 +42,7 @@ export const ST27_ASSIGNMENTS: CardEffectAssignment[] = [
           timing: 'onEnterPlay',
           functions: [
             { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }] } },
-            { fn: 'addCost', target: { ref: 'self' }, amount: 1, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }, { kind: 'selfTrashCount', atLeast: 4 }] } },
+            { fn: 'addCost', target: { ref: 'self' }, amount: 0, scale: { per: 'controllerTrash', step: 4, amountPer: 1 }, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }] } },
           ],
         },
       },

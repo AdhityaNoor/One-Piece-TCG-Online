@@ -175,8 +175,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-118 — PARTIAL: red/cost≥3/other-than-self filters not on keyword aura.
-  { cardNumber: 'OP04-118', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'rush', duration: 'permanent' }] } },
+  // OP04-118 — All red Characters with cost 3+ other than this Character gain [Rush].
+  { cardNumber: 'OP04-118', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'rush', duration: 'permanent', anyOfColors: ['red'], excludeSource: true, targetCondition: { minCost: 3 } }] } },
 
   // OP04-119 — [Opponent's Turn] if rested, active allies base cost 5 immune to effects; [On Play] rest this → play green cost==5 from hand.
   {
@@ -708,8 +708,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'CP', excludeSelfName: true, maxCost: 2 }, optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // OP04-086 — PARTIAL: battle-K.O. gate not modeled; fires on any onBattle.
-  { cardNumber: 'OP04-086', templateId: 'ability', params: { timing: 'onBattle', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
+  // OP04-086 - [DON!! x1] When this battles and K.O.'s an opponent Character, draw 2 and trash 2.
+  { cardNumber: 'OP04-086', templateId: 'ability', params: { timing: 'onBattle', requiresOpponentKoed: true, condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
 
   { cardNumber: 'OP04-088', templateId: 'ability', params: { timing: 'activateMain', functions: [
     { fn: 'restControllerLeaderOrStage' },

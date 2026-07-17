@@ -113,6 +113,8 @@ export interface ContinuousPowerCondition {
   rested?: boolean;
   /** Current cost of the modified card must be at most this value. */
   maxCost?: number;
+  /** Current cost of the modified card must be at least this value. */
+  minCost?: number;
   /** Printed base cost of the modified card must be at most this value. */
   maxBaseCost?: number;
   /** Printed base cost of the modified card must be at least this value. */
@@ -146,6 +148,13 @@ export interface PowerAuraGroup {
   anyOfAttributes?: string[];
   /** Restrict to cards whose printed colors include any of these (OR). */
   anyOfColors?: Color[];
+  /** Exclude the modifier source card from the aura target set. */
+  excludeSource?: true;
+  /**
+   * Nested OR filters for mixed target clauses such as "[Name] and {Type}" where
+   * a card matching both branches must receive the aura only once.
+   */
+  anyOfGroups?: PowerAuraFilterGroup[];
   /** Exclude the Leader (chars only) — for "all of your Characters" auras. */
   charactersOnly?: boolean;
   /** Target the OPPONENT's Characters instead of the controller's — for "give all of your opponent's Characters -N". */
@@ -160,6 +169,26 @@ export interface PowerAuraGroup {
    * Optionally filtered by `anyOfTypes`. Does not require the source to remain on field once registered.
    */
   controllerCharactersInHand?: true;
+  /**
+   * Cards in the modifier owner's hand ("blue Events in your hand get -1 cost").
+   * Optionally filtered by category/color/type/name/base cost.
+   */
+  controllerCardsInHand?: true;
+  /** Restrict hand/field groups by printed category. */
+  category?: Exclude<CardCategory, 'don'>;
+  /** Restrict hand/field groups by printed base cost. */
+  minBaseCost?: number;
+  maxBaseCost?: number;
+}
+
+export interface PowerAuraFilterGroup {
+  anyOfTypes?: string[];
+  anyOfNames?: string[];
+  anyOfAttributes?: string[];
+  anyOfColors?: Color[];
+  category?: Exclude<CardCategory, 'don'>;
+  minBaseCost?: number;
+  maxBaseCost?: number;
 }
 
 /**
@@ -178,7 +207,12 @@ export interface SourceStateCondition {
 
 /** A structured power delta, evaluated by computeCurrentPower. */
 /** Count source for a dynamic "+X power for every N of <source>" scaling modifier. */
-export type PowerScaleSource = 'controllerHand' | 'controllerTrash' | 'controllerTrashEvents' | 'controllerRestedDon';
+export type PowerScaleSource =
+  | 'controllerHand'
+  | 'controllerTrash'
+  | 'controllerTrashEvents'
+  | 'controllerRestedDon'
+  | 'controllerCharacterDistinctNames';
 
 /** Dynamic scaling term: effective bonus = floor(count(per) / step) * amountPer, re-read each time. */
 export interface PowerScale {
@@ -222,6 +256,8 @@ export interface ContinuousCostModifier {
   appliesToGroup?: PowerAuraGroup;
   /** Signed cost delta; final computed cost is floored at 0. */
   amount: number;
+  /** Dynamic "+X for every N" scaling term added to `amount` at read time. */
+  scale?: PowerScale;
   /**
    * "This card's base cost BECOMES N" (2-7): OVERWRITES the printed base cost instead of adding.
    * When present, `amount` is ignored for this record; additive `amount` deltas from OTHER
@@ -301,7 +337,10 @@ export interface ContinuousRestRestriction {
  * the battle-K.O. path at all. Mirrors ContinuousRestRestriction's shape.
  */
 export interface ContinuousFieldRemovalImmunityModifier {
-  appliesToInstanceId: string;
+  /** Single fixed target. Exactly one of appliesToInstanceId / appliesToGroup is set. */
+  appliesToInstanceId?: string;
+  /** Dynamic aura target set, resolved at removal time. */
+  appliesToGroup?: PowerAuraGroup;
   /** Omitted = any effect source. Otherwise relative to the protected card's owner. */
   effectSourceController?: 'opponent' | 'controller';
   /** Re-evaluated condition on the protected card (e.g. trash-count gate). */

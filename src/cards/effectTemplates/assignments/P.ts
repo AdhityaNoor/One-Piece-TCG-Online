@@ -17,8 +17,8 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'P-014', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
   // ── Triage batch (P expressible). ──
-  // P-029 — [End of Your Turn] rest this: set up to 1 {FILM} Character active (exclude-[Bartolomeo] dropped).
-  { cardNumber: 'P-029', templateId: 'ability', params: { timing: 'endOfTurn', cost: [{ kind: 'restThis' }], functions: [{ fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { typeIncludes: 'FILM' } }] } },
+  // P-029 — [End of Your Turn] rest this: set up to 1 {FILM} Character other than [Bartolomeo] active.
+  { cardNumber: 'P-029', templateId: 'ability', params: { timing: 'endOfTurn', cost: [{ kind: 'restThis' }], functions: [{ fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { typeIncludes: 'FILM', excludeCardNames: ['Bartolomeo'] } }] } },
 
   // P-030 — [On K.O.] Place up to 1 Character cost ≤3 at bottom of deck.
   { cardNumber: 'P-030', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
@@ -92,8 +92,8 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   // P-082 — [Your Turn] [On Play] if Leader {Cross Guild} or {Baroque Works}, place up to 1 opp Character power<=2000 at bottom of deck.
   { cardNumber: 'P-082', templateId: 'ability', params: { timing: 'onPlay', condition: { turn: 'your' }, gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Cross Guild' }, { kind: 'leaderType', type: 'Baroque Works' }] }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxPower: 2000 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 
-  // P-083 — [DON!! x1][When Attacking] trash 1 (Character filter dropped) → give up to 1 opp Character −1000, then draw 1.
-  { cardNumber: 'P-083', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' }, { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }] } },
+  // P-083 — [DON!! x1][When Attacking] trash 1 Character -> give up to 1 opp Character -1000, then draw 1.
+  { cardNumber: 'P-083', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'optionalTrashFromHand', count: 1, filter: { category: 'character' } }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' }, { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }] } },
 
   // P-084 (character) Buggy —
   //   This Character cannot attack.If your Leader is [Buggy], all Characters with a cost of 3 or 4 cannot

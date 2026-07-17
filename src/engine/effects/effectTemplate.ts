@@ -10,7 +10,7 @@
  * Card behavior is DATA (EffectProgram, see effectIr.ts), never code; nothing
  * here is per-card.
  */
-import type { ContinuousEffectDuration, ContinuousKeyword, ContinuousPowerCondition, GameState, PowerAuraGroup, SourceStateCondition } from '../state/game';
+import type { ContinuousEffectDuration, ContinuousKeyword, ContinuousPowerCondition, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../state/game';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinition } from '../state/card';
 import type { EffectProgram, SearchPickDestination, SearchRemainderDestination } from './effectIr';
@@ -58,6 +58,7 @@ export interface EffectContext {
     amount: number;
     duration: ContinuousEffectDuration;
     condition?: ContinuousPowerCondition;
+    scale?: PowerScale;
     description?: string;
   }): void;
   /** Register an aura power modifier over a dynamic target group (8-1-3-3), optionally gated on source state; both re-checked on every read. */
@@ -67,6 +68,7 @@ export interface EffectContext {
     duration: ContinuousEffectDuration;
     sourceCondition?: SourceStateCondition;
     condition?: ContinuousPowerCondition;
+    scale?: PowerScale;
     description?: string;
   }): void;
   /** Register a "base power becomes N" aura over a dynamic target group (8-1-3-3). */
@@ -84,6 +86,7 @@ export interface EffectContext {
     amount: number;
     duration: ContinuousEffectDuration;
     condition?: ContinuousPowerCondition;
+    scale?: PowerScale;
     description?: string;
   }): void;
   /** Register a continuous keyword grant (8-1-3-3); condition re-checked on every keyword read. */
@@ -145,7 +148,8 @@ export interface EffectContext {
    * to hand, or placed at the bottom of the deck — for the given duration. Never blocks battle K.O.
    */
   preventFieldRemoval(spec: {
-    appliesToInstanceId: string;
+    appliesToInstanceId?: string;
+    appliesToGroup?: import('../state/game').PowerAuraGroup;
     duration: ContinuousEffectDuration;
     effectSourceController?: 'opponent' | 'controller';
     condition?: ContinuousPowerCondition;

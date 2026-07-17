@@ -8,8 +8,8 @@ export const ST16_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST16-001 — [Activate: Main] trash 1 {FILM} from hand → give up to 1 rested DON!!.
   { cardNumber: 'ST16-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'FILM' }, optional: true }, { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' }] } },
 
-  // ST16-002 — PARTIAL: variable Music trash count → single trash +1000 battle buff (OP06-014 pattern).
-  { cardNumber: 'ST16-002', templateId: 'ability', params: { timing: 'onOpponentsAttack', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Music' }, optional: true }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' }] } },
+  // ST16-002 — trash any number of {Music} from hand; +1000 battle power per card trashed.
+  { cardNumber: 'ST16-002', templateId: 'ability', params: { timing: 'onOpponentsAttack', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Music' }, optional: true, anyNumber: true }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 0, amountPer: 1000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' }] } },
 
   // ST16-003 — if Leader {FILM} and 6+ rested cards, this Character gains +2000.
   { cardNumber: 'ST16-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'FILM' }, { kind: 'selfRestedCardCount', atLeast: 6 }] } }] } },

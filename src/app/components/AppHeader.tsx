@@ -15,17 +15,19 @@
  * purpose so it doesn't look like a sixth tab.
  *
  * Visual language: dark frosted glass bar. Each nav item is plain text when
- * unselected; the active item gets a full-height, left-to-right skewed
- * parallelogram in opaque red behind it (an absolutely-positioned skewed
- * span, not a skewed hit-box, so the clickable area/text stay upright).
- * The reveal (scale-y, `origin-top`) and the skew live on two nested spans
- * rather than one — stacking both transforms on a single element forces
- * them to share one transform-origin, which pulls the skew's pivot off its
- * own center and makes the parallelogram shear asymmetrically. The outer
- * span is always mounted (never conditionally rendered) and toggles
- * `scale-y-0` -> `scale-y-100` so switching tabs animates the fill sweeping
- * top-to-bottom instead of popping in instantly; the inner span just skews.
+ * unselected; the active item sits over a full-height, skewed red
+ * parallelogram. That fill is a SINGLE shared element (not one per tab): it's
+ * absolutely positioned inside the nav and slides sideways to the active tab
+ * by animating `transform`/`width`, so switching menus glides the highlight
+ * horizontally to the new item instead of fading or wiping in place. We
+ * measure the active button's `offsetLeft`/`offsetWidth` (re-measured on tab
+ * change and on resize) to drive it. The skew lives on an inner span so its
+ * transform-origin stays centered on itself and the outer slide transform
+ * doesn't shear it. The first appearance (and any hidden->shown transition,
+ * e.g. leaving the profile screen) jumps without animating so the highlight
+ * never streaks in from the far left.
  */
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { HubTab } from '../store/navigationStore';
 import { useCurrentScreen, useHeaderTab, useNavigationStore } from '../store/navigationStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -47,6 +49,36 @@ export function AppHeader() {
   const username = useSettingsStore((state) => state.username);
   const avatarId = useSettingsStore((state) => state.avatarId);
   const isProfileActive = current.screen === 'profile';
+
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const wasVisible = useRef(false);
+  const [indicator, setIndicator] = useState<{ left: number; width: number; visible: boolean; animate: boolean }>({
+    left: 0,
+    width: 0,
+    visible: false,
+    animate: false,
+  });
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      if (!activeTab) {
+        wasVisible.current = false;
+        setIndicator((prev) => ({ ...prev, visible: false }));
+        return;
+      }
+      const el = tabRefs.current[activeTab];
+      if (!el) {
+        wasVisible.current = false;
+        setIndicator((prev) => ({ ...prev, visible: false }));
+        return;
+      }
+      setIndicator({ left: el.offsetLeft, width: el.offsetWidth, visible: true, animate: wasVisible.current });
+      wasVisible.current = true;
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [activeTab]);
 
   return (
     <header className="relative z-30 flex h-16 w-full flex-shrink-0 items-stretch gap-2 border-b border-white/10 bg-black/15 px-3 shadow-[0_8px_30px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:h-20 sm:px-6">
@@ -73,25 +105,30 @@ export function AppHeader() {
       </button>
 
       <nav className="relative z-10 ml-1 flex h-full min-w-0 flex-1 items-stretch gap-1 overflow-x-auto pl-3 sm:ml-6 sm:gap-2 sm:pl-4" aria-label="Main navigation">
+        <span
+          aria-hidden="true"
+          className={[
+            'pointer-events-none absolute inset-y-0 left-0 z-0',
+            indicator.visible ? 'opacity-100' : 'opacity-0',
+            indicator.animate ? 'transition-[transform,width,opacity] duration-300 ease-out' : '',
+          ].join(' ')}
+          style={{ width: `${indicator.width}px`, transform: `translateX(${indicator.left}px)` }}
+        >
+          <span className="absolute inset-0 skew-x-12 bg-red-600" />
+        </span>
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              ref={(el) => {
+                tabRefs.current[tab.id] = el;
+              }}
               type="button"
               onClick={() => setHubTab(tab.id)}
               aria-current={isActive ? 'page' : undefined}
-              className="group relative flex flex-shrink-0 items-center px-4 transition-colors sm:px-7"
+              className="group relative z-10 flex flex-shrink-0 items-center px-4 transition-colors sm:px-7"
             >
-              <span
-                aria-hidden="true"
-                className={[
-                  'absolute inset-y-0 inset-x-0 origin-top transition-transform duration-300 ease-out',
-                  isActive ? 'scale-y-100' : 'scale-y-0',
-                ].join(' ')}
-              >
-                <span className="absolute inset-0 skew-x-12 bg-red-600" />
-              </span>
               <span
                 className={[
                   'relative z-10 font-heading text-base font-black uppercase tracking-[0.06em] transition-colors sm:text-lg sm:tracking-[0.08em]',

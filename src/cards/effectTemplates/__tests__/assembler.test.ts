@@ -133,6 +133,11 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'trashCards' });
   });
 
+  it('restAllCharacters rests every matching Character without target selection', () => {
+    const p = applyTemplate('T', 'ability', { timing: 'onPlay', functions: [{ fn: 'restAllCharacters', player: 'opponent', filter: { maxCost: 4 } }] });
+    expect(p.abilities[0].ops).toEqual([{ op: 'rest', target: { sel: 'opponentCharacters', maxCost: 4 } }]);
+  });
+
   it('ability condition carries DON!! attachment requirements', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'whenAttacking',
@@ -465,6 +470,14 @@ describe('template factories - structural correctness', () => {
       functions: [{ fn: 'returnSelfToHand' }],
     });
     expect(p.abilities[0].ops).toEqual([{ op: 'moveToHand', target: { sel: 'self' } }]);
+  });
+
+  it('moveSelfToBottomDeck moves the source instance to owner deck bottom without target selection', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'activateMain',
+      functions: [{ fn: 'moveSelfToBottomDeck' }],
+    });
+    expect(p.abilities[0].ops).toEqual([{ op: 'moveToBottomDeck', target: { sel: 'self' } }]);
   });
 
   it('playFromDeck produces a deck-play search op with a filter', () => {

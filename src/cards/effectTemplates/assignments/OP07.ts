@@ -95,12 +95,17 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // ── Triage batch (OP07 expressible): Warlords/Fish-Man/Foxy/Egghead lines. ──
   // OP07-017 Bombardment — [Main]/[Trigger] K.O. up to 1 opp Character with 3000 power or less.
-  //   PARTIAL: the "and up to 1 opp Stage cost ≤1" clause needs a Stage target (no Stage selector yet).
   {
     cardNumber: 'OP07-017',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true },
+        { fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true },
+        { fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+      ] } },
     ],
   },
 
@@ -145,14 +150,16 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-025 — [On Play] play [Caribou] cost≤4 from hand rested.
   { cardNumber: 'OP07-025', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Caribou', maxCost: 4 }, rested: true }] } },
 
-  // OP07-026 (character) Jewelry Bonney —
-  //   PARTIAL: rested DON!! cards not included in preventRefresh target.
+  // OP07-026 (character) Jewelry Bonney - [On Play] up to 1 rested opponent Character or DON!! will not become active.
   {
     cardNumber: 'OP07-026',
     templateId: 'ability',
     params: {
       timing: 'onPlay',
-      functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 }],
+      functions: [{ fn: 'preventRefresh', target: { group: 'union', targets: [
+        { group: 'characters', player: 'opponent', filter: { rested: true } },
+        { group: 'don', player: 'opponent', filter: { rested: true } },
+      ] }, optional: true, maxTargets: 1 }],
     },
   },
 
@@ -186,12 +193,15 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP07-036 — [Main] up to 1 Leader/Char +3000 this turn. [Trigger] Rest up to 1 opp Character cost ≤4.
-  //   PARTIAL: the "rest your cost-3+ Character → rest opp cost ≤5" mid-clause needs a min-cost in-play filter (deferred).
+  // OP07-036 — [Main] +3000, then rest your cost 3+ Character to rest an opponent cost 5 or less. [Trigger] rest cost <=4.
   {
     cardNumber: 'OP07-036',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true },
+        { fn: 'rest', target: { group: 'characters', player: 'controller', filter: { minCost: 3 } }, optional: true, maxTargets: 1 },
+        { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
+      ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
     ],
   },
@@ -342,8 +352,7 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP07-058 (stage) — [Activate: Main] rest this Stage + trash 1: If Leader {Kuja Pirates}, return up to 1 {Amazon Lily}/{Kuja Pirates} Character to hand.
   { cardNumber: 'OP07-058', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { anyOfTypes: ['Amazon Lily', 'Kuja Pirates'] } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
 
-  // OP07-059 (leader) Foxy —
-  //   PARTIAL: rested DON!! preventRefresh not modeled; mapped rested Leader + Character only.
+  // OP07-059 (leader) Foxy - [When Attacking] DON!! -3: if 3+ Foxy Pirates Characters, up to 1 rested opponent Leader/Character/DON!! will not become active.
   {
     cardNumber: 'OP07-059',
     templateId: 'ability',
@@ -352,14 +361,17 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
       cost: [{ kind: 'donMinus', count: 3 }],
       gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Foxy Pirates', atLeast: 3 }],
       functions: [
-        { fn: 'preventRefresh', target: { group: 'leader', player: 'opponent', filter: { rested: true } }, optional: true },
-        { fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 },
+        { fn: 'preventRefresh', target: { group: 'union', targets: [
+          { group: 'leader', player: 'opponent', filter: { rested: true } },
+          { group: 'characters', player: 'opponent', filter: { rested: true } },
+          { group: 'don', player: 'opponent', filter: { rested: true } },
+        ] }, optional: true, maxTargets: 1 },
       ],
     },
   },
 
-  // OP07-060 — PARTIAL: "no other [Itomimizu]" gate not modeled.
-  { cardNumber: 'OP07-060', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  // OP07-060 — [Activate: Main] [Once Per Turn] If Leader {Foxy Pirates} and no other [Itomimizu], add 1 DON!! rested.
+  { cardNumber: 'OP07-060', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }, { kind: 'selfOtherNamedCharacterCount', name: 'Itomimizu', atMost: 0 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
   // OP07-061 — [On Play] DON!! −1: If Leader {The Vinsmoke Family}, draw 1.
   { cardNumber: 'OP07-061', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'The Vinsmoke Family' }], functions: [{ fn: 'draw', amount: 1 }] } },
@@ -453,12 +465,11 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP07-078 (event) Megaton Nine-Tails Rush —
-  //   PARTIAL: [Foxy] Leader not covered by setActiveControllerCharacter.
+  // OP07-078 (event) Megaton Nine-Tails Rush — set [Foxy] Leader/Character active.
   {
     cardNumber: 'OP07-078',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'setActiveControllerCharacter', filter: { name: 'Foxy' }, maxTargets: 1, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'setActiveControllerLeaderOrCharacter', filter: { name: 'Foxy' }, maxTargets: 1, optional: true }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
     ],
   },
@@ -521,11 +532,11 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP07-090', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromOpponentHandChosenByOpponent', count: 1 }, { fn: 'revealOpponentHand' }, { fn: 'draw', amount: 1, player: 'opponent' }] } },
 
-  // OP07-091 — PARTIAL: +1000 per 3 cards placed (dynamic scaling) deferred; mapped flat +1000 after trash reorder.
+  // OP07-091 — K.O. a small Character, bottom-deck any number of cost 4+ Characters from trash, then +1000 per 3 placed.
   { cardNumber: 'OP07-091', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
     { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true },
     { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', minCost: 4 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 9 },
-    { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+    { fn: 'addPower', target: { ref: 'self' }, amount: 0, amountPer: 1000, amountPerStep: 3, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
   ] } },
 
   // OP07-093 — [On Play] reorder 3 trash → deck bottom: opp trashes 1 hand, then optional opp trash → deck bottom.

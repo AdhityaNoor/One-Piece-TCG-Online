@@ -143,13 +143,12 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP02-024 — PARTIAL: [Edward.Newgate] + {Whitebeard Pirates} +2000 when ≤1 Life; [Trigger] play this Stage.
+  // OP02-024 — [Edward.Newgate] + {Whitebeard Pirates} +2000 when ≤1 Life; [Trigger] play this Stage.
   {
     cardNumber: 'OP02-024',
     templates: [
-      { templateId: 'ability', params: { timing: 'onEnterPlay', gate: [{ kind: 'selfLife', atMost: 1 }], functions: [
-        { fn: 'addPowerAuraControllerCharacters', amount: 2000, duration: 'permanent', anyOfNames: ['Edward.Newgate'], sourceCondition: { turn: 'your' } },
-        { fn: 'addPowerAuraControllerCharacters', amount: 2000, duration: 'permanent', anyOfTypes: ['Whitebeard Pirates'], sourceCondition: { turn: 'your' } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addPowerAuraControllerTypes', amount: 2000, duration: 'permanent', anyOfGroups: [{ anyOfNames: ['Edward.Newgate'] }, { anyOfTypes: ['Whitebeard Pirates'] }], sourceCondition: { turn: 'your' }, gate: [{ kind: 'selfLife', atMost: 1 }] },
       ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
     ],
@@ -164,18 +163,18 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-026 — [Once Per Turn] When you play a vanilla Character from hand, if ≤3 Characters, set up to 2 DON!! active.
   { cardNumber: 'OP02-026', templateId: 'ability', params: { timing: 'onCharacterPlayedFromHand', oncePerTurn: true, gate: [{ kind: 'playedCharacterNoBaseEffect' }, { kind: 'selfCharacterCount', atMost: 3 }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
 
-  // OP02-027 — PARTIAL: "all DON!! rested" gate deferred; mapped effect-source K.O. immunity behind rested-DON count proxy.
+  // OP02-027 — If all DON!! are rested, this Character cannot be removed by opponent effects.
   {
     cardNumber: 'OP02-027',
     templateId: 'ability',
     params: {
       timing: 'onEnterPlay',
       functions: [{
-        fn: 'koImmunitySelf',
-        scope: 'effect',
+        fn: 'preventFieldRemoval',
+        target: { ref: 'self' },
         duration: 'permanent',
         effectSourceController: 'opponent',
-        condition: { gate: [{ kind: 'selfRestedDonCount', atLeast: 10 }] },
+        condition: { gate: [{ kind: 'selfAllFieldDonRested' }] },
       }],
     },
   },

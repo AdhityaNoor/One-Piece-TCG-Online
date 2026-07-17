@@ -42,8 +42,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-010 — [DON!! x1][Activate: Main][OPT] up to 1 of your {Animal} Characters +1000 this turn (self-exclusion dropped).
-  { cardNumber: 'OP08-010', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Animal' } }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
+  // OP08-010 — [DON!! x1][Activate: Main][OPT] up to 1 of your {Animal} Characters other than this Character +1000 this turn.
+  { cardNumber: 'OP08-010', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Animal', excludeSelf: true } }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
 
   // OP08-012 — [DON!! x2] [When Attacking] If Leader is {Drum Kingdom}, K.O. up to 1 opp Character with 4000 power or less.
   { cardNumber: 'OP08-012', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 2 }, gate: [{ kind: 'leaderType', type: 'Drum Kingdom' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 4000 } }, optional: true }] } },
@@ -279,10 +279,9 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
       { fn: 'rest', target: { ref: 'self' } },
     ],
   } },
-  // OP08-047 — [On Play] you may return 1 of your Characters to hand: return up to 1 Character with a cost of 6 or less to hand.
-  //   NOTE: the cost's "other than this Character" self-exclusion is dropped (name-based exclusion would over-match; instance exclusion isn't modeled on move costs).
+  // OP08-047 — [On Play] you may return 1 of your Characters other than this Character to hand: return up to 1 Character cost 6 or less to hand.
   { cardNumber: 'OP08-047', templateId: 'ability', params: { timing: 'onPlay', functions: [
-    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { excludeSelf: true } }, to: { zone: 'hand', player: 'owner' }, optional: true },
     { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 6 } }, to: { zone: 'hand', player: 'owner' }, optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
 

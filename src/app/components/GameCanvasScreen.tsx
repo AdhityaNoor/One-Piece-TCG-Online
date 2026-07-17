@@ -91,7 +91,7 @@ export function GameCanvasScreen({ onBack, topRight, footer, dense = false, chil
         </div>
 
         <div className={['relative z-20 items-end justify-center', dense ? 'hidden sm:flex sm:min-h-3' : 'flex min-h-4'].join(' ')}>
-          {footer ?? <div className="h-2 w-40 border-x-2 border-gold/45 bg-[linear-gradient(90deg,_transparent,_rgba(217,164,65,0.85),_transparent)]" />}
+          {footer}
         </div>
       </section>
     </main>

@@ -11,6 +11,7 @@
  * flips, with no extra bookkeeping. Cost modifiers use the same record model.
  */
 import type { ContinuousEffectRecord, ContinuousFieldRemovalImmunityModifier, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousPowerCondition, ContinuousRestRestriction, ForbiddenAttackTargetFilter, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
+import type { CardDefinition } from '../../state/card';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
 
@@ -23,6 +24,26 @@ function typeIncludes(types: string[], required: string): boolean {
       .map((p) => p.trim().toLowerCase())
       .some((p) => p.includes(needle)),
   );
+}
+
+function definitionMatchesAuraFilters(def: CardDefinition, group: Pick<PowerAuraGroup, 'anyOfTypes' | 'anyOfNames' | 'anyOfAttributes' | 'anyOfColors' | 'category' | 'minBaseCost' | 'maxBaseCost'>): boolean {
+  if (group.category !== undefined && def.category !== group.category) return false;
+  if (group.anyOfTypes !== undefined && !group.anyOfTypes.some((t) => typeIncludes(def.types, t))) return false;
+  if (group.anyOfNames !== undefined && !group.anyOfNames.includes(def.name)) return false;
+  if (group.anyOfAttributes !== undefined) {
+    const attrs = def.attributes ?? [];
+    if (!group.anyOfAttributes.some((a) => attrs.some((have) => have.toLowerCase() === a.toLowerCase()))) return false;
+  }
+  if (group.anyOfColors !== undefined && !group.anyOfColors.some((c) => def.colors.includes(c))) return false;
+  if (group.minBaseCost !== undefined && (def.baseCost ?? -Infinity) < group.minBaseCost) return false;
+  if (group.maxBaseCost !== undefined && (def.baseCost ?? Infinity) > group.maxBaseCost) return false;
+  return true;
+}
+
+function definitionMatchesAuraGroup(def: CardDefinition, group: PowerAuraGroup): boolean {
+  if (!definitionMatchesAuraFilters(def, group)) return false;
+  if (group.anyOfGroups !== undefined && !group.anyOfGroups.some((candidate) => definitionMatchesAuraFilters(def, candidate))) return false;
+  return true;
 }
 
 /** True if `instanceId` is in the aura's dynamic target set (owner's Leader/Characters, optionally type-filtered). */
@@ -46,9 +67,13 @@ export function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffec
     if (target.currentZone !== 'hand' || target.controllerId !== record.ownerId) return false;
     const def = getDefinition(defs, target);
     if (def.category !== 'character') return false;
-    if (group.anyOfTypes !== undefined) {
-      if (!group.anyOfTypes.some((t) => typeIncludes(def.types, t))) return false;
-    }
+    if (!definitionMatchesAuraGroup(def, group)) return false;
+    return true;
+  }
+  if (group.controllerCardsInHand) {
+    if (target.currentZone !== 'hand' || target.controllerId !== record.ownerId) return false;
+    const def = getDefinition(defs, target);
+    if (!definitionMatchesAuraGroup(def, group)) return false;
     return true;
   }
   if (group.opponentCharacters) {
@@ -58,24 +83,10 @@ export function targetInAuraGroup(group: PowerAuraGroup, record: ContinuousEffec
     if (target.controllerId !== record.ownerId) return false;
     if (target.currentZone !== 'leaderArea' && target.currentZone !== 'characterArea') return false;
   }
+  if (group.excludeSource && instanceId === record.sourceInstanceId) return false;
   if (group.charactersOnly && target.currentZone === 'leaderArea') return false;
-  if (group.anyOfTypes !== undefined) {
-    const def = getDefinition(defs, target);
-    if (!group.anyOfTypes.some((t) => typeIncludes(def.types, t))) return false;
-  }
-  if (group.anyOfNames !== undefined) {
-    const def = getDefinition(defs, target);
-    if (!group.anyOfNames.includes(def.name)) return false;
-  }
-  if (group.anyOfAttributes !== undefined) {
-    const def = getDefinition(defs, target);
-    const attrs = def.attributes ?? [];
-    if (!group.anyOfAttributes.some((a) => attrs.some((have) => have.toLowerCase() === a.toLowerCase()))) return false;
-  }
-  if (group.anyOfColors !== undefined) {
-    const def = getDefinition(defs, target);
-    if (!group.anyOfColors.some((c) => def.colors.includes(c))) return false;
-  }
+  const def = getDefinition(defs, target);
+  if (!definitionMatchesAuraGroup(def, group)) return false;
   return true;
 }
 
@@ -114,6 +125,7 @@ export function continuousTargetConditionApplies(
   if (cond.rested !== undefined && (instance.orientation === 'rested') !== cond.rested) return false;
   const def = getDefinition(defs, instance);
   if (cond.maxCost !== undefined && computeCurrentCost(defs, state, instanceId) > cond.maxCost) return false;
+  if (cond.minCost !== undefined && computeCurrentCost(defs, state, instanceId) < cond.minCost) return false;
   if (cond.maxBaseCost !== undefined && (def.baseCost ?? Infinity) > cond.maxBaseCost) return false;
   if (cond.minBaseCost !== undefined && (def.baseCost ?? -Infinity) < cond.minBaseCost) return false;
   if (cond.maxBasePower !== undefined && (def.basePower ?? Infinity) > cond.maxBasePower) return false;
@@ -197,6 +209,17 @@ function scaleAmount(scale: PowerScale | undefined, ownerId: string, state: Game
       count = player.costArea.cardIds.filter((id) => state.cardsById[id]?.donRested === true && !attached.has(id)).length;
       break;
     }
+    case 'controllerCharacterDistinctNames': {
+      const names = new Set<string>();
+      for (const id of player.characterArea.cardIds) {
+        const inst = state.cardsById[id];
+        if (!inst) continue;
+        const def = defs[inst.cardDefinitionId];
+        if (def?.name) names.add(def.name);
+      }
+      count = names.size;
+      break;
+    }
   }
   return scale.step > 0 ? Math.floor(count / scale.step) * scale.amountPer : 0;
 }
@@ -238,7 +261,7 @@ export function computeCurrentCost(defs: CardDefinitionLookup, state: GameState,
     const mod = record.costModifier!;
     // "base cost becomes N" (2-7): overwrite the base; last applicable set wins.
     if (mod.setBase !== undefined) base = mod.setBase;
-    else continuousDelta += mod.amount;
+    else continuousDelta += mod.amount + scaleAmount(mod.scale, record.ownerId, state, defs);
   }
   return Math.max(0, base + continuousDelta);
 }
@@ -482,7 +505,14 @@ export function cannotBeRemovedFromFieldByEffect(
 ): boolean {
   return state.continuousEffects.some((record) => {
     const r = record.fieldRemovalImmunityModifier;
-    if (!r || r.appliesToInstanceId !== instanceId) return false;
+    if (!r) return false;
+    if (r.appliesToInstanceId !== undefined) {
+      if (r.appliesToInstanceId !== instanceId) return false;
+    } else if (r.appliesToGroup !== undefined) {
+      if (!targetInAuraGroup(r.appliesToGroup, record, state, instanceId, defs)) return false;
+    } else {
+      return false;
+    }
     if (!fieldRemovalSourceMatches(r, state, instanceId, effectSourceInstanceId)) return false;
     if (r.condition && !continuousTargetConditionApplies(r.condition, record, state, instanceId, defs)) return false;
     return true;

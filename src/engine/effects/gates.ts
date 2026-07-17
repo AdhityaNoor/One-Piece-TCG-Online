@@ -9,7 +9,7 @@
  *   - interpreter.ts: before a triggered/activated ability fires.
  *   - power.ts: for continuous power modifiers that carry a gate condition.
  */
-import type { AbilityGate } from './effectIr';
+import type { AbilityGate, RemovedFromFieldDestination } from './effectIr';
 import type { GameState } from '../state/game';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { getOpponentId } from '../rules/shared/players';
@@ -74,6 +74,8 @@ export interface GateEvalContext {
   removedFromFieldControllerId?: string;
   /** Player who controlled the effect that removed the card. */
   removedByEffectControllerId?: string;
+  /** Destination zone of the field removal. */
+  removedToZone?: RemovedFromFieldDestination;
   /** Character just played from hand/trash (played-character reactive windows). */
   playedCharacterInstanceId?: string;
   /** True when the just-played Character entered play via another Character's effect. */
@@ -225,6 +227,11 @@ function evaluateGate(
       return true;
     }
 
+    case 'selfAllFieldDonRested': {
+      const ids = fieldDonIds(state, ownerId);
+      return ids.length > 0 && ids.every((id) => state.cardsById[id]?.donRested === true);
+    }
+
     case 'selfActiveDonCount': {
       const count = countControllerActiveUnattachedDon(state, ownerId);
       if (gate.atLeast !== undefined && count < gate.atLeast) return false;
@@ -299,6 +306,13 @@ function evaluateGate(
       if (gate.atLeast !== undefined && count < gate.atLeast) return false;
       if (gate.atMost !== undefined && count > gate.atMost) return false;
       return true;
+    }
+
+    case 'selfHandAtLeastLessThanOpponent': {
+      const opponentId = getOpponentId(state, ownerId);
+      const opponent = state.players[opponentId];
+      if (!opponent) return false;
+      return player.hand.cardIds.length + gate.count <= opponent.hand.cardIds.length;
     }
 
     case 'anyCharacterExactCost': {
@@ -464,6 +478,16 @@ function evaluateGate(
       });
     }
 
+    case 'selfControlsNamedCharacterBasePower': {
+      const mode = gate.mode ?? 'atLeast';
+      return player.characterArea.cardIds.some((id) => {
+        const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
+        if (!def || def.name !== gate.name) return false;
+        const basePower = def.basePower ?? -1;
+        return mode === 'exact' ? basePower === gate.power : basePower >= gate.power;
+      });
+    }
+
     case 'selfTypedCharacterPowerAtLeast': {
       return player.characterArea.cardIds.some((id) => {
         const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
@@ -474,6 +498,17 @@ function evaluateGate(
 
     case 'selfCharacterCurrentPowerCount': {
       const c = player.characterArea.cardIds.filter((id) => computeCurrentPower(defs, state, id) >= gate.power).length;
+      if (gate.atLeast !== undefined && c < gate.atLeast) return false;
+      if (gate.atMost !== undefined && c > gate.atMost) return false;
+      return true;
+    }
+
+    case 'selfCharacterBasePowerCount': {
+      const mode = gate.mode ?? 'atLeast';
+      const c = player.characterArea.cardIds.filter((id) => {
+        const basePower = defs[state.cardsById[id]?.cardDefinitionId ?? '']?.basePower ?? -1;
+        return mode === 'exact' ? basePower === gate.power : basePower >= gate.power;
+      }).length;
       if (gate.atLeast !== undefined && c < gate.atLeast) return false;
       if (gate.atMost !== undefined && c > gate.atMost) return false;
       return true;
@@ -717,6 +752,9 @@ function evaluateGate(
       if (!def) return false;
       return typeMatches(def.types, gate.typeIncludes);
     }
+
+    case 'removedToZone':
+      return eventContext?.removedToZone === gate.zone;
 
     case 'effectSourceTypeIncludes': {
       const sourceId = eventContext?.handTrashEffectSourceInstanceId;

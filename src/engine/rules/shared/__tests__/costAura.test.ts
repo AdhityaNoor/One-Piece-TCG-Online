@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ContinuousEffectRecord, ContinuousPowerCondition, GameState, PowerAuraGroup, SourceStateCondition } from '../../../state/game';
 import { computeCurrentCost, consumablePlayFromHandCostDiscountIds, withConsumedPlayFromHandCostDiscounts } from '../power';
-import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putInHand } from './testRig';
+import { buildBaseRig, makeCharacterDef, makeEventDef, putCharacterInPlay, putInHand } from './testRig';
 
 /** A continuous cost aura over a dynamic group, owned by p1 (source = `sourceInstanceId`). */
 function costAura(
@@ -168,6 +168,53 @@ describe('continuous cost aura (addCostAura)', () => {
     expect(computeCurrentCost(withCheap.rig.defs, state, wanoHand.instanceId)).toBe(3);
     expect(computeCurrentCost(withCheap.rig.defs, state, withOther.instanceId)).toBe(4);
     expect(computeCurrentCost(withCheap.rig.defs, state, withCheap.instanceId)).toBe(2);
+  });
+
+  it('applies a one-shot in-hand play discount to matching named Characters with min base cost', () => {
+    const law = makeCharacterDef({ baseCost: 4, name: 'Trafalgar Law', cardNumber: 'LAW-001' });
+    const cheapLaw = makeCharacterDef({ baseCost: 3, name: 'Trafalgar Law', cardNumber: 'LAW-002' });
+    const other = makeCharacterDef({ baseCost: 4, name: 'Bepo', cardNumber: 'BEPO-001' });
+    const base = buildBaseRig({ activePlayerId: 'p1' });
+    const lawHand = putInHand(base, 'p1', law);
+    const cheapLawHand = putInHand(lawHand.rig, 'p1', cheapLaw);
+    const otherHand = putInHand(cheapLawHand.rig, 'p1', other);
+    const state: GameState = {
+      ...otherHand.rig.state,
+      continuousEffects: [{
+        id: 'next-law-discount',
+        sourceInstanceId: otherHand.rig.state.players.p1.leaderInstanceId!,
+        ownerId: 'p1',
+        duration: 'duringThisTurn',
+        usesRemaining: 1,
+        description: 'next Law -2',
+        costModifier: {
+          appliesToGroup: { controllerCharactersInHand: true, anyOfNames: ['Trafalgar Law'] },
+          amount: -2,
+          condition: { minBaseCost: 4 },
+        },
+      }],
+    };
+
+    expect(computeCurrentCost(otherHand.rig.defs, state, lawHand.instanceId)).toBe(2);
+    expect(computeCurrentCost(otherHand.rig.defs, state, cheapLawHand.instanceId)).toBe(3);
+    expect(computeCurrentCost(otherHand.rig.defs, state, otherHand.instanceId)).toBe(4);
+  });
+
+  it('applies an in-hand cost aura to matching blue Events only', () => {
+    const base = buildBaseRig({ activePlayerId: 'p1' });
+    const source = putCharacterInPlay(base, 'p1', makeCharacterDef({ baseCost: 4, cardNumber: 'SRC-001' }));
+    const blueEvent = putInHand(source.rig, 'p1', makeEventDef({ baseCost: 3, colors: ['blue'], cardNumber: 'EVT-BLUE' }));
+    const redEvent = putInHand(blueEvent.rig, 'p1', makeEventDef({ baseCost: 3, colors: ['red'], cardNumber: 'EVT-RED' }));
+    const blueCharacter = putInHand(redEvent.rig, 'p1', makeCharacterDef({ baseCost: 3, colors: ['blue'], cardNumber: 'CHAR-BLUE' }));
+    const group: PowerAuraGroup = { controllerCardsInHand: true, category: 'event', anyOfColors: ['blue'] };
+    const state: GameState = {
+      ...blueCharacter.rig.state,
+      continuousEffects: [costAura(group, -1, source.instanceId)],
+    };
+
+    expect(computeCurrentCost(blueCharacter.rig.defs, state, blueEvent.instanceId)).toBe(2);
+    expect(computeCurrentCost(blueCharacter.rig.defs, state, redEvent.instanceId)).toBe(3);
+    expect(computeCurrentCost(blueCharacter.rig.defs, state, blueCharacter.instanceId)).toBe(3);
   });
 
   it('consumes a one-shot in-hand play discount after PLAY_CHARACTER', () => {

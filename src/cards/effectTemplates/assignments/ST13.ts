@@ -17,9 +17,9 @@ const SEARCH_BROTHERS = {
 } as const;
 
 export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
-  // ST13-001 — PARTIAL: 7000 power filter on Life-add deferred; mapped char→Life face-up + +2000.
+  // ST13-001 — DON!! x1 Activate Main: add cost 3+ / 7000+ power Character to Life face-up, then +2000.
   { cardNumber: 'ST13-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [
-    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { minCost: 3 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { minCost: 3, minPower: 7000 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true },
     { fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
 

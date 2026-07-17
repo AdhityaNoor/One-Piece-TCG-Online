@@ -10,11 +10,13 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-001 — PARTIAL: K.O. replacement via −1000 power instead deferred; no matching primitive.
   { cardNumber: 'OP05-001', templateId: 'noRuntime', params: {} },
 
-  // OP05-002 — [Activate: Main] [OPT] trash 1 Revolutionary Army: up to 3 Rev Army +3000 this turn.
-  // PARTIAL: Characters with [Trigger] omitted (no hasTrigger on addPower target filter).
+  // OP05-002 - [Activate: Main] [OPT] trash 1 Revolutionary Army: up to 3 Rev Army or [Trigger] Characters +3000 this turn.
   { cardNumber: 'OP05-002', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
     { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Revolutionary Army' }, optional: true },
-    { fn: 'addPower', ifPrevious: 'previousSelectedAny', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Revolutionary Army' } }, amount: 3000, duration: 'duringThisTurn', optional: true, maxTargets: 3 },
+    { fn: 'addPower', ifPrevious: 'previousSelectedAny', target: { group: 'union', targets: [
+      { group: 'characters', player: 'controller', filter: { typeIncludes: 'Revolutionary Army' } },
+      { group: 'characters', player: 'controller', filter: { hasTrigger: true } },
+    ] }, amount: 3000, duration: 'duringThisTurn', optional: true, maxTargets: 3 },
   ] } },
 
   // OP05-003 — if another Character has 7000+ current power, [Rush].
@@ -373,8 +375,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP05-067', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfLife', atMost: 3 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
 
-  // OP05-068 — [On Play] if 8+ DON!!, set up to 1 {Straw Hat Crew} cost<=6 active. PARTIAL: purple/color + power filter deferred.
-  { cardNumber: 'OP05-068', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'setActiveControllerCharacter', filter: { typeIncludes: 'Straw Hat Crew', maxCost: 6 }, maxTargets: 1 }] } },
+  // OP05-068 — [On Play] if 8+ DON!!, set up to 1 purple {Straw Hat Crew} Character cost<=6 and power<=6000 active.
+  { cardNumber: 'OP05-068', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'setActiveControllerCharacter', filter: { color: 'purple', typeIncludes: 'Straw Hat Crew', maxCost: 6, maxPower: 6000 }, maxTargets: 1 }] } },
 
   // OP05-069 — [When Attacking] If opp has more DON!! than you: Look 5, reveal up to 1 {Heart Pirates} to hand, rest to bottom.
   { cardNumber: 'OP05-069', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'opponentDonMoreThanSelf' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Heart Pirates' } }] } },
@@ -431,9 +433,10 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-079 — [On Play] opponent places 3 cards from their trash at the bottom of their deck.
   { cardNumber: 'OP05-079', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 3 }] } },
 
-  // OP05-080 — PARTIAL: shuffle step omitted; trash→deck return mapped as moveCards.
+  // OP05-080 - [When Attacking] [OPT] return up to 20 trash to deck, shuffle, then gain Double Attack and +10000.
   { cardNumber: 'OP05-080', templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, functions: [
     { fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 20 },
+    { fn: 'shuffleDeck', ifPrevious: 'previousMovedAny' },
     { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
     { fn: 'addPowerSelf', amount: 10000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
   ] } },
@@ -546,16 +549,18 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP05-097 — PARTIAL: continuous hand-play discount aura deferred; mapped one-shot next-play discount on enter.
+  // OP05-097 — [Your Turn] reduce playing cost of {Celestial Dragons} Characters cost 2+ from hand by 1.
   {
     cardNumber: 'OP05-097',
     templateId: 'ability',
     params: {
       timing: 'onEnterPlay',
       functions: [{
-        fn: 'addNextPlayFromHandCostDiscount',
+        fn: 'addCostAuraControllerHandCards',
         amount: -1,
-        filter: { typeIncludes: 'Celestial Dragons', minBaseCost: 2 },
+        duration: 'permanent',
+        filter: { category: 'character', typeIncludes: 'Celestial Dragons', minBaseCost: 2 },
+        sourceCondition: { turn: 'your' },
       }],
     },
   },
@@ -596,12 +601,11 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-105 — [Trigger] trash 1 → play this card.
   { cardNumber: 'OP05-105', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' }] } },
 
-  // OP05-106 — [On Play] Look 5, reveal up to 1 {Sky Island} to hand, rest to bottom. [Trigger] play this card.
-  //   PARTIAL: "other than [Shura]" exclusion is dropped (arbitrary-name exclusion not modeled).
+  // OP05-106 — [On Play] Look 5, reveal up to 1 {Sky Island} other than [Shura] to hand, rest to bottom. [Trigger] play this card.
   {
     cardNumber: 'OP05-106',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Sky Island' } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Sky Island', excludeCardNames: ['Shura'] } }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
     ],
   },

@@ -82,11 +82,14 @@ function selectorFromTarget(target: TargetSpec): Selector {
       ...(target.filter?.rested !== undefined ? { rested: target.filter.rested } : {}),
     };
   }
+  if (target.group === 'leaderOrStages' && target.player === 'controller') return { sel: 'var', name: 't' };
   if (target.group === 'leaderOrCharacters' && target.player === 'controller') return { sel: 'var', name: 't' };
   if (target.group === 'leaderOrCharacters' && target.player === 'opponent') return { sel: 'var', name: 't' };
   if (target.group === 'characters') return { sel: 'var', name: 't' };
+  if (target.group === 'don') return { sel: 'var', name: 't' };
   if (target.group === 'charactersOrDon' && target.player === 'opponent') return { sel: 'var', name: 't' };
   if (target.group === 'charactersOrStages') return { sel: 'var', name: 't' };
+  if (target.group === 'union') return { sel: 'var', name: 't' };
 
   throw new Error(`Unsupported target ${JSON.stringify(target)}`);
 }
@@ -105,7 +108,12 @@ function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTa
     return null;
   }
 
+  if (target.group === 'union') {
+    return { sel: 'union', members: target.targets.map((member) => chooseFromTarget(member) ?? selectorFromTarget(member)) };
+  }
+
   if (target.group === 'leader') return null;
+  if (target.group === 'leaderOrStages' && target.player === 'controller') return { sel: 'controllerLeaderOrStage', ...target.filter };
   if (target.group === 'leaderOrCharacters' && target.player === 'controller') return { sel: 'controllerLeaderOrCharacters', ...target.filter };
   if (target.group === 'leaderOrCharacters' && target.player === 'opponent') {
     const { restedLeader, ...charFilter } = target.filter ?? {};
@@ -117,6 +125,16 @@ function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTa
   }
   if (target.group === 'characters' && target.player === 'controller') return { sel: 'controllerCharacters', ...target.filter };
   if (target.group === 'characters' && target.player === 'opponent') return { sel: 'opponentCharacters', ...target.filter };
+  if (target.group === 'don') {
+    if (target.player === 'controller') {
+      if (target.filter?.rested === true) return { sel: 'controllerRestedDon' };
+      if (target.filter?.rested === false) return { sel: 'controllerActiveDon' };
+      return { sel: 'controllerFieldDon' };
+    }
+    if (target.filter?.rested === true) return { sel: 'opponentRestedDon' };
+    if (target.filter?.rested === false) return { sel: 'opponentActiveDon' };
+    return { sel: 'opponentFieldDon' };
+  }
   if (target.group === 'charactersOrDon' && target.player === 'opponent') {
     return {
       sel: 'union',
@@ -349,15 +367,16 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         ];
       }
       const from = f.charactersOnly
-        ? ({ sel: 'controllerCharacters' as const, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}), ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) })
-        : ({ sel: 'controllerLeaderOrCharacters' as const, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}), ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) });
+        ? ({ sel: 'controllerCharacters' as const, ...f.targetFilter, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}), ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) })
+        : ({ sel: 'controllerLeaderOrCharacters' as const, ...f.targetFilter, ...(f.targetTypeIncludes ? { typeIncludes: f.targetTypeIncludes } : {}), ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}) });
+      const maxTargets = f.maxTargets ?? 1;
       return [
         {
           op: 'chooseTargets',
           var: 't',
           from,
           min: optional ? 0 : 1,
-          max: 1,
+          max: maxTargets,
           prompt: 'Give DON!! to your Leader or 1 of your Characters.',
         },
         f.activeDonOnly
@@ -402,6 +421,15 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       });
     case 'rest':
       return targetOps(f.target, (target) => ({ op: 'rest', target }), { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt });
+    case 'restAllCharacters': {
+      const filter = f.filter ?? {};
+      const target = f.player === 'controller'
+        ? ({ sel: 'controllerCharacters', ...filter } as const)
+        : f.player === 'opponent'
+          ? ({ sel: 'opponentCharacters', ...filter } as const)
+          : ({ sel: 'allCharacters', ...filter } as const);
+      return [{ op: 'rest', target }];
+    }
     case 'preventRefresh':
       return targetOps(
         f.target,
@@ -482,6 +510,20 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         (target) => ({ op: 'preventFieldRemoval', target, duration: f.duration, ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}), ...(f.condition ? { condition: f.condition } : {}) }),
         {},
       );
+    case 'preventFieldRemovalAuraControllerCharacters':
+      return [{
+        op: 'preventFieldRemovalAura',
+        group: {
+          ownLeaderAndCharacters: true,
+          charactersOnly: true,
+          ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}),
+          ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}),
+          ...(f.anyOfColors ? { anyOfColors: f.anyOfColors } : {}),
+        },
+        duration: f.duration,
+        ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}),
+        ...(f.targetCondition || f.gate ? { condition: { ...(f.targetCondition ?? {}), ...(f.gate ? { gate: f.gate } : {}) } } : {}),
+      }];
     case 'negateEffect':
       return targetOps(
         f.target,
@@ -531,13 +573,21 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
     case 'addCost':
       return targetOps(
         f.target,
-        (target) => ({ op: 'addCost', target, amount: f.amount, duration: f.duration ?? 'duringThisTurn', ...(f.condition ? { condition: f.condition } : {}) }),
+        (target) => ({ op: 'addCost', target, amount: f.amount, duration: f.duration ?? 'duringThisTurn', ...(f.condition ? { condition: f.condition } : {}), ...(f.scale ? { scale: f.scale } : {}) }),
         { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
       );
     case 'addPower':
       return targetOps(
         f.target,
-        (target) => ({ op: 'addPower', target, amount: f.amount, duration: f.duration, ...(f.condition ? { condition: f.condition } : {}) }),
+        (target) => ({
+          op: 'addPower',
+          target,
+          amount: f.amount,
+          duration: f.duration,
+          ...(f.condition ? { condition: f.condition } : {}),
+          ...(f.scale ? { scale: f.scale } : {}),
+          ...(f.amountPer !== undefined ? { amountPer: f.amountPer, amountPerVar: f.countVar ?? 't', ...(f.amountPerStep !== undefined ? { amountPerStep: f.amountPerStep } : {}) } : {}),
+        }),
         { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
       );
     case 'setBasePower':
@@ -603,11 +653,11 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [
         {
           op: 'addKeywordAura',
-          group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) },
+          group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}), ...(f.anyOfColors ? { anyOfColors: f.anyOfColors } : {}), ...(f.excludeSource ? { excludeSource: true } : {}) },
           keyword: f.keyword,
           duration: f.duration,
           ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
-          ...(f.gate ? { condition: { gate: f.gate } } : {}),
+          ...(f.targetCondition || f.gate ? { condition: { ...(f.targetCondition ?? {}), ...(f.gate ? { gate: f.gate } : {}) } } : {}),
         },
       ];
     case 'preventBlockers': {
@@ -700,20 +750,24 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'trashCards', target: { sel: 'var', name: 't' } },
       ];
     case 'trashTypeFromHand':
+      const trashTypeMax = f.anyNumber ? -1 : f.count;
       return [
         {
           op: 'chooseTargets',
           var: 't',
           from: { sel: 'controllerHand', filter: { ...f.filter } },
           min: f.optional ? 0 : f.count,
-          max: f.count,
-          prompt: `Trash ${f.count} ${f.filter.typeIncludes ? `{${f.filter.typeIncludes}} ` : ''}card${f.count === 1 ? '' : 's'} from your hand.`,
+          max: trashTypeMax,
+          prompt: f.anyNumber
+            ? `Trash any number of ${f.filter.typeIncludes ? `{${f.filter.typeIncludes}} ` : ''}cards from your hand.`
+            : `Trash ${f.count} ${f.filter.typeIncludes ? `{${f.filter.typeIncludes}} ` : ''}card${f.count === 1 ? '' : 's'} from your hand.`,
         },
         { op: 'trashCards', target: { sel: 'var', name: 't' } },
       ];
     case 'optionalRevealTypeFromHand': {
       const count = f.count ?? 1;
-      if (count > 1) {
+      if (f.then !== undefined || count > 1) {
+        const branch = f.then?.flatMap(functionOps) ?? [];
         return [{
           op: 'chooseOption',
           prompt: f.prompt ?? `You may reveal ${count} cards from your hand.`,
@@ -725,6 +779,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
               ops: [
                 { op: 'chooseTargets', var: 't', from: { sel: 'controllerHand', ...(f.filter ? { filter: f.filter } : {}) }, min: count, max: count, prompt: f.prompt ?? `Reveal ${count} cards from your hand.` },
                 { op: 'revealCards', target: { sel: 'var', name: 't' } },
+                ...branch,
               ],
             },
           ],
@@ -807,8 +862,12 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'trashCards', target: { sel: 'self' } }];
     case 'returnSelfToHand':
       return [{ op: 'moveToHand', target: { sel: 'self' } }];
+    case 'moveSelfToBottomDeck':
+      return [{ op: 'moveToBottomDeck', target: { sel: 'self' } }];
     case 'moveCards':
       return moveCardsOps(f);
+    case 'movePreviousSelection':
+      return [moveOpForDestination(f.to, { sel: 'var', name: f.varName ?? 't' })];
     case 'moveAllCards':
       return [moveOpForDestination(f.to, selectorFromMoveSource(f.from))];
     case 'moveAllCharactersToBottomDeck':
@@ -1012,6 +1071,20 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'setActive', target: { sel: 'self' } }];
     case 'setActiveControllerLeader':
       return [{ op: 'setActive', target: { sel: 'controllerLeader' } }];
+    case 'setActiveControllerLeaderOrCharacter': {
+      const maxTargets = f.maxTargets ?? 1;
+      return [
+        {
+          op: 'chooseTargets',
+          var: 't',
+          from: { sel: 'controllerLeaderOrCharacters', ...f.filter },
+          min: f.optional === false ? maxTargets : 0,
+          max: maxTargets,
+          prompt: `Set up to ${maxTargets} of your Leader or Characters as active (or decline).`,
+        },
+        { op: 'setActive', target: { sel: 'var', name: 't' } },
+      ];
+    }
     case 'setActiveControllerCharacters':
       return [{ op: 'setActive', target: { sel: 'controllerCharacters', ...f.filter } }];
     case 'setActiveControllerCharacter': {
@@ -1065,7 +1138,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           from: { sel: 'controllerActiveDon' },
           min: 0,
           max: maxTargets,
-          prompt: `Rest up to ${maxTargets} of your DON!! cards (or decline).`,
+          prompt: maxTargets < 0 ? 'Rest any number of your DON!! cards (or decline).' : `Rest up to ${maxTargets} of your DON!! cards (or decline).`,
         },
         { op: 'rest', target: { sel: 'var', name: 't' } },
       ];
@@ -1174,7 +1247,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [
         {
           op: 'addPowerAura',
-          group: { ownLeaderAndCharacters: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) },
+          group: { ownLeaderAndCharacters: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}), ...(f.anyOfGroups ? { anyOfGroups: f.anyOfGroups } : {}) },
           amount: f.amount,
           duration: f.duration,
           ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
@@ -1197,30 +1270,55 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
     case 'addPowerAuraControllerCharacters':
       return [{
         op: 'addPowerAura',
-        group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) },
+        group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}), ...(f.anyOfGroups ? { anyOfGroups: f.anyOfGroups } : {}) },
         amount: f.amount,
         duration: f.duration,
         ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
         ...(f.targetCondition || f.gate ? { condition: { ...(f.targetCondition ?? {}), ...(f.gate ? { gate: f.gate } : {}) } } : {}),
+        ...(f.scale ? { scale: f.scale } : {}),
       }];
     case 'addCostAuraControllerCharacters':
-      return [{ op: 'addCostAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
+      return [{ op: 'addCostAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}), ...(f.scale ? { scale: f.scale } : {}) }];
+    case 'addCostAuraControllerHandCards':
+      return [{
+        op: 'addCostAura',
+        group: {
+          controllerCardsInHand: true,
+          ...(f.filter?.category ? { category: f.filter.category } : {}),
+          ...(f.filter?.color ? { anyOfColors: [f.filter.color] } : {}),
+          ...(f.filter?.typeIncludes ? { anyOfTypes: [f.filter.typeIncludes] } : {}),
+          ...(f.filter?.anyOfTypes ? { anyOfTypes: f.filter.anyOfTypes } : {}),
+          ...(f.filter?.anyOfNames ? { anyOfNames: f.filter.anyOfNames } : {}),
+          ...(f.filter?.minBaseCost !== undefined ? { minBaseCost: f.filter.minBaseCost } : {}),
+          ...(f.filter?.maxBaseCost !== undefined ? { maxBaseCost: f.filter.maxBaseCost } : {}),
+        },
+        amount: f.amount,
+        duration: f.duration,
+        ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+        ...(f.gate ? { condition: { gate: f.gate } } : {}),
+        ...(f.scale ? { scale: f.scale } : {}),
+      }];
     case 'addCostAuraOpponentCharacters':
       return [{ op: 'addCostAura', group: { opponentCharacters: true }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addCostAuraSameCardInHand':
       return [{ op: 'addCostAura', group: { controllerSameDefinitionInHand: true }, amount: f.amount, duration: f.duration, ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addNextPlayFromHandCostDiscount': {
-      const condition = f.filter?.minBaseCost !== undefined ? { minBaseCost: f.filter.minBaseCost } : undefined;
+      const condition = {
+        ...(f.filter?.minBaseCost !== undefined ? { minBaseCost: f.filter.minBaseCost } : {}),
+        ...(f.filter?.maxBaseCost !== undefined ? { maxBaseCost: f.filter.maxBaseCost } : {}),
+      };
       return [{
         op: 'addCostAura',
         group: {
           controllerCharactersInHand: true,
           ...(f.filter?.typeIncludes ? { anyOfTypes: [f.filter.typeIncludes] } : {}),
+          ...(f.filter?.name ? { anyOfNames: [f.filter.name] } : {}),
+          ...(f.filter?.anyOfNames ? { anyOfNames: f.filter.anyOfNames } : {}),
         },
         amount: f.amount,
         duration: 'duringThisTurn',
         usesRemaining: 1,
-        ...(condition ? { condition } : {}),
+        ...(Object.keys(condition).length > 0 ? { condition } : {}),
       }];
     }
     case 'addPowerControllerCharactersAll':
@@ -1341,6 +1439,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       ];
     case 'drawByEventCount':
       return [{ op: 'drawByEventCount', countField: f.countField }];
+    case 'shuffleDeck':
+      return [{ op: 'shuffleDeck', ...(f.player ? { player: f.player } : {}) }];
     case 'returnHandShuffleDraw':
       return [{
         op: 'returnHandShuffleDraw',

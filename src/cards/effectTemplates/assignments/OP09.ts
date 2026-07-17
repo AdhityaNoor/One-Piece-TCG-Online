@@ -22,8 +22,8 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-004', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraOpponentCharacters', amount: -1000, duration: 'permanent' }] } },
 
   // ── Triage batch (OP09 expressible). "return 1 or more DON!!" is approximated as DON!! −1. ──
-  // OP09-007 — [Blocker][On Play] your Leader +1000 this turn (the "4000 power or less" leader filter is dropped).
-  { cardNumber: 'OP09-007', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'duringThisTurn' }] } },
+  // OP09-007 — [Blocker][On Play] if your Leader has 4000 power or less, it gains +1000 this turn.
+  { cardNumber: 'OP09-007', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfLeaderPowerAtMost', power: 4000 }], functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'duringThisTurn' }] } },
 
 
 
@@ -167,8 +167,8 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-076', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
 
 
-  // PARTIAL: "3 less than opponent's hand" gate dropped.
-  { cardNumber: 'OP09-092', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'trashFromHand', count: 1 }] } },
+  // OP09-092 - rest this: if your hand is at least 3 less than opponent's, draw 2 and trash 1.
+  { cardNumber: 'OP09-092', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'selfHandAtLeastLessThanOpponent', count: 3 }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'trashFromHand', count: 1 }] } },
 
 
   { cardNumber: 'OP09-101', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }, { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifPrevious: 'previousMovedAny' }] } },

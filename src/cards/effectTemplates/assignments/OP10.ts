@@ -116,17 +116,17 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP10-028 — [Activate: Main] rest 2 DON!! + trash this: look 5, reveal up to 2 {The Akazaya Nine}, add to hand, rest to bottom.
   { cardNumber: 'OP10-028', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 2 }, { kind: 'trashThis' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'hand', filter: { typeIncludes: 'The Akazaya Nine' }, remainder: 'bottom' }] } },
 
-  // OP10-026 — PARTIAL: "this Character" deck-bottom uses name filter (may pick wrong Kin'emon on field).
+  // OP10-026 - return 0-power Kin'emon from trash and this Character to deck bottom, then play Kin'emon cost 6 from hand.
   { cardNumber: 'OP10-026', templateId: 'ability', params: { timing: 'activateMain', functions: [
     { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { name: "Kin'emon", exactBasePower: 0 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
-    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { name: "Kin'emon" } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+    { fn: 'moveSelfToBottomDeck' },
     { fn: 'playFromHand', filter: { name: "Kin'emon", exactCost: 6 }, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // OP10-027 — PARTIAL: same Kin'emon self-target approximation as OP10-026.
+  // OP10-027 - return 1000-power Kin'emon from trash and this Character to deck bottom, then play Kin'emon cost 6 from hand.
   { cardNumber: 'OP10-027', templateId: 'ability', params: { timing: 'activateMain', functions: [
     { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { name: "Kin'emon", exactBasePower: 1000 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
-    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { name: "Kin'emon" } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 1 },
+    { fn: 'moveSelfToBottomDeck' },
     { fn: 'playFromHand', filter: { name: "Kin'emon", exactCost: 6 }, ifPrevious: 'previousMovedAny' },
   ] } },
 
@@ -155,15 +155,14 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP10-033 (character) Nami —
-  //   PARTIAL: {ODYSSEY} type filter on rested-character gate not modeled; rested DON!! target deferred.
+  // OP10-033 - [On Play] If 2+ rested {ODYSSEY} Characters, up to 1 opponent rested DON!! will not become active.
   {
     cardNumber: 'OP10-033',
     templateId: 'ability',
     params: {
       timing: 'onPlay',
-      gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }],
-      functions: [{ fn: 'preventRefresh', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 }],
+      gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'ODYSSEY', rested: true, atLeast: 2 }],
+      functions: [{ fn: 'preventRefresh', target: { group: 'don', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 }],
     },
   },
 

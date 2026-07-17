@@ -29,12 +29,12 @@ export const ST21_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST21-014 — [Rush][When Attacking] give up to 1 rested DON!! to Leader/1 Char.
   { cardNumber: 'ST21-014', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'giveDon', count: 1 }] } },
 
-  // ST21-015 — [DON!! x2] this Character gains [Rush]. [On K.O.] play up to 1 red Character 6000 power or less from hand (exclude-[Zoro] dropped).
+  // ST21-015 — [DON!! x2] this Character gains [Rush]. [On K.O.] play up to 1 red Character 6000 power or less other than [Roronoa Zoro] from hand.
   {
     cardNumber: 'ST21-015',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
-      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'red', maxPower: 6000 } }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'red', maxPower: 6000, excludeCardNames: ['Roronoa Zoro'] } }] } },
     ],
   },
 

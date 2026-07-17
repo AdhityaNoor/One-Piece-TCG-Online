@@ -12,7 +12,7 @@ import { runTimings, resumeProgram } from './interpreter';
 import { evaluateGates, type GateEvalContext } from './gates';
 import { autoSelectDonMinusIds, canPayAbilityCost, payAbilityCost } from './abilityCost';
 import { recordEventActivation } from './eventActivationHistory';
-import type { Ability, IrTiming } from './effectIr';
+import type { Ability, IrTiming, RemovedFromFieldDestination } from './effectIr';
 import type { EffectTemplateRegistry } from './effectTemplate';
 
 /** Per-instance once-per-turn key for a triggered [On Battle] ability. Cleared in the Refresh Phase. */
@@ -825,6 +825,7 @@ export interface FieldRemovalEvent {
   targetInstanceId: string;
   removedControllerId: string;
   effectControllerId: string;
+  removedToZone: RemovedFromFieldDestination;
 }
 
 /**
@@ -842,6 +843,7 @@ export function fireRemovedFromFieldReactions(
     removedFromFieldInstanceId: event.targetInstanceId,
     removedFromFieldControllerId: event.removedControllerId,
     removedByEffectControllerId: event.effectControllerId,
+    removedToZone: event.removedToZone,
   };
   let working = state;
   let log: ActionExecuteResult['log'] = [];

@@ -237,6 +237,7 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
   const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
   if (filter.typeIncludes && !hasType(def.types, filter.typeIncludes)) return false;
   if (filter.excludeSelfName && selfName !== undefined && def.name === selfName) return false;
+  if (filter.excludeCardNames?.includes(def.name)) return false;
   if (filter.category && def.category !== filter.category) return false;
   if (filter.color && !def.colors.includes(filter.color)) return false;
   if (filter.excludeColorsOfPreviousMove) {
@@ -409,9 +410,12 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const maxCost = effectiveMaxCost(sel, ctx);
       if (maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= maxCost);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
+      if (sel.minPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) >= sel.minPower!);
+      if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       ids = applyBaseFilters(ids, sel, ctx);
       if (sel.color !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.colors.includes(sel.color!) === true);
       if (sel.name !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name === sel.name);
+      if (sel.excludeCardNames !== undefined) ids = ids.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
       if (sel.anyOfTypes !== undefined) ids = ids.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
@@ -437,9 +441,18 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
         ids = ids.filter((id) => (sel.typeFilterCharactersOnly && id === leaderId) || sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
       }
       if (sel.name !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name === sel.name);
+      if (sel.minCost !== undefined) ids = ids.filter((id) => id === leaderId || ctx.costOf(id) >= sel.minCost!);
+      const maxCost = effectiveMaxCost(sel, ctx);
+      if (maxCost !== undefined) ids = ids.filter((id) => id === leaderId || ctx.costOf(id) <= maxCost);
+      if (sel.exactCost !== undefined) ids = ids.filter((id) => id === leaderId || ctx.costOf(id) === sel.exactCost);
       if (sel.minPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) >= sel.minPower!);
+      if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       if (sel.maxBasePower !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.basePower ?? Infinity) <= sel.maxBasePower!);
+      if (sel.minBasePower !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.basePower ?? -Infinity) >= sel.minBasePower!);
+      if (sel.exactBasePower !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.basePower ?? -1) === sel.exactBasePower);
+      if (sel.color !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.colors.includes(sel.color!) === true);
       if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
+      if (sel.excludeCardNames !== undefined) ids = ids.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       return ids;
     }
     case 'opponentLeaderOrCharacters': {
@@ -458,9 +471,11 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const maxCost = effectiveMaxCost(sel, ctx);
       if (maxCost !== undefined) charIds = charIds.filter((id) => ctx.costOf(id) <= maxCost);
       if (sel.exactCost !== undefined) charIds = charIds.filter((id) => ctx.costOf(id) === sel.exactCost);
+      if (sel.minPower !== undefined) charIds = charIds.filter((id) => ctx.powerOf(id) >= sel.minPower!);
       if (sel.maxPower !== undefined) charIds = charIds.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       charIds = applyBaseFilters(charIds, sel, ctx);
       if (sel.excludeName !== undefined) charIds = charIds.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
+      if (sel.excludeCardNames !== undefined) charIds = charIds.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       return [...ids, ...charIds];
     }
     case 'opponentLeader': {
@@ -473,6 +488,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const p = ctx.state().players[ctx.controllerId];
       let ids = [p.leaderInstanceId, ...p.stageArea.cardIds];
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
+      if (sel.name !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name === sel.name);
       return ids;
     }
     case 'controllerRestedDon': {
@@ -559,10 +575,12 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       let ids = [...ctx.controllerCharacterIds(), ...ctx.opponentCharacterIds()];
       if (sel.minCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) >= sel.minCost!);
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
+      if (sel.minPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) >= sel.minPower!);
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       ids = applyBaseFilters(ids, sel, ctx);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
+      if (sel.excludeCardNames !== undefined) ids = ids.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       return ids;
     }
     case 'opponentCharacters': {
@@ -571,6 +589,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const maxCost = effectiveMaxCost(sel, ctx);
       if (maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= maxCost);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
+      if (sel.minPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) >= sel.minPower!);
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       ids = applyBaseFilters(ids, sel, ctx);
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
@@ -579,6 +598,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
       if (sel.attribute !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.attributes?.includes(sel.attribute!) === true);
       if (sel.excludeName !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
+      if (sel.excludeCardNames !== undefined) ids = ids.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
       return ids;
     }
@@ -675,7 +695,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       const ids = resolveSelector(op.target, ctx, bindings);
       const scaledAmount =
         op.amountPerVar && op.amountPer
-          ? op.amountPer * (bindings[op.amountPerVar]?.length ?? 0)
+          ? op.amountPer * Math.floor((bindings[op.amountPerVar]?.length ?? 0) / (op.amountPerStep ?? 1))
           : op.amount;
       for (const id of ids) {
         ctx.addContinuousPower({ appliesToInstanceId: id, amount: scaledAmount, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}), ...(op.scale ? { scale: op.scale } : {}) });
@@ -683,7 +703,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return { selectedIds: ids, movedIds: scaledAmount !== 0 ? ids : [] };
     }
     case 'addPowerAura': {
-      ctx.addContinuousPowerAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}) });
+      ctx.addContinuousPowerAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}), ...(op.scale ? { scale: op.scale } : {}) });
       return { selectedIds: [], movedIds: [] };
     }
     case 'setBasePowerAura': {
@@ -691,13 +711,13 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return { selectedIds: [], movedIds: [] };
     }
     case 'addCostAura': {
-      ctx.addContinuousCostAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}), ...(op.usesRemaining !== undefined ? { usesRemaining: op.usesRemaining } : {}) });
+      ctx.addContinuousCostAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}), ...(op.scale ? { scale: op.scale } : {}), ...(op.usesRemaining !== undefined ? { usesRemaining: op.usesRemaining } : {}) });
       return { selectedIds: [], movedIds: [] };
     }
     case 'addCost': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
-        ctx.addContinuousCost({ appliesToInstanceId: id, amount: op.amount, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
+        ctx.addContinuousCost({ appliesToInstanceId: id, amount: op.amount, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}), ...(op.scale ? { scale: op.scale } : {}) });
       }
       return { selectedIds: ids, movedIds: [] };
     }
@@ -882,6 +902,15 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
         });
       }
       return { selectedIds: ids, movedIds: [] };
+    }
+    case 'preventFieldRemovalAura': {
+      ctx.preventFieldRemoval({
+        appliesToGroup: op.group,
+        duration: op.duration,
+        ...(op.effectSourceController ? { effectSourceController: op.effectSourceController } : {}),
+        ...(op.condition ? { condition: op.condition } : {}),
+      });
+      return { selectedIds: [], movedIds: [] };
     }
     case 'negateEffect': {
       const ids = resolveSelector(op.target, ctx, bindings);
@@ -1722,6 +1751,12 @@ function runOpList(
         ctx.replaceState(reactive.state, reactive.log);
       }
       workingBindings = withResultBindings(workingBindings, { selectedIds: [], movedIds: count > 0 ? ['__draw'] : [] });
+      continue;
+    }
+    if (op.op === 'shuffleDeck') {
+      const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      ctx.shuffleDeck(playerId);
+      workingBindings = withResultBindings(workingBindings, { selectedIds: [], movedIds: ['__shuffleDeck'] });
       continue;
     }
     if (op.op === 'returnHandShuffleDraw') {

@@ -49,10 +49,9 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability',
     params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent' }] },
   },
-  // OP06-011 — [Activate: Main] [Once Per Turn] rest 1 [Uta] Character: this +5000 this turn.
-  // PARTIAL: Leader/Stage [Uta] rest cost deferred; mapped Character [Uta] rest only.
+  // OP06-011 — [Activate: Main] [Once Per Turn] rest 1 [Uta] card: this +5000 this turn.
   { cardNumber: 'OP06-011', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
-    { fn: 'rest', target: { group: 'characters', player: 'controller', filter: { name: 'Uta' } }, optional: true, maxTargets: 1 },
+    { fn: 'rest', target: { group: 'union', targets: [{ group: 'characters', player: 'controller', filter: { name: 'Uta' } }, { group: 'leaderOrStages', player: 'controller', filter: { name: 'Uta' } }] }, optional: true, maxTargets: 1 },
     { fn: 'addPowerSelf', amount: 5000, duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny' },
   ] } },
 
@@ -65,15 +64,14 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-014 — PARTIAL: variable FILM trash count → single trash +1000 battle buff.
+  // OP06-014 — trash any number of {FILM} from hand; +1000 battle power per card trashed.
   { cardNumber: 'OP06-014', templateId: 'ability', params: { timing: 'onOpponentsAttack', functions: [
-    { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'FILM' }, optional: true },
-    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' },
+    { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'FILM' }, optional: true, anyNumber: true },
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 0, amountPer: 1000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
-  // OP06-015 — [Activate: Main] [Once Per Turn] trash 1 Character power>=6000: play {FILM} cost 2–5 from trash rested.
-  // PARTIAL: "6000 power or more" uses minBasePower proxy on the trash target filter.
+  // OP06-015 — [Activate: Main] [Once Per Turn] trash 1 Character with 6000+ current power: play {FILM} cost 2–5 from trash rested.
   { cardNumber: 'OP06-015', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
-    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { minBasePower: 6000 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { minPower: 6000 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
     { fn: 'playFromTrash', ifPrevious: 'previousMovedAny', filter: { category: 'character', typeIncludes: 'FILM', minCost: 2, maxCost: 5 }, rested: true, maxTargets: 1 },
   ] } },
 
@@ -287,11 +285,11 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-041 — [On Play] rest all opp Characters. PARTIAL: "rest all" mapped as up to 1; [Trigger] play this Stage.
+  // OP06-041 — [On Play] rest all opp Characters. [Trigger] play this Stage.
   {
     cardNumber: 'OP06-041',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'restAllCharacters', player: 'opponent' }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
     ],
   },

@@ -67,10 +67,9 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP03-011', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP03-012 — [When Attacking] trash 1 red Character power>=4000: draw 1, this +1000 this battle.
-  // PARTIAL: "4000 power or more" uses minBasePower proxy on the trash target filter.
+  // OP03-012 — [When Attacking] trash 1 red Character with 4000+ current power: draw 1, this +1000 this battle.
   { cardNumber: 'OP03-012', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
-    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { color: 'red', minBasePower: 4000 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { color: 'red', minPower: 4000 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
     { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
     { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
   ] } },
@@ -181,14 +180,13 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'playFromHand', filter: { category: 'character', name: 'Buchi' }, ifGate: [{ kind: 'selfDoesNotControlNamed', name: 'Buchi' }] },
   ] } },
 
-  // OP03-028 — [On Play] choose one: set East Blue cost<=6 active, or rest self + up to 1 opp Character.
-  // PARTIAL: Leader set-active branch deferred; mapped Character-only set active.
+  // OP03-028 — [On Play] choose one: set East Blue Leader/Character cost<=6 active, or rest self + up to 1 opp Character.
   { cardNumber: 'OP03-028', templateId: 'ability', params: { timing: 'onPlay', functions: [{
     fn: 'chooseOne',
     chooser: 'controller',
     prompt: 'Choose one:',
     options: [
-      { label: 'setActiveEastBlue', functions: [{ fn: 'setActiveControllerCharacter', filter: { typeIncludes: 'East Blue', maxCost: 6 }, maxTargets: 1 }] },
+      { label: 'setActiveEastBlue', functions: [{ fn: 'setActiveControllerLeaderOrCharacter', filter: { typeIncludes: 'East Blue', maxCost: 6 }, maxTargets: 1 }] },
       { label: 'restBoth', functions: [{ fn: 'restSelf' }, { fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 1 }] },
     ],
   }] } },
@@ -231,14 +229,14 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP03-036 — [Main] rest 1 East Blue: set [Kuro] active. PARTIAL: name-specific set-active → East Blue cost<=6.
+  // OP03-036 — [Main] rest 1 East Blue Character: set [Kuro] active.
   // [Trigger] K.O. rested opp cost<=3.
   {
     cardNumber: 'OP03-036',
     templates: [
       { templateId: 'ability', params: { timing: 'activateMain', functions: [
         { fn: 'rest', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'East Blue' } }, optional: true },
-        { fn: 'setActiveControllerCharacter', filter: { typeIncludes: 'East Blue', maxCost: 6 }, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
+        { fn: 'setActiveControllerLeaderOrCharacter', filter: { name: 'Kuro' }, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
       ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 3 } }, optional: true }] } },
     ],

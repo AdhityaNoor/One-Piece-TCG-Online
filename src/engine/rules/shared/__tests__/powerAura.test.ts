@@ -125,6 +125,27 @@ describe('continuous power aura (addPowerAura)', () => {
     expect(computeCurrentPower(other.rig.defs, state, other.instanceId)).toBe(3000);
   });
 
+  it('OR-group aura matches name or type without double-applying cards that match both', () => {
+    const base = buildBaseRig({ activePlayerId: 'p1' });
+    const src = putCharacterInPlay(base, 'p1', makeCharacterDef({ name: 'Stage Source', basePower: 1000 }));
+    const namedAndTyped = putCharacterInPlay(src.rig, 'p1', makeCharacterDef({ name: 'Edward.Newgate', basePower: 6000, types: ['Whitebeard Pirates'] }));
+    const typedOnly = putCharacterInPlay(namedAndTyped.rig, 'p1', makeCharacterDef({ name: 'Marco', basePower: 4000, types: ['Whitebeard Pirates'] }));
+    const namedOnly = putCharacterInPlay(typedOnly.rig, 'p1', makeCharacterDef({ name: 'Edward.Newgate', basePower: 5000, types: ['Former Rocks Pirates'] }));
+    const other = putCharacterInPlay(namedOnly.rig, 'p1', makeCharacterDef({ name: 'Sanji', basePower: 3000, types: ['Straw Hat Crew'] }));
+
+    const group: PowerAuraGroup = {
+      ownLeaderAndCharacters: true,
+      anyOfGroups: [{ anyOfNames: ['Edward.Newgate'] }, { anyOfTypes: ['Whitebeard Pirates'] }],
+    };
+    const aura = powerAura(group, 2000, src.instanceId, { turn: 'your' });
+    const state: GameState = { ...other.rig.state, continuousEffects: [aura] };
+
+    expect(computeCurrentPower(other.rig.defs, state, namedAndTyped.instanceId)).toBe(8000);
+    expect(computeCurrentPower(other.rig.defs, state, typedOnly.instanceId)).toBe(6000);
+    expect(computeCurrentPower(other.rig.defs, state, namedOnly.instanceId)).toBe(7000);
+    expect(computeCurrentPower(other.rig.defs, state, other.instanceId)).toBe(3000);
+  });
+
   it('applies +2000 only while the Character itself is rested on opponent turn (OP14-026)', () => {
     const base = buildBaseRig({ activePlayerId: 'p2' });
     const src = putCharacterInPlay(base, 'p1', makeCharacterDef({ basePower: 5000 }));

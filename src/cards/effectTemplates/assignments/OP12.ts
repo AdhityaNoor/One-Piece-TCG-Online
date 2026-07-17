@@ -23,8 +23,8 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // ── Triage batch (OP12 expressible). "reveal 2 Events from hand" cost, "give active DON!! to [named]", and Events-in-trash gates are deferred. ──
-  // OP12-007 — [On Play] up to 1 {Roger Pirates} Character gains [Rush] this turn (exclude-[Shanks] dropped).
-  { cardNumber: 'OP12-007', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Roger Pirates' } }, keyword: 'rush', duration: 'duringThisTurn', optional: true }] } },
+  // OP12-007 — [On Play] up to 1 {Roger Pirates} Character other than [Shanks] gains [Rush] this turn.
+  { cardNumber: 'OP12-007', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Roger Pirates', excludeCardNames: ['Shanks'] } }, keyword: 'rush', duration: 'duringThisTurn', optional: true }] } },
 
   // OP12-008 — [Blocker] [On Your Opponent's Attack] [Once Per Turn] trash 1 from hand: give up to 1 opp Leader/Character −2000 this turn.
   { cardNumber: 'OP12-008', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [
@@ -308,8 +308,8 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP12-047 — [On Play] trash 1 → Look 5, reveal up to 2 {Navy} to hand (exclude-[Sengoku] dropped), rest to bottom.
-  { cardNumber: 'OP12-047', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'hand', filter: { typeIncludes: 'Navy' }, remainder: 'bottom', ifPrevious: 'previousMovedAny' }] } },
+  // OP12-047 — [On Play] trash 1 → Look 5, reveal up to 2 {Navy} other than [Sengoku] to hand, rest to bottom.
+  { cardNumber: 'OP12-047', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'hand', filter: { typeIncludes: 'Navy', excludeCardNames: ['Sengoku'] }, remainder: 'bottom', ifPrevious: 'previousMovedAny' }] } },
 
   // OP12-048 (character) Donquixote Rosinante —
   //   [Opponent's Turn] If your blue {Navy} type Character would be removed from the field by your
@@ -356,11 +356,11 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     ] },
   },
 
-  // OP12-054 — [On Play] If Leader {The Seven Warlords of the Sea}: return up to 1 Character cost ≤1 to hand (exclude-self dropped).
-  { cardNumber: 'OP12-054', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'The Seven Warlords of the Sea' }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 1 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  // OP12-054 — [On Play] If Leader {The Seven Warlords of the Sea}: return up to 1 Character cost ≤1 other than this Character to hand.
+  { cardNumber: 'OP12-054', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'The Seven Warlords of the Sea' }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 1, excludeSelf: true } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
-  // OP12-056 — [On Play] trash 1 → play up to 1 blue {Navy} Character (≤8000 base power) from hand (exclude-[Garp] dropped).
-  { cardNumber: 'OP12-056', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'playFromHand', filter: { category: 'character', color: 'blue', typeIncludes: 'Navy', maxPower: 8000 } }] } },
+  // OP12-056 — [On Play] trash 1 → play up to 1 blue {Navy} Character with 8000 power or less other than [Monkey.D.Garp] from hand.
+  { cardNumber: 'OP12-056', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'playFromHand', filter: { category: 'character', color: 'blue', typeIncludes: 'Navy', maxPower: 8000, excludeCardNames: ['Monkey.D.Garp'] } }] } },
 
   // OP12-057 — [Counter] up to 1 Leader/Char +4000 this battle, then trash 1 from hand. [Trigger] trash 1 → draw 1.
   {
@@ -382,23 +382,33 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP12-061 — [Once Per Turn] [Trafalgar Law] K.O. replacement (top Life → hand) is fully mapped via registerKoReplacementAura.
-  // PARTIAL: the separate [Activate: Main] DON!!−1 "next play of [Trafalgar Law] cost 4+ is reduced by 2" clause is
-  // still deferred — addNextPlayFromHandCostDiscount's controllerCharactersInHand group only filters by anyOfTypes,
-  // not by card name, so a name-scoped one-shot next-play discount isn't expressible yet without extending that group.
+  // OP12-061 — [Trafalgar Law] K.O. replacement plus DON!!−1 next named hand play discount.
   {
     cardNumber: 'OP12-061',
-    templateId: 'ability',
-    params: {
-      timing: 'onEnterPlay',
-      functions: [{
-        fn: 'registerKoReplacementAura',
-        oncePerTurn: true,
-        anyOfNames: ['Trafalgar Law'],
-        lifeToHand: { position: 'top' },
-        duration: 'permanent',
-      }],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementAura',
+            oncePerTurn: true,
+            anyOfNames: ['Trafalgar Law'],
+            lifeToHand: { position: 'top' },
+            duration: 'permanent',
+          }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          cost: [{ kind: 'donMinus', count: 1 }],
+          functions: [{ fn: 'addNextPlayFromHandCostDiscount', amount: -2, filter: { name: 'Trafalgar Law', minBaseCost: 4 } }],
+        },
+      },
+    ],
   },
 
   // OP12-062 — [On Play] If Leader [Sanji] and your DON!! ≤ opponent's, add 1 DON!! (rested), then draw 1.
@@ -424,23 +434,22 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-069 — [On Your Opponent's Attack] [Once Per Turn] DON!! −1: If Leader {Baroque Works}, up to 1 Leader/Character +2000 battle.
   { cardNumber: 'OP12-069', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }] } },
 
-  // OP12-070 — Closed 2026-07-16 field-removal replacement pass: broadened effectSourceController + replacementTriggers.
-  // PARTIAL: the dynamic "+1000 power for every 5 Events in your trash" scaling clause is still deferred — no
-  // generic "scale bonus by dynamic count" op exists yet (see effect-partial-curation-priority.md cluster 5).
+  // OP12-070 — +1000 power per 5 Events in trash; field-removal replacement returns 1 DON!!.
   {
     cardNumber: 'OP12-070',
-    templateId: 'ability',
-    params: {
-      timing: 'onEnterPlay',
-      functions: [{
-        fn: 'registerKoReplacementSelf',
-        scope: 'effect',
-        effectSourceController: 'opponent',
-        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
-        returnDon: { count: 1 },
-        duration: 'permanent',
-      }],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addPowerSelfScaling', per: 'controllerTrashEvents', step: 5, amountPer: 1000, duration: 'permanent' },
+        {
+          fn: 'registerKoReplacementSelf',
+          scope: 'effect',
+          effectSourceController: 'opponent',
+          replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+          returnDon: { count: 1 },
+          duration: 'permanent',
+        },
+      ] } },
+    ],
   },
   // OP12-071 - [On Play] Look at 4; add [Sanji] or Event.
   {
@@ -587,12 +596,12 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP12-097 — [Main]/[Trigger] Look 3, reveal up to 1 {Revolutionary Army} to hand, trash the rest (exclude-name dropped).
+  // OP12-097 — [Main]/[Trigger] Look 3, reveal up to 1 {Revolutionary Army} other than [Captains Assembled] to hand, trash rest.
   {
     cardNumber: 'OP12-097',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Revolutionary Army' }, remainder: 'trash' }] } },
-      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Revolutionary Army' }, remainder: 'trash' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Revolutionary Army', excludeCardNames: ['Captains Assembled'] }, remainder: 'trash' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Revolutionary Army', excludeCardNames: ['Captains Assembled'] }, remainder: 'trash' }] } },
     ],
   },
 

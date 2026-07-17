@@ -163,7 +163,7 @@ function HomeActions() {
               transparent (sparse faint ink-line map art) — it's an overlay,
               not a fill, so it needs a solid dark base underneath or the
               gaps show through to whatever's behind the button. */}
-          <div className="absolute inset-0 bg-[#08101f]" />
+          <div className="absolute inset-0 bg-[#08101f] transition-opacity duration-200 group-hover:opacity-0" />
           <div className="absolute inset-0 bg-repeat opacity-70" style={{ backgroundImage: `url('${MENUS_BG}')` }} />
           {/* Per-card foreground art — fit to the card's height (natural aspect,
               not cropped) and docked to the left edge, matching the source
@@ -178,7 +178,7 @@ function HomeActions() {
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
 
           <div className="relative z-10 flex h-full flex-col items-end justify-end gap-0.5 px-3 py-2 text-right sm:px-4 sm:py-3">
-            <span className="font-display text-lg font-black uppercase tracking-[0.08em] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] sm:text-xl lg:text-2xl">
+            <span className="font-display text-lg font-black uppercase tracking-[0.08em] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] transition-colors group-hover:text-red-600 sm:text-xl lg:text-2xl">
               {card.title}
             </span>
             <span className="text-xs text-slate-100/80 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] sm:text-sm">{card.subtitle}</span>

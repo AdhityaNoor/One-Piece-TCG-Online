@@ -94,14 +94,26 @@ export const ST30_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST30-014 — PARTIAL: 6000 base power target filter on giveDon deferred; rest this → give 2 DON!! mapped.
-  { cardNumber: 'ST30-014', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'giveDon', count: 2 }] } },
+  // ST30-014 — rest this: give up to 2 rested DON!! each to up to 2 Characters with exactly 6000 base power.
+  { cardNumber: 'ST30-014', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'giveDon', count: 2, charactersOnly: true, maxTargets: 2, optional: true, targetFilter: { exactBasePower: 6000 } }] } },
 
-  // ST30-015 — [Trigger] K.O. up to 1 opp Character 6000 power or less. PARTIAL: the power-count-gated [Counter] buff is deferred.
-  { cardNumber: 'ST30-015', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 6000 } }, optional: true }] } },
+  // ST30-015 — [Counter] 2+ own 6000-base-power Characters: +4000; [Trigger] K.O. 6000-power-or-less.
+  {
+    cardNumber: 'ST30-015',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'selfCharacterBasePowerCount', power: 6000, mode: 'exact', atLeast: 2 }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 6000 } }, optional: true }] } },
+    ],
+  },
 
-  // ST30-016 — [Counter] up to 1 Leader/Char +3000 this battle. PARTIAL: named+power draw rider deferred.
-  { cardNumber: 'ST30-016', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true }] } },
+  // ST30-016 — [Counter] +3000, then draw 1 if you have [Ace] and [Luffy] Characters with 6000 base power.
+  { cardNumber: 'ST30-016', templateId: 'ability', params: { timing: 'counter', functions: [
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true },
+    { fn: 'draw', amount: 1, ifGate: [
+      { kind: 'selfControlsNamedCharacterBasePower', name: 'Portgas.D.Ace', power: 6000, mode: 'exact' },
+      { kind: 'selfControlsNamedCharacterBasePower', name: 'Monkey.D.Luffy', power: 6000, mode: 'exact' },
+    ] },
+  ] } },
 
   // ST30-017 — [Main]/[Trigger] Look 5, reveal up to 1 Character with 6000 power to hand, rest to bottom.
   {
