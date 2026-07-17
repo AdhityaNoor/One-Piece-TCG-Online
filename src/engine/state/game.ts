@@ -707,6 +707,19 @@ export interface GameState {
    * "diff at a single choke point" approach.
    */
   pendingLifeTriggerTrash?: string[];
+  /**
+   * Instance ids of Characters that entered play together via a single effect
+   * (e.g. OP13-082 "play up to 5 … from your trash") whose [On Play] / entry
+   * abilities have NOT fired yet, in the order they were played. Populated when
+   * the entry-trigger cascade in interpreter.ts's finishWithCascade suspends on
+   * one card's On Play choice — the remaining cards would otherwise be dropped,
+   * because the ephemeral per-resolution queue is lost across the client
+   * round-trip. Drained one card at a time by settleEntryTriggers.ts, called
+   * from dispatch.ts's executeAction after every action (same choke-point
+   * pattern as pendingLifeTriggerTrash), so the turn player's simultaneous
+   * On Play triggers all resolve, in order, each pausing for its own input.
+   */
+  pendingEntryTriggers?: string[];
   log: GameLogEntry[];
   gameOver: { winnerId: string | null; reason: GameOverReason } | null;
   /** Gates 6-3-1 (no draw), 6-4-1 (1 DON!!), 6-5-6-1 (no battle) first-turn exceptions. */

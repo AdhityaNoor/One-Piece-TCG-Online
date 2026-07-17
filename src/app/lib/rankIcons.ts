@@ -31,6 +31,12 @@ export interface RankCategoryStyle {
   label: string;
   /** Solid fill applied to the (monochrome) icon silhouette via CSS mask. */
   color: string;
+  /**
+   * Metallic sheen for the icon: a diagonal gradient with highlight + shadow
+   * bands so the masked silhouette reads like brushed/polished metal rather
+   * than a flat fill.
+   */
+  gradient: string;
   /** Softer accent used for the container ring/border. */
   ring: string;
   /** Glow color for the container backdrop. */
@@ -38,10 +44,34 @@ export interface RankCategoryStyle {
 }
 
 export const RANK_CATEGORY_STYLES: Record<RankCategory, RankCategoryStyle> = {
-  iron: { label: 'Iron', color: '#b8c2cf', ring: 'rgba(184,194,207,0.55)', glow: 'rgba(184,194,207,0.18)' },
-  copper: { label: 'Copper', color: '#d08a4f', ring: 'rgba(208,138,79,0.6)', glow: 'rgba(208,138,79,0.2)' },
-  silver: { label: 'Silver', color: '#dfe7f0', ring: 'rgba(223,231,240,0.6)', glow: 'rgba(223,231,240,0.22)' },
-  gold: { label: 'Gold', color: '#f4c542', ring: 'rgba(244,197,66,0.65)', glow: 'rgba(244,197,66,0.25)' },
+  iron: {
+    label: 'Iron',
+    color: '#b8c2cf',
+    gradient: 'linear-gradient(150deg, #f4f7fa 0%, #c3ccd8 32%, #868f9d 55%, #cfd6df 74%, #6f7885 100%)',
+    ring: 'rgba(184,194,207,0.55)',
+    glow: 'rgba(184,194,207,0.18)',
+  },
+  copper: {
+    label: 'Copper',
+    color: '#d08a4f',
+    gradient: 'linear-gradient(150deg, #f7cba3 0%, #d98f54 32%, #9c5a2c 55%, #e2a56d 74%, #7f4620 100%)',
+    ring: 'rgba(208,138,79,0.6)',
+    glow: 'rgba(208,138,79,0.2)',
+  },
+  silver: {
+    label: 'Silver',
+    color: '#dfe7f0',
+    gradient: 'linear-gradient(150deg, #ffffff 0%, #dde5ee 32%, #a7b2c1 55%, #eff3f8 74%, #8d99a8 100%)',
+    ring: 'rgba(223,231,240,0.6)',
+    glow: 'rgba(223,231,240,0.22)',
+  },
+  gold: {
+    label: 'Gold',
+    color: '#f4c542',
+    gradient: 'linear-gradient(150deg, #fff4c6 0%, #f4cf5a 32%, #c99a24 55%, #ffe793 74%, #a97a1a 100%)',
+    ring: 'rgba(244,197,66,0.65)',
+    glow: 'rgba(244,197,66,0.25)',
+  },
 };
 
 /** First (1-indexed) icon number owned by each category. Four icons per tier. */
@@ -83,7 +113,10 @@ function divisionOffset(division: RankedDivision | null | undefined): number {
     case 'I':
       return 3;
     default:
-      return 3;
+      // Unknown / null division (placement, unranked). Division-less ELITE
+      // ranks never reach here — they're routed through ELITE_ICON_OFFSET
+      // before divisionOffset is consulted. So this is the lowest icon.
+      return 0;
   }
 }
 

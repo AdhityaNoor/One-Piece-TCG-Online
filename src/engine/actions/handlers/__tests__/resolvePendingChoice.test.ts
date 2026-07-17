@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { validateResolvePendingChoice, executeResolvePendingChoice } from '../resolvePendingChoice';
+import { validateAction } from '../../dispatch';
 import type { ResolvePendingChoiceAction } from '../../action';
 import type { PendingChoice } from '../../../events/pendingChoice';
 import { buildBaseRig, putCharacterInPlay, makeCharacterDef, nextTestId } from '../../../rules/shared/__tests__/testRig';
@@ -91,6 +92,29 @@ describe('validateResolvePendingChoice', () => {
     };
     const state = { ...second.rig.state, pendingChoices: [choice] };
     const result = validateResolvePendingChoice(state, resolveAction('p1', choice.id, [first.instanceId, second.instanceId]), second.rig.defs);
+    expect(result.legal).toBe(false);
+    expect(result.reasons.join(' ')).toContain('different card names');
+  });
+
+  it('enforces distinct names through the dispatcher — regression: defs must be forwarded (OP13-082 dup-name bug)', () => {
+    // The dispatcher previously called validateResolvePendingChoice(state, action)
+    // without `defs`, so printedNameOf() returned undefined for every card and
+    // the distinctNames constraint was silently skipped — letting a "different
+    // card names" effect (e.g. OP13-082) select two same-named cards.
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const first = putCharacterInPlay(base, 'p1', makeCharacterDef({ cardDefinitionId: 'elder-a', name: 'Five Elder' }));
+    const second = putCharacterInPlay(first.rig, 'p1', makeCharacterDef({ cardDefinitionId: 'elder-b', name: 'Five Elder' }));
+    const choice: PendingChoice = {
+      id: nextTestId('choice'),
+      playerId: 'p1',
+      kind: 'SELECT_CARDS',
+      prompt: 'Play up to 5 cards with different card names.',
+      constraints: { min: 0, max: 5, candidateInstanceIds: [first.instanceId, second.instanceId], distinctNames: true },
+      sourceInstanceId: first.instanceId,
+      sourceEffectId: 'ir',
+    };
+    const state = { ...second.rig.state, pendingChoices: [choice] };
+    const result = validateAction(state, resolveAction('p1', choice.id, [first.instanceId, second.instanceId]), second.rig.defs);
     expect(result.legal).toBe(false);
     expect(result.reasons.join(' ')).toContain('different card names');
   });

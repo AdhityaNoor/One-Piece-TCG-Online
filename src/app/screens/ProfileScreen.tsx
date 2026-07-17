@@ -62,7 +62,7 @@ export function ProfileScreen() {
           <ProfileHeader />
         </aside>
 
-        <section className="flex min-h-[28rem] min-w-0 flex-col overflow-hidden border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] shadow-[0_14px_0_rgba(1,5,16,0.5)]">
+        <section className="flex min-h-[28rem] min-w-0 flex-col overflow-hidden border border-white/10 bg-[linear-gradient(180deg,_rgba(0,0,0,0.5),_rgba(0,0,0,0.72))] shadow-[0_14px_0_rgba(1,5,16,0.5)]">
           <ProfileNavigation sections={visibleSections} current={section} onChange={setSection} />
           <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
             {!backendConfigured ? (
@@ -104,7 +104,7 @@ function ProfileHeader() {
   const bannerGradient = resolveBannerGradient(profile.equippedCosmetics.banner);
 
   return (
-    <div className="overflow-hidden border border-cyan-200/20 bg-[#08101f]">
+    <div className="overflow-hidden border border-white/10 bg-black/40">
       {/* Banner sits as a full-bleed backdrop BEHIND the avatar + name card
           below (not a separate strip) — the -mt-8 on the card pulls it up
           to overlap the banner, and the avatar itself overlaps both. */}
@@ -129,11 +129,11 @@ function ProfileHeader() {
           onClick={() => setAvatarPickerOpen(true)}
           aria-label={isOwner ? 'Change profile photo' : undefined}
           className={[
-            'group relative mx-auto flex h-24 w-24 items-center justify-center overflow-hidden border-2 border-gold bg-[#050914]',
+            'group relative mx-auto flex h-32 w-32 items-center justify-center bg-transparent',
             isOwner ? 'cursor-pointer' : 'cursor-default',
           ].join(' ')}
         >
-          <img src={avatarUrl} alt="" draggable={false} className="h-full w-full object-contain p-1" />
+          <img src={avatarUrl} alt="" draggable={false} className="h-full w-full object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.55)]" />
           {isOwner && (
             <span className="absolute inset-0 hidden items-center justify-center bg-black/55 text-[9px] font-black uppercase tracking-[0.12em] text-white group-hover:flex">
               Change
@@ -151,9 +151,10 @@ function ProfileHeader() {
             size="lg"
           />
           <div className="min-w-0">
-            <p className="truncate text-[10px] font-black uppercase tracking-[0.2em] text-gold">{ranked?.rankName ?? 'Unranked'}</p>
-            <p className="mt-1 truncate text-xs font-bold uppercase tracking-[0.12em] text-white/55">
-              {ranked ? (ranked.inPlacement ? 'Placement Voyage' : ranked.division ? `Division ${ranked.division} - ${ranked.rankedPoints} BP` : `${ranked.rankedPoints} BP`) : 'No ranked record'}
+            <p className="truncate text-[9px] font-black uppercase tracking-[0.22em] text-gold/70">Current Rank</p>
+            <p className="mt-1 truncate text-sm font-black uppercase tracking-[0.1em] text-white">{ranked?.rankName ?? 'Unranked'}</p>
+            <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">
+              {ranked ? (ranked.inPlacement ? 'Placement in progress' : ranked.division ? `Division ${ranked.division} - ${ranked.rankedPoints} BP` : `${ranked.rankedPoints} BP`) : 'No ranked record'}
             </p>
           </div>
         </div>

@@ -157,7 +157,19 @@ function finishWithCascade(
     const fired = runTimings(program, ['onEnterPlay', 'onPlay'], working, event.instanceId, defs, actionId, registry);
     working = fired.state;
     log = [...log, ...fired.log];
-    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+    if (fired.pendingChoices.length > 0) {
+      // This card's On Play suspended for input. Any characters that entered
+      // play alongside it (same effect, e.g. OP13-082's 5 cards) still owe
+      // their own entry triggers — persist them on state so they aren't lost
+      // across the client round-trip. settleEntryTriggers (dispatch.ts) fires
+      // them, in order, once this card's choice chain resolves.
+      const remaining = playedCharacterEntryQueue.map((e) => e.instanceId);
+      const deferred =
+        remaining.length > 0
+          ? { ...working, pendingEntryTriggers: [...(working.pendingEntryTriggers ?? []), ...remaining] }
+          : working;
+      return { state: deferred, log, pendingChoices: fired.pendingChoices };
+    }
   }
 
   const playedFromTrashQueue = ctx.takePlayedFromTrash();

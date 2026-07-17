@@ -178,7 +178,7 @@ These cards are in `CURATED_EFFECT_PROGRAMS` but assignment comments still mark 
 | OP13-001 | OP13 | partial | OP13-001 — PARTIAL: variable DON rest → scaling +2000 deferred; mapped rest-1-DON → +2000 Straw Hat Crew battle buff. |
 | OP13-002 | OP13 | partial | PARTIAL: onOpponentsAttack −2000 only; damage/KO draw trigger deferred. |
 | OP13-003 | OP13 | partial | PARTIAL: the DON-placement routing rule is deferred (needs DON-phase modifier). |
-| OP13-079 | OP13 | partial | PARTIAL: deck construction and start-of-game Stage play remain deferred. |
+| OP13-079 | OP13 | partial | PARTIAL: deck-construction restriction ("cannot include Events cost 2+") remains deferred — no |
 | OP14-041 | OP14 | partial | PARTIAL: ally K.O. uses onRemovedFromField proxy (battle K.O. + type/base-power filters deferred). |
 | OP14-056 | OP14 | partial | PARTIAL: the static self attack lock is implemented below; the effect-negation trigger remains deferred. |
 | OP14-070 | OP14 | partial | PARTIAL: opponent-Character-effect rested gate + DON return cost deferred; mapped setActiveSelf on onRested. |

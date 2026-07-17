@@ -645,15 +645,36 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     const visibleIds = choice.constraints.visibleInstanceIds ?? candidateIds;
     const candidates = visibleIds.map((id) => buildCardView(defs, state, images, id));
     const { min, max } = choice.constraints;
+    const distinctNames = choice.constraints.distinctNames ?? false;
+    const nameById = new Map(candidates.map((card) => [card.instanceId, card.name]));
     const count = selectedIrIds.length;
     const canConfirm = count >= min && count <= max;
-    const selectLabel = min === max ? `Select ${max}` : `Select ${min}–${max}`;
+    const selectLabel = `${min === max ? `Select ${max}` : `Select ${min}–${max}`}${distinctNames ? ' · different names' : ''}`;
+
+    // When the effect requires different card names (e.g. OP13-082 "… with
+    // different card names"), a candidate whose printed name already appears in
+    // the selection becomes non-selectable — mirrors the engine's distinctNames
+    // validation (resolvePendingChoice.ts) so the player can't build an invalid
+    // set and only find out on Confirm.
+    const selectableIrIds = distinctNames
+      ? new Set(
+          candidateIds.filter((id) => {
+            if (selectedIrIds.includes(id)) return true;
+            const name = nameById.get(id);
+            return name === undefined || !selectedIrIds.some((sid) => nameById.get(sid) === name);
+          }),
+        )
+      : new Set(candidateIds);
 
     const toggle = (instanceId: string): void => {
       setSelectedIrIds((prev) => {
         if (prev.includes(instanceId)) return prev.filter((id) => id !== instanceId);
         if (max === 1) return [instanceId]; // single-select replaces
         if (prev.length >= max) return prev; // at cap — ignore
+        if (distinctNames) {
+          const name = nameById.get(instanceId);
+          if (name !== undefined && prev.some((id) => nameById.get(id) === name)) return prev; // same name already chosen
+        }
         return [...prev, instanceId];
       });
     };
@@ -670,7 +691,7 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
           <ChoicePromptInset>
             <CardChoiceGallery
               cards={candidates}
-              selectableIds={new Set(candidateIds)}
+              selectableIds={selectableIrIds}
               selectedOrder={selectedIrIds}
               max={max}
               onToggle={toggle}

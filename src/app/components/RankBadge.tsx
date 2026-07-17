@@ -12,7 +12,7 @@ import { resolveRankIcon, type RankCategory, type RankCategoryStyle } from '../l
 
 type RankBadgeSize = 'sm' | 'md' | 'lg';
 
-const SIZE_PX: Record<RankBadgeSize, number> = { sm: 30, md: 44, lg: 68 };
+const SIZE_PX: Record<RankBadgeSize, number> = { sm: 24, md: 44, lg: 82 };
 
 export interface RankBadgeProps {
   /** RankedRankId, 'placement', or any string from the profile header. */
@@ -50,7 +50,8 @@ export function RankBadge({ rank, division, inPlacement = false, size = 'md', ti
         style={{
           width: '88%',
           height: '88%',
-          backgroundColor: muted ? 'rgba(255,255,255,0.3)' : style.color,
+          background: muted ? 'rgba(255,255,255,0.28)' : style.gradient,
+          filter: muted ? 'none' : 'drop-shadow(0 1px 1px rgba(0,0,0,0.45))',
           WebkitMaskImage: `url("${resolved.path}")`,
           maskImage: `url("${resolved.path}")`,
           WebkitMaskRepeat: 'no-repeat',
