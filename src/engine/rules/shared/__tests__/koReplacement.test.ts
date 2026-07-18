@@ -409,4 +409,43 @@ describe('findKoReplacementRecord', () => {
     expect(result.state.cardsById[pica.instanceId].currentZone).toBe('characterArea');
     expect(result.state.cardsById[allyHigh.instanceId].orientation).toBe('rested');
   });
+
+  it('giveTargetPowerPenalty applies −N to the protected ally, not the aura source (OP05-001)', () => {
+    const saboDef = makeCharacterDef({ cardNumber: 'OP05-001', name: 'Sabo', basePower: 5000 });
+    const allyDef = makeCharacterDef({ cardNumber: 'ALLY-5K', name: 'Ally', basePower: 5000 });
+    let rig = buildBaseRig({ activePlayerId: 'p2', phase: 'main', turnNumber: 2 });
+    const don = putDon(rig, 'p1', 1);
+    const sabo = putCharacterInPlay(don.rig, 'p1', saboDef, { donAttached: [don.donIds[0]!] });
+    const ally = putCharacterInPlay(sabo.rig, 'p1', allyDef);
+    rig = ally.rig;
+
+    const record: ContinuousEffectRecord = {
+      id: 'kr-sabo',
+      sourceInstanceId: sabo.instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'that Character −1000',
+      koReplacementModifier: {
+        appliesToGroup: { ownLeaderAndCharacters: true, charactersOnly: true },
+        scope: 'any',
+        oncePerTurn: true,
+        condition: { minPower: 5000 },
+        sourceCondition: { turn: 'opponent', donAttachedAtLeast: 1 },
+        action: { kind: 'giveTargetPowerPenalty', amount: 1000, duration: 'duringThisTurn' },
+      },
+    };
+    const state: GameState = { ...rig.state, continuousEffects: [record] };
+    expect(findKoReplacementRecord(state, ally.instanceId, 'battle', rig.defs)).not.toBeNull();
+
+    const result = applyKoReplacementCost(state, ally.instanceId, record, [], rig.defs, null);
+    expect(result.state.cardsById[ally.instanceId].currentZone).toBe('characterArea');
+    const allyPowerMod = result.state.continuousEffects.find(
+      (ce) => ce.powerModifier?.appliesToInstanceId === ally.instanceId && ce.powerModifier.amount === -1000,
+    );
+    const sourcePowerMod = result.state.continuousEffects.find(
+      (ce) => ce.powerModifier?.appliesToInstanceId === sabo.instanceId && ce.powerModifier.amount === -1000,
+    );
+    expect(allyPowerMod).toBeTruthy();
+    expect(sourcePowerMod).toBeUndefined();
+  });
 });

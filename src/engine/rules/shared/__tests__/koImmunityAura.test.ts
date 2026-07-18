@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { isKoImmune } from '../power';
+import { isKoImmune, withKoImmunityConsumed } from '../power';
 import { buildBaseRig, makeCharacterDef, putCharacterInPlay } from './testRig';
 import type { ContinuousEffectRecord, GameState } from '../../../state/game';
+import { buildRegistryFromAssignments, type CardEffectAssignment } from '../../../../cards/effectTemplates/assembler';
+import { resumeProgram, runTimings } from '../../../effects';
 
 function withAura(
   state: GameState,
@@ -105,5 +107,60 @@ describe('isKoImmune: effect-source filters on self', () => {
 
     expect(isKoImmune(rig.defs, state, begeId, 'effect', { koSourceInstanceId: weakId })).toBe(true);
     expect(isKoImmune(rig.defs, state, begeId, 'effect', { koSourceInstanceId: strongId })).toBe(false);
+  });
+});
+
+describe('isKoImmune: oncePerTurn effect shield', () => {
+  it('prevents one opponent effect K.O., then spends the shield for the turn', () => {
+    const luffyCard: CardEffectAssignment = {
+      cardNumber: 'SYN-OPT-IMMUNE',
+      templateId: 'ability',
+      params: {
+        timing: 'onEnterPlay',
+        functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', oncePerTurn: true, effectSourceController: 'opponent' }],
+      },
+    };
+    const koCard: CardEffectAssignment = {
+      cardNumber: 'SYN-OPT-KO',
+      templateId: 'ability',
+      params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent' }, optional: true }] },
+    };
+    const registry = buildRegistryFromAssignments([luffyCard, koCard]);
+    const luffyDef = makeCharacterDef({ cardDefinitionId: 'SYN-OPT-IMMUNE', cardNumber: 'SYN-OPT-IMMUNE', baseCost: 5 });
+    const koDef = makeCharacterDef({ cardDefinitionId: 'SYN-OPT-KO', cardNumber: 'SYN-OPT-KO', baseCost: 4 });
+
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let luffyId: string;
+    let koId: string;
+    ({ rig, instanceId: luffyId } = putCharacterInPlay(rig, 'p2', luffyDef));
+    const entered = runTimings(registry['SYN-OPT-IMMUNE'], ['onEnterPlay'], rig.state, luffyId, rig.defs, null, registry).state;
+
+    ({ rig, instanceId: koId } = putCharacterInPlay({ state: entered, defs: rig.defs }, 'p1', koDef));
+    const firstKo = runTimings(registry['SYN-OPT-KO'], ['onPlay'], rig.state, koId, rig.defs, null, registry);
+    const firstResolved = resumeProgram(registry['SYN-OPT-KO'], firstKo.state, firstKo.state.pendingChoices[0], [luffyId], rig.defs, null, registry);
+    expect(firstResolved.state.players.p2.characterArea.cardIds).toContain(luffyId);
+    expect(firstResolved.state.cardsById[luffyId].oncePerTurnUsed.some((k) => k.startsWith('koImmunity:'))).toBe(true);
+    expect(isKoImmune(rig.defs, firstResolved.state, luffyId, 'effect', { koSourceInstanceId: koId })).toBe(false);
+
+    const secondKo = runTimings(registry['SYN-OPT-KO'], ['onPlay'], firstResolved.state, koId, rig.defs, null, registry);
+    const secondResolved = resumeProgram(registry['SYN-OPT-KO'], secondKo.state, secondKo.state.pendingChoices[0], [luffyId], rig.defs, null, registry);
+    expect(secondResolved.state.cardsById[luffyId].currentZone).toBe('trash');
+  });
+
+  it('withKoImmunityConsumed is a no-op when oncePerTurn is unset', () => {
+    let rig = buildBaseRig({ activePlayerId: 'p1' });
+    let id: string;
+    const def = makeCharacterDef({ cardDefinitionId: 'PERM-IMMUNE', cardNumber: 'PERM-IMMUNE' });
+    ({ rig, instanceId: id } = putCharacterInPlay(rig, 'p1', def));
+    const record: ContinuousEffectRecord = {
+      id: 'ce-perm',
+      sourceInstanceId: id,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: 'permanent',
+      koImmunityModifier: { appliesToInstanceId: id, scope: 'effect' },
+    };
+    const next = withKoImmunityConsumed(rig.state, record);
+    expect(next.cardsById[id].oncePerTurnUsed).toEqual([]);
   });
 });

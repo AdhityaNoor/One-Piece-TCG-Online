@@ -751,7 +751,10 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP10-115', templates: [{ templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }, { fn: 'draw', amount: 1, ifGate: [{ kind: 'selfLife', atMost: 0 }] }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromOpponentLife: true } }, optional: true }] } }] },
 
-  // PARTIAL: once-per-turn effect-KO immunity approximated as permanent effect immunity.
-  { cardNumber: 'OP10-118', templates: [{ templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent' }] } }, { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 3 }, { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifGate: [{ kind: 'opponentHand', atLeast: 5 }], ifPrevious: 'previousMovedAny' }] } }] },
+  // OP10-118 — OPT effect-KO shield vs opponent effects; When Attacking: bottom-deck 3 trash → opp trash 1 if hand ≥5.
+  { cardNumber: 'OP10-118', templates: [
+    { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', oncePerTurn: true, effectSourceController: 'opponent' }] } },
+    { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 3 }, { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifGate: [{ kind: 'opponentHand', atLeast: 5 }], ifPrevious: 'previousMovedAny' }] } },
+  ] },
 
 ];

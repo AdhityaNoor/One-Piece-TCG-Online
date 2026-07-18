@@ -651,23 +651,24 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP15-064 — [Activate: Main] DON!! −2 + rest this: If you have [Satori] and [Hotori], rest up to 1 opp Character with 5000 power or less.
   { cardNumber: 'OP15-064', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 2 }, { kind: 'restThis' }], gate: [{ kind: 'selfControlsNamed', name: 'Satori' }, { kind: 'selfControlsNamed', name: 'Hotori' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxPower: 5000 } }, optional: true }] } },
 
-  // OP15-119 (character) Monkey.D.Luffy —
-  //   If you have 6 or more DON!! cards on your field, this Character gains [Rush].When your opponent
-  //   activates an Event or [Blocker], reveal up to 1 card from the top of your Life cards. This Character
-  //   gains +1000 power during this turn per 1 cost on the revealed card.
-  // PARTIAL: opponent Event/Blocker activation + Life-reveal scaling power deferred.
+  // OP15-119 — Rush if ≥6 DON; on opp Event/Blocker: reveal top Life → +1000 × printed cost this turn.
   {
     cardNumber: 'OP15-119',
-    templateId: 'ability',
-    params: {
-      timing: 'onEnterPlay',
-      functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfDonFieldCount', atLeast: 6 }] } }],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfDonFieldCount', atLeast: 6 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentEventActivated', functions: [{ fn: 'revealTopLifeAddPowerPerCost', amountPer: 1000, duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'onOpponentBlockerActivated', functions: [{ fn: 'revealTopLifeAddPowerPerCost', amountPer: 1000, duration: 'duringThisTurn' }] } },
+    ],
   },
 
-
-  // PARTIAL: [Activate: Main] DON-scaling debuff deferred; mapped onPlay give 3 opp rested DON + Rush.
-  { cardNumber: 'OP15-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDonFromOpponentCostArea', count: 3, restedOnly: true, optional: true }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
+  // OP15-008 — [On Play] give 3 opp rested DON + Rush; [Activate: Main] OPT if played this turn: opp Characters −1000 per DON on them.
+  {
+    cardNumber: 'OP15-008',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDonFromOpponentCostArea', count: 3, restedOnly: true, optional: true }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfPlayedThisTurn' }], functions: [{ fn: 'addPowerAuraOpponentCharacters', amount: 0, duration: 'duringThisTurn', scale: { per: 'targetDonAttached', step: 1, amountPer: -1000 } }] } },
+    ],
+  },
 
 
   { cardNumber: 'OP15-023', templates: [{ templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'preventRefresh', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 2 }] } }, { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDonFromOpponentCostArea', count: 1, restedOnly: true, optional: true }, { fn: 'giveDonFromPreviousTargetOwnerCostArea', count: 1, restedOnly: true, optional: true, ifPrevious: 'previousSelectedAny' }] } }] },

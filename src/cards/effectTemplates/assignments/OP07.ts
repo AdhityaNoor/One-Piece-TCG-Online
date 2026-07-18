@@ -597,11 +597,32 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP07-097 (leader) Vegapunk —
-  //   This Leader cannot attack.[Activate: Main] [Once Per Turn] ① (You may rest the specified number of
-  //   DON!! cards in your cost area.): Select up to 1 {Egghead} type card with a cost of 5 or less from
-  //   your hand and play it or add it to the top of your Life cards face-up.
-  //   PARTIAL: the static "cannot attack" lock is implemented below; the activated play-or-life ability remains deferred.
-  { cardNumber: 'OP07-097', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+  //   This Leader cannot attack.[Activate: Main] [Once Per Turn] ①: Select up to 1 {Egghead} cost≤5 from
+  //   hand and play it or add it to the top of your Life face-up.
+  {
+    cardNumber: 'OP07-097',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          cost: [{ kind: 'restDon', count: 1 }],
+          functions: [{
+            fn: 'chooseOne',
+            chooser: 'controller',
+            prompt: 'Play an {Egghead} card, add it to Life, or skip?',
+            options: [
+              { label: 'skip', functions: [] },
+              { label: 'play', functions: [{ fn: 'playFromHand', filter: { anyOf: [{ category: 'character', typeIncludes: 'Egghead', maxCost: 5 }, { category: 'stage', typeIncludes: 'Egghead', maxCost: 5 }] } }] },
+              { label: 'life', functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { typeIncludes: 'Egghead', maxCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 1 }] },
+            ],
+          }],
+        },
+      },
+    ],
+  },
 
   // OP07-098 — static: if fewer Life than opponent, cannot be K.O.'d in battle. [Trigger] If Leader [Vegapunk], play this.
   {

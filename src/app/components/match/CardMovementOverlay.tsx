@@ -6,14 +6,13 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { anchorCenterInShell, cardScaleFromAnchorRect, resolveAnchorRect } from '../../../animations/cardMovement/boardAnchors';
-import type { CardMovementSpec } from '../../../animations/cardMovement/types';
+import { FLIGHT_MS, type CardMovementSpec } from '../../../animations/cardMovement/types';
 import { useCardAnimationStore } from '../../store/cardAnimationStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { CardBackArt } from './CardBackArt';
 import { CardImage } from '../CardImage';
 
 const DON_TOKEN_SRC = '/ui/don-token.png';
-const FLIGHT_MS = 640;
 const FLIP_START = 0.72;
 const EASING = 'cubic-bezier(0.33, 1, 0.38, 1)';
 

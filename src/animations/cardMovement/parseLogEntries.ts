@@ -1,9 +1,7 @@
 import type { GameLogEntry } from '../../engine/logs/logEntry';
 import type { GameState } from '../../engine/state/game';
 import { normalizeEngineZone } from './boardAnchors';
-import type { BoardZoneId, CardMovementSpec, MovementAnchor } from './types';
-
-const STAGGER_MS = 75;
+import { STAGGER_MS, type BoardZoneId, type CardMovementSpec, type MovementAnchor } from './types';
 
 function isDonDefinition(cardDefinitionId: string): boolean {
   return cardDefinitionId === 'DON-GENERIC';

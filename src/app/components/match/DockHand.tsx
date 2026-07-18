@@ -10,6 +10,14 @@
  * above the card strip at z-index 60 (cards max out at z-index 50).
  *
  * Off-turn privacy: backs shown at rest, faces on dock hover.
+ *
+ * Hover-reveal is a hotseat-only convenience (same physical player controls
+ * both boards, so there's no real secrecy boundary between "acting" and
+ * "not currently acting"). In Online/Casual/VS CPU, `isOwn=false` means a
+ * genuinely different entity's hand (a real opponent or the CPU) — hovering
+ * it must never reveal faces, only ever show backs like the docked/at-rest
+ * state. See `allowHoverReveal` below.
+ *
  * Touch: TODO — mouse-driven only for now.
  */
 
@@ -41,6 +49,15 @@ export interface DockHandProps {
   playerId: string;
   cards: CardView[];
   isOwn: boolean;
+  /**
+   * Whether hovering a non-own hand is allowed to reveal card faces.
+   * Defaults to true (hotseat's existing behavior). Callers pass `false`
+   * whenever the non-own hand belongs to a genuinely separate entity whose
+   * hand must stay secret — an online opponent or the CPU — so hovering it
+   * only ever shows backs, same as the docked/at-rest look. Has no effect
+   * when `isOwn` is true (an own hand always shows faces regardless).
+   */
+  allowHoverReveal?: boolean;
   position: 'bottom' | 'top';
   selectedIds: Set<string>;
   selectable: (card: CardView) => boolean;
@@ -264,6 +281,7 @@ export function DockHand({
   playerId,
   cards,
   isOwn,
+  allowHoverReveal = true,
   position,
   selectedIds,
   selectable,
@@ -315,7 +333,7 @@ export function DockHand({
 
   const isTop = position === 'top';
   const isOpen = (dockHovered || touchOpen || forceOpen) && !boardFocused;
-  const showFaces = isOwn || isOpen;
+  const showFaces = isOwn || (isOpen && allowHoverReveal);
   const restPeek = restPeekRatio ?? PEEK;
 
   // Three translate states:

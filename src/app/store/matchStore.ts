@@ -40,11 +40,42 @@ import type { GameLogEntry } from '../../engine/logs/logEntry';
 import { buildCardDefinitionLookup, buildCardImageLookup, resolveLeaderDonDeckSize, savedDeckToPlayerSetupInput } from '../lib/savedDeckToSetupInput';
 import { parseMovementSpecs } from '../../animations/cardMovement/parseLogEntries';
 import { applyMovementPresentation } from '../../animations/cardMovement/presentationHints';
-import { parsePhaseAnnouncements } from '../../animations/phaseAnnounce/parsePhaseAnnouncements';
+import { buildTurnSequence } from '../../animations/phaseAnnounce/buildTurnSequence';
 import { useSettingsStore } from './settingsStore';
 import { useCardAnimationStore } from './cardAnimationStore';
 import { usePhaseAnnounceStore } from './phaseAnnounceStore';
 import { EFFECT_RUNTIME_MODE } from '../config/effectRuntimeMode';
+
+/**
+ * Splits a dispatch's log delta into (a) ordinary card movement, presented
+ * immediately as before (playing a card, attacking, DON!! given mid-turn —
+ * anything with no turn/phase-transition marker in it), and (b) the
+ * turn-change + Refresh -> Draw -> DON!! -> Main sequence, handed to
+ * phaseAnnounceStore as ONE ordered queue of steps that each own their own
+ * banner AND (for phase steps) card flights — see buildTurnSequence.ts /
+ * phaseAnnounceStore.ts doc comments for why this needed to be a single
+ * queue instead of the turn-change banner and phase banners running as two
+ * separate systems on two separate clocks. Called from every dispatch()
+ * exit point below instead of enqueuing straight to cardAnimationStore.
+ */
+function presentLogDelta(
+  prevState: GameState,
+  delta: GameLogEntry[],
+  images: Record<string, string | null>,
+  localPlayerId: string | null,
+): void {
+  if (delta.length === 0) return;
+  const animationsEnabled = useSettingsStore.getState().animationsEnabled;
+  const { preStepEntries, steps } = buildTurnSequence(prevState, delta, images, localPlayerId, animationsEnabled);
+
+  if (animationsEnabled && preStepEntries.length > 0) {
+    const specs = applyMovementPresentation(parseMovementSpecs(prevState, preStepEntries, images), localPlayerId);
+    useCardAnimationStore.getState().enqueue(specs);
+  }
+  if (steps.length > 0) {
+    usePhaseAnnounceStore.getState().enqueue(steps);
+  }
+}
 
 /**
  * Build the match's card-effect registry from curated V1 EffectProgram data.
@@ -769,17 +800,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
             return { ok: false, reasons: handled.reasons };
           }
           const { cardImagesByDefinitionId } = get();
-          if (useSettingsStore.getState().animationsEnabled && handled.log.length > 0) {
-            const specs = applyMovementPresentation(
-              parseMovementSpecs(state, handled.log, cardImagesByDefinitionId),
-              localPlayerId,
-            );
-            useCardAnimationStore.getState().enqueue(specs);
-          }
-          if (handled.log.length > 0) {
-            const announcements = parsePhaseAnnouncements(handled.log);
-            usePhaseAnnounceStore.getState().enqueue(announcements);
-          }
+          presentLogDelta(state, handled.log, cardImagesByDefinitionId, localPlayerId);
           set({ state: handled.state, v2EffectSidecars: handled.sidecars });
           return { ok: true };
         }
@@ -809,16 +830,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       return { ok: false, reasons: [message] };
     }
     const { cardImagesByDefinitionId } = get();
-    if (useSettingsStore.getState().animationsEnabled && result.log.length > 0) {
-      const specs = applyMovementPresentation(
-        parseMovementSpecs(state, result.log, cardImagesByDefinitionId),
-        localPlayerId,
-      );
-      useCardAnimationStore.getState().enqueue(specs);
-    }
-    if (result.log.length > 0) {
-      usePhaseAnnounceStore.getState().enqueue(parsePhaseAnnouncements(result.log));
-    }
+    presentLogDelta(state, result.log, cardImagesByDefinitionId, localPlayerId);
     let nextState = result.state;
     let nextLog = result.log;
     let nextV2EffectSidecars = v2EffectSidecars;
@@ -845,15 +857,8 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
         }
       }
     }
-    if (useSettingsStore.getState().animationsEnabled && nextLog.length > result.log.length) {
-      const specs = applyMovementPresentation(
-        parseMovementSpecs(result.state, nextLog.slice(result.log.length), cardImagesByDefinitionId),
-        localPlayerId,
-      );
-      useCardAnimationStore.getState().enqueue(specs);
-    }
     if (nextLog.length > result.log.length) {
-      usePhaseAnnounceStore.getState().enqueue(parsePhaseAnnouncements(nextLog.slice(result.log.length)));
+      presentLogDelta(result.state, nextLog.slice(result.log.length), cardImagesByDefinitionId, localPlayerId);
     }
     set({ state: nextState, v2EffectSidecars: nextV2EffectSidecars });
     return { ok: true };

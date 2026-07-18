@@ -37,7 +37,7 @@ import type { PendingChoice } from '../../events/pendingChoice';
 import { createActionLogger } from '../shared/actionLogger';
 import { addToZoneTop, removeFromZone } from '../shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
-import { computeCurrentPower, hasContinuousKeyword, isKoImmune } from '../shared/power';
+import { computeCurrentPower, findKoImmunityRecord, hasContinuousKeyword, withKoImmunityConsumed } from '../shared/power';
 import { getOpponentId } from '../shared/players';
 import { buildKoReplacementConfirmChoice, findKoReplacementRecord } from '../shared/koAttempt';
 import { fireOnKO, fireOnBattle, fireOnBattleKoedOpponent, fireLifeDamageDealtReactions, fireLifeToHandReactions, type EffectTemplateRegistry } from '../../effects';
@@ -219,107 +219,114 @@ export function resolveDamageAndEndOfBattle(
           visibility: banished ? 'public' : { visibleTo: [defendingPlayerId] },
         });
 
+        // Commit this hit before reactions so Life→hand / deck→Life mutations are not wiped.
+        nextState = { ...nextState, players: { ...nextState.players, [defendingPlayerId]: player }, cardsById };
+
         if (!banished && !lethal) {
           const lifeToHand = fireLifeToHandReactions(
-            { ...nextState, players: { ...nextState.players, [defendingPlayerId]: player }, cardsById },
+            nextState,
             defendingPlayerId,
             registry,
             defs,
             causedByActionId,
           );
           nextState = lifeToHand.state;
+          player = nextState.players[defendingPlayerId];
+          cardsById = { ...nextState.cardsById };
           onBattleLog = [...onBattleLog, ...lifeToHand.log];
           onBattlePending = [...onBattlePending, ...lifeToHand.pendingChoices];
           if (lifeToHand.pendingChoices.length > 0) break;
         }
 
         const lifeDamage = fireLifeDamageDealtReactions(
-          { ...nextState, players: { ...nextState.players, [defendingPlayerId]: player }, cardsById },
+          nextState,
           attackerPlayerId,
           registry,
           defs,
           causedByActionId,
         );
         nextState = lifeDamage.state;
+        player = nextState.players[defendingPlayerId];
+        cardsById = { ...nextState.cardsById };
         onBattleLog = [...onBattleLog, ...lifeDamage.log];
         onBattlePending = [...onBattlePending, ...lifeDamage.pendingChoices];
         if (lifeDamage.pendingChoices.length > 0) break;
       }
-
-      if (!lethal) {
-        nextState = { ...nextState, players: { ...nextState.players, [defendingPlayerId]: player }, cardsById };
-      }
-    } else if (isKoImmune(defs, nextState, targetId, 'battle')) {
-      // Character target that "cannot be K.O.'d in battle" (e.g. ST05-008 Shiki):
-      // the attack connects but the Character survives (7-1-4-2 K.O. is prevented).
-      logger.push({
-        actorPlayerId: attackerPlayerId,
-        type: 'DAMAGE_DEALT',
-        message: `'${targetId}' cannot be K.O.'d in battle — it survives (7-1-4-2 prevented).`,
-        data: { targetInstanceId: targetId, koPrevented: true },
-        relatedCardInstanceIds: [targetId],
-        visibility: 'public',
-      });
     } else {
-      const replacementRecord = findKoReplacementRecord(nextState, targetId, 'battle', defs);
-      if (replacementRecord) {
-        const replaceChoice = buildKoReplacementConfirmChoice(nextState, targetId, replacementRecord, `${targetId}__battle-ko-replace`, {
-          abilityIndex: 0,
-          opIndex: 0,
-          bindings: {},
-          koReplacement: {
-            phase: 'confirm',
-            targetInstanceId: targetId,
-            recordId: replacementRecord.id,
-            cause: 'battle',
-            actorPlayerId: attackerPlayerId,
-            battle: {
-              causedByActionId,
-              attackerId,
-              attackerPlayerId,
-              defendingPlayerId,
-              priorLogCount: state.log.length,
-              onBattleLogLen: onBattleLog.length,
-              triggerPending: [...triggerPending],
-              onBattlePending: [...onBattlePending],
-            },
-          },
+      const battleImmunity = findKoImmunityRecord(defs, nextState, targetId, 'battle');
+      if (battleImmunity) {
+        // Character target that "cannot be K.O.'d in battle" (e.g. ST05-008 Shiki):
+        // the attack connects but the Character survives (7-1-4-2 K.O. is prevented).
+        nextState = withKoImmunityConsumed(nextState, battleImmunity);
+        logger.push({
+          actorPlayerId: attackerPlayerId,
+          type: 'DAMAGE_DEALT',
+          message: `'${targetId}' cannot be K.O.'d in battle — it survives (7-1-4-2 prevented).`,
+          data: { targetInstanceId: targetId, koPrevented: true },
+          relatedCardInstanceIds: [targetId],
+          visibility: 'public',
         });
-        return {
-          state: { ...nextState, pendingChoices: [...nextState.pendingChoices, replaceChoice], log: [...state.log, ...logger.log, ...onBattleLog] },
-          log: [...logger.log, ...onBattleLog],
-          pendingChoices: [replaceChoice, ...onBattlePending, ...triggerPending],
-        };
+      } else {
+        const replacementRecord = findKoReplacementRecord(nextState, targetId, 'battle', defs);
+        if (replacementRecord) {
+          const replaceChoice = buildKoReplacementConfirmChoice(nextState, targetId, replacementRecord, `${targetId}__battle-ko-replace`, {
+            abilityIndex: 0,
+            opIndex: 0,
+            bindings: {},
+            koReplacement: {
+              phase: 'confirm',
+              targetInstanceId: targetId,
+              recordId: replacementRecord.id,
+              cause: 'battle',
+              actorPlayerId: attackerPlayerId,
+              battle: {
+                causedByActionId,
+                attackerId,
+                attackerPlayerId,
+                defendingPlayerId,
+                priorLogCount: state.log.length,
+                onBattleLogLen: onBattleLog.length,
+                triggerPending: [...triggerPending],
+                onBattlePending: [...onBattlePending],
+              },
+            },
+          });
+          return {
+            state: { ...nextState, pendingChoices: [...nextState.pendingChoices, replaceChoice], log: [...state.log, ...logger.log, ...onBattleLog] },
+            log: [...logger.log, ...onBattleLog],
+            pendingChoices: [replaceChoice, ...onBattlePending, ...triggerPending],
+          };
+        }
+        // Character target: KO'd (7-1-4-2). Attacker is never affected.
+        const owner = nextState.players[target.ownerId];
+        const cardsById = { ...nextState.cardsById, [targetId]: { ...target, currentZone: 'trash' as const, donAttached: [] } };
+        const newCharacterArea = removeFromZone(owner.characterArea, targetId);
+        const newTrash = addToZoneTop(owner.trash, targetId);
+        const newOwner = { ...owner, characterArea: newCharacterArea, trash: newTrash };
+
+        logger.push({
+          actorPlayerId: attackerPlayerId,
+          type: 'CHARACTER_KO',
+          message: `'${targetId}' was K.O.'d and trashed (7-1-4-2).`,
+          data: { instanceId: targetId },
+          relatedCardInstanceIds: [targetId],
+          visibility: 'public',
+        });
+
+        nextState = { ...nextState, cardsById, players: { ...nextState.players, [target.ownerId]: newOwner } };
+
+        // [On K.O.] (10-2-17) fires now that the Character is in the trash.
+        // No-op without a curated onKO ability; collect its log/choices.
+        const koFired = fireOnKO(nextState, targetId, registry, defs, causedByActionId, { cause: 'battle', sourceInstanceId: attackerId });
+        nextState = koFired.state;
+        koLog = [...koLog, ...koFired.log];
+        koPending = [...koPending, ...koFired.pendingChoices];
+
+        const koedBattle = fireOnBattleKoedOpponent(nextState, attackerId, registry, defs, causedByActionId);
+        nextState = koedBattle.state;
+        onBattleLog = [...onBattleLog, ...koedBattle.log];
+        onBattlePending = [...onBattlePending, ...koedBattle.pendingChoices];
       }
-      // Character target: KO'd (7-1-4-2). Attacker is never affected.
-      const owner = nextState.players[target.ownerId];
-      const cardsById = { ...nextState.cardsById, [targetId]: { ...target, currentZone: 'trash' as const, donAttached: [] } };
-      const newCharacterArea = removeFromZone(owner.characterArea, targetId);
-      const newTrash = addToZoneTop(owner.trash, targetId);
-      const newOwner = { ...owner, characterArea: newCharacterArea, trash: newTrash };
-
-      logger.push({
-        actorPlayerId: attackerPlayerId,
-        type: 'CHARACTER_KO',
-        message: `'${targetId}' was K.O.'d and trashed (7-1-4-2).`,
-        data: { instanceId: targetId },
-        relatedCardInstanceIds: [targetId],
-        visibility: 'public',
-      });
-
-      nextState = { ...nextState, cardsById, players: { ...nextState.players, [target.ownerId]: newOwner } };
-
-      // [On K.O.] (10-2-17) fires now that the Character is in the trash.
-      // No-op without a curated onKO ability; collect its log/choices.
-      const koFired = fireOnKO(nextState, targetId, registry, defs, causedByActionId, { cause: 'battle', sourceInstanceId: attackerId });
-      nextState = koFired.state;
-      koLog = [...koLog, ...koFired.log];
-      koPending = [...koPending, ...koFired.pendingChoices];
-
-      const koedBattle = fireOnBattleKoedOpponent(nextState, attackerId, registry, defs, causedByActionId);
-      nextState = koedBattle.state;
-      onBattleLog = [...onBattleLog, ...koedBattle.log];
-      onBattlePending = [...onBattlePending, ...koedBattle.pendingChoices];
     }
   } else {
     logger.push({

@@ -807,7 +807,6 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'EB02-038', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Impel Down', maxCost: 2 } }] } },
 
   // EB02-039 — [Main] trash GERMA 66 Character ≤4000 base power: if DON!! ≤ opponent's, play same-name Character 5000–7000 power from trash.
-  // PARTIAL: "same card name as the trashed card" filter on playFromTrash is deferred.
   {
     cardNumber: 'EB02-039',
     templateId: 'ability',
@@ -817,7 +816,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
         { fn: 'trashTypeFromHand', count: 1, filter: { category: 'character', typeIncludes: 'GERMA 66', maxBasePower: 4000 }, optional: true },
         {
           fn: 'playFromTrash',
-          filter: { category: 'character', minBasePower: 5000, maxBasePower: 7000 },
+          filter: { category: 'character', minBasePower: 5000, maxBasePower: 7000, nameMatchesPreviousMove: true },
           ifPrevious: 'previousMovedAny',
           ifGate: [{ kind: 'selfDonAtMostOpponent' }],
         },

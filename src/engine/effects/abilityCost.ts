@@ -8,7 +8,7 @@ import type { GameState } from '../state/game';
 import type { AbilityCost } from './effectIr';
 import type { GameLogEntry } from '../logs/logEntry';
 import { createActionLogger } from '../rules/shared/actionLogger';
-import { addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
+import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 
 function trashThisSourceZone(currentZone: string): 'characterArea' | 'stageArea' | null {
   return currentZone === 'characterArea' || currentZone === 'stageArea' ? currentZone : null;
@@ -39,10 +39,15 @@ function activeDonIds(state: GameState, playerId: string): string[] {
   return player.costArea.cardIds.filter((id) => !attached.has(id) && state.cardsById[id]?.donRested === false);
 }
 
-/** DON!! candidates for paying DON!! −N costs (active-only when any cost requires it). */
+/** DON!! candidates for paying DON!! −N / returnGivenDon costs (active-only when any cost requires it). */
 export function donMinusCandidateIds(state: GameState, playerId: string, costs: AbilityCost[]): string[] {
+  const hasReturnGiven = costs.some((c) => c.kind === 'returnGivenDon');
+  const hasDonMinus = costs.some((c) => c.kind === 'donMinus');
+  if (hasReturnGiven && !hasDonMinus) return givenDonIds(state, playerId);
   const activeOnly = costs.some((c) => c.kind === 'donMinus' && c.activeOnly);
-  return activeOnly ? activeDonIds(state, playerId) : fieldDonIds(state, playerId);
+  const fieldOrActive = activeOnly ? activeDonIds(state, playerId) : fieldDonIds(state, playerId);
+  if (hasReturnGiven) return [...new Set([...givenDonIds(state, playerId), ...fieldOrActive])];
+  return fieldOrActive;
 }
 
 export function countControllerActiveUnattachedDon(state: GameState, playerId: string): number {
@@ -55,8 +60,22 @@ function activeDonCount(state: GameState, playerId: string): number {
 
 export function requiredDonMinusCount(costs: AbilityCost[] = []): number {
   return costs
-    .filter((cost): cost is Extract<AbilityCost, { kind: 'donMinus' }> => cost.kind === 'donMinus')
+    .filter((cost): cost is Extract<AbilityCost, { kind: 'donMinus' | 'returnGivenDon' }> =>
+      cost.kind === 'donMinus' || cost.kind === 'returnGivenDon')
     .reduce((sum, cost) => sum + cost.count, 0);
+}
+
+/** Given (attached) DON!! on the player's Leader/Characters. */
+export function givenDonIds(state: GameState, playerId: string): string[] {
+  const ids: string[] = [];
+  for (const inst of Object.values(state.cardsById)) {
+    if (inst.controllerId !== playerId) continue;
+    if (inst.currentZone !== 'leaderArea' && inst.currentZone !== 'characterArea') continue;
+    for (const donId of inst.donAttached) {
+      if (state.cardsById[donId]?.ownerId === playerId) ids.push(donId);
+    }
+  }
+  return ids;
 }
 
 /** Auto-pick field DON!! for nested/free activations that cannot prompt for DON!! −N selection. */
@@ -64,8 +83,12 @@ export function autoSelectDonMinusIds(state: GameState, playerId: string, costs:
   const selected: string[] = [];
   const used = new Set<string>();
   for (const cost of costs) {
-    if (cost.kind !== 'donMinus') continue;
-    const candidates = cost.activeOnly ? activeDonIds(state, playerId) : fieldDonIds(state, playerId);
+    if (cost.kind !== 'donMinus' && cost.kind !== 'returnGivenDon') continue;
+    const candidates = cost.kind === 'returnGivenDon'
+      ? givenDonIds(state, playerId)
+      : cost.activeOnly
+        ? activeDonIds(state, playerId)
+        : fieldDonIds(state, playerId);
     let pickedForCost = 0;
     for (const id of candidates) {
       if (used.has(id)) continue;
@@ -78,16 +101,32 @@ export function autoSelectDonMinusIds(state: GameState, playerId: string, costs:
   return selected;
 }
 
+/**
+ * Availability-only check for structured ability costs (no DON!! selection yet).
+ * Used when Event play cost must be rested first, then DON!! −N is chosen via
+ * a pending choice on the post-rest board (so rested play-cost DON!! remain legal returns).
+ */
+export function canAffordAbilityCost(
+  state: GameState,
+  sourceInstanceId: string,
+  playerId: string,
+  costs: AbilityCost[],
+): string[] {
+  return canPayAbilityCost(state, sourceInstanceId, playerId, costs, [], { requireDonSelection: false });
+}
+
 export function canPayAbilityCost(
   state: GameState,
   sourceInstanceId: string,
   playerId: string,
   costs: AbilityCost[],
   selectedDonMinusIds: readonly string[] = [],
+  options: { requireDonSelection?: boolean } = {},
 ): string[] {
+  const requireDonSelection = options.requireDonSelection !== false;
   const reasons: string[] = [];
   const requiredDonMinus = requiredDonMinusCount(costs);
-  if (selectedDonMinusIds.length !== requiredDonMinus) {
+  if (requireDonSelection && selectedDonMinusIds.length !== requiredDonMinus) {
     reasons.push(`Cost requires selecting ${requiredDonMinus} DON!! to return, but ${selectedDonMinusIds.length} were supplied.`);
   }
   const uniqueSelectedDon = new Set(selectedDonMinusIds);
@@ -96,6 +135,7 @@ export function canPayAbilityCost(
   }
   const fieldDon = new Set(fieldDonIds(state, playerId));
   const activeDon = new Set(activeDonIds(state, playerId));
+  const givenDon = new Set(givenDonIds(state, playerId));
   for (const donId of uniqueSelectedDon) {
     const donInstance = state.cardsById[donId];
     if (!donInstance || donInstance.ownerId !== playerId || !fieldDon.has(donId)) {
@@ -113,9 +153,21 @@ export function canPayAbilityCost(
         if (available < cost.count) {
           reasons.push(`Cost requires returning ${cost.count}${cost.activeOnly ? ' active' : ''} DON!! but only ${available} are available.`);
         }
-        if (cost.activeOnly) {
+        if (requireDonSelection && cost.activeOnly) {
           const inactive = selectedForCost.filter((id) => !activeDon.has(id));
           if (inactive.length > 0) reasons.push('Cost requires active DON!! from the cost area.');
+        }
+        break;
+      }
+      case 'returnGivenDon': {
+        const selectedForCost = selectedDonMinusIds.slice(selectedCursor, selectedCursor + cost.count);
+        selectedCursor += cost.count;
+        if (givenDon.size < cost.count) {
+          reasons.push(`Cost requires returning ${cost.count} given DON!! but only ${givenDon.size} are attached.`);
+        }
+        if (requireDonSelection) {
+          const notGiven = selectedForCost.filter((id) => !givenDon.has(id));
+          if (notGiven.length > 0) reasons.push('Cost requires given (attached) DON!! cards.');
         }
         break;
       }
@@ -178,6 +230,13 @@ export function payAbilityCost(
         selectedCursor += cost.count;
         returnedDonCount += selected.length;
         working = payDonMinus(working, playerId, selected, logger);
+        break;
+      }
+      case 'returnGivenDon': {
+        const selected = selectedDonMinusIds.slice(selectedCursor, selectedCursor + cost.count);
+        selectedCursor += cost.count;
+        returnedDonCount += selected.length;
+        working = payReturnGivenDon(working, playerId, selected, cost.rested !== false, logger);
         break;
       }
       case 'restThis': {
@@ -301,6 +360,49 @@ export function payDonMinus(
     players: {
       ...state.players,
       [playerId]: { ...player, costArea, donDeck },
+    },
+  };
+}
+
+function payReturnGivenDon(
+  state: GameState,
+  playerId: string,
+  toReturn: readonly string[],
+  rested: boolean,
+  logger: ReturnType<typeof createActionLogger>,
+): GameState {
+  const player = state.players[playerId];
+  let cardsById = { ...state.cardsById };
+  let costArea = player.costArea;
+
+  for (const donId of toReturn) {
+    for (const [id, inst] of Object.entries(cardsById)) {
+      if (inst.donAttached.includes(donId)) {
+        cardsById = { ...cardsById, [id]: { ...inst, donAttached: inst.donAttached.filter((d) => d !== donId) } };
+      }
+    }
+    costArea = addToZoneBottom(removeFromZone(costArea, donId), donId);
+    cardsById = {
+      ...cardsById,
+      [donId]: { ...cardsById[donId], currentZone: 'costArea', donRested: rested, revealedTo: 'all' },
+    };
+  }
+
+  logger.push({
+    actorPlayerId: playerId,
+    type: 'DON_RETURNED',
+    message: `${playerId} returned ${toReturn.length} given DON!! to the cost area${rested ? ' rested' : ''} as an activation cost.`,
+    data: { donInstanceIds: toReturn, destination: 'costArea', rested },
+    relatedCardInstanceIds: [...toReturn],
+    visibility: 'public',
+  });
+
+  return {
+    ...state,
+    cardsById,
+    players: {
+      ...state.players,
+      [playerId]: { ...player, costArea },
     },
   };
 }

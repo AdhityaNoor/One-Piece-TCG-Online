@@ -4,12 +4,12 @@ import type { BattleState } from '../../../state/game';
 import {
   buildBaseRig,
   putCharacterInPlay,
+  putDeckCards,
   putLifeCards,
   makeCharacterDef,
-  makeLeaderDef,
-  nextTestId,
 } from '../../shared/__tests__/testRig';
 import type { EffectTemplateRegistry } from '../../../effects';
+import { resumeProgram } from '../../../effects';
 
 function battleAt(attackerInstanceId: string, targetInstanceId: string, overrides: Partial<BattleState> = {}): BattleState {
   return {
@@ -175,5 +175,49 @@ describe('resolveDamageAndEndOfBattle', () => {
     expect(result.state.gameOver).toBeNull();
     expect(result.state.currentBattle).toBeNull();
     expect(result.log.some((e) => e.type === 'DAMAGE_DEALT' && e.data && (e.data as Record<string, unknown>).succeeded === false)).toBe(true);
+  });
+
+  it('onLifeToHand after last Life hit can refill Life from deck without being wiped (OP05-098)', () => {
+    const enelDef = makeCharacterDef({ cardDefinitionId: 'SYN-ENEL', cardNumber: 'SYN-ENEL', basePower: 5000 });
+    const lifeDef = makeCharacterDef({ cardDefinitionId: 'SYN-LIFE', cardNumber: 'SYN-LIFE' });
+    const deckDef = makeCharacterDef({ cardDefinitionId: 'SYN-DECK', cardNumber: 'SYN-DECK' });
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    ({ rig } = putLifeCards(rig, 'p2', [lifeDef]));
+    let enelId: string;
+    ({ rig, instanceId: enelId } = putCharacterInPlay(rig, 'p2', enelDef));
+    const withDeck = putDeckCards(rig, 'p2', deckDef, 1);
+    const deckTop = withDeck.deckIds[0];
+    const registry: EffectTemplateRegistry = {
+      'SYN-ENEL': {
+        cardNumber: 'SYN-ENEL',
+        abilities: [{
+          timing: 'onLifeToHand',
+          oncePerTurn: true,
+          condition: { turn: 'opponent' },
+          gate: [{ kind: 'selfLife', atMost: 0 }],
+          ops: [
+            { op: 'moveToLifeTop', target: { sel: 'controllerDeckTop' } },
+            { op: 'chooseTargets', var: 't', from: { sel: 'controllerHand' }, min: 1, max: 1, prompt: 'Trash 1 card from your hand.' },
+            { op: 'trashCards', target: { sel: 'var', name: 't' } },
+          ],
+        }],
+      },
+    };
+    const attackerId = withDeck.rig.state.players.p1.leaderInstanceId;
+    const targetId = withDeck.rig.state.players.p2.leaderInstanceId;
+    const battling = { ...withDeck.rig.state, currentBattle: battleAt(attackerId, targetId) };
+
+    const result = resolveDamageAndEndOfBattle(battling, withDeck.rig.defs, 'action-x', registry);
+
+    expect(result.state.gameOver).toBeNull();
+    expect(result.state.players.p2.lifeArea.cardIds).toContain(deckTop);
+    expect(result.state.cardsById[deckTop].currentZone).toBe('lifeArea');
+    expect(result.pendingChoices.length).toBeGreaterThan(0);
+
+    const trashChoice = result.pendingChoices[0];
+    const handId = result.state.players.p2.hand.cardIds[0];
+    const resolved = resumeProgram(registry['SYN-ENEL'], result.state, trashChoice, [handId], withDeck.rig.defs, 'action-x', registry);
+    expect(resolved.state.players.p2.trash.cardIds).toContain(handId);
+    expect(resolved.state.cardsById[enelId].oncePerTurnUsed.length).toBeGreaterThan(0);
   });
 });

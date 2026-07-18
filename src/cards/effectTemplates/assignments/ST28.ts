@@ -21,12 +21,13 @@ export const ST28_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST28-003 — [Trigger] If Leader {Land of Wano} and opponent has 3 or less Life, play this.
   { cardNumber: 'ST28-003', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Land of Wano' }, { kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // ST28-004 — PARTIAL: DON!! return-to-cost rested modeled as donMinus; Leader +1000 if ≤2 Life mapped.
+  // ST28-004 — [Your Turn] if ≤2 Life, Leader +1000.
+  //   [Activate: Main] [OPT] return 2 given DON!! to cost area rested: this gains [Rush] and +1000 this turn.
   {
     cardNumber: 'ST28-004',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'permanent', condition: { turn: 'your', gate: [{ kind: 'selfLife', atMost: 2 }] } }] } },
-      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }, { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'returnGivenDon', count: 2, rested: true }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }, { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' }] } },
     ],
   },
 

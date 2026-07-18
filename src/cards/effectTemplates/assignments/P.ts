@@ -99,11 +99,18 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'P-083', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'optionalTrashFromHand', count: 1, filter: { category: 'character' } }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' }, { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }] } },
 
   // P-084 (character) Buggy —
-  //   This Character cannot attack.If your Leader is [Buggy], all Characters with a cost of 3 or 4 cannot
-  //   attack.[On Play] Play up to 1 {Cross Guild} type Character card with a cost of 6 or less from your
-  //   hand.
-  //   PARTIAL: the self "cannot attack" lock is implemented below; the leader-gated global cost-3/4 aura remains deferred.
-  { cardNumber: 'P-084', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent' }] } },
+  //   This Character cannot attack. If Leader [Buggy], all Characters cost 3 or 4 cannot attack.
+  //   [On Play] Play up to 1 {Cross Guild} Character cost ≤6 from hand.
+  {
+    cardNumber: 'P-084',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent' },
+        { fn: 'preventAttackAll', duration: 'permanent', player: 'both', charactersOnly: true, condition: { minCost: 3, maxCost: 4, gate: [{ kind: 'leaderName', name: 'Buggy' }] } },
+      ] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Cross Guild', maxCost: 6 } }] } },
+    ],
+  },
 
   // P-085 — [On Play] if Leader {Supernovas} and self Life <= opp Life, add up to 1 opp Character cost<=4 to top/bottom of owner's Life face-up.
   { cardNumber: 'P-085', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Supernovas' }, { kind: 'selfLifeLessThanOpponent' }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] } },
@@ -123,5 +130,127 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' }] } },
     ],
   },
+
+  // ── Triage batch 2026-07-18: expressible P gap after promo catalog restore. ──
+  { cardNumber: 'P-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
+  { cardNumber: 'P-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'permanent', condition: { donAttachedAtLeast: 2 } }] } },
+  { cardNumber: 'P-004', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+  { cardNumber: 'P-006', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 2, turn: 'your' } }] } },
+  { cardNumber: 'P-008', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] } },
+  { cardNumber: 'P-011', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restDon', count: 1 }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { noBaseEffect: true } }, amount: 2000, duration: 'duringThisTurn', optional: true }] } },
+  { cardNumber: 'P-013', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveSelfToBottomDeck' }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' }] } },
+  { cardNumber: 'P-017', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] } },
+  { cardNumber: 'P-019', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true }] } },
+  { cardNumber: 'P-020', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
+  { cardNumber: 'P-026', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true }] } },
+  // Alias [Franky] is normalization (aliasNames); map opponent-turn aura only.
+  { cardNumber: 'P-027', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 1000, duration: 'permanent', targetCondition: { maxBasePower: 3000 }, sourceCondition: { turn: 'opponent' } }] } },
+  { cardNumber: 'P-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  { cardNumber: 'P-032', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraOpponentCharacters', amount: -2, duration: 'permanent', sourceCondition: { donAttachedAtLeast: 1, turn: 'your' } }] } },
+  { cardNumber: 'P-033', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveSelfToBottomDeck' }, { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }] } },
+  { cardNumber: 'P-034', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 1, turn: 'your', gate: [{ kind: 'selfLife', atMost: 2 }] } }] } },
+  { cardNumber: 'P-035', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { exactCost: 0 } }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+  { cardNumber: 'P-036', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+    { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+    { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
+  { cardNumber: 'P-037', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' }] } },
+  { cardNumber: 'P-038', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restLeader' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
+  { cardNumber: 'P-042', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+  { cardNumber: 'P-043', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  { cardNumber: 'P-047', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'draw', amount: 1, ifGate: [{ kind: 'selfHand', atMost: 3 }] }] } },
+  { cardNumber: 'P-049', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom' }] } },
+  // [Blocker] from printed keyword flags; map DON!! power only.
+  { cardNumber: 'P-050', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 4000, duration: 'permanent', condition: { donAttachedAtLeast: 1, turn: 'your', gate: [{ kind: 'selfHand', atMost: 3 }] } }] } },
+  { cardNumber: 'P-051', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+    { fn: 'optionalTrashFromHand', anyNumber: true },
+    { fn: 'addPowerSelfPerPreviousTrashed', amountPer: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+  ] } },
+  { cardNumber: 'P-056', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 5 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
+  { cardNumber: 'P-065', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }], functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn' }] } },
+  { cardNumber: 'P-066', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 1000, duration: 'permanent', anyOfTypes: ['Kuja Pirates'], gate: [{ kind: 'selfHand', atMost: 5 }], sourceCondition: { turn: 'your' } }] } },
+  { cardNumber: 'P-076', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Navy' }, optional: true },
+    { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -1, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+  ] } },
+  {
+    cardNumber: 'P-086',
+    templateId: 'ability',
+    params: {
+      timing: 'activateMain',
+      oncePerTurn: true,
+      cost: [{ kind: 'donMinus', count: 3 }],
+      functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { minPower: 3000 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true },
+        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Heart Pirates', maxCost: 4 }, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
+  {
+    cardNumber: 'P-090',
+    templateId: 'ability',
+    params: {
+      timing: 'onKO',
+      condition: { turn: 'opponent' },
+      cost: [{ kind: 'donMinus', count: 1 }],
+      functions: [{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Big Mom Pirates', maxCostFromOpponentDon: true, excludeCardNames: ['Charlotte Smoothie'] } }],
+    },
+  },
+  // [Blocker] from printed flags.
+  { cardNumber: 'P-093', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonAtMostOpponent' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
+  {
+    cardNumber: 'P-096',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1, targetName: 'Nami', charactersOnly: true, optional: true }] } },
+    ],
+  },
+  { cardNumber: 'P-101', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDonControllerLeader', count: 1 }] } },
+  { cardNumber: 'P-103', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'draw', amount: 2 },
+    { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'topOrBottom' }, maxTargets: 2 },
+    { fn: 'giveDonControllerLeader', count: 1 },
+  ] } },
+  { cardNumber: 'P-107', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'selfDonFieldCount', atLeast: 10 }, { kind: 'opponentDonFieldCount', atLeast: 10 }] }], functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn' }] } },
+  { cardNumber: 'P-112', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Nami' }], functions: [
+    { fn: 'giveDonControllerLeader', count: 1 },
+    { fn: 'playFromHand', filter: { category: 'character', maxCost: 2 } },
+  ] } },
+  {
+    cardNumber: 'P-113',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { donAttachedAtLeast: 2, turn: 'opponent' } },
+        { fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 2, turn: 'opponent' } },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+    ],
+  },
+  { cardNumber: 'P-135', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
+  {
+    cardNumber: 'P-155',
+    templates: [
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [
+        { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
+        { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'opponentLife', atMost: 3 }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
+
+  // Vanilla promos (no effect text).
+  { cardNumber: 'P-012', templateId: 'noRuntime', params: {} },
+  { cardNumber: 'P-015', templateId: 'noRuntime', params: {} },
+  { cardNumber: 'P-016', templateId: 'noRuntime', params: {} },
+  { cardNumber: 'P-021', templateId: 'noRuntime', params: {} },
+  { cardNumber: 'P-022', templateId: 'noRuntime', params: {} },
+  { cardNumber: 'P-023', templateId: 'noRuntime', params: {} },
+  { cardNumber: 'P-041', templateId: 'noRuntime', params: {} },
+  { cardNumber: 'P-061', templateId: 'noRuntime', params: {} },
+  { cardNumber: 'P-064', templateId: 'noRuntime', params: {} },
+  { cardNumber: 'P-070', templateId: 'noRuntime', params: {} },
+  { cardNumber: 'P-080', templateId: 'noRuntime', params: {} },
+  { cardNumber: 'P-089', templateId: 'noRuntime', params: {} },
 
 ];

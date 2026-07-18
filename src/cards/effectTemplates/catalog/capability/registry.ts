@@ -348,14 +348,34 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   preventAttackAll: {
     id: 'preventAttackAll',
-    summary: 'All of the controller\'s Leaders/Characters gain an attack restriction for the duration without a target choice.',
+    summary: 'Leaders/Characters controlled by one or both players gain an attack restriction (optionally cost-gated, Characters-only, or trash-to-attack tax).',
     params: [
       { name: 'duration', type: 'IrDuration', required: true },
       { name: 'forbiddenTarget', type: "'leader'", required: false, note: 'Omit for full cannot-attack; set to leader for "cannot attack a Leader".' },
+      { name: 'player', type: "'controller' | 'opponent' | 'both'", required: false },
+      { name: 'charactersOnly', type: 'true', required: false },
+      { name: 'condition', type: 'IrCondition', required: false },
+      { name: 'attackUnlessTrashFromHand', type: 'number', required: false, note: 'Cannot attack unless hand size ≥ N; declare raises mandatory trash-N PendingChoice' },
     ],
-    covers: ['you cannot attack a Leader during this turn', 'you cannot attack during this turn'],
+    covers: [
+      'you cannot attack a Leader during this turn',
+      'you cannot attack during this turn',
+      'If your Leader is [Buggy], all Characters with a cost of 3 or 4 cannot attack',
+      'none of the selected Characters can attack unless your opponent trashes 2 cards from their hand whenever they attack',
+    ],
     excludes: ['Up to 1 chosen Character cannot attack — use preventAttack with a target choice instead'],
-    examples: [{ cardNumber: 'OP06-026', snippet: "{ fn: 'preventAttackAll', duration: 'duringThisTurn', forbiddenTarget: 'leader' }" }],
+    examples: [
+      { cardNumber: 'OP06-026', snippet: "{ fn: 'preventAttackAll', duration: 'duringThisTurn', forbiddenTarget: 'leader' }" },
+      { cardNumber: 'P-084', snippet: "{ fn: 'preventAttackAll', duration: 'permanent', player: 'both', charactersOnly: true, condition: { minCost: 3, maxCost: 4, gate: [{ kind: 'leaderName', name: 'Buggy' }] } }" },
+      { cardNumber: 'OP08-043', snippet: "{ fn: 'preventAttackAll', player: 'opponent', charactersOnly: true, duration: 'endOfOpponentsTurn', attackUnlessTrashFromHand: 2 }" },
+    ],
+  },
+  forceCharactersPlayedRested: {
+    id: 'forceCharactersPlayedRested',
+    summary: 'Controller\'s Characters enter play rested (normal cost plays and effect plays).',
+    params: [{ name: 'duration', type: 'IrDuration', required: true }],
+    covers: ['Your Character cards are played rested'],
+    examples: [{ cardNumber: 'OP09-022', snippet: "{ fn: 'forceCharactersPlayedRested', duration: 'permanent' }" }],
   },
   setForcedAttackTarget: {
     id: 'setForcedAttackTarget',
@@ -448,6 +468,23 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['all of your yellow {Scientist} type Characters cannot be removed from the field by your opponent\'s effects'],
     examples: [
       { cardNumber: 'EB04-057', snippet: "{ fn: 'preventFieldRemovalAuraControllerCharacters', duration: 'permanent', anyOfTypes: ['Scientist'], anyOfColors: ['yellow'], effectSourceController: 'opponent', gate: [{ kind: 'selfLife', atMost: 2 }] }" },
+    ],
+  },
+  preventFieldRemovalAuraOpponentCharacters: {
+    id: 'preventFieldRemovalAuraOpponentCharacters',
+    summary: 'Dynamic aura: matching opponent Characters cannot be removed from the field by effects.',
+    params: [
+      { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'anyOfTypes', type: 'string[]', required: false },
+      { name: 'anyOfNames', type: 'string[]', required: false },
+      { name: 'anyOfColors', type: 'Color[]', required: false },
+      { name: 'effectSourceController', type: "'opponent' | 'controller'", required: false },
+      { name: 'targetCondition', type: 'IrCondition', required: false },
+      { name: 'gate', type: 'AbilityGate[]', required: false },
+    ],
+    covers: ['All of your opponent\'s Characters cannot be removed from the field by your effects'],
+    examples: [
+      { cardNumber: 'OP14-079', snippet: "{ fn: 'preventFieldRemovalAuraOpponentCharacters', duration: 'permanent', effectSourceController: 'opponent' }" },
     ],
   },
   negateEffect: {
@@ -1032,16 +1069,21 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     id: 'playFromTrash',
     summary: 'Play up to N cards matching a filter from the trash (optionally rested), or from a prior binding via fromVar.',
     params: [
-      { name: 'filter', type: 'SearchFilter', required: false, note: 'required unless fromVar is set' },
+      { name: 'filter', type: 'SearchFilter', required: false, note: 'required unless fromVar is set; supports nameMatchesPreviousMove' },
       { name: 'fromVar', type: 'string', required: false },
       { name: 'maxTargets', type: 'number', required: false },
       { name: 'rested', type: 'boolean', required: false },
       { name: 'distinctNames', type: 'boolean', required: false },
     ],
-    covers: ['play up to 1 {type} Character card with a cost of {C} or less from your trash', 'play up to {N} {type} Character cards with different card names from your trash'],
+    covers: [
+      'play up to 1 {type} Character card with a cost of {C} or less from your trash',
+      'play up to {N} {type} Character cards with different card names from your trash',
+      'play up to 1 Character card with the same card name as the trashed card from your trash',
+    ],
     examples: [
       { cardNumber: 'OP08-096', snippet: "{ fn: 'playFromTrash', filter: { category: 'character', color: 'black', maxCost: 3 } }" },
       { cardNumber: 'OP13-082', snippet: "{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Five Elders', exactPower: 5000 }, maxTargets: 5, distinctNames: true }" },
+      { cardNumber: 'EB02-039', snippet: "{ fn: 'playFromTrash', filter: { category: 'character', minBasePower: 5000, maxBasePower: 7000, nameMatchesPreviousMove: true } }" },
     ],
   },
   playPairOneRested: {
@@ -1383,15 +1425,33 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   addPowerAuraOpponentCharacters: {
     id: 'addPowerAuraOpponentCharacters',
-    summary: 'Dynamic aura over ALL opponent Characters ("give all your opponent\'s Characters −N power").',
+    summary: 'Dynamic aura over ALL opponent Characters (optional per-target DON!! scale).',
     params: [
       { name: 'amount', type: 'number', required: true },
       { name: 'duration', type: 'IrDuration', required: true },
       { name: 'sourceCondition', type: 'SourceStateCondition', required: false },
       { name: 'gate', type: 'AbilityGate[]', required: false, note: 'board gate re-evaluated each read against the source\'s controller (e.g. "if you have 3+ {type} Characters")' },
+      { name: 'scale', type: 'PowerScale', required: false, note: 'per: targetDonAttached for −N per DON!! on that Character' },
     ],
-    covers: ['give your opponent\'s Leader and all of their Characters −{P} power', 'if <board state>, give all of your opponent\'s Characters −{P} power'],
-    examples: [{ cardNumber: 'OP01-091', snippet: "{ fn: 'addPowerAuraOpponentCharacters', amount: -1000, duration: 'permanent', gate: [{ kind: 'selfDonFieldCount', atLeast: 10 }], sourceCondition: { turn: 'your' } }" }],
+    covers: [
+      'give your opponent\'s Leader and all of their Characters −{P} power',
+      'if <board state>, give all of your opponent\'s Characters −{P} power',
+      'give all of your opponent\'s Characters −{N} power for every DON!! card given to that Character',
+    ],
+    examples: [
+      { cardNumber: 'OP01-091', snippet: "{ fn: 'addPowerAuraOpponentCharacters', amount: -1000, duration: 'permanent', gate: [{ kind: 'selfDonFieldCount', atLeast: 10 }], sourceCondition: { turn: 'your' } }" },
+      { cardNumber: 'OP15-008', snippet: "{ fn: 'addPowerAuraOpponentCharacters', amount: 0, duration: 'duringThisTurn', scale: { per: 'targetDonAttached', step: 1, amountPer: -1000 } }" },
+    ],
+  },
+  revealTopLifeAddPowerPerCost: {
+    id: 'revealTopLifeAddPowerPerCost',
+    summary: 'Reveal the top Life card; this card gains +amountPer × printed cost for the duration.',
+    params: [
+      { name: 'amountPer', type: 'number', required: true },
+      { name: 'duration', type: 'IrDuration', required: true },
+    ],
+    covers: ['reveal up to 1 card from the top of your Life cards. This Character gains +{N} power during this turn per 1 cost on the revealed card'],
+    examples: [{ cardNumber: 'OP15-119', snippet: "{ fn: 'revealTopLifeAddPowerPerCost', amountPer: 1000, duration: 'duringThisTurn' }" }],
   },
   addCostAuraControllerCharacters: {
     id: 'addCostAuraControllerCharacters',
@@ -1463,10 +1523,11 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   koImmunitySelf: {
     id: 'koImmunitySelf',
-    summary: '"This card cannot be K.O.\'d" — scope battle/effect/any, optionally by attacker or effect-source filters.',
+    summary: '"This card cannot be K.O.\'d" — scope battle/effect/any, optionally OPT + attacker/effect-source filters.',
     params: [
       { name: 'scope', type: "'battle' | 'effect' | 'any'", required: true },
       { name: 'duration', type: 'IrDuration', required: true },
+      { name: 'oncePerTurn', type: 'boolean', required: false, note: 'consumable shield — spent after preventing one K.O. this turn' },
       { name: 'condition', type: 'IrCondition', required: false },
       { name: 'attackerCategory', type: "'leader' | 'character'", required: false },
       { name: 'attackerAttribute', type: 'string', required: false, note: 'battle K.O. only — attacker must have this attribute' },
@@ -1475,8 +1536,11 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'effectSourceCategory', type: "'leader' | 'character'", required: false, note: 'effect K.O. only — K.O.-ing card category' },
       { name: 'effectSourceWithoutAttribute', type: 'string', required: false, note: 'effect K.O. only — K.O.-ing card must not have this attribute' },
     ],
-    covers: ['this Character cannot be K.O.\'d in battle', 'this Character cannot be K.O.\'d in battle by <Attribute> attribute Characters', 'this Character cannot be K.O.\'d by your opponent\'s effects', 'cannot be K.O.\'d by effects of opponent Characters with {N} base power or less', 'cannot be K.O.\'d by effects of Characters without the <Attribute> attribute'],
-    examples: [{ cardNumber: 'OP11-005', snippet: "{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { donAttachedAtLeast: 1 }, effectSourceCategory: 'character', effectSourceWithoutAttribute: 'special' }" }],
+    covers: ['this Character cannot be K.O.\'d in battle', 'this Character cannot be K.O.\'d in battle by <Attribute> attribute Characters', 'this Character cannot be K.O.\'d by your opponent\'s effects', 'Once per turn, this Character cannot be K.O.\'d by your opponent\'s effects', 'cannot be K.O.\'d by effects of opponent Characters with {N} base power or less', 'cannot be K.O.\'d by effects of Characters without the <Attribute> attribute'],
+    examples: [
+      { cardNumber: 'OP11-005', snippet: "{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', condition: { donAttachedAtLeast: 1 }, effectSourceCategory: 'character', effectSourceWithoutAttribute: 'special' }" },
+      { cardNumber: 'OP10-118', snippet: "{ fn: 'koImmunitySelf', scope: 'effect', duration: 'permanent', oncePerTurn: true, effectSourceController: 'opponent' }" },
+    ],
   },
   koImmunityControllerCharactersAll: {
     id: 'koImmunityControllerCharactersAll',
@@ -1600,6 +1664,7 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       '[Once Per Turn] If your black Character with a base cost of 5 or less would be K.O.\'d by your opponent\'s effect, you may place 3 cards from your trash at the bottom of your deck in any order instead',
       'If your {Egghead} type Character would be K.O.\'d by your opponent\'s effect, you may turn 1 card from the top of your Life cards face-up instead',
       '[Opponent\'s Turn] If your blue {Type} Character would be removed from the field by your opponent\'s effect, you may rest this Character and trash 1 card from your hand instead',
+      '[DON!! x1] [Opponent\'s Turn] [Once Per Turn] If your Character with 5000 power or more would be K.O.\'d, you may give that Character −1000 power during this turn instead',
     ],
     examples: [
       { cardNumber: 'OP13-008', snippet: "{ fn: 'registerKoReplacementAura', scope: 'effect', anyOfTypes: ['Revolutionary Army'], trashSource: true, duration: 'permanent' }" },
@@ -1612,6 +1677,7 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { cardNumber: 'OP13-060', snippet: "{ fn: 'registerKoReplacementAura', scope: 'effect', anyOfTypes: ['Roger Pirates'], trashSource: true, duration: 'permanent' }" },
       { cardNumber: 'OP15-094', snippet: "{ fn: 'registerKoReplacementAura', scope: 'effect', anyOfTypes: ['Straw Hat Crew'], excludeSource: true, trashSource: true, duration: 'permanent' }" },
       { cardNumber: 'OP12-048', snippet: "{ fn: 'registerKoReplacementAura', scope: 'effect', effectSourceController: 'opponent', anyOfTypes: ['Navy'], anyOfColors: ['blue'], sourceCondition: { turn: 'opponent' }, restTargetAndTrashFromHand: {}, duration: 'permanent' }" },
+      { cardNumber: 'OP05-001', snippet: "{ fn: 'registerKoReplacementAura', oncePerTurn: true, charactersOnly: true, sourceCondition: { turn: 'opponent', donAttachedAtLeast: 1 }, targetCondition: { minPower: 5000 }, giveTargetPowerPenalty: { amount: 1000, duration: 'duringThisTurn' }, duration: 'permanent' }" },
     ],
   },
 };
@@ -1655,6 +1721,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
     examples: [{ cardNumber: 'OP10-098', snippet: "{ kind: 'selfCharacterCountAtLeastLessThanOpponent', count: 2 }" }],
   },
   anyCharacterExactCost: { id: 'anyCharacterExactCost', summary: 'There is a Character with a cost of exactly N (either player).', params: [{ name: 'exactCost', type: 'number', required: true }], covers: ['If there is a Character with a cost of {N}'], examples: [{ cardNumber: 'EB03-046', snippet: "{ kind: 'anyCharacterExactCost', exactCost: 0 }" }] },
+  anyNamedCharacter: { id: 'anyNamedCharacter', summary: 'There is a named Character on either player\'s field.', params: [{ name: 'name', type: 'string', required: true }], covers: ['If there is a [{name}] Character'], examples: [{ cardNumber: 'OP05-100', snippet: "{ kind: 'noneOf', gates: [{ kind: 'anyNamedCharacter', name: 'Monkey.D.Luffy' }] }" }] },
   selfHasCharacterCostAtLeast: { id: 'selfHasCharacterCostAtLeast', summary: 'You have a Character with a cost of N or more.', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['If you have a Character with a cost of {N} or more'], examples: [{ cardNumber: 'OP08-085', snippet: "{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }" }] },
   selfCharacterCostCount: { id: 'selfCharacterCostCount', summary: 'You have N or more Characters with a cost of M or more.', params: [{ name: 'minCost', type: 'number', required: true }, { name: 'atLeast', type: 'number', required: true }], covers: ['If you have {N} or more Characters with a cost of {M} or more'], examples: [{ cardNumber: 'OP12-081', snippet: "{ kind: 'selfCharacterCostCount', minCost: 8, atLeast: 2 }" }] },
   selfCharacterBaseCostCount: { id: 'selfCharacterBaseCostCount', summary: 'You have N or more Characters with a base cost of M or more.', params: [{ name: 'minBaseCost', type: 'number', required: true }, { name: 'atLeast', type: 'number', required: true }], covers: ['If you have {N} or more Characters with a base cost of {M} or more'], examples: [{ cardNumber: 'ST25-002', snippet: "{ kind: 'selfCharacterBaseCostCount', minBaseCost: 5, atLeast: 2 }" }] },
@@ -1800,6 +1867,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
 
 export const COSTS: Record<AbilityCost['kind'], CapabilitySpec> = {
   donMinus: { id: 'donMinus', summary: 'DON!! −N: return N DON!! from the field to the DON!! deck.', params: [{ name: 'count', type: 'number', required: true }, { name: 'activeOnly', type: 'boolean', required: false }], covers: ['DON!! −{N}', 'return {N} active DON!! cards to your DON!! deck'], examples: [{ cardNumber: 'OP12-069', snippet: "cost: [{ kind: 'donMinus', count: 1 }]" }] },
+  returnGivenDon: { id: 'returnGivenDon', summary: 'Return N given (attached) DON!! to your cost area (default rested).', params: [{ name: 'count', type: 'number', required: true }, { name: 'rested', type: 'boolean', required: false }], covers: ['return {N} DON!! cards from your field to your cost area rested', 'You may return {N} DON!! cards from your field to your cost area rested'], examples: [{ cardNumber: 'ST28-004', snippet: "cost: [{ kind: 'returnGivenDon', count: 2, rested: true }]" }] },
   restThis: { id: 'restThis', summary: 'Rest the source card as a cost.', params: [], covers: ['You may rest this card:'], examples: [{ cardNumber: 'OP05-026', snippet: "cost: [{ kind: 'restThis' }]" }] },
   restLeader: { id: 'restLeader', summary: "Rest the controller's Leader as a cost.", params: [], covers: ['You may rest your Leader:', 'rest this Leader:'], examples: [{ cardNumber: 'OP04-081', snippet: "cost: [{ kind: 'restLeader' }]" }] },
   trashThis: { id: 'trashThis', summary: 'Trash the source card as a cost (NOT a K.O.; does not fire [On K.O.]).', params: [], covers: ['You may trash this Character:'], examples: [{ cardNumber: 'EB01-042', snippet: "cost: [{ kind: 'trashThis' }]" }] },

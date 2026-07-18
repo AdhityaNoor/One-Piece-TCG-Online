@@ -63,19 +63,20 @@ function fireReactiveAbilitiesForPlayer(
       const optKey = ability.oncePerTurnKey ?? timingOptKey;
       if (optKey && ability.oncePerTurn && inst.oncePerTurnUsed.includes(optKey)) continue;
       if (!triggeredAbilityWouldFire(ability, inst, working, defs, eventContext)) continue;
+      // Consume OPT before resolution so an early pending-choice return still spends the window.
+      if (optKey && ability.oncePerTurn) {
+        working = {
+          ...working,
+          cardsById: {
+            ...working.cardsById,
+            [id]: { ...inst, oncePerTurnUsed: [...inst.oncePerTurnUsed, optKey] },
+          },
+        };
+      }
       const fired = runTimings(program, [timing], working, id, defs, actionId, registry, false, eventContext);
       working = fired.state;
       log = [...log, ...fired.log];
       if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
-      if (optKey && ability.oncePerTurn) {
-        const updated = working.cardsById[id];
-        if (updated) {
-          working = {
-            ...working,
-            cardsById: { ...working.cardsById, [id]: { ...updated, oncePerTurnUsed: [...updated.oncePerTurnUsed, optKey] } },
-          };
-        }
-      }
     }
   }
   return { state: working, log, pendingChoices: [] };
@@ -412,12 +413,14 @@ export function fireActivate(
   registry: EffectTemplateRegistry,
   defs: CardDefinitionLookup,
   actionId: string | null,
+  /** When true, DON!! −N (etc.) is paid/prompted here — used after Event play cost is already rested. */
+  payCosts = false,
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTimings(program, ['activateMain'], state, instanceId, defs, actionId, registry, false);
+  return runTimings(program, ['activateMain'], state, instanceId, defs, actionId, registry, payCosts);
 }
 
 /**
@@ -511,12 +514,14 @@ export function fireCounter(
   registry: EffectTemplateRegistry,
   defs: CardDefinitionLookup,
   actionId: string | null,
+  /** When true, DON!! −N (etc.) is paid/prompted here — used after Event play cost is already rested. */
+  payCosts = false,
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return runTimings(program, ['counter'], state, instanceId, defs, actionId, registry, false);
+  return runTimings(program, ['counter'], state, instanceId, defs, actionId, registry, payCosts);
 }
 
 /**

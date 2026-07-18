@@ -111,8 +111,14 @@ export interface EffectContext {
     appliesToInstanceId: string;
     scope: 'battle' | 'effect' | 'any';
     duration: ContinuousEffectDuration;
+    oncePerTurn?: boolean;
     condition?: ContinuousPowerCondition;
     attackerCategory?: 'leader' | 'character';
+    attackerAttribute?: string;
+    effectSourceController?: 'opponent' | 'controller';
+    effectSourceMaxBasePower?: number;
+    effectSourceCategory?: 'leader' | 'character';
+    effectSourceWithoutAttribute?: string;
     description?: string;
   }): void;
   /** Prevent some/all [Blocker] activations while the target instance is attacking. */

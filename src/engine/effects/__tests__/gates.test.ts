@@ -291,6 +291,14 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(true);
   });
 
+  it('checks anyNamedCharacter across either player\'s field (OP05-100 Luffy negation)', () => {
+    let rig = buildBaseRig();
+    expect(evaluateGates([{ kind: 'anyNamedCharacter', name: 'Monkey.D.Luffy' }], rig.state, rig.defs, 'p1')).toBe(false);
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ name: 'Monkey.D.Luffy' })));
+    expect(evaluateGates([{ kind: 'anyNamedCharacter', name: 'Monkey.D.Luffy' }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'noneOf', gates: [{ kind: 'anyNamedCharacter', name: 'Monkey.D.Luffy' }] }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
   it('matches an alias name in selfControlsNamed (OP04-099 Olin ≡ [Charlotte Linlin])', () => {
     let rig = buildBaseRig();
     ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ name: 'Olin', aliasNames: ['Charlotte Linlin'] })));

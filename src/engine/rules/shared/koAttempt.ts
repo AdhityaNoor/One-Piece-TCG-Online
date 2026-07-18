@@ -20,7 +20,7 @@ import type { KoReplacementResumeState, PendingChoice } from '../../events/pendi
 import type { GameLogEntry } from '../../logs/logEntry';
 import type { CardDefinitionLookup } from './definitions';
 import { getDefinition } from './definitions';
-import { computeCurrentPower, continuousTargetConditionApplies, isKoImmune, sourceConditionApplies, targetInAuraGroup } from './power';
+import { computeCurrentPower, continuousTargetConditionApplies, findKoImmunityRecord, sourceConditionApplies, targetInAuraGroup, withKoImmunityConsumed } from './power';
 import { addToZoneTop, removeFromZone } from './zoneOps';
 import { createActionLogger } from './actionLogger';
 import { fieldDonIds, payAbilityCost, requiredDonMinusCount } from '../../effects/abilityCost';
@@ -226,6 +226,7 @@ function replacementCostIsImmediate(action: KoReplacementAction): boolean {
     action.kind === 'restSource' ||
     action.kind === 'giveSelfPowerPenalty' ||
     action.kind === 'giveLeaderPowerPenalty' ||
+    action.kind === 'giveTargetPowerPenalty' ||
     action.kind === 'moveTargetToLifeFaceDown' ||
     action.kind === 'trashSelfAndDraw' ||
     action.kind === 'turnTopLifeFace'
@@ -343,6 +344,9 @@ function replacementCostAvailable(
   if (mod.action.kind === 'giveLeaderPowerPenalty') {
     return !!state.players[target.ownerId]?.leaderInstanceId;
   }
+  if (mod.action.kind === 'giveTargetPowerPenalty') {
+    return target.currentZone === 'characterArea' || target.currentZone === 'leaderArea';
+  }
   if (mod.action.kind === 'moveTargetToLifeFaceDown') {
     return true;
   }
@@ -424,6 +428,7 @@ export function buildKoReplacementPayChoice(
   if (mod.action.kind === 'restSource') return null;
   if (mod.action.kind === 'giveSelfPowerPenalty') return null;
   if (mod.action.kind === 'giveLeaderPowerPenalty') return null;
+  if (mod.action.kind === 'giveTargetPowerPenalty') return null;
   if (mod.action.kind === 'moveTargetToLifeFaceDown') return null;
   if (mod.action.kind === 'trashSelfAndDraw') return null;
   if (mod.action.kind === 'chooseLifeToHand' && mod.action.position === 'top') return null;
@@ -578,10 +583,18 @@ export function applyKoToTrash(
   cause: KoCause,
   defs: CardDefinitionLookup,
   actionId: string | null,
+  opts?: { effectSourceInstanceId?: string },
 ): { state: GameState; log: GameLogEntry[] } {
   const inst = state.cardsById[targetInstanceId];
   if (!inst) return { state, log: [] };
-  if (isKoImmune(defs, state, targetInstanceId, cause)) {
+  const immunity = findKoImmunityRecord(
+    defs,
+    state,
+    targetInstanceId,
+    cause,
+    opts?.effectSourceInstanceId ? { koSourceInstanceId: opts.effectSourceInstanceId } : undefined,
+  );
+  if (immunity) {
     const logger = createActionLogger(state, actionId);
     logger.push({
       actorPlayerId,
@@ -591,7 +604,8 @@ export function applyKoToTrash(
       relatedCardInstanceIds: [targetInstanceId],
       visibility: 'public',
     });
-    return { state: { ...state, log: [...state.log, ...logger.log] }, log: logger.log };
+    const prevented = withKoImmunityConsumed(state, immunity);
+    return { state: { ...prevented, log: [...prevented.log, ...logger.log] }, log: logger.log };
   }
   const owner = state.players[inst.ownerId];
   const logger = createActionLogger(state, actionId);
@@ -812,6 +826,17 @@ export function applyKoReplacementCost(
       working = moved.state;
       logger.log.push(...moved.log);
     }
+  } else if (mod.action.kind === 'giveTargetPowerPenalty') {
+    const ctx = new EffectContextImpl(working, record.sourceInstanceId, defs, actionId);
+    ctx.addContinuousPower({
+      appliesToInstanceId: targetInstanceId,
+      amount: -mod.action.amount,
+      duration: mod.action.duration,
+      description: `−${mod.action.amount} power (replacement cost)`,
+    });
+    const moved = ctx.finish();
+    working = moved.state;
+    logger.log.push(...moved.log);
   } else if (mod.action.kind === 'moveTargetToLifeFaceDown') {
     const ctx = new EffectContextImpl(working, record.sourceInstanceId, defs, actionId);
     ctx.moveToLifeTop(targetInstanceId, false);
@@ -995,6 +1020,8 @@ export function koReplacementDescription(mod: ContinuousKoReplacementModifier): 
       return `Give this Character −${mod.action.amount} power during this turn instead?`;
     case 'giveLeaderPowerPenalty':
       return `Give your Leader −${mod.action.amount} power during this turn instead?`;
+    case 'giveTargetPowerPenalty':
+      return `Give that Character −${mod.action.amount} power during this turn instead?`;
     case 'moveTargetToLifeFaceDown':
       return 'Add the ally to the top of your Life cards face-down instead?';
     case 'restTargetAndTrashFromHand':

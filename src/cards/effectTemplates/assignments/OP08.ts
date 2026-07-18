@@ -226,7 +226,7 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP08-042 — [DON!! x1] [When Attacking] Return up to 1 Character with a cost of 3 or less to the owner's hand.
   { cardNumber: 'OP08-042', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
-  // OP08-043 — PARTIAL: attack-unless-trash-2 tax deferred; mapped gated preventAttack on opp Characters.
+  // OP08-043 — [On Play] if WB Leader + ≤2 Life: all opp Characters cannot attack unless trash 2 from hand (until end of opp next turn).
   {
     cardNumber: 'OP08-043',
     templateId: 'ability',
@@ -234,10 +234,11 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'onPlay',
       gate: [{ kind: 'leaderType', type: 'Whitebeard Pirates' }, { kind: 'selfLife', atMost: 2 }],
       functions: [{
-        fn: 'preventAttack',
-        target: { group: 'characters', player: 'opponent' },
+        fn: 'preventAttackAll',
+        player: 'opponent',
+        charactersOnly: true,
         duration: 'endOfOpponentsTurn',
-        optional: true,
+        attackUnlessTrashFromHand: 2,
       }],
     },
   },

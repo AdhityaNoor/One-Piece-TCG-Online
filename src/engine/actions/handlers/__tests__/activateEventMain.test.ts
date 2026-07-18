@@ -68,10 +68,10 @@ describe('validateActivateEventMain', () => {
     expect(result.legal).toBe(true);
   });
 
-  it('validates structured DON!! -N [Main] ability costs separately from the Event play cost', () => {
+  it('allows deferring DON!! -N selection (no abilityCostDonInstanceIds) when the field can afford it', () => {
     const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
     const { rig, instanceId } = putInHand(base, 'p1', makeEventDef({ cardDefinitionId: 'COSTED-MAIN', baseCost: 1 }));
-    const { rig: withDon, donIds } = putDon(rig, 'p1', 2);
+    const { rig: withDon, donIds } = putDon(rig, 'p1', 1);
     const registry: EffectTemplateRegistry = {
       'COSTED-MAIN': {
         cardNumber: 'COSTED-MAIN',
@@ -79,12 +79,13 @@ describe('validateActivateEventMain', () => {
       },
     };
 
-    const missingAbilityCost = validateActivateEventMain(withDon.state, activateEventAction('p1', instanceId, [donIds[0]]), withDon.defs, registry);
-    expect(missingAbilityCost.legal).toBe(false);
-    expect(missingAbilityCost.reasons.join(' ')).toContain('Cost requires selecting 1 DON!! to return, but 0 were supplied.');
+    // One active DON!! covers play cost; DON!! −1 is chosen after that rest.
+    const deferred = validateActivateEventMain(withDon.state, activateEventAction('p1', instanceId, [donIds[0]]), withDon.defs, registry);
+    expect(deferred.legal).toBe(true);
 
-    const result = validateActivateEventMain(withDon.state, activateEventAction('p1', instanceId, [donIds[0]], [donIds[1]]), withDon.defs, registry);
-    expect(result.legal).toBe(true);
+    const { rig: withTwo, donIds: two } = putDon(rig, 'p1', 2);
+    const preselected = validateActivateEventMain(withTwo.state, activateEventAction('p1', instanceId, [two[0]], [two[1]]), withTwo.defs, registry);
+    expect(preselected.legal).toBe(true);
   });
 });
 
@@ -136,5 +137,35 @@ describe('executeActivateEventMain', () => {
     expect(result.state.players.p1.donDeck.cardIds).toContain(donIds[1]);
     expect(result.state.players.p1.hand.cardIds).toHaveLength(1);
     expect(result.pendingChoices).toHaveLength(0);
+  });
+
+  it('rests play-cost DON!! first, then prompts DON!! −1 including the rested play-cost DON!! (OP05-077 order)', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const def = makeEventDef({
+      cardDefinitionId: 'OP05-077-SHAPE',
+      baseCost: 1,
+      name: 'Rest Then Return',
+      text: '[Main] DON!! −1: Give up to 1 of your opponent\'s Characters −5000 power during this turn.',
+    });
+    const { rig, instanceId: handInstanceId } = putInHand(base, 'p1', def);
+    const { rig: withDon, donIds } = putDon(rig, 'p1', 1);
+    const registry: EffectTemplateRegistry = {
+      [def.cardDefinitionId]: {
+        cardNumber: def.cardDefinitionId,
+        abilities: [{
+          timing: 'activateMain',
+          cost: [{ kind: 'donMinus', count: 1 }],
+          ops: [{ op: 'chooseTargets', var: 't', from: { sel: 'opponentCharacters' }, min: 0, max: 1, prompt: 'Choose' }, { op: 'addPower', target: { sel: 'var', name: 't' }, amount: -5000, duration: 'duringThisTurn' }],
+        }],
+      },
+    };
+
+    const result = executeActivateEventMain(withDon.state, activateEventAction('p1', handInstanceId, [donIds[0]]), withDon.defs, registry);
+
+    expect(result.state.cardsById[donIds[0]].donRested).toBe(true);
+    expect(result.state.cardsById[donIds[0]].currentZone).toBe('costArea');
+    expect(result.pendingChoices).toHaveLength(1);
+    expect(result.pendingChoices[0].prompt).toMatch(/DON!!/);
+    expect(result.pendingChoices[0].constraints.candidateInstanceIds).toContain(donIds[0]);
   });
 });

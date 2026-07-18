@@ -200,17 +200,16 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-034 — [On Play] if Leader has Slash attribute, search top 5 for Slash card or green Event.
   { cardNumber: 'OP12-034', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderAttribute', attribute: 'slash' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ attribute: 'slash' }, { category: 'event', color: 'green' }] } }] } },
 
-  // OP12-036 (character) Roronoa Zoro —
-  //   This card in your hand cannot be played by effects.If your Leader has the <Slash> attribute, this
-  //   Character cannot be K.O.'d in battle by <Slash> attribute cards and gains +1000 power.
-  // PARTIAL: "this card in your hand cannot be played by effects" remains deferred.
+  // OP12-036 — cannot be played by effects from hand; if Leader Slash: battle KO immunity vs Slash +1000.
   {
     cardNumber: 'OP12-036',
-    templateId: 'ability',
-    params: { timing: 'onEnterPlay', gate: [{ kind: 'leaderAttribute', attribute: 'slash' }], functions: [
-      { fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', attackerAttribute: 'slash' },
-      { fn: 'addPowerSelf', amount: 1000, duration: 'permanent' },
-    ] },
+    templates: [
+      { templateId: 'staticFlags', params: { cannotBePlayedByEffects: true } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', gate: [{ kind: 'leaderAttribute', attribute: 'slash' }], functions: [
+        { fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', attackerAttribute: 'slash' },
+        { fn: 'addPowerSelf', amount: 1000, duration: 'permanent' },
+      ] } },
+    ],
   },
 
   // OP12-037 — [Main] rest 3 DON!!: rest up to 2 opp Characters or DON!!. [Counter] Leader +3000 this battle.

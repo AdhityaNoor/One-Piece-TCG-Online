@@ -20,7 +20,7 @@ import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/def
 import { computeCurrentCost } from '../../rules/shared/power';
 import { getOpponentId } from '../../rules/shared/players';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { fireCounter, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, type EffectTemplateRegistry } from '../../effects';
+import { fireCounter, canAffordAbilityCost, canPayAbilityCost, countControllerActiveUnattachedDon, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, requiredDonMinusCount, type EffectTemplateRegistry } from '../../effects';
 import { recordEventActivation } from '../../effects/eventActivationHistory';
 import { effectLogDataForSource } from '../../logs/effectLogData';
 
@@ -74,7 +74,19 @@ export function validateActivateCounterEvent(
     reasons.push(`'${def.name}' has no [Counter] effect to activate.`);
   }
   if (ability?.cost?.length) {
-    reasons.push(...canPayAbilityCost(state, action.handCardInstanceId, action.playerId, ability.cost, action.abilityCostDonInstanceIds ?? []));
+    const preselected = action.abilityCostDonInstanceIds ?? [];
+    const requiredDon = requiredDonMinusCount(ability.cost);
+    if (requiredDon > 0 && preselected.length === 0) {
+      reasons.push(...canAffordAbilityCost(state, action.handCardInstanceId, action.playerId, ability.cost));
+      const activeOnlyCount = ability.cost
+        .filter((c): c is Extract<typeof c, { kind: 'donMinus' }> => c.kind === 'donMinus' && c.activeOnly === true)
+        .reduce((sum, c) => sum + c.count, 0);
+      if (activeOnlyCount > 0 && countControllerActiveUnattachedDon(state, action.playerId) - action.donInstanceIds.length < activeOnlyCount) {
+        reasons.push(`Cost requires returning ${activeOnlyCount} active DON!! after paying the Event play cost, but not enough remain.`);
+      }
+    } else {
+      reasons.push(...canPayAbilityCost(state, action.handCardInstanceId, action.playerId, ability.cost, preselected));
+    }
   } else if ((action.abilityCostDonInstanceIds?.length ?? 0) > 0) {
     reasons.push('This Counter Event has no DON!! -N ability cost, so abilityCostDonInstanceIds must be empty.');
   }
@@ -146,27 +158,32 @@ export function executeActivateCounterEvent(
     log: [...state.log, ...logger.log],
   };
 
-  // Pay structured [Counter] ability costs (for example DON!! -N) before the
-  // counter effect resolves. The Event play cost above is separate.
-  const paid = ability?.cost?.length
-    ? payAbilityCost(nextState, action.handCardInstanceId, action.playerId, ability.cost, action.actionId, action.abilityCostDonInstanceIds ?? [])
-    : { state: nextState, log: [] as ActionExecuteResult['log'], restedInstanceIds: [] as string[], returnedDonCount: 0 };
+  // Play cost is already rested above. Defer DON!! −N until after that rest so
+  // rested play-cost DON!! remain legal returns.
+  const preselected = action.abilityCostDonInstanceIds ?? [];
+  const requiredDon = requiredDonMinusCount(ability?.cost ?? []);
+  const deferDonMinusChoice = !!(ability?.cost?.length && requiredDon > 0 && preselected.length === 0);
 
-  let working = paid.state;
-  let paidLog = [...paid.log];
-  if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
-    const cascaded = afterAbilityCostPaid(working, action.playerId, paid, registry, defs, action.actionId);
-    working = cascaded.state;
-    paidLog = [...paidLog, ...cascaded.log];
-    if (cascaded.pendingChoices.length > 0) {
-      return { state: working, log: [...logger.log, ...paidLog], pendingChoices: cascaded.pendingChoices };
+  let working = nextState;
+  let paidLog: ActionExecuteResult['log'] = [];
+  if (ability?.cost?.length && !deferDonMinusChoice) {
+    const paid = payAbilityCost(nextState, action.handCardInstanceId, action.playerId, ability.cost, action.actionId, preselected);
+    working = paid.state;
+    paidLog = [...paid.log];
+    if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
+      const cascaded = afterAbilityCostPaid(working, action.playerId, paid, registry, defs, action.actionId);
+      working = cascaded.state;
+      paidLog = [...paidLog, ...cascaded.log];
+      if (cascaded.pendingChoices.length > 0) {
+        return { state: working, log: [...logger.log, ...paidLog], pendingChoices: cascaded.pendingChoices };
+      }
     }
   }
 
   working = recordEventActivation(working, action.playerId, action.handCardInstanceId, defs);
 
-  // Fire the [Counter] ability (timing 'counter'); may emit a target choice.
-  const fired = fireCounter(working, action.handCardInstanceId, registry, defs, action.actionId);
+  // Fire the [Counter] ability (timing 'counter'); may emit a target / DON!! choice.
+  const fired = fireCounter(working, action.handCardInstanceId, registry, defs, action.actionId, deferDonMinusChoice);
 
   let resultState = fired.state;
   let resultLog = [...logger.log, ...paidLog, ...fired.log];

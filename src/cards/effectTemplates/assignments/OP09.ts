@@ -84,19 +84,24 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-021 (stage) — [Activate: Main] rest this: If Leader {Red-Haired Pirates}, give up to 1 opp Character −1000.
   { cardNumber: 'OP09-021', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } },
 
-  // OP09-022 — PARTIAL: "Characters played rested" static rule deferred; mapped activate rest-3-DON → add rested DON + play ODYSSEY.
+  // OP09-022 — Characters played rested; [Activate: Main] OPT rest 3 DON → add rested DON + play ODYSSEY ≤5.
   {
     cardNumber: 'OP09-022',
-    templateId: 'ability',
-    params: {
-      timing: 'activateMain',
-      oncePerTurn: true,
-      cost: [{ kind: 'restDon', count: 3 }],
-      functions: [
-        { fn: 'addDonFromDeck', count: 1, rested: true },
-        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'ODYSSEY', maxCost: 5 }, ifPrevious: 'previousSelectedAny' },
-      ],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'forceCharactersPlayedRested', duration: 'permanent' }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          cost: [{ kind: 'restDon', count: 3 }],
+          functions: [
+            { fn: 'addDonFromDeck', count: 1, rested: true },
+            { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'ODYSSEY', maxCost: 5 }, ifPrevious: 'previousSelectedAny' },
+          ],
+        },
+      },
+    ],
   },
 
   // OP09-023 — [On Play] If Leader {ODYSSEY}, set up to 3 DON!! active. [On Opponent's Attack] rest DON → +2000 battle.

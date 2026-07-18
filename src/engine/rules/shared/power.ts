@@ -131,6 +131,7 @@ export function continuousTargetConditionApplies(
   if (cond.minBaseCost !== undefined && (def.baseCost ?? -Infinity) < cond.minBaseCost) return false;
   if (cond.maxBasePower !== undefined && (def.basePower ?? Infinity) > cond.maxBasePower) return false;
   if (cond.minBasePower !== undefined && (def.basePower ?? -Infinity) < cond.minBasePower) return false;
+  if (cond.minPower !== undefined && computeCurrentPower(defs, state, instanceId) < cond.minPower) return false;
   if (cond.exactBasePower !== undefined && (def.basePower ?? -1) !== cond.exactBasePower) return false;
   if (cond.color !== undefined && !def.colors.includes(cond.color)) return false;
   if (cond.gate && !evaluateGates(cond.gate, state, defs, record.ownerId, record.sourceInstanceId)) return false;
@@ -185,21 +186,27 @@ function keywordModifierApplies(record: ContinuousEffectRecord, state: GameState
 }
 
 
-/** Dynamic "+X for every N of <source>" term, counted against the modifier's owner. */
-function scaleAmount(scale: PowerScale | undefined, ownerId: string, state: GameState, defs: CardDefinitionLookup): number {
+/** Dynamic "+X for every N of <source>" term, counted against the modifier's owner (or the target for targetDonAttached). */
+function scaleAmount(
+  scale: PowerScale | undefined,
+  ownerId: string,
+  state: GameState,
+  defs: CardDefinitionLookup,
+  targetInstanceId?: string,
+): number {
   if (!scale) return 0;
   const player = state.players[ownerId];
-  if (!player) return 0;
+  if (!player && scale.per !== 'targetDonAttached') return 0;
   let count = 0;
   switch (scale.per) {
     case 'controllerHand':
-      count = player.hand.cardIds.length;
+      count = player!.hand.cardIds.length;
       break;
     case 'controllerTrash':
-      count = player.trash.cardIds.length;
+      count = player!.trash.cardIds.length;
       break;
     case 'controllerTrashEvents':
-      count = player.trash.cardIds.filter((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.category === 'event').length;
+      count = player!.trash.cardIds.filter((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.category === 'event').length;
       break;
     case 'controllerRestedDon': {
       const attached = new Set<string>();
@@ -207,12 +214,12 @@ function scaleAmount(scale: PowerScale | undefined, ownerId: string, state: Game
         if (inst.controllerId !== ownerId) continue;
         for (const d of inst.donAttached) attached.add(d);
       }
-      count = player.costArea.cardIds.filter((id) => state.cardsById[id]?.donRested === true && !attached.has(id)).length;
+      count = player!.costArea.cardIds.filter((id) => state.cardsById[id]?.donRested === true && !attached.has(id)).length;
       break;
     }
     case 'controllerCharacterDistinctNames': {
       const names = new Set<string>();
-      for (const id of player.characterArea.cardIds) {
+      for (const id of player!.characterArea.cardIds) {
         const inst = state.cardsById[id];
         if (!inst) continue;
         const def = defs[inst.cardDefinitionId];
@@ -221,6 +228,9 @@ function scaleAmount(scale: PowerScale | undefined, ownerId: string, state: Game
       count = names.size;
       break;
     }
+    case 'targetDonAttached':
+      count = targetInstanceId ? (state.cardsById[targetInstanceId]?.donAttached.length ?? 0) : 0;
+      break;
   }
   return scale.step > 0 ? Math.floor(count / scale.step) * scale.amountPer : 0;
 }
@@ -246,7 +256,7 @@ export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState
         base = leaderDef.basePower ?? 0;
       }
     } else {
-      continuousBonus += mod.amount + scaleAmount(mod.scale, record.ownerId, state, defs);
+      continuousBonus += mod.amount + scaleAmount(mod.scale, record.ownerId, state, defs, instanceId);
     }
   }
   return base + donBonus + battleBonus + continuousBonus;
@@ -262,7 +272,7 @@ export function computeCurrentCost(defs: CardDefinitionLookup, state: GameState,
     const mod = record.costModifier!;
     // "base cost becomes N" (2-7): overwrite the base; last applicable set wins.
     if (mod.setBase !== undefined) base = mod.setBase;
-    else continuousDelta += mod.amount + scaleAmount(mod.scale, record.ownerId, state, defs);
+    else continuousDelta += mod.amount + scaleAmount(mod.scale, record.ownerId, state, defs, instanceId);
   }
   return Math.max(0, base + continuousDelta);
 }
@@ -306,6 +316,8 @@ function effectSourceMatches(
   return true;
 }
 
+const KO_IMMUNITY_OPT_KEY = (recordId: string) => `koImmunity:${recordId}`;
+
 function koImmunityModifierApplies(
   record: ContinuousEffectRecord,
   state: GameState,
@@ -338,7 +350,47 @@ function koImmunityModifierApplies(
     if (!attrs.some((a) => a.toLowerCase() === mod.attackerAttribute!.toLowerCase())) return false;
   }
   if (!effectSourceMatches(mod, record, state, defs, ctx?.koSourceInstanceId)) return false;
+  if (mod.oncePerTurn) {
+    const source = state.cardsById[record.sourceInstanceId];
+    if (source?.oncePerTurnUsed.includes(KO_IMMUNITY_OPT_KEY(record.id))) return false;
+  }
   return conditionApplies(mod.condition, record, state, instanceId, defs) && sourceConditionApplies(mod.sourceCondition, record, state);
+}
+
+/**
+ * First matching K.O. immunity record for this attempt (for OPT consumption after prevent).
+ */
+export function findKoImmunityRecord(
+  defs: CardDefinitionLookup,
+  state: GameState,
+  instanceId: string,
+  cause: 'battle' | 'effect',
+  ctx?: KoImmunityCheckContext,
+): ContinuousEffectRecord | null {
+  for (const record of state.continuousEffects) {
+    if (koImmunityModifierApplies(record, state, instanceId, cause, defs, ctx)) return record;
+  }
+  return null;
+}
+
+/** Mark a once-per-turn K.O. immunity as spent after it prevents a K.O. */
+export function withKoImmunityConsumed(state: GameState, record: ContinuousEffectRecord): GameState {
+  const mod = record.koImmunityModifier;
+  if (!mod?.oncePerTurn) return state;
+  const source = state.cardsById[record.sourceInstanceId];
+  if (!source) return state;
+  const key = KO_IMMUNITY_OPT_KEY(record.id);
+  if (source.oncePerTurnUsed.includes(key)) return state;
+  return {
+    ...state,
+    cardsById: {
+      ...state.cardsById,
+      [record.sourceInstanceId]: {
+        ...source,
+        oncePerTurnUsed: [...source.oncePerTurnUsed, key],
+      },
+    },
+  };
 }
 
 /**
@@ -354,7 +406,7 @@ export function isKoImmune(
   cause: 'battle' | 'effect',
   ctx?: KoImmunityCheckContext,
 ): boolean {
-  return state.continuousEffects.some((record) => koImmunityModifierApplies(record, state, instanceId, cause, defs, ctx));
+  return findKoImmunityRecord(defs, state, instanceId, cause, ctx) !== null;
 }
 
 /**
@@ -372,6 +424,11 @@ function attackRestrictionBlocks(
   if (!r || r.forbiddenTarget !== undefined || r.forbiddenTargetFilter !== undefined) return false;
   const attacker = state.cardsById[instanceId];
   if (!attackRestrictionAppliesToAttacker(r, instanceId, attacker)) return false;
+  if (r.attackUnlessTrashFromHand !== undefined) {
+    if (!attacker) return true;
+    const handSize = state.players[attacker.controllerId]?.hand.cardIds.length ?? 0;
+    return handSize < r.attackUnlessTrashFromHand;
+  }
   if (r.attackUnlessGate?.length) {
     return !evaluateGates(r.attackUnlessGate, state, defs, record.ownerId, record.sourceInstanceId);
   }
@@ -383,6 +440,31 @@ function attackRestrictionBlocks(
 
 export function cannotAttack(state: GameState, instanceId: string, defs: CardDefinitionLookup = {}): boolean {
   return state.continuousEffects.some((record) => attackRestrictionBlocks(record, state, instanceId, defs));
+}
+
+/** Trash-from-hand tax required to declare an attack with this attacker, or null. */
+export function getAttackTrashTax(
+  state: GameState,
+  attackerInstanceId: string,
+  defs: CardDefinitionLookup = {},
+): number | null {
+  const attacker = state.cardsById[attackerInstanceId];
+  if (!attacker) return null;
+  let tax: number | null = null;
+  for (const record of state.continuousEffects) {
+    const r = record.attackRestriction;
+    if (!r?.attackUnlessTrashFromHand) continue;
+    if (r.forbiddenTarget !== undefined || r.forbiddenTargetFilter !== undefined) continue;
+    if (!attackRestrictionAppliesToAttacker(r, attackerInstanceId, attacker)) continue;
+    if (r.condition && !continuousTargetConditionApplies(r.condition, record, state, attackerInstanceId, defs)) continue;
+    tax = Math.max(tax ?? 0, r.attackUnlessTrashFromHand);
+  }
+  return tax;
+}
+
+/** True when the controller's Characters must enter play rested. */
+export function mustPlayCharactersRested(state: GameState, controllerId: string): boolean {
+  return state.continuousEffects.some((record) => record.charactersPlayedRested?.appliesToControllerId === controllerId);
 }
 
 /** While active, the opponent must attack this Character (and only this Character). */
@@ -408,7 +490,9 @@ function attackRestrictionAppliesToAttacker(
   attacker: import('../../state/card').CardInstance | undefined,
 ): boolean {
   if (restriction.appliesToControllerId !== undefined) {
-    return attacker?.controllerId === restriction.appliesToControllerId;
+    if (attacker?.controllerId !== restriction.appliesToControllerId) return false;
+    if (restriction.charactersOnly && attacker.currentZone !== 'characterArea') return false;
+    return true;
   }
   return restriction.appliesToInstanceId === attackerId;
 }

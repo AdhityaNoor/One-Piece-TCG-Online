@@ -1,3 +1,8 @@
+/** Per-card flight duration (CardMovementOverlay's CSS Animation), in ms. */
+export const FLIGHT_MS = 640;
+/** Stagger between consecutive cards in the same batch (parseLogEntries' pushSpec), in ms. */
+export const STAGGER_MS = 75;
+
 /** Board zones that have a visible anchor on the match table UI. */
 export type BoardZoneId =
   | 'deck'

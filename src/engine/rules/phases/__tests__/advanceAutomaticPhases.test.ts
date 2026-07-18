@@ -35,11 +35,12 @@ describe('advanceAutomaticPhases', () => {
     expect(result.state.players.p1.hand.cardIds).toContain(deckIds[0]);
     expect(result.state.players.p1.costArea.cardIds).toHaveLength(2);
     const types = result.log.map((e) => e.type);
-    // Trailing PHASE_CHANGED is runDonPhase's own "DON!! Phase" marker (pushed after
-    // CARD_MOVED so runDonPhase.test.ts's log[0]-is-CARD_MOVED assertions stay valid) —
-    // it's what lets PhaseTransitionBanner (MatchScreen.tsx) announce DON!! Phase the
-    // same way it does Refresh/Draw.
-    expect(types).toEqual(['PHASE_CHANGED', 'CARD_DRAWN', 'CARD_MOVED', 'PHASE_CHANGED']);
+    // The PHASE_CHANGED after CARD_DRAWN is runDrawPhase's own "Draw Phase" marker (pushed
+    // after CARD_DRAWN so runDrawPhase.test.ts's log[0]-is-CARD_DRAWN assertions stay valid).
+    // The trailing PHASE_CHANGED is runDonPhase's "DON!! Phase" marker (same reasoning,
+    // pushed after CARD_MOVED). Both exist so PhaseTransitionBanner (MatchScreen.tsx) can
+    // announce every phase, not just Refresh.
+    expect(types).toEqual(['PHASE_CHANGED', 'CARD_DRAWN', 'PHASE_CHANGED', 'CARD_MOVED', 'PHASE_CHANGED']);
   });
 
   it('runs End -> handoff -> Refresh -> Draw -> DON!! -> Main, landing on the new active player', () => {
@@ -55,7 +56,7 @@ describe('advanceAutomaticPhases', () => {
     expect(result.state.players.p2.hand.cardIds).toContain(deckIds[0]);
     expect(result.state.players.p2.costArea.cardIds).toHaveLength(2);
     const types = result.log.map((e) => e.type);
-    expect(types).toEqual(['PHASE_CHANGED', 'TURN_PASSED', 'PHASE_CHANGED', 'CARD_DRAWN', 'CARD_MOVED', 'PHASE_CHANGED']);
+    expect(types).toEqual(['PHASE_CHANGED', 'TURN_PASSED', 'PHASE_CHANGED', 'CARD_DRAWN', 'PHASE_CHANGED', 'CARD_MOVED', 'PHASE_CHANGED']);
   });
 
   it('stops immediately once gameOver is set mid-cascade (decking out during the Draw Phase)', () => {

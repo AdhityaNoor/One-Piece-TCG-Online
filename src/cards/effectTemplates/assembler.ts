@@ -64,14 +64,21 @@ export function buildRegistryFromAssignments(
       // Should never happen if sets are reviewed carefully; warn loudly.
       console.warn(`[effectTemplates] duplicate assignment for ${a.cardNumber} - last one wins`);
     }
-    const abilities = bindingsFor(a).flatMap((binding) =>
-      applyTemplate(
+    let cannotBePlayedByEffects = false;
+    const abilities = bindingsFor(a).flatMap((binding) => {
+      const prog = applyTemplate(
         a.cardNumber,
         binding.templateId,
         binding.params as TemplateParamMap[typeof binding.templateId],
-      ).abilities,
-    );
-    registry[a.cardNumber] = { cardNumber: a.cardNumber, abilities };
+      );
+      if (prog.cannotBePlayedByEffects) cannotBePlayedByEffects = true;
+      return prog.abilities;
+    });
+    registry[a.cardNumber] = {
+      cardNumber: a.cardNumber,
+      abilities,
+      ...(cannotBePlayedByEffects ? { cannotBePlayedByEffects: true } : {}),
+    };
   }
 
   return registry;

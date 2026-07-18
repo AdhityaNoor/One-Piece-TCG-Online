@@ -1,5 +1,116 @@
 # Effect Curation — Coverage Addition Worklist
 
+## Progress update — 2026-07-18 (OP12-036 + OP15-008 + OP15-119)
+
+Closed **3** partials (**13 → 10**). New reusable pieces:
+
+- **`staticFlags.cannotBePlayedByEffects`** — EffectProgram flag; blocks effect `playFromHand` (OP12-036).
+- **`PowerScale.per: 'targetDonAttached'`** — −N per DON!! on the modified card (OP15-008).
+- **`revealTopLifeAddPowerPerCost`** — reveal top Life → +amountPer × printed cost (OP15-119).
+
+| Card | Closure |
+| --- | --- |
+| OP12-036 | static cannot-be-played-by-effects + Slash Leader KO immunity / +1000 |
+| OP15-008 | onPlay DON+Rush; Activate if played this turn: opp Char −1000×DON |
+| OP15-119 | Rush if ≥6 DON; opp Event/Blocker → reveal Life cost power |
+
+### Next recommended targets
+
+- Hard defer: counter auras, extra turn, win conditions, deck construction, DON-phase routing, face-up Life→deck.
+- Remaining assigned PARTIALs (10).
+
+## Progress update — 2026-07-18 (EB02-039 + OP09-022 + OP08-043)
+
+Closed **3** partials (**16 → 13**). New reusable pieces:
+
+- **`SearchFilter.nameMatchesPreviousMove`** — "same card name as the trashed card" (EB02-039).
+- **`forceCharactersPlayedRested`** — Characters enter play rested (OP09-022).
+- **`attackUnlessTrashFromHand`** on `preventAttackAll` — declare-attack trash tax via `rule:attackTrashTax` PendingChoice (OP08-043).
+
+| Card | Closure |
+| --- | --- |
+| EB02-039 | trash GERMA ≤4000 → play same-name 5000–7000 from trash |
+| OP09-022 | onEnterPlay `forceCharactersPlayedRested` + mapped Activate |
+| OP08-043 | opp Characters cannot attack unless trash 2 (until end of opp next turn) |
+
+### Next recommended targets
+
+- Hard defer: counter auras, extra turn, win conditions, deck construction.
+- Remaining assigned PARTIALs (13).
+
+## Progress update — 2026-07-18 (OP05-098 + OP10-118)
+
+Closed **2** partials (**18 → 16**). New reusable pieces:
+
+- **damageStep Life-hit commit** — commit Life→hand before reactions so `onLifeToHand` deck→Life mutations are not wiped.
+- **`koImmunitySelf.oncePerTurn`** — consumable effect/battle K.O. shield via `oncePerTurnUsed` (`koImmunity:<recordId>`).
+
+| Card | Closure |
+| --- | --- |
+| OP05-098 | Opp-turn OPT `onLifeToHand` + `selfLife ≤0` → top deck to Life, trash 1 hand (not Banish Life→trash) |
+| OP10-118 | OPT `koImmunitySelf` effect + `effectSourceController: 'opponent'` |
+
+### Next recommended targets
+
+- Hard defer: counter auras (OP16-118 / EB01-001), extra turn (OP05-119), win conditions.
+- Scan remaining assigned PARTIALs (16).
+
+## Progress update — 2026-07-18 (P-084 + ST28-004)
+
+Closed **2** partials (**20 → 18**). New reusable pieces:
+
+- **`preventAttackAll`** — `player: 'both'`, `charactersOnly`, cost `condition` (P-084 Buggy aura).
+- **`returnGivenDon`** AbilityCost — return attached DON!! to cost area (default rested).
+
+| Card | Closure |
+| --- | --- |
+| P-084 | self cannot-attack + both-sides cost 3–4 aura if Leader Buggy + onPlay Cross Guild ≤6 |
+| ST28-004 | Activate cost `returnGivenDon` ×2 rested → Rush +1000 |
+
+### Next recommended targets
+
+- OP05-098 — `onLifeBecomesZero` (or damageStep sync + `onLifeToHand` approx).
+- OP10-118 — OPT `koImmunitySelf`.
+- Hard defer: counter auras, extra turn, win conditions.
+
+## Progress update — 2026-07-18 (OP14-079 + OP05-001)
+
+Closed **2** partials (**22 → 20**). New reusable pieces:
+
+- **`preventFieldRemovalAuraOpponentCharacters`** — factory for opp Character field-removal lock (“cannot be removed by your effects”).
+- **`giveTargetPowerPenalty`** — KO replacement gives −N to the protected ally (“that Character”), not the aura source.
+- **`ContinuousPowerCondition.minPower`** — current-power gate for replacement targets (Sabo 5000+).
+
+| Card | Closure |
+| --- | --- |
+| OP14-079 | onEnterPlay preventFieldRemovalAuraOpponentCharacters + mapped Activate |
+| OP05-001 | registerKoReplacementAura + giveTargetPowerPenalty (−1000 on ally) |
+
+### Next recommended targets
+
+- Hard defer: ST28-004, EB02-039, Counter-aura OP16-118 / EB01-001, extra turn OP05-119.
+- Remaining OP05: OP05-098 (`onLifeBecomesZero`).
+
+## Progress update — 2026-07-18 (expressible partial batch)
+
+Closed **6** partials (**28 → 22**). New reusable piece:
+
+- **`anyNamedCharacter`** — “If there is a [X] Character” across either field (used for OP05-100 Luffy negation).
+
+| Card | Closure |
+| --- | --- |
+| OP05-030 | Stale PARTIAL removed — `registerKoReplacementAura` already exact |
+| OP06-009 | `setBasePowerFromSource` on whenAttacking / onBlock (shared OPT key) |
+| OP07-097 | Activate Main: chooseOne play-or-Life {Egghead} ≤5 |
+| OP13-002 | Shared OPT draw via `onLifeToHand` + `onCharacterKoed` (min base 6000) |
+| ST07-009 | lifeTrigger trash 1 → `triggerPlaySelf` |
+| OP05-100 | leave-field `registerKoReplacementSelf` + trash top Life; negated by `anyNamedCharacter` Luffy |
+
+### Next recommended targets
+
+- Hard defer: ST28-004, EB02-039, Counter-aura OP16-118 / EB01-001.
+- Scan remaining OP05 / OP15 / OP12 partials for assignment-only closures.
+
 ## Progress update — 2026-07-18 (onCharacterRested watcher)
 
 Closed **2** partials (**30 → 28**). New reusable pieces:

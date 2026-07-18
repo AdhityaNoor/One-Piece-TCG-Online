@@ -830,8 +830,32 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP13-095', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 3 } }, optional: true, maxTargets: 2, ifPrevious: 'previousMovedAny', ifGate: [{ kind: 'selfAllCharactersTyped', typeIncludes: 'Celestial Dragons' }] }] } },
 
-  // PARTIAL: onOpponentsAttack −2000 only; damage/KO draw trigger deferred.
-  { cardNumber: 'OP13-002', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' }] } },
+  // OP13-002 — [On Opp Attack] [OPT] trash 1: opp −2000 this battle.
+  //   [DON!! x1] [OPT] When you take damage or your Character with 6000+ base power is K.O.'d, draw 1.
+  {
+    cardNumber: 'OP13-002',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: {
+        timing: 'onLifeToHand',
+        oncePerTurn: true,
+        oncePerTurnKey: 'op13-002-draw',
+        condition: { donAttachedAtLeast: 1 },
+        functions: [{ fn: 'draw', amount: 1 }],
+      } },
+      { templateId: 'ability', params: {
+        timing: 'onCharacterKoed',
+        oncePerTurn: true,
+        oncePerTurnKey: 'op13-002-draw',
+        condition: { donAttachedAtLeast: 1 },
+        gate: [
+          { kind: 'koedCharacterController', player: 'controller' },
+          { kind: 'koedCharacterMinBasePower', power: 6000 },
+        ],
+        functions: [{ fn: 'draw', amount: 1 }],
+      } },
+    ],
+  },
 
   { cardNumber: 'OP13-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
 

@@ -16,6 +16,7 @@ import { buildRegistryFromAssignments } from '../../../cards/effectTemplates/ass
 import { EB_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/EB';
 import { OP02_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/OP02';
 import { OP13_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/OP13';
+import { OP14_ASSIGNMENTS } from '../../../cards/effectTemplates/assignments/OP14';
 import {
   buildBaseRig,
   makeCharacterDef,
@@ -331,5 +332,25 @@ describe('filtered field-removal-immunity aura assignments', () => {
     ctx.koApply(wrongColor.instanceId);
     expect(ctx.state().cardsById[protectedScientist.instanceId]!.currentZone).toBe('characterArea');
     expect(ctx.state().cardsById[wrongColor.instanceId]!.currentZone).toBe('trash');
+  });
+
+  it('OP14-079 protects opponent Characters from your effect removal', () => {
+    const sourceDef = makeCharacterDef({ cardDefinitionId: 'OP14-079', cardNumber: 'OP14-079' });
+    const oppCharDef = makeCharacterDef({ cardDefinitionId: 'OPP-CHAR', cardNumber: 'OPP-CHAR' });
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    const source = putCharacterInPlay(rig, 'p1', sourceDef);
+    const oppChar = putCharacterInPlay(source.rig, 'p2', oppCharDef);
+    rig = oppChar.rig;
+
+    const entry = OP14_ASSIGNMENTS.find((a) => a.cardNumber === 'OP14-079')!;
+    const registry = buildRegistryFromAssignments([entry]);
+    const fired = runTimings(registry['OP14-079'], ['onEnterPlay'], rig.state, source.instanceId, rig.defs, null, registry);
+    const record = fired.state.continuousEffects.find((ce) => ce.fieldRemovalImmunityModifier?.appliesToGroup);
+    expect(record?.fieldRemovalImmunityModifier?.appliesToGroup).toMatchObject({ opponentCharacters: true });
+    expect(record?.fieldRemovalImmunityModifier?.effectSourceController).toBe('opponent');
+
+    const ctx = new EffectContextImpl(fired.state, source.instanceId, rig.defs, null);
+    ctx.koApply(oppChar.instanceId);
+    expect(ctx.state().cardsById[oppChar.instanceId]!.currentZone).toBe('characterArea');
   });
 });

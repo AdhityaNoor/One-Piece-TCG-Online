@@ -96,19 +96,27 @@ export const ST07_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST07-008 - On Play Life peek.
   { cardNumber: 'ST07-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'peekLifeAndPlace', from: 'controllerOrOpponentTop', placement: 'topOrBottom' }] } },
 
-  // ST07-009 - rest self + mandatory Life payment: K.O. cost <=3. Trigger is deferred until source-safe trigger costs exist.
+  // ST07-009 - rest self + Life→hand: K.O. cost <=3. [Trigger] trash 1 from hand: play this.
   {
     cardNumber: 'ST07-009',
-    templateId: 'ability',
-    params: {
-      timing: 'activateMain',
-      cost: [{ kind: 'restThis' }],
-      gate: [{ kind: 'selfLife', atLeast: 1 }],
-      functions: [
-        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' } },
-        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true, ifPrevious: 'previousMovedAny' },
-      ],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          cost: [{ kind: 'restThis' }],
+          gate: [{ kind: 'selfLife', atLeast: 1 }],
+          functions: [
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' } },
+            { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'optionalTrashFromHand', count: 1 },
+        { fn: 'triggerPlaySelf', ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
   },
 
   // ST07-010 - Opponent chooses whether to lose their Life or give you a Life from deck top.

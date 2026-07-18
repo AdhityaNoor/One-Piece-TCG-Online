@@ -13,7 +13,7 @@ import { createActionLogger, type ActionLogger } from '../rules/shared/actionLog
 import type { GameLogEntry } from '../logs/logEntry';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 import { getOpponentId } from '../rules/shared/players';
-import { cannotBeRemovedFromFieldByEffect, cannotBeRestedByEffect, computeCurrentCost, computeCurrentPower, isKoImmune } from '../rules/shared/power';
+import { cannotBeRemovedFromFieldByEffect, cannotBeRestedByEffect, computeCurrentCost, computeCurrentPower, findKoImmunityRecord, mustPlayCharactersRested, withKoImmunityConsumed } from '../rules/shared/power';
 import { isControllerLifeToHandPrevented } from '../rules/shared/lifeToHandRestriction';
 import { isControllerCharacterPlayPrevented } from '../rules/shared/characterPlayRestriction';
 import { isControllerHandPlayPrevented } from '../rules/shared/handPlayRestriction';
@@ -23,7 +23,7 @@ import { koReplacementDescription, restReplacementDescription } from '../rules/s
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { createSeededRng } from '../rng/seededRng';
 import { effectLogDataForSource } from '../logs/effectLogData';
-import type { EffectContext } from './effectTemplate';
+import type { EffectContext, EffectTemplateRegistry } from './effectTemplate';
 import type { RemovedFromFieldDestination, SearchPickDestination, SearchRemainderDestination } from './effectIr';
 
 export class EffectContextImpl implements EffectContext {
@@ -33,6 +33,7 @@ export class EffectContextImpl implements EffectContext {
 
   private working: GameState;
   private readonly defs: CardDefinitionLookup;
+  private readonly registry: EffectTemplateRegistry;
   private readonly logger: ActionLogger;
   private readonly externalLog: GameLogEntry[] = [];
   private readonly pending: PendingChoice[] = [];
@@ -77,14 +78,27 @@ export class EffectContextImpl implements EffectContext {
     this.donGiven.push({ targetInstanceId, count });
   }
 
-  constructor(state: GameState, sourceInstanceId: string, defs: CardDefinitionLookup, actionId: string | null) {
+  constructor(
+    state: GameState,
+    sourceInstanceId: string,
+    defs: CardDefinitionLookup,
+    actionId: string | null,
+    registry: EffectTemplateRegistry = {},
+  ) {
     this.working = state;
     this.defs = defs;
+    this.registry = registry;
     this.sourceInstanceId = sourceInstanceId;
     const source = state.cardsById[sourceInstanceId];
     this.controllerId = source ? source.controllerId : state.activePlayerId;
     this.opponentId = getOpponentId(state, this.controllerId);
     this.logger = createActionLogger(state, actionId);
+  }
+
+  private programFor(cardDefinitionId: string) {
+    if (this.registry[cardDefinitionId]) return this.registry[cardDefinitionId];
+    const def = this.defs[cardDefinitionId];
+    return def?.cardNumber ? this.registry[def.cardNumber] : undefined;
   }
 
   state(): GameState {
@@ -611,6 +625,7 @@ export class EffectContextImpl implements EffectContext {
     appliesToInstanceId: string;
     scope: 'battle' | 'effect' | 'any';
     duration: ContinuousEffectDuration;
+    oncePerTurn?: boolean;
     condition?: ContinuousPowerCondition;
     attackerCategory?: 'leader' | 'character';
     attackerAttribute?: string;
@@ -629,6 +644,7 @@ export class EffectContextImpl implements EffectContext {
       koImmunityModifier: {
         appliesToInstanceId: spec.appliesToInstanceId,
         scope: spec.scope,
+        ...(spec.oncePerTurn ? { oncePerTurn: true } : {}),
         ...(spec.attackerCategory ? { attackerCategory: spec.attackerCategory } : {}),
         ...(spec.attackerAttribute ? { attackerAttribute: spec.attackerAttribute } : {}),
         ...(spec.condition ? { condition: spec.condition } : {}),
@@ -864,6 +880,9 @@ export class EffectContextImpl implements EffectContext {
     appliesToControllerId: string;
     duration: ContinuousEffectDuration;
     forbiddenTarget?: 'leader';
+    charactersOnly?: true;
+    condition?: import('../state/game').ContinuousPowerCondition;
+    attackUnlessTrashFromHand?: number;
     description?: string;
   }): void {
     const record: ContinuousEffectRecord = {
@@ -871,10 +890,16 @@ export class EffectContextImpl implements EffectContext {
       sourceInstanceId: this.sourceInstanceId,
       ownerId: this.controllerId,
       duration: spec.duration,
-      description: spec.description ?? (spec.forbiddenTarget === 'leader' ? 'cannot attack the opponent\'s Leader' : 'cannot attack'),
+      description: spec.description
+        ?? (spec.attackUnlessTrashFromHand
+          ? `cannot attack unless trash ${spec.attackUnlessTrashFromHand} from hand`
+          : spec.forbiddenTarget === 'leader' ? 'cannot attack the opponent\'s Leader' : 'cannot attack'),
       attackRestriction: {
         appliesToControllerId: spec.appliesToControllerId,
+        ...(spec.charactersOnly ? { charactersOnly: true } : {}),
         ...(spec.forbiddenTarget ? { forbiddenTarget: spec.forbiddenTarget } : {}),
+        ...(spec.condition ? { condition: spec.condition } : {}),
+        ...(spec.attackUnlessTrashFromHand !== undefined ? { attackUnlessTrashFromHand: spec.attackUnlessTrashFromHand } : {}),
       },
     };
     this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
@@ -882,6 +907,29 @@ export class EffectContextImpl implements EffectContext {
       actorPlayerId: this.controllerId,
       type: 'EFFECT_RESOLVED',
       message: `${spec.appliesToControllerId} cannot attack (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  forceCharactersPlayedRested(spec: {
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'Characters are played rested',
+      charactersPlayedRested: { appliesToControllerId: this.controllerId },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${this.controllerId}'s Characters are played rested.`,
       data: { continuousEffectId: record.id, duration: spec.duration },
       relatedCardInstanceIds: [this.sourceInstanceId],
       visibility: 'public',
@@ -1308,7 +1356,9 @@ export class EffectContextImpl implements EffectContext {
     if (!inst) return;
     const fromZone = inst.currentZone;
     // "Cannot be K.O.'d" (scope 'any', e.g. ST05-017 rider): an effect K.O. is prevented.
-    if (isKoImmune(this.defs, this.working, targetInstanceId, 'effect', { koSourceInstanceId: this.sourceInstanceId })) {
+    const immunity = findKoImmunityRecord(this.defs, this.working, targetInstanceId, 'effect', { koSourceInstanceId: this.sourceInstanceId });
+    if (immunity) {
+      this.working = withKoImmunityConsumed(this.working, immunity);
       this.logger.push({
         actorPlayerId: this.controllerId,
         type: 'EFFECT_RESOLVED',
@@ -1907,6 +1957,18 @@ export class EffectContextImpl implements EffectContext {
     const def = this.defs[handInst.cardDefinitionId];
     if (!def || def.category !== 'character') return; // only Characters can be played to the field
     const controllerId = handInst.controllerId;
+    rested = rested || mustPlayCharactersRested(this.working, controllerId);
+    if (this.programFor(handInst.cardDefinitionId)?.cannotBePlayedByEffects) {
+      this.logger.push({
+        actorPlayerId: controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${def.name} in hand cannot be played by effects.`,
+        data: { instanceId: handInstanceId, prevented: true, cannotBePlayedByEffects: true },
+        relatedCardInstanceIds: [handInstanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     if (isControllerHandPlayPrevented(this.working, controllerId)) {
       this.logger.push({
         actorPlayerId: controllerId,
@@ -1992,6 +2054,7 @@ export class EffectContextImpl implements EffectContext {
     const def = this.defs[trashInst.cardDefinitionId];
     if (!def || def.category !== 'character') return null; // only Characters can be played to the field
     const controllerId = trashInst.controllerId;
+    rested = rested || mustPlayCharactersRested(this.working, controllerId);
     if (isControllerCharacterPlayPrevented(this.working, controllerId, this.defs, trashInst.cardDefinitionId)) {
       this.logger.push({
         actorPlayerId: controllerId,
@@ -2076,6 +2139,7 @@ export class EffectContextImpl implements EffectContext {
     const def = this.defs[lifeInst.cardDefinitionId];
     if (!def || def.category !== 'character') return null; // only Characters can be played to the field
     const controllerId = lifeInst.controllerId;
+    rested = rested || mustPlayCharactersRested(this.working, controllerId);
     if (isControllerCharacterPlayPrevented(this.working, controllerId, this.defs, lifeInst.cardDefinitionId)) {
       this.logger.push({
         actorPlayerId: controllerId,
@@ -2149,6 +2213,7 @@ export class EffectContextImpl implements EffectContext {
     const def = this.defs[deckInst.cardDefinitionId];
     if (!def || def.category !== 'character') return;
     const controllerId = deckInst.controllerId;
+    rested = rested || mustPlayCharactersRested(this.working, controllerId);
     if (isControllerCharacterPlayPrevented(this.working, controllerId, this.defs, deckInst.cardDefinitionId)) {
       this.logger.push({
         actorPlayerId: controllerId,

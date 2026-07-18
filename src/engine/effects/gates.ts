@@ -351,6 +351,12 @@ function evaluateGate(
       return ids.some((id) => currentCostForGate(state, defs, id) === gate.exactCost);
     }
 
+    case 'anyNamedCharacter': {
+      const opponentId = getOpponentId(state, ownerId);
+      const ids = [...player.characterArea.cardIds, ...state.players[opponentId].characterArea.cardIds];
+      return ids.some((id) => nameMatches(defs[state.cardsById[id]?.cardDefinitionId ?? ''], gate.name));
+    }
+
     case 'selfHasCharacterCostAtLeast': {
       return player.characterArea.cardIds.some((id) => currentCostForGate(state, defs, id) >= gate.atLeast);
     }

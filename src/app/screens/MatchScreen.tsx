@@ -96,6 +96,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const matchModeLabel = onlineMode ? 'Online Match' : isCpuMatch ? 'VS CPU' : isCasual ? 'Casual Match' : 'Local Hotseat';
   const playTestMode = useMatchStore((s) => s.playTestMode);
   const nameFor = (id: string): string => playerNames[id] ?? id;
+  const phaseQueueFront = usePhaseAnnounceStore((s) => s.queue[0] ?? null);
 
   const [pauseOpen, setPauseOpen] = useState(false);
   const [reportBugOpen, setReportBugOpen] = useState(false);
@@ -294,6 +295,37 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     );
   }
 
+  // PhaseIndicator (both boards) shows the phase currently being announced by
+  // TurnAndPhaseBanner while its queue is draining, not just the final
+  // settled matchState.currentPhase — a single dispatch can run Refresh ->
+  // Draw -> DON!! -> Main in one go (see buildTurnSequence.ts), so watching
+  // currentPhase alone would only ever show the end result and never glide
+  // through the phases in between. Falls back to the true state once the
+  // queue is empty (steady-state Main Phase, mid-battle, etc).
+  //
+  // While ANY step of the sequence is active (turnChange OR a phase step
+  // for the OTHER player), this deliberately does NOT fall back to the raw
+  // matchState for either board — matchState.activePlayerId/currentPhase
+  // already reflect the fully-settled END of the whole cascade (set in one
+  // shot), so without this guard the new active player's board would light
+  // up as "active" the instant End Turn is clicked, before their Refresh
+  // step even reaches the front of the queue. `active: false` here doesn't
+  // hide anything — PhaseIndicator freezes at its last real position while
+  // inactive, so both boards just hold still until the sequence actually
+  // reaches them.
+  // (The hook itself is called up top with the rest of MatchScreen's hooks —
+  // React's Rules of Hooks forbid calling it after the early returns above;
+  // this closure just reuses that value once matchState is narrowed non-null.)
+  const phaseDisplayFor = (pid: string): { phase: GameState['currentPhase']; active: boolean } => {
+    if (phaseQueueFront) {
+      if (phaseQueueFront.kind === 'phase' && phaseQueueFront.playerId === pid) {
+        return { phase: phaseQueueFront.phase, active: true };
+      }
+      return { phase: matchState.currentPhase, active: false };
+    }
+    return { phase: matchState.currentPhase, active: matchState.activePlayerId === pid };
+  };
+
   if (matchState.gameOver) {
     return (
       <VictoryScreen
@@ -424,8 +456,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         <div className="mb-3 flex flex-col gap-2">
-          <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} />
-          <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} />
+          <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={phaseDisplayFor(topPlayerId).phase} active={phaseDisplayFor(topPlayerId).active} />
+          <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={phaseDisplayFor(bottomPlayerId).phase} active={phaseDisplayFor(bottomPlayerId).active} />
         </div>
         {actionContent}
       </div>
@@ -695,6 +727,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               playerId={topPlayerId}
               cards={topPlayerBoard.hand}
               isOwn={isPinnedPerspective ? false : actingPlayerId === topPlayerId}
+              allowHoverReveal={!isPinnedPerspective}
               position="top"
               selectedIds={selectedHandIds(selection.mode)}
               selectable={(card) => (isPinnedPerspective ? false : handSelectable(selection.mode, actingPlayerId === topPlayerId, card, selection.isCounterCardApplicable))}
@@ -711,6 +744,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               playerId={bottomPlayerId}
               cards={bottomPlayerBoard.hand}
               isOwn={isPinnedPerspective ? true : actingPlayerId === bottomPlayerId}
+              allowHoverReveal={!isPinnedPerspective}
               position="bottom"
               selectedIds={selectedHandIds(selection.mode)}
               selectable={(card) => handSelectable(selection.mode, actingPlayerId === bottomPlayerId, card, selection.isCounterCardApplicable)}
@@ -745,8 +779,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
         </div>
       </div>
 
-      <TurnChangeBanner turnNumber={matchState.turnNumber} activePlayerId={matchState.activePlayerId} activePlayerName={nameFor(matchState.activePlayerId)} phase={matchState.currentPhase} gameOver={!!matchState.gameOver} />
-      <PhaseTransitionBanner nameFor={nameFor} gameOver={!!matchState.gameOver} />
+      <TurnAndPhaseBanner nameFor={nameFor} gameOver={!!matchState.gameOver} />
       {/* On-field SELECT_CARDS choices (see useBoardSelection.ts's
           'resolvingFieldChoice') resolve via board dimming, not this banner
           — but the banner is what tells the player WHAT they're choosing and
@@ -1143,6 +1176,7 @@ function MobileMatchLayout({
           playerId={topPlayerId}
           cards={topBoard.hand}
           isOwn={topHandIsOwn}
+          allowHoverReveal={!isPinnedPerspective}
           position="top"
           selectedIds={selectedHandIds}
           selectable={(card) => handSelectable(topPlayerId, card)}
@@ -1164,6 +1198,7 @@ function MobileMatchLayout({
           playerId={bottomPlayerId}
           cards={bottomBoard.hand}
           isOwn={bottomHandIsOwn}
+          allowHoverReveal={!isPinnedPerspective}
           position="bottom"
           selectedIds={selectedHandIds}
           selectable={(card) => handSelectable(bottomPlayerId, card)}
@@ -1920,74 +1955,11 @@ function WaitingForOpponent({ opponentName }: { opponentName: string }) {
   );
 }
 
-function TurnChangeBanner({
-  turnNumber,
-  activePlayerId,
-  activePlayerName,
-  phase,
-  gameOver,
-}: {
-  turnNumber: number;
-  activePlayerId: string;
-  /** Display label for the turn player (username in Casual, else the raw id). */
-  activePlayerName: string;
-  phase: string;
-  gameOver: boolean;
-}) {
-  const [visible, setVisible] = useState(false);
-  const [banner, setBanner] = useState<{ key: string; playerName: string; turnNumber: number } | null>(null);
-
-  useEffect(() => {
-    if (gameOver || phase === 'setup') {
-      setVisible(false);
-      return;
-    }
-
-    const key = `${turnNumber}:${activePlayerId}`;
-    setBanner({ key, playerName: activePlayerName, turnNumber });
-    setVisible(false);
-
-    const showFrame = window.requestAnimationFrame(() => setVisible(true));
-    const hideTimer = window.setTimeout(() => setVisible(false), 1250);
-
-    return () => {
-      window.cancelAnimationFrame(showFrame);
-      window.clearTimeout(hideTimer);
-    };
-  }, [activePlayerId, activePlayerName, gameOver, phase, turnNumber]);
-
-  if (!banner) return null;
-
-  return (
-    <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center px-5" aria-live="polite">
-      <div
-        key={banner.key}
-        className={[
-          'relative min-w-[min(34rem,88vw)] overflow-hidden px-7 py-5 text-center transition-all duration-300 ease-out',
-          visible ? 'translate-x-0 scale-100 opacity-100' : '-translate-x-28 scale-105 opacity-0',
-        ].join(' ')}
-      >
-        <div className="absolute inset-0 skew-x-[-12deg] border-y-2 border-gold/60 bg-[linear-gradient(90deg,_transparent_0%,_rgba(255,211,74,0.13)_16%,_rgba(14,28,62,0.34)_48%,_rgba(185,29,34,0.18)_74%,_transparent_100%)] shadow-[0_0_42px_rgba(255,211,74,0.22)] backdrop-blur-[2px]" />
-        <div className="absolute inset-x-[-18%] top-1/2 h-px -translate-y-1/2 bg-[linear-gradient(90deg,_transparent,_rgba(255,255,255,0.75),_transparent)]" />
-        <div className="absolute left-[-8%] top-1/2 h-10 w-24 -translate-y-1/2 skew-x-[-18deg] bg-gold/25 blur-sm" />
-        <div className="absolute right-[-10%] top-1/2 h-12 w-28 -translate-y-1/2 skew-x-[-18deg] bg-brand/25 blur-sm" />
-        <div className="relative">
-          <p className="mb-1 text-[10px] font-black uppercase tracking-[0.34em] text-gold drop-shadow-[0_2px_0_rgba(0,0,0,0.65)]">Turn {banner.turnNumber}</p>
-          <p className="font-display text-[clamp(2rem,7vw,4.75rem)] font-black uppercase leading-none tracking-[0.05em] text-white drop-shadow-[0_6px_0_rgba(0,0,0,0.62)]">
-          {banner.playerName.toUpperCase()} Turn
-          </p>
-          <p className="mt-2 text-xs font-black uppercase tracking-[0.3em] text-white/72">Begin</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /**
  * Non-blocking prompt banner shown over the field while a
  * 'resolvingFieldChoice' selection mode is active (see useBoardSelection.ts)
  * — tells the player WHAT they're choosing and WHY. Pinned near the top
- * (not centered like TurnChangeBanner) so it never covers the mat cards it's
+ * (not centered like TurnAndPhaseBanner) so it never covers the mat cards it's
  * describing; pointer-events-none throughout so it can never block a tap on
  * the dimmed/eligible cards underneath. `viewerLabel`, when set, means this
  * client is the non-deciding online opponent looking in — same underlying
@@ -2015,56 +1987,108 @@ function FieldChoiceBanner({
 }
 
 /**
- * Plays back the phaseAnnounceStore queue one item at a time — "Refresh
- * Phase", "Draw Phase", "DON!! Phase" — so a single dispatch that runs
- * advanceAutomaticPhases through several phases at once (see
- * parsePhaseAnnouncements.ts doc comment) still reads as a sequence rather
- * than jumping straight to whatever phase the state settles at. Mirrors
- * TurnChangeBanner's show/hide timing pattern, but is queue-driven instead
- * of prop-diff-driven since it needs to display MULTIPLE transitions that
- * all land in the same React update. Not gated by animationsEnabled — see
- * phaseAnnounceStore.ts doc comment.
+ * Plays back phaseAnnounceStore's queue one step at a time — [Turn N begins
+ * ->] "Refresh Phase" -> "Draw Phase" -> "DON!! Phase" -> "Main Phase" — as
+ * ONE strict sequence: each step's banner appears, its own card flights (if
+ * any) play, the banner is dismissed, then the next one appears. This used
+ * to be two independent components (TurnChangeBanner reacting to prop
+ * diffs, this one draining a separate queue) with nothing keeping them from
+ * showing at once; now both banner "looks" are just two renders of the same
+ * queue-driven component, so there is only ever ONE thing on screen at a
+ * time, in order. Advancing from one queued step to the next (including
+ * releasing a phase step's own card flights) is owned entirely by
+ * phaseAnnounceStore's own timer, not by this component — this only handles
+ * the fade in/out for whichever step is currently at the front (see
+ * phaseAnnounceStore.ts doc comment for why that split matters). Not gated
+ * by animationsEnabled — see phaseAnnounceStore.ts doc comment.
  */
-function PhaseTransitionBanner({ nameFor, gameOver }: { nameFor: (id: string) => string; gameOver: boolean }) {
-  const queue = usePhaseAnnounceStore((s) => s.queue);
-  const dequeue = usePhaseAnnounceStore((s) => s.dequeue);
-  const current = queue[0] ?? null;
+function TurnAndPhaseBanner({ nameFor, gameOver }: { nameFor: (id: string) => string; gameOver: boolean }) {
+  const current = usePhaseAnnounceStore((s) => s.queue[0] ?? null);
+  const clearQueue = usePhaseAnnounceStore((s) => s.clear);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (gameOver) usePhaseAnnounceStore.getState().clear();
-  }, [gameOver]);
+    if (gameOver) clearQueue();
+  }, [gameOver, clearQueue]);
 
   useEffect(() => {
-    if (!current || gameOver) return;
+    if (!current || gameOver) {
+      setVisible(false);
+      return;
+    }
     setVisible(false);
     const showFrame = window.requestAnimationFrame(() => setVisible(true));
-    const hideTimer = window.setTimeout(() => setVisible(false), 900);
-    const dequeueTimer = window.setTimeout(() => dequeue(), 1050);
+    // Fade out a little before the step's actual dwell ends, so it's fully gone (not
+    // mid-transition) by the time the next step's flights/banner are released.
+    const hideTimer = window.setTimeout(() => setVisible(false), Math.max(0, current.durationMs - 200));
 
     return () => {
       window.cancelAnimationFrame(showFrame);
       window.clearTimeout(hideTimer);
-      window.clearTimeout(dequeueTimer);
     };
-    // Re-trigger only when a NEW item reaches the front of the queue, not on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id, gameOver]);
 
   if (!current || gameOver) return null;
 
+  // Resolved here (not inline below) so the current.kind narrowing actually happens where the
+  // union is discriminated — reading current.turnNumber/current.label back out through a
+  // boolean flag elsewhere wouldn't type-check, since TS can't correlate an arbitrary boolean
+  // with which arm of the union it came from.
+  const content =
+    current.kind === 'turnChange'
+      ? {
+          isTurnChange: true as const,
+          kicker: `Turn ${current.turnNumber}`,
+          headline: `${nameFor(current.playerId).toUpperCase()} Turn`,
+          footer: 'Begin',
+          detail: null as string | null,
+        }
+      : {
+          isTurnChange: false as const,
+          kicker: nameFor(current.playerId),
+          headline: current.label,
+          footer: null as string | null,
+          detail: current.detail,
+        };
+
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-16 z-[107] flex justify-center px-4" aria-live="polite">
+    <div className="pointer-events-none fixed inset-0 z-[108] flex items-center justify-center px-5" aria-live="polite">
       <div
         key={current.id}
         className={[
-          'pointer-events-none min-w-[14rem] max-w-[90vw] border border-gold/40 bg-black/65 px-5 py-2.5 text-center shadow-[0_14px_36px_rgba(0,0,0,0.45)] backdrop-blur-md transition-all duration-300 ease-out',
-          visible ? 'translate-y-0 scale-100 opacity-100' : '-translate-y-3 scale-95 opacity-0',
+          'relative overflow-hidden text-center transition-all duration-300 ease-out',
+          content.isTurnChange ? 'min-w-[min(34rem,88vw)] px-7 py-5' : 'min-w-[min(30rem,88vw)] px-7 py-5',
+          visible ? 'translate-x-0 scale-100 opacity-100' : '-translate-x-16 scale-105 opacity-0',
         ].join(' ')}
       >
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/55">{nameFor(current.playerId)}</p>
-        <p className="font-display text-base font-black uppercase tracking-[0.14em] text-gold sm:text-lg">{current.label}</p>
-        {current.detail && <p className="mt-0.5 text-[11px] font-semibold text-white/70">{current.detail}</p>}
+        <div className="absolute inset-0 skew-x-[-12deg] border-y-2 border-gold/60 bg-[linear-gradient(90deg,_transparent_0%,_rgba(255,211,74,0.13)_16%,_rgba(14,28,62,0.34)_48%,_rgba(185,29,34,0.18)_74%,_transparent_100%)] shadow-[0_0_42px_rgba(255,211,74,0.22)] backdrop-blur-[2px]" />
+        <div className="absolute inset-x-[-18%] top-1/2 h-px -translate-y-1/2 bg-[linear-gradient(90deg,_transparent,_rgba(255,255,255,0.75),_transparent)]" />
+        {content.isTurnChange && (
+          <>
+            <div className="absolute left-[-8%] top-1/2 h-10 w-24 -translate-y-1/2 skew-x-[-18deg] bg-gold/25 blur-sm" />
+            <div className="absolute right-[-10%] top-1/2 h-12 w-28 -translate-y-1/2 skew-x-[-18deg] bg-brand/25 blur-sm" />
+          </>
+        )}
+        <div className="relative">
+          <p
+            className={[
+              'font-black uppercase drop-shadow-[0_2px_0_rgba(0,0,0,0.6)]',
+              content.isTurnChange ? 'mb-1 text-[10px] tracking-[0.34em] text-gold' : 'mb-1 text-[10px] tracking-[0.3em] text-gold',
+            ].join(' ')}
+          >
+            {content.kicker}
+          </p>
+          <p
+            className={[
+              'font-display font-black uppercase leading-none tracking-[0.05em] text-white',
+              content.isTurnChange ? 'text-[clamp(2rem,7vw,4.75rem)] drop-shadow-[0_6px_0_rgba(0,0,0,0.62)]' : 'text-[clamp(1.8rem,6vw,3.5rem)] drop-shadow-[0_5px_0_rgba(0,0,0,0.6)]',
+            ].join(' ')}
+          >
+            {content.headline}
+          </p>
+          {content.footer && <p className="mt-2 text-xs font-black uppercase tracking-[0.3em] text-white/72">{content.footer}</p>}
+          {content.detail && <p className="mt-2 text-[11px] font-black uppercase tracking-[0.25em] text-white/72">{content.detail}</p>}
+        </div>
       </div>
     </div>
   );

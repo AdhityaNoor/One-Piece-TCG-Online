@@ -23,6 +23,7 @@ import { finishBattleAfterKoDecision } from '../../rules/battle/damageStep';
 import { resolveKoReplacementStep, validateKoReplacementResponse } from '../../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../../rules/shared/definitions';
 import { computeCurrentPower } from '../../rules/shared/power';
+import { continueAfterDeclareAttackSetup } from '../../rules/battle/declareAttack';
 
 function findChoice(state: GameState, action: ResolvePendingChoiceAction) {
   return state.pendingChoices.find((c) => c.id === action.choiceId);
@@ -52,6 +53,24 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
       const [chosenId] = action.response;
       if (typeof chosenId !== 'string' || !player.characterArea.cardIds.includes(chosenId)) {
         reasons.push(`'${String(chosenId)}' is not currently in ${action.playerId}'s Character Area.`);
+      }
+    }
+  } else if (choice.sourceEffectId === 'rule:attackTrashTax') {
+    const sel = action.response;
+    if (!Array.isArray(sel)) {
+      reasons.push('attackTrashTax expects an array of selected hand card ids.');
+    } else {
+      const { min, max, candidateInstanceIds } = choice.constraints;
+      const candidates = candidateInstanceIds ?? [];
+      const candidateSet = new Set(candidates);
+      if (sel.length < min || sel.length > max) {
+        reasons.push(`Select exactly ${min} card(s) from your hand to trash (got ${sel.length}).`);
+      } else {
+        for (const id of sel) {
+          if (typeof id !== 'string' || !candidateSet.has(id)) {
+            reasons.push(`'${String(id)}' is not an eligible hand card for this attack tax.`);
+          }
+        }
       }
     }
   } else if (choice.sourceEffectId === 'ir') {
@@ -239,6 +258,42 @@ export function executeResolvePendingChoice(
       log: [...state.log, ...logger.log],
     };
     return { state: nextState, log: logger.log, pendingChoices: [] };
+  }
+
+  if (choice.sourceEffectId === 'rule:attackTrashTax') {
+    const selected = action.response as string[];
+    let working: GameState = { ...state, pendingChoices: remainingChoices };
+    let player = working.players[action.playerId];
+    let cardsById = { ...working.cardsById };
+    for (const id of selected) {
+      const inst = cardsById[id];
+      if (!inst || inst.currentZone !== 'hand') continue;
+      cardsById = { ...cardsById, [id]: { ...inst, currentZone: 'trash' as const, donAttached: [] } };
+      player = {
+        ...player,
+        hand: removeFromZone(player.hand, id),
+        trash: addToZoneTop(player.trash, id),
+      };
+      logger.push({
+        actorPlayerId: action.playerId,
+        type: 'CARD_MOVED',
+        message: `${action.playerId} trashed '${id}' to pay an attack tax.`,
+        data: { from: 'hand', to: 'trash', attackTrashTax: true },
+        relatedCardInstanceIds: [id],
+        visibility: 'public',
+      });
+    }
+    working = {
+      ...working,
+      cardsById,
+      players: { ...working.players, [action.playerId]: player },
+      log: [...working.log, ...logger.log],
+    };
+    const attackerId = choice.sourceInstanceId;
+    if (!attackerId) {
+      return { state: working, log: logger.log, pendingChoices: [] };
+    }
+    return continueAfterDeclareAttackSetup(working, attackerId, registry, defs, action.actionId, logger.log);
   }
 
   throw new Error(`executeResolvePendingChoice: unrecognized sourceEffectId '${choice.sourceEffectId}'.`);

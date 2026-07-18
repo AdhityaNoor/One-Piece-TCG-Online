@@ -22,7 +22,7 @@ import type { CardView, PlayerBoardView } from '../../../board/projection';
 import { findFirstAvailableDonId } from '../../../board/projection';
 import { computeCurrentCost, computeCurrentPower } from '../../../engine/rules/shared/power';
 import { getOpponentId } from '../../../engine/rules/shared';
-import { canPayAbilityCost, donMinusCandidateIds, evaluateGates, requiredDonMinusCount } from '../../../engine/effects';
+import { canAffordAbilityCost, canPayAbilityCost, donMinusCandidateIds, evaluateGates, fieldDonIds, requiredDonMinusCount } from '../../../engine/effects';
 import type { Ability } from '../../../engine/effects/effectIr';
 import type { CardInstance } from '../../../engine/state/card';
 import { isDonReturnChoice } from './donChoiceUtils';
@@ -402,23 +402,25 @@ export function useBoardSelection(actingPlayerId: string | null) {
       const ability = v2StandardAbility(card.cardNumber, 'EVENT_MAIN');
       if (!ability) return null;
       const cost = currentCostOf(card);
-      const playCostDon = new Set(activeCostAreaDonIds(actingPlayerId).slice(0, cost));
       const donMinus = v2DonSelectionCostCount(card.cardNumber, 'EVENT_MAIN');
-      return { cost, donMinus, available: activeCostAreaDonIds(actingPlayerId).length - playCostDon.size + playCostDon.size };
+      // Play-cost DON!! stay on the field after resting, so they count toward DON!! −N.
+      return { cost, donMinus, available: activeCostAreaDonIds(actingPlayerId).length };
     }
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'activateMain');
     if (!ability) return null;
     const cost = currentCostOf(card);
     const abilityCosts = ability.cost ?? [];
-    const playCostDon = new Set(activeCostAreaDonIds(actingPlayerId).slice(0, cost));
-    const abilityCostDon = donMinusCandidateIds(state, actingPlayerId, abilityCosts).filter((id) => !playCostDon.has(id));
     return {
       cost,
       donMinus: requiredDonMinusCount(abilityCosts),
-      available: playCostDon.size + abilityCostDon.length,
+      available: activeCostAreaDonIds(actingPlayerId).length,
     };
   };
 
+  /**
+   * Play-cost DON!! only. DON!! −N is chosen after the engine rests the play
+   * cost (pending choice), so rested play-cost DON!! remain legal returns.
+   */
   const mainEventDonPayment = (card: CardView): { donInstanceIds: string[]; abilityCost: number; candidateInstanceIds: string[] } | null => {
     if (!state || !actingPlayerId) return null;
     const info = mainEventDonInfo(card);
@@ -427,6 +429,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (donInstanceIds.length < info.cost) return null;
     if (EFFECT_RUNTIME_MODE === 'v2') {
       const requiredDon = v2DonSelectionCostCount(card.cardNumber, 'EVENT_MAIN');
+      // v2 still collects return DON!! in the UI for now; exclude play-cost picks.
       const candidateInstanceIds = activeCostAreaDonIds(actingPlayerId).filter((id) => !new Set(donInstanceIds).has(id));
       if (candidateInstanceIds.length < requiredDon) return null;
       return { donInstanceIds, abilityCost: requiredDon, candidateInstanceIds };
@@ -434,13 +437,15 @@ export function useBoardSelection(actingPlayerId: string | null) {
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'activateMain');
     if (!ability) return null;
     const abilityCosts = ability.cost ?? [];
+    if (abilityCosts.length && canAffordAbilityCost(state, card.instanceId, actingPlayerId, abilityCosts).length > 0) return null;
     const requiredDon = requiredDonMinusCount(abilityCosts);
-    const playCostDon = new Set(donInstanceIds);
-    const candidateInstanceIds = requiredDon > 0
-      ? donMinusCandidateIds(state, actingPlayerId, abilityCosts).filter((id) => !playCostDon.has(id))
-      : [];
-    if (candidateInstanceIds.length < requiredDon) return null;
-    return { donInstanceIds, abilityCost: requiredDon, candidateInstanceIds };
+    const activeOnlyCount = abilityCosts
+      .filter((c): c is Extract<typeof c, { kind: 'donMinus' }> => c.kind === 'donMinus' && c.activeOnly === true)
+      .reduce((sum, c) => sum + c.count, 0);
+    if (activeOnlyCount > 0 && activeCostAreaDonIds(actingPlayerId).length - info.cost < activeOnlyCount) return null;
+    if (requiredDon > 0 && !activeOnlyCount && fieldDonIds(state, actingPlayerId).length < requiredDon) return null;
+    // abilityCost 0 → UI skips pre-prompt; engine prompts after play-cost rest.
+    return { donInstanceIds, abilityCost: 0, candidateInstanceIds: [] };
   };
 
   /**
@@ -457,33 +462,24 @@ export function useBoardSelection(actingPlayerId: string | null) {
       const ability = v2StandardAbility(card.cardNumber, 'EVENT_COUNTER');
       if (!ability) return null;
       const cost = currentCostOf(card);
-      const playCostDon = new Set(activeCostAreaDonIds(actingPlayerId).slice(0, cost));
       const donMinus = v2DonSelectionCostCount(card.cardNumber, 'EVENT_COUNTER');
-      return { cost, donMinus, available: activeCostAreaDonIds(actingPlayerId).length - playCostDon.size + playCostDon.size };
+      return { cost, donMinus, available: activeCostAreaDonIds(actingPlayerId).length };
     }
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'counter');
     if (!ability) return null;
     const cost = currentCostOf(card);
     const abilityCosts = ability.cost ?? [];
-    const playCostDon = new Set(activeCostAreaDonIds(actingPlayerId).slice(0, cost));
-    const abilityCostDon = donMinusCandidateIds(state, actingPlayerId, abilityCosts).filter((id) => !playCostDon.has(id));
     return {
       cost,
       donMinus: requiredDonMinusCount(abilityCosts),
-      available: playCostDon.size + abilityCostDon.length,
+      available: activeCostAreaDonIds(actingPlayerId).length,
     };
   };
 
   /**
-   * Auto-picks active cost-area DON!! for a Counter Event's base cost and,
-   * if present, its [Counter] ability's DON!! -N cost — mirrors how
-   * playHandCard already auto-selects rather than making the player click
-   * individual DON!! cards. Both pools are drawn from the same active
-   * cost-area DON!!; a 'donMinus' cost that specifically returns DON!!
-   * attached elsewhere on the field (activeOnly: false) is a rarer curated
-   * shape not covered by this auto-pick (documented limitation — such a
-   * card is treated as inapplicable/dimmed here rather than silently
-   * picking the wrong DON!!). Returns null if there isn't enough.
+   * Auto-picks active cost-area DON!! for a Counter Event's play cost only.
+   * DON!! −N is prompted after that rest via a pending choice (same order as
+   * [Main] Events). Returns null if the play cost or deferred return can't be afforded.
    */
   const counterEventDonPayment = (card: CardView): { donInstanceIds: string[]; abilityCost: number; candidateInstanceIds: string[] } | null => {
     if (!state || !actingPlayerId) return null;
@@ -500,13 +496,14 @@ export function useBoardSelection(actingPlayerId: string | null) {
     const ability = registry[card.cardDefinitionId]?.abilities.find((entry) => entry.timing === 'counter');
     if (!ability) return null;
     const abilityCosts = ability.cost ?? [];
+    if (abilityCosts.length && canAffordAbilityCost(state, card.instanceId, actingPlayerId, abilityCosts).length > 0) return null;
     const requiredDon = requiredDonMinusCount(abilityCosts);
-    const playCostDon = new Set(donInstanceIds);
-    const candidateInstanceIds = requiredDon > 0
-      ? donMinusCandidateIds(state, actingPlayerId, abilityCosts).filter((id) => !playCostDon.has(id))
-      : [];
-    if (candidateInstanceIds.length < requiredDon) return null;
-    return { donInstanceIds, abilityCost: requiredDon, candidateInstanceIds };
+    const activeOnlyCount = abilityCosts
+      .filter((c): c is Extract<typeof c, { kind: 'donMinus' }> => c.kind === 'donMinus' && c.activeOnly === true)
+      .reduce((sum, c) => sum + c.count, 0);
+    if (activeOnlyCount > 0 && activeCostAreaDonIds(actingPlayerId).length - info.cost < activeOnlyCount) return null;
+    if (requiredDon > 0 && !activeOnlyCount && fieldDonIds(state, actingPlayerId).length < requiredDon) return null;
+    return { donInstanceIds, abilityCost: 0, candidateInstanceIds: [] };
   };
 
   /**
@@ -734,12 +731,12 @@ export function useBoardSelection(actingPlayerId: string | null) {
     if (card.category === 'event' && !eventPayment) {
       const info = mainEventDonInfo(card);
       if (info) {
-        const required = info.cost + info.donMinus;
-        setLastError([`${card.name} requires ${required} usable DON!! for its play cost and DON!! -N ability cost, but only ${info.available} are available.`]);
+        setLastError([`${card.name} needs ${info.cost} active DON!! for its play cost` + (info.donMinus > 0 ? ` (then DON!! −${info.donMinus} after resting)` : '') + `, but only ${info.available} active DON!! are available.`]);
         return;
       }
     }
 
+    // v2 still collects DON!! −N before dispatch; v1 defers to a post-rest pending choice.
     if (card.category === 'event' && eventPayment && eventPayment.abilityCost > 0) {
       setMode({
         kind: 'payingEventMainCost',
@@ -781,7 +778,6 @@ export function useBoardSelection(actingPlayerId: string | null) {
     const donInstanceIds = eventPayment?.donInstanceIds ?? activeCostAreaDonIds(actingPlayerId).slice(0, cost);
     if (donInstanceIds.length < cost) return false;
     if (card.category === 'event' && !eventPayment) return false;
-    const previewAbilityCostDon = eventPayment?.candidateInstanceIds.slice(0, eventPayment.abilityCost) ?? [];
 
     return validateAction(
       state,
@@ -791,7 +787,6 @@ export function useBoardSelection(actingPlayerId: string | null) {
         playerId: actingPlayerId,
         handCardInstanceId: card.instanceId,
         donInstanceIds,
-        ...(card.category === 'event' ? { abilityCostDonInstanceIds: previewAbilityCostDon } : {}),
       } as GameAction,
       defs,
       registry,
@@ -971,24 +966,9 @@ export function useBoardSelection(actingPlayerId: string | null) {
           if (card.category === 'event' && !eventPayment) {
             const info = mainEventDonInfo(card);
             if (info) {
-              const required = info.cost + info.donMinus;
-              setLastError([`${card.name} requires ${required} usable DON!! for its play cost and DON!! -N ability cost, but only ${info.available} are available.`]);
+              setLastError([`${card.name} needs ${info.cost} active DON!! for its play cost` + (info.donMinus > 0 ? ` (then DON!! −${info.donMinus} after resting)` : '') + `, but only ${info.available} active DON!! are available.`]);
               return;
             }
-          }
-          if (card.category === 'event' && eventPayment && eventPayment.abilityCost > 0) {
-            setMode({
-              kind: 'payingEventMainCost',
-              handCardInstanceId: card.instanceId,
-              cardName: card.name,
-              cost,
-              donInstanceIds: eventPayment.donInstanceIds,
-              abilityCost: eventPayment.abilityCost,
-              candidateInstanceIds: eventPayment.candidateInstanceIds,
-              selectedDonIds: [],
-            });
-            setLastError(null);
-            return;
           }
           withActingPlayer((playerId) => ({
             type: PLAY_ACTION_BY_CATEGORY[card.category as 'character' | 'stage' | 'event'],
@@ -1007,11 +987,11 @@ export function useBoardSelection(actingPlayerId: string | null) {
         if (card.category === 'event' && !eventPayment) {
           const info = mainEventDonInfo(card);
           if (info) {
-            const required = info.cost + info.donMinus;
-            setLastError([`${card.name} requires ${required} usable DON!! for its play cost and DON!! -N ability cost, but only ${info.available} are available.`]);
+            setLastError([`${card.name} needs ${info.cost} active DON!! for its play cost` + (info.donMinus > 0 ? ` (then DON!! −${info.donMinus} after resting)` : '') + `, but only ${info.available} active DON!! are available.`]);
             return;
           }
         }
+        // v2 Events with DON!! −N still collect the return before dispatch.
         if (card.category === 'event' && eventPayment && eventPayment.abilityCost > 0) {
           setMode({
             kind: 'payingEventMainCost',

@@ -17,7 +17,7 @@ import type { PlayCharacterAction, ValidationResult } from '../action';
 import { createActionLogger } from '../../rules/shared/actionLogger';
 import { addToZoneBottom, removeFromZone } from '../../rules/shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/definitions';
-import { computeCurrentCost, consumablePlayFromHandCostDiscountIds, withConsumedPlayFromHandCostDiscounts } from '../../rules/shared/power';
+import { computeCurrentCost, consumablePlayFromHandCostDiscountIds, mustPlayCharactersRested, withConsumedPlayFromHandCostDiscounts } from '../../rules/shared/power';
 import { isControllerCharacterPlayPrevented } from '../../rules/shared/characterPlayRestriction';
 import { isControllerHandPlayPrevented } from '../../rules/shared/handPlayRestriction';
 import { mintRuntimeInstanceId } from '../../rules/shared/mintInstance';
@@ -113,13 +113,14 @@ export function executePlayCharacter(
   const minted = mintRuntimeInstanceId(state);
   const newInstanceId = minted.id;
 
+  const playRested = mustPlayCharactersRested(state, action.playerId);
   const newInstance: CardInstance = {
     instanceId: newInstanceId,
     cardDefinitionId: handInstance.cardDefinitionId,
     ownerId: action.playerId,
     controllerId: action.playerId,
     currentZone: 'characterArea',
-    orientation: 'active',
+    orientation: playRested ? 'rested' : 'active',
     faceState: 'faceUp',
     donAttached: [],
     currentPower: def.basePower,

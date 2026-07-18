@@ -265,6 +265,13 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
     );
     if (excludedColors.size > 0 && def.colors.some((c) => excludedColors.has(c))) return false;
   }
+  if (filter.nameMatchesPreviousMove) {
+    const movedIds = bindings.__lastMovedIds ?? [];
+    const movedNames = movedIds
+      .map((movedId) => ctx.definitionOf(movedId)?.name)
+      .filter((n): n is string => !!n);
+    if (movedNames.length === 0 || !movedNames.some((n) => nameMatches(def, n))) return false;
+  }
   if (filter.excludeIdsFromVar !== undefined) {
     const exclude = new Set(bindings[filter.excludeIdsFromVar] ?? []);
     if (exclude.has(id)) return false;
@@ -840,6 +847,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
           appliesToInstanceId: id,
           scope: op.scope,
           duration: op.duration,
+          ...(op.oncePerTurn ? { oncePerTurn: true } : {}),
           ...(op.condition ? { condition: op.condition } : {}),
           ...(op.attackerCategory ? { attackerCategory: op.attackerCategory } : {}),
           ...(op.attackerAttribute ? { attackerAttribute: op.attackerAttribute } : {}),
@@ -906,7 +914,14 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
         appliesToControllerId: targetPlayerId,
         duration: op.duration,
         ...(op.forbiddenTarget ? { forbiddenTarget: op.forbiddenTarget } : {}),
+        ...(op.charactersOnly ? { charactersOnly: true } : {}),
+        ...(op.condition ? { condition: op.condition } : {}),
+        ...(op.attackUnlessTrashFromHand !== undefined ? { attackUnlessTrashFromHand: op.attackUnlessTrashFromHand } : {}),
       });
+      return EMPTY_RESULT;
+    }
+    case 'forceCharactersPlayedRested': {
+      ctx.forceCharactersPlayedRested({ duration: op.duration });
       return EMPTY_RESULT;
     }
     case 'setForcedAttackTarget': {
@@ -1702,11 +1717,18 @@ function runOpList(
     if (op.op === 'revealTopLife') {
       const [topId] = ctx.lifeIds(ctx.controllerId);
       let matched = false;
+      let costUnits: string[] = [];
       if (topId) {
         ctx.revealLifeCard(topId);
         matched = op.filter ? matchesSearchFilter(topId, op.filter, ctx) : true;
+        const printedCost = Math.max(0, ctx.definitionOf(topId)?.baseCost ?? 0);
+        costUnits = Array.from({ length: printedCost }, (_, i) => String(i));
       }
-      workingBindings = { ...withResultBindings(workingBindings, EMPTY_RESULT), __lastRevealMatched: boolBinding(matched) };
+      workingBindings = {
+        ...withResultBindings(workingBindings, EMPTY_RESULT),
+        __lastRevealMatched: boolBinding(matched),
+        __lastRevealedCostUnits: costUnits,
+      };
       continue;
     }
     if (op.op === 'revealOpponentDeckTop') {
@@ -2112,7 +2134,7 @@ export function runTimings(
     .filter(({ ability }) => timings.includes(ability.timing));
   if (matching.length === 0) return noop(state);
 
-  const ctx = new EffectContextImpl(state, sourceInstanceId, defs, actionId);
+  const ctx = new EffectContextImpl(state, sourceInstanceId, defs, actionId, registry);
   for (const { ability, index } of matching) {
     if (isAbilityNegated(ctx.state(), ctx.sourceInstanceId, ability.timing, defs)) continue;
     if (!evalCondition(ability.condition, ctx)) continue;
@@ -2164,7 +2186,7 @@ export function resumeProgram(
       }
     }
     if (step.declinedRemoval) {
-      const declineCtx = new EffectContextImpl(working, step.resumeKr?.ir?.sourceInstanceId ?? choice.sourceInstanceId ?? '', defs, actionId);
+      const declineCtx = new EffectContextImpl(working, step.resumeKr?.ir?.sourceInstanceId ?? choice.sourceInstanceId ?? '', defs, actionId, registry);
       if (step.declinedRemoval.kind === 'returnToHand') declineCtx.returnToHand(step.declinedRemoval.targetInstanceId);
       else declineCtx.moveToBottomDeck(step.declinedRemoval.targetInstanceId);
       const declined = declineCtx.finish();
@@ -2182,7 +2204,7 @@ export function resumeProgram(
     if (response !== true) return noop(stateWithoutChoice);
     const ability = program.abilities[rs.abilityIndex];
     if (!ability) return noop(stateWithoutChoice);
-    const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
+    const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId, registry);
     const suspended = runOps(ability, rs.abilityIndex, 0, rs.bindings, ctx, defs, registry, actionId);
     if (suspended) return finishWithCascade(ctx, defs, actionId, registry);
     runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
@@ -2197,7 +2219,7 @@ export function resumeProgram(
     const reasons = canPayAbilityCost(stateWithoutChoice, choice.sourceInstanceId, choice.playerId, ability.cost, selection);
     if (reasons.length > 0) return noop(stateWithoutChoice);
     const paid = payAbilityCost(stateWithoutChoice, choice.sourceInstanceId, choice.playerId, ability.cost, actionId, selection);
-    const ctx = new EffectContextImpl(paid.state, choice.sourceInstanceId, defs, actionId);
+    const ctx = new EffectContextImpl(paid.state, choice.sourceInstanceId, defs, actionId, registry);
     if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
       const cascaded = afterAbilityCostPaid(paid.state, choice.playerId, paid, registry, defs, actionId);
       ctx.absorbActionResult(cascaded);
@@ -2212,7 +2234,7 @@ export function resumeProgram(
     return { state: finished.state, log: [...paid.log, ...finished.log], pendingChoices: finished.pendingChoices };
   }
 
-  const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId);
+  const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId, registry);
   const op = suspendedOpAt(ability, rs);
   if (!op || (op.op !== 'chooseTargets' && op.op !== 'chooseCost' && op.op !== 'searchTopDeck' && op.op !== 'searchDeck' && op.op !== 'playFromDeck' && op.op !== 'playStageFromDeck' && op.op !== 'lookLifeAndReorder' && op.op !== 'peekLifeThenPlace' && op.op !== 'chooseLifeToHand' && op.op !== 'chooseLifeToTrash' && op.op !== 'chooseOption' && op.op !== 'trashFromHandByCountVar')) return noop(stateWithoutChoice);
 
@@ -2453,7 +2475,7 @@ function continueKoOpAfterReplacement(
   const program = registry[defId];
   if (!program) return { state, log: [], pendingChoices: [] };
 
-  const ctx = new EffectContextImpl(state, ir.sourceInstanceId, defs, actionId);
+  const ctx = new EffectContextImpl(state, ir.sourceInstanceId, defs, actionId, registry);
   const pendingRemovalIds = [...(ir.remainingRemovalTargetIds ?? [])];
   const suspendedRemovalOp = ir.suspendedRemovalOp;
   if (suspendedRemovalOp && pendingRemovalIds.length >= 0) {

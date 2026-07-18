@@ -93,6 +93,20 @@ export function runDrawPhase(state: GameState): PhaseStepResult {
     visibility: { visibleTo: [player.playerId] },
   });
 
+  // Pushed after CARD_DRAWN (not before) so existing log[0]-is-CARD_DRAWN assertions in
+  // runDrawPhase.test.ts stay valid — mirrors runDonPhase.ts's CARD_MOVED-then-PHASE_CHANGED
+  // ordering. Without this, a NORMAL (non-skipped, non-empty-deck) draw never emitted its own
+  // PHASE_CHANGED('draw') entry at all — only the skip/empty-deck edge cases above did — so
+  // "Draw Phase" never had a marker to announce on the vast majority of real turns.
+  logger.push({
+    actorPlayerId: player.playerId,
+    type: 'PHASE_CHANGED',
+    message: `${player.playerId}'s Draw Phase: drew 1 card (6-3).`,
+    data: { phase: 'draw' },
+    relatedCardInstanceIds: [],
+    visibility: 'public',
+  });
+
   let nextState: GameState = {
     ...state,
     players: { ...state.players, [player.playerId]: newPlayer },

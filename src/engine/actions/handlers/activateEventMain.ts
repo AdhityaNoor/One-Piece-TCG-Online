@@ -16,7 +16,7 @@ import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/definitions';
 import { computeCurrentCost } from '../../rules/shared/power';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { evaluateGates, fireActivate, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, type EffectTemplateRegistry } from '../../effects';
+import { evaluateGates, fireActivate, canAffordAbilityCost, canPayAbilityCost, countControllerActiveUnattachedDon, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, requiredDonMinusCount, type EffectTemplateRegistry } from '../../effects';
 import { isControllerHandPlayPrevented } from '../../rules/shared/handPlayRestriction';
 import { recordEventActivation } from '../../effects/eventActivationHistory';
 import { effectLogDataForSource } from '../../logs/effectLogData';
@@ -68,7 +68,22 @@ export function validateActivateEventMain(
     reasons.push(`'${def.name}' can't be activated right now - its "If ..." condition isn't met.`);
   }
   if (ability?.cost?.length) {
-    reasons.push(...canPayAbilityCost(state, action.handCardInstanceId, action.playerId, ability.cost, action.abilityCostDonInstanceIds ?? []));
+    const preselected = action.abilityCostDonInstanceIds ?? [];
+    const requiredDon = requiredDonMinusCount(ability.cost);
+    // Prefer deferring DON!! −N selection until after play-cost rest (see execute).
+    // Preselected IDs remain legal for callers that still supply them.
+    if (requiredDon > 0 && preselected.length === 0) {
+      reasons.push(...canAffordAbilityCost(state, action.handCardInstanceId, action.playerId, ability.cost));
+      // activeOnly returns cannot use DON!! that will be rested for the play cost.
+      const activeOnlyCount = ability.cost
+        .filter((c): c is Extract<typeof c, { kind: 'donMinus' }> => c.kind === 'donMinus' && c.activeOnly === true)
+        .reduce((sum, c) => sum + c.count, 0);
+      if (activeOnlyCount > 0 && countControllerActiveUnattachedDon(state, action.playerId) - action.donInstanceIds.length < activeOnlyCount) {
+        reasons.push(`Cost requires returning ${activeOnlyCount} active DON!! after paying the Event play cost, but not enough remain.`);
+      }
+    } else {
+      reasons.push(...canPayAbilityCost(state, action.handCardInstanceId, action.playerId, ability.cost, preselected));
+    }
   } else if ((action.abilityCostDonInstanceIds?.length ?? 0) > 0) {
     reasons.push('This Event has no DON!! -N ability cost, so abilityCostDonInstanceIds must be empty.');
   }
@@ -140,24 +155,31 @@ export function executeActivateEventMain(
     log: [...state.log, ...logger.log],
   };
 
-  const paid = ability?.cost?.length
-    ? payAbilityCost(nextState, action.handCardInstanceId, action.playerId, ability.cost, action.actionId, action.abilityCostDonInstanceIds ?? [])
-    : { state: nextState, log: [] as ActionExecuteResult['log'], restedInstanceIds: [] as string[], returnedDonCount: 0 };
+  // Play cost is already rested above. DON!! −N must be chosen on that board so
+  // rested play-cost DON!! are legal returns (Comprehensive Rules cost order).
+  const preselected = action.abilityCostDonInstanceIds ?? [];
+  const requiredDon = requiredDonMinusCount(ability?.cost ?? []);
+  const deferDonMinusChoice = !!(ability?.cost?.length && requiredDon > 0 && preselected.length === 0);
 
-  let working = paid.state;
-  let paidLog = [...paid.log];
-  if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
-    const cascaded = afterAbilityCostPaid(working, action.playerId, paid, registry, defs, action.actionId);
-    working = cascaded.state;
-    paidLog = [...paidLog, ...cascaded.log];
-    if (cascaded.pendingChoices.length > 0) {
-      return { state: working, log: [...logger.log, ...paidLog], pendingChoices: cascaded.pendingChoices };
+  let working = nextState;
+  let paidLog: ActionExecuteResult['log'] = [];
+  if (ability?.cost?.length && !deferDonMinusChoice) {
+    const paid = payAbilityCost(nextState, action.handCardInstanceId, action.playerId, ability.cost, action.actionId, preselected);
+    working = paid.state;
+    paidLog = [...paid.log];
+    if (paid.restedInstanceIds.length > 0 || paid.returnedDonCount > 0) {
+      const cascaded = afterAbilityCostPaid(working, action.playerId, paid, registry, defs, action.actionId);
+      working = cascaded.state;
+      paidLog = [...paidLog, ...cascaded.log];
+      if (cascaded.pendingChoices.length > 0) {
+        return { state: working, log: [...logger.log, ...paidLog], pendingChoices: cascaded.pendingChoices };
+      }
     }
   }
 
   working = recordEventActivation(working, action.playerId, action.handCardInstanceId, defs);
 
-  const fired = fireActivate(working, action.handCardInstanceId, registry, defs, action.actionId);
+  const fired = fireActivate(working, action.handCardInstanceId, registry, defs, action.actionId, deferDonMinusChoice);
 
   let resultState = fired.state;
   let resultLog = [...logger.log, ...paidLog, ...fired.log];

@@ -43,11 +43,18 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-012 — if opponent has a Leader/Character with 6000+ base power, cannot be K.O.'d in battle
   { cardNumber: 'OP06-012', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { gate: [{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 6000 }] } }] } },
 
-  // OP06-009 — PARTIAL: dynamic same-power-as-opp-Leader on attack/block deferred; mapped [Blocker] only.
+  // OP06-009 — [Blocker]. [When Attacking]/[On Block] [OPT] become same power as opp Leader until start of your next turn.
   {
     cardNumber: 'OP06-009',
-    templateId: 'ability',
-    params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent' }] },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, oncePerTurnKey: 'op06-009-power', functions: [
+        { fn: 'setBasePowerFromSource', target: { ref: 'self' }, source: { group: 'leader', player: 'opponent' }, duration: 'untilStartOfNextTurn' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'onBlock', oncePerTurn: true, oncePerTurnKey: 'op06-009-power', functions: [
+        { fn: 'setBasePowerFromSource', target: { ref: 'self' }, source: { group: 'leader', player: 'opponent' }, duration: 'untilStartOfNextTurn' },
+      ] } },
+    ],
   },
   // OP06-011 — [Activate: Main] [Once Per Turn] rest 1 [Uta] card: this +5000 this turn.
   { cardNumber: 'OP06-011', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [

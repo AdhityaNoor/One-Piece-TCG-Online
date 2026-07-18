@@ -123,6 +123,8 @@ export interface ContinuousPowerCondition {
   maxBasePower?: number;
   /** Printed base power of the modified card must be at least this value. */
   minBasePower?: number;
+  /** Current power of the modified card must be at least this value. */
+  minPower?: number;
   /** Printed base power of the modified card must exactly equal this value. */
   exactBasePower?: number;
   /** The modified card must include this color. */
@@ -212,7 +214,9 @@ export type PowerScaleSource =
   | 'controllerTrash'
   | 'controllerTrashEvents'
   | 'controllerRestedDon'
-  | 'controllerCharacterDistinctNames';
+  | 'controllerCharacterDistinctNames'
+  /** Count DON!! attached to the modified card itself ("−1000 for every DON!! given to that Character"). */
+  | 'targetDonAttached';
 
 /** Dynamic scaling term: effective bonus = floor(count(per) / step) * amountPer, re-read each time. */
 export interface PowerScale {
@@ -290,6 +294,8 @@ export interface ContinuousAttackRestriction {
   appliesToInstanceId?: string;
   /** All Leaders/Characters controlled by this player. Omitted when `appliesToInstanceId` is set. */
   appliesToControllerId?: string;
+  /** With `appliesToControllerId`, restrict Characters only (not the Leader). */
+  charactersOnly?: true;
   /** Omitted = cannot declare any attack. 'leader' = may attack Characters but not the opponent Leader. */
   forbiddenTarget?: 'leader';
   /** Partial target ban: forbid attacks into matching opponent Leaders/Characters only. */
@@ -298,6 +304,11 @@ export interface ContinuousAttackRestriction {
   whileSummoningSick?: boolean;
   /** Re-evaluated gate: when it fails, the card cannot attack ("cannot attack unless …"). */
   attackUnlessGate?: AbilityGate[];
+  /**
+   * "Cannot attack unless you trash N from hand whenever you attack."
+   * Blocks declare when hand size < N; on a legal declare, raises a mandatory trash PendingChoice.
+   */
+  attackUnlessTrashFromHand?: number;
   /** Re-evaluated condition on the restricted card (e.g. "if you have 5+ cards in hand, cannot attack"). */
   condition?: ContinuousPowerCondition;
 }
@@ -384,6 +395,8 @@ export interface ContinuousKoImmunityModifier {
   /** Dynamic aura target set, resolved at read time (e.g. "your {Type} Characters with cost ≤N"). */
   appliesToGroup?: KoImmunityAuraGroup;
   scope: 'battle' | 'effect' | 'any';
+  /** [Once Per Turn] — after this immunity prevents one K.O., it is spent until refresh. */
+  oncePerTurn?: boolean;
   /**
    * Restrict a battle immunity to K.O.s dealt by an attacker of this category
    * ("cannot be K.O.'d in battle by Leaders" → 'leader'). Omitted = any attacker.
@@ -464,6 +477,8 @@ export type KoReplacementAction =
   | { kind: 'giveSelfPowerPenalty'; amount: number; duration: ContinuousEffectDuration }
   /** Give your Leader −N power for the duration instead of removing the ally. */
   | { kind: 'giveLeaderPowerPenalty'; amount: number; duration: ContinuousEffectDuration }
+  /** Give the Character that would be K.O.'d −N power for the duration instead ("that Character"). */
+  | { kind: 'giveTargetPowerPenalty'; amount: number; duration: ContinuousEffectDuration }
   /** Move the ally that would be removed to the top of your Life face-down instead. */
   | { kind: 'moveTargetToLifeFaceDown' }
   /** Pay structured ability costs (e.g. `{ kind: 'donMinus', count: 1 }`). */
@@ -587,6 +602,8 @@ export interface ContinuousEffectRecord {
   blockerRestriction?: ContinuousBlockerRestriction;
   /** Structured attack restriction ("cannot attack"). Omitted for unrelated continuous effects. */
   attackRestriction?: ContinuousAttackRestriction;
+  /** Controller's Characters enter play rested (OP09-022 Lim). */
+  charactersPlayedRested?: { appliesToControllerId: string };
   /** Opponent must attack this Character when the modifier is active. Omitted otherwise. */
   forcedAttackTarget?: ContinuousForcedAttackTargetModifier;
   /** Structured rest restriction ("cannot be rested by effects"). Omitted for unrelated continuous effects. */

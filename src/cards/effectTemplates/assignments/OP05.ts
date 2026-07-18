@@ -7,8 +7,24 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // OP05-001 — PARTIAL: K.O. replacement via −1000 power instead deferred; no matching primitive.
-  { cardNumber: 'OP05-001', templateId: 'noRuntime', params: {} },
+  // OP05-001 — [DON!! x1] [Opponent's Turn] [OPT] If your Character with 5000+ power would be K.O.'d,
+  //   give that Character −1000 this turn instead.
+  {
+    cardNumber: 'OP05-001',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        oncePerTurn: true,
+        charactersOnly: true,
+        sourceCondition: { turn: 'opponent', donAttachedAtLeast: 1 },
+        targetCondition: { minPower: 5000 },
+        giveTargetPowerPenalty: { amount: 1000, duration: 'duringThisTurn' },
+        duration: 'permanent',
+      }],
+    },
+  },
 
   // OP05-002 - [Activate: Main] [OPT] trash 1 Revolutionary Army: up to 3 Rev Army or [Trigger] Characters +3000 this turn.
   { cardNumber: 'OP05-002', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
@@ -163,7 +179,7 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-031 — [When Attacking] [Once Per Turn] If you have 2 or more rested Characters, set up to 1 of your rested Characters (cost 1) as active.
   { cardNumber: 'OP05-031', templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, gate: [{ kind: 'selfRestedCharacterCount', atLeast: 2 }], functions: [{ fn: 'setActiveControllerCharacter', filter: { exactCost: 1, rested: true }, maxTargets: 1 }] } },
 
-  // OP05-030 — PARTIAL: [Blocker] is printed; aura replacement for rested allies on opponent's turn.
+  // OP05-030 — [Blocker] printed. [Opponent's Turn] If your rested Character would be K.O.'d, trash this instead.
   {
     cardNumber: 'OP05-030',
     templateId: 'ability',
@@ -567,8 +583,18 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP05-098 — PARTIAL: onLifeBecomesZero reactive window deferred; no matching primitive.
-  { cardNumber: 'OP05-098', templateId: 'noRuntime', params: {} },
+  // OP05-098 — [Opponent's Turn] [OPT] When Life becomes 0: top deck → Life, then trash 1 hand.
+  //   Wired via onLifeToHand + selfLife ≤0 (covers normal Life→hand damage; not Banish Life→trash).
+  { cardNumber: 'OP05-098', templateId: 'ability', params: {
+    timing: 'onLifeToHand',
+    oncePerTurn: true,
+    condition: { turn: 'opponent' },
+    gate: [{ kind: 'selfLife', atMost: 0 }],
+    functions: [
+      { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' } },
+      { fn: 'trashFromHand', count: 1 },
+    ],
+  } },
 
   // OP05-099 — [On Your Opponent's Attack] rest this: opponent may trash top Life; if they do not,
   //   give up to 1 opp Leader/Character −2000 this turn.
@@ -582,8 +608,28 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   }] } },
 
-  // OP05-100 — [Rush] templated. PARTIAL: leave-field life-trash replacement + Luffy negation deferred.
-  { cardNumber: 'OP05-100', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
+  // OP05-100 — [Rush]. [OPT] If this would leave the field, trash top Life instead (negated if [Monkey.D.Luffy] exists).
+  {
+    cardNumber: 'OP05-100',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementSelf',
+            scope: 'any',
+            oncePerTurn: true,
+            replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+            trashLife: { position: 'top' },
+            activationGate: [{ kind: 'noneOf', gates: [{ kind: 'anyNamedCharacter', name: 'Monkey.D.Luffy' }] }],
+            duration: 'permanent',
+          }],
+        },
+      },
+    ],
+  },
 
   // OP05-101 — static: if ≤2 Life, +1000. [On Play] Look 5, reveal up to 1 [Holly] to hand (rest to bottom), then play up to 1 [Holly].
   {

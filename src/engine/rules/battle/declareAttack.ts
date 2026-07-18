@@ -21,9 +21,10 @@ import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
-import { hasContinuousKeyword, cannotAttack, isAttackTargetForbidden, getForcedAttackTargetId } from '../shared/power';
+import { hasContinuousKeyword, cannotAttack, isAttackTargetForbidden, getForcedAttackTargetId, getAttackTrashTax } from '../shared/power';
 import { fireWhenAttacking, fireRestTransitions, type EffectTemplateRegistry } from '../../effects';
 import { hasAnyLegalBlocker } from './activateBlocker';
+import type { PendingChoice } from '../../events/pendingChoice';
 
 export function validateDeclareAttack(state: GameState, action: DeclareAttackAction, defs: CardDefinitionLookup): ValidationResult {
   const reasons: string[] = [];
@@ -162,18 +163,51 @@ export function executeDeclareAttack(
     };
   }
 
+  // Attack-tax ("cannot attack unless you trash N from hand whenever they attack"):
+  // mandatory trash before [When Attacking] continues.
+  const trashTax = getAttackTrashTax(state, action.attackerInstanceId, defs);
+  if (trashTax !== null && trashTax > 0) {
+    const handIds = nextState.players[action.playerId].hand.cardIds;
+    const taxChoice: PendingChoice = {
+      id: `${action.attackerInstanceId}__attack-trash-tax`,
+      playerId: action.playerId,
+      kind: 'SELECT_CARDS',
+      prompt: `Trash ${trashTax} card${trashTax === 1 ? '' : 's'} from your hand to attack.`,
+      constraints: { min: trashTax, max: trashTax, candidateInstanceIds: [...handIds] },
+      sourceInstanceId: action.attackerInstanceId,
+      sourceEffectId: 'rule:attackTrashTax',
+    };
+    return {
+      state: { ...nextState, pendingChoices: [...nextState.pendingChoices, taxChoice] },
+      log: logger.log,
+      pendingChoices: [taxChoice],
+    };
+  }
+
+  return continueAfterDeclareAttackSetup(nextState, action.attackerInstanceId, registry, defs, action.actionId, logger.log);
+}
+
+/** Shared tail after DECLARE_ATTACK battle setup (and optional attack trash-tax). */
+export function continueAfterDeclareAttackSetup(
+  state: GameState,
+  attackerInstanceId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+  priorLog: ActionExecuteResult['log'] = [],
+): ActionExecuteResult {
   // [When Attacking] (8-1-3) fires now that the Battle is set up, with the
   // attacker as source. No-op when the card has no curated whenAttacking
   // ability; any targeting it needs surfaces as a PendingChoice (resolved
   // before the Block/Counter Step proceeds, via the dispatch pending-choice gate).
-  const fired = fireWhenAttacking(nextState, action.attackerInstanceId, registry, defs, action.actionId);
+  const fired = fireWhenAttacking(state, attackerInstanceId, registry, defs, actionId);
   if (fired.pendingChoices.length > 0) {
-    return { state: fired.state, log: [...logger.log, ...fired.log], pendingChoices: fired.pendingChoices };
+    return { state: fired.state, log: [...priorLog, ...fired.log], pendingChoices: fired.pendingChoices };
   }
-  const rested = fireRestTransitions(fired.state, [action.attackerInstanceId], registry, defs, action.actionId);
+  const rested = fireRestTransitions(fired.state, [attackerInstanceId], registry, defs, actionId);
   return {
     state: rested.state,
-    log: [...logger.log, ...fired.log, ...rested.log],
+    log: [...priorLog, ...fired.log, ...rested.log],
     pendingChoices: rested.pendingChoices,
   };
 }

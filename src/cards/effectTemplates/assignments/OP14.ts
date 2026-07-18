@@ -723,19 +723,27 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP14-079 — PARTIAL: "opp Characters cannot be removed by your effects" static rule deferred; mapped activate KO Baroque Works → opp −10 cost + trash 2 deck.
+  // OP14-079 — Opp Characters cannot be removed by your effects.
+  //   [Activate: Main] [OPT] KO 1 {Baroque Works}: opp Character −10 cost this turn, then trash 2 deck.
   {
     cardNumber: 'OP14-079',
-    templateId: 'ability',
-    params: {
-      timing: 'activateMain',
-      oncePerTurn: true,
-      functions: [
-        { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Baroque Works' } }, optional: true, maxTargets: 1 },
-        { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -10, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
-        { fn: 'trashTopDeck', count: 2, optional: true, ifPrevious: 'previousMovedAny' },
-      ],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'preventFieldRemovalAuraOpponentCharacters', duration: 'permanent', effectSourceController: 'opponent' },
+      ] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          functions: [
+            { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Baroque Works' } }, optional: true, maxTargets: 1 },
+            { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -10, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+            { fn: 'trashTopDeck', count: 2, optional: true, ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
   },
 
   // OP14-080 (leader) Gecko Moria —

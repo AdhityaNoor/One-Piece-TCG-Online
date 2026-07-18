@@ -27,6 +27,7 @@ function koReplacementAction(f: {
   turnTopLifeFace?: { faceUp: boolean };
   giveSelfPowerPenalty?: { amount: number; duration: import('../../../engine/effects/effectIr').IrDuration };
   giveLeaderPowerPenalty?: { amount: number; duration: import('../../../engine/effects/effectIr').IrDuration };
+  giveTargetPowerPenalty?: { amount: number; duration: import('../../../engine/effects/effectIr').IrDuration };
   moveTargetToLifeFaceDown?: true;
   restTargetAndTrashFromHand?: { filter?: { category?: 'character' | 'event' | 'stage'; categories?: ('character' | 'event' | 'stage')[]; maxCurrentPower?: number; minCurrentPower?: number; typeIncludes?: string } };
   restLeaderOrNamed?: KoReplacementLeaderOrNamedFilter;
@@ -52,6 +53,7 @@ function koReplacementAction(f: {
   if (f.turnTopLifeFace) return { kind: 'turnTopLifeFace', faceUp: f.turnTopLifeFace.faceUp };
   if (f.giveSelfPowerPenalty) return { kind: 'giveSelfPowerPenalty', amount: f.giveSelfPowerPenalty.amount, duration: f.giveSelfPowerPenalty.duration };
   if (f.giveLeaderPowerPenalty) return { kind: 'giveLeaderPowerPenalty', amount: f.giveLeaderPowerPenalty.amount, duration: f.giveLeaderPowerPenalty.duration };
+  if (f.giveTargetPowerPenalty) return { kind: 'giveTargetPowerPenalty', amount: f.giveTargetPowerPenalty.amount, duration: f.giveTargetPowerPenalty.duration };
   if (f.moveTargetToLifeFaceDown) return { kind: 'moveTargetToLifeFaceDown' };
   if (f.returnSourceToHand) return { kind: 'returnSourceToHand' };
   if (f.trashSource) return { kind: 'trashSource' };
@@ -475,13 +477,21 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         }),
         { optional: f.optional, maxTargets: f.maxTargets, prompt: f.prompt },
       );
-    case 'preventAttackAll':
-      return [{
-        op: 'preventAttackController',
-        player: 'controller',
+    case 'preventAttackAll': {
+      const players: Array<'controller' | 'opponent'> =
+        f.player === 'both' ? ['controller', 'opponent'] : [f.player ?? 'controller'];
+      return players.map((player) => ({
+        op: 'preventAttackController' as const,
+        player,
         duration: f.duration,
         ...(f.forbiddenTarget ? { forbiddenTarget: f.forbiddenTarget } : {}),
-      }];
+        ...(f.charactersOnly ? { charactersOnly: true as const } : {}),
+        ...(f.condition ? { condition: f.condition } : {}),
+        ...(f.attackUnlessTrashFromHand !== undefined ? { attackUnlessTrashFromHand: f.attackUnlessTrashFromHand } : {}),
+      }));
+    }
+    case 'forceCharactersPlayedRested':
+      return [{ op: 'forceCharactersPlayedRested', duration: f.duration }];
     case 'setForcedAttackTarget':
       return [{
         op: 'setForcedAttackTarget',
@@ -538,6 +548,19 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         group: {
           ownLeaderAndCharacters: true,
           charactersOnly: true,
+          ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}),
+          ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}),
+          ...(f.anyOfColors ? { anyOfColors: f.anyOfColors } : {}),
+        },
+        duration: f.duration,
+        ...(f.effectSourceController ? { effectSourceController: f.effectSourceController } : {}),
+        ...(f.targetCondition || f.gate ? { condition: { ...(f.targetCondition ?? {}), ...(f.gate ? { gate: f.gate } : {}) } } : {}),
+      }];
+    case 'preventFieldRemovalAuraOpponentCharacters':
+      return [{
+        op: 'preventFieldRemovalAura',
+        group: {
+          opponentCharacters: true,
           ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}),
           ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}),
           ...(f.anyOfColors ? { anyOfColors: f.anyOfColors } : {}),
@@ -1428,7 +1451,27 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         },
       ];
     case 'addPowerAuraOpponentCharacters':
-      return [{ op: 'addPowerAura', group: { opponentCharacters: true }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
+      return [{
+        op: 'addPowerAura',
+        group: { opponentCharacters: true },
+        amount: f.amount,
+        duration: f.duration,
+        ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
+        ...(f.gate ? { condition: { gate: f.gate } } : {}),
+        ...(f.scale ? { scale: f.scale } : {}),
+      }];
+    case 'revealTopLifeAddPowerPerCost':
+      return [
+        { op: 'revealTopLife' },
+        {
+          op: 'addPower',
+          target: { sel: 'self' },
+          amount: 0,
+          amountPer: f.amountPer,
+          amountPerVar: '__lastRevealedCostUnits',
+          duration: f.duration,
+        },
+      ];
     case 'addPowerAuraControllerCharacters':
       return [{
         op: 'addPowerAura',
@@ -1499,6 +1542,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           target: { sel: 'self' },
           scope: f.scope,
           duration: f.duration,
+          ...(f.oncePerTurn ? { oncePerTurn: true } : {}),
           ...(f.condition ? { condition: f.condition } : {}),
           ...(f.attackerCategory ? { attackerCategory: f.attackerCategory } : {}),
           ...(f.attackerAttribute ? { attackerAttribute: f.attackerAttribute } : {}),
@@ -1721,6 +1765,11 @@ const FACTORY_MAP: {
   [T in TemplateId]: (cardNumber: string, params: TemplateParamMap[T]) => EffectProgram;
 } = {
   noRuntime: (cn) => program(cn, []),
+  staticFlags: (cn, p) => ({
+    cardNumber: cn,
+    abilities: [],
+    ...(p.cannotBePlayedByEffects ? { cannotBePlayedByEffects: true as const } : {}),
+  }),
   ability: (cn, p) => {
     const implicitGates = p.functions.some((f) => (f.fn === 'giveDon' && !f.activeDonOnly && !f.skipRestedDonGate) || f.fn === 'giveGivenDon')
       ? ([{ kind: 'selfRestedDonCount', atLeast: 1 }] as const)

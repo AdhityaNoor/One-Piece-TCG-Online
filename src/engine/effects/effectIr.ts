@@ -111,6 +111,8 @@ export interface SearchFilter {
   noBaseEffect?: boolean;
   /** After a prior moveCards in the same sequence, exclude hand cards sharing any color with the moved card(s). */
   excludeColorsOfPreviousMove?: boolean;
+  /** After a prior trash/move, require the same printed name as a moved card ("same card name as the trashed card"). */
+  nameMatchesPreviousMove?: boolean;
   /** Exclude instance ids currently bound in this var (e.g. prior trash/hand pick). */
   excludeIdsFromVar?: string;
 }
@@ -202,7 +204,7 @@ export type EffectOp =
   | ({ op: 'addKeywordAura'; group: PowerAuraGroup; keyword: ContinuousKeyword; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
   // Grant "cannot be K.O.'d" to the target. scope 'battle' = battle K.O. only (7-1-4-2); 'any' = any source.
   // `attackerCategory` optionally restricts a battle immunity to a given attacker category ("by Leaders").
-  | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; attackerCategory?: 'leader' | 'character'; attackerAttribute?: string; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string } & EffectOpSequenceGate)
+  | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; oncePerTurn?: boolean; condition?: IrCondition; attackerCategory?: 'leader' | 'character'; attackerAttribute?: string; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string } & EffectOpSequenceGate)
   | ({ op: 'addKoImmunityAura'; group: KoImmunityAuraGroup; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string } & EffectOpSequenceGate)
   // Register optional K.O. replacement on enter play ("would be K.O.'d … instead").
   | ({ op: 'registerKoReplacement'; appliesTo: 'self' | 'aura'; appliesToInstanceId?: string; group?: KoReplacementAuraGroup; scope: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; action: KoReplacementAction; condition?: IrCondition; sourceCondition?: SourceStateCondition; replacementTriggers?: import('../state/game').KoReplacementTrigger[]; effectSourceController?: 'opponent' | 'controller'; effectSourceCategory?: 'leader' | 'character'; activationGate?: AbilityGate[]; duration: IrDuration } & EffectOpSequenceGate)
@@ -212,7 +214,8 @@ export type EffectOp =
   // Prevent the target Leader/Character from declaring an attack (7-1-1-1) while active.
   | ({ op: 'preventAttack'; target: Selector; duration: IrDuration; forbiddenTarget?: 'leader'; forbiddenTargetFilter?: import('../state/game').ForbiddenAttackTargetFilter; whileSummoningSick?: boolean; attackUnlessGate?: AbilityGate[]; condition?: IrCondition } & EffectOpSequenceGate)
   // Prevent all of a player's Leaders/Characters from attacking (optionally only barring Leader targets).
-  | ({ op: 'preventAttackController'; player: 'controller' | 'opponent'; duration: IrDuration; forbiddenTarget?: 'leader' } & EffectOpSequenceGate)
+  | ({ op: 'preventAttackController'; player: 'controller' | 'opponent'; duration: IrDuration; forbiddenTarget?: 'leader'; charactersOnly?: true; condition?: IrCondition; attackUnlessTrashFromHand?: number } & EffectOpSequenceGate)
+  | ({ op: 'forceCharactersPlayedRested'; duration: IrDuration } & EffectOpSequenceGate)
   // While active, the opponent may only attack this Character (taunt).
   | ({ op: 'setForcedAttackTarget'; target: Selector; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
   // During an in-progress battle, retarget the current attack onto a chosen defender (7-1-2-1-style redirect, not taunt).
@@ -404,6 +407,7 @@ export type IrTiming =
  */
 export type AbilityCost =
   | { kind: 'donMinus'; count: number; activeOnly?: boolean } // return N DON!! from the field to the DON!! deck; activeOnly restricts to active cost-area DON!!
+  | { kind: 'returnGivenDon'; count: number; rested?: boolean } // return N given (attached) DON!! to the cost area (default rested)
   | { kind: 'restThis' } // rest the source card
   | { kind: 'restLeader' } // rest the controller's Leader ("You may rest your Leader:" / "rest this Leader:")
   | { kind: 'trashThis' } // trash the source card (not a K.O.; does not fire [On K.O.])
@@ -442,6 +446,7 @@ export type AbilityGate =
   | { kind: 'selfHandAtLeastLessThanOpponent'; count: number } // "If your hand count is at least N less than your opponent's"
   | { kind: 'selfCharacterCountAtLeastLessThanOpponent'; count: number } // "If your Character count is at least N less than your opponent's"
   | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
+  | { kind: 'anyNamedCharacter'; name: string } // "If there is a [X] Character" (either player's field)
   | { kind: 'selfHasCharacterCostAtLeast'; atLeast: number } // "If you have a Character with a cost of N or more"
   | { kind: 'selfCharacterCostCount'; minCost: number; atLeast?: number; atMost?: number } // "If you have N or more/fewer Characters with a cost of M or more"
   | { kind: 'selfCharacterBaseCostCount'; minBaseCost: number; atLeast: number } // "If you have N or more Characters with a base cost of M or more"
@@ -572,6 +577,8 @@ export interface Ability {
 export interface EffectProgram {
   cardNumber: string;
   abilities: Ability[];
+  /** Static: while in hand, this card cannot be played by card effects (normal cost play still ok). */
+  cannotBePlayedByEffects?: boolean;
 }
 
 /** Serializable resume point stored on a PendingChoice for an interpreter-suspended program. */
