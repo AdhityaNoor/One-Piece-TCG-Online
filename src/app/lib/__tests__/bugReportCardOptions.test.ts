@@ -2,7 +2,32 @@ import { describe, expect, it } from 'vitest';
 import type { GameLogEntry } from '../../../engine/logs/logEntry';
 import type { CardInstance, CardDefinition } from '../../../engine/state/card';
 import type { CardDefinitionLookup } from '../../../engine/rules/shared';
+import type { PlayerState } from '../../../engine/state/player';
+import type { Zone, ZoneId } from '../../../engine/state/zone';
 import { buildBugReportCardOptions } from '../bugReportCardOptions';
+
+function zone(id: ZoneId, visibility: Zone['visibility'] = 'secret'): Zone {
+  return { id, visibility, cardIds: [] };
+}
+
+function player(overrides: Partial<PlayerState> = {}): PlayerState {
+  return {
+    playerId: 'p1',
+    leaderInstanceId: 'leader-p1',
+    leaderLifeValue: 5,
+    deck: zone('deck'),
+    donDeck: zone('donDeck', 'open'),
+    hand: zone('hand'),
+    characterArea: zone('characterArea', 'open'),
+    stageArea: zone('stageArea', 'open'),
+    costArea: zone('costArea', 'open'),
+    trash: zone('trash', 'open'),
+    lifeArea: zone('lifeArea'),
+    hasGoneFirst: false,
+    hasMulliganed: false,
+    ...overrides,
+  };
+}
 
 function playedEntry(overrides: Partial<GameLogEntry> = {}): GameLogEntry {
   return {
@@ -63,7 +88,7 @@ describe('buildBugReportCardOptions', () => {
       playedEntry({ type: 'PHASE_CHANGED', relatedCardInstanceIds: ['inst-1'] }),
       playedEntry({ type: 'ATTACK_DECLARED', relatedCardInstanceIds: ['inst-1'] }),
     ];
-    const state = { cardsById: { 'inst-1': instance() } };
+    const state = { cardsById: { 'inst-1': instance() }, players: {} };
     const defs: CardDefinitionLookup = { 'OP01-001': definition() };
 
     expect(buildBugReportCardOptions(log, state, defs)).toHaveLength(0);
@@ -71,7 +96,7 @@ describe('buildBugReportCardOptions', () => {
 
   it('labels an option with name, card number, and turn from the definition lookup', () => {
     const log: GameLogEntry[] = [playedEntry({ relatedCardInstanceIds: ['inst-1'], turnNumber: 3, sequence: 7 })];
-    const state = { cardsById: { 'inst-1': instance() } };
+    const state = { cardsById: { 'inst-1': instance() }, players: {} };
     const defs: CardDefinitionLookup = { 'OP01-001': definition() };
 
     const options = buildBugReportCardOptions(log, state, defs);
@@ -83,12 +108,15 @@ describe('buildBugReportCardOptions', () => {
       cardNumber: 'OP01-001',
       cardName: 'Monkey.D.Luffy',
       cardText: '[On Play] Draw 1 card.',
+      selectedEffectText: null,
     });
+    // Single-ability text ("[On Play] Draw 1 card.") — nothing to choose between.
+    expect(options[0].subEffects).toEqual([]);
   });
 
   it('falls back to a placeholder label when the instance or definition is missing', () => {
     const log: GameLogEntry[] = [playedEntry({ relatedCardInstanceIds: ['ghost-instance'] })];
-    const state = { cardsById: {} };
+    const state = { cardsById: {}, players: {} };
     const defs: CardDefinitionLookup = {};
 
     const options = buildBugReportCardOptions(log, state, defs);
@@ -102,7 +130,7 @@ describe('buildBugReportCardOptions', () => {
       playedEntry({ id: 'a', sequence: 1, relatedCardInstanceIds: ['inst-1'] }),
       playedEntry({ id: 'b', sequence: 2, relatedCardInstanceIds: ['inst-1'] }),
     ];
-    const state = { cardsById: { 'inst-1': instance() } };
+    const state = { cardsById: { 'inst-1': instance() }, players: {} };
     const defs: CardDefinitionLookup = { 'OP01-001': definition() };
 
     expect(buildBugReportCardOptions(log, state, defs)).toHaveLength(1);
@@ -118,10 +146,49 @@ describe('buildBugReportCardOptions', () => {
         'inst-1': instance({ instanceId: 'inst-1' }),
         'inst-2': instance({ instanceId: 'inst-2' }),
       },
+      players: {},
     };
     const defs: CardDefinitionLookup = { 'OP01-001': definition() };
 
     const options = buildBugReportCardOptions(log, state, defs);
     expect(options.map((o) => o.cardInstanceId)).toEqual(['inst-2', 'inst-1']);
+  });
+
+  it('always includes both players\' Leaders, sorted before any CARD_PLAYED options', () => {
+    const log: GameLogEntry[] = [playedEntry({ relatedCardInstanceIds: ['played-1'], sequence: 9 })];
+    const state = {
+      cardsById: {
+        'leader-p1': instance({ instanceId: 'leader-p1', cardDefinitionId: 'OP01-001', currentZone: 'leader' }),
+        'leader-p2': instance({ instanceId: 'leader-p2', cardDefinitionId: 'OP01-001', currentZone: 'leader', ownerId: 'p2', controllerId: 'p2' }),
+        'played-1': instance({ instanceId: 'played-1' }),
+      },
+      players: {
+        p1: player({ playerId: 'p1', leaderInstanceId: 'leader-p1' }),
+        p2: player({ playerId: 'p2', leaderInstanceId: 'leader-p2' }),
+      },
+    };
+    const defs: CardDefinitionLookup = { 'OP01-001': definition() };
+
+    const options = buildBugReportCardOptions(log, state, defs);
+    expect(options).toHaveLength(3);
+    expect(options.slice(0, 2).map((o) => o.cardInstanceId).sort()).toEqual(['leader-p1', 'leader-p2']);
+    expect(options[2].cardInstanceId).toBe('played-1');
+    expect(options[0].label).toContain("Leader");
+  });
+
+  it('splits a multi-ability card into subEffects, one per bracketed ability', () => {
+    const log: GameLogEntry[] = [playedEntry({ relatedCardInstanceIds: ['inst-1'] })];
+    const state = {
+      cardsById: { 'inst-1': instance() },
+      players: {},
+    };
+    const defs: CardDefinitionLookup = {
+      'OP01-001': definition({ text: '[On Play] Draw 1 card. [Trigger] Play this card.' }),
+    };
+
+    const options = buildBugReportCardOptions(log, state, defs);
+    expect(options[0].subEffects).toHaveLength(2);
+    expect(options[0].subEffects[0].text).toContain('[On Play]');
+    expect(options[0].subEffects[1].text).toContain('[Trigger]');
   });
 });

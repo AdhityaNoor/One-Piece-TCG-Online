@@ -5,6 +5,7 @@
  * an AdminJwtClaims token is never interchangeable with a player JwtClaims
  * token (different secret, different collection, different claims shape).
  */
+import type { BugReportCardSnapshot } from './support';
 
 // ---- admin auth -------------------------------------------------------
 
@@ -178,7 +179,8 @@ export interface AdminBugReportDetail extends AdminBugReportSummary {
   matchId: string | null;
   turnNumber: number;
   phase: string;
-  selectedCard: { cardInstanceId: string; cardDefinitionId: string; cardNumber: string | null; cardName: string | null; cardText: string | null } | null;
+  /** Was a hand-duplicated inline type; now reuses BugReportCardSnapshot directly (shared/support.ts) so a new field there (e.g. selectedEffectText) can't silently drift out of sync here. */
+  selectedCard: BugReportCardSnapshot | null;
   log: unknown[]; // GameLogEntry[] — kept opaque here (admin/net client doesn't need the engine's log type, just to render it generically)
 }
 

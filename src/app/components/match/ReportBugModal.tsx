@@ -1,10 +1,13 @@
 /**
  * "Report a Bug" modal, launched from MatchScreen's Paused modal. Lets the
- * reporter (a) optionally pick which played card the bug is about, from the
- * match's own play history (buildBugReportCardOptions — CARD_PLAYED log
- * entries only) and (b) describe the issue in free text. Submitting sends
- * both plus the full cumulative GameLogEntry[] ("record the battle log
- * verbosely" requirement) to the backend via bugReportStore.submit.
+ * reporter (a) optionally pick which card the bug is about — from the
+ * match's own play history plus both players' Leaders (buildBugReportCardOptions),
+ * (b) when that card has more than one bracketed ability, optionally narrow
+ * down to the specific one (subEffects — see bugReportCardOptions.ts's
+ * parseEffect-based splitting), and (c) describe the issue in free text.
+ * Submitting sends all of that plus the full cumulative GameLogEntry[]
+ * ("record the battle log verbosely" requirement) to the backend via
+ * bugReportStore.submit.
  *
  * Pure projection + one store's worth of local UI state — no engine imports,
  * no dispatch, same boundary MatchChatPanel documents for chat.
@@ -34,12 +37,17 @@ export interface ReportBugModalProps {
 export function ReportBugModal({ open, onClose, matchMode, matchId, turnNumber, phase, log, cardOptions }: ReportBugModalProps) {
   const description = useBugReportStore((s) => s.description);
   const selectedCardInstanceId = useBugReportStore((s) => s.selectedCardInstanceId);
+  const selectedEffectIndex = useBugReportStore((s) => s.selectedEffectIndex);
   const status = useBugReportStore((s) => s.status);
   const error = useBugReportStore((s) => s.error);
   const setDescription = useBugReportStore((s) => s.setDescription);
   const selectCard = useBugReportStore((s) => s.selectCard);
+  const selectEffect = useBugReportStore((s) => s.selectEffect);
   const submit = useBugReportStore((s) => s.submit);
   const reset = useBugReportStore((s) => s.reset);
+
+  const selectedOption = cardOptions.find((option) => option.cardInstanceId === selectedCardInstanceId) ?? null;
+  const subEffects = selectedOption?.subEffects ?? [];
 
   // Fresh draft every time the modal is (re)opened — a stale description or
   // card pick from a previous report shouldn't silently carry over.
@@ -112,6 +120,30 @@ export function ReportBugModal({ open, onClose, matchMode, matchId, turnNumber, 
               <p className="text-xs text-white/40">No cards have been played onto the board yet this match.</p>
             )}
           </div>
+
+          {subEffects.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="bug-report-effect" className="text-[11px] font-black uppercase tracking-[0.12em] text-white/50">
+                Which part of the text? (optional)
+              </label>
+              <select
+                id="bug-report-effect"
+                value={selectedEffectIndex ?? ''}
+                onChange={(event) => selectEffect(event.target.value === '' ? null : Number(event.target.value))}
+                disabled={status === 'submitting'}
+                className="h-10 w-full border border-white/25 bg-white/[0.07] px-3 text-sm text-white outline-none focus:border-gold/60 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="" style={OPTION_STYLE}>
+                  Not specific / whole card
+                </option>
+                {subEffects.map((effect) => (
+                  <option key={effect.index} value={effect.index} style={OPTION_STYLE}>
+                    {effect.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="bug-report-description" className="text-[11px] font-black uppercase tracking-[0.12em] text-white/50">

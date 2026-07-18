@@ -35,6 +35,8 @@ interface BugReportState {
   open: boolean;
   description: string;
   selectedCardInstanceId: string | null;
+  /** Index into the selected card's BugReportCardOption.subEffects; null = "not specific" / card has no sub-effects. */
+  selectedEffectIndex: number | null;
   status: BugReportSubmitStatus;
   error: string | null;
 
@@ -42,6 +44,7 @@ interface BugReportState {
   closeModal(): void;
   setDescription(value: string): void;
   selectCard(instanceId: string | null): void;
+  selectEffect(index: number | null): void;
   submit(context: BugReportMatchContext): Promise<boolean>;
   reset(): void;
 }
@@ -52,6 +55,7 @@ export const useBugReportStore = create<BugReportState>((set, get) => ({
   open: false,
   description: '',
   selectedCardInstanceId: null,
+  selectedEffectIndex: null,
   status: 'idle',
   error: null,
 
@@ -68,7 +72,12 @@ export const useBugReportStore = create<BugReportState>((set, get) => ({
   },
 
   selectCard(instanceId) {
-    set({ selectedCardInstanceId: instanceId });
+    // A new card pick invalidates whichever sub-effect index was chosen for the previous card.
+    set({ selectedCardInstanceId: instanceId, selectedEffectIndex: null });
+  },
+
+  selectEffect(index) {
+    set({ selectedEffectIndex: index });
   },
 
   async submit(context) {
@@ -85,6 +94,9 @@ export const useBugReportStore = create<BugReportState>((set, get) => ({
     }
 
     const selectedOption = context.cardOptions.find((option) => option.cardInstanceId === get().selectedCardInstanceId) ?? null;
+    const selectedEffectIndex = get().selectedEffectIndex;
+    const selectedEffect =
+      selectedEffectIndex !== null ? selectedOption?.subEffects.find((effect) => effect.index === selectedEffectIndex) ?? null : null;
 
     const body: SubmitBugReportRequest = {
       description,
@@ -92,7 +104,7 @@ export const useBugReportStore = create<BugReportState>((set, get) => ({
       matchId: context.matchId,
       turnNumber: context.turnNumber,
       phase: context.phase,
-      selectedCard: selectedOption?.snapshot ?? null,
+      selectedCard: selectedOption ? { ...selectedOption.snapshot, selectedEffectText: selectedEffect?.text ?? null } : null,
       log: context.log,
       clientVersion: typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : null,
     };
@@ -109,6 +121,6 @@ export const useBugReportStore = create<BugReportState>((set, get) => ({
   },
 
   reset() {
-    set({ description: '', selectedCardInstanceId: null, status: 'idle', error: null });
+    set({ description: '', selectedCardInstanceId: null, selectedEffectIndex: null, status: 'idle', error: null });
   },
 }));

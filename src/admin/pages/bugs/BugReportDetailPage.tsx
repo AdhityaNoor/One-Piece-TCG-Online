@@ -97,6 +97,12 @@ export function BugReportDetailPage() {
           <dd>
             {report.selectedCard ? `${report.selectedCard.cardName ?? 'Unknown'} (${report.selectedCard.cardNumber ?? report.selectedCard.cardDefinitionId})` : '—'}
           </dd>
+          {report.selectedCard?.selectedEffectText && (
+            <>
+              <dt className="text-white/40">Specific effect</dt>
+              <dd className="whitespace-pre-wrap">{report.selectedCard.selectedEffectText}</dd>
+            </>
+          )}
         </dl>
       </AdminCard>
 

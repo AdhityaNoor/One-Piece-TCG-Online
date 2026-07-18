@@ -38,6 +38,15 @@ export interface BugReportCardSnapshot {
   cardNumber: string | null;
   cardName: string | null;
   cardText: string | null;
+  /**
+   * The specific sub-effect/ability the reporter picked out of `cardText`
+   * (e.g. one bracketed [Trigger]/[On Play] segment out of several), when the
+   * card had more than one and the reporter narrowed it down. Null when the
+   * card has only one segment (nothing to choose between) or the reporter
+   * left it as "not specific". Raw text only, same rule as cardText — never
+   * treated as executable effect logic.
+   */
+  selectedEffectText: string | null;
 }
 
 /**

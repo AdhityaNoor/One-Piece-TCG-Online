@@ -4,6 +4,7 @@ import { useAdminAuthStore } from '../../store/adminAuthStore';
 import { fetchBugReports } from '../../net/bugReportAdminClient';
 import { AdminApiError } from '../../net/shared';
 import { AdminBadge, AdminButton, AdminSelect } from '../../components/ui';
+import { downloadBugReportsAsCsv, downloadBugReportsAsJson, fetchAllBugReports } from '../../lib/exportBugReports';
 import type { AdminBugReportSummary, BugReportStatus, BugReportValidity } from '../../../../shared/admin';
 
 function validityTone(validity: BugReportValidity): 'good' | 'warn' | 'bad' {
@@ -26,6 +27,21 @@ export function BugReportListPage() {
   const [validityFilter, setValidityFilter] = useState<BugReportValidity | ''>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState<'json' | 'csv' | null>(null);
+
+  async function handleExport(format: 'json' | 'csv'): Promise<void> {
+    setExporting(format);
+    setError(null);
+    try {
+      const all = await fetchAllBugReports(token, { status: statusFilter, validity: validityFilter });
+      if (format === 'json') downloadBugReportsAsJson(all);
+      else downloadBugReportsAsCsv(all);
+    } catch (cause) {
+      setError(cause instanceof AdminApiError ? cause.message : 'Could not export bug reports.');
+    } finally {
+      setExporting(null);
+    }
+  }
 
   async function load(reset: boolean): Promise<void> {
     setLoading(true);
@@ -54,20 +70,30 @@ export function BugReportListPage() {
     <div>
       <h1 className="mb-4 text-xl font-bold text-white">Bugs & Reports Management</h1>
 
-      <div className="mb-4 flex gap-2">
-        <AdminSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as BugReportStatus | '')}>
-          <option value="">All statuses</option>
-          <option value="open">Open</option>
-          <option value="triaged">Triaged</option>
-          <option value="resolved">Resolved</option>
-          <option value="wont_fix">Won't fix</option>
-        </AdminSelect>
-        <AdminSelect value={validityFilter} onChange={(e) => setValidityFilter(e.target.value as BugReportValidity | '')}>
-          <option value="">All validity</option>
-          <option value="unreviewed">Unreviewed</option>
-          <option value="valid">Valid</option>
-          <option value="invalid">Invalid</option>
-        </AdminSelect>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <AdminSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as BugReportStatus | '')}>
+            <option value="">All statuses</option>
+            <option value="open">Open</option>
+            <option value="triaged">Triaged</option>
+            <option value="resolved">Resolved</option>
+            <option value="wont_fix">Won't fix</option>
+          </AdminSelect>
+          <AdminSelect value={validityFilter} onChange={(e) => setValidityFilter(e.target.value as BugReportValidity | '')}>
+            <option value="">All validity</option>
+            <option value="unreviewed">Unreviewed</option>
+            <option value="valid">Valid</option>
+            <option value="invalid">Invalid</option>
+          </AdminSelect>
+        </div>
+        <div className="flex gap-2">
+          <AdminButton variant="secondary" onClick={() => void handleExport('json')} disabled={exporting !== null}>
+            {exporting === 'json' ? 'Exporting…' : 'Download JSON'}
+          </AdminButton>
+          <AdminButton variant="secondary" onClick={() => void handleExport('csv')} disabled={exporting !== null}>
+            {exporting === 'csv' ? 'Exporting…' : 'Download CSV'}
+          </AdminButton>
+        </div>
       </div>
 
       {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
