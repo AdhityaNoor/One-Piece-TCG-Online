@@ -833,6 +833,12 @@ export interface GameState {
   eventActivationHistory?: EventActivationRecord[];
   /** Keyed by `${cardInstanceId}:${effectId}`; cleared on that instance's owner's Refresh Phase. */
   oncePerTurnUsage: Record<string, true>;
+  /**
+   * Keys `${instanceId}:${abilityIndex}` for [Start of your turn] windows already offered/resolved
+   * this Refresh. Prevents re-prompting when a YES_NO / search choice suspends mid-Refresh and
+   * advanceAutomaticPhases re-enters `refresh`. Cleared when Refresh mechanics complete.
+   */
+  startOfTurnHandledKeys?: Record<string, true>;
   pendingChoices: PendingChoice[];
   /**
    * Instance ids of Life cards whose [Trigger] the defending player chose to

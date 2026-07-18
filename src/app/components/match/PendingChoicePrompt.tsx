@@ -612,6 +612,23 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     // tell the player WHICH field DON!! they're picking.
     if (isDonReturnChoice(state, defs, choice)) return null;
 
+    if (choice.kind === 'YES_NO') {
+      return (
+        <ChoicePromptShell title="Activate Effect?">
+          <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+          {errorBanner}
+          <ChoicePromptActionList>
+            <ChoicePromptOption onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: true })}>
+              Activate
+            </ChoicePromptOption>
+            <ChoicePromptOption onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: false })}>
+              Decline
+            </ChoicePromptOption>
+          </ChoicePromptActionList>
+        </ChoicePromptShell>
+      );
+    }
+
     if (choice.kind === 'SELECT_OPTION') {
       const options = choice.constraints.options ?? [];
       return (

@@ -77,6 +77,11 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
     const sel = action.response;
     if (choice.resumeState?.koReplacement) {
       reasons.push(...validateKoReplacementResponse(choice, sel));
+    } else if (choice.kind === 'YES_NO') {
+      // Optional activate / confirm prompts (e.g. OP11-040 start-of-turn).
+      if (typeof sel !== 'boolean') {
+        reasons.push('A YES_NO card-effect choice expects a boolean response.');
+      }
     } else if (choice.kind === 'SELECT_OPTION') {
       const optionCount = choice.constraints.options?.length ?? 0;
       if (typeof sel !== 'number' || !Number.isInteger(sel) || sel < 0 || sel >= optionCount) {

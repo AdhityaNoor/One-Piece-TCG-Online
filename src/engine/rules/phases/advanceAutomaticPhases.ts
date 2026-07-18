@@ -37,8 +37,23 @@ export function advanceAutomaticPhases(state: GameState, defs: CardDefinitionLoo
 
   while (!current.gameOver && iterations < MAX_ITERATIONS) {
     iterations += 1;
+    // Never auto-advance turn phases while a player choice is outstanding
+    // (e.g. start-of-turn YES_NO / search suspended mid-Refresh). Setup keeps
+    // its own PendingChoice handling via advanceStartOfGameEffects below.
+    if (current.pendingChoices.length > 0 && current.currentPhase !== 'setup') {
+      return { state: current, log };
+    }
     switch (current.currentPhase) {
       case 'refresh': {
+        // OP11-040 FAQ: start-of-turn effects fire at the beginning of Refresh,
+        // before returning given DON!! / set-active / Draw / DON!! placement.
+        const sot = fireStartOfTurnReactions(current, registry, defs, null);
+        current = sot.state;
+        log.push(...sot.log);
+        if (sot.pendingChoices.length > 0) {
+          // Choice is already on state.pendingChoices — do not append again.
+          return { state: current, log };
+        }
         const result = runRefreshPhase(current, defs);
         current = result.state;
         log.push(...result.log);
@@ -54,14 +69,6 @@ export function advanceAutomaticPhases(state: GameState, defs: CardDefinitionLoo
         const result = runDonPhase(current);
         current = result.state;
         log.push(...result.log);
-        if (current.currentPhase === 'main' && !current.gameOver) {
-          const sot = fireStartOfTurnReactions(current, registry, defs, null);
-          current = sot.state;
-          log.push(...sot.log);
-          if (sot.pendingChoices.length > 0) {
-            return { state: { ...current, pendingChoices: [...current.pendingChoices, ...sot.pendingChoices] }, log };
-          }
-        }
         break;
       }
       case 'end': {

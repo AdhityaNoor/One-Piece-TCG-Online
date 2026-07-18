@@ -959,7 +959,12 @@ export function fireHandTrashedReactions(
   return fireReactiveAbilitiesForPlayer(state, event.ownerId, 'onHandTrashed', registry, defs, actionId, eventContext);
 }
 
-/** Fires optional [Start of your turn] activations for the active player's in-play cards. */
+/**
+ * Fires [Start of your turn] abilities for the active player's in-play cards.
+ * Official timing (OP11-040 FAQ): beginning of Refresh, before returning given DON!!,
+ * set-active, Draw, or DON!! placement. Optional activates are offered even when board
+ * gates fail; unmet gates make resolution a no-op (same FAQ).
+ */
 export function fireStartOfTurnReactions(
   state: GameState,
   registry: EffectTemplateRegistry,
@@ -974,11 +979,27 @@ export function fireStartOfTurnReactions(
     if (!inst) continue;
     const program = registry[inst.cardDefinitionId];
     if (!program?.abilities.some((a) => a.timing === 'onStartOfTurn')) continue;
-    for (const ability of program.abilities.filter((a) => a.timing === 'onStartOfTurn')) {
-      if (!triggeredAbilityWouldFire(ability, inst, working, defs)) continue;
+    for (let abilityIndex = 0; abilityIndex < program.abilities.length; abilityIndex += 1) {
+      const ability = program.abilities[abilityIndex];
+      if (ability.timing !== 'onStartOfTurn') continue;
+      const handledKey = `${id}:${abilityIndex}`;
+      if (working.startOfTurnHandledKeys?.[handledKey]) continue;
+
       if (ability.optionalActivate) {
+        // Offer even when ability.gate fails (checked on YES resolve). Still honor
+        // [DON!! xN] / [Your Turn] style condition fields before prompting.
+        const c = ability.condition;
+        if (c) {
+          if (c.donAttachedAtLeast !== undefined && inst.donAttached.length < c.donAttachedAtLeast) continue;
+          if (c.turn !== undefined) {
+            const isOwnersTurn = working.activePlayerId === inst.ownerId;
+            if (c.turn === 'your' && !isOwnersTurn) continue;
+            if (c.turn === 'opponent' && isOwnersTurn) continue;
+          }
+        }
         working = {
           ...working,
+          startOfTurnHandledKeys: { ...working.startOfTurnHandledKeys, [handledKey]: true },
           pendingChoices: [
             ...working.pendingChoices,
             {
@@ -990,7 +1011,7 @@ export function fireStartOfTurnReactions(
               sourceInstanceId: id,
               sourceEffectId: 'ir',
               resumeState: {
-                abilityIndex: program.abilities.indexOf(ability),
+                abilityIndex,
                 opIndex: -2,
                 bindings: {},
               },
@@ -999,6 +1020,12 @@ export function fireStartOfTurnReactions(
         };
         return { state: working, log, pendingChoices: working.pendingChoices.slice(-1) };
       }
+
+      if (!triggeredAbilityWouldFire(ability, inst, working, defs)) continue;
+      working = {
+        ...working,
+        startOfTurnHandledKeys: { ...working.startOfTurnHandledKeys, [handledKey]: true },
+      };
       const fired = runTimings(program, ['onStartOfTurn'], working, id, defs, actionId, registry, false);
       working = fired.state;
       log = [...log, ...fired.log];

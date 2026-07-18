@@ -560,7 +560,21 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP16-017', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfHand', atMost: 3 }] } }] } },
 
 
-  { cardNumber: 'OP16-045', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 2 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
+  // OP16-045 (character) Crocodile —
+  //   [Blocker] is card-data (hasBlocker). [On Play] You may return 1 of your Characters with a cost of
+  //   2 or more to the owner's hand: Play up to 1 {Impel Down} type Character card with a cost of 2 or
+  //   less from your hand. (FAQ: may return this Character itself.)
+  {
+    cardNumber: 'OP16-045',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { minCost: 2 } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 },
+        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Impel Down', maxCost: 2 }, ifPrevious: 'previousMovedAny' },
+      ],
+    },
+  },
 
 
   {

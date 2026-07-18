@@ -124,6 +124,8 @@ export function runRefreshPhase(state: GameState, defs: CardDefinitionLookup = {
     ...state,
     cardsById,
     oncePerTurnUsage,
+    // Start-of-turn windows for this Refresh are complete once mechanics run.
+    startOfTurnHandledKeys: undefined,
     currentPhase: 'draw',
     log: [...state.log, ...logger.log],
   };

@@ -2273,6 +2273,12 @@ export function resumeProgram(
     const ability = program.abilities[rs.abilityIndex];
     if (!ability) return noop(stateWithoutChoice);
     const ctx = new EffectContextImpl(stateWithoutChoice, choice.sourceInstanceId, defs, actionId, registry);
+    // Optional activate may be offered before board gates are met (OP11-040 FAQ);
+    // unmet gates / conditions make acceptance a no-op.
+    if (!evalCondition(ability.condition, ctx)) return noop(stateWithoutChoice);
+    if (ability.gate?.length && !evaluateGates(ability.gate, stateWithoutChoice, defs, ctx.controllerId, ctx.sourceInstanceId)) {
+      return noop(stateWithoutChoice);
+    }
     const suspended = runOps(ability, rs.abilityIndex, 0, rs.bindings, ctx, defs, registry, actionId);
     if (suspended) return finishWithCascade(ctx, defs, actionId, registry);
     runFollowingAbilities(program, ability.timing, rs.abilityIndex + 1, ctx, defs, actionId, true, registry);
