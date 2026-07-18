@@ -158,8 +158,8 @@ describe('buildBugReportCardOptions', () => {
     const log: GameLogEntry[] = [playedEntry({ relatedCardInstanceIds: ['played-1'], sequence: 9 })];
     const state = {
       cardsById: {
-        'leader-p1': instance({ instanceId: 'leader-p1', cardDefinitionId: 'OP01-001', currentZone: 'leader' }),
-        'leader-p2': instance({ instanceId: 'leader-p2', cardDefinitionId: 'OP01-001', currentZone: 'leader', ownerId: 'p2', controllerId: 'p2' }),
+        'leader-p1': instance({ instanceId: 'leader-p1', cardDefinitionId: 'OP01-001', currentZone: 'leaderArea' }),
+        'leader-p2': instance({ instanceId: 'leader-p2', cardDefinitionId: 'OP01-001', currentZone: 'leaderArea', ownerId: 'p2', controllerId: 'p2' }),
         'played-1': instance({ instanceId: 'played-1' }),
       },
       players: {
