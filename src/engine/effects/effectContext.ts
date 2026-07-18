@@ -5,7 +5,7 @@
  * canonical engine implementation so behavior can't drift.
  */
 import type { ContinuousEffectDuration, ContinuousEffectRecord, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousKoReplacementModifier, ContinuousPowerCondition, GameState, KoImmunityAuraGroup, KoReplacementAuraGroup, PowerAuraGroup, SourceStateCondition } from '../state/game';
-import type { CardDefinition, CardInstance } from '../state/card';
+import type { Attribute, CardDefinition, CardInstance } from '../state/card';
 import type { PendingChoice } from '../events/pendingChoice';
 import { mintRuntimeInstanceId } from '../rules/shared/mintInstance';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
@@ -13,12 +13,16 @@ import { createActionLogger, type ActionLogger } from '../rules/shared/actionLog
 import type { GameLogEntry } from '../logs/logEntry';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../rules/shared/zoneOps';
 import { getOpponentId } from '../rules/shared/players';
-import { cannotBeRemovedFromFieldByEffect, cannotBeRestedByEffect, computeCurrentCost, computeCurrentPower, findKoImmunityRecord, mustPlayCharactersRested, withKoImmunityConsumed } from '../rules/shared/power';
-import { isControllerLifeToHandPrevented } from '../rules/shared/lifeToHandRestriction';
+import { cannotBeRemovedFromFieldByEffect, cannotBeRestedByEffect, computeCurrentCost, computeCurrentPower, findKoImmunityRecord, getEffectiveAttributes, mustPlayCharactersRested, withKoImmunityConsumed } from '../rules/shared/power';
+import { isControllerEffectDrawPrevented, isControllerLifeToHandPrevented, isFaceUpLifeRedirectedToDeckBottom } from '../rules/shared/lifeToHandRestriction';
 import { isControllerCharacterPlayPrevented } from '../rules/shared/characterPlayRestriction';
 import { isControllerHandPlayPrevented } from '../rules/shared/handPlayRestriction';
 import { isControllerCharacterSetActiveDonPrevented } from '../rules/shared/characterSetActiveDonRestriction';
-import { hasEmptyDeckDefeatDeferral, withDeckBecameZeroThisTurn } from '../rules/shared/emptyDeckDefeat';
+import {
+  hasEmptyDeckDefeatDeferral,
+  hasEmptyDeckDefeatWinReplacement,
+  withDeckBecameZeroThisTurn,
+} from '../rules/shared/emptyDeckDefeat';
 import { koReplacementDescription, restReplacementDescription } from '../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { createSeededRng } from '../rng/seededRng';
@@ -58,8 +62,15 @@ export class EffectContextImpl implements EffectContext {
   private readonly playedCharacters: { instanceId: string; controllerId: string; fromCharacterEffect: boolean }[] = [];
   /** Hand cards trashed by this resolution's effects; drained for onHandTrashed cascade. */
   private readonly handTrashed: { ownerId: string; count: number; effectSourceInstanceId: string }[] = [];
+  /** Instance ids that left Life this resolution; drained for onLifeRemoved cascade. */
+  private readonly lifeLeaves: string[] = [];
 
   private static readonly FIELD_ZONES = new Set(['leaderArea', 'characterArea', 'stageArea']);
+
+  private recordLifeLeave(instanceId: string, fromZone: CardInstance['currentZone']): void {
+    if (fromZone !== 'lifeArea') return;
+    this.lifeLeaves.push(instanceId);
+  }
 
   private recordFieldRemoval(targetInstanceId: string, fromZone: CardInstance['currentZone'], toZone: RemovedFromFieldDestination): void {
     if (!EffectContextImpl.FIELD_ZONES.has(fromZone)) return;
@@ -175,6 +186,11 @@ export class EffectContextImpl implements EffectContext {
     const inst = this.working.cardsById[instanceId];
     return inst ? this.defs[inst.cardDefinitionId] : undefined;
   }
+
+  /** Printed attributes plus active continuous attribute grants. */
+  effectiveAttributesOf(instanceId: string): Attribute[] {
+    return getEffectiveAttributes(this.defs, this.working, instanceId);
+  }
   topOfDeck(playerId: string, n: number): string[] {
     const player = this.working.players[playerId];
     if (!player) return [];
@@ -250,7 +266,30 @@ export class EffectContextImpl implements EffectContext {
   private drawOne(playerId: string): void {
     const player = this.working.players[playerId];
     if (!player) return;
+    if (isControllerEffectDrawPrevented(this.working, playerId)) {
+      this.logger.push({
+        actorPlayerId: playerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${playerId} cannot draw cards using their own effects — draw prevented.`,
+        data: { reason: 'effectDrawPrevented', playerId },
+        relatedCardInstanceIds: [],
+        visibility: 'public',
+      });
+      return;
+    }
     if (player.deck.cardIds.length === 0) {
+      if (hasEmptyDeckDefeatWinReplacement(this.working, playerId)) {
+        this.logger.push({
+          actorPlayerId: playerId,
+          type: 'GAME_OVER',
+          message: `${playerId} wins — their deck is 0 cards, so they win instead of losing.`,
+          data: { reason: 'cardEffect', winnerId: playerId },
+          relatedCardInstanceIds: [],
+          visibility: 'public',
+        });
+        this.working = { ...this.working, gameOver: { winnerId: playerId, reason: 'cardEffect' } };
+        return;
+      }
       if (hasEmptyDeckDefeatDeferral(this.working, playerId)) {
         this.working = withDeckBecameZeroThisTurn(this.working, playerId);
         this.logger.push({
@@ -425,6 +464,46 @@ export class EffectContextImpl implements EffectContext {
       type: 'EFFECT_RESOLVED',
       message: `${record.description} applied to a group.`,
       data: { continuousEffectId: record.id, amount: spec.amount, duration: spec.duration },
+      relatedCardInstanceIds: [],
+      visibility: 'public',
+    });
+  }
+
+  addContinuousCounterAura(spec: {
+    group: PowerAuraGroup;
+    amount?: number;
+    setValue?: number;
+    duration: ContinuousEffectDuration;
+    sourceCondition?: SourceStateCondition;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const label = spec.setValue !== undefined
+      ? `aura Counter becomes +${spec.setValue}`
+      : `aura Counter ${((spec.amount ?? 0) >= 0 ? '+' : '')}${spec.amount ?? 0}`;
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? label,
+      counterModifier: {
+        appliesToGroup: spec.group,
+        ...(spec.setValue !== undefined ? { setValue: spec.setValue } : { amount: spec.amount ?? 0 }),
+        ...(spec.sourceCondition ? { sourceCondition: spec.sourceCondition } : {}),
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to a group.`,
+      data: {
+        continuousEffectId: record.id,
+        ...(spec.setValue !== undefined ? { setValue: spec.setValue } : { amount: spec.amount ?? 0 }),
+        duration: spec.duration,
+      },
       relatedCardInstanceIds: [],
       visibility: 'public',
     });
@@ -621,6 +700,36 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  addContinuousAttribute(spec: {
+    appliesToInstanceId: string;
+    attribute: Attribute;
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? `gains <${spec.attribute}>`,
+      attributeModifier: {
+        appliesToInstanceId: spec.appliesToInstanceId,
+        attribute: spec.attribute,
+        ...(spec.condition ? { condition: spec.condition } : {}),
+      },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${record.description} applied to ${spec.appliesToInstanceId}.`,
+      data: { continuousEffectId: record.id, attribute: spec.attribute, duration: spec.duration },
+      relatedCardInstanceIds: [spec.appliesToInstanceId],
+      visibility: 'public',
+    });
+  }
+
   addContinuousKoImmunity(spec: {
     appliesToInstanceId: string;
     scope: 'battle' | 'effect' | 'any';
@@ -629,6 +738,7 @@ export class EffectContextImpl implements EffectContext {
     condition?: ContinuousPowerCondition;
     attackerCategory?: 'leader' | 'character';
     attackerAttribute?: string;
+    attackerWithoutAttribute?: string;
     effectSourceController?: 'opponent' | 'controller';
     effectSourceMaxBasePower?: number;
     effectSourceCategory?: 'leader' | 'character';
@@ -647,6 +757,7 @@ export class EffectContextImpl implements EffectContext {
         ...(spec.oncePerTurn ? { oncePerTurn: true } : {}),
         ...(spec.attackerCategory ? { attackerCategory: spec.attackerCategory } : {}),
         ...(spec.attackerAttribute ? { attackerAttribute: spec.attackerAttribute } : {}),
+        ...(spec.attackerWithoutAttribute ? { attackerWithoutAttribute: spec.attackerWithoutAttribute } : {}),
         ...(spec.condition ? { condition: spec.condition } : {}),
         ...(spec.effectSourceController ? { effectSourceController: spec.effectSourceController } : {}),
         ...(spec.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: spec.effectSourceMaxBasePower } : {}),
@@ -1133,6 +1244,36 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  preventEffectDraw(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'cannot draw cards using your own effects',
+      effectDrawRestriction: { appliesToControllerId: spec.appliesToControllerId },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToControllerId} cannot draw cards using their own effects (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  takeLifeLeaves(): string[] {
+    const out = [...this.lifeLeaves];
+    this.lifeLeaves.length = 0;
+    return out;
+  }
+
   preventControllerCharacterPlay(spec: {
     appliesToControllerId: string;
     duration: ContinuousEffectDuration;
@@ -1213,6 +1354,79 @@ export class EffectContextImpl implements EffectContext {
       actorPlayerId: this.controllerId,
       type: 'EFFECT_RESOLVED',
       message: `${spec.appliesToControllerId} does not lose when their deck has 0 cards; they lose at the end of the turn their deck becomes 0.`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  replaceEmptyDeckDefeatWithWin(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'when deck is reduced to 0, win instead of losing',
+      emptyDeckDefeatWinReplacement: { appliesToControllerId: spec.appliesToControllerId },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToControllerId} wins instead of losing when their deck is reduced to 0.`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  winGame(): void {
+    if (this.working.gameOver) return;
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'GAME_OVER',
+      message: `${this.controllerId} wins the game (card effect).`,
+      data: { reason: 'cardEffect', winnerId: this.controllerId },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+    this.working = { ...this.working, gameOver: { winnerId: this.controllerId, reason: 'cardEffect' } };
+  }
+
+  grantExtraTurn(): void {
+    this.working = { ...this.working, pendingExtraTurnPlayerId: this.controllerId };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${this.controllerId} will take an extra turn after this one.`,
+      data: { pendingExtraTurnPlayerId: this.controllerId },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
+  registerDonPhasePlacement(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? '1 DON!! placed in DON!! Phase goes to Leader if field already has DON!!',
+      donPhasePlacement: { appliesToControllerId: spec.appliesToControllerId, attachOneToLeaderIfFieldDon: true },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToControllerId}: if they have DON!! on the field, 1 DON!! placed during their DON!! Phase is given to their Leader.`,
       data: { continuousEffectId: record.id, duration: spec.duration },
       relatedCardInstanceIds: [this.sourceInstanceId],
       visibility: 'public',
@@ -1563,6 +1777,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: 'public',
     });
+    this.recordLifeLeave(instanceId, fromZone);
     this.recordFieldRemoval(instanceId, fromZone, 'deck');
   }
 
@@ -1598,6 +1813,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: 'public',
     });
+    this.recordLifeLeave(instanceId, fromZone);
     this.recordFieldRemoval(instanceId, fromZone, 'deck');
   }
 
@@ -1759,6 +1975,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: deckTopId ? [deckTopId, ...nextLifeIds] : nextLifeIds,
       visibility: { visibleTo: [this.controllerId] },
     });
+    if (deckTopId && currentSet.has(deckTopId)) this.recordLifeLeave(deckTopId, 'lifeArea');
   }
 
   turnAllLifeFace(playerId: string, faceUp: boolean): void {
@@ -2190,6 +2407,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [newId],
       visibility: 'public',
     });
+    this.recordLifeLeave(lifeInstanceId, 'lifeArea');
 
     const limit = newCharacterArea.maxSize ?? Infinity;
     if (newCharacterArea.cardIds.length > limit) {
@@ -2373,28 +2591,39 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
-  returnHandShuffleDraw(playerId: string, drawAmount?: number): number {
+  returnHandShuffleDraw(playerId: string, drawAmount?: number, destination: 'shuffle' | 'bottom' = 'shuffle'): number {
     const player = this.working.players[playerId];
     if (!player) return 0;
     const returnedIds = [...player.hand.cardIds];
     const returnedCount = returnedIds.length;
-    const combined = [...player.deck.cardIds, ...returnedIds];
-    const seededRng = createSeededRng(this.working.rng.seed);
-    const shuffled = seededRng.shuffle(this.working.rng, combined);
     const cardsById = { ...this.working.cardsById };
-    for (const id of shuffled.result) {
+    for (const id of returnedIds) {
       const card = cardsById[id];
       if (card) cardsById[id] = { ...card, currentZone: 'deck', revealedTo: [] };
     }
+
+    let nextDeck: string[];
+    let nextRng = this.working.rng;
+    if (destination === 'bottom') {
+      // Place hand under the deck in current hand order (no interactive "any order" reorder).
+      nextDeck = [...player.deck.cardIds, ...returnedIds];
+    } else {
+      const combined = [...player.deck.cardIds, ...returnedIds];
+      const seededRng = createSeededRng(this.working.rng.seed);
+      const shuffled = seededRng.shuffle(this.working.rng, combined);
+      nextDeck = shuffled.result;
+      nextRng = shuffled.nextState;
+    }
+
     this.working = {
       ...this.working,
-      rng: shuffled.nextState,
+      rng: nextRng,
       players: {
         ...this.working.players,
         [playerId]: {
           ...player,
           hand: { ...player.hand, cardIds: [] },
-          deck: { ...player.deck, cardIds: shuffled.result },
+          deck: { ...player.deck, cardIds: nextDeck },
         },
       },
       cardsById,
@@ -2402,8 +2631,11 @@ export class EffectContextImpl implements EffectContext {
     this.logger.push({
       actorPlayerId: playerId,
       type: 'EFFECT_RESOLVED',
-      message: `${playerId} returned ${returnedCount} card${returnedCount === 1 ? '' : 's'} from hand to deck and shuffled.`,
-      data: { returnedCount, returnedInstanceIds: returnedIds },
+      message:
+        destination === 'bottom'
+          ? `${playerId} placed ${returnedCount} card${returnedCount === 1 ? '' : 's'} from hand at the bottom of their deck.`
+          : `${playerId} returned ${returnedCount} card${returnedCount === 1 ? '' : 's'} from hand to deck and shuffled.`,
+      data: { returnedCount, returnedInstanceIds: returnedIds, destination },
       relatedCardInstanceIds: returnedIds,
       visibility: 'public',
     });
@@ -2431,6 +2663,15 @@ export class EffectContextImpl implements EffectContext {
       });
       return;
     }
+    // ST13-003: face-up Life → deck bottom instead of hand (still leaves Life).
+    if (
+      fromZone === 'lifeArea'
+      && inst.faceState === 'faceUp'
+      && isFaceUpLifeRedirectedToDeckBottom(this.working, inst.ownerId)
+    ) {
+      this.moveToBottomDeck(instanceId);
+      return;
+    }
     const owner = this.working.players[inst.ownerId];
     if (!owner) return;
     const newOwner = {
@@ -2456,7 +2697,32 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: { visibleTo: [inst.ownerId] },
     });
+    this.recordLifeLeave(instanceId, fromZone);
     this.recordFieldRemoval(instanceId, fromZone, 'hand');
+  }
+
+  redirectFaceUpLifeToDeckBottom(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'face-up Life cards go to deck bottom instead of hand',
+      faceUpLifeLeaveReplacement: { appliesToControllerId: spec.appliesToControllerId, destination: 'deckBottom' },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToControllerId}'s face-up Life cards go to the bottom of their deck instead of hand (${record.description}).`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
   }
 
   trashCard(instanceId: string): void {
@@ -2488,6 +2754,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: [instanceId],
       visibility: 'public',
     });
+    this.recordLifeLeave(instanceId, fromZone);
     if (EffectContextImpl.FIELD_ZONES.has(fromZone)) this.recordFieldRemoval(instanceId, fromZone, 'trash');
     if (fromZone === 'hand') {
       this.handTrashed.push({ ownerId: inst.ownerId, count: 1, effectSourceInstanceId: this.sourceInstanceId });
@@ -2677,6 +2944,7 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: moving,
       visibility: 'public',
     });
+    for (const id of moving) this.recordLifeLeave(id, 'lifeArea');
   }
 
   trashHandDownTo(handSize: number, playerId: string = this.controllerId): void {

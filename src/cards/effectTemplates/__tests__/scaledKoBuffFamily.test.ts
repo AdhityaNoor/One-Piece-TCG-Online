@@ -52,7 +52,7 @@ describe('family: scaled leader buff per Character K.O.\'d (OP06-095)', () => {
 
     const fired = runTimings(registry['SYN-SRC'], ['activateMain'], rig.state, srcId, rig.defs, null, registry);
     // Base +1000 already applied before the K.O. choice.
-    expect(computeCurrentPower(fired.state.defs ?? rig.defs, fired.state, leaderId)).toBe(leaderBase + 1000);
+    expect(computeCurrentPower(rig.defs, fired.state, leaderId)).toBe(leaderBase + 1000);
     const choice = fired.state.pendingChoices[0];
     expect(choice.kind).toBe('SELECT_CARDS');
     // "any number" → max equals the matching-candidate count (2), off-filter card excluded.
@@ -65,7 +65,7 @@ describe('family: scaled leader buff per Character K.O.\'d (OP06-095)', () => {
     expect(state.players.p1.trash.cardIds).toEqual(expect.arrayContaining([m1, m2]));
     expect(state.players.p1.characterArea.cardIds).toContain(off); // off-filter Character survives
     // +1000 base + 2 × 1000 = +3000 total.
-    expect(computeCurrentPower(state.defs ?? rig.defs, state, leaderId)).toBe(leaderBase + 3000);
+    expect(computeCurrentPower(rig.defs, state, leaderId)).toBe(leaderBase + 3000);
   });
 
   it('applies only the base +1000 when no Characters are K.O.\'d', () => {
@@ -74,6 +74,6 @@ describe('family: scaled leader buff per Character K.O.\'d (OP06-095)', () => {
     const choice = fired.state.pendingChoices[0];
     // Decline the K.O. (select none).
     const state = resumeProgram(registry['SYN-SRC'], fired.state, choice, [], rig.defs, null, registry).state;
-    expect(computeCurrentPower(state.defs ?? rig.defs, state, leaderId)).toBe(leaderBase + 1000);
+    expect(computeCurrentPower(rig.defs, state, leaderId)).toBe(leaderBase + 1000);
   });
 });

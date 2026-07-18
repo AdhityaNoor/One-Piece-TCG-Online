@@ -71,7 +71,7 @@ describe('family: revealTopLifePlay (reveal top Life, optionally play it, then b
     expect(played?.currentZone).toBe('characterArea');
 
     // The Leader buff fired (only because the card was played).
-    expect(computeCurrentPower(state.defs ?? rig.defs, state, leaderId)).toBe(leaderBefore + 2000);
+    expect(computeCurrentPower(rig.defs, state, leaderId)).toBe(leaderBefore + 2000);
   });
 
   it('declining the optional play leaves the card in Life and applies no buff', () => {

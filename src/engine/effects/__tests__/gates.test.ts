@@ -291,6 +291,14 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(true);
   });
 
+  it('checks selfTypedCharacterCount with minCost (EB01-001 Land of Wano cost ≥ 5)', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Land of Wano'], baseCost: 4 })));
+    expect(evaluateGates([{ kind: 'selfTypedCharacterCount', typeIncludes: 'Land of Wano', minCost: 5, atLeast: 1 }], rig.state, rig.defs, 'p1')).toBe(false);
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Land of Wano'], baseCost: 5 })));
+    expect(evaluateGates([{ kind: 'selfTypedCharacterCount', typeIncludes: 'Land of Wano', minCost: 5, atLeast: 1 }], rig.state, rig.defs, 'p1')).toBe(true);
+  });
+
   it('checks anyNamedCharacter across either player\'s field (OP05-100 Luffy negation)', () => {
     let rig = buildBaseRig();
     expect(evaluateGates([{ kind: 'anyNamedCharacter', name: 'Monkey.D.Luffy' }], rig.state, rig.defs, 'p1')).toBe(false);

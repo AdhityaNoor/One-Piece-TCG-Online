@@ -78,14 +78,29 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
     visibility: 'public',
   });
 
-  logger.push({
-    actorPlayerId: nextPlayerId,
-    type: 'TURN_PASSED',
-    message: `Turn passes to ${nextPlayerId} (turn ${working.turnNumber + 1}).`,
-    data: { turnNumber: working.turnNumber + 1, previousPlayerId: endingPlayerId },
-    relatedCardInstanceIds: [],
-    visibility: 'public',
-  });
+  // OP05-119: consume a pending extra turn instead of handing off.
+  const takesExtraTurn = working.pendingExtraTurnPlayerId === endingPlayerId;
+  const handoffPlayerId = takesExtraTurn ? endingPlayerId : nextPlayerId;
+
+  if (takesExtraTurn) {
+    logger.push({
+      actorPlayerId: endingPlayerId,
+      type: 'TURN_PASSED',
+      message: `${endingPlayerId} takes an extra turn (turn ${working.turnNumber + 1}).`,
+      data: { turnNumber: working.turnNumber + 1, previousPlayerId: endingPlayerId, extraTurn: true },
+      relatedCardInstanceIds: [],
+      visibility: 'public',
+    });
+  } else {
+    logger.push({
+      actorPlayerId: nextPlayerId,
+      type: 'TURN_PASSED',
+      message: `Turn passes to ${nextPlayerId} (turn ${working.turnNumber + 1}).`,
+      data: { turnNumber: working.turnNumber + 1, previousPlayerId: endingPlayerId },
+      relatedCardInstanceIds: [],
+      visibility: 'public',
+    });
+  }
 
   // Clear the ending player's deck-became-zero flag on handoff (safety; deferred
   // loss above should have already ended the game when the flag was set).
@@ -103,7 +118,8 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
     players,
     continuousEffects,
     turnNumber: working.turnNumber + 1,
-    activePlayerId: nextPlayerId,
+    activePlayerId: handoffPlayerId,
+    pendingExtraTurnPlayerId: takesExtraTurn ? undefined : working.pendingExtraTurnPlayerId,
     isFirstTurnOfGame: false,
     currentPhase: 'refresh',
     log: [...working.log, ...logger.log],

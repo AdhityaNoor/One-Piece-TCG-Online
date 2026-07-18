@@ -6,7 +6,7 @@
  * GameState must be fully JSON-serializable (project ground rule) — no
  * class instances, Map/Set, functions, or undefined values inside it.
  */
-import type { CardCategory, CardInstance, Color } from './card';
+import type { Attribute, CardCategory, CardInstance, Color } from './card';
 import type { PlayerState } from './player';
 import type { GameLogEntry } from '../logs/logEntry';
 import type { PendingChoice } from '../events/pendingChoice';
@@ -129,6 +129,8 @@ export interface ContinuousPowerCondition {
   exactBasePower?: number;
   /** The modified card must include this color. */
   color?: import('./card').Color;
+  /** Printed Counter is absent or 0 ("Character cards without a Counter"). */
+  withoutPrintedCounter?: true;
   /** "If <board state>" gate(s), re-checked on every power read (e.g. "If you have 2 or less Life cards"). */
   gate?: AbilityGate[];
 }
@@ -215,6 +217,8 @@ export type PowerScaleSource =
   | 'controllerTrashEvents'
   | 'controllerRestedDon'
   | 'controllerCharacterDistinctNames'
+  /** Count of Characters in the owner's Character Area ("+1000 for each of your Characters"). */
+  | 'controllerCharacters'
   /** Count DON!! attached to the modified card itself ("−1000 for every DON!! given to that Character"). */
   | 'targetDonAttached';
 
@@ -248,6 +252,22 @@ export interface ContinuousPowerModifier {
   sourceCondition?: SourceStateCondition;
   /** Dynamic "+X for every N" scaling term added to `amount` at read time. */
   scale?: PowerScale;
+}
+
+/**
+ * Continuous Counter value modifier (2-10). Used for Leader/Character rules like
+ * "+1000 Counter" or "Counter becomes +2000" on matching cards (usually in hand).
+ * Exactly one of `amount` / `setValue` should be set per record.
+ */
+export interface ContinuousCounterModifier {
+  appliesToInstanceId?: string;
+  appliesToGroup?: PowerAuraGroup;
+  /** Additive Counter delta (e.g. +1000 Counter). */
+  amount?: number;
+  /** Overwrite Counter to this value ("Counter becomes +2000"). */
+  setValue?: number;
+  condition?: ContinuousPowerCondition;
+  sourceCondition?: SourceStateCondition;
 }
 
 export interface ContinuousCostModifier {
@@ -382,6 +402,19 @@ export interface ContinuousKeywordModifier {
   sourceCondition?: SourceStateCondition;
 }
 
+/** A structured attribute grant applied to one instance or a dynamic aura group (e.g. gains <Slash>). */
+export interface ContinuousAttributeModifier {
+  /** Single fixed target. Exactly one of appliesToInstanceId / appliesToGroup is set. */
+  appliesToInstanceId?: string;
+  /** Dynamic aura target set, resolved at read time (Leader + Characters or chars only). */
+  appliesToGroup?: PowerAuraGroup;
+  attribute: Attribute;
+  /** Gate evaluated against the buffed (modified) card. Omitted when the grant is unconditional. */
+  condition?: ContinuousPowerCondition;
+  /** Gate evaluated against the SOURCE card. Omitted when the grant does not depend on source state. */
+  sourceCondition?: SourceStateCondition;
+}
+
 /**
  * Grants "this card cannot be K.O.'d" to one instance (re-evaluated on every K.O.
  * attempt). `scope` distinguishes "cannot be K.O.'d in battle" (7-1-4-2 only) from
@@ -404,6 +437,8 @@ export interface ContinuousKoImmunityModifier {
   attackerCategory?: 'leader' | 'character';
   /** Battle K.O. only: restrict immunity to attackers with this printed attribute. */
   attackerAttribute?: string;
+  /** Battle K.O. only: restrict immunity to attackers that do NOT have this attribute. */
+  attackerWithoutAttribute?: string;
   /** Omitted when the immunity is unconditional. */
   condition?: ContinuousPowerCondition;
   /** Gate evaluated against the SOURCE card (e.g. "If this Character is active/rested"). */
@@ -539,6 +574,21 @@ export interface ContinuousLifeToHandRestriction {
   appliesToControllerId: string;
 }
 
+/** "You cannot draw cards using your own effects" (effect draws only; Draw Phase still draws). */
+export interface ContinuousEffectDrawRestriction {
+  appliesToControllerId: string;
+}
+
+/**
+ * "Your face-up Life cards are placed at the bottom of your deck instead of being
+ * added to your hand" (ST13-003). Applies whenever a Life card that is already
+ * face-up would leave Life for hand (battle damage, effects, replacements).
+ */
+export interface ContinuousFaceUpLifeLeaveReplacement {
+  appliesToControllerId: string;
+  destination: 'deckBottom';
+}
+
 /** "You cannot play Character cards [matching filter] during this turn." */
 export interface ContinuousCharacterPlayRestriction {
   appliesToControllerId: string;
@@ -564,6 +614,17 @@ export interface ContinuousCharacterSetActiveDonRestriction {
  */
 export interface ContinuousEmptyDeckDefeatDeferral {
   appliesToControllerId: string;
+}
+
+/** "When your deck is reduced to 0, you win instead of losing" (OP03-040). */
+export interface ContinuousEmptyDeckDefeatWinReplacement {
+  appliesToControllerId: string;
+}
+
+/** DON!! Phase: attach 1 newly placed DON!! to Leader if field already had DON!! (OP13-003). */
+export interface ContinuousDonPhasePlacement {
+  appliesToControllerId: string;
+  attachOneToLeaderIfFieldDon: true;
 }
 
 /** While the source Stage is in play, Characters at or below maxCost do not become active during Refresh Phases. */
@@ -598,6 +659,8 @@ export interface ContinuousEffectRecord {
   powerModifier?: ContinuousPowerModifier;
   /** Structured cost delta, when this record modifies cost. Omitted for non-cost effects. */
   costModifier?: ContinuousCostModifier;
+  /** Structured Counter delta/set, when this record modifies Counter (2-10). */
+  counterModifier?: ContinuousCounterModifier;
   /** Structured blocker-activation restriction. Omitted for unrelated continuous effects. */
   blockerRestriction?: ContinuousBlockerRestriction;
   /** Structured attack restriction ("cannot attack"). Omitted for unrelated continuous effects. */
@@ -612,6 +675,8 @@ export interface ContinuousEffectRecord {
   fieldRemovalImmunityModifier?: ContinuousFieldRemovalImmunityModifier;
   /** Structured keyword grant. Omitted for unrelated continuous effects. */
   keywordModifier?: ContinuousKeywordModifier;
+  /** Structured attribute grant. Omitted for unrelated continuous effects. */
+  attributeModifier?: ContinuousAttributeModifier;
   /** Structured "cannot be K.O.'d" grant. Omitted for unrelated continuous effects. */
   koImmunityModifier?: ContinuousKoImmunityModifier;
   /** Structured optional K.O. replacement. Omitted for unrelated continuous effects. */
@@ -622,6 +687,10 @@ export interface ContinuousEffectRecord {
   effectNegation?: ContinuousEffectNegation;
   /** Blocks controller-sourced Life→hand moves. Omitted for unrelated continuous effects. */
   lifeToHandRestriction?: ContinuousLifeToHandRestriction;
+  /** Blocks effect-sourced draws for a controller. Omitted for unrelated continuous effects. */
+  effectDrawRestriction?: ContinuousEffectDrawRestriction;
+  /** Redirects face-up Life leaving for hand to another zone (ST13-003). */
+  faceUpLifeLeaveReplacement?: ContinuousFaceUpLifeLeaveReplacement;
   /** Blocks Character plays from hand/trash/deck for a controller. Omitted for unrelated continuous effects. */
   characterPlayRestriction?: ContinuousCharacterPlayRestriction;
   /** Blocks all card plays from hand for a controller. Omitted for unrelated continuous effects. */
@@ -630,6 +699,10 @@ export interface ContinuousEffectRecord {
   characterSetActiveDonRestriction?: ContinuousCharacterSetActiveDonRestriction;
   /** Defers empty-deck defeat to end of the turn the deck became 0. Omitted otherwise. */
   emptyDeckDefeatDeferral?: ContinuousEmptyDeckDefeatDeferral;
+  /** Empty deck → win instead of lose (OP03-040). Takes precedence over emptyDeckDefeatDeferral. */
+  emptyDeckDefeatWinReplacement?: ContinuousEmptyDeckDefeatWinReplacement;
+  /** DON!! Phase placement routing (OP13-003). */
+  donPhasePlacement?: ContinuousDonPhasePlacement;
   /** Blocks Characters at or below a cost threshold from becoming active during Refresh Phases. Omitted otherwise. */
   refreshCostRestriction?: ContinuousRefreshCostRestriction;
   /**
@@ -788,6 +861,11 @@ export interface GameState {
   pendingEntryTriggers?: string[];
   log: GameLogEntry[];
   gameOver: { winnerId: string | null; reason: GameOverReason } | null;
+  /**
+   * When set, the End Phase handoff keeps this player as activePlayerId for one
+   * extra turn (OP05-119), then clears. Cleared when consumed.
+   */
+  pendingExtraTurnPlayerId?: string;
   /** Gates 6-3-1 (no draw), 6-4-1 (1 DON!!), 6-5-6-1 (no battle) first-turn exceptions. */
   isFirstTurnOfGame: boolean;
   /**

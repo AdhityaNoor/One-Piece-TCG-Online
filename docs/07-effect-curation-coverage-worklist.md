@@ -1,5 +1,135 @@
 # Effect Curation — Coverage Addition Worklist
 
+## Progress update — 2026-07-18 (P-set triage defer → 0)
+
+Closed remaining **7** defer promo cards. Triage now: **expressible 0 / needsPrimitive 0 / defer 0**.
+
+| Card | Closure |
+| --- | --- |
+| P-002 | `returnHandShuffleDraw` on Main + Trigger |
+| P-005 | Activate Main DON!!−2 → `[Banish]` this turn |
+| P-024 | Leader power scale `per: 'controllerCharacters'`; Trigger +1000 optional |
+| P-039 | Printed Banish (card data) + DON!!×2 / 0 Life +2000 |
+| P-046 | `returnHandShuffleDraw` `destination: 'bottom'` + `optional` |
+| P-111 | `registerKoReplacementAura` field-removal + `restDon` |
+| P-117 | `staticFlags.mustHaveType: 'East Blue'` + empty-deck win + Life-damage trash |
+
+New reusable pieces:
+- **`PowerScaleSource: 'controllerCharacters'`** — count of Characters in the owner's Character Area (P-024).
+- **`returnHandShuffleDraw.destination: 'bottom' | 'shuffle'`** + **`optional`** — hand→bottom→draw-equal without shuffle; optional chooseOption (P-046). Known limitation: bottom path uses current hand order (no interactive "any order").
+- **`staticFlags.mustHaveType`** — Leader deck-construction: every main-deck card must include the type (P-117), enforced in `validateDeckConstruction`.
+
+## Progress update — 2026-07-18 (P-set triage → needsPrimitive 0)
+
+Closed **23** promo cards. Triage then: **expressible 0 / needsPrimitive 0 / defer 7**.
+
+| Cluster | Cards |
+| --- | --- |
+| Battle K.O. immunity by attribute | P-007, P-052, P-054 |
+| Battle K.O. without attribute (`attackerWithoutAttribute`) | P-025 |
+| Simple field/DON/Life moves | P-009, P-010, P-048, P-062, P-102 |
+| Taunt / Blocker / preventBlockers | P-067, P-097, P-098, P-114 |
+| On Play / On K.O. / When Attacking | P-071, P-072, P-091, P-092, P-099, P-100, P-106, P-115 |
+| Field-removal lock | P-104 |
+| onDonReturned + `setActiveControllerStage` | P-077 |
+
+New reusable pieces:
+- **`attackerWithoutAttribute`** on `koImmunitySelf` (battle)
+- **`setActiveControllerStage`** (+ `controllerStages.color` filter)
+
+### Remaining triage (resolved later same day)
+
+Was **defer** (7); closed in the defer→0 update above.
+
+## Progress update — 2026-07-18 (win / extra turn / DON-phase routing)
+
+Closed **4** partials (**4 → 0**). New reusable pieces:
+
+- **`replaceEmptyDeckDefeatWithWin`** — empty-deck defeat checkpoints + empty-deck draw attempts become a win (OP03-040).
+- **`winGame`** — immediate card-effect victory (OP09-118).
+- **`grantExtraTurn` / `pendingExtraTurnPlayerId`** — End Phase keeps the same active player for one extra turn (OP05-119).
+- **`registerDonPhasePlacement` / `donPhasePlacement`** — if field already had DON!!, 1 newly placed DON!! attaches to Leader (OP13-003).
+- **`moveAllCharactersToBottomDeck` filter** — `player` + `excludeSelf` for “all your Characters except this”.
+
+| Card | Closure |
+| --- | --- |
+| OP03-040 | startOfGame win-replacement + existing Life-damage trash |
+| OP05-119 | On Play DON!!−10 bottom-deck allies + extra turn + existing Activate Main |
+| OP09-118 | Rush + onOpponentBlockerActivated winGame when either Life is 0 |
+| OP13-003 | startOfGame DON-phase routing + existing −2000 when field DON ≤9 |
+
+### Remaining assigned PARTIALs
+
+None (scan should report **0**).
+
+## Progress update — 2026-07-18 (OP13-079 + OP12-099)
+
+Closed **2** partials (**6 → 4**). New reusable pieces:
+
+- **`staticFlags.cannotIncludeCategoryCostOrMore`** — Leader deck-construction forbid enforced in `validateDeckConstruction` (OP13-079 Events cost ≥2).
+- **`onLifeRemoved`** — board-wide reactive timing when any Life card leaves (any destination).
+- **`preventEffectDraw`** — continuous lock on effect-sourced draws (Draw Phase unaffected).
+
+| Card | Closure |
+| --- | --- |
+| OP13-079 | staticFlags Events cost≥2 + existing startOfGame / Activate Main |
+| OP12-099 | onLifeRemoved → draw 1 → preventEffectDraw this turn |
+
+### Remaining assigned PARTIALs (4) — hard defer
+
+- OP03-040 — empty-deck → win instead of lose
+- OP05-119 — extra turn (+ DON!!−10 bottom-deck allies)
+- OP09-118 — win on Blocker at 0 Life
+- OP13-003 — DON-phase placement routing to Leader
+
+## Progress update — 2026-07-18 (OP15-093 addAttribute)
+
+Closed **1** partial (**7 → 6**). New reusable piece:
+
+- **`addAttribute`** — continuous attribute grant (mirror of `addKeyword`); read via `getEffectiveAttributes` / `hasContinuousAttribute` in selectors, gates, power, and battle attribute checks.
+
+| Card | Closure |
+| --- | --- |
+| OP15-093 | Activate Main: [Rush: Character] + `<Slash>` this turn on up to 1 Monkey.D.Luffy |
+
+### Next recommended targets
+
+- Hard defer: extra turn, win conditions, deck construction, DON-phase routing, Life-removal + cannot-draw.
+- Remaining assigned PARTIALs (6): OP03-040, OP05-119, OP09-118, OP12-099, OP13-003, OP13-079.
+
+## Progress update — 2026-07-18 (ST13-003 face-up Life → deck bottom)
+
+Closed **1** partial (**8 → 7**). New reusable pieces:
+
+- **`redirectFaceUpLifeToDeckBottom`** — continuous replacement: face-up Life leaving for hand goes to deck bottom instead (battle damage + effect `moveToHand`); face-down Life still to hand; Banish still trashes; Triggers suppressed on redirect.
+- **`resolveLifeLeaveDestination` / `isFaceUpLifeRedirectedToDeckBottom`** — shared Life-leave routing used by `damageStep`, `dealLifeDamage`, and effect context.
+
+| Card | Closure |
+| --- | --- |
+| ST13-003 | startOfGame redirect + existing Activate Main trash→Life refill |
+
+### Next recommended targets
+
+- Hard defer: extra turn, win conditions, deck construction, DON-phase routing, attribute grant, Life-removal + cannot-draw.
+- Remaining assigned PARTIALs (7): OP03-040, OP05-119, OP09-118, OP12-099, OP13-003, OP13-079, OP15-093.
+
+## Progress update — 2026-07-18 (EB01-001 + OP16-118 counter auras)
+
+Closed **2** partials (**10 → 8**). New reusable piece:
+
+- **`addCounterAuraControllerCharactersInHand`** — continuous Counter ADD/`setValue` on hand Characters; consumed by `computeEffectiveCounter` → `ACTIVATE_COUNTER_CHARACTER` (+ hand UI projection).
+- **`selfTypedCharacterCount.minCost`** — typed Character cost floor (Oden’s cost ≥5 gate).
+
+| Card | Closure |
+| --- | --- |
+| EB01-001 | startOfGame +1000 Counter for Land of Wano without printed Counter; When Attacking if typed cost≥5 |
+| OP16-118 | onEnterPlay Counter becomes +2000 for 8000-power Characters in hand (+ existing look-5) |
+
+### Next recommended targets
+
+- Hard defer: extra turn, win conditions, deck construction, DON-phase routing, face-up Life→deck, attribute grant, Life-removal + cannot-draw.
+- Remaining assigned PARTIALs (8).
+
 ## Progress update — 2026-07-18 (OP12-036 + OP15-008 + OP15-119)
 
 Closed **3** partials (**13 → 10**). New reusable pieces:
@@ -334,11 +464,10 @@ Closed **4** more partials (**67 → 63**). New reusable pieces:
 | ST13-005 | Life trash cost → `optionalRevealTypeFromHand` cost-5 Character → Life top face-down |
 | ST13-009 | turn 1 face-up Life face-down → optional trash opp Life top if hand ≥7 |
 
-ST13-003 face-up Life→deck-bottom replacement rule still deferred. Tests: assembler (deck topOrBottom, optional Leader negate, fromFaceUp), gates exactCost; partialCurationsBatch / revealTopLifePlayFamily green.
+ST13-003 face-up Life→deck-bottom replacement later closed (see top progress update). Tests: assembler (deck topOrBottom, optional Leader negate, fromFaceUp), gates exactCost; partialCurationsBatch / revealTopLifePlayFamily green.
 
-### Next recommended targets
+### Next recommended targets (historical)
 
-- ST13-003 — static Life-to-deck-bottom replacement (rules-layer).
 - Remaining Life reorder / face-state cluster from the live backlog.
 - Other expressible leftovers in `effect-partial-curation.csv`.
 
@@ -349,13 +478,13 @@ Closed **4** more partials (**71 → 67**). New reusable pieces:
 - **`koedCharacterTypeIncludes` / `koedCharacterAnyOfTypes` / `koedCharacterMinBasePower`** — onCharacterKoed event context now carries `koedCharacterDefinitionId` from the pre-K.O. state.
 - **`oncePerTurnKey`** on abilities — shared OPT bucket across reactive timings (OP10-042 removal + KO halves).
 - **`ifPreviousSelectedPowerAtMost`** — gate follow-on ops on current power of var `t` (OP06-074).
-- **`opponentLeaderOrCharacters`** now filters Leader+Characters by `typeIncludes` / `anyOfTypes` / `attribute` (ST12-016).
+- **`opponentLeaderOrCharacters`** filters Leader+Characters by `typeIncludes` / `anyOfTypes` / `attribute` where printed.
 
 | Card | Closure |
 | --- | --- |
 | OP10-042 | Dressrosa cost aura + non-trash effect-removal draw + typed onCharacterKoed draw, shared OPT |
 | OP14-041 | onCharacterKoed with Amazon Lily/Kuja + base power ≥5000 (replaced loose onRemovedFromField proxy) |
-| ST12-016 | union rest target: {Muggy Kingdom} OR \<Slash\> + cost ≤4 |
+| ST12-016 | rest opp Leader/Char cost ≤4 on Main+Counter; Trigger = Main (no type/attribute filter) |
 | OP06-074 | negate → `ref: 'previous'` KO gated by `ifPreviousSelectedPowerAtMost: 5000` |
 
 Tests: gate cases for koedCharacter\* filters; `negateSameTargetKoFamily.test.ts` (2). Assembler / partialCurationsBatch / gates green.
@@ -488,23 +617,34 @@ Notable: **most of the "hard" scaling cluster was reachable with small pieces** 
 - **Negate** (OP06-074, OP09-093/097, OP10-098) — stack-level effect cancellation.
 - Cheap-win tooling: a script flagging partial cards whose deferred clause text matches an existing capability's `covers` (would surface the remaining stale leftovers automatically).
 
-_Source of truth: `effect-partial-curation.csv` (65 marker rows over 53 partially-curated cards) + `effect-coverage.csv`. Regenerate with `npm run scan:partials` / `npm run coverage`. Analysis date: 2026-07-18._
+_Source of truth: `effect-partial-curation.csv` (8 marker rows — all `batchNote`) + `effect-coverage.csv`. Regenerate with `npm run scan:partials` / `npm run coverage`. Analysis date: 2026-07-18._
 
 ## Where coverage actually stands
 
-`effect-coverage.csv` reports every one of the 2,287 non-vanilla cards as `status = curated` — so raw status coverage is 100%. That number is misleading. **115 of those cards are only _partially_ curated**: a curated program handles most of the text but one clause was dropped, approximated, or deferred, each recorded as a `NOTE:`/`PARTIAL:` marker. The remaining coverage work is *not* net-new cards — it is closing these partial gaps.
+`npm run scan:partials` now reports **0 assigned cards with incomplete clauses**. Remaining markers are informational `batchNote` triage headers only (OP10–OP16/ST30). The old `scripts/effect-triage/run.py` still returns `expressible=0 needsPrimitive=0 defer=0` because it only classifies `needsTemplate` cards.
 
-The old `scripts/effect-triage/run.py` returns `expressible=0 needsPrimitive=0 defer=0` because it only classifies `needsTemplate` cards, and there are none left. The live backlog now lives in the partial-curation report, not the triage report.
-
-Breakdown of the 127 marker rows:
+Live marker breakdown:
 
 | kind | count | meaning |
 | --- | ---: | --- |
-| partial | 107 | card curated, one clause approximated/deferred |
-| dropped | 4 | a clause was silently dropped (usually a filter) |
+| partial | 0 | card curated, one clause approximated/deferred |
+| dropped | 0 | a clause was silently dropped (usually a filter) |
 | batchNote | 8 | per-set triage batch summary (not a single card) |
-| deferred | 4 | whole sub-effect deferred, needs a real primitive |
-| notImplemented | 4 | unassigned defer stubs |
+| deferred | 0 | whole sub-effect deferred, needs a real primitive |
+| notImplemented | 0 | unassigned defer stubs |
+
+### Progress update — 2026-07-18 (stale OP04 notImplemented cleanup)
+
+Removed **4** orphaned `NOTE: not yet implemented` stubs in `OP04.ts` that the scanner counted as both `notImplemented` and `unassigned defer`. Each was leftover printed-text fragments after the referenced cards were already fully assigned:
+
+| Orphan near | Actually covered by |
+| --- | --- |
+| after OP04-038 (`in any order`) | prior search-card leftover; no gap card |
+| after OP04-046 (Plague Rounds / Ice Oni search) | OP04-046 `searchTopDeck` |
+| after OP04-097 (deck → Life) | OP04-098 (assigned later in file) |
+| after OP04-109 (+3000 Land of Wano) | OP04-109 `addPower` |
+
+No new primitives or assignments needed. `batchNote` headers left untouched.
 
 ## Highest-yield primitives to add (ranked by cards unlocked)
 

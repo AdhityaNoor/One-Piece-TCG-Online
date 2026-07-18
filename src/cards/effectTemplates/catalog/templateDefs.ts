@@ -148,12 +148,22 @@ export type AbilityFunction =
   | { fn: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[]; appliesToCategories?: Exclude<CardCategory, 'don'>[]; exceptTypeIncludes?: string }
   // "You cannot add Life cards to your hand using your own effects" for the controller (or opponent).
   | { fn: 'preventControllerLifeToHand'; duration: IrDuration; player?: 'controller' | 'opponent' }
+  | { fn: 'preventEffectDraw'; duration: IrDuration; player?: 'controller' | 'opponent' }
+  | { fn: 'redirectFaceUpLifeToDeckBottom'; duration?: IrDuration }
   // "You cannot play Character cards [matching filter] this turn" for the controller (or opponent).
   | { fn: 'preventControllerCharacterPlay'; duration: IrDuration; player?: 'controller' | 'opponent'; minBaseCost?: number; maxBaseCost?: number }
   | { fn: 'preventControllerHandPlay'; duration: IrDuration; player?: 'controller' | 'opponent' }
   | { fn: 'preventControllerCharacterSetActiveDon'; duration: IrDuration; player?: 'controller' | 'opponent' }
   /** Do not lose from empty deck; lose at end of the turn the deck became 0 (OP15-022). */
   | { fn: 'deferEmptyDeckDefeatToEndOfTurn'; duration?: IrDuration }
+  /** Empty deck → win instead of lose (OP03-040). Register at startOfGame on Leaders. */
+  | { fn: 'replaceEmptyDeckDefeatWithWin'; duration?: IrDuration }
+  /** Immediately win the game (OP09-118). */
+  | { fn: 'winGame' }
+  /** Take an extra turn after this one (OP05-119). */
+  | { fn: 'grantExtraTurn' }
+  /** DON!! Phase: if field already had DON!!, give 1 newly placed DON!! to Leader (OP13-003). */
+  | { fn: 'registerDonPhasePlacement'; duration?: IrDuration }
   | { fn: 'addCost'; target: TargetSpec; amount: number; duration?: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; scale?: PowerScale; prompt?: string }
   | { fn: 'addPower'; target: TargetSpec; amount: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; scale?: PowerScale; amountPer?: number; amountPerStep?: number; countVar?: string; prompt?: string }
   // "This card's / your Leader's base power BECOMES N" (2-6): a SET (overwrite), not a +/− delta.
@@ -163,6 +173,7 @@ export type AbilityFunction =
   // "This card's base cost BECOMES N" (2-7): a SET (overwrite). Additive cost deltas still stack.
   | { fn: 'setBaseCost'; target: TargetSpec; value: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   | { fn: 'addKeyword'; target: TargetSpec; keyword: ContinuousKeyword; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
+  | { fn: 'addAttribute'; target: TargetSpec; attribute: Attribute; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; prompt?: string }
   // Aura: grant a keyword to the controller's own Leader + Characters (optionally name/type-filtered).
   | { fn: 'addKeywordAuraControllerTypes'; keyword: ContinuousKeyword; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // Aura: grant a keyword to ALL of the controller's Characters (chars only), optionally name/type-filtered.
@@ -184,7 +195,7 @@ export type AbilityFunction =
   | { fn: 'moveCards'; from: MoveCardSource; to: MoveCardDestination; optional?: boolean; minTargets?: number; maxTargets?: number; prompt?: string; chooser?: 'controller' | 'opponent' }
   | { fn: 'movePreviousSelection'; to: MoveCardDestination; varName?: string }
   | { fn: 'moveAllCards'; from: Extract<MoveCardSource, { zone: 'characters' | 'stages' }>; to: MoveCardDestination }
-  | { fn: 'moveAllCharactersToBottomDeck'; filter?: { maxCost?: number; maxPower?: number; maxBaseCost?: number; maxBasePower?: number } }
+  | { fn: 'moveAllCharactersToBottomDeck'; filter?: { maxCost?: number; maxPower?: number; maxBaseCost?: number; maxBasePower?: number; excludeSelf?: boolean; player?: 'controller' | 'opponent' | 'any' } }
   | { fn: 'peekLifeAndPlace'; from: 'controllerOrOpponentTop'; placement: 'topOrBottom' }
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
   /** Bind var `t` via chooseTargets with no follow-up effect (for riders like koImmunityChosen). */
@@ -243,6 +254,7 @@ export type AbilityFunction =
   | { fn: 'setActiveControllerCharacters'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; minBaseCost?: number; maxBaseCost?: number; exactBaseCost?: number; minPower?: number; maxPower?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string; excludeCardNames?: string[]; color?: Color; attribute?: Attribute } }
   | { fn: 'setActiveControllerCharacter'; filter?: { minCost?: number; maxCost?: number; exactCost?: number; minBaseCost?: number; maxBaseCost?: number; exactBaseCost?: number; minPower?: number; maxPower?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; typeIncludes?: string; anyOfTypes?: string[]; name?: string; excludeCardNames?: string[]; color?: Color; attribute?: Attribute }; maxTargets?: number; optional?: boolean }
   | { fn: 'setActiveControllerDon'; maxTargets: number }
+  | { fn: 'setActiveControllerStage'; filter?: { color?: Color; rested?: boolean }; maxTargets?: number; optional?: boolean }
   | { fn: 'setActiveControllerDonAtEndOfTurn'; maxTargets: number }
   | { fn: 'restOpponentDonAtStartOfNextMain'; maxTargets?: number }
   | { fn: 'trashSelfAtEndOfTurn' }
@@ -279,6 +291,8 @@ export type AbilityFunction =
   | { fn: 'addPowerControllerCharactersAll'; amount: number; duration: IrDuration; filter?: { typeIncludes?: string; maxCost?: number } }
   // Dynamic aura over ALL the controller's Characters (chars only), optionally type-filtered + gated on source state ([DON!! xN]/[Your/Opponent's Turn]).
   | { fn: 'addPowerAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfGroups?: PowerAuraFilterGroup[]; sourceCondition?: SourceStateCondition; targetCondition?: IrCondition; gate?: AbilityGate[]; scale?: PowerScale }
+  // Counter auras (2-10): "+1000 Counter" / "Counter becomes +2000" on matching Characters (usually in hand).
+  | { fn: 'addCounterAuraControllerCharactersInHand'; amount?: number; setValue?: number; duration: IrDuration; anyOfTypes?: string[]; exactBasePower?: number; withoutPrintedCounter?: true; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // Dynamic aura over ALL the opponent's Characters ("give all of your opponent's Characters -N power").
   | { fn: 'addPowerAuraOpponentCharacters'; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; gate?: AbilityGate[]; scale?: PowerScale }
   /** Reveal top Life (optional via upTo in prompt sense — always reveals if present); then +amountPer × revealed printed cost to self. */
@@ -295,7 +309,7 @@ export type AbilityFunction =
   | { fn: 'addNextPlayFromHandCostDiscount'; amount: number; filter?: { typeIncludes?: string; name?: string; anyOfNames?: string[]; minBaseCost?: number; maxBaseCost?: number } }
   // "This card cannot be K.O.'d" — scope 'battle' (battle K.O. only) or 'any'.
   // `attackerCategory` optionally limits a battle immunity to a given attacker ("by Leaders").
-  | { fn: 'koImmunitySelf'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; oncePerTurn?: boolean; condition?: IrCondition; attackerCategory?: 'leader' | 'character'; attackerAttribute?: string; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string }
+  | { fn: 'koImmunitySelf'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; oncePerTurn?: boolean; condition?: IrCondition; attackerCategory?: 'leader' | 'character'; attackerAttribute?: string; attackerWithoutAttribute?: string; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string }
   | { fn: 'koImmunityControllerCharactersAll'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition }
   | { fn: 'koImmunityAuraControllerCharacters'; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; anyOfTypes?: string[]; excludeSource?: boolean; targetCondition?: IrCondition; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller' }
   // Grant K.O. immunity to the card chosen by the immediately preceding function (var 't').
@@ -308,8 +322,10 @@ export type AbilityFunction =
   | { fn: 'drawByEventCount'; countField: 'handTrashedCount' }
   // Shuffle a player's main deck without moving cards itself.
   | { fn: 'shuffleDeck'; player?: 'controller' | 'opponent' }
-  // Return all hand cards to deck, shuffle, then draw equal count (or fixed drawAmount).
-  | { fn: 'returnHandShuffleDraw'; player?: 'controller' | 'opponent'; drawAmount?: number }
+  // Return all hand cards to deck (shuffle or bottom), then draw equal count (or fixed drawAmount).
+  // `destination: 'bottom'` places hand under the deck in current hand order (no interactive reorder).
+  // `optional: true` → chooseOption do/don't (e.g. "You may place all cards in your hand at the bottom…").
+  | { fn: 'returnHandShuffleDraw'; player?: 'controller' | 'opponent'; drawAmount?: number; destination?: 'shuffle' | 'bottom'; optional?: boolean }
   // Trash exactly `count` cards of a given type from your hand (used to pay a typed hand cost).
   | { fn: 'trashTypeFromHand'; count: number; filter: SearchFilter; optional?: boolean; anyNumber?: true }
   // K.O. ALL Characters (both players) matching a cost/power filter, no target choice
@@ -358,5 +374,10 @@ export interface AbilityTemplateParams {
 export interface TemplateParamMap {
   ability: AbilityTemplateParams;
   noRuntime: Record<string, never>;
-  staticFlags: { cannotBePlayedByEffects?: true };
+  staticFlags: {
+    cannotBePlayedByEffects?: true;
+    cannotIncludeCategoryCostOrMore?: { category: CardCategory; minCost: number };
+    /** Every main-deck card must include this type (P-117 East Blue). */
+    mustHaveType?: string;
+  };
 }

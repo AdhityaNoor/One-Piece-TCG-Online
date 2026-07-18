@@ -150,16 +150,32 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] },
   },
 
-  // OP05-119 — PARTIAL: DON!!−10 bottom-deck allies + extra turn deferred; mapped [Activate: Main] ➀ add 1 active DON!!.
+  // OP05-119 — [On Play] DON!! −10: bottom-deck all other Characters, then extra turn.
+  //   [Activate: Main] [Once Per Turn] ➀: Add up to 1 DON!! from DON!! deck set as active.
   {
     cardNumber: 'OP05-119',
-    templateId: 'ability',
-    params: {
-      timing: 'activateMain',
-      oncePerTurn: true,
-      cost: [{ kind: 'restDon', count: 1 }],
-      functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          cost: [{ kind: 'donMinus', count: 10 }],
+          functions: [
+            { fn: 'moveAllCharactersToBottomDeck', filter: { player: 'controller', excludeSelf: true } },
+            { fn: 'grantExtraTurn' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          cost: [{ kind: 'restDon', count: 1 }],
+          functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }],
+        },
+      },
+    ],
   },
 
   // --- codegen batch ---

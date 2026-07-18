@@ -2,7 +2,11 @@ import type { PlayerReference_V2, ValueExpression_V2 } from '../../cards/effectC
 import type { GameLogEntry } from '../logs/logEntry';
 import { createActionLogger } from '../rules/shared/actionLogger';
 import { addToZoneBottom } from '../rules/shared/zoneOps';
-import { hasEmptyDeckDefeatDeferral, withDeckBecameZeroThisTurn } from '../rules/shared/emptyDeckDefeat';
+import {
+  hasEmptyDeckDefeatDeferral,
+  hasEmptyDeckDefeatWinReplacement,
+  withDeckBecameZeroThisTurn,
+} from '../rules/shared/emptyDeckDefeat';
 import type { GameState } from '../state/game';
 import type { SelectorContext_V2 } from './selectorResolver_V2';
 import { fixedNumberValue_V2 } from './damage_V2';
@@ -44,6 +48,18 @@ export function drawCards_V2(ctx: SelectorContext_V2, playerRef: PlayerReference
     if (!player) break;
 
     if (player.deck.cardIds.length === 0) {
+      if (hasEmptyDeckDefeatWinReplacement(state, playerId)) {
+        logger.push({
+          actorPlayerId: playerId,
+          type: 'GAME_OVER',
+          message: `${playerId} wins — their deck is 0 cards, so they win instead of losing.`,
+          data: { reason: 'cardEffect', winnerId: playerId },
+          relatedCardInstanceIds: [],
+          visibility: 'public',
+        });
+        state = { ...state, gameOver: { winnerId: playerId, reason: 'cardEffect' } };
+        break;
+      }
       if (hasEmptyDeckDefeatDeferral(state, playerId)) {
         state = withDeckBecameZeroThisTurn(state, playerId);
         logger.push({

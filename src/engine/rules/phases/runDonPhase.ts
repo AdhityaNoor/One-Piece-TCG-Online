@@ -12,14 +12,19 @@
  * 10-DON!! deck within a realistic game length.
  */
 import type { GameState } from '../../state/game';
+import { fieldDonIds } from '../../effects/abilityCost';
 import { createActionLogger } from '../shared/actionLogger';
 import { addToZoneTop } from '../shared/zoneOps';
 import type { PhaseStepResult } from './phaseStepResult';
 import { consumeStartOfMainDelayedEffects } from './delayedEffects';
+import { applyDonPhasePlacementRouting } from './donPhasePlacement';
 
 export function runDonPhase(state: GameState): PhaseStepResult {
   const player = state.players[state.activePlayerId];
   const logger = createActionLogger(state, null);
+
+  // Capture before placement — OP13-003 routes 1 new DON!! only if field already had DON!!.
+  const hadFieldDonBeforePlacement = fieldDonIds(state, player.playerId).length > 0;
 
   const amount = Math.min(state.isFirstTurnOfGame ? 1 : 2, player.donDeck.cardIds.length);
   const drawnIds = player.donDeck.cardIds.slice(0, amount);
@@ -63,7 +68,7 @@ export function runDonPhase(state: GameState): PhaseStepResult {
     visibility: 'public',
   });
 
-  const beforeMain: GameState = {
+  const afterPlace: GameState = {
     ...state,
     players: { ...state.players, [player.playerId]: newPlayer },
     cardsById,
@@ -71,6 +76,14 @@ export function runDonPhase(state: GameState): PhaseStepResult {
     log: [...state.log, ...logger.log],
   };
 
+  const routed = applyDonPhasePlacementRouting(
+    afterPlace,
+    player.playerId,
+    drawnIds,
+    hadFieldDonBeforePlacement,
+  );
+  const beforeMain = routed.state;
+
   const delayed = consumeStartOfMainDelayedEffects(beforeMain);
-  return { state: delayed.state, log: [...logger.log, ...delayed.log] };
+  return { state: delayed.state, log: [...logger.log, ...routed.log, ...delayed.log] };
 }

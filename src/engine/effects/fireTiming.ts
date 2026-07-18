@@ -7,6 +7,7 @@
 import type { GameState } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
+import { getEffectiveAttributes } from '../rules/shared/power';
 import { getOpponentId } from '../rules/shared/players';
 import { runTimings, resumeProgram } from './interpreter';
 import { evaluateGates, type GateEvalContext } from './gates';
@@ -26,6 +27,7 @@ const REACTIVE_ONCE_PER_TURN_KEYS: Partial<Record<IrTiming, string>> = {
   onYouEventActivated: 'onYouEventActivated',
   onOpponentBlockerActivated: 'onOpponentBlockerActivated',
   onLifeDamageDealt: 'onLifeDamageDealt',
+  onLifeRemoved: 'onLifeRemoved',
   onDrawOutsideDrawPhase: 'onDrawOutsideDrawPhase',
   onLifeToHand: 'onLifeToHand',
   onTriggerActivated: 'onTriggerActivated',
@@ -128,6 +130,24 @@ export function fireLifeDamageDealtReactions(
   return fireReactiveAbilitiesForPlayer(state, dealerPlayerId, 'onLifeDamageDealt', registry, defs, actionId);
 }
 
+/** Fires [When a card is removed from Life] for every in-play card (all controllers). */
+export function fireLifeRemovedReactions(
+  state: GameState,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const observerId of Object.keys(state.players)) {
+    const fired = fireReactiveAbilitiesForPlayer(working, observerId, 'onLifeRemoved', registry, defs, actionId);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
 /** Fires [When a card is added to your hand from your Life] for `playerId`'s in-play cards. */
 export function fireLifeToHandReactions(
   state: GameState,
@@ -208,7 +228,7 @@ export function battleAttackerIsCharacterWithAttribute(
   const def = attacker ? defs[attacker.cardDefinitionId] : undefined;
   if (!attacker || attacker.currentZone !== 'characterArea' || def?.category !== 'character') return false;
   const needle = attribute.toLowerCase();
-  return (def.attributes ?? []).some((a) => a.toLowerCase() === needle);
+  return getEffectiveAttributes(defs, state, battle.attackerInstanceId).some((a) => a.toLowerCase() === needle);
 }
 
 /** Fires leader/field reactions when the opponent plays a Character from hand/effect. */
@@ -571,7 +591,7 @@ export function fireOnBattle(
     const oppDef = oppInst ? defs[oppInst.cardDefinitionId] : undefined;
     const needle = ability.battlingOpponentAttribute.toLowerCase();
     const isOpposingCharacter = oppInst?.currentZone === 'characterArea' && oppDef?.category === 'character';
-    if (!isOpposingCharacter || !(oppDef?.attributes ?? []).some((a) => a.toLowerCase() === needle)) return noop(state);
+    if (!isOpposingCharacter || !getEffectiveAttributes(defs, state, opposingId).some((a) => a.toLowerCase() === needle)) return noop(state);
   }
   // Gate + once-per-turn are checked here so the flag is only consumed on a real fire.
   if (!triggeredAbilityWouldFire(ability, instance, state, defs)) return noop(state);

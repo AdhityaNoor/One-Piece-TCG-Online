@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyTemplate } from '../catalog/factories';
 import { runTimings, resumeProgram } from '../../../engine/effects/interpreter';
-import { buildBaseRig, makeCharacterDef, makeEventDef, makeStageDef, putCharacterInPlay, putInHand, putLifeCards, putStageInPlay } from '../../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, makeEventDef, makeStageDef, putCharacterInPlay, putDon, putInHand, putLifeCards, putStageInPlay } from '../../../engine/rules/shared/__tests__/testRig';
 import { findKoReplacementRecord } from '../../../engine/rules/shared/koAttempt';
 import type { EffectTemplateRegistry } from '../../../engine/effects/effectTemplate';
 
@@ -378,5 +378,56 @@ describe('K.O. replacement runtime', () => {
     expect(resolved.state.cardsById[ally.instanceId].orientation).toBe('rested');
     expect(resolved.state.cardsById[rosinante.instanceId].orientation).toBe('active');
     expect(resolved.state.cardsById[hand.instanceId].currentZone).toBe('trash');
+  });
+
+  it('P-111 aura restDon replacement rests 1 DON and keeps Straw Hat Crew on field', () => {
+    const robinDef = makeCharacterDef({ cardNumber: 'P-111', types: ['Straw Hat Crew'] });
+    const allyDef = makeCharacterDef({ cardNumber: 'ALLY-SHC', types: ['Straw Hat Crew'] });
+    const koProgram = applyTemplate('KO-001', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent' }, optional: true }],
+    });
+    const auraProgram = applyTemplate('P-111', 'ability', {
+      timing: 'onEnterPlay',
+      functions: [{
+        fn: 'registerKoReplacementAura',
+        scope: 'effect',
+        oncePerTurn: true,
+        anyOfTypes: ['Straw Hat Crew'],
+        replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+        effectSourceController: 'opponent',
+        restDon: { count: 1 },
+        duration: 'permanent',
+      }],
+    });
+    expect(auraProgram.abilities[0].ops[0]).toMatchObject({
+      op: 'registerKoReplacement',
+      appliesTo: 'aura',
+      action: { kind: 'payAbilityCosts', costs: [{ kind: 'restDon', count: 1 }] },
+    });
+
+    let rig = buildBaseRig();
+    const robin = putCharacterInPlay(rig, 'p1', robinDef);
+    rig = { ...robin.rig, defs: { ...robin.rig.defs, [robinDef.cardDefinitionId]: robinDef, [allyDef.cardDefinitionId]: allyDef } };
+    const registered = runTimings(auraProgram, ['onEnterPlay'], rig.state, robin.instanceId, rig.defs, null, { [robinDef.cardDefinitionId]: auraProgram });
+    rig = { ...rig, state: registered.state };
+    const ally = putCharacterInPlay(rig, 'p1', allyDef);
+    rig = ally.rig;
+    const don = putDon(rig, 'p1', 1);
+    rig = don.rig;
+
+    const koSourceDef = makeCharacterDef({ cardNumber: 'KO-001' });
+    const koSource = putCharacterInPlay(rig, 'p2', koSourceDef);
+    rig = { ...koSource.rig, defs: { ...koSource.rig.defs, [koSourceDef.cardDefinitionId]: koSourceDef } };
+    const reg: EffectTemplateRegistry = {
+      [robinDef.cardDefinitionId]: auraProgram,
+      [koSourceDef.cardDefinitionId]: koProgram,
+    };
+
+    const koFired = runTimings(koProgram, ['onPlay'], rig.state, koSource.instanceId, rig.defs, null, reg);
+    const afterTarget = resumeProgram(koProgram, koFired.state, koFired.pendingChoices[0], [ally.instanceId], rig.defs, null, reg);
+    const resolved = resumeProgram(koProgram, afterTarget.state, afterTarget.pendingChoices[0], true, rig.defs, null, reg);
+    expect(resolved.state.cardsById[ally.instanceId].currentZone).toBe('characterArea');
+    expect(resolved.state.cardsById[don.donIds[0]].donRested).toBe(true);
   });
 });

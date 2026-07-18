@@ -51,7 +51,7 @@ export type Selector =
   | { sel: 'opponentTrash'; filter?: SearchFilter } // opponent's trash cards matching a filter
   | { sel: 'controllerDeck'; filter?: SearchFilter } // controller's deck cards matching a filter (for play-from-deck)
   | { sel: 'allStages'; rested?: boolean } // any player's Stage in the stage area
-  | { sel: 'controllerStages'; maxCost?: number; exactCost?: number; rested?: boolean } // controller's Stage in the stage area
+  | { sel: 'controllerStages'; maxCost?: number; exactCost?: number; rested?: boolean; color?: Color } // controller's Stage in the stage area
   | { sel: 'controllerActiveStages'; maxCost?: number; exactCost?: number } // active controller Stages in the stage area
   | { sel: 'opponentStages'; maxCost?: number; exactCost?: number; rested?: boolean } // opponent's Stage in the stage area
   | { sel: 'var'; name: string; filter?: SearchFilter; excludeIdsFromVar?: string } // ids bound by a prior chooseTargets op
@@ -194,6 +194,7 @@ export type EffectOp =
   // Register a continuous cost "aura" over a dynamic target group (e.g. "all of your {Navy}
   // Characters gain +2 cost", "give all of your opponent's Characters −1 cost").
   | ({ op: 'addCostAura'; group: PowerAuraGroup; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition; scale?: PowerScale; usesRemaining?: number } & EffectOpSequenceGate)
+  | ({ op: 'addCounterAura'; group: PowerAuraGroup; amount?: number; setValue?: number; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
   | ({ op: 'setBasePower'; target: Selector; value: number; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate) // "base power BECOMES N" (2-6): overwrite base; additive modifiers still stack on top
   | ({ op: 'setBasePowerFromLeader'; target: Selector; duration: IrDuration; condition?: IrCondition; sourceCondition?: SourceStateCondition } & EffectOpSequenceGate) // "base power becomes the same as your Leader's base power"
   | ({ op: 'setBasePowerFromSource'; target: Selector; source: Selector; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate) // "base power becomes the same as [source]'s current power"
@@ -202,9 +203,10 @@ export type EffectOp =
   // Register a continuous keyword grant over a dynamic target group (e.g. "all of your [Shura]
   // cards gain [Unblockable]"), optionally gated on source state.
   | ({ op: 'addKeywordAura'; group: PowerAuraGroup; keyword: ContinuousKeyword; duration: IrDuration; sourceCondition?: SourceStateCondition; condition?: IrCondition } & EffectOpSequenceGate)
+  | ({ op: 'addAttribute'; target: Selector; attribute: Attribute; duration: IrDuration; condition?: IrCondition } & EffectOpSequenceGate)
   // Grant "cannot be K.O.'d" to the target. scope 'battle' = battle K.O. only (7-1-4-2); 'any' = any source.
   // `attackerCategory` optionally restricts a battle immunity to a given attacker category ("by Leaders").
-  | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; oncePerTurn?: boolean; condition?: IrCondition; attackerCategory?: 'leader' | 'character'; attackerAttribute?: string; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string } & EffectOpSequenceGate)
+  | ({ op: 'addKoImmunity'; target: Selector; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; oncePerTurn?: boolean; condition?: IrCondition; attackerCategory?: 'leader' | 'character'; attackerAttribute?: string; attackerWithoutAttribute?: string; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string } & EffectOpSequenceGate)
   | ({ op: 'addKoImmunityAura'; group: KoImmunityAuraGroup; scope: 'battle' | 'effect' | 'any'; duration: IrDuration; condition?: IrCondition; sourceCondition?: SourceStateCondition; effectSourceController?: 'opponent' | 'controller'; effectSourceMaxBasePower?: number; effectSourceCategory?: 'leader' | 'character'; effectSourceWithoutAttribute?: string } & EffectOpSequenceGate)
   // Register optional K.O. replacement on enter play ("would be K.O.'d … instead").
   | ({ op: 'registerKoReplacement'; appliesTo: 'self' | 'aura'; appliesToInstanceId?: string; group?: KoReplacementAuraGroup; scope: 'battle' | 'effect' | 'any'; oncePerTurn?: boolean; action: KoReplacementAction; condition?: IrCondition; sourceCondition?: SourceStateCondition; replacementTriggers?: import('../state/game').KoReplacementTrigger[]; effectSourceController?: 'opponent' | 'controller'; effectSourceCategory?: 'leader' | 'character'; activationGate?: AbilityGate[]; duration: IrDuration } & EffectOpSequenceGate)
@@ -235,12 +237,23 @@ export type EffectOp =
   | ({ op: 'negateControllerEffects'; player: 'controller' | 'opponent'; duration: IrDuration; negatedTimings?: IrTiming[]; appliesToCategories?: Exclude<CardCategory, 'don'>[]; exceptTypeIncludes?: string } & EffectOpSequenceGate)
   // "You cannot add Life cards to your hand using your own effects" for the controller.
   | ({ op: 'preventControllerLifeToHand'; player: 'controller' | 'opponent'; duration: IrDuration } & EffectOpSequenceGate)
+  | ({ op: 'preventEffectDraw'; player: 'controller' | 'opponent'; duration: IrDuration } & EffectOpSequenceGate)
   // "You cannot play Character cards [matching filter] this turn" for the controller.
   | ({ op: 'preventControllerCharacterPlay'; player?: 'controller' | 'opponent'; duration: IrDuration; minBaseCost?: number; maxBaseCost?: number } & EffectOpSequenceGate)
   | ({ op: 'preventControllerHandPlay'; player?: 'controller' | 'opponent'; duration: IrDuration } & EffectOpSequenceGate)
   | ({ op: 'preventControllerCharacterSetActiveDon'; player?: 'controller' | 'opponent'; duration: IrDuration } & EffectOpSequenceGate)
   /** Do not lose from empty deck; lose at end of the turn the deck became 0 (OP15-022). */
   | ({ op: 'deferEmptyDeckDefeatToEndOfTurn'; duration: IrDuration } & EffectOpSequenceGate)
+  /** Empty deck → win instead of lose (OP03-040). */
+  | ({ op: 'replaceEmptyDeckDefeatWithWin'; duration: IrDuration } & EffectOpSequenceGate)
+  /** Face-up Life cards go to deck bottom instead of hand (ST13-003). */
+  | ({ op: 'redirectFaceUpLifeToDeckBottom'; duration: IrDuration } & EffectOpSequenceGate)
+  /** Immediately win the game (OP09-118). */
+  | ({ op: 'winGame' } & EffectOpSequenceGate)
+  /** Take an extra turn after this one (OP05-119). */
+  | ({ op: 'grantExtraTurn' } & EffectOpSequenceGate)
+  /** DON!! Phase: if field already had DON!!, give 1 newly placed DON!! to Leader (OP13-003). */
+  | ({ op: 'registerDonPhasePlacement'; duration: IrDuration } & EffectOpSequenceGate)
   | ({ op: 'giveDon'; target: Selector; count: number } & EffectOpSequenceGate)
   // Reassign up to N DON!! cards already given on the controller's field onto a chosen Character.
   | ({ op: 'giveGivenDon'; donTarget: Selector; characterTarget: Selector } & EffectOpSequenceGate)
@@ -334,8 +347,8 @@ export type EffectOp =
   | ({ op: 'drawByEventCount'; countField: 'handTrashedCount' } & EffectOpSequenceGate)
   // Shuffle a player's main deck without moving cards itself.
   | ({ op: 'shuffleDeck'; player?: 'controller' | 'opponent' } & EffectOpSequenceGate)
-  // Return all hand cards to deck, shuffle, then draw (equal to returned count unless drawAmount is set).
-  | ({ op: 'returnHandShuffleDraw'; player?: 'controller' | 'opponent'; drawAmount?: number } & EffectOpSequenceGate)
+  // Return all hand cards to deck (shuffle or bottom), then draw (equal to returned count unless drawAmount is set).
+  | ({ op: 'returnHandShuffleDraw'; player?: 'controller' | 'opponent'; drawAmount?: number; destination?: 'shuffle' | 'bottom' } & EffectOpSequenceGate)
   // Suspending: trash N from hand where N is read from bindings[countVar] (set by drawByTypedCharacterCount).
   | ({ op: 'trashFromHandByCountVar'; countVar: string; prompt?: string } & EffectOpSequenceGate);
 
@@ -383,6 +396,7 @@ export type IrTiming =
   | 'onYouEventActivated'
   | 'onOpponentBlockerActivated'
   | 'onLifeDamageDealt'
+  | 'onLifeRemoved'
   | 'onDrawOutsideDrawPhase'
   | 'onLifeToHand'
   | 'onTriggerActivated'
@@ -471,7 +485,7 @@ export type AbilityGate =
   | { kind: 'opponentLeaderAttribute'; attribute: string }
   | { kind: 'selfTrashCount'; atLeast?: number; atMost?: number } // "N or more/less cards in your trash"
   | { kind: 'selfDeckCount'; atLeast?: number; atMost?: number } // "N or less cards in your deck"
-  | { kind: 'selfTypedCharacterCount'; typeIncludes: string; atLeast?: number; atMost?: number; rested?: boolean; color?: Color } // "if you have N or more {color} {type} Characters"
+  | { kind: 'selfTypedCharacterCount'; typeIncludes: string; atLeast?: number; atMost?: number; rested?: boolean; color?: Color; minCost?: number } // "if you have N or more {color} {type} Characters" (+ optional current-cost floor)
   | { kind: 'selfTypedCharacterDistinctNameCount'; typeIncludes: string; atLeast: number } // "if you have N {type} Characters with different card names"
   | { kind: 'selfAnyTypedCharacterCount'; anyOfTypes: string[]; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {A} or {B} type Characters"
   | { kind: 'selfAllCharactersTyped'; typeIncludes: string } // "if the only Characters on your field are {type} type Characters"
@@ -579,6 +593,16 @@ export interface EffectProgram {
   abilities: Ability[];
   /** Static: while in hand, this card cannot be played by card effects (normal cost play still ok). */
   cannotBePlayedByEffects?: boolean;
+  /**
+   * Static Leader deck-construction rule (5-1-2 family extension): main deck may not
+   * include cards of `category` with printed base cost ≥ `minCost` (e.g. OP13-079 Events ≥2).
+   */
+  cannotIncludeCategoryCostOrMore?: { category: CardCategory; minCost: number };
+  /**
+   * Static Leader deck-construction rule: every main-deck card must include this type
+   * (e.g. P-117 East Blue — "you can only include {East Blue} type cards in your deck").
+   */
+  mustHaveType?: string;
 }
 
 /** Serializable resume point stored on a PendingChoice for an interpreter-suspended program. */

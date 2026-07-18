@@ -692,8 +692,21 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP09-118 — PARTIAL: win-the-game on Blocker at 0 Life deferred; mapped [Rush].
-  { cardNumber: 'OP09-118', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
+  // OP09-118 — [Rush]. When opponent activates [Blocker], if either player has 0 Life, you win.
+  {
+    cardNumber: 'OP09-118',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentBlockerActivated',
+          gate: [{ kind: 'anyOf', gates: [{ kind: 'selfLife', atMost: 0 }, { kind: 'opponentLife', atMost: 0 }] }],
+          functions: [{ fn: 'winGame' }],
+        },
+      },
+    ],
+  },
 
   // OP09-119 — [On Play] DON!! −1: Draw 1 and this Character gains [Rush] this turn.
   { cardNumber: 'OP09-119', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'duringThisTurn' }] } },

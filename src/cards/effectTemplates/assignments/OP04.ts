@@ -267,9 +267,6 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  //   in any order.
-  // NOTE: not yet implemented (needs template).
-
   // OP04-039 (leader) Rebecca — cannot attack; [Activate: Main] rest 1 DON!!, if hand <=6, look 2 for Dressrosa and trash rest.
   {
     cardNumber: 'OP04-039',
@@ -337,11 +334,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-045 — [On Play] Draw 1 card.
   { cardNumber: 'OP04-045', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
 
+  // OP04-046 — [On Play] If Leader {Animal Kingdom Pirates}, look 7; reveal up to 2 [Plague Rounds]/[Ice Oni]; rest bottom.
   { cardNumber: 'OP04-046', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }], functions: [{ fn: 'searchTopDeck', look: 7, pick: 2, reveal: true, destination: 'hand', filter: { anyOf: [{ name: 'Plague Rounds' }, { name: 'Ice Oni' }] }, remainder: 'bottom' }] } },
-
-  //   deck; reveal a total of up to 2 [Plague Rounds] or [Ice Oni] cards and add them to your hand. Then,
-  //   place the rest at the bottom of your deck in any order.
-  // NOTE: not yet implemented (needs template).
 
   // OP04-047 — [Your Turn] [When Battling] You may place 1 opp Character cost ≤5 at bottom of deck at end of battle.
   {
@@ -644,10 +638,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-096 — If Leader {Dressrosa}, your {Dressrosa} Characters can attack Characters on the turn played.
   { cardNumber: 'OP04-096', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent', anyOfTypes: ['Dressrosa'], gate: [{ kind: 'leaderType', type: 'Dressrosa' }] }] } },
 
+  // OP04-097 — [On Play] Add up to 1 opp {Animal}/{SMILE} cost ≤3 to top of owner's Life face-up.
   { cardNumber: 'OP04-097', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { anyOfTypes: ['Animal', 'SMILE'], maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'top', faceUp: true }, optional: true }] } },
-
-  //   add 1 card from the top of your deck to the top of your Life cards.
-  // NOTE: not yet implemented (needs template).
 
   // OP04-099 (character) Olin — alternate name [Charlotte Linlin] auto-extracted into def.aliasNames (nameMatches).
   {
@@ -704,10 +696,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, ifPrevious: 'previousMovedAny' },
   ] } },
 
+  // OP04-109 — [Activate: Main] trash this: up to 1 {Land of Wano} Leader/Char +3000 this turn.
   { cardNumber: 'OP04-109', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller', filter: { typeIncludes: 'Land of Wano' } }, amount: 3000, duration: 'duringThisTurn', optional: true }] } },
-
-  //   Character cards gains +3000 power during this turn.
-  // NOTE: not yet implemented (needs template).
 
   // OP04-108 — [DON!! x1] this Character gains [Banish]. [Trigger] trash 1 from hand: play this.
   {

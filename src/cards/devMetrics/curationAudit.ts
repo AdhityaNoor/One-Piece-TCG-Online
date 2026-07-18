@@ -58,7 +58,8 @@ const TIMING_MARKERS: Partial<Record<IrTiming, RegExp>> = {
   onKO: /\[On K\.?O\.?\]|K\.?O\.?['’ʼ]?d/i,
   whenAttacking:
     /\[When Attacking\]|when this (?:leader|character) attacks(?: or is attacked)?|when this leader attacks your opponent(?:'s)? leader/i,
-  activateMain: /\[Activate:\s*Main\]|\[Main\]/i,
+  // `[Active: Main]` is an OPTCG API typo for `[Activate: Main]` (e.g. P-062, P-086).
+  activateMain: /\[Activ(?:ate|e):\s*Main\]|\[Main\]/i,
   onBlock: /\[On Block\]/i,
   counter: /\[Counter\]/i,
   onOpponentsAttack:

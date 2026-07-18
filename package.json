@@ -1,7 +1,7 @@
 {
   "name": "one-piece-tcg-online",
   "private": true,
-  "version": "0.9.2",
+  "version": "beta-1.9.7",
   "type": "module",
   "description": "One Piece TCG web simulator. Pure rules engine + card/deck layer under /src/engine and /src/cards; React+Vite+Tailwind app shell under /src/app, /src/board, /src/animations, /src/renderer3d.",
   "scripts": {

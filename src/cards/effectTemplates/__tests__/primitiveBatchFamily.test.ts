@@ -236,12 +236,30 @@ describe('opp-deck reveal reuse', () => {
 });
 
 describe('OP10-022 composed ability', () => {
-  it('requires total Character cost ≥5 and includes life-to-hand + playFromHand', () => {
+  it('requires total Character cost ≥5 and nests life reveal/play under chooseOne', () => {
     const program = registry['OP10-022'];
     const main = program.abilities[0];
     expect(main.gate).toEqual([{ kind: 'selfCharactersTotalCostAtLeast', atLeast: 5 }]);
     expect(main.condition).toEqual({ donAttachedAtLeast: 1 });
-    expect(main.ops.some((op) => op.op === 'playFromHand')).toBe(true);
+    expect(main.ops).toHaveLength(1);
+    const choose = main.ops[0];
+    // Template fn `chooseOne` compiles to IR `chooseOption`.
+    expect(choose.op).toBe('chooseOption');
+    if (choose.op !== 'chooseOption') throw new Error('expected chooseOption');
+    expect(choose.options.map((o) => o.label)).toEqual(['doNotReturn', 'return']);
+    expect(choose.options[0].ops).toEqual([]);
+    // return branch: return Character to hand, then revealTopLifePlay (reveal + optional playFromLife).
+    expect(choose.options[1].ops.map((op) => op.op)).toEqual(['chooseTargets', 'moveToHand', 'revealTopLife', 'chooseOption']);
+    const reveal = choose.options[1].ops.find((op) => op.op === 'revealTopLife');
+    expect(reveal).toMatchObject({
+      op: 'revealTopLife',
+      filter: { category: 'character', typeIncludes: 'Supernovas', maxCost: 5 },
+    });
+    const playChoice = choose.options[1].ops.find((op) => op.op === 'chooseOption' && op.ifPrevious === 'previousRevealMatched');
+    expect(playChoice?.op).toBe('chooseOption');
+    if (playChoice?.op !== 'chooseOption') throw new Error('expected nested play chooseOption');
+    expect(playChoice.options.map((o) => o.label)).toEqual(['doNotPlay', 'play']);
+    expect(playChoice.options[1].ops.some((op) => op.op === 'playFromLife')).toBe(true);
   });
 });
 

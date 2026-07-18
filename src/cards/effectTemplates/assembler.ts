@@ -15,6 +15,7 @@
  *     only produces plain data ops.
  *   - Raw card text NEVER touches this path.
  */
+import type { EffectProgram } from '../../engine/effects/effectIr';
 import type { EffectTemplateRegistry } from '../../engine/effects/effectTemplate';
 import { applyTemplate } from './catalog/factories';
 import type { TemplateId, TemplateParamMap } from './catalog/templateDefs';
@@ -65,6 +66,8 @@ export function buildRegistryFromAssignments(
       console.warn(`[effectTemplates] duplicate assignment for ${a.cardNumber} - last one wins`);
     }
     let cannotBePlayedByEffects = false;
+    let cannotIncludeCategoryCostOrMore: EffectProgram['cannotIncludeCategoryCostOrMore'];
+    let mustHaveType: EffectProgram['mustHaveType'];
     const abilities = bindingsFor(a).flatMap((binding) => {
       const prog = applyTemplate(
         a.cardNumber,
@@ -72,12 +75,16 @@ export function buildRegistryFromAssignments(
         binding.params as TemplateParamMap[typeof binding.templateId],
       );
       if (prog.cannotBePlayedByEffects) cannotBePlayedByEffects = true;
+      if (prog.cannotIncludeCategoryCostOrMore) cannotIncludeCategoryCostOrMore = prog.cannotIncludeCategoryCostOrMore;
+      if (prog.mustHaveType) mustHaveType = prog.mustHaveType;
       return prog.abilities;
     });
     registry[a.cardNumber] = {
       cardNumber: a.cardNumber,
       abilities,
       ...(cannotBePlayedByEffects ? { cannotBePlayedByEffects: true } : {}),
+      ...(cannotIncludeCategoryCostOrMore ? { cannotIncludeCategoryCostOrMore } : {}),
+      ...(mustHaveType ? { mustHaveType } : {}),
     };
   }
 

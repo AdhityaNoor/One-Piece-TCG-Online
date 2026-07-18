@@ -33,8 +33,13 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP13-003 (leader) Gol.D.Roger —
   //   If you have any DON!! cards on your field, 1 DON!! card placed during your DON!! Phase is given to
   //   your Leader.If you have 9 or less DON!! cards on your field, give this Leader −2000 power.
-  //   PARTIAL: the DON-placement routing rule is deferred (needs DON-phase modifier).
-  { cardNumber: 'OP13-003', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: -2000, duration: 'permanent', condition: { gate: [{ kind: 'selfDonFieldCount', atMost: 9 }] } }] } },
+  {
+    cardNumber: 'OP13-003',
+    templates: [
+      { templateId: 'ability', params: { timing: 'startOfGame', functions: [{ fn: 'registerDonPhasePlacement' }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: -2000, duration: 'permanent', condition: { gate: [{ kind: 'selfDonFieldCount', atMost: 9 }] } }] } },
+    ],
+  },
 
   // OP13-004 (leader) Sabo —
   //   If you have 4 or more Life cards, give this Leader −1000 power.[DON!! x1] If you have a Character
@@ -491,11 +496,10 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   //   the start of the game, play up to 1 {Mary Geoise} type Stage card from your deck.[Activate: Main]
   //   [Once Per Turn] You may trash 1 of your {Celestial Dragons} type Characters or 1 card from your hand:
   //   Draw 1 card.
-  // PARTIAL: deck-construction restriction ("cannot include Events cost 2+") remains deferred — no
-  // deck-validation hook exists yet for Leader-specific deck-construction restrictions.
   {
     cardNumber: 'OP13-079',
     templates: [
+      { templateId: 'staticFlags', params: { cannotIncludeCategoryCostOrMore: { category: 'event', minCost: 2 } } },
       { templateId: 'ability', params: { timing: 'startOfGame', functions: [{ fn: 'playStageFromDeck', filter: { category: 'stage', typeIncludes: 'Mary Geoise' }, maxTargets: 1 }] } },
       { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{
         fn: 'chooseOne',
@@ -664,7 +668,9 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP13-099 — static trash-count Leader buff; [Activate: Main] rest this + 3 DON!! to play black {Five Elders} cost <= DON!! field count.
+  // OP13-099 (stage) The Empty Throne —
+  //   [Your Turn] If you have 19 or more cards in your trash, your Leader gains +1000 power.
+  //   [Activate: Main] rest this + 3 DON!!: play black {Five Elders} cost <= DON!! field count from hand.
   {
     cardNumber: 'OP13-099',
     templates: [

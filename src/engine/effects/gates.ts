@@ -15,7 +15,7 @@ import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { getOpponentId } from '../rules/shared/players';
 import { nameMatches } from '../state/card';
 import { countControllerActiveUnattachedDon, fieldDonIds } from './abilityCost';
-import { computeCurrentPower } from '../rules/shared/power';
+import { computeCurrentPower, getEffectiveAttributes } from '../rules/shared/power';
 import { cardHasNoBaseEffect } from './cardHasNoBaseEffect';
 
 function typeMatches(defTypes: string[], required: string): boolean {
@@ -152,24 +152,20 @@ function evaluateGate(
     }
 
     case 'leaderAttribute': {
-      const leaderInst = state.cardsById[player.leaderInstanceId];
-      if (!leaderInst) return false;
-      const def = defs[leaderInst.cardDefinitionId];
-      if (!def?.attributes?.length) return false;
+      const leaderId = player.leaderInstanceId;
+      if (!state.cardsById[leaderId]) return false;
       const want = gate.attribute.toLowerCase();
-      return def.attributes.some((a) => a.toLowerCase() === want);
+      return getEffectiveAttributes(defs, state, leaderId).some((a) => a.toLowerCase() === want);
     }
 
     case 'opponentLeaderAttribute': {
       const opponentId = getOpponentId(state, ownerId);
       const opponent = state.players[opponentId];
       if (!opponent) return false;
-      const leaderInst = state.cardsById[opponent.leaderInstanceId];
-      if (!leaderInst) return false;
-      const def = defs[leaderInst.cardDefinitionId];
-      if (!def?.attributes?.length) return false;
+      const leaderId = opponent.leaderInstanceId;
+      if (!state.cardsById[leaderId]) return false;
       const want = gate.attribute.toLowerCase();
-      return def.attributes.some((a) => a.toLowerCase() === want);
+      return getEffectiveAttributes(defs, state, leaderId).some((a) => a.toLowerCase() === want);
     }
 
     case 'leaderMulticolor': {
@@ -469,6 +465,7 @@ function evaluateGate(
         if (gate.rested !== undefined && (state.cardsById[id]?.orientation === 'rested') !== gate.rested) return false;
         const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
         if (gate.color !== undefined && !(def?.colors ?? []).includes(gate.color)) return false;
+        if (gate.minCost !== undefined && currentCostForGate(state, defs, id) < gate.minCost) return false;
         return typeMatches(def?.types ?? [], gate.typeIncludes);
       }).length;
       if (gate.atLeast !== undefined && c < gate.atLeast) return false;

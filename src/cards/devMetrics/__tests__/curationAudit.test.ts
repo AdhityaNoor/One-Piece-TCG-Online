@@ -61,4 +61,14 @@ describe('auditCuratedCard timing markers', () => {
     const findings = auditCuratedCard(card('[On Play] Draw 1 card.'), program('whenAttacking'));
     expect(findings.some((f) => f.category === 'timing' && f.detail === 'whenAttacking')).toBe(true);
   });
+
+  it('accepts API typo [Active: Main] as activateMain (P-062 / P-086)', () => {
+    const findings = auditCuratedCard(
+      card(
+        "[Active: Main] [Once Per Turn] Rest up to 1 of your opponent's Characters with a cost of 4 or less and this Character gains +1000 power during this turn.",
+      ),
+      program('activateMain'),
+    );
+    expect(findings.filter((f) => f.category === 'timing')).toEqual([]);
+  });
 });

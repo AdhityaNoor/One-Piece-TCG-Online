@@ -776,7 +776,7 @@ describe('V2 actions', () => {
       },
       player: 'PLAYER',
     }, 'play-looked-card');
-    const playedId = played.playedInstanceIds[0];
+    const playedId = played.bindings?.selectedObjects.SELECTED_PREVIOUSLY?.[0];
 
     expect(playedId).toBeDefined();
     expect(played.bindings?.selectedObjects.PLAYED_SOURCE_PREVIOUSLY).toEqual(['animal-old']);
@@ -2032,7 +2032,9 @@ describe('V2 actions', () => {
       continuousEffects: [{
         id: 'battle-effect',
         sourceInstanceId: 'p1-leader',
+        ownerId: 'p1',
         duration: 'duringThisBattle' as const,
+        description: '+1000 during this battle',
         modifier: { kind: 'power' as const, amount: 1000 },
         createdAtTurn: state.turnNumber,
       }],

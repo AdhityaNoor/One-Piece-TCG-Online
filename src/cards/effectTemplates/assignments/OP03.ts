@@ -271,9 +271,13 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   //   When your deck is reduced to 0, you win the game instead of losing, according to the rules.[DON!! x1]
   //   When this Leader's attack deals damage to your opponent's Life, you may trash 1 card from the top of
   //   your deck.
-  // PARTIAL: the deck-out win-condition replacement ("reduced to 0 → you win instead of losing") is deferred
-  // (no win-condition primitive). The [DON!! x1] Life-damage trash is curated, mirroring OP03-041.
-  { cardNumber: 'OP03-040', templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'trashTopDeck', count: 1, optional: true }] } },
+  {
+    cardNumber: 'OP03-040',
+    templates: [
+      { templateId: 'ability', params: { timing: 'startOfGame', functions: [{ fn: 'replaceEmptyDeckDefeatWithWin' }] } },
+      { templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'trashTopDeck', count: 1, optional: true }] } },
+    ],
+  },
 
   // OP03-041 — [DON!! x1] When this Character's attack deals Life damage, trash 7 from deck top.
   { cardNumber: 'OP03-041', templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'trashTopDeck', count: 7, optional: true }] } },

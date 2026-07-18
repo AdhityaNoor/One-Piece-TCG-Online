@@ -9,7 +9,7 @@
  */
 import type { CardCategory, Color, FaceState, Orientation } from '../../engine/state/card';
 import type { GameState } from '../../engine/state/game';
-import { computeCurrentCost, computeCurrentPower, hasContinuousKeyword, type CardDefinitionLookup } from '../../engine/rules/shared';
+import { computeCurrentCost, computeCurrentPower, computeEffectiveCounter, hasContinuousKeyword, type CardDefinitionLookup } from '../../engine/rules/shared';
 import {
   computeProjectedCostWithV2,
   computeProjectedPowerWithV2,
@@ -150,7 +150,12 @@ export function buildCardView(
     cost,
     baseCost,
     costDelta: cost !== null && baseCost !== null ? cost - baseCost : null,
-    counter: def.category === 'character' ? def.counter ?? null : null,
+    counter: def.category === 'character'
+      ? (() => {
+          const effective = computeEffectiveCounter(defs, state, instanceId);
+          return effective > 0 ? effective : (def.counter ?? null);
+        })()
+      : null,
     life: def.category === 'leader' ? def.life ?? null : null,
     orientation: instance.orientation,
     faceState: instance.faceState,

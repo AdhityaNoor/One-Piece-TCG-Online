@@ -11,7 +11,8 @@
  * flips, with no extra bookkeeping. Cost modifiers use the same record model.
  */
 import type { ContinuousEffectRecord, ContinuousFieldRemovalImmunityModifier, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousPowerCondition, ContinuousRestRestriction, ForbiddenAttackTargetFilter, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
-import type { CardDefinition } from '../../state/card';
+// ContinuousCounterModifier is consumed via ContinuousEffectRecord.counterModifier.
+import type { Attribute, CardDefinition } from '../../state/card';
 import { nameMatches } from '../../state/card';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
@@ -99,7 +100,7 @@ export function sourceConditionApplies(cond: SourceStateCondition | undefined, r
   if (cond.rested !== undefined && (src.orientation === 'rested') !== cond.rested) return false;
   if (cond.donAttachedAtLeast !== undefined && src.donAttached.length < cond.donAttachedAtLeast) return false;
   if (cond.turn !== undefined) {
-    const isOwnersTurn = state.activePlayerId === src.ownerId;
+    const isOwnersTurn = state.activePlayerId === record.ownerId;
     if (cond.turn === 'your' && !isOwnersTurn) return false;
     if (cond.turn === 'opponent' && isOwnersTurn) return false;
   }
@@ -119,7 +120,10 @@ export function continuousTargetConditionApplies(
   if (!instance) return false;
   if (cond.donAttachedAtLeast !== undefined && instance.donAttached.length < cond.donAttachedAtLeast) return false;
   if (cond.turn !== undefined) {
-    const isOwnersTurn = state.activePlayerId === instance.ownerId;
+    // [Your Turn] / [Opponent's Turn] is relative to the modifier's owner
+    // (ContinuousPowerCondition docs), not the target card. Targeting "your
+    // Leader" from a Stage/Character must still key off the effect controller.
+    const isOwnersTurn = state.activePlayerId === record.ownerId;
     if (cond.turn === 'your' && !isOwnersTurn) return false;
     if (cond.turn === 'opponent' && isOwnersTurn) return false;
   }
@@ -134,6 +138,7 @@ export function continuousTargetConditionApplies(
   if (cond.minPower !== undefined && computeCurrentPower(defs, state, instanceId) < cond.minPower) return false;
   if (cond.exactBasePower !== undefined && (def.basePower ?? -1) !== cond.exactBasePower) return false;
   if (cond.color !== undefined && !def.colors.includes(cond.color)) return false;
+  if (cond.withoutPrintedCounter && (def.counter ?? 0) > 0) return false;
   if (cond.gate && !evaluateGates(cond.gate, state, defs, record.ownerId, record.sourceInstanceId)) return false;
   return true;
 }
@@ -145,6 +150,9 @@ function conditionApplies(cond: ContinuousPowerCondition | undefined, record: Co
 function powerModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
   const mod = record.powerModifier;
   if (!mod) return false;
+  // Permanent statics (Stage/Leader/Character continuous abilities) only apply
+  // while their source remains in a field zone. Timed durations may linger.
+  if (record.duration === 'permanent' && !sourceOnField(record.sourceInstanceId, state)) return false;
   // Target selection: a single fixed instance, or a dynamic aura group.
   if (mod.appliesToInstanceId !== undefined) {
     if (mod.appliesToInstanceId !== instanceId) return false;
@@ -161,7 +169,21 @@ function costModifierApplies(record: ContinuousEffectRecord, state: GameState, i
   const mod = record.costModifier;
   if (!mod) return false;
   if (record.usesRemaining !== undefined && record.usesRemaining <= 0) return false;
+  if (record.duration === 'permanent' && !sourceOnField(record.sourceInstanceId, state)) return false;
   // Target selection: a single fixed instance, or a dynamic aura group (mirrors powerModifierApplies).
+  if (mod.appliesToInstanceId !== undefined) {
+    if (mod.appliesToInstanceId !== instanceId) return false;
+  } else if (mod.appliesToGroup !== undefined) {
+    if (!targetInAuraGroup(mod.appliesToGroup, record, state, instanceId, defs)) return false;
+  } else {
+    return false;
+  }
+  return conditionApplies(mod.condition, record, state, instanceId, defs) && sourceConditionApplies(mod.sourceCondition, record, state);
+}
+
+function counterModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, defs: CardDefinitionLookup): boolean {
+  const mod = record.counterModifier;
+  if (!mod) return false;
   if (mod.appliesToInstanceId !== undefined) {
     if (mod.appliesToInstanceId !== instanceId) return false;
   } else if (mod.appliesToGroup !== undefined) {
@@ -175,6 +197,19 @@ function costModifierApplies(record: ContinuousEffectRecord, state: GameState, i
 function keywordModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, keyword: ContinuousKeyword, defs: CardDefinitionLookup): boolean {
   const mod = record.keywordModifier;
   if (!mod || mod.keyword !== keyword) return false;
+  if (mod.appliesToInstanceId !== undefined) {
+    if (mod.appliesToInstanceId !== instanceId) return false;
+  } else if (mod.appliesToGroup !== undefined) {
+    if (!targetInAuraGroup(mod.appliesToGroup, record, state, instanceId, defs)) return false;
+  } else {
+    return false;
+  }
+  return conditionApplies(mod.condition, record, state, instanceId, defs) && sourceConditionApplies(mod.sourceCondition, record, state);
+}
+
+function attributeModifierApplies(record: ContinuousEffectRecord, state: GameState, instanceId: string, attribute: Attribute, defs: CardDefinitionLookup): boolean {
+  const mod = record.attributeModifier;
+  if (!mod || mod.attribute !== attribute) return false;
   if (mod.appliesToInstanceId !== undefined) {
     if (mod.appliesToInstanceId !== instanceId) return false;
   } else if (mod.appliesToGroup !== undefined) {
@@ -228,6 +263,9 @@ function scaleAmount(
       count = names.size;
       break;
     }
+    case 'controllerCharacters':
+      count = player!.characterArea.cardIds.length;
+      break;
     case 'targetDonAttached':
       count = targetInstanceId ? (state.cardsById[targetInstanceId]?.donAttached.length ?? 0) : 0;
       break;
@@ -277,8 +315,48 @@ export function computeCurrentCost(defs: CardDefinitionLookup, state: GameState,
   return Math.max(0, base + continuousDelta);
 }
 
+/**
+ * Effective Counter value for ACTIVATE_COUNTER_CHARACTER (2-10 / 7-1-3-2-1).
+ * Starts from printed Counter, then applies continuous Counter auras
+ * ("+1000 Counter", "Counter becomes +2000"). Returns 0 when the card has no
+ * usable Counter after modifiers.
+ */
+export function computeEffectiveCounter(defs: CardDefinitionLookup, state: GameState, instanceId: string): number {
+  const instance = state.cardsById[instanceId];
+  if (!instance) return 0;
+  const def = getDefinition(defs, instance);
+  if (def.category !== 'character') return 0;
+  let value = def.counter ?? 0;
+  for (const record of state.continuousEffects) {
+    if (!counterModifierApplies(record, state, instanceId, defs)) continue;
+    const mod = record.counterModifier!;
+    if (mod.setValue !== undefined) value = mod.setValue;
+    else value += mod.amount ?? 0;
+  }
+  return Math.max(0, value);
+}
+
 export function hasContinuousKeyword(defs: CardDefinitionLookup, state: GameState, instanceId: string, keyword: ContinuousKeyword): boolean {
   return state.continuousEffects.some((record) => keywordModifierApplies(record, state, instanceId, keyword, defs));
+}
+
+export function hasContinuousAttribute(defs: CardDefinitionLookup, state: GameState, instanceId: string, attribute: Attribute): boolean {
+  return state.continuousEffects.some((record) => attributeModifierApplies(record, state, instanceId, attribute, defs));
+}
+
+/** Printed attributes plus any active continuous attribute grants. */
+export function getEffectiveAttributes(defs: CardDefinitionLookup, state: GameState, instanceId: string): Attribute[] {
+  const instance = state.cardsById[instanceId];
+  if (!instance) return [];
+  const printed = getDefinition(defs, instance).attributes ?? [];
+  const granted = new Set<Attribute>(printed);
+  for (const record of state.continuousEffects) {
+    const mod = record.attributeModifier;
+    if (!mod) continue;
+    if (!attributeModifierApplies(record, state, instanceId, mod.attribute, defs)) continue;
+    granted.add(mod.attribute);
+  }
+  return [...granted];
 }
 
 export interface KoImmunityCheckContext {
@@ -310,7 +388,9 @@ function effectSourceMatches(
   if (mod.effectSourceCategory !== undefined && sourceDef.category !== mod.effectSourceCategory) return false;
   if (mod.effectSourceMaxBasePower !== undefined && (sourceDef.basePower ?? Infinity) > mod.effectSourceMaxBasePower) return false;
   if (mod.effectSourceWithoutAttribute !== undefined) {
-    const blocked = sourceDef.attributes?.some((a) => a.toLowerCase() === mod.effectSourceWithoutAttribute!.toLowerCase()) ?? false;
+    const blocked = getEffectiveAttributes(defs, state, koSourceInstanceId).some(
+      (a) => a.toLowerCase() === mod.effectSourceWithoutAttribute!.toLowerCase(),
+    );
     if (blocked) return false;
   }
   return true;
@@ -345,9 +425,15 @@ function koImmunityModifierApplies(
   }
   if (mod.attackerAttribute !== undefined) {
     const attackerId = state.currentBattle?.attackerInstanceId;
-    const attackerDef = attackerId ? defs[state.cardsById[attackerId]?.cardDefinitionId ?? ''] : undefined;
-    const attrs = attackerDef?.attributes ?? [];
+    if (!attackerId) return false;
+    const attrs = getEffectiveAttributes(defs, state, attackerId);
     if (!attrs.some((a) => a.toLowerCase() === mod.attackerAttribute!.toLowerCase())) return false;
+  }
+  if (mod.attackerWithoutAttribute !== undefined) {
+    const attackerId = state.currentBattle?.attackerInstanceId;
+    if (!attackerId) return false;
+    const attrs = getEffectiveAttributes(defs, state, attackerId);
+    if (attrs.some((a) => a.toLowerCase() === mod.attackerWithoutAttribute!.toLowerCase())) return false;
   }
   if (!effectSourceMatches(mod, record, state, defs, ctx?.koSourceInstanceId)) return false;
   if (mod.oncePerTurn) {

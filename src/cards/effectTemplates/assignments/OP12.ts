@@ -622,8 +622,19 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP12-099 — PARTIAL: general Life-removal trigger + "cannot draw" rider deferred; mapped draw on Life damage dealt.
-  { cardNumber: 'OP12-099', templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { turn: 'your' }, functions: [{ fn: 'draw', amount: 1 }] } },
+  // OP12-099 — [Your Turn] when any Life is removed: draw 1, then cannot draw via own effects this turn.
+  {
+    cardNumber: 'OP12-099',
+    templateId: 'ability',
+    params: {
+      timing: 'onLifeRemoved',
+      condition: { turn: 'your' },
+      functions: [
+        { fn: 'draw', amount: 1 },
+        { fn: 'preventEffectDraw', duration: 'duringThisTurn' },
+      ],
+    },
+  },
 
   // OP12-100 — If 3 or less Life, gains [Blocker]/+3 cost. [On Play] add top Life to hand → Draw 2, trash 1.
   {

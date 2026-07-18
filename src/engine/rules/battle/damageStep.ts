@@ -35,12 +35,13 @@ import type { GameState } from '../../state/game';
 import type { GameLogEntry } from '../../logs/logEntry';
 import type { PendingChoice } from '../../events/pendingChoice';
 import { createActionLogger } from '../shared/actionLogger';
-import { addToZoneTop, removeFromZone } from '../shared/zoneOps';
+import { addToZoneBottom, addToZoneTop, removeFromZone } from '../shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { computeCurrentPower, findKoImmunityRecord, hasContinuousKeyword, withKoImmunityConsumed } from '../shared/power';
+import { resolveLifeLeaveDestination } from '../shared/lifeLeaveDestination';
 import { getOpponentId } from '../shared/players';
 import { buildKoReplacementConfirmChoice, findKoReplacementRecord } from '../shared/koAttempt';
-import { fireOnKO, fireOnBattle, fireOnBattleKoedOpponent, fireLifeDamageDealtReactions, fireLifeToHandReactions, type EffectTemplateRegistry } from '../../effects';
+import { fireOnKO, fireOnBattle, fireOnBattleKoedOpponent, fireLifeDamageDealtReactions, fireLifeRemovedReactions, fireLifeToHandReactions, type EffectTemplateRegistry } from '../../effects';
 import { consumeEndOfBattleDelayedEffects } from '../phases/delayedEffects';
 import type { KoReplacementResumeState } from '../../events/pendingChoice';
 import { effectLogDataForSource } from '../../logs/effectLogData';
@@ -155,25 +156,42 @@ export function resolveDamageAndEndOfBattle(
         const [lifeCardId, ...restLife] = player.lifeArea.cardIds;
         const lifeDef = defs[cardsById[lifeCardId].cardDefinitionId];
         const banished = !!attackerDef.hasBanish || hasContinuousKeyword(defs, nextState, attackerId, 'banish');
+        // Resolve before flipping face-up: ST13-003 only redirects cards that were already face-up.
+        const leaveTo = resolveLifeLeaveDestination(nextState, defendingPlayerId, lifeCardId, { banished });
         cardsById = {
           ...cardsById,
           [lifeCardId]: {
             ...cardsById[lifeCardId],
-            currentZone: banished ? 'trash' : 'hand',
+            currentZone: leaveTo === 'trash' ? 'trash' : leaveTo === 'deckBottom' ? 'deck' : 'hand',
             faceState: 'faceUp',
-            revealedTo: banished ? 'all' : cardsById[lifeCardId].revealedTo,
+            revealedTo: leaveTo === 'hand' ? cardsById[lifeCardId].revealedTo : 'all',
           },
         };
-        player = banished
-          ? { ...player, lifeArea: { ...player.lifeArea, cardIds: restLife }, trash: addToZoneTop(player.trash, lifeCardId) }
-          : { ...player, lifeArea: { ...player.lifeArea, cardIds: restLife }, hand: addToZoneTop(player.hand, lifeCardId) };
+        player = {
+          ...player,
+          lifeArea: { ...player.lifeArea, cardIds: restLife },
+          ...(leaveTo === 'trash'
+            ? { trash: addToZoneTop(player.trash, lifeCardId) }
+            : leaveTo === 'deckBottom'
+              ? { deck: addToZoneBottom(player.deck, lifeCardId) }
+              : { hand: addToZoneTop(player.hand, lifeCardId) }),
+        };
 
-        if (banished) {
+        if (leaveTo === 'trash') {
           logger.push({
             actorPlayerId: defendingPlayerId,
             type: 'DAMAGE_DEALT',
             message: `${defendingPlayerId}'s damaged Life card was trashed by [Banish]; its [Trigger] cannot activate.`,
             data: { lifeCardInstanceId: lifeCardId, banish: true, triggerSuppressed: !!lifeDef?.hasTrigger },
+            relatedCardInstanceIds: [lifeCardId],
+            visibility: 'public',
+          });
+        } else if (leaveTo === 'deckBottom') {
+          logger.push({
+            actorPlayerId: defendingPlayerId,
+            type: 'DAMAGE_DEALT',
+            message: `${defendingPlayerId}'s face-up Life card was placed at the bottom of their deck instead of hand; its [Trigger] cannot activate.`,
+            data: { lifeCardInstanceId: lifeCardId, faceUpLifeToDeckBottom: true, triggerSuppressed: !!lifeDef?.hasTrigger },
             relatedCardInstanceIds: [lifeCardId],
             visibility: 'public',
           });
@@ -210,19 +228,28 @@ export function resolveDamageAndEndOfBattle(
             });
           }
         }
+        const leaveLabel =
+          leaveTo === 'trash' ? 'trashed by [Banish]'
+            : leaveTo === 'deckBottom' ? 'placed at the bottom of their deck'
+              : 'added to hand';
         logger.push({
           actorPlayerId: defendingPlayerId,
           type: 'DAMAGE_DEALT',
-          message: `${defendingPlayerId} took 1 Life damage (hit ${hit + 1}/${hitCount}) — Life card ${banished ? 'trashed by [Banish]' : 'added to hand'} (7-1-4-1).`,
-          data: { hit: hit + 1, of: hitCount, banish: banished || undefined },
+          message: `${defendingPlayerId} took 1 Life damage (hit ${hit + 1}/${hitCount}) — Life card ${leaveLabel} (7-1-4-1).`,
+          data: {
+            hit: hit + 1,
+            of: hitCount,
+            banish: leaveTo === 'trash' || undefined,
+            faceUpLifeToDeckBottom: leaveTo === 'deckBottom' || undefined,
+          },
           relatedCardInstanceIds: [lifeCardId],
-          visibility: banished ? 'public' : { visibleTo: [defendingPlayerId] },
+          visibility: leaveTo === 'hand' ? { visibleTo: [defendingPlayerId] } : 'public',
         });
 
         // Commit this hit before reactions so Life→hand / deck→Life mutations are not wiped.
         nextState = { ...nextState, players: { ...nextState.players, [defendingPlayerId]: player }, cardsById };
 
-        if (!banished && !lethal) {
+        if (leaveTo === 'hand' && !lethal) {
           const lifeToHand = fireLifeToHandReactions(
             nextState,
             defendingPlayerId,
@@ -251,6 +278,14 @@ export function resolveDamageAndEndOfBattle(
         onBattleLog = [...onBattleLog, ...lifeDamage.log];
         onBattlePending = [...onBattlePending, ...lifeDamage.pendingChoices];
         if (lifeDamage.pendingChoices.length > 0) break;
+
+        const lifeRemoved = fireLifeRemovedReactions(nextState, registry, defs, causedByActionId);
+        nextState = lifeRemoved.state;
+        player = nextState.players[defendingPlayerId];
+        cardsById = { ...nextState.cardsById };
+        onBattleLog = [...onBattleLog, ...lifeRemoved.log];
+        onBattlePending = [...onBattlePending, ...lifeRemoved.pendingChoices];
+        if (lifeRemoved.pendingChoices.length > 0) break;
       }
     } else {
       const battleImmunity = findKoImmunityRecord(defs, nextState, targetId, 'battle');

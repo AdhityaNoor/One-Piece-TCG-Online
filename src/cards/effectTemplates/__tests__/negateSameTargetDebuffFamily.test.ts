@@ -47,8 +47,8 @@ describe('family: negate + same-target debuff (OP09-097, ref: previous)', () => 
     const state = resumeProgram(registry['SYN-SRC'], fired.state, choice, [aId], rig.defs, null, registry).state;
 
     // Only A takes -4000; B (not chosen) is unchanged.
-    expect(computeCurrentPower(state.defs ?? rig.defs, state, aId)).toBe(aBefore - 4000);
-    expect(computeCurrentPower(state.defs ?? rig.defs, state, bId)).toBe(bBefore);
+    expect(computeCurrentPower(rig.defs, state, aId)).toBe(aBefore - 4000);
+    expect(computeCurrentPower(rig.defs, state, bId)).toBe(bBefore);
   });
 
   it('applies no debuff when nothing is negated', () => {
@@ -62,6 +62,6 @@ describe('family: negate + same-target debuff (OP09-097, ref: previous)', () => 
     const fired = runTimings(registry['SYN-SRC'], ['activateMain'], rig.state, srcId, rig.defs, null, registry);
     const choice = fired.state.pendingChoices[0];
     const state = resumeProgram(registry['SYN-SRC'], fired.state, choice, [], rig.defs, null, registry).state;
-    expect(computeCurrentPower(state.defs ?? rig.defs, state, aId)).toBe(aBefore); // no negate → no debuff
+    expect(computeCurrentPower(rig.defs, state, aId)).toBe(aBefore); // no negate → no debuff
   });
 });

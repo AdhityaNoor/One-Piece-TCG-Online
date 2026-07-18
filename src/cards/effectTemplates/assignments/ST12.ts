@@ -302,7 +302,7 @@ export const ST12_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST12-015 (character) Patty & Carne — (no effect)
 
   // ST12-016 (event) Lion Strike — [Main]/[Counter] Rest up to 1 of your opponent's Leader or Character cards
-  //   with {Muggy Kingdom} type or <Slash> attribute and a cost of 4 or less.
+  //   with a cost of 4 or less. [Trigger] Activate this card's [Main] effect.
   {
     cardNumber: 'ST12-016',
     templates: [
@@ -311,17 +311,7 @@ export const ST12_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'activateMain',
           functions: [
-            {
-              fn: 'rest',
-              target: {
-                group: 'union',
-                targets: [
-                  { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4, typeIncludes: 'Muggy Kingdom' } },
-                  { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4, attribute: 'slash' } },
-                ],
-              },
-              optional: true,
-            },
+            { fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4 } }, optional: true },
           ],
         },
       },
@@ -330,17 +320,16 @@ export const ST12_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'counter',
           functions: [
-            {
-              fn: 'rest',
-              target: {
-                group: 'union',
-                targets: [
-                  { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4, typeIncludes: 'Muggy Kingdom' } },
-                  { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4, attribute: 'slash' } },
-                ],
-              },
-              optional: true,
-            },
+            { fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4 } }, optional: true },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'lifeTrigger',
+          functions: [
+            { fn: 'rest', target: { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4 } }, optional: true },
           ],
         },
       },

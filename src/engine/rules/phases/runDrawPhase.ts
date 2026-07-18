@@ -14,7 +14,11 @@
 import type { GameState } from '../../state/game';
 import { createActionLogger } from '../shared/actionLogger';
 import { addToZoneBottom } from '../shared/zoneOps';
-import { hasEmptyDeckDefeatDeferral, withDeckBecameZeroThisTurn } from '../shared/emptyDeckDefeat';
+import {
+  hasEmptyDeckDefeatDeferral,
+  hasEmptyDeckDefeatWinReplacement,
+  withDeckBecameZeroThisTurn,
+} from '../shared/emptyDeckDefeat';
 import type { PhaseStepResult } from './phaseStepResult';
 
 export function runDrawPhase(state: GameState): PhaseStepResult {
@@ -35,6 +39,22 @@ export function runDrawPhase(state: GameState): PhaseStepResult {
   }
 
   if (player.deck.cardIds.length === 0) {
+    if (hasEmptyDeckDefeatWinReplacement(state, player.playerId)) {
+      logger.push({
+        actorPlayerId: player.playerId,
+        type: 'GAME_OVER',
+        message: `${player.playerId} wins — their deck is 0 cards, so they win instead of losing.`,
+        data: { reason: 'cardEffect', winnerId: player.playerId },
+        relatedCardInstanceIds: [],
+        visibility: 'public',
+      });
+      const nextState: GameState = {
+        ...state,
+        gameOver: { winnerId: player.playerId, reason: 'cardEffect' },
+        log: [...state.log, ...logger.log],
+      };
+      return { state: nextState, log: logger.log };
+    }
     if (hasEmptyDeckDefeatDeferral(state, player.playerId)) {
       const deferred = withDeckBecameZeroThisTurn(state, player.playerId);
       logger.push({

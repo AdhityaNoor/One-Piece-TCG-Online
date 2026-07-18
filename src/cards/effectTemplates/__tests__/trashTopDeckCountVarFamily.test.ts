@@ -57,7 +57,7 @@ describe('family: trashTopDeck countVar after hand trash', () => {
 
   it('mills the same number of deck cards as were trashed from hand', () => {
     const registry = buildRegistryFromAssignments([assignment]);
-    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'counter', turnNumber: 3 });
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
     let sourceId: string;
     ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC));
     let handA: string;

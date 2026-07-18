@@ -49,35 +49,40 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST13-003 (leader) Monkey.D.Luffy —
-  //   Your face-up Life cards are placed at the bottom of your deck instead of being added to your hand,
-  //   according to the rules.[DON!! x2] [Activate: Main] [Once Per Turn] You may trash 1 card from your
-  //   hand: If you have 0 Life cards, add up to 2 Character cards with a cost of 5 from your hand or trash
-  //   to the top of your Life cards face-up.
-  // ST13-003 — PARTIAL: face-up Life-to-deck-bottom replacement rule deferred.
-  //   [Activate: Main] trash 1 from hand: if 0 Life, add up to 2 cost-5 Characters from hand or trash to Life top face-up.
+  // ST13-003 (leader) Monkey.D.Luffy — face-up Life → deck bottom; [DON!! x2] Activate trash→Life refill.
   {
     cardNumber: 'ST13-003',
-    templateId: 'ability',
-    params: {
-      timing: 'activateMain',
-      oncePerTurn: true,
-      condition: { donAttachedAtLeast: 2 },
-      functions: [
-        { fn: 'optionalTrashFromHand', count: 1 },
-        {
-          fn: 'chooseOne',
-          chooser: 'controller',
-          prompt: 'Add Characters from:',
-          ifGate: [{ kind: 'selfLife', atMost: 0 }],
-          ifPrevious: 'previousMovedAny',
-          options: [
-            { label: 'fromHand', functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 2 }] },
-            { label: 'fromTrash', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 2 }] },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'startOfGame',
+          functions: [{ fn: 'redirectFaceUpLifeToDeckBottom' }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          condition: { donAttachedAtLeast: 2 },
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            {
+              fn: 'chooseOne',
+              chooser: 'controller',
+              prompt: 'Add Characters from:',
+              ifGate: [{ kind: 'selfLife', atMost: 0 }],
+              ifPrevious: 'previousMovedAny',
+              options: [
+                { label: 'fromHand', functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 2 }] },
+                { label: 'fromTrash', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, maxTargets: 2 }] },
+              ],
+            },
           ],
         },
-      ],
-    },
+      },
+    ],
   },
 
   // ST13-004 (character) Edward.Newgate —

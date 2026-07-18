@@ -129,4 +129,43 @@ describe('validateDeckConstruction', () => {
     expect(result.legal).toBe(false);
     expect(result.reasons.some((r) => r.includes('Leader slot must contain'))).toBe(true);
   });
+
+  it('OP13-079 rejects Events with cost ≥2 and allows cost-1 Events', () => {
+    const imu = makeDef('OP13-079', 'leader', ['black']);
+    const eventCost2 = { ...makeDef('EV-2', 'event', ['black']), baseCost: 2 };
+    const eventCost1 = { ...makeDef('EV-1', 'event', ['black']), baseCost: 1 };
+    const illegal = legalMainDeck(['black']);
+    illegal[0] = { definition: eventCost2, quantity: illegal[0].quantity };
+    const illegalResult = validateDeckConstruction(imu, illegal);
+    expect(illegalResult.legal).toBe(false);
+    expect(illegalResult.reasons.some((r) => r.includes('cost of 2 or more'))).toBe(true);
+
+    const legal = legalMainDeck(['black']);
+    legal[0] = { definition: eventCost1, quantity: legal[0].quantity };
+    const legalResult = validateDeckConstruction(imu, legal);
+    expect(legalResult.legal).toBe(true);
+  });
+
+  it('P-117 rejects main-deck cards without East Blue type and accepts typed decks', () => {
+    const nami = { ...makeDef('P-117', 'leader', ['blue']), types: ['East Blue'] };
+    const illegal = legalMainDeck(['blue']);
+    const illegalResult = validateDeckConstruction(nami, illegal);
+    expect(illegalResult.legal).toBe(false);
+    expect(illegalResult.reasons.some((r) => r.includes('{East Blue}'))).toBe(true);
+
+    const legal: DeckConstructionEntry[] = [];
+    for (let i = 1; i <= 12; i++) {
+      legal.push({
+        definition: { ...makeDef(`EB-${i}`, 'character', ['blue']), types: ['East Blue'] },
+        quantity: 4,
+      });
+    }
+    legal.push({
+      definition: { ...makeDef('EB-13', 'character', ['blue']), types: ['East Blue'] },
+      quantity: 2,
+    });
+    const legalResult = validateDeckConstruction(nami, legal);
+    expect(legalResult.legal).toBe(true);
+    expect(legalResult.reasons).toEqual([]);
+  });
 });

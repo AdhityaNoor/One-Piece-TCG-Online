@@ -139,9 +139,14 @@ describe('OP13-079 (Imu) startOfGame: play up to 1 Mary Geoise Stage from deck',
 
     const resolved = resumeProgram(registry['OP13-079'], advanced.state, choice, [maryGeoiseDeckId as string], defs, 'a1', registry).state;
 
-    // Mary Geoise Stage is now in play, no longer in the deck.
-    expect(resolved.players.p1.stageArea.cardIds).toEqual([maryGeoiseDeckId]);
-    expect(resolved.cardsById[maryGeoiseDeckId as string].currentZone).toBe('stageArea');
+    // playStageFromDeck mints a new field instance (rt-*) and removes the deck copy.
+    expect(resolved.players.p1.stageArea.cardIds).toHaveLength(1);
+    const stagedId = resolved.players.p1.stageArea.cardIds[0];
+    expect(resolved.cardsById[stagedId]).toMatchObject({
+      cardDefinitionId: MARY_GEOISE_STAGE_DEF.cardDefinitionId,
+      currentZone: 'stageArea',
+    });
+    expect(resolved.cardsById[maryGeoiseDeckId as string]).toBeUndefined();
     expect(resolved.players.p1.deck.cardIds).not.toContain(maryGeoiseDeckId);
     // Deck shuffled back down to 49 (50 - 1 played).
     expect(resolved.players.p1.deck.cardIds).toHaveLength(49);
@@ -174,9 +179,15 @@ describe('OP13-079 (Imu) startOfGame: play up to 1 Mary Geoise Stage from deck',
     // eligible candidates the interpreter never emits a choice at all (see
     // interpreter.ts's playStageFromDeck suspend-case: `if (eligible.length
     // === 0) { shuffle; continue; }`) — it shuffles and proceeds straight
-    // through to dealing hands, with no Stage ever played.
-    expect(advanced.state.pendingChoices).toHaveLength(0);
+    // through to dealing hands, with no Stage ever played. The only pending
+    // choice is the going-first player's mulligan (5-2-1-6).
     expect(advanced.state.setupState?.stage).toBe('awaitingMulliganDecision');
+    expect(advanced.state.pendingChoices).toHaveLength(1);
+    expect(advanced.state.pendingChoices[0]).toMatchObject({
+      playerId: 'p1',
+      kind: 'YES_NO',
+      id: 'p1__mulligan-decision',
+    });
     expect(advanced.state.players.p1.stageArea.cardIds).toHaveLength(0);
     expect(advanced.state.players.p1.hand.cardIds).toHaveLength(5);
   });
@@ -194,8 +205,13 @@ describe('OP13-079 (Imu) startOfGame: play up to 1 Mary Geoise Stage from deck',
     const chosen = executeChooseGoingFirst(pregame.state, { type: 'CHOOSE_GOING_FIRST', actionId: 'a1', playerId: 'p1', goingFirst: true });
     const advanced = advanceStartOfGameEffects(chosen.state, defs, registry, 'a1');
 
-    expect(advanced.state.pendingChoices).toHaveLength(0);
     expect(advanced.state.setupState?.stage).toBe('awaitingMulliganDecision');
+    expect(advanced.state.pendingChoices).toHaveLength(1);
+    expect(advanced.state.pendingChoices[0]).toMatchObject({
+      playerId: 'p1',
+      kind: 'YES_NO',
+      id: 'p1__mulligan-decision',
+    });
     expect(advanced.state.players.p1.hand.cardIds).toHaveLength(5);
     expect(advanced.state.players.p2.hand.cardIds).toHaveLength(5);
   });

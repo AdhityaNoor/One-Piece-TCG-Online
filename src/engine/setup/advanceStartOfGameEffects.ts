@@ -58,7 +58,15 @@ export function advanceStartOfGameEffects(
     const program = leaderDef ? registry[leaderDef.cardNumber] : undefined;
 
     if (program && leaderInstance) {
-      const fired = runTimings(program, ['startOfGame'], current, leaderInstance.instanceId, defs, actionId, registry);
+      // Leaders "enter play" during setup (5-2-1-5-1). Fire startOfGame first
+      // (one-shot setup clauses like Imu's Stage search), then onEnterPlay so
+      // permanent statics/auras authored as onEnterPlay (e.g. OP16-080 cost aura,
+      // OP13-003/004 Leader power modifiers) actually register. Matches V2's
+      // ON_ENTER_PLAY drain in effects_V2/engineAdapter_V2.ts.
+      const fired = runTimings(program, ['startOfGame', 'onEnterPlay'], current, leaderInstance.instanceId, defs, actionId, registry);
+      // fired.state.pendingChoices already includes any newly emitted choices
+      // (EffectContext.finish merges them). Do not append fired.pendingChoices
+      // again or the same choice is duplicated.
       current = fired.state;
       log.push(...fired.log);
       if (fired.pendingChoices.length > 0) {
@@ -66,7 +74,6 @@ export function advanceStartOfGameEffects(
           state: {
             ...current,
             setupState: { ...setupState, startOfGameEffectQueue: queue },
-            pendingChoices: [...current.pendingChoices, ...fired.pendingChoices],
           },
           log,
         };

@@ -651,7 +651,10 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   //   during this turn.(This card can attack on the turn in which it is played.)
   { cardNumber: 'OP16-079', templateId: 'ability', params: { timing: 'onCharacterPlayedFromTrash', gate: [{ kind: 'playedCharacterTypeIncludes', typeIncludes: 'Land of Wano' }], functions: [{ fn: 'addKeyword', target: { ref: 'eventPlayedCharacter' }, keyword: 'rush', duration: 'duringThisTurn' }] } },
 
-  // OP16-080 — opponent-turn +1 cost aura; [On Your Opponent's Attack] optional trash [Trigger] → redirect attack to Leader or {Blackbeard Pirates} Character.
+  // OP16-080 (leader) Marshall.D.Teach —
+  //   [Opponent's Turn] All of your Characters gain +1 cost.
+  //   [On Your Opponent's Attack] [Once Per Turn] optional trash [Trigger] → redirect attack to this Leader or {Blackbeard Pirates} Character.
+  //   Static aura uses onEnterPlay; setup fires Leader onEnterPlay via advanceStartOfGameEffects.
   {
     cardNumber: 'OP16-080',
     templates: [
@@ -900,10 +903,22 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP16-118 — [On Play]/[On K.O.] Look 5, reveal up to 1 [Monkey.D.Luffy]/{Whitebeard Pirates} to hand, rest to bottom. PARTIAL: static hand-counter buff deferred.
+  // OP16-118 — hand Counter becomes +2000 for 8000-power Characters; [On Play]/[On K.O.] look 5.
   {
     cardNumber: 'OP16-118',
     templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'addCounterAuraControllerCharactersInHand',
+            setValue: 2000,
+            duration: 'permanent',
+            exactBasePower: 8000,
+          }],
+        },
+      },
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ name: 'Monkey.D.Luffy' }, { typeIncludes: 'Whitebeard Pirates' }] }, remainder: 'bottom' }] } },
       { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ name: 'Monkey.D.Luffy' }, { typeIncludes: 'Whitebeard Pirates' }] }, remainder: 'bottom' }] } },
     ],

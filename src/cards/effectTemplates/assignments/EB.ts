@@ -16,16 +16,33 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
   // --- Batch: EB02 expressible ---
   // --- Batch: EB03 expressible ---
   // --- Batch: EB04 expressible ---
-  // EB01-001 (leader) Kouzuki Oden — PARTIAL: +1000 Counter aura for Land of Wano without Counter deferred; cost≥5 gate approximated.
+  // EB01-001 (leader) Kouzuki Oden — Counter aura for Land of Wano without Counter; [DON!! x1] When Attacking if typed cost≥5.
   {
     cardNumber: 'EB01-001',
-    templateId: 'ability',
-    params: {
-      timing: 'whenAttacking',
-      condition: { donAttachedAtLeast: 1 },
-      gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Land of Wano', atLeast: 1 }],
-      functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'untilStartOfNextTurn' }],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'startOfGame',
+          functions: [{
+            fn: 'addCounterAuraControllerCharactersInHand',
+            amount: 1000,
+            duration: 'permanent',
+            anyOfTypes: ['Land of Wano'],
+            withoutPrintedCounter: true,
+          }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'whenAttacking',
+          condition: { donAttachedAtLeast: 1 },
+          gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Land of Wano', minCost: 5, atLeast: 1 }],
+          functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'untilStartOfNextTurn' }],
+        },
+      },
+    ],
   },
 
   {

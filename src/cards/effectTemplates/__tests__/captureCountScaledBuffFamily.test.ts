@@ -61,7 +61,7 @@ describe('family: captureCount → scaled buff on a separately chosen target (P-
     const state = resumeProgram(registry['SYN-SRC'], afterReturn.state, buffChoice, [leaderId], rig.defs, null, registry).state;
 
     // +2000 × 2 returned = +4000.
-    expect(computeCurrentPower(state.defs ?? rig.defs, state, leaderId)).toBe(leaderBase + 4000);
+    expect(computeCurrentPower(rig.defs, state, leaderId)).toBe(leaderBase + 4000);
   });
 
   it('offers no buff when nothing is returned', () => {
@@ -72,6 +72,6 @@ describe('family: captureCount → scaled buff on a separately chosen target (P-
     const after = resumeProgram(registry['SYN-SRC'], fired.state, returnChoice, [], rig.defs, null, registry);
     // ifPrevious previousMovedAny is false → no buff-target choice pending, no power change.
     expect(after.state.pendingChoices).toHaveLength(0);
-    expect(computeCurrentPower(after.state.defs ?? rig.defs, after.state, leaderId)).toBe(leaderBase);
+    expect(computeCurrentPower(rig.defs, after.state, leaderId)).toBe(leaderBase);
   });
 });

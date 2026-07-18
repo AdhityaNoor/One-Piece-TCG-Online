@@ -20,7 +20,7 @@ import type { KoReplacementTrigger } from '../state/game';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates, countSelfTypedCharacters } from './gates';
 import { canPayAbilityCost, donMinusCandidateIds, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
-import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireCharacterRestedReactions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, fireHandTrashedReactions, fireLifeDamageDealtReactions, fireLifeToHandReactions } from './fireTiming';
+import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireCharacterRestedReactions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, fireHandTrashedReactions, fireLifeDamageDealtReactions, fireLifeRemovedReactions, fireLifeToHandReactions } from './fireTiming';
 import { dealLifeDamage } from '../rules/shared/dealLifeDamage';
 import { isAbilityNegated } from './effectNegation';
 import type { GateEvalContext } from './gates';
@@ -152,6 +152,16 @@ function finishWithCascade(
     if (removed.pendingChoices.length > 0) return { state: working, log, pendingChoices: removed.pendingChoices };
   }
 
+  const lifeLeaveQueue = ctx.takeLifeLeaves();
+  guard = 0;
+  while (lifeLeaveQueue.length > 0 && guard++ < 200) {
+    lifeLeaveQueue.shift();
+    const lifeRemoved = fireLifeRemovedReactions(working, registry, defs, actionId);
+    working = lifeRemoved.state;
+    log = [...log, ...lifeRemoved.log];
+    if (lifeRemoved.pendingChoices.length > 0) return { state: working, log, pendingChoices: lifeRemoved.pendingChoices };
+  }
+
   const eventQueue = ctx.takePendingEventActivations();
   guard = 0;
   while (eventQueue.length > 0 && guard++ < 200) {
@@ -276,7 +286,7 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
     const exclude = new Set(bindings[filter.excludeIdsFromVar] ?? []);
     if (exclude.has(id)) return false;
   }
-  if (filter.attribute && !def.attributes?.includes(filter.attribute)) return false;
+  if (filter.attribute && !ctx.effectiveAttributesOf(id).includes(filter.attribute)) return false;
   if (filter.name && !nameMatches(def, filter.name)) return false;
   const maxCost = effectiveMaxCost(filter, ctx);
   if (maxCost !== undefined && (def.baseCost ?? Infinity) > maxCost) return false;
@@ -459,7 +469,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.anyOfTypes !== undefined) ids = ids.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
       if (sel.hasTrigger !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasTrigger === true) === sel.hasTrigger);
       if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
-      if (sel.attribute !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.attributes?.includes(sel.attribute!) === true);
+      if (sel.attribute !== undefined) ids = ids.filter((id) => ctx.effectiveAttributesOf(id).includes(sel.attribute!));
       if (sel.excludeSelf) ids = ids.filter((id) => id !== ctx.sourceInstanceId);
       if (sel.excludeSelfName) {
         const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
@@ -507,7 +517,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       }
       if (sel.typeIncludes !== undefined && !hasType(leaderDef?.types ?? [], sel.typeIncludes)) includeLeader = false;
       if (sel.anyOfTypes !== undefined && !sel.anyOfTypes.some((t) => hasType(leaderDef?.types ?? [], t))) includeLeader = false;
-      if (sel.attribute !== undefined && leaderDef?.attributes?.includes(sel.attribute) !== true) includeLeader = false;
+      if (sel.attribute !== undefined && !ctx.effectiveAttributesOf(leaderId).includes(sel.attribute)) includeLeader = false;
       if (includeLeader) ids.push(leaderId);
       let charIds = ctx.opponentCharacterIds();
       if (sel.minCost !== undefined) charIds = charIds.filter((id) => ctx.costOf(id) >= sel.minCost!);
@@ -519,7 +529,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       charIds = applyBaseFilters(charIds, sel, ctx);
       if (sel.typeIncludes !== undefined) charIds = charIds.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
       if (sel.anyOfTypes !== undefined) charIds = charIds.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
-      if (sel.attribute !== undefined) charIds = charIds.filter((id) => ctx.definitionOf(id)?.attributes?.includes(sel.attribute!) === true);
+      if (sel.attribute !== undefined) charIds = charIds.filter((id) => ctx.effectiveAttributesOf(id).includes(sel.attribute!));
       if (sel.excludeName !== undefined) charIds = charIds.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
       if (sel.excludeCardNames !== undefined) charIds = charIds.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       return [...ids, ...charIds];
@@ -646,7 +656,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.hasBlocker !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasBlocker === true) === sel.hasBlocker);
       if (sel.hasTrigger !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasTrigger === true) === sel.hasTrigger);
       if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
-      if (sel.attribute !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.attributes?.includes(sel.attribute!) === true);
+      if (sel.attribute !== undefined) ids = ids.filter((id) => ctx.effectiveAttributesOf(id).includes(sel.attribute!));
       if (sel.excludeName !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
       if (sel.excludeCardNames !== undefined) ids = ids.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
@@ -692,6 +702,9 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.maxCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) <= sel.maxCost!);
       if (sel.exactCost !== undefined) ids = ids.filter((id) => ctx.costOf(id) === sel.exactCost);
       if (sel.rested !== undefined) ids = ids.filter((id) => ctx.state().cardsById[id]?.orientation === (sel.rested ? 'rested' : 'active'));
+      if (sel.color !== undefined) {
+        ids = ids.filter((id) => ctx.definitionOf(id)?.colors.includes(sel.color!) === true);
+      }
       return ids;
     }
     case 'controllerActiveStages': {
@@ -780,6 +793,17 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       ctx.addContinuousCostAura({ group: op.group, amount: op.amount, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}), ...(op.scale ? { scale: op.scale } : {}), ...(op.usesRemaining !== undefined ? { usesRemaining: op.usesRemaining } : {}) });
       return { selectedIds: [], movedIds: [] };
     }
+    case 'addCounterAura': {
+      ctx.addContinuousCounterAura({
+        group: op.group,
+        duration: op.duration,
+        ...(op.amount !== undefined ? { amount: op.amount } : {}),
+        ...(op.setValue !== undefined ? { setValue: op.setValue } : {}),
+        ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}),
+        ...(op.condition ? { condition: op.condition } : {}),
+      });
+      return { selectedIds: [], movedIds: [] };
+    }
     case 'addCost': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
@@ -840,6 +864,13 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       ctx.addContinuousKeywordAura({ group: op.group, keyword: op.keyword, duration: op.duration, ...(op.sourceCondition ? { sourceCondition: op.sourceCondition } : {}), ...(op.condition ? { condition: op.condition } : {}) });
       return { selectedIds: [], movedIds: [] };
     }
+    case 'addAttribute': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      for (const id of ids) {
+        ctx.addContinuousAttribute({ appliesToInstanceId: id, attribute: op.attribute, duration: op.duration, ...(op.condition ? { condition: op.condition } : {}) });
+      }
+      return { selectedIds: ids, movedIds: [] };
+    }
     case 'addKoImmunity': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) {
@@ -851,6 +882,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
           ...(op.condition ? { condition: op.condition } : {}),
           ...(op.attackerCategory ? { attackerCategory: op.attackerCategory } : {}),
           ...(op.attackerAttribute ? { attackerAttribute: op.attackerAttribute } : {}),
+          ...(op.attackerWithoutAttribute ? { attackerWithoutAttribute: op.attackerWithoutAttribute } : {}),
           ...(op.effectSourceController ? { effectSourceController: op.effectSourceController } : {}),
           ...(op.effectSourceMaxBasePower !== undefined ? { effectSourceMaxBasePower: op.effectSourceMaxBasePower } : {}),
           ...(op.effectSourceCategory ? { effectSourceCategory: op.effectSourceCategory } : {}),
@@ -1013,6 +1045,11 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       ctx.preventControllerLifeToHand({ appliesToControllerId: targetPlayerId, duration: op.duration });
       return EMPTY_RESULT;
     }
+    case 'preventEffectDraw': {
+      const targetPlayerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      ctx.preventEffectDraw({ appliesToControllerId: targetPlayerId, duration: op.duration });
+      return EMPTY_RESULT;
+    }
     case 'preventControllerCharacterPlay': {
       const targetPlayerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
       ctx.preventControllerCharacterPlay({
@@ -1030,6 +1067,26 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     }
     case 'deferEmptyDeckDefeatToEndOfTurn': {
       ctx.deferEmptyDeckDefeatToEndOfTurn({ appliesToControllerId: ctx.controllerId, duration: op.duration });
+      return EMPTY_RESULT;
+    }
+    case 'replaceEmptyDeckDefeatWithWin': {
+      ctx.replaceEmptyDeckDefeatWithWin({ appliesToControllerId: ctx.controllerId, duration: op.duration });
+      return EMPTY_RESULT;
+    }
+    case 'winGame': {
+      ctx.winGame();
+      return EMPTY_RESULT;
+    }
+    case 'grantExtraTurn': {
+      ctx.grantExtraTurn();
+      return EMPTY_RESULT;
+    }
+    case 'registerDonPhasePlacement': {
+      ctx.registerDonPhasePlacement({ appliesToControllerId: ctx.controllerId, duration: op.duration });
+      return EMPTY_RESULT;
+    }
+    case 'redirectFaceUpLifeToDeckBottom': {
+      ctx.redirectFaceUpLifeToDeckBottom({ appliesToControllerId: ctx.controllerId, duration: op.duration });
       return EMPTY_RESULT;
     }
     case 'preventControllerCharacterSetActiveDon': {
@@ -1890,7 +1947,7 @@ function runOpList(
     }
     if (op.op === 'returnHandShuffleDraw') {
       const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
-      const returned = ctx.returnHandShuffleDraw(playerId, op.drawAmount);
+      const returned = ctx.returnHandShuffleDraw(playerId, op.drawAmount, op.destination ?? 'shuffle');
       const drawCount = op.drawAmount ?? returned;
       if (drawCount > 0 && ctx.state().currentPhase !== 'draw') {
         const reactive = fireDrawOutsideDrawPhaseReactions(ctx.state(), playerId, registry, defs, actionId);
@@ -1937,6 +1994,17 @@ function runOpList(
             movedIds: ['__dealDamage'],
           });
           return { suspended: true, bindings: workingBindings };
+        }
+        // One onLifeRemoved pulse per resolved hit (any leave destination).
+        for (let hit = 0; hit < damaged.hitsResolved; hit++) {
+          const lifeRemoved = fireLifeRemovedReactions(ctx.state(), registry, defs, actionId);
+          if (ctx.absorbActionResult(lifeRemoved)) {
+            workingBindings = withResultBindings(workingBindings, {
+              selectedIds: [],
+              movedIds: ['__dealDamage'],
+            });
+            return { suspended: true, bindings: workingBindings };
+          }
         }
       }
 

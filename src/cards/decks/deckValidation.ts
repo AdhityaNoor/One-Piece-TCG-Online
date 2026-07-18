@@ -9,6 +9,7 @@
  * becomes a CardInstance in a running game.
  */
 import type { CardDefinition, Color } from '../../engine/state/card';
+import { CURATED_EFFECT_PROGRAMS } from '../effectTemplates/curatedPrograms';
 import { hasUnlimitedCopies } from './unlimitedCopyCards';
 
 export interface DeckConstructionEntry {
@@ -82,6 +83,39 @@ export function validateDeckConstruction(leader: CardDefinition, mainDeck: DeckC
       reasons.push(
         `"${entry.definition.name}" (${entry.definition.colors.join('/')}) is not a legal color for Leader colors (${leader.colors.join('/')}) (5-1-2-2).`,
       );
+    }
+  }
+
+  const leaderRestriction = CURATED_EFFECT_PROGRAMS[leader.cardNumber]?.cannotIncludeCategoryCostOrMore;
+  if (leaderRestriction) {
+    for (const entry of mainDeck) {
+      const def = entry.definition;
+      if (def.category !== leaderRestriction.category) continue;
+      const cost = def.baseCost ?? -1;
+      if (cost >= leaderRestriction.minCost) {
+        reasons.push(
+          `"${def.name}" is a ${def.category} with cost ${cost}; under this Leader's rules you cannot include ${leaderRestriction.category} cards with a cost of ${leaderRestriction.minCost} or more.`,
+        );
+      }
+    }
+  }
+
+  const mustHaveType = CURATED_EFFECT_PROGRAMS[leader.cardNumber]?.mustHaveType;
+  if (mustHaveType) {
+    const needle = mustHaveType.toLowerCase();
+    for (const entry of mainDeck) {
+      const def = entry.definition;
+      const hasType = (def.types ?? []).some((t) =>
+        t
+          .split(/[\/,]+/)
+          .map((p) => p.trim().toLowerCase())
+          .some((p) => p.includes(needle)),
+      );
+      if (!hasType) {
+        reasons.push(
+          `"${def.name}" does not have {${mustHaveType}} type; under this Leader's rules you can only include {${mustHaveType}} type cards in your deck.`,
+        );
+      }
     }
   }
 

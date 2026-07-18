@@ -3,7 +3,7 @@ import type { DeclareAttackAction } from '../../../engine/actions/action';
 import { runTimings, resumeProgram } from '../../../engine/effects/interpreter';
 import { runEndPhaseAndHandoff } from '../../../engine/rules/phases/runEndPhaseAndHandoff';
 import { validateDeclareAttack } from '../../../engine/rules/battle/declareAttack';
-import { buildBaseRig, makeCharacterDef, makeEventDef, putCharacterInPlay, putInHand, putLifeCards } from '../../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, makeEventDef, putCharacterInPlay, putDeckCards, putInHand, putLifeCards } from '../../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments } from '../assembler';
 import { OP04_ASSIGNMENTS } from '../assignments/OP04';
 import { OP05_ASSIGNMENTS } from '../assignments/OP05';
@@ -73,11 +73,15 @@ describe('preventAttack curated assignments', () => {
     let legalFoeId: string;
     ({ rig, instanceId: legalFoeId } = putCharacterInPlay(rig, 'p2', FOE_NINE));
     ({ rig } = putCharacterInPlay(rig, 'p2', FOE_TEN));
+    // Then-draw fires (Crocodile is cost 9 / FOE_TEN is cost 10) — keep a deck so
+    // resolution does not deck-out and short-circuit End Phase expiry cleanup.
+    ({ rig } = putDeckCards(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'syn-deck-filler', cardNumber: 'SYN-DECK' }), 2));
 
     const fired = runTimings(registry['OP14-120'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
     expect(fired.state.pendingChoices[0].constraints.candidateInstanceIds).toEqual([legalFoeId]);
 
     const resolved = resumeProgram(registry['OP14-120'], fired.state, fired.state.pendingChoices[0], [legalFoeId], rig.defs, null, registry);
+    expect(resolved.state.gameOver).toBeNull();
     const p2Turn = { ...resolved.state, activePlayerId: 'p2' as const, currentPhase: 'main' as const, turnNumber: 4 };
     const p1LeaderId = p2Turn.players.p1.leaderInstanceId;
     expectBlockedUntilTurnEnds(p2Turn, rig.defs, legalFoeId, p1LeaderId);

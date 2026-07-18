@@ -12,7 +12,7 @@
  */
 import type { ContinuousEffectDuration, ContinuousKeyword, ContinuousPowerCondition, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../state/game';
 import type { PendingChoice } from '../events/pendingChoice';
-import type { CardDefinition } from '../state/card';
+import type { Attribute, CardDefinition } from '../state/card';
 import type { EffectProgram, SearchPickDestination, SearchRemainderDestination } from './effectIr';
 
 export interface EffectContext {
@@ -106,6 +106,14 @@ export interface EffectContext {
     condition?: ContinuousPowerCondition;
     description?: string;
   }): void;
+  /** Register a continuous attribute grant (8-1-3-3); condition re-checked on every attribute read. */
+  addContinuousAttribute(spec: {
+    appliesToInstanceId: string;
+    attribute: Attribute;
+    duration: ContinuousEffectDuration;
+    condition?: ContinuousPowerCondition;
+    description?: string;
+  }): void;
   /** Register a "cannot be K.O.'d" grant on the target (8-1-3-3); scope + condition re-checked on every K.O. attempt. */
   addContinuousKoImmunity(spec: {
     appliesToInstanceId: string;
@@ -183,6 +191,18 @@ export interface EffectContext {
     duration: ContinuousEffectDuration;
     description?: string;
   }): void;
+  /** Register "cannot draw using your own effects" for a player. */
+  preventEffectDraw(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void;
+  /** Register "face-up Life → deck bottom instead of hand" (ST13-003). */
+  redirectFaceUpLifeToDeckBottom(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void;
   /** Register "cannot play Character cards [matching filter] this turn" for a player. */
   preventControllerCharacterPlay(spec: {
     appliesToControllerId: string;
@@ -235,8 +255,8 @@ export interface EffectContext {
   playCharacterFromTrash(trashInstanceId: string, rested?: boolean): string | null;
   /** Shuffle a player's deck using the serialized seedable RNG state. */
   shuffleDeck(playerId: string): void;
-  /** Return all hand cards to deck, shuffle, then draw equal count (or `drawAmount` when set). */
-  returnHandShuffleDraw(playerId: string, drawAmount?: number): number;
+  /** Return all hand to deck (`shuffle` default, or `bottom`), then draw equal count (or `drawAmount`). */
+  returnHandShuffleDraw(playerId: string, drawAmount?: number, destination?: 'shuffle' | 'bottom'): number;
   /** Move a card (e.g. from the trash) to its owner's hand. */
   moveToHand(instanceId: string): void;
   /** Move a card (e.g. from the hand) to its owner's trash. */

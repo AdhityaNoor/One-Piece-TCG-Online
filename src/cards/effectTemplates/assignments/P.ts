@@ -239,6 +239,171 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
+  // ── Triage batch 2026-07-18: remaining needsPrimitive P cards expressible with existing catalog. ──
+  // P-007 — [DON!! x1] cannot be K.O.'d in battle by ＜Strike＞ Leaders/Characters.
+  { cardNumber: 'P-007', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { donAttachedAtLeast: 1 }, attackerAttribute: 'strike' }] } },
+
+  // P-025 — [DON!! x1] cannot be K.O.'d in battle by Characters without ＜Special＞.
+  { cardNumber: 'P-025', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { donAttachedAtLeast: 1 }, attackerCategory: 'character', attackerWithoutAttribute: 'special' }] } },
+
+  // P-077 — [OPT] When 2+ DON!! returned: add 1 DON!! rested, then set up to 1 purple Stage active.
+  { cardNumber: 'P-077', templateId: 'ability', params: { timing: 'onDonReturned', oncePerTurn: true, gate: [{ kind: 'selfDonReturnedThisAction', atLeast: 2 }], functions: [
+    { fn: 'addDonFromDeck', count: 1, rested: true },
+    { fn: 'setActiveControllerStage', filter: { color: 'purple' }, maxTargets: 1 },
+  ] } },
+
+  // P-009 — [On Play] If opponent hand ≥6, opponent adds 1 Life to hand.
+  { cardNumber: 'P-009', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'opponentHand', atLeast: 6 }], functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' } }] } },
+
+  // P-010 — [End of Your Turn] Add 1 DON!! from DON!! deck set as active.
+  { cardNumber: 'P-010', templateId: 'ability', params: { timing: 'endOfTurn', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+
+  // P-048 — [DON!! x1] [When Attacking] If Life ≥4, opponent places 1 hand card at bottom of deck.
+  { cardNumber: 'P-048', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfLife', atLeast: 4 }], functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 1, chooser: 'opponent' }] } },
+
+  // P-052 — [DON!! x1] cannot be K.O.'d in battle by <Slash> cards.
+  { cardNumber: 'P-052', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { donAttachedAtLeast: 1 }, attackerAttribute: 'slash' }] } },
+
+  // P-054 — [DON!! x1] cannot be K.O.'d in battle by <Strike> cards.
+  { cardNumber: 'P-054', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', condition: { donAttachedAtLeast: 1 }, attackerAttribute: 'strike' }] } },
+
+  // P-062 — [Activate: Main] [OPT] rest opp Character cost≤4 + this +1000 this turn; Then Life top → hand.
+  { cardNumber: 'P-062', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true },
+    { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' },
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' } },
+  ] } },
+
+  // P-067 — If this Character is rested, opponent cannot attack any card other than this Character.
+  { cardNumber: 'P-067', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'setForcedAttackTarget', duration: 'permanent', condition: { rested: true } }] } },
+
+  // P-071 — [On K.O.] You may add this Character to your hand.
+  { cardNumber: 'P-071', templateId: 'ability', params: { timing: 'onKO', optionalActivate: true, functions: [{ fn: 'returnSelfToHand' }] } },
+
+  // P-072 — [On Play]/[On K.O.] Rest up to 1 opp Character cost≤4.
+  {
+    cardNumber: 'P-072',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+    ],
+  },
+
+  // P-091 — [On Play] play {Neptunian}/{Fish-Man Island} cost≤5 from hand.
+  //   [Activate: Main] rest this: up to 1 {Neptunian} can attack Characters the turn it is played.
+  {
+    cardNumber: 'P-091',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', anyOf: [{ typeIncludes: 'Neptunian' }, { typeIncludes: 'Fish-Man Island' }], maxCost: 5 } }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Neptunian' } }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
+
+  // P-092 — [Opponent's Turn] −3000. [When Attacking] If Leader {Navy}, Leader base power becomes 7000 until end of opponent's next turn.
+  {
+    cardNumber: 'P-092',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: -3000, duration: 'permanent', condition: { turn: 'opponent' } }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'leaderType', type: 'Navy' }], functions: [{ fn: 'setBasePower', target: { group: 'leader', player: 'controller' }, value: 7000, duration: 'endOfOpponentsTurn' }] } },
+    ],
+  },
+
+  // P-097 — [On Play]/[When Attacking] opponent cannot activate [Blocker] this turn.
+  {
+    cardNumber: 'P-097',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'preventBlockers', duration: 'duringThisTurn' }] } },
+    ],
+  },
+
+  // P-098 — [Blocker] printed. [On Play] If you do NOT have 5 Characters cost≥5, bottom-deck this.
+  { cardNumber: 'P-098', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveSelfToBottomDeck', ifGate: [{ kind: 'selfCharacterCostCount', minCost: 5, atMost: 4 }] }] } },
+
+  // P-099 — [When Attacking] DON!! −10: set this Character as active.
+  { cardNumber: 'P-099', templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'donMinus', count: 10 }], functions: [{ fn: 'setActiveSelf' }] } },
+
+  // P-100 — [When Attacking] Negate effects of opponent Leader + all Characters this turn.
+  { cardNumber: 'P-100', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'negateControllerEffects', player: 'opponent', duration: 'duringThisTurn', appliesToCategories: ['leader', 'character'] }] } },
+
+  // P-102 — [On Play] If Leader {Straw Hat Crew}, set up to 2 DON!! as active.
+  { cardNumber: 'P-102', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'setActiveControllerDon', maxTargets: 2 }] } },
+
+  // P-104 — If either player has 10 DON!! on field, cannot be removed by opponent's effects.
+  { cardNumber: 'P-104', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventFieldRemoval', target: { ref: 'self' }, duration: 'permanent', effectSourceController: 'opponent', condition: { gate: [{ kind: 'anyOf', gates: [{ kind: 'selfDonFieldCount', atLeast: 10 }, { kind: 'opponentDonFieldCount', atLeast: 10 }] }] } }] } },
+
+  // P-106 — [End of Your Turn] may turn top Life face-up: set up to 1 {Egghead} active. [Trigger] Draw 1 + K.O. cost≤2.
+  {
+    cardNumber: 'P-106',
+    templates: [
+      { templateId: 'ability', params: { timing: 'endOfTurn', functions: [
+        { fn: 'turnTopLifeFace', faceUp: true },
+        { fn: 'setActiveControllerCharacter', maxTargets: 1, filter: { typeIncludes: 'Egghead', rested: true }, ifPrevious: 'previousSelectedAny' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'draw', amount: 1 },
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true },
+      ] } },
+    ],
+  },
+
+  // P-114 — [Blocker] printed. [End of Your Turn] If you have any active DON!!, set this Character as active.
+  { cardNumber: 'P-114', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfActiveDonCount', atLeast: 1 }], functions: [{ fn: 'setActiveSelf' }] } },
+
+  // P-115 — [On Play] Give up to 1 rested DON!! to Leader/Character. [Trigger] Play yellow Character ≤5000 power with [Trigger] from hand.
+  {
+    cardNumber: 'P-115',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'giveDon', count: 1 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', color: 'yellow', maxPower: 5000, hasTrigger: true } }] } },
+    ],
+  },
+
+  // ── Triage batch 2026-07-18: close remaining defer (7 → 0). ──
+  // P-002 — [Main] return hand → shuffle → draw equal. [Trigger] Activate [Main].
+  {
+    cardNumber: 'P-002',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'returnHandShuffleDraw' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'returnHandShuffleDraw' }] } },
+    ],
+  },
+  // P-005 — [Activate: Main] DON!! −2: this Character gains [Banish] this turn.
+  { cardNumber: 'P-005', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'donMinus', count: 2 }], functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'duringThisTurn' }] } },
+  // P-024 — [Main] Leader +1000 per your Character this turn. [Trigger] up to 1 Leader/Character +1000 this turn.
+  {
+    cardNumber: 'P-024',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 0, duration: 'duringThisTurn', scale: { per: 'controllerCharacters', step: 1, amountPer: 1000 } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
+  // P-039 — Printed [Banish] is card data. [DON!! x2] If 0 Life, +2000.
+  { cardNumber: 'P-039', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { donAttachedAtLeast: 2, gate: [{ kind: 'selfLife', atMost: 0 }] } }] } },
+  // P-046 — [On Play] You may place all hand at deck bottom; if you do, draw equal.
+  //   Known limitation: "in any order" → place in current hand order (no interactive reorder).
+  { cardNumber: 'P-046', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'returnHandShuffleDraw', destination: 'bottom', optional: true }] } },
+  // P-111 — [OPT] If {Straw Hat Crew} would be removed by opponent effect, rest 1 DON!! instead.
+  { cardNumber: 'P-111', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{
+    fn: 'registerKoReplacementAura',
+    scope: 'effect',
+    oncePerTurn: true,
+    anyOfTypes: ['Straw Hat Crew'],
+    replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+    effectSourceController: 'opponent',
+    restDon: { count: 1 },
+    duration: 'permanent',
+  }] } },
+  // P-117 (leader) Nami — East Blue deck-only; empty deck → win; [DON!! x1] on Life damage may trash top deck.
+  {
+    cardNumber: 'P-117',
+    templates: [
+      { templateId: 'staticFlags', params: { mustHaveType: 'East Blue' } },
+      { templateId: 'ability', params: { timing: 'startOfGame', functions: [{ fn: 'replaceEmptyDeckDefeatWithWin' }] } },
+      { templateId: 'ability', params: { timing: 'onLifeDamageDealt', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'trashTopDeck', count: 1, optional: true }] } },
+    ],
+  },
+
   // Vanilla promos (no effect text).
   { cardNumber: 'P-012', templateId: 'noRuntime', params: {} },
   { cardNumber: 'P-015', templateId: 'noRuntime', params: {} },

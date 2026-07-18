@@ -14,7 +14,8 @@ import { effectLogDataForSource } from '../../logs/effectLogData';
 import { createActionLogger } from './actionLogger';
 import type { CardDefinitionLookup } from './definitions';
 import { getOpponentId } from './players';
-import { addToZoneTop } from './zoneOps';
+import { addToZoneBottom, addToZoneTop } from './zoneOps';
+import { resolveLifeLeaveDestination } from './lifeLeaveDestination';
 
 export interface DealLifeDamageResult {
   state: GameState;
@@ -61,18 +62,22 @@ export function dealLifeDamage(args: {
 
     const [lifeCardId, ...restLife] = player.lifeArea.cardIds;
     const lifeDef = args.defs[working.cardsById[lifeCardId]?.cardDefinitionId ?? ''];
+    const leaveTo = resolveLifeLeaveDestination(working, args.targetPlayerId, lifeCardId);
     const cardsById = {
       ...working.cardsById,
       [lifeCardId]: {
         ...working.cardsById[lifeCardId],
-        currentZone: 'hand' as const,
+        currentZone: leaveTo === 'deckBottom' ? 'deck' as const : 'hand' as const,
         faceState: 'faceUp' as const,
+        revealedTo: leaveTo === 'deckBottom' ? 'all' as const : working.cardsById[lifeCardId].revealedTo,
       },
     };
     const nextPlayer = {
       ...player,
       lifeArea: { ...player.lifeArea, cardIds: restLife },
-      hand: addToZoneTop(player.hand, lifeCardId),
+      ...(leaveTo === 'deckBottom'
+        ? { deck: addToZoneBottom(player.deck, lifeCardId) }
+        : { hand: addToZoneTop(player.hand, lifeCardId) }),
     };
     working = {
       ...working,
@@ -81,7 +86,7 @@ export function dealLifeDamage(args: {
     };
     hitsResolved += 1;
 
-    if (lifeDef?.hasTrigger) {
+    if (leaveTo === 'hand' && lifeDef?.hasTrigger) {
       const hasCuratedTrigger = !!args.registry[working.cardsById[lifeCardId].cardDefinitionId]?.abilities.some(
         (ab) => ab.timing === 'lifeTrigger',
       );
@@ -112,16 +117,19 @@ export function dealLifeDamage(args: {
     logger.push({
       actorPlayerId: args.actorPlayerId,
       type: 'DAMAGE_DEALT',
-      message: `${args.targetPlayerId} took 1 Life damage from an effect (hit ${hit + 1}/${args.amount}).`,
+      message: leaveTo === 'deckBottom'
+        ? `${args.targetPlayerId} took 1 Life damage from an effect (hit ${hit + 1}/${args.amount}) — face-up Life placed at bottom of deck.`
+        : `${args.targetPlayerId} took 1 Life damage from an effect (hit ${hit + 1}/${args.amount}).`,
       data: {
         hit: hit + 1,
         of: args.amount,
         targetPlayerId: args.targetPlayerId,
         lifeCardInstanceId: lifeCardId,
         sourceInstanceId: args.sourceInstanceId ?? undefined,
+        faceUpLifeToDeckBottom: leaveTo === 'deckBottom' || undefined,
       },
       relatedCardInstanceIds: [lifeCardId],
-      visibility: { visibleTo: [args.targetPlayerId] },
+      visibility: leaveTo === 'hand' ? { visibleTo: [args.targetPlayerId] } : 'public',
     });
   }
 
