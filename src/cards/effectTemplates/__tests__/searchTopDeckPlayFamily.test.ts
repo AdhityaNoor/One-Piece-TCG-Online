@@ -70,6 +70,44 @@ describe('family: searchTopDeck play destination', () => {
     expect(resolved.players.p1.deck.cardIds).toEqual([seeded.deckIds[2], seeded.deckIds[0]]);
   });
 
+  it('plays a matching looked card and places the rest on top or bottom (OP06-057)', () => {
+    const assignment: CardEffectAssignment = {
+      cardNumber: 'SYN-SRC',
+      templateId: 'ability',
+      params: {
+        timing: 'activateMain',
+        functions: [{
+          fn: 'searchTopDeck',
+          look: 1,
+          pick: 1,
+          reveal: true,
+          destination: 'play',
+          filter: { category: 'character', exactCost: 2 },
+          remainder: 'deckTopOrBottom',
+        }],
+      },
+    };
+    const registry = buildRegistryFromAssignments([assignment]);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC));
+    const seeded = withDeck(rig, [OFF]);
+    rig = seeded.rig;
+
+    const fired = runTimings(registry['SYN-SRC'], ['activateMain'], rig.state, sourceId, rig.defs, null, registry);
+    const pickChoice = fired.state.pendingChoices[0];
+    expect(pickChoice.constraints.candidateInstanceIds).toEqual([]); // OFF is cost 5, not eligible
+    const afterPick = resumeProgram(registry['SYN-SRC'], fired.state, pickChoice, [], rig.defs, null, registry);
+    const orderChoice = afterPick.state.pendingChoices[0];
+    expect(orderChoice.constraints.candidateInstanceIds).toEqual([seeded.deckIds[0]]);
+    const afterOrder = resumeProgram(registry['SYN-SRC'], afterPick.state, orderChoice, [seeded.deckIds[0]], rig.defs, null, registry);
+    const placementChoice = afterOrder.state.pendingChoices[0];
+    expect(placementChoice).toMatchObject({ kind: 'SELECT_OPTION' });
+    const resolved = resumeProgram(registry['SYN-SRC'], afterOrder.state, placementChoice, 0, rig.defs, null, registry).state;
+    expect(resolved.players.p1.deck.cardIds[0]).toBe(seeded.deckIds[0]);
+    expect(resolved.players.p1.characterArea.cardIds).not.toContain(seeded.deckIds[0]);
+  });
+
   it("trashes up to N looked cards (destination: 'trash', OP03-083) and bottoms the rest", () => {
     const assignment: CardEffectAssignment = {
       cardNumber: 'SYN-SRC',

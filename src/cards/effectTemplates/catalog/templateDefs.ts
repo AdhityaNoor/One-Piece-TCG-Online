@@ -41,7 +41,7 @@ export type MoveCardSource =
 export type MoveCardDestination =
   | { zone: 'hand'; player: 'owner' }
   | { zone: 'life'; player: 'owner' | 'controller'; position: 'top' | 'topOrBottom'; faceUp?: boolean }
-  | { zone: 'deck'; player: 'owner'; position: 'bottom' | 'top' }
+  | { zone: 'deck'; player: 'owner'; position: 'bottom' | 'top' | 'topOrBottom' }
   | { zone: 'trash'; player: 'owner' };
 
 export interface TargetFilter {
@@ -96,6 +96,8 @@ export interface TargetFilter {
   restedLeader?: boolean;
   /** When typeIncludes/anyOfTypes is set on leaderOrCharacters, still include the controller Leader. */
   typeFilterCharactersOnly?: boolean;
+  /** Exclude instance ids currently bound in this var (e.g. prior chooseTargets / captureCount). */
+  excludeIdsFromVar?: string;
 }
 
 export type TargetSpec =
@@ -166,7 +168,7 @@ export type AbilityFunction =
   | { fn: 'optionalTrashFromHand'; count?: number; anyNumber?: true; filter?: SearchFilter }
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
   | { fn: 'revealOpponentHand'; count?: number }
-  | { fn: 'trashTopDeck'; count: number; optional?: boolean }
+  | { fn: 'trashTopDeck'; count?: number; countVar?: string; optional?: boolean }
   | { fn: 'trashSelf' }
   | { fn: 'returnSelfToHand' }
   | { fn: 'moveSelfToBottomDeck' }
@@ -176,13 +178,18 @@ export type AbilityFunction =
   | { fn: 'moveAllCharactersToBottomDeck'; filter?: { maxCost?: number; maxPower?: number; maxBaseCost?: number; maxBasePower?: number } }
   | { fn: 'peekLifeAndPlace'; from: 'controllerOrOpponentTop'; placement: 'topOrBottom' }
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
-  | { fn: 'playFromHand'; filter: SearchFilter; maxTargets?: number; optional?: boolean; rested?: boolean; player?: 'controller' | 'opponent'; chooser?: 'controller' | 'opponent'; distinctNames?: boolean }
+  | { fn: 'playFromHand'; filter?: SearchFilter; fromVar?: string; maxTargets?: number; minTargets?: number; optional?: boolean; rested?: boolean; player?: 'controller' | 'opponent'; chooser?: 'controller' | 'opponent'; distinctNames?: boolean; prompt?: string }
   | { fn: 'activateEventFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'activateEventFromTrash'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number; rested?: boolean }
   // "At the start of the game, play up to N matching Stage cards from your deck" (5-2-1-5-1, e.g. Imu/OP13-079).
   | { fn: 'playStageFromDeck'; filter: SearchFilter; maxTargets?: number }
-  | { fn: 'playFromTrash'; filter: SearchFilter; maxTargets?: number; rested?: boolean; distinctNames?: boolean }
+  | { fn: 'playFromTrash'; filter?: SearchFilter; fromVar?: string; maxTargets?: number; rested?: boolean; distinctNames?: boolean; prompt?: string }
+  /**
+   * Choose up to 1 card matching each pick filter from trash (distinct), then if 2 were
+   * chosen pick which enters rested and play the other active; a lone pick plays active.
+   */
+  | { fn: 'playPairOneRested'; zone: 'trash'; picks: [{ filter: SearchFilter; prompt?: string }, { filter: SearchFilter; prompt?: string }] }
   | { fn: 'playSelfFromTrash' }
   | { fn: 'triggerPlaySelf' }
   | { fn: 'searchTopDeck'; look: number; pick: number; reveal: boolean; destination: SearchPickDestination; filter?: SearchFilter; remainder?: SearchRemainderDestination; rested?: boolean }
@@ -215,7 +222,7 @@ export type AbilityFunction =
   // Rest 1 chosen controller Leader/Stage matching a type (for 'You may rest 1 of your {X} Leader or Stage cards:' costs). Binds var 't'.
   | { fn: 'restControllerLeaderOrStage'; typeIncludes?: string }
   // 'You may turn N cards from the top of your Life cards face-up/down:' cost. Optional flip of the top Life card(s); binds var 't'.
-  | { fn: 'turnTopLifeFace'; faceUp: boolean; count?: number }
+  | { fn: 'turnTopLifeFace'; faceUp: boolean; count?: number; fromFaceUp?: true }
   | { fn: 'turnAllLifeFace'; player?: 'controller' | 'opponent'; faceUp: boolean }
   | { fn: 'lookLifeAndReorder'; player?: 'controller' | 'opponent'; moveOneToDeckTop?: boolean }
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.
@@ -234,13 +241,13 @@ export type AbilityFunction =
   | { fn: 'trashControllerCharacterAtEndOfTurn'; filter?: { typeIncludes?: string } }
   | { fn: 'returnDonToMatchOpponentAtEndOfTurn' }
   | { fn: 'moveDeckTopToLifeAtEndOfTurn'; gates?: AbilityGate[]; ifPrevious?: SequenceCondition }
-  | { fn: 'trashHandDownTo'; handSize: number }
+  | { fn: 'trashHandDownTo'; handSize: number; player?: 'controller' | 'opponent' }
   | { fn: 'trashFaceUpLife' }
   | { fn: 'returnSelfToHandAtEndOfTurn'; ifPrevious?: SequenceCondition }
   | { fn: 'preventRefreshOnGivenCharacterAtEndOfTurn'; minDonAttached: number; requireRested?: boolean; ifPrevious?: SequenceCondition }
   | { fn: 'preventRefreshOnCharactersCostAtMost'; maxCost: number; activationGate?: AbilityGate[] }
   // Optional reveal-from-hand payment (card stays in hand; gates subsequent steps via ifPrevious).
-  | { fn: 'optionalRevealTypeFromHand'; filter?: SearchFilter; prompt?: string; count?: number; then?: SequencedAbilityFunction[] }
+  | { fn: 'optionalRevealTypeFromHand'; filter?: SearchFilter; prompt?: string; count?: number; upTo?: boolean; then?: SequencedAbilityFunction[] }
   // Rest up to N of the opponent's active DON!! cards (DON!! denial).
   | { fn: 'restOpponentDon'; maxTargets?: number; optional?: boolean }
   // Rest up to N of the controller's active DON!! cards (optional effect-chain payment).
@@ -250,7 +257,7 @@ export type AbilityFunction =
   // Controller may return 1+ DON!! from field to DON!! deck (optional; gates subsequent steps via ifPrevious).
   | { fn: 'optionalReturnControllerDon'; maxTargets?: number }
   // Opponent chooses N DON!! cards from their field and returns them to their DON!! deck.
-  | { fn: 'returnOpponentDon'; count: number }
+  | { fn: 'returnOpponentDon'; count: number; activeOnly?: boolean }
   // Aura: give the controller's own Leader + Characters (optionally type-filtered)
   // a flat power delta, optionally gated on the source card's own state.
   | { fn: 'addPowerAuraControllerTypes'; amount: number; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfGroups?: PowerAuraFilterGroup[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
@@ -264,7 +271,7 @@ export type AbilityFunction =
   // Dynamic aura over ALL the opponent's Characters ("give all of your opponent's Characters -N power").
   | { fn: 'addPowerAuraOpponentCharacters'; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // Continuous cost aura over ALL the controller's Characters (chars only), optionally type-filtered + gated on source state ("all of your {Navy} Characters gain +2 cost").
-  | { fn: 'addCostAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfColors?: Color[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[]; scale?: PowerScale }
+  | { fn: 'addCostAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfColors?: Color[]; minBaseCost?: number; maxBaseCost?: number; sourceCondition?: SourceStateCondition; gate?: AbilityGate[]; scale?: PowerScale }
   // Continuous cost aura over cards in the controller's hand, optionally filtered by category/color/type/name/base cost.
   | { fn: 'addCostAuraControllerHandCards'; amount: number; duration: IrDuration; filter?: { category?: Exclude<CardCategory, 'don'>; color?: Color; typeIncludes?: string; anyOfTypes?: string[]; anyOfNames?: string[]; minBaseCost?: number; maxBaseCost?: number }; sourceCondition?: SourceStateCondition; gate?: AbilityGate[]; scale?: PowerScale }
   // Continuous cost aura over ALL the opponent's Characters ("give all of your opponent's Characters -N cost").
@@ -310,6 +317,8 @@ export type SequencedAbilityFunction = AbilityFunction & {
   ifPrevious?: SequenceCondition;
   /** Gate this function on any card moved by the prior function having printed cost >= N. */
   ifPreviousMovedAnyCostAtLeast?: number;
+  /** Gate this function on the prior selection (var `t`) having CURRENT power ≤ N. */
+  ifPreviousSelectedPowerAtMost?: number;
   /** Gate this function at its exact sequence point, after prior effects/costs have resolved. */
   ifGate?: AbilityGate[];
 };
@@ -321,6 +330,8 @@ export interface AbilityTemplateParams {
   gate?: AbilityGate[];
   cost?: AbilityCost[];
   oncePerTurn?: boolean;
+  /** Shared OPT bucket across multiple reactive timings on the same source card. */
+  oncePerTurnKey?: string;
   /** onStartOfTurn only: player may decline before the ability resolves. */
   optionalActivate?: boolean;
   /** Attacker attribute filter for onBattle / onOpponentsAttack (e.g. 'slash'). */

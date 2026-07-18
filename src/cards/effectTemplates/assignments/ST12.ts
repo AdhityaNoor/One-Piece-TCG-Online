@@ -303,7 +303,6 @@ export const ST12_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // ST12-016 (event) Lion Strike — [Main]/[Counter] Rest up to 1 of your opponent's Leader or Character cards
   //   with {Muggy Kingdom} type or <Slash> attribute and a cost of 4 or less.
-  // PARTIAL: {Muggy Kingdom}/<Slash> filter dropped; mapped as cost ≤4 rest only.
   {
     cardNumber: 'ST12-016',
     templates: [
@@ -314,7 +313,13 @@ export const ST12_ASSIGNMENTS: CardEffectAssignment[] = [
           functions: [
             {
               fn: 'rest',
-              target: { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4 } },
+              target: {
+                group: 'union',
+                targets: [
+                  { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4, typeIncludes: 'Muggy Kingdom' } },
+                  { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4, attribute: 'slash' } },
+                ],
+              },
               optional: true,
             },
           ],
@@ -327,7 +332,13 @@ export const ST12_ASSIGNMENTS: CardEffectAssignment[] = [
           functions: [
             {
               fn: 'rest',
-              target: { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4 } },
+              target: {
+                group: 'union',
+                targets: [
+                  { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4, typeIncludes: 'Muggy Kingdom' } },
+                  { group: 'leaderOrCharacters', player: 'opponent', filter: { maxCost: 4, attribute: 'slash' } },
+                ],
+              },
               optional: true,
             },
           ],

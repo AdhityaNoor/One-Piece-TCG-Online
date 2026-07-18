@@ -94,10 +94,18 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
       oncePerTurn: true,
       condition: { donAttachedAtLeast: 1 },
       gate: [{ kind: 'selfCharactersTotalCostAtLeast', atLeast: 5 }],
-      functions: [
-        { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true },
-        { fn: 'revealTopLifePlay', filter: { category: 'character', typeIncludes: 'Supernovas', maxCost: 5 }, ifPrevious: 'previousMovedAny' },
-      ],
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'You may return 1 of your Characters to the owner\'s hand.',
+        options: [
+          { label: 'doNotReturn', functions: [] },
+          { label: 'return', functions: [
+            { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' } },
+            { fn: 'revealTopLifePlay', filter: { category: 'character', typeIncludes: 'Supernovas', maxCost: 5 } },
+          ] },
+        ],
+      }],
     },
   },
   // OP10-023 — [On Play] If Leader {Navy}, rest up to 2 opp Characters cost<=5.
@@ -228,20 +236,38 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   //   All of your {Dressrosa} type Characters with a cost of 2 or more gain +1 cost.[Opponent's Turn] [Once
   //   Per Turn] This effect can be activated when your {Dressrosa} type Character is removed from the field
   //   by your opponent's effect or K.O.'d. If you have 5 or less cards in your hand, draw 1 card.
-  // PARTIAL: minBaseCost 2+ filter on the cost aura and battle-K.O. trigger branch deferred.
   {
     cardNumber: 'OP10-042',
     templates: [
-      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraControllerCharacters', amount: 1, duration: 'permanent', anyOfTypes: ['Dressrosa'] }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraControllerCharacters', amount: 1, duration: 'permanent', anyOfTypes: ['Dressrosa'], minBaseCost: 2 }] } },
+      // Non-KO effect removals (bounce/bottom-deck/Life). Effect K.O. is covered by onCharacterKoed below
+      // (koApply also records field-removal-to-trash — exclude trash here to avoid double-draw).
       { templateId: 'ability', params: {
         timing: 'onRemovedFromField',
         oncePerTurn: true,
+        oncePerTurnKey: 'op10-042-dressrosa-leave',
         condition: { turn: 'opponent' },
         gate: [
           { kind: 'removedFromFieldCategory', category: 'character' },
           { kind: 'removedFromFieldController', player: 'controller' },
           { kind: 'removedFromFieldTypeIncludes', typeIncludes: 'Dressrosa' },
           { kind: 'removedByEffectController', player: 'opponent' },
+          { kind: 'anyOf', gates: [
+            { kind: 'removedToZone', zone: 'hand' },
+            { kind: 'removedToZone', zone: 'deck' },
+            { kind: 'removedToZone', zone: 'life' },
+          ] },
+        ],
+        functions: [{ fn: 'draw', amount: 1, ifGate: [{ kind: 'selfHand', atMost: 5 }] }],
+      } },
+      { templateId: 'ability', params: {
+        timing: 'onCharacterKoed',
+        oncePerTurn: true,
+        oncePerTurnKey: 'op10-042-dressrosa-leave',
+        condition: { turn: 'opponent' },
+        gate: [
+          { kind: 'koedCharacterController', player: 'controller' },
+          { kind: 'koedCharacterTypeIncludes', typeIncludes: 'Dressrosa' },
         ],
         functions: [{ fn: 'draw', amount: 1, ifGate: [{ kind: 'selfHand', atMost: 5 }] }],
       } },
@@ -294,16 +320,27 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
 
-  // OP10-058 — PARTIAL: reveal-2-hand choose-one rested branch deferred; mapped cost-8+ gate → draw + play Dressrosa from hand.
+  // OP10-058 — if any Character cost ≥8 draw 1; reveal up to 2 Dressrosa ≤7 other than Rebecca; play 1; other rested if ≤4.
   {
     cardNumber: 'OP10-058',
     templateId: 'ability',
     params: {
       timing: 'onPlay',
-      gate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }],
       functions: [
-        { fn: 'draw', amount: 1 },
-        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Dressrosa', maxCost: 7, excludeSelfName: true }, optional: true },
+        { fn: 'draw', amount: 1, ifGate: [{ kind: 'anyCharacterCostAtLeast', atLeast: 8 }] },
+        {
+          fn: 'optionalRevealTypeFromHand',
+          count: 2,
+          upTo: true,
+          filter: { category: 'character', typeIncludes: 'Dressrosa', maxCost: 7, excludeSelfName: true },
+          prompt: 'You may reveal up to 2 {Dressrosa} type Character cards with a cost of 7 or less other than [Rebecca] from your hand.',
+          then: [
+            { fn: 'captureCount', into: 'revealed' },
+            { fn: 'playFromHand', fromVar: 'revealed', maxTargets: 1, optional: false },
+            { fn: 'captureCount', into: 'played' },
+            { fn: 'playFromHand', fromVar: 'revealed', filter: { maxCost: 4, excludeIdsFromVar: 'played' }, rested: true, maxTargets: 1 },
+          ],
+        },
       ],
     },
   },

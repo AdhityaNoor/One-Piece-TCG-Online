@@ -329,14 +329,16 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP05-058 (event) It's a Waste of Human Life!! —
-  //   [Main] Place all Characters with a cost of 3 or less at the bottom of the owner's deck. Then, you and
-  //   your opponent trash cards from your hands until you each have 5 cards in your hands. [Trigger] Place
-  //   all Characters with a cost of 2 or less at the bottom of the owner's deck.
-  // PARTIAL: hand-size equalization after the [Main] board clear is not modeled yet.
+  //   [Main] Place all Characters cost ≤3 at deck bottom. Then both players trash hand down to 5.
+  //   [Trigger] Place all Characters cost ≤2 at deck bottom.
   {
     cardNumber: 'OP05-058',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveAllCharactersToBottomDeck', filter: { maxCost: 3 } }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'moveAllCharactersToBottomDeck', filter: { maxCost: 3 } },
+        { fn: 'trashHandDownTo', handSize: 5 },
+        { fn: 'trashHandDownTo', handSize: 5, player: 'opponent' },
+      ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'moveAllCharactersToBottomDeck', filter: { maxCost: 2 } }] } },
     ],
   },
@@ -568,11 +570,17 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP05-098 — PARTIAL: onLifeBecomesZero reactive window deferred; no matching primitive.
   { cardNumber: 'OP05-098', templateId: 'noRuntime', params: {} },
 
-  // OP05-099 — PARTIAL: optional opp life-trash vs −2000 branch not modeled; rest + optional life trash + −2000 mapped.
-  { cardNumber: 'OP05-099', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restThis' }], functions: [
-    { fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true },
-    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true },
-  ] } },
+  // OP05-099 — [On Your Opponent's Attack] rest this: opponent may trash top Life; if they do not,
+  //   give up to 1 opp Leader/Character −2000 this turn.
+  { cardNumber: 'OP05-099', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restThis' }], functions: [{
+    fn: 'chooseOne',
+    chooser: 'opponent',
+    prompt: 'Trash the top card of your Life, or take −2000?',
+    options: [
+      { label: 'trashLife', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'trash', player: 'owner' } }] },
+      { label: 'powerMinus', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] },
+    ],
+  }] } },
 
   // OP05-100 — [Rush] templated. PARTIAL: leave-field life-trash replacement + Luffy negation deferred.
   { cardNumber: 'OP05-100', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent' }] } },
@@ -623,7 +631,7 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [{ fn: 'draw', amount: 2 }, { fn: 'trashFromHand', count: 2 }],
     },
   },
-  // OP05-111 — [On Play] play [Kotori] from hand: add up to 1 opp Character cost<=3 to opp Life face-up. PARTIAL: play-Kotori optional chain simplified.
+  // OP05-111 — [On Play] You may play 1 [Kotori] from hand: add up to 1 opp Character cost≤3 to opp Life face-up (top or bottom).
   { cardNumber: 'OP05-111', templateId: 'ability', params: { timing: 'onPlay', functions: [
     { fn: 'playFromHand', filter: { category: 'character', name: 'Kotori' } },
     { fn: 'moveCards', ifPrevious: 'previousSelectedAny', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true },

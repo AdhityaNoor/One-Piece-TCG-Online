@@ -376,13 +376,13 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-057 — [Main] +1000; reveal 1, play cost==2 Character. PARTIAL: remainder top/bottom placement deferred. [Trigger] play cost==2 from hand.
+  // OP06-057 — [Main] +1000; reveal top, play up to 1 Character cost 2, place rest top or bottom. [Trigger] play cost 2 from hand.
   {
     cardNumber: 'OP06-057',
     templates: [
       { templateId: 'ability', params: { timing: 'activateMain', functions: [
         { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true },
-        { fn: 'revealTopThen', filter: { category: 'character', exactCost: 2 }, then: [{ fn: 'playFromHand', filter: { category: 'character', exactCost: 2 }, maxTargets: 1 }] },
+        { fn: 'searchTopDeck', look: 1, pick: 1, reveal: true, destination: 'play', filter: { category: 'character', exactCost: 2 }, remainder: 'deckTopOrBottom' },
       ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', exactCost: 2 }, maxTargets: 1 }] } },
     ],
@@ -502,10 +502,10 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-073 — [Blocker] [On Play] If you have 8+ DON!! on field, draw 1 and trash 1 from hand.
   { cardNumber: 'OP06-073', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfDonFieldCount', atLeast: 8 }], functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
 
-  // PARTIAL: K.O. gate uses maxPower 5000 proxy for "5000 power or less" after negate.
+  // OP06-074 — [On Play] DON!! −1: negate up to 1 opp Character; if THAT Character has ≤5000 power, K.O. it.
   { cardNumber: 'OP06-074', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [
     { fn: 'negateEffect', target: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
-    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 5000 } }, optional: true, maxTargets: 1, ifPrevious: 'previousSelectedAny' },
+    { fn: 'ko', target: { ref: 'previous' }, ifPrevious: 'previousSelectedAny', ifPreviousSelectedPowerAtMost: 5000 },
   ] } },
 
   // OP06-075 — [On Play] DON!! −1: Rest up to 2 of your opponent's Characters with a cost of 2 or less.
@@ -571,11 +571,15 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-085 — [DON!! x2] [Your Turn] +1000 power for every 5 cards in your trash.
   { cardNumber: 'OP06-085', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelfScaling', per: 'controllerTrash', step: 5, amountPer: 1000, duration: 'permanent', condition: { donAttachedAtLeast: 2, turn: 'your' } }] } },
 
-  // OP06-086 — [On Play] play 1 cost<=4 and 1 cost<=2 from trash; PARTIAL: "play the other rested" sequencing deferred.
-  { cardNumber: 'OP06-086', templateId: 'ability', params: { timing: 'onPlay', functions: [
-    { fn: 'playFromTrash', filter: { category: 'character', maxCost: 4 }, maxTargets: 1 },
-    { fn: 'playFromTrash', filter: { category: 'character', maxCost: 2 }, rested: true, maxTargets: 1 },
-  ] } },
+  // OP06-086 — [On Play] up to 1 Character ≤4 and up to 1 Character ≤2 from trash; play 1 active and the other rested.
+  { cardNumber: 'OP06-086', templateId: 'ability', params: { timing: 'onPlay', functions: [{
+    fn: 'playPairOneRested',
+    zone: 'trash',
+    picks: [
+      { filter: { category: 'character', maxCost: 4 }, prompt: 'Choose up to 1 Character card with a cost of 4 or less from your trash.' },
+      { filter: { category: 'character', maxCost: 2 }, prompt: 'Choose up to 1 Character card with a cost of 2 or less from your trash.' },
+    ],
+  }] } },
 
   // OP06-088 — if Leader {Dressrosa} is active, this Character gains +2000 power.
   { cardNumber: 'OP06-088', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Dressrosa' }, { kind: 'leaderActive' }] } }] } },

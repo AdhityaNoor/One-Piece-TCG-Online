@@ -19,6 +19,7 @@ import { connectMongo, closeMongo } from './db/mongo';
 import { authRouter } from './auth/routes';
 import { rankedRouter } from './ranked/routes';
 import { profileRouter } from './profile/routes';
+import { supportRouter } from './support/routes';
 import { GameRoom } from './rooms/GameRoom';
 import { GAME_ROOM_NAME } from '../../shared/multiplayer';
 
@@ -70,6 +71,7 @@ async function main(): Promise<void> {
   app.use('/auth', authRouter());
   app.use('/ranked', rankedRouter());
   app.use('/profile', profileRouter());
+  app.use('/support', supportRouter());
 
   const httpServer = createServer(app);
 

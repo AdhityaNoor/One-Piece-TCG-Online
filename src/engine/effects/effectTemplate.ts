@@ -249,7 +249,7 @@ export interface EffectContext {
   trashTopOfDeck(playerId: string, n: number): void;
   /** Trash the top `n` Life cards of a player (e.g. opponent Life removal); fewer if Life is short. */
   trashLife(playerId: string, n: number): void;
-  trashHandDownTo(handSize: number): void;
+  trashHandDownTo(handSize: number, playerId?: string): void;
   trashFaceUpLife(): void;
   /** Add `n` DON!! from the player's DON!! deck to their cost area, active or rested (DON!! ramp); fewer if the DON!! deck is short. */
   addDonFromDeck(playerId: string, n: number, rested: boolean): void;
@@ -274,6 +274,15 @@ export interface EffectContext {
     topOrderIds: string[],
     bottomOrderIds: string[],
     reveal: boolean,
+  ): void;
+  /** Play chosen Characters from the look, then place the rest of the looked cards at top/bottom in selected order. */
+  searchPlayResolveWithTopOrBottomRemainder(
+    playerId: string,
+    lookedIds: string[],
+    playIds: string[],
+    topOrderIds: string[],
+    bottomOrderIds: string[],
+    rested?: boolean,
   ): void;
   /** Emit a fully-built PendingChoice (the interpreter uses this to suspend; carries its resume point). */
   emitChoice(choice: PendingChoice): void;

@@ -1,5 +1,163 @@
 # Effect Curation — Coverage Addition Worklist
 
+## Progress update — 2026-07-18 (reveal-from-var play + trash pair one-rested)
+
+Closed **2** more partials (**51 → 49**). New reusable pieces:
+
+- **`optionalRevealTypeFromHand.upTo`** — reveal 1..N (OP10-058).
+- **`playFromHand` / `playFromTrash` `fromVar`** — play a subset of a prior binding; var selector supports `filter` + `excludeIdsFromVar`.
+- **`playPairOneRested`** — dual trash picks, then choose which enters rested when both selected (`boundVarsTotalCount` sequence gate).
+- **`SearchFilter.excludeIdsFromVar`** + trash selectors pass bindings into `searchEligible`.
+
+| Card | Closure |
+| --- | --- |
+| OP10-058 | gated draw (any Character ≥8) → reveal up to 2 Dressrosa ≤7 → play 1 → other rested if ≤4 |
+| OP06-086 | ≤4 + ≤2 from trash → if 2 picked, choose rested; lone pick plays active |
+
+### Next recommended targets
+
+- Expressible leftovers from `effect-partial-curation.csv`.
+- Hard defer: ST28-004 DON return rested, EB02-039 same-name-as-trashed.
+
+## Progress update — 2026-07-18 (opponent active-DON modal + exclude-previous split debuff)
+
+Closed **2** more partials (**53 → 51**). New reusable pieces:
+
+- **`returnOpponentDon.activeOnly`** — opponent returns active (unattached cost-area) DON!! only (OP15-059 modal).
+- **`TargetFilter.excludeIdsFromVar` / `opponentCharacters.excludeIdsFromVar`** — second target choice excludes a prior `captureCount` binding (OP08-118 −3000/−2000 split).
+
+| Card | Closure |
+| --- | --- |
+| OP15-059 | opponent `chooseOne`: return 1 active DON!! **or** take −2000 |
+| OP08-118 | −3000 on up to 1 Character, −2000 on a different Character, then KO ≤3000 |
+
+Still deferred: OP06-086 (which of two trash plays is rested is a free choice, not slot-forced); OP10-058 (reveal up to 2 → play 1 → play other rested if ≤4). Tests: assembler (`activeOnly`, `excludeIdsFromVar`); `returnOpponentDonFamily` active-only candidates.
+
+### Next recommended targets
+
+- OP10-058 — reveal-from-hand selection → play one / play other rested.
+- OP06-086 — choose which trash card enters rested after dual pick.
+- Hard defer: ST28-004 DON return rested, EB02-039 same-name-as-trashed.
+
+## Progress update — 2026-07-18 (Life+hand gate + mill-by-count + dual hand-down-to)
+
+Closed **4** more partials (**57 → 53**). New reusable pieces:
+
+- **`selfLifeAndHand` / `noneOf` gates** — Life+hand total checks and NOR nesting (OP04-040 draw vs deck→Life branch).
+- **`trashTopDeck.countVar`** — mill by length of prior selection binding (OP09-059).
+- **`trashHandDownTo.player`** — opponent hand equalization (OP05-058).
+
+| Card | Closure |
+| --- | --- |
+| OP04-040 | Life+hand ≤4 → choose draw vs deck→Life when cost-8+ Char; else draw |
+| OP09-059 | Counter +3000 → trash up to 2 hand → mill same count |
+| OP05-058 | board clear + both players `trashHandDownTo` 5 |
+| OP04-073 | chooseOne: trash BW ally + self → add 1 active DON!! |
+
+Known limitation: `trashHandDownTo` auto-discards from hand end (no per-card choice), matching OP14-054. Tests: gates (Life+hand, noneOf); `trashTopDeckCountVarFamily`; assembler / partialCurationsBatch green.
+
+### Next recommended targets
+
+- Expressible leftovers from `effect-partial-curation.csv`.
+- Hard defer: ST28-004 DON return rested, EB02-039 same-name-as-trashed.
+
+## Progress update — 2026-07-18 (opponent modal + recur + play remainder)
+
+Closed **6** more partials (**63 → 57**). New reusable piece:
+
+- **`searchTopDeck` `destination: 'play'` + `remainder: 'deckTopOrBottom'`** — reveal/play from look, then place unplayed remainder top or bottom (OP06-057). Shares the hand-remainder choice path via `__searchPickChosen`.
+
+| Card | Closure |
+| --- | --- |
+| OP05-099 | opponent `chooseOne`: trash top Life **or** take −2000 |
+| OP05-111 | stale PARTIAL removed — Kotori play → Life face-up already exact |
+| OP11-117 | dropped bogus `restThis` / Counter note; Main Life-face + typed +1000 only |
+| OP15-080 | onKO: place 3 trash bottom → `playSelfFromTrash` |
+| OP15-100 | `chooseOne` trash-self + Life→hand → KO cost ≤6 |
+| OP06-057 | `searchTopDeck` play cost-2 + remainder top/bottom (replaces hand approx) |
+
+Tests: hand-remainder family still green; new play+topOrBottom case in `searchTopDeckPlayFamily`; assembler / partialCurationsBatch / gates green.
+
+### Next recommended targets
+
+- OP04-040 — `selfLifeAndHand` gate + optional deck→Life branch.
+- OP09-059 — trash up to 2 → mill equal count (`countVar` mill).
+- Hard defer: OP08-118 split debuff, ST28-004 DON return rested, EB02-039 same-name-as-trashed.
+
+## Progress update — 2026-07-18 (deck top/bottom + optional Leader negate + face-up Life)
+
+Closed **4** more partials (**67 → 63**). New reusable pieces:
+
+- **`MoveCardDestination` deck `topOrBottom`** — hand→deck after draw (OP08-056).
+- **Optional Leader `chooseTargets`** — Leader group is choosable only when `optional: true`, so "up to 1 opponent Leader" can be declined; mandatory Leader effects stay direct.
+- **`turnTopLifeFace.fromFaceUp`** + selector `controllerFaceUpLife` — turn a face-up Life card face-down (ST13-009).
+- **`selfHandMatching.exactCost`** — unlocks reveal-then-move for cost-filtered hand reveals (ST13-005).
+
+| Card | Closure |
+| --- | --- |
+| OP08-056 | draw 1 then place 1 hand card top **or** bottom of deck |
+| OP09-093 | optional opponent-Leader negate + Character negate → `preventAttack` on `ref: 'previous'` |
+| ST13-005 | Life trash cost → `optionalRevealTypeFromHand` cost-5 Character → Life top face-down |
+| ST13-009 | turn 1 face-up Life face-down → optional trash opp Life top if hand ≥7 |
+
+ST13-003 face-up Life→deck-bottom replacement rule still deferred. Tests: assembler (deck topOrBottom, optional Leader negate, fromFaceUp), gates exactCost; partialCurationsBatch / revealTopLifePlayFamily green.
+
+### Next recommended targets
+
+- ST13-003 — static Life-to-deck-bottom replacement (rules-layer).
+- Remaining Life reorder / face-state cluster from the live backlog.
+- Other expressible leftovers in `effect-partial-curation.csv`.
+
+## Progress update — 2026-07-18 (koedCharacter filters + same-target power KO)
+
+Closed **4** more partials (**71 → 67**). New reusable pieces:
+
+- **`koedCharacterTypeIncludes` / `koedCharacterAnyOfTypes` / `koedCharacterMinBasePower`** — onCharacterKoed event context now carries `koedCharacterDefinitionId` from the pre-K.O. state.
+- **`oncePerTurnKey`** on abilities — shared OPT bucket across reactive timings (OP10-042 removal + KO halves).
+- **`ifPreviousSelectedPowerAtMost`** — gate follow-on ops on current power of var `t` (OP06-074).
+- **`opponentLeaderOrCharacters`** now filters Leader+Characters by `typeIncludes` / `anyOfTypes` / `attribute` (ST12-016).
+
+| Card | Closure |
+| --- | --- |
+| OP10-042 | Dressrosa cost aura + non-trash effect-removal draw + typed onCharacterKoed draw, shared OPT |
+| OP14-041 | onCharacterKoed with Amazon Lily/Kuja + base power ≥5000 (replaced loose onRemovedFromField proxy) |
+| ST12-016 | union rest target: {Muggy Kingdom} OR \<Slash\> + cost ≤4 |
+| OP06-074 | negate → `ref: 'previous'` KO gated by `ifPreviousSelectedPowerAtMost: 5000` |
+
+Tests: gate cases for koedCharacter\* filters; `negateSameTargetKoFamily.test.ts` (2). Assembler / partialCurationsBatch / gates green.
+
+### Next recommended targets
+
+- OP09-093 — optional single-Leader negate + preventAttack on negated Character.
+- Life face-state gates (ST13-003/005/009).
+- OP08-056 hand→deck top/bottom choice after removal draw.
+
+## Progress update — 2026-07-18 (stale leftovers + minBaseCost cost aura)
+
+Closed **8** partials by re-checking the live backlog against capabilities that already exist (plus one small factory thread). Partial assigned cards **79 → 71**; dropped markers **2 → 0**.
+
+| Card | Closure |
+| --- | --- |
+| ST29-003 | `selfLifeAtMostOpponent` + `addPowerSelf` +1000 (exact cover text already in registry) |
+| ST25-001 | `addCost` self +1 gated on `selfCharacterBaseCostCount` (same shape as ST25-002/005) |
+| ST26-001 | swapped current-power gate for `selfControlsNamedCharacterBasePower` (printed "7000 base power") |
+| OP10-022 | `chooseOne` return → `revealTopLifePlay` Supernovas ≤5 (replaces Life→hand approximation) |
+| OP15-086 | `playFromTrash` + `captureCount from: '__lastMovedIds'` + `addKeyword` Rush on reminted field id |
+| OP15-106 | `playFromHand` with `anyOf` yellow Character **or** Stage cost ≤2 |
+| OP03-077 | stale PARTIAL removed — mapping already matched printed text |
+| OP04-055 | stale PARTIAL removed — sequenced trash/bottom-deck/play is the accepted model |
+
+Also threaded `minBaseCost` / `maxBaseCost` onto `addCostAuraControllerCharacters` (PowerAuraGroup already supported them) and applied it on **OP10-042** Dressrosa cost-2+ aura. OP10-042 remains partial only for the battle-K.O. draw branch (`onCharacterKoed` still lacks a type filter).
+
+New test: minBaseCost case in `costAura.test.ts`. Related suites green (costAura, revealTopLifePlayFamily, partialCurationsBatch, assembler, gates).
+
+### Next recommended targets
+
+- **`koedCharacterTypeIncludes` gate** — unlocks OP10-042 battle-K.O. half and similar Dressrosa/type-filtered KO reactions.
+- **OP06-074** — per-target power gate on `ref: 'previous'` after negate.
+- **OP09-093** — optional single-Leader negate.
+- Life face-state gates (ST13-003/005/009 cluster).
+
 ## Progress update — 2026-07-17
 
 Latest regenerated coverage reports `2287` curated non-vanilla cards, `115` partial cards, and `2172` fully curated cards (`95.0%` of cards with text). The name-exclusion cluster and base/current-power filter cluster are closed, `EB01-030` is now covered through source-card bottom-deck movement, `EB02-023` is now covered through removed-field destination gates, `OP01-067`/`OP05-097` are now covered through the generic in-hand card cost aura, `OP02-024` is now covered through mixed name-or-type aura groups, `OP02-027` is now covered through all-field-DON-rested field-removal immunity, `OP03-028`/`OP03-036`/`OP07-078` are now covered through Leader-or-Character set-active selection, `OP04-086` is now covered through the existing battle-K.O. onBattle wrapper, `OP04-118` is now covered through filtered keyword auras, `OP05-002` is now covered through reusable union target selection, `OP05-080` is now covered through explicit deck shuffling, `OP06-011` is now covered through named Leader/Stage/Character rest targeting, `OP06-041` is now covered through all-character rest, `OP07-017` is now covered through generic Stage-to-trash movement, `OP07-026`/`OP07-059` are now covered through rested DON!! target selection, `OP07-036` is now covered through min-cost self-rest sequencing, `OP07-060` is now covered through the existing no-other-named-Character gate, `OP09-092` is now covered through the generic hand-count differential gate, `OP10-026`/`OP10-027` are now covered through source-instance bottom-deck movement, `OP10-033` is now covered through the existing rested typed Character gate and rested DON!! targeting, `OP11-067` is now covered through the existing set-active cost filter, `OP15-032` is now covered through base-cost set-active filtering, `EB04-057` is now covered through the filtered field-removal immunity aura, `OP12-061` is now covered through named next-play hand discount filters, `P-083` is now covered through filtered Character hand-trash cost, and `ST22-001`/`ST22-017` are now covered through reveal-from-hand branch sequencing.
@@ -96,7 +254,7 @@ Notable: **most of the "hard" scaling cluster was reachable with small pieces** 
 - **Negate** (OP06-074, OP09-093/097, OP10-098) — stack-level effect cancellation.
 - Cheap-win tooling: a script flagging partial cards whose deferred clause text matches an existing capability's `covers` (would surface the remaining stale leftovers automatically).
 
-_Source of truth: `effect-partial-curation.csv` (127 marker rows over 115 partially-curated cards) + `effect-coverage.csv`. Regenerate with `npm run coverage`. Analysis date: 2026-07-18._
+_Source of truth: `effect-partial-curation.csv` (65 marker rows over 53 partially-curated cards) + `effect-coverage.csv`. Regenerate with `npm run scan:partials` / `npm run coverage`. Analysis date: 2026-07-18._
 
 ## Where coverage actually stands
 

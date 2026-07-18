@@ -465,6 +465,52 @@ describe('evaluateGates', () => {
     expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { koCause: 'effect' })).toBe(true);
   });
 
+  it('checks koedCharacter type/base-power gates from the K.O. event definition', () => {
+    let rig = buildBaseRig();
+    const dressrosa = makeCharacterDef({ types: ['Dressrosa'], basePower: 6000, cardNumber: 'DRESS-001' });
+    const other = makeCharacterDef({ types: ['Navy'], basePower: 4000, cardNumber: 'NAVY-001' });
+    const kuja = makeCharacterDef({ types: ['Kuja Pirates'], basePower: 5000, cardNumber: 'KUJA-001' });
+    ({ rig } = putCharacterInPlay(rig, 'p1', dressrosa));
+    ({ rig } = putCharacterInPlay(rig, 'p1', other));
+    ({ rig } = putCharacterInPlay(rig, 'p1', kuja));
+
+    expect(evaluateGates(
+      [{ kind: 'koedCharacterTypeIncludes', typeIncludes: 'Dressrosa' }],
+      rig.state,
+      rig.defs,
+      'p1',
+      undefined,
+      { koedCharacterControllerId: 'p1', koedCharacterDefinitionId: dressrosa.cardDefinitionId },
+    )).toBe(true);
+    expect(evaluateGates(
+      [{ kind: 'koedCharacterTypeIncludes', typeIncludes: 'Dressrosa' }],
+      rig.state,
+      rig.defs,
+      'p1',
+      undefined,
+      { koedCharacterControllerId: 'p1', koedCharacterDefinitionId: other.cardDefinitionId },
+    )).toBe(false);
+    expect(evaluateGates(
+      [
+        { kind: 'koedCharacterAnyOfTypes', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'] },
+        { kind: 'koedCharacterMinBasePower', power: 5000 },
+      ],
+      rig.state,
+      rig.defs,
+      'p1',
+      undefined,
+      { koedCharacterControllerId: 'p1', koedCharacterDefinitionId: kuja.cardDefinitionId },
+    )).toBe(true);
+    expect(evaluateGates(
+      [{ kind: 'koedCharacterMinBasePower', power: 5000 }],
+      rig.state,
+      rig.defs,
+      'p1',
+      undefined,
+      { koedCharacterControllerId: 'p1', koedCharacterDefinitionId: other.cardDefinitionId },
+    )).toBe(false);
+  });
+
   it('checks selfActiveDonCount for unattached active DON!! in cost area', () => {
     let rig = buildBaseRig();
     ({ rig } = putDon(rig, 'p1', 2, { rested: false }));
@@ -625,5 +671,46 @@ describe('evaluateGates', () => {
     expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { playedCharacterInstanceId: triggeredId })).toBe(true);
     expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { playedCharacterInstanceId: plainId })).toBe(false);
     expect(evaluateGates(gate, rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks selfHandMatching exactCost against printed base cost', () => {
+    let rig = buildBaseRig();
+    const cost5 = makeCharacterDef({ cardDefinitionId: 'COST5', cardNumber: 'COST5', baseCost: 5 });
+    const cost3 = makeCharacterDef({ cardDefinitionId: 'COST3', cardNumber: 'COST3', baseCost: 3 });
+    ({ rig } = putInHand(rig, 'p1', cost5));
+    ({ rig } = putInHand(rig, 'p1', cost3));
+
+    expect(evaluateGates([{ kind: 'selfHandMatching', atLeast: 1, category: 'character', exactCost: 5 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfHandMatching', atLeast: 1, category: 'character', exactCost: 4 }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'selfHandMatching', atLeast: 2, category: 'character', exactCost: 5 }], rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks boundVarsTotalCount against sequence bindings', () => {
+    const rig = buildBaseRig();
+    const gate = [{ kind: 'boundVarsTotalCount' as const, varNames: ['pairA', 'pairB'], atLeast: 2 }];
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { bindings: { pairA: ['a'], pairB: ['b'] } })).toBe(true);
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { bindings: { pairA: ['a'], pairB: [] } })).toBe(false);
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks selfLifeAndHand as Life count + hand count', () => {
+    let rig = buildBaseRig();
+    const lifeCard = makeCharacterDef({ cardDefinitionId: 'TEST-LIFE', cardNumber: 'TEST-LIFE' });
+    const handCard = makeCharacterDef({ cardDefinitionId: 'TEST-HAND', cardNumber: 'TEST-HAND' });
+    ({ rig } = putLifeCards(rig, 'p1', [lifeCard, lifeCard]));
+    ({ rig } = putInHand(rig, 'p1', handCard));
+    ({ rig } = putInHand(rig, 'p1', handCard));
+
+    expect(evaluateGates([{ kind: 'selfLifeAndHand', atMost: 4 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfLifeAndHand', atMost: 3 }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'selfLifeAndHand', atLeast: 4 }], rig.state, rig.defs, 'p1')).toBe(true);
+  });
+
+  it('checks noneOf as the negation of any nested gate', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'BIG', baseCost: 8 })));
+
+    expect(evaluateGates([{ kind: 'noneOf', gates: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }] }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'noneOf', gates: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 9 }] }], rig.state, rig.defs, 'p1')).toBe(true);
   });
 });

@@ -49,7 +49,12 @@ function conditionMet(op: EffectOp, bindings: Record<string, string[]>, ctx: Eff
     });
     if (!matched) return false;
   }
-  if (op.ifGate?.length && !evaluateGates(op.ifGate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId)) return false;
+  if (op.ifPreviousSelectedPowerAtMost !== undefined) {
+    const ids = bindings.t ?? [];
+    const matched = ids.some((id) => computeCurrentPower(defs, ctx.state(), id) <= op.ifPreviousSelectedPowerAtMost!);
+    if (!matched) return false;
+  }
+  if (op.ifGate?.length && !evaluateGates(op.ifGate, ctx.state(), defs, ctx.controllerId, ctx.sourceInstanceId, { bindings })) return false;
   return true;
 }
 
@@ -247,6 +252,10 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
       movedIds.flatMap((movedId) => ctx.definitionOf(movedId)?.colors ?? []),
     );
     if (excludedColors.size > 0 && def.colors.some((c) => excludedColors.has(c))) return false;
+  }
+  if (filter.excludeIdsFromVar !== undefined) {
+    const exclude = new Set(bindings[filter.excludeIdsFromVar] ?? []);
+    if (exclude.has(id)) return false;
   }
   if (filter.attribute && !def.attributes?.includes(filter.attribute)) return false;
   if (filter.name && !nameMatches(def, filter.name)) return false;
@@ -462,10 +471,14 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       let ids: string[] = [];
       const leaderId = state.players[opponentId].leaderInstanceId;
       const leader = state.cardsById[leaderId];
+      const leaderDef = ctx.definitionOf(leaderId);
       let includeLeader = true;
       if (sel.restedLeader !== undefined) {
         includeLeader = (leader?.orientation === 'rested') === sel.restedLeader;
       }
+      if (sel.typeIncludes !== undefined && !hasType(leaderDef?.types ?? [], sel.typeIncludes)) includeLeader = false;
+      if (sel.anyOfTypes !== undefined && !sel.anyOfTypes.some((t) => hasType(leaderDef?.types ?? [], t))) includeLeader = false;
+      if (sel.attribute !== undefined && leaderDef?.attributes?.includes(sel.attribute) !== true) includeLeader = false;
       if (includeLeader) ids.push(leaderId);
       let charIds = ctx.opponentCharacterIds();
       if (sel.minCost !== undefined) charIds = charIds.filter((id) => ctx.costOf(id) >= sel.minCost!);
@@ -475,6 +488,9 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.minPower !== undefined) charIds = charIds.filter((id) => ctx.powerOf(id) >= sel.minPower!);
       if (sel.maxPower !== undefined) charIds = charIds.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       charIds = applyBaseFilters(charIds, sel, ctx);
+      if (sel.typeIncludes !== undefined) charIds = charIds.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
+      if (sel.anyOfTypes !== undefined) charIds = charIds.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
+      if (sel.attribute !== undefined) charIds = charIds.filter((id) => ctx.definitionOf(id)?.attributes?.includes(sel.attribute!) === true);
       if (sel.excludeName !== undefined) charIds = charIds.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
       if (sel.excludeCardNames !== undefined) charIds = charIds.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       return [...ids, ...charIds];
@@ -568,6 +584,10 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     }
     case 'controllerLifeTopBottom':
       return ctx.controllerLifeTopBottomIds();
+    case 'controllerFaceUpLife': {
+      const life = ctx.state().players[ctx.controllerId].lifeArea.cardIds;
+      return life.filter((id) => ctx.state().cardsById[id]?.faceState === 'faceUp');
+    }
     case 'controllerOrOpponentLifeTop':
       return ctx.controllerOrOpponentLifeTopIds();
     case 'controllerDeckTop':
@@ -601,6 +621,10 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.excludeName !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
       if (sel.excludeCardNames !== undefined) ids = ids.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
+      if (sel.excludeIdsFromVar !== undefined) {
+        const exclude = new Set(bindings[sel.excludeIdsFromVar] ?? []);
+        ids = ids.filter((id) => !exclude.has(id));
+      }
       return ids;
     }
     case 'opponentUnattachedDon': {
@@ -612,7 +636,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     }
     case 'union': {
       const seen = new Set<string>();
-      const out: string[] = [];
+      let out: string[] = [];
       for (const member of sel.members) {
         for (const id of resolveSelector(member, ctx, bindings)) {
           if (!seen.has(id)) {
@@ -620,6 +644,10 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
             out.push(id);
           }
         }
+      }
+      if (sel.excludeIdsFromVar !== undefined) {
+        const exclude = new Set(bindings[sel.excludeIdsFromVar] ?? []);
+        out = out.filter((id) => !exclude.has(id));
       }
       return out;
     }
@@ -657,13 +685,20 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     case 'opponentHand':
       return searchEligible(ctx.opponentHandIds(), sel.filter, ctx, bindings);
     case 'controllerTrash':
-      return searchEligible(ctx.controllerTrashIds(), sel.filter, ctx);
+      return searchEligible(ctx.controllerTrashIds(), sel.filter, ctx, bindings);
     case 'opponentTrash':
-      return searchEligible(ctx.opponentTrashIds(), sel.filter, ctx);
+      return searchEligible(ctx.opponentTrashIds(), sel.filter, ctx, bindings);
     case 'controllerDeck':
-      return searchEligible(ctx.controllerDeckIds(), sel.filter, ctx);
-    case 'var':
-      return bindings[sel.name] ?? [];
+      return searchEligible(ctx.controllerDeckIds(), sel.filter, ctx, bindings);
+    case 'var': {
+      let ids = bindings[sel.name] ?? [];
+      if (sel.excludeIdsFromVar !== undefined) {
+        const exclude = new Set(bindings[sel.excludeIdsFromVar] ?? []);
+        ids = ids.filter((id) => !exclude.has(id));
+      }
+      if (sel.filter) ids = searchEligible(ids, sel.filter, ctx, bindings);
+      return ids;
+    }
   }
   return [];
 }
@@ -1178,7 +1213,8 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return EMPTY_RESULT;
     }
     case 'trashHandDownTo': {
-      ctx.trashHandDownTo(op.handSize);
+      const playerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
+      ctx.trashHandDownTo(op.handSize, playerId);
       return { selectedIds: [], movedIds: ['__trashHandDownTo'] };
     }
     case 'trashFaceUpLife': {
@@ -1285,8 +1321,12 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return { selectedIds: ids, movedIds: ids };
     }
     case 'trashTopDeck': {
-      const moving = ctx.topOfDeck(ctx.controllerId, op.count);
-      ctx.trashTopOfDeck(ctx.controllerId, op.count);
+      const count = op.countVar !== undefined
+        ? (bindings[op.countVar]?.length ?? 0)
+        : (op.count ?? 0);
+      if (count <= 0) return { selectedIds: [], movedIds: [] };
+      const moving = ctx.topOfDeck(ctx.controllerId, count);
+      ctx.trashTopOfDeck(ctx.controllerId, count);
       return { selectedIds: [], movedIds: moving };
     }
     case 'trashLife': {
@@ -2126,14 +2166,18 @@ export function resumeProgram(
       const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: ordered, movedIds: looked });
       return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
     }
-    if (remainder === 'deckTopOrBottom' && destination === 'hand') {
+    if (remainder === 'deckTopOrBottom' && (destination === 'hand' || destination === 'play')) {
       const looked = rs.bindings.__looked ?? [];
-      const handChosen = rs.bindings.__searchHandChosen ?? selection;
-      const restAfterHand = looked.filter((id) => !new Set(handChosen).has(id));
-      if (!rs.bindings.__searchHandChosen) {
-        if (restAfterHand.length === 0) {
-          ctx.searchResolveHandWithTopOrBottomRemainder(ctx.controllerId, looked, handChosen, [], [], reveal);
-          const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: handChosen, movedIds: handChosen });
+      const pickChosen = rs.bindings.__searchPickChosen ?? selection;
+      const restAfterPick = looked.filter((id) => !new Set(pickChosen).has(id));
+      if (!rs.bindings.__searchPickChosen) {
+        if (restAfterPick.length === 0) {
+          if (destination === 'play') {
+            ctx.searchPlayResolveWithTopOrBottomRemainder(ctx.controllerId, looked, pickChosen, [], [], op.rested === true);
+          } else {
+            ctx.searchResolveHandWithTopOrBottomRemainder(ctx.controllerId, looked, pickChosen, [], [], reveal);
+          }
+          const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: pickChosen, movedIds: pickChosen });
           return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
         }
         const orderChoice: PendingChoice = {
@@ -2141,10 +2185,10 @@ export function resumeProgram(
           playerId: ctx.controllerId,
           kind: 'SELECT_CARDS',
           prompt: 'Choose the order for the remaining looked card(s). You will choose top or bottom next.',
-          constraints: { min: restAfterHand.length, max: restAfterHand.length, candidateInstanceIds: restAfterHand },
+          constraints: { min: restAfterPick.length, max: restAfterPick.length, candidateInstanceIds: restAfterPick },
           sourceInstanceId: choice.sourceInstanceId,
           sourceEffectId: 'ir',
-          resumeState: preserveBranch({ ...rs.bindings, __searchHandChosen: handChosen }),
+          resumeState: preserveBranch({ ...rs.bindings, __searchPickChosen: pickChosen }),
         };
         ctx.emitChoice(orderChoice);
         return ctx.finish();
@@ -2165,8 +2209,26 @@ export function resumeProgram(
         return ctx.finish();
       }
       const placeOnTop = typeof response === 'number' ? response === 0 : true;
-      ctx.searchResolveHandWithTopOrBottomRemainder(ctx.controllerId, looked, handChosen, placeOnTop ? orderedRest : [], placeOnTop ? [] : orderedRest, reveal);
-      const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: handChosen, movedIds: handChosen });
+      if (destination === 'play') {
+        ctx.searchPlayResolveWithTopOrBottomRemainder(
+          ctx.controllerId,
+          looked,
+          pickChosen,
+          placeOnTop ? orderedRest : [],
+          placeOnTop ? [] : orderedRest,
+          op.rested === true,
+        );
+      } else {
+        ctx.searchResolveHandWithTopOrBottomRemainder(
+          ctx.controllerId,
+          looked,
+          pickChosen,
+          placeOnTop ? orderedRest : [],
+          placeOnTop ? [] : orderedRest,
+          reveal,
+        );
+      }
+      const afterSearchBindings = withResultBindings(rs.bindings, { selectedIds: pickChosen, movedIds: pickChosen });
       return continueAfterResolvedOp(program, ability, rs, afterSearchBindings, ctx, defs, actionId, registry);
     }
     if (remainder === 'bottom' && !rs.bindings.__searchChosen) {

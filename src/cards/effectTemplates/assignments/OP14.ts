@@ -356,7 +356,6 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Opponent's Turn] When you play a Character, draw 1 card.[DON!! x1] [Once Per Turn] When one of your
   //   {Amazon Lily} or {Kuja Pirates} type Characters with 5000 base power or more is K.O.'d, add up to 1
   //   card from the top of your opponent's Life cards to the owner's hand.
-  // PARTIAL: ally K.O. uses onRemovedFromField proxy (battle K.O. + type/base-power filters deferred).
   {
     cardNumber: 'OP14-041',
     templates: [
@@ -371,12 +370,13 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
       {
         templateId: 'ability',
         params: {
-          timing: 'onRemovedFromField',
+          timing: 'onCharacterKoed',
           oncePerTurn: true,
           condition: { donAttachedAtLeast: 1 },
           gate: [
-            { kind: 'removedFromFieldCategory', category: 'character' },
-            { kind: 'removedFromFieldController', player: 'controller' },
+            { kind: 'koedCharacterController', player: 'controller' },
+            { kind: 'koedCharacterAnyOfTypes', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'] },
+            { kind: 'koedCharacterMinBasePower', power: 5000 },
           ],
           functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' }, optional: true }],
         },

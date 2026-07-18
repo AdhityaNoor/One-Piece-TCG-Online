@@ -30,4 +30,24 @@ describe('returnOpponentDon family', () => {
     expect(resolved.players.p2.donDeck.cardIds).toContain(donIds[0]);
     expect(resolved.cardsById[donIds[0]].currentZone).toBe('donDeck');
   });
+
+  it('activeOnly limits candidates to active unattached DON!!', () => {
+    const activeOnlyProgram = applyTemplate('SRC-RETURN-DON', 'ability', {
+      timing: 'onKO',
+      functions: [{ fn: 'returnOpponentDon', count: 1, activeOnly: true }],
+    });
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 5 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SOURCE));
+    ({ rig } = putCharacterInPlay(rig, 'p2', HOST));
+    let restedDonIds: string[];
+    let activeDonIds: string[];
+    ({ rig, donIds: restedDonIds } = putDon(rig, 'p2', 1, { rested: true }));
+    ({ rig, donIds: activeDonIds } = putDon(rig, 'p2', 1));
+
+    const fired = runTimings(activeOnlyProgram, ['onKO'], rig.state, sourceId, rig.defs, null, {});
+    const choice = fired.state.pendingChoices[0];
+    expect(choice.constraints.candidateInstanceIds).toEqual(activeDonIds);
+    expect(choice.constraints.candidateInstanceIds).not.toContain(restedDonIds[0]);
+  });
 });

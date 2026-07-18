@@ -240,10 +240,19 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   returnOpponentDon: {
     id: 'returnOpponentDon',
-    summary: 'Opponent chooses N DON!! from their field and returns them to their DON!! deck.',
-    params: [{ name: 'count', type: 'number', required: true }],
-    covers: ['your opponent returns {N} DON!! card from their field to their DON!! deck'],
-    examples: [{ cardNumber: 'OP14-065', snippet: "{ fn: 'returnOpponentDon', count: 1 }" }],
+    summary: 'Opponent chooses N DON!! from their field (or active cost-area only) and returns them to their DON!! deck.',
+    params: [
+      { name: 'count', type: 'number', required: true },
+      { name: 'activeOnly', type: 'boolean', required: false, note: 'restrict to active unattached DON!! in the cost area' },
+    ],
+    covers: [
+      'your opponent returns {N} DON!! card from their field to their DON!! deck',
+      'your opponent may return {N} of their active DON!! cards to their DON!! deck',
+    ],
+    examples: [
+      { cardNumber: 'OP14-065', snippet: "{ fn: 'returnOpponentDon', count: 1 }" },
+      { cardNumber: 'OP15-059', snippet: "{ fn: 'returnOpponentDon', count: 1, activeOnly: true }" },
+    ],
   },
   optionalReturnControllerDon: {
     id: 'optionalReturnControllerDon',
@@ -280,10 +289,25 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   optionalRevealTypeFromHand: {
     id: 'optionalRevealTypeFromHand',
-    summary: 'Optionally reveal exactly N matching cards from hand (stays in hand); gates subsequent steps via ifPrevious.',
-    params: [{ name: 'filter', type: 'SearchFilter', required: false }, { name: 'prompt', type: 'string', required: false }, { name: 'count', type: 'number', required: false }, { name: 'then', type: 'SequencedAbilityFunction[]', required: false }],
-    covers: ['you may reveal 1 {type} card from your hand', 'you may reveal 2 {type}/power cards from your hand', 'reveal from hand as a cost, then resolve payoff functions'],
-    examples: [{ cardNumber: 'OP13-024', snippet: "{ fn: 'optionalRevealTypeFromHand', filter: { anyOf: [{ typeIncludes: 'Music' }, { typeIncludes: 'FILM' }] } }" }, { cardNumber: 'OP16-003', snippet: "{ fn: 'optionalRevealTypeFromHand', count: 2, filter: { category: 'character', exactPower: 8000 } }" }, { cardNumber: 'ST22-001', snippet: "{ fn: 'optionalRevealTypeFromHand', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'draw', amount: 1 }] }" }],
+    summary: 'Optionally reveal N matching cards from hand (stays in hand); with upTo, reveal 1..N. Optional then branch runs after reveal.',
+    params: [
+      { name: 'filter', type: 'SearchFilter', required: false },
+      { name: 'prompt', type: 'string', required: false },
+      { name: 'count', type: 'number', required: false },
+      { name: 'upTo', type: 'boolean', required: false, note: 'when true with count>1, reveal 1..count instead of exactly count' },
+      { name: 'then', type: 'SequencedAbilityFunction[]', required: false },
+    ],
+    covers: [
+      'you may reveal 1 {type} card from your hand',
+      'you may reveal 2 {type}/power cards from your hand',
+      'you may reveal up to 2 {type} Character cards from your hand',
+      'reveal from hand as a cost, then resolve payoff functions',
+    ],
+    examples: [
+      { cardNumber: 'OP13-024', snippet: "{ fn: 'optionalRevealTypeFromHand', filter: { anyOf: [{ typeIncludes: 'Music' }, { typeIncludes: 'FILM' }] } }" },
+      { cardNumber: 'OP16-003', snippet: "{ fn: 'optionalRevealTypeFromHand', count: 2, filter: { category: 'character', exactPower: 8000 } }" },
+      { cardNumber: 'OP10-058', snippet: "{ fn: 'optionalRevealTypeFromHand', count: 2, upTo: true, filter: { category: 'character', typeIncludes: 'Dressrosa', maxCost: 7, excludeSelfName: true }, then: [...] }" },
+    ],
   },
   movePreviousSelection: {
     id: 'movePreviousSelection',
@@ -810,10 +834,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   trashTopDeck: {
     id: 'trashTopDeck',
-    summary: 'Trash N cards from the top of the controller\'s deck (mill self).',
-    params: [{ name: 'count', type: 'number', required: true }],
-    covers: ['trash {N} cards from the top of your deck'],
-    examples: [{ cardNumber: 'OP04-079', snippet: "{ fn: 'trashTopDeck', count: 2 }" }],
+    summary: 'Trash N cards from the top of the controller\'s deck (self-mill). With countVar, N is the length of a prior selection binding.',
+    params: [{ name: 'count', type: 'number', required: false }, { name: 'countVar', type: 'string', required: false }],
+    covers: ['trash {N} cards from the top of your deck', 'trash the same number of cards from the top of your deck as you did from your hand'],
+    examples: [
+      { cardNumber: 'OP04-079', snippet: "{ fn: 'trashTopDeck', count: 2 }" },
+      { cardNumber: 'OP09-059', snippet: "{ fn: 'optionalTrashFromHand', count: 2 }, { fn: 'trashTopDeck', countVar: 't', ifPrevious: 'previousMovedAny' }" },
+    ],
   },
   trashSelf: {
     id: 'trashSelf',
@@ -838,7 +865,7 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   moveCards: {
     id: 'moveCards',
-    summary: 'Generic zone move: from a source (characters/hand/trash/deck/life) to a destination (hand/life/deck-bottom/trash). Covers return-to-hand, bottom-deck, life-to-hand, etc.',
+    summary: 'Generic zone move: from a source (characters/hand/trash/deck/life) to a destination (hand/life/deck-top/bottom/topOrBottom/trash). Covers return-to-hand, bottom-deck, life-to-hand, etc.',
     params: [
       { name: 'from', type: 'MoveCardSource', required: true },
       { name: 'to', type: 'MoveCardDestination', required: true },
@@ -846,10 +873,11 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'maxTargets', type: 'number', required: false },
       { name: 'chooser', type: "'controller' | 'opponent'", required: false },
     ],
-    covers: ['return up to 1 Character to the owner\'s hand', 'place ... at the bottom of the owner\'s deck', 'add 1 card from the top of your Life to your hand', 'your opponent places 1 card from their hand at the bottom of their deck', 'move/K.O. a Character with a [Trigger]'],
+    covers: ['return up to 1 Character to the owner\'s hand', 'place ... at the bottom of the owner\'s deck', 'place 1 card from your hand at the top or bottom of your deck', 'add 1 card from the top of your Life to your hand', 'your opponent places 1 card from their hand at the bottom of their deck', 'move/K.O. a Character with a [Trigger]'],
     excludes: ['character source filter by CURRENT minCost (only minBaseCost exists)', 'return to hand OR bottom of deck (player choice of destination)'],
     examples: [
       { cardNumber: 'OP01-047', snippet: "{ fn: 'moveCards', from: { zone: 'characters', player: 'any' }, to: { zone: 'hand', player: 'owner' }, optional: true }" },
+      { cardNumber: 'OP08-056', snippet: "{ fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'topOrBottom' }, maxTargets: 1 }" },
       { cardNumber: 'OP09-115', snippet: "{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3, hasTrigger: true } }, optional: true }" },
     ],
   },
@@ -895,10 +923,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   playFromHand: {
     id: 'playFromHand',
-    summary: 'Play up to N cards matching a filter from hand.',
+    summary: 'Play up to N cards matching a filter from hand, or choose from a prior binding via fromVar (e.g. revealed set).',
     params: [
-      { name: 'filter', type: 'SearchFilter', required: true },
+      { name: 'filter', type: 'SearchFilter', required: false, note: 'required unless fromVar is set' },
+      { name: 'fromVar', type: 'string', required: false, note: 'play a subset of a prior chooseTargets/captureCount binding' },
       { name: 'maxTargets', type: 'number', required: false },
+      { name: 'minTargets', type: 'number', required: false },
+      { name: 'optional', type: 'boolean', required: false, note: 'with fromVar, optional:false forces minTargets 1' },
       { name: 'rested', type: 'boolean', required: false },
       { name: 'player', type: "'controller' | 'opponent'", required: false },
       { name: 'chooser', type: "'controller' | 'opponent'", required: false },
@@ -912,13 +943,12 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       'play ... a different color than the returned Character',
       'opponent plays up to 1 Character card with a cost of {C} or less from their hand',
       'play up to N Characters with different card names from your hand',
+      'play 1 of the revealed cards',
+      'play the other card rested if it has a cost of {C} or less',
     ],
     examples: [
       { cardNumber: 'EB02-028', snippet: "{ fn: 'playFromHand', filter: { category: 'character', exactCost: 2 }, rested: true }" },
-      { cardNumber: 'EB03-048', snippet: "{ fn: 'playFromHand', filter: { category: 'stage', typeIncludes: 'Dressrosa', maxCost: 1 } }" },
-      { cardNumber: 'OP08-098', snippet: "{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Shandian Warrior', maxCostFromSelfDon: true } }" },
-      { cardNumber: 'OP13-119', snippet: "{ fn: 'playFromHand', player: 'opponent', chooser: 'opponent', filter: { category: 'character', maxCost: 4 } }" },
-      { cardNumber: 'OP16-060', snippet: "{ fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Admiral' }, maxTargets: 3, distinctNames: true }" },
+      { cardNumber: 'OP10-058', snippet: "{ fn: 'playFromHand', fromVar: 'revealed', maxTargets: 1, optional: false }" },
     ],
   },
   activateEventFromHand: {
@@ -963,9 +993,10 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   playFromTrash: {
     id: 'playFromTrash',
-    summary: 'Play up to N cards matching a filter from the trash (optionally rested).',
+    summary: 'Play up to N cards matching a filter from the trash (optionally rested), or from a prior binding via fromVar.',
     params: [
-      { name: 'filter', type: 'SearchFilter', required: true },
+      { name: 'filter', type: 'SearchFilter', required: false, note: 'required unless fromVar is set' },
+      { name: 'fromVar', type: 'string', required: false },
       { name: 'maxTargets', type: 'number', required: false },
       { name: 'rested', type: 'boolean', required: false },
       { name: 'distinctNames', type: 'boolean', required: false },
@@ -975,6 +1006,21 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { cardNumber: 'OP08-096', snippet: "{ fn: 'playFromTrash', filter: { category: 'character', color: 'black', maxCost: 3 } }" },
       { cardNumber: 'OP13-082', snippet: "{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Five Elders', exactPower: 5000 }, maxTargets: 5, distinctNames: true }" },
     ],
+  },
+  playPairOneRested: {
+    id: 'playPairOneRested',
+    summary: 'Choose up to 1 trash card per pick filter (distinct), then if 2 were chosen pick which enters rested and play the other active; a lone pick plays active.',
+    params: [
+      { name: 'zone', type: "'trash'", required: true },
+      { name: 'picks', type: '[{ filter: SearchFilter; prompt?: string }, { filter: SearchFilter; prompt?: string }]', required: true },
+    ],
+    covers: [
+      'choose up to 1 Character card with a cost of {A} or less and up to 1 Character card with a cost of {B} or less from your trash. Play 1 card and play the other card rested',
+    ],
+    examples: [{
+      cardNumber: 'OP06-086',
+      snippet: "{ fn: 'playPairOneRested', zone: 'trash', picks: [{ filter: { category: 'character', maxCost: 4 } }, { filter: { category: 'character', maxCost: 2 } }] }",
+    }],
   },
   playSelfFromTrash: {
     id: 'playSelfFromTrash',
@@ -1003,10 +1049,11 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'filter', type: 'SearchFilter', required: false },
       { name: 'remainder', type: "'bottom' | 'trash' | 'deckTopOrBottom'", required: false },
     ],
-    covers: ['look at {N} cards from the top of your deck; reveal up to 1 {type} card and add it to your hand', 'reveal up to 1 <attribute> card or {color} Event and add it to your hand', 'place the rest at the top or bottom of the deck in any order'],
+    covers: ['look at {N} cards from the top of your deck; reveal up to 1 {type} card and add it to your hand', 'reveal up to 1 <attribute> card or {color} Event and add it to your hand', 'reveal 1 card from the top of your deck, play up to 1 Character with a cost of 2, and place the rest at the top or bottom of your deck', 'place the rest at the top or bottom of the deck in any order'],
     examples: [
       { cardNumber: 'OP06-013', snippet: "{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'FILM' }, remainder: 'bottom' }" },
       { cardNumber: 'OP02-057', snippet: "{ fn: 'searchTopDeck', look: 2, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'The Seven Warlords of the Sea' }, remainder: 'deckTopOrBottom' }" },
+      { cardNumber: 'OP06-057', snippet: "{ fn: 'searchTopDeck', look: 1, pick: 1, reveal: true, destination: 'play', filter: { category: 'character', exactCost: 2 }, remainder: 'deckTopOrBottom' }" },
       { cardNumber: 'OP12-034', snippet: "{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ attribute: 'slash' }, { category: 'event', color: 'green' }] } }" },
     ],
   },
@@ -1035,13 +1082,19 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   captureCount: {
     id: 'captureCount',
-    summary: 'Snapshot the previous variable-count selection (var `from`, default t) into stable var `into`, so a later buff-target choice reusing t does not clobber the count.',
+    summary: 'Snapshot the previous selection (var `from`, default t) into stable var `into`, so a later chooseTargets reusing t does not clobber it (countVar scaling or excludeIdsFromVar).',
     params: [
       { name: 'from', type: 'string', required: false, note: "source var, default 't'" },
-      { name: 'into', type: 'string', required: true, note: 'stable var read by a later addPower countVar' },
+      { name: 'into', type: 'string', required: true, note: 'stable var read by a later addPower countVar or TargetFilter.excludeIdsFromVar' },
     ],
-    covers: ['... gains +N power for every returned/K.O.\'d Character (when the buff recipient is separately chosen)'],
-    examples: [{ cardNumber: 'P-059', snippet: "{ fn: 'captureCount', into: 'returned' }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 0, countVar: 'returned', amountPer: 2000, duration: 'duringThisBattle', optional: true, maxTargets: 1 }" }],
+    covers: [
+      '... gains +N power for every returned/K.O.\'d Character (when the buff recipient is separately chosen)',
+      'give 1 Character −A and the other −B (exclude prior pick via excludeIdsFromVar)',
+    ],
+    examples: [
+      { cardNumber: 'P-059', snippet: "{ fn: 'captureCount', into: 'returned' }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 0, countVar: 'returned', amountPer: 2000, duration: 'duringThisBattle', optional: true, maxTargets: 1 }" },
+      { cardNumber: 'OP08-118', snippet: "{ fn: 'captureCount', into: 'firstDebuff' }, { fn: 'addPower', target: { group: 'characters', player: 'opponent', filter: { excludeIdsFromVar: 'firstDebuff' } }, amount: -2000, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 1 }" },
+    ],
   },
   revealTopLifePlay: {
     id: 'revealTopLifePlay',
@@ -1074,10 +1127,14 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   turnTopLifeFace: {
     id: 'turnTopLifeFace',
-    summary: '"You may turn N cards from the top of your Life cards face-up/down:" cost. Binds var t.',
-    params: [{ name: 'faceUp', type: 'boolean', required: true }, { name: 'count', type: 'number', required: false }],
-    covers: ['you may turn 1 card from the top of your Life cards face-up:', 'you may turn 2 cards from the top of your Life cards face-up:'],
-    examples: [{ cardNumber: 'OP08-096', snippet: "{ fn: 'turnTopLifeFace', faceUp: true }" }, { cardNumber: 'OP08-058', snippet: "{ fn: 'turnTopLifeFace', faceUp: true, count: 2 }" }],
+    summary: '"You may turn N cards from the top of your Life cards face-up/down:" cost. With fromFaceUp, chooses among currently face-up Life cards instead of the top. Binds var t.',
+    params: [{ name: 'faceUp', type: 'boolean', required: true }, { name: 'count', type: 'number', required: false }, { name: 'fromFaceUp', type: 'true', required: false }],
+    covers: ['you may turn 1 card from the top of your Life cards face-up:', 'you may turn 2 cards from the top of your Life cards face-up:', 'you may turn 1 of your face-up Life cards face-down:'],
+    examples: [
+      { cardNumber: 'OP08-096', snippet: "{ fn: 'turnTopLifeFace', faceUp: true }" },
+      { cardNumber: 'OP08-058', snippet: "{ fn: 'turnTopLifeFace', faceUp: true, count: 2 }" },
+      { cardNumber: 'ST13-009', snippet: "{ fn: 'turnTopLifeFace', faceUp: false, fromFaceUp: true }" },
+    ],
   },
   turnAllLifeFace: {
     id: 'turnAllLifeFace',
@@ -1210,10 +1267,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   trashHandDownTo: {
     id: 'trashHandDownTo',
-    summary: 'Trash cards from hand until the controller has the given hand size.',
-    params: [{ name: 'handSize', type: 'number', required: true }],
-    covers: ['trash cards from your hand until you have {N} cards in your hand'],
-    examples: [{ cardNumber: 'OP14-054', snippet: "{ fn: 'trashHandDownTo', handSize: 5 }" }],
+    summary: 'Trash cards from a player\'s hand until they have the given hand size (auto-discards from hand end; no per-card choice).',
+    params: [{ name: 'handSize', type: 'number', required: true }, { name: 'player', type: "'controller' | 'opponent'", required: false }],
+    covers: ['trash cards from your hand until you have {N} cards in your hand', 'you and your opponent trash cards from your hands until you each have {N} cards'],
+    examples: [
+      { cardNumber: 'OP14-054', snippet: "{ fn: 'trashHandDownTo', handSize: 5 }" },
+      { cardNumber: 'OP05-058', snippet: "{ fn: 'trashHandDownTo', handSize: 5 }, { fn: 'trashHandDownTo', handSize: 5, player: 'opponent' }" },
+    ],
   },
   trashFaceUpLife: {
     id: 'trashFaceUpLife',
@@ -1298,17 +1358,22 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   addCostAuraControllerCharacters: {
     id: 'addCostAuraControllerCharacters',
-    summary: 'Continuous cost aura over ALL controller Characters (chars only), optionally type-filtered + source-state gated.',
+    summary: 'Continuous cost aura over ALL controller Characters (chars only), optionally type/color/base-cost-filtered + source-state gated.',
     params: [
       { name: 'amount', type: 'number', required: true, note: 'negative for "−N cost"' },
       { name: 'duration', type: 'IrDuration', required: true },
       { name: 'anyOfTypes', type: 'string[]', required: false },
       { name: 'anyOfColors', type: 'Color[]', required: false, note: 'restrict the aura to Characters of these colors (e.g. black {Straw Hat Crew})' },
+      { name: 'minBaseCost', type: 'number', required: false, note: 'restrict to Characters with printed cost >= N' },
+      { name: 'maxBaseCost', type: 'number', required: false, note: 'restrict to Characters with printed cost <= N' },
       { name: 'sourceCondition', type: 'SourceStateCondition', required: false },
       { name: 'gate', type: 'AbilityGate[]', required: false, note: 'board gate re-evaluated each read against the source\'s controller (e.g. "if you have 3+ {type} Characters")' },
     ],
-    covers: ['[Opponent\'s Turn] all of your {type} Characters gain +{C} cost', 'all of your Characters gain +{C} cost', 'all of your {color} {type} Characters gain +{C} cost', 'if <board state>, all of your {type} Characters gain +{C} cost'],
-    examples: [{ cardNumber: 'EB04-046', snippet: "{ fn: 'addCostAuraControllerCharacters', amount: 2, duration: 'permanent', anyOfTypes: ['Navy'], sourceCondition: { turn: 'opponent' } }" }],
+    covers: ['[Opponent\'s Turn] all of your {type} Characters gain +{C} cost', 'all of your Characters gain +{C} cost', 'all of your {color} {type} Characters gain +{C} cost', 'all of your {type} Characters with a cost of {N} or more gain +{C} cost', 'if <board state>, all of your {type} Characters gain +{C} cost'],
+    examples: [
+      { cardNumber: 'EB04-046', snippet: "{ fn: 'addCostAuraControllerCharacters', amount: 2, duration: 'permanent', anyOfTypes: ['Navy'], sourceCondition: { turn: 'opponent' } }" },
+      { cardNumber: 'OP10-042', snippet: "{ fn: 'addCostAuraControllerCharacters', amount: 1, duration: 'permanent', anyOfTypes: ['Dressrosa'], minBaseCost: 2 }" },
+    ],
   },
   addCostAuraControllerHandCards: {
     id: 'addCostAuraControllerHandCards',
@@ -1527,6 +1592,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   selfLifeLessThanOpponent: { id: 'selfLifeLessThanOpponent', summary: 'You have fewer Life cards than your opponent.', params: [], covers: ['If you have less Life cards than your opponent'], examples: [{ cardNumber: 'OP04-106', snippet: "{ kind: 'selfLifeLessThanOpponent' }" }] },
   selfLifeAtMostOpponent: { id: 'selfLifeAtMostOpponent', summary: 'Your Life count is equal to or less than opponent\'s.', params: [], covers: ['If the number of your Life cards is equal to or less than the number of your opponent\'s Life cards'], examples: [{ cardNumber: 'OP13-102', snippet: "{ kind: 'selfLifeAtMostOpponent' }" }] },
   selfHand: { id: 'selfHand', summary: 'You have N or more/less cards in hand.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have {N} or less cards in your hand'], examples: [{ cardNumber: 'OP11-057', snippet: "{ kind: 'selfHand', atMost: 4 }" }] },
+  selfLifeAndHand: { id: 'selfLifeAndHand', summary: 'Your Life count + hand count is at least/at most N.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have a total of {N} or less cards in your Life area and hand'], examples: [{ cardNumber: 'OP04-040', snippet: "{ kind: 'selfLifeAndHand', atMost: 4 }" }] },
   selfHandAtLeastLessThanOpponent: { id: 'selfHandAtLeastLessThanOpponent', summary: 'Your hand count is at least N less than opponent\'s.', params: [{ name: 'count', type: 'number', required: true }], covers: ['If the number of cards in your hand is at least {N} less than the number in your opponent\'s hand'], examples: [{ cardNumber: 'OP09-092', snippet: "{ kind: 'selfHandAtLeastLessThanOpponent', count: 3 }" }] },
   anyCharacterExactCost: { id: 'anyCharacterExactCost', summary: 'There is a Character with a cost of exactly N (either player).', params: [{ name: 'exactCost', type: 'number', required: true }], covers: ['If there is a Character with a cost of {N}'], examples: [{ cardNumber: 'EB03-046', snippet: "{ kind: 'anyCharacterExactCost', exactCost: 0 }" }] },
   selfHasCharacterCostAtLeast: { id: 'selfHasCharacterCostAtLeast', summary: 'You have a Character with a cost of N or more.', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['If you have a Character with a cost of {N} or more'], examples: [{ cardNumber: 'OP08-085', snippet: "{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }" }] },
@@ -1541,7 +1607,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   selfControlsNamed: { id: 'selfControlsNamed', summary: 'You control/have a named card among your Leader, Characters, or Stage.', params: [{ name: 'name', type: 'string', required: true }], covers: ['If you have [{name}]', 'If you have a [{name}] Character'], excludes: ['"other than THIS Character" self-instance exclusion'], examples: [{ cardNumber: 'OP07-030', snippet: "{ kind: 'selfControlsNamed', name: 'Camie' }" }] },
   selfDoesNotControlNamed: { id: 'selfDoesNotControlNamed', summary: 'You do not control/have a named card among your Leader, Characters, or Stage.', params: [{ name: 'name', type: 'string', required: true }], covers: ['If you don\'t have [{name}]', 'you have no other [{name}] Characters'], examples: [{ cardNumber: 'EB01-012', snippet: "{ kind: 'selfDoesNotControlNamed', name: 'Cavendish' }" }] },
   selfNamedCardCount: { id: 'selfNamedCardCount', summary: 'You have N or more/less named cards among your Leader, Characters, or Stage.', params: [{ name: 'name', type: 'string', required: true }, { name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have {N} or more [{name}] cards'], examples: [{ cardNumber: 'OP16-057', snippet: "{ kind: 'selfNamedCardCount', name: 'Prisoner of Impel Down', atLeast: 2 }" }] },
-  selfHandMatching: { id: 'selfHandMatching', summary: 'You can reveal N cards in hand matching a type/category/power ("reveal ... from your hand").', params: [{ name: 'atLeast', type: 'number', required: true }, { name: 'typeIncludes', type: 'string', required: false }, { name: 'category', type: 'CardCategory', required: false }, { name: 'exactPower/minPower', type: 'number', required: false }], covers: ['reveal {N} {type}/Event/{power}-power cards from your hand'], examples: [{ cardNumber: 'OP16-002', snippet: "{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }" }] },
+  selfHandMatching: { id: 'selfHandMatching', summary: 'You can reveal N cards in hand matching a type/category/power/cost ("reveal ... from your hand").', params: [{ name: 'atLeast', type: 'number', required: true }, { name: 'typeIncludes', type: 'string', required: false }, { name: 'category', type: 'CardCategory', required: false }, { name: 'exactPower/minPower/exactCost', type: 'number', required: false }], covers: ['reveal {N} {type}/Event/{power}-power cards from your hand', 'reveal 1 Character card with a cost of 5 from your hand'], examples: [{ cardNumber: 'OP16-002', snippet: "{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }" }, { cardNumber: 'ST13-005', snippet: "{ kind: 'selfHandMatching', category: 'character', exactCost: 5, atLeast: 1 }" }] },
   opponentHand: { id: 'opponentHand', summary: 'Opponent has N or more/less cards in hand.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If your opponent has {N} or more cards in their hand'], examples: [{ cardNumber: 'OP05-082', snippet: "{ kind: 'opponentHand', atLeast: 6 }" }] },
   selfPlayedThisTurn: { id: 'selfPlayedThisTurn', summary: 'This card was played this turn.', params: [], covers: ['If this Character was played on this turn'], examples: [{ cardNumber: 'EB03-013', snippet: "{ kind: 'selfPlayedThisTurn' }" }] },
   selfBattledOpponentCharacterThisTurn: { id: 'selfBattledOpponentCharacterThisTurn', summary: 'This card battled an opponent Character this turn.', params: [], covers: ['If this Leader battles your opponent\'s Character during this turn'], examples: [{ cardNumber: 'OP12-020', snippet: "{ kind: 'selfBattledOpponentCharacterThisTurn' }" }] },
@@ -1570,6 +1636,17 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   opponentCharacterBasePowerCount: { id: 'opponentCharacterBasePowerCount', summary: 'Opponent has N Characters with base power M or more.', params: [{ name: 'power', type: 'number', required: true }, { name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['your opponent has {N} or more Characters with a base power of {M} or more'], examples: [{ cardNumber: 'EB04-005', snippet: "{ kind: 'opponentCharacterBasePowerCount', power: 5000, atLeast: 2 }" }] },
   opponentCharacterCurrentPowerCount: { id: 'opponentCharacterCurrentPowerCount', summary: 'Opponent has N Characters with M current power or more.', params: [{ name: 'power', type: 'number', required: true }, { name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['if your opponent has a Character with {N} power or more', 'your opponent has {N} or more Characters with {M} power or more'], examples: [{ cardNumber: 'OP09-019', snippet: "{ kind: 'opponentCharacterCurrentPowerCount', power: 5000, atLeast: 1 }" }] },
   anyCharacterCostAtLeast: { id: 'anyCharacterCostAtLeast', summary: 'There is a Character with a cost of N or more (either player).', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['if there is a Character with a cost of {N} or more'], examples: [{ cardNumber: 'OP11-095', snippet: "{ kind: 'anyCharacterCostAtLeast', atLeast: 9 }" }] },
+  boundVarsTotalCount: {
+    id: 'boundVarsTotalCount',
+    summary: 'Sequence-local: total length of named chooseTargets bindings (requires GateEvalContext.bindings).',
+    params: [
+      { name: 'varNames', type: 'string[]', required: true },
+      { name: 'atLeast', type: 'number', required: false },
+      { name: 'atMost', type: 'number', required: false },
+    ],
+    covers: ['if 2 cards were chosen from the prior picks (orientation / pair follow-ups)'],
+    examples: [{ cardNumber: 'OP06-086', snippet: "{ kind: 'boundVarsTotalCount', varNames: ['pairA', 'pairB'], atLeast: 2 }" }],
+  },
   anyCharacterBasePowerAtLeast: { id: 'anyCharacterBasePowerAtLeast', summary: 'There is a Character with base power N or more (either player).', params: [{ name: 'power', type: 'number', required: true }], covers: ['unless there is a Character with {N} base power or more'], examples: [{ cardNumber: 'EB04-051', snippet: "{ kind: 'anyCharacterBasePowerAtLeast', power: 12000 }" }] },
   selfCharactersTotalCostAtLeast: { id: 'selfCharactersTotalCostAtLeast', summary: 'Total current cost of your Characters is N or more.', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['If the total cost of your Characters is {N} or more'], examples: [{ cardNumber: 'OP10-022', snippet: "{ kind: 'selfCharactersTotalCostAtLeast', atLeast: 5 }" }] },
   opponentHasCharacterExactCost: { id: 'opponentHasCharacterExactCost', summary: 'Opponent has a Character with a cost of exactly N.', params: [{ name: 'exactCost', type: 'number', required: true }], covers: ['if your opponent has a Character with a cost of {N}'], examples: [{ cardNumber: 'OP07-087', snippet: "{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }" }] },
@@ -1584,6 +1661,9 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   playedCharacterBaseCostAtLeast: { id: 'playedCharacterBaseCostAtLeast', summary: 'The just-played Character has base cost >= N (reactive windows).', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['when your opponent plays a Character with a base cost of {N} or more'], examples: [{ cardNumber: 'OP12-081', snippet: "{ kind: 'playedCharacterBaseCostAtLeast', atLeast: 8 }" }] },
   playedFromCharacterEffect: { id: 'playedFromCharacterEffect', summary: 'The just-played Character entered play via another Character\'s effect.', params: [], covers: ['when your opponent plays a Character using a Character\'s effect'], examples: [{ cardNumber: 'OP12-081', snippet: "{ kind: 'playedFromCharacterEffect' }" }] },
   koedCharacterController: { id: 'koedCharacterController', summary: "Filters the onCharacterKoed reactive window by whose Character was K.O.'d (onCharacterKoed only).", params: [{ name: 'player', type: "'opponent' | 'controller'", required: true }], covers: ["When your opponent's Character is K.O.'d", 'When your Character is K.O.\u2019d'], examples: [{ cardNumber: 'OP01-061', snippet: "{ kind: 'koedCharacterController', player: 'opponent' }" }] },
+  koedCharacterTypeIncludes: { id: 'koedCharacterTypeIncludes', summary: "The K.O.'d Character carries a type (onCharacterKoed only).", params: [{ name: 'typeIncludes', type: 'string', required: true }], covers: ["When your {Type} type Character is K.O.'d"], examples: [{ cardNumber: 'OP10-042', snippet: "{ kind: 'koedCharacterTypeIncludes', typeIncludes: 'Dressrosa' }" }] },
+  koedCharacterAnyOfTypes: { id: 'koedCharacterAnyOfTypes', summary: "The K.O.'d Character carries any of the listed types (onCharacterKoed only).", params: [{ name: 'anyOfTypes', type: 'string[]', required: true }], covers: ["When your {A} or {B} type Character is K.O.'d"], examples: [{ cardNumber: 'OP14-041', snippet: "{ kind: 'koedCharacterAnyOfTypes', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'] }" }] },
+  koedCharacterMinBasePower: { id: 'koedCharacterMinBasePower', summary: "The K.O.'d Character has printed base power ≥ N (onCharacterKoed only).", params: [{ name: 'power', type: 'number', required: true }], covers: ["Characters with {N} base power or more is K.O.'d"], examples: [{ cardNumber: 'OP14-041', snippet: "{ kind: 'koedCharacterMinBasePower', power: 5000 }" }] },
   koByOpponentEffect: {
     id: 'koByOpponentEffect',
     summary: 'onKO only: the source Character was K.O.\'d by an opponent-controlled effect (not battle damage).',
@@ -1612,6 +1692,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   removedToZone: { id: 'removedToZone', summary: 'Destination zone of a card removed from the field by an effect (onRemovedFromField only).', params: [{ name: 'zone', type: "'hand' | 'deck' | 'trash' | 'life'", required: true }], covers: ['When a Character is returned to the owner\'s hand by your effect', 'When a Character is placed at the bottom of the deck by your effect', 'When a Character is trashed by your effect'], examples: [{ cardNumber: 'EB02-023', snippet: "{ kind: 'removedToZone', zone: 'hand' }" }] },
   effectSourceTypeIncludes: { id: 'effectSourceTypeIncludes', summary: 'Effect source card must include a type (reactive windows).', params: [{ name: 'typeIncludes', type: 'string', required: true }], covers: ['by your {Navy} type card\'s effect'], examples: [{ cardNumber: 'OP12-040', snippet: "{ kind: 'effectSourceTypeIncludes', typeIncludes: 'Navy' }" }] },
   anyOf: { id: 'anyOf', summary: 'OR: satisfied if any sub-gate holds ("if Leader is X or has {Y} type").', params: [{ name: 'gates', type: 'AbilityGate[]', required: true }], covers: ['if your Leader has the {A} or {B} type'], examples: [{ cardNumber: 'OP11-031', snippet: "{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }" }] },
+  noneOf: { id: 'noneOf', summary: 'NOR: satisfied if no nested sub-gate holds.', params: [{ name: 'gates', type: 'AbilityGate[]', required: true }], covers: ['if you do not have a Character with a cost of {N} or more'], examples: [{ cardNumber: 'OP04-040', snippet: "{ kind: 'noneOf', gates: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }] }" }] },
 };
 
 // ---------------------------------------------------------------------------

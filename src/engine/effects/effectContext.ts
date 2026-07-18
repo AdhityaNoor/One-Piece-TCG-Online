@@ -2574,11 +2574,10 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
-  trashHandDownTo(handSize: number): void {
-    const player = this.working.players[this.controllerId];
-    if (!player) return;
-    while (this.working.players[this.controllerId].hand.cardIds.length > handSize) {
-      const handIds = this.working.players[this.controllerId].hand.cardIds;
+  trashHandDownTo(handSize: number, playerId: string = this.controllerId): void {
+    if (!this.working.players[playerId]) return;
+    while (this.working.players[playerId].hand.cardIds.length > handSize) {
+      const handIds = this.working.players[playerId].hand.cardIds;
       const toTrash = handIds[handIds.length - 1];
       if (!toTrash) break;
       this.trashCard(toTrash);
@@ -2931,6 +2930,101 @@ export class EffectContextImpl implements EffectContext {
       relatedCardInstanceIds: handChosen,
       visibility: reveal ? 'public' : { visibleTo: [playerId] },
     });
+  }
+
+  searchPlayResolveWithTopOrBottomRemainder(
+    playerId: string,
+    lookedIds: string[],
+    playIds: string[],
+    topOrderIds: string[],
+    bottomOrderIds: string[],
+    rested = false,
+  ): void {
+    const player = this.working.players[playerId];
+    if (!player || lookedIds.length === 0) return;
+
+    const lookedSet = new Set(lookedIds);
+    const chosen = playIds.filter((id) => lookedSet.has(id));
+    const chosenSet = new Set(chosen);
+    const rest = lookedIds.filter((id) => !chosenSet.has(id));
+    const restSet = new Set(rest);
+    const top = topOrderIds.filter((id) => restSet.has(id));
+    const topSet = new Set(top);
+    const remaining = rest.filter((id) => !topSet.has(id));
+    const remainingSet = new Set(remaining);
+    const bottom =
+      bottomOrderIds.length === remaining.length && bottomOrderIds.every((id) => remainingSet.has(id))
+        ? bottomOrderIds
+        : remaining;
+
+    let deck = { ...player.deck, cardIds: player.deck.cardIds.slice(lookedIds.length) };
+    let characterArea = player.characterArea;
+    let nextState = this.working;
+    let cardsById = { ...nextState.cardsById };
+    const playedIds: string[] = [];
+
+    for (const oldId of chosen) {
+      const deckInst = cardsById[oldId];
+      const def = this.defs[deckInst?.cardDefinitionId ?? ''];
+      if (!deckInst || !def || def.category !== 'character') continue;
+      const minted = mintRuntimeInstanceId({ ...nextState, cardsById });
+      nextState = minted.state;
+      cardsById = { ...minted.state.cardsById };
+      const newId = minted.id;
+      cardsById[newId] = {
+        instanceId: newId,
+        cardDefinitionId: deckInst.cardDefinitionId,
+        ownerId: deckInst.ownerId,
+        controllerId: deckInst.controllerId,
+        currentZone: 'characterArea',
+        orientation: rested ? 'rested' : 'active',
+        faceState: 'faceUp',
+        donAttached: [],
+        currentPower: def.basePower ?? 0,
+        appliedContinuousEffectIds: [],
+        oncePerTurnUsed: [],
+        summoningSick: !def.hasRush,
+        revealedTo: 'all',
+        enteredPlayTurn: nextState.turnNumber,
+      };
+      delete cardsById[oldId];
+      characterArea = addToZoneBottom(characterArea, newId);
+      playedIds.push(newId);
+    }
+
+    deck = { ...deck, cardIds: [...top, ...deck.cardIds, ...bottom] };
+    for (const id of rest) {
+      cardsById[id] = { ...cardsById[id], currentZone: 'deck', revealedTo: [] };
+    }
+
+    this.working = {
+      ...nextState,
+      players: { ...nextState.players, [playerId]: { ...player, deck, characterArea } },
+      cardsById,
+    };
+
+    this.logger.push({
+      actorPlayerId: playerId,
+      type: 'CARD_PLAYED',
+      message: `${playerId} searched the top ${lookedIds.length} and played ${playedIds.length} Character card${playedIds.length === 1 ? '' : 's'} (${rested ? 'rested' : 'active'}), reordered ${rest.length} to top/bottom.`,
+      data: { lookedCount: lookedIds.length, playedCount: playedIds.length, playedInstanceIds: playedIds, topOrderIds: top, bottomOrderIds: bottom, rested },
+      relatedCardInstanceIds: playedIds,
+      visibility: 'public',
+    });
+
+    const limit = characterArea.maxSize ?? Infinity;
+    if (characterArea.cardIds.length > limit) {
+      this.emitChoice({
+        id: `${playerId}__character-overflow-${playedIds[playedIds.length - 1] ?? 'search-play'}`,
+        playerId,
+        kind: 'SELECT_CARDS',
+        prompt: `Choose 1 Character to trash - more than ${limit} in your Character Area (3-7-6-1).`,
+        constraints: { min: 1, max: 1, zoneId: 'characterArea', filterDescription: 'Any Character currently in your Character Area.' },
+        sourceInstanceId: null,
+        sourceEffectId: 'rule:characterAreaOverflow',
+      });
+    }
+    for (const id of playedIds) this.recordPlayedCharacter(id);
   }
 
   emitChoice(choice: PendingChoice): void {

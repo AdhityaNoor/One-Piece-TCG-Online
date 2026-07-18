@@ -593,14 +593,22 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP15-059 — PARTIAL: opponent may return active DON!! modal deferred; mapped: rest self → opp Leader/Char −2000.
+  // OP15-059 — [On Your Opponent's Attack] rest this: opponent may return 1 active DON!!; if they do not, −2000.
   {
     cardNumber: 'OP15-059',
     templateId: 'ability',
     params: {
       timing: 'onOpponentsAttack',
       cost: [{ kind: 'restThis' }],
-      functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }],
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'opponent',
+        prompt: 'Return 1 active DON!! to your DON!! deck, or take −2000?',
+        options: [
+          { label: 'returnDon', functions: [{ fn: 'returnOpponentDon', count: 1, activeOnly: true }] },
+          { label: 'powerMinus', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true }] },
+        ],
+      }],
     },
   },
   {
@@ -790,15 +798,21 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP15-080 — static +7000 if [Gecko Moria] ≥10000 power and no other [Oars]. PARTIAL: onKO recur deferred.
+  // OP15-080 — static +7000 if [Gecko Moria] ≥10000 power and no other [Oars].
+  //   [On K.O.] You may place 3 trash to deck bottom: play this from trash.
   {
     cardNumber: 'OP15-080',
-    templateId: 'ability',
-    params: {
-      timing: 'onEnterPlay',
-      gate: [{ kind: 'selfControlsNamedWithPowerAtLeast', name: 'Gecko Moria', power: 10000 }, { kind: 'selfOtherNamedCharacterCount', name: 'Oars', atMost: 0 }],
-      functions: [{ fn: 'addPowerSelf', amount: 7000, duration: 'permanent' }],
-    },
+    templates: [
+      { templateId: 'ability', params: {
+        timing: 'onEnterPlay',
+        gate: [{ kind: 'selfControlsNamedWithPowerAtLeast', name: 'Gecko Moria', power: 10000 }, { kind: 'selfOtherNamedCharacterCount', name: 'Oars', atMost: 0 }],
+        functions: [{ fn: 'addPowerSelf', amount: 7000, duration: 'permanent' }],
+      } },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [
+        { fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, minTargets: 3, maxTargets: 3 },
+        { fn: 'playSelfFromTrash', ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
   },
   { cardNumber: 'OP15-081', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'trashTopDeck', count: 5 }] } },
 
@@ -956,16 +970,25 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
       { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'giveDon', count: 1, optional: true, ifPrevious: 'previousSelectedAny' }] } },
     ],
   },
-  // OP15-100 — PARTIAL: optional trash-self on onPlay deferred; mapped: Life to hand → K.O. opp cost ≤6.
+  // OP15-100 — [On Play] You may trash this and add top Life to hand: K.O. up to 1 opp Character cost ≤6.
   {
     cardNumber: 'OP15-100',
     templateId: 'ability',
     params: {
       timing: 'onPlay',
-      functions: [
-        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' }, optional: true },
-        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, ifPrevious: 'previousMovedAny' },
-      ],
+      functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Trash this Character and take Life to hand to K.O.?',
+        options: [
+          { label: 'doNotPay', functions: [] },
+          { label: 'pay', functions: [
+            { fn: 'trashSelf' },
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' } },
+            { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true },
+          ] },
+        ],
+      }],
     },
   },
   { cardNumber: 'OP15-101', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'hand', filter: { anyOf: [{ name: 'Mont Blanc Noland' }, { typeIncludes: 'Shandian Warrior' }] }, remainder: 'bottom', ifPrevious: 'previousMovedAny' }] } },

@@ -20,3 +20,4 @@ export * from './TrashPile';
 export * from './TrashGalleryModal';
 export * from './CardMovementOverlay';
 export * from './MatchChatPanel';
+export * from './ReportBugModal';

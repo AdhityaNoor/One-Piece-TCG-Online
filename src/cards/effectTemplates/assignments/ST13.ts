@@ -89,7 +89,8 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'lookLifeAndReorder', moveOneToDeckTop: true },
   ] } },
 
-  // ST13-005 — PARTIAL: reveal-from-hand semantics approximated via filtered hand→Life face-down move.
+  // ST13-005 — [On Play] You may trash 1 Life (top or bottom): reveal up to 1 Character cost 5 from hand and
+  //   add it to the top of your Life face-down.
   {
     cardNumber: 'ST13-005',
     templateId: 'ability',
@@ -97,7 +98,12 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'onPlay',
       functions: [
         { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'trash', player: 'owner' }, optional: true },
-        { fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { category: 'character', exactCost: 5 } }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+        {
+          fn: 'optionalRevealTypeFromHand',
+          filter: { category: 'character', exactCost: 5 },
+          ifPrevious: 'previousMovedAny',
+          then: [{ fn: 'movePreviousSelection', to: { zone: 'life', player: 'controller', position: 'top' } }],
+        },
       ],
     },
   },
@@ -129,14 +135,15 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
     params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'trash', player: 'owner' }, optional: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, ifPrevious: 'previousMovedAny', optional: true }] },
   },
 
-  // ST13-009 — PARTIAL: "face-up Life" gate not modeled; turn-top-face-down + opp-hand gate mapped.
+  // ST13-009 — [On Play] You may turn 1 of your face-up Life cards face-down: If opponent hand ≥7,
+  //   trash up to 1 card from the top of your opponent's Life.
   {
     cardNumber: 'ST13-009',
     templateId: 'ability',
     params: {
       timing: 'onPlay',
       functions: [
-        { fn: 'turnTopLifeFace', faceUp: false },
+        { fn: 'turnTopLifeFace', faceUp: false, fromFaceUp: true },
         { fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top', count: 1 }, to: { zone: 'trash', player: 'owner' }, optional: true, ifPrevious: 'previousSelectedAny', ifGate: [{ kind: 'opponentHand', atLeast: 7 }] },
       ],
     },

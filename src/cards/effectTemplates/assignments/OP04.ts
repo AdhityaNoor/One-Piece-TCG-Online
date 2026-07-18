@@ -279,15 +279,28 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-040 — PARTIAL: combined Life+hand ≤4 gate and optional deck→Life branch deferred; mapped draw 1 at hand ≤4.
+  // OP04-040 — [DON!! x1][When Attacking] If Life+hand ≤4, draw 1; if you also have a cost-8+ Character,
+  //   you may add deck top to Life instead of drawing.
   {
     cardNumber: 'OP04-040',
     templateId: 'ability',
     params: {
       timing: 'whenAttacking',
       condition: { donAttachedAtLeast: 1 },
-      gate: [{ kind: 'selfHand', atMost: 4 }],
-      functions: [{ fn: 'draw', amount: 1 }],
+      gate: [{ kind: 'selfLifeAndHand', atMost: 4 }],
+      functions: [
+        {
+          fn: 'chooseOne',
+          chooser: 'controller',
+          prompt: 'Draw 1, or add the top of your deck to Life instead?',
+          ifGate: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }],
+          options: [
+            { label: 'draw', functions: [{ fn: 'draw', amount: 1 }] },
+            { label: 'deckToLife', functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] },
+          ],
+        },
+        { fn: 'draw', amount: 1, ifGate: [{ kind: 'noneOf', gates: [{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }] }] },
+      ],
     },
   },
 
@@ -379,7 +392,7 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP04-055 — PARTIAL: compound "trash Ice Oni + bottom-deck Character" activation cost is sequenced as mappable steps.
+  // OP04-055 — [Main]/[Trigger] trash 1 [Ice Oni] from hand + bottom-deck cost ≤4 Character → play [Ice Oni] from trash.
   {
     cardNumber: 'OP04-055',
     templates: [
@@ -463,11 +476,24 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP04-072 — [On Your Opponent's Attack] [Once Per Turn] DON!! −2 + rest this: K.O. up to 1 opp Character cost<=4.
   { cardNumber: 'OP04-072', templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, cost: [{ kind: 'donMinus', count: 2 }, { kind: 'restThis' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
 
-  // OP04-073 — PARTIAL: co-trash Baroque Works Character cost not modeled (trashThis only).
+  // OP04-073 — [Activate: Main] You may trash this and 1 {Baroque Works} Character: add 1 active DON!!.
+  //   [Trigger] Play this card.
   {
     cardNumber: 'OP04-073',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: false }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{
+        fn: 'chooseOne',
+        chooser: 'controller',
+        prompt: 'Trash this and 1 {Baroque Works} Character to add 1 DON!!?',
+        options: [
+          { label: 'doNotPay', functions: [] },
+          { label: 'pay', functions: [
+            { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'Baroque Works', excludeSelf: true } }, to: { zone: 'trash', player: 'owner' }, minTargets: 1, maxTargets: 1 },
+            { fn: 'trashSelf' },
+            { fn: 'addDonFromDeck', count: 1, rested: false },
+          ] },
+        ],
+      }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
     ],
   },

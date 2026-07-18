@@ -319,7 +319,6 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Your Turn] [Once Per Turn] When your Character with a type including "Whitebeard Pirates" is removed
   //   from the field by an effect, draw 1 card. Then, place 1 card from your hand at the top or bottom of
   //   your deck. [Trigger] Play this card.
-  // PARTIAL: draw on removal implemented; hand→deck top/bottom choice deferred.
   {
     cardNumber: 'OP08-056',
     templates: [
@@ -328,7 +327,10 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
         oncePerTurn: true,
         condition: { turn: 'your' },
         gate: [{ kind: 'removedFromFieldCategory', category: 'character' }, { kind: 'removedFromFieldController', player: 'controller' }, { kind: 'removedFromFieldTypeIncludes', typeIncludes: 'Whitebeard Pirates' }],
-        functions: [{ fn: 'draw', amount: 1 }],
+        functions: [
+          { fn: 'draw', amount: 1 },
+          { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'topOrBottom' }, maxTargets: 1 },
+        ],
       } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'stage', name: 'Moby Dick' }, maxTargets: 1 }] } },
     ],
@@ -728,10 +730,11 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP08-118 — PARTIAL: −3000/−2000 split on two targets approximated as sequential −3000 then −2000.
+  // OP08-118 — [On Play] up to 1 Character −3000 and a different Character −2000, then KO ≤3000.
   { cardNumber: 'OP08-118', templateId: 'ability', params: { timing: 'onPlay', functions: [
     { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 1 },
-    { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 1 },
+    { fn: 'captureCount', into: 'firstDebuff' },
+    { fn: 'addPower', target: { group: 'characters', player: 'opponent', filter: { excludeIdsFromVar: 'firstDebuff' } }, amount: -2000, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 1 },
     { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true },
   ] } },
 

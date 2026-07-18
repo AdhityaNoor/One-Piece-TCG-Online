@@ -49,7 +49,7 @@ function fireReactiveAbilitiesForPlayer(
   eventContext?: GateEvalContext,
   opts?: { onlyInstanceId?: string },
 ): ActionExecuteResult {
-  const optKey = REACTIVE_ONCE_PER_TURN_KEYS[timing];
+  const timingOptKey = REACTIVE_ONCE_PER_TURN_KEYS[timing];
   let working = state;
   let log: ActionExecuteResult['log'] = [];
   for (const id of fieldInstanceIds(working, observerPlayerId)) {
@@ -59,6 +59,7 @@ function fireReactiveAbilitiesForPlayer(
     const program = registry[inst.cardDefinitionId];
     if (!program?.abilities.some((a) => a.timing === timing)) continue;
     for (const ability of program.abilities.filter((a) => a.timing === timing)) {
+      const optKey = ability.oncePerTurnKey ?? timingOptKey;
       if (optKey && ability.oncePerTurn && inst.oncePerTurnUsed.includes(optKey)) continue;
       if (!triggeredAbilityWouldFire(ability, inst, working, defs, eventContext)) continue;
       const fired = runTimings(program, [timing], working, id, defs, actionId, registry, false, eventContext);
@@ -651,12 +652,16 @@ export function fireEndOfTurn(
  * (i.e. K.O.'d this action), tagged with their pre-K.O. controller so reactive
  * windows can ask "was it YOUR opponent's Character?".
  */
-function charactersKoedBetween(before: GameState, after: GameState): { controllerId: string }[] {
-  const out: { controllerId: string }[] = [];
+function charactersKoedBetween(before: GameState, after: GameState): { controllerId: string; cardDefinitionId: string }[] {
+  const out: { controllerId: string; cardDefinitionId: string }[] = [];
   for (const playerId of Object.keys(before.players)) {
     for (const id of before.players[playerId].characterArea.cardIds) {
       if (after.cardsById[id]?.currentZone === 'trash') {
-        out.push({ controllerId: before.cardsById[id]?.controllerId ?? playerId });
+        const pre = before.cardsById[id];
+        out.push({
+          controllerId: pre?.controllerId ?? playerId,
+          cardDefinitionId: pre?.cardDefinitionId ?? '',
+        });
       }
     }
   }
@@ -684,8 +689,11 @@ export function fireCharacterKoedReactions(
   if (koed.length === 0) return noop(after);
   let working = after;
   let log: ActionExecuteResult['log'] = [];
-  for (const { controllerId } of koed) {
-    const eventContext: GateEvalContext = { koedCharacterControllerId: controllerId };
+  for (const { controllerId, cardDefinitionId } of koed) {
+    const eventContext: GateEvalContext = {
+      koedCharacterControllerId: controllerId,
+      ...(cardDefinitionId ? { koedCharacterDefinitionId: cardDefinitionId } : {}),
+    };
     for (const observerId of Object.keys(working.players)) {
       const res = fireReactiveAbilitiesForPlayer(working, observerId, 'onCharacterKoed', registry, defs, actionId, eventContext);
       working = res.state;

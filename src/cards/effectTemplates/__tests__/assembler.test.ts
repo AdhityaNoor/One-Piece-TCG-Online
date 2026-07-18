@@ -223,12 +223,144 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'returnDonToDonDeck', target: { sel: 'var', name: 't' } });
   });
 
+  it('returnOpponentDon activeOnly uses opponentActiveDon', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onKO',
+      functions: [{ fn: 'returnOpponentDon', count: 1, activeOnly: true }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentActiveDon' }, min: 1, max: 1, chooser: 'opponent' });
+  });
+
+  it('addPower can exclude a prior captureCount binding via excludeIdsFromVar', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [
+        { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 1 },
+        { fn: 'captureCount', into: 'firstDebuff' },
+        { fn: 'addPower', target: { group: 'characters', player: 'opponent', filter: { excludeIdsFromVar: 'firstDebuff' } }, amount: -2000, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 1 },
+      ],
+    });
+    expect(p.abilities[0].ops).toEqual(expect.arrayContaining([
+      expect.objectContaining({ op: 'copyVar', from: 't', into: 'firstDebuff' }),
+      expect.objectContaining({
+        op: 'chooseTargets',
+        from: { sel: 'opponentCharacters', excludeIdsFromVar: 'firstDebuff' },
+      }),
+    ]));
+  });
+
+  it('optionalRevealTypeFromHand upTo reveals 1..count then playFromHand fromVar', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{
+        fn: 'optionalRevealTypeFromHand',
+        count: 2,
+        upTo: true,
+        filter: { category: 'character', typeIncludes: 'Dressrosa', maxCost: 7 },
+        then: [
+          { fn: 'captureCount', into: 'revealed' },
+          { fn: 'playFromHand', fromVar: 'revealed', maxTargets: 1, optional: false },
+          { fn: 'captureCount', into: 'played' },
+          { fn: 'playFromHand', fromVar: 'revealed', filter: { maxCost: 4, excludeIdsFromVar: 'played' }, rested: true, maxTargets: 1 },
+        ],
+      }],
+    });
+    const reveal = p.abilities[0].ops[0];
+    expect(reveal).toMatchObject({
+      op: 'chooseOption',
+      ifGate: [expect.objectContaining({ kind: 'selfHandMatching', atLeast: 1 })],
+    });
+    const revealOps = reveal.op === 'chooseOption' ? reveal.options.find((o) => o.label === 'reveal')?.ops ?? [] : [];
+    expect(revealOps[0]).toMatchObject({ op: 'chooseTargets', min: 1, max: 2 });
+    expect(revealOps).toEqual(expect.arrayContaining([
+      expect.objectContaining({ op: 'copyVar', into: 'revealed' }),
+      expect.objectContaining({ op: 'chooseTargets', from: { sel: 'var', name: 'revealed' }, min: 1, max: 1 }),
+      expect.objectContaining({
+        op: 'chooseTargets',
+        from: { sel: 'var', name: 'revealed', filter: { maxCost: 4, excludeIdsFromVar: 'played' } },
+        min: 0,
+        max: 1,
+      }),
+    ]));
+  });
+
+  it('playPairOneRested picks two trash cards then chooses which enters rested', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{
+        fn: 'playPairOneRested',
+        zone: 'trash',
+        picks: [
+          { filter: { category: 'character', maxCost: 4 } },
+          { filter: { category: 'character', maxCost: 2 } },
+        ],
+      }],
+    });
+    expect(p.abilities[0].ops).toEqual(expect.arrayContaining([
+      expect.objectContaining({ op: 'chooseTargets', var: 'pairA', from: { sel: 'controllerTrash', filter: { category: 'character', maxCost: 4 } } }),
+      expect.objectContaining({
+        op: 'chooseTargets',
+        var: 'pairB',
+        from: { sel: 'controllerTrash', filter: { category: 'character', maxCost: 2, excludeIdsFromVar: 'pairA' } },
+      }),
+      expect.objectContaining({
+        op: 'chooseTargets',
+        var: 'restedPick',
+        min: 1,
+        max: 1,
+        ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['pairA', 'pairB'], atLeast: 2 }],
+      }),
+      expect.objectContaining({ op: 'playFromTrash', target: { sel: 'var', name: 'restedPick' }, rested: true }),
+      expect.objectContaining({
+        op: 'playFromTrash',
+        target: expect.objectContaining({ sel: 'union', excludeIdsFromVar: 'restedPick' }),
+      }),
+    ]));
+  });
+
   it('moveCards keeps top-or-bottom Life choices hidden when moving to trash', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onPlay',
       functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'trash', player: 'owner' }, optional: true }],
     });
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseLifeToTrash', position: 'topOrBottom', optional: true });
+  });
+
+  it('moveCards can place a hand card at the top or bottom of the deck', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'topOrBottom' }, maxTargets: 1 }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerHand' }, min: 1, max: 1 });
+    expect(p.abilities[0].ops[1]).toMatchObject({
+      op: 'chooseOption',
+      options: [
+        expect.objectContaining({ label: 'top', ops: [expect.objectContaining({ op: 'moveToTopDeck' })] }),
+        expect.objectContaining({ label: 'bottom', ops: [expect.objectContaining({ op: 'moveToBottomDeck' })] }),
+      ],
+    });
+  });
+
+  it('optional Leader negate uses chooseTargets so the player can decline', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'activateMain',
+      functions: [
+        { fn: 'negateEffect', target: { group: 'leader', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+        { fn: 'preventAttack', target: { ref: 'previous' }, duration: 'endOfOpponentsTurn', ifPrevious: 'previousSelectedAny' },
+      ],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentLeader' }, min: 0, max: 1 });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'negateEffect', target: { sel: 'var', name: 't' } });
+    expect(p.abilities[0].ops[2]).toMatchObject({ op: 'preventAttack', target: { sel: 'var', name: 't' }, ifPrevious: 'previousSelectedAny' });
+  });
+
+  it('turnTopLifeFace fromFaceUp chooses among face-up Life cards', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'turnTopLifeFace', faceUp: false, fromFaceUp: true }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerFaceUpLife' }, min: 0, max: 1 });
+    expect(p.abilities[0].ops[1]).toMatchObject({ op: 'turnLifeFace', faceUp: false });
   });
 
   it('moveCards trashes controller top Life until a remaining count via trashLife.untilLife', () => {

@@ -83,6 +83,8 @@ export interface GateEvalContext {
   playedFromCharacterEffect?: boolean;
   /** Controller (pre-K.O.) of the Character that was K.O.'d (onCharacterKoed reactive window). */
   koedCharacterControllerId?: string;
+  /** cardDefinitionId of the Character that was K.O.'d (onCharacterKoed; from pre-K.O. state). */
+  koedCharacterDefinitionId?: string;
   /** Instance ids trashed from hand by an effect this event (onHandTrashed reactive window). */
   handTrashedCount?: number;
   /** Instance id of the card whose effect trashed from hand (onHandTrashed filter). */
@@ -91,6 +93,8 @@ export interface GateEvalContext {
   koCause?: 'battle' | 'effect';
   /** Instance id of the card/effect that K.O.'d the onKO source (onKO only). */
   koSourceInstanceId?: string;
+  /** Live effect-sequence bindings (for boundVarsTotalCount and similar sequence gates). */
+  bindings?: Record<string, string[]>;
 }
 
 export function evaluateGates(
@@ -316,6 +320,13 @@ function evaluateGate(
       return true;
     }
 
+    case 'selfLifeAndHand': {
+      const count = player.lifeArea.cardIds.length + player.hand.cardIds.length;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
     case 'selfHandAtLeastLessThanOpponent': {
       const opponentId = getOpponentId(state, ownerId);
       const opponent = state.players[opponentId];
@@ -416,6 +427,7 @@ function evaluateGate(
         if (gate.category !== undefined && def.category !== gate.category) return false;
         if (gate.exactPower !== undefined && (def.basePower ?? -1) !== gate.exactPower) return false;
         if (gate.minPower !== undefined && (def.basePower ?? -1) < gate.minPower) return false;
+        if (gate.exactCost !== undefined && (def.baseCost ?? -1) !== gate.exactCost) return false;
         return true;
       }).length;
       return n >= gate.atLeast;
@@ -593,6 +605,14 @@ function evaluateGate(
       return ids.some((id) => currentCostForGate(state, defs, id) >= gate.atLeast);
     }
 
+    case 'boundVarsTotalCount': {
+      const bindings = eventContext?.bindings ?? {};
+      const total = gate.varNames.reduce((n, name) => n + (bindings[name]?.length ?? 0), 0);
+      if (gate.atLeast !== undefined && total < gate.atLeast) return false;
+      if (gate.atMost !== undefined && total > gate.atMost) return false;
+      return true;
+    }
+
     case 'anyCharacterBasePowerAtLeast': {
       const opponentId = getOpponentId(state, ownerId);
       const ids = [...player.characterArea.cardIds, ...state.players[opponentId].characterArea.cardIds];
@@ -647,6 +667,9 @@ function evaluateGate(
 
     case 'anyOf':
       return gate.gates.some((g) => evaluateGate(g, state, defs, ownerId, sourceInstanceId, eventContext));
+
+    case 'noneOf':
+      return gate.gates.every((g) => !evaluateGate(g, state, defs, ownerId, sourceInstanceId, eventContext));
 
     case 'selfDonReturnedThisAction': {
       const count = eventContext?.donReturnedCount ?? 0;
@@ -733,6 +756,25 @@ function evaluateGate(
       if (!koedControllerId) return false;
       const isController = koedControllerId === ownerId;
       return gate.player === 'controller' ? isController : !isController;
+    }
+
+    case 'koedCharacterTypeIncludes': {
+      const defId = eventContext?.koedCharacterDefinitionId;
+      if (!defId) return false;
+      return typeMatches(defs[defId]?.types ?? [], gate.typeIncludes);
+    }
+
+    case 'koedCharacterAnyOfTypes': {
+      const defId = eventContext?.koedCharacterDefinitionId;
+      if (!defId) return false;
+      const types = defs[defId]?.types ?? [];
+      return gate.anyOfTypes.some((required) => typeMatches(types, required));
+    }
+
+    case 'koedCharacterMinBasePower': {
+      const defId = eventContext?.koedCharacterDefinitionId;
+      if (!defId) return false;
+      return (defs[defId]?.basePower ?? -Infinity) >= gate.power;
     }
 
     case 'koByOpponentEffect': {

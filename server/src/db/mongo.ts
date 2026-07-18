@@ -10,6 +10,7 @@ import { MongoClient, type Collection, type Db } from 'mongodb';
 import { env } from '../config/env';
 import type { UserDocument } from '../auth/userModel';
 import type { MatchHistoryDocument } from '../models/matchHistory';
+import type { BugReportDocument } from '../models/bugReport';
 import type {
   RankedAuditEventDocument,
   RankedLeaderboardSnapshotDocument,
@@ -111,6 +112,10 @@ export function playerReports(): Collection<PlayerReportDocument> {
   return getDb().collection<PlayerReportDocument>('playerReports');
 }
 
+export function bugReports(): Collection<BugReportDocument> {
+  return getDb().collection<BugReportDocument>('bugReports');
+}
+
 async function ensureIndexes(database: Db): Promise<void> {
   // Case-insensitive unique email so signup can't create duplicates by case.
   await database
@@ -167,6 +172,10 @@ async function ensureIndexes(database: Db): Promise<void> {
 
   await database.collection('playerReports').createIndex({ targetUserId: 1, createdAt: -1 });
   await database.collection('playerReports').createIndex({ reporterUserId: 1, createdAt: -1 });
+
+  // Bug reports — see server/src/support/routes.ts + models/bugReport.ts.
+  await database.collection('bugReports').createIndex({ reporterUserId: 1, createdAt: -1 });
+  await database.collection('bugReports').createIndex({ status: 1, createdAt: -1 });
 }
 
 /** For graceful shutdown / tests. */

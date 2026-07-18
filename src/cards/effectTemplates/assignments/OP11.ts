@@ -798,8 +798,12 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP11-107', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderName', name: 'Shirahoshi' }], functions: [{ fn: 'turnTopLifeFace', faceUp: false }, { fn: 'setActiveSelf', ifPrevious: 'previousSelectedAny' }] } },
 
-  // PARTIAL: face-down Life half only on Main; Counter +1000 aura deferred.
-  { cardNumber: 'OP11-117', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderName', name: 'Shirahoshi' }], functions: [{ fn: 'turnTopLifeFace', faceUp: true }, { fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { anyOfTypes: ['Neptunian', 'Fish-Man', 'Merfolk'] } }, amount: 1000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousSelectedAny' }] } },
+  // OP11-117 (stage) Fish-Man Island — [Activate: Main] [OPT] If Leader [Shirahoshi], you may turn top Life face-up:
+  //   up to 1 {Neptunian}/{Fish-Man}/{Merfolk} Character +1000 this turn.
+  { cardNumber: 'OP11-117', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'leaderName', name: 'Shirahoshi' }], functions: [
+    { fn: 'turnTopLifeFace', faceUp: true },
+    { fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { anyOfTypes: ['Neptunian', 'Fish-Man', 'Merfolk'] } }, amount: 1000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousSelectedAny' },
+  ] } },
 
   // Closed 2026-07-16: <Special> attribute filter wired into the opponentCharacters selector.
   { cardNumber: 'OP11-006', templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent', filter: { attribute: 'special' } }, amount: -5000, duration: 'duringThisTurn', optional: true }] } },

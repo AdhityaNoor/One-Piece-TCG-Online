@@ -1953,7 +1953,8 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
     expect(counter).toMatchObject({ cost: [{ kind: 'donMinus', count: 1 }] });
     expect(counter.ops).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ op: 'addPower', target: { sel: 'opponentLeader' }, amount: -2000 }),
+        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentLeader' }, min: 0, max: 1 }),
+        expect.objectContaining({ op: 'addPower', target: { sel: 'var', name: 't' }, amount: -2000 }),
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentCharacters' }, min: 0, max: 1 }),
         expect.objectContaining({ op: 'addPower', target: { sel: 'var', name: 't' }, amount: -2000 }),
       ]),

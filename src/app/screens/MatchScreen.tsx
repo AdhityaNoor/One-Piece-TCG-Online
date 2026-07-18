@@ -20,14 +20,15 @@
  * scannable text list is more useful than card art. Card zoom/preview
  * (small-screen requirement) reuses the existing CardDetailModal as-is.
  */
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { CardDefinition } from '../../engine/state/card';
 import type { GameState } from '../../engine/state/game';
 import type { GameLogEntry } from '../../engine/logs/logEntry';
+import type { MatchModeTag } from '../../../shared/support';
 import { countAvailableDon, getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
 import { Button, CardDetailModal, CardImage, GlitterWrap, Modal, ScaleToFit } from '../components';
-import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, MatchChatPanel, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, TrashGalleryModal, useBoardSelection } from '../components/match';
+import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, MatchChatPanel, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, ReportBugModal, TrashGalleryModal, useBoardSelection } from '../components/match';
 import { useCpuTurnController } from '../hooks/useCpuTurnController';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -37,6 +38,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useOnlineStore } from '../store/onlineStore';
 import type { CardView } from '../../board/projection';
 import { logEffectText, logSourceCardLabel } from '../lib/logDisplay';
+import { buildBugReportCardOptions } from '../lib/bugReportCardOptions';
 import { EFFECT_RUNTIME_LABEL, EFFECT_RUNTIME_MODE } from '../config/effectRuntimeMode';
 
 function EffectRuntimeBadge() {
@@ -85,6 +87,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const chatMessages = useOnlineStore((s) => s.chatMessages);
   const sendChat = useOnlineStore((s) => s.sendChat);
   const onlineStatus = useOnlineStore((s) => s.status);
+  const onlineRoomCode = useOnlineStore((s) => s.roomCode);
   const isCasual = localPlayerId !== null && cpuPlayerIds.length === 0;
   const isCpuMatch = cpuPlayerIds.length > 0;
   /** Casual + VS CPU: board stays on the local seat; never hotseat-flip by turn. */
@@ -94,6 +97,17 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const nameFor = (id: string): string => playerNames[id] ?? id;
 
   const [pauseOpen, setPauseOpen] = useState(false);
+  const [reportBugOpen, setReportBugOpen] = useState(false);
+  // Card-play history for the bug-report picker (CARD_PLAYED log entries
+  // only — see bugReportCardOptions.ts doc comment). Recomputed whenever the
+  // log or cardsById changes; a match's log is small (a few hundred entries
+  // at most) so this is cheap enough to keep unconditional rather than
+  // gating it behind reportBugOpen.
+  const bugReportCardOptions = useMemo(
+    () => (matchState ? buildBugReportCardOptions(matchState.log, matchState, defs) : []),
+    [matchState, defs],
+  );
+  const bugReportMatchMode: MatchModeTag = onlineMode ? 'online' : isCpuMatch ? 'vs-cpu' : isCasual ? 'casual-mock' : 'local-hotseat';
   // Left Actions aside: online matches (Casual + Ranked) get an always-visible
   // Chat dock below the action content (see MatchChatPanel doc). Mobile still
   // gates chat behind a bubble/fullscreen panel (mobilePanel === 'chat'),
@@ -456,6 +470,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
             showChat={onlineMode}
             unreadChatCount={unreadChatCount}
             onOpenChat={() => setMobilePanel((panel) => (panel === 'chat' ? null : 'chat'))}
+            onOpenPause={() => setPauseOpen(true)}
           />
         </div>
 
@@ -791,8 +806,31 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           <Button variant="secondary" fullWidth onClick={handleQuit}>
             Quit to Main Menu (without conceding)
           </Button>
+          <Button
+            variant="ghost"
+            fullWidth
+            onClick={() => {
+              setPauseOpen(false);
+              setReportBugOpen(true);
+            }}
+          >
+            Report a Bug
+          </Button>
         </div>
       </Modal>
+
+      {matchState && (
+        <ReportBugModal
+          open={reportBugOpen}
+          onClose={() => setReportBugOpen(false)}
+          matchMode={bugReportMatchMode}
+          matchId={onlineMode ? onlineRoomCode : null}
+          turnNumber={matchState.turnNumber}
+          phase={matchState.currentPhase}
+          log={matchState.log}
+          cardOptions={bugReportCardOptions}
+        />
+      )}
     </MatchGameShell>
   );
 }
@@ -1163,12 +1201,15 @@ function MobileActionHeader({
   onOpenActions,
   onOpenLog,
   onOpenChat,
+  onOpenPause,
   showChat = false,
   unreadChatCount = 0,
 }: {
   onOpenActions: () => void;
   onOpenLog: () => void;
   onOpenChat?: () => void;
+  /** Opens the Paused modal (Concede / Quit / Report a Bug) — on desktop this lives as a standing button in the left aside, but that aside is `hidden` below `xl` (see the wrapping `<div className="xl:hidden">`), so mobile had NO way to reach it at all until this button was added. */
+  onOpenPause: () => void;
   showChat?: boolean;
   unreadChatCount?: number;
 }) {
@@ -1201,6 +1242,11 @@ function MobileActionHeader({
           )}
         </button>
       )}
+      <button type="button" className="op-mobile-header-icon-button op-mobile-menu-button" onClick={onOpenPause} aria-label="Open menu">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M2 4h12M2 8h12M2 12h12" />
+        </svg>
+      </button>
     </div>
   );
 }

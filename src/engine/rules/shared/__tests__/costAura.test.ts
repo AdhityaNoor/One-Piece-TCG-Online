@@ -54,6 +54,21 @@ describe('continuous cost aura (addCostAura)', () => {
     expect(computeCurrentCost(rig.defs, state, blackNavy.instanceId)).toBe(4); // wrong type -> unaffected
   });
 
+  it('applies a minBaseCost-filtered aura ({Dressrosa} cost 2+ +1, OP10-042) only to matching printed costs', () => {
+    const base = buildBaseRig({ activePlayerId: 'p1' });
+    const dressrosa2 = putCharacterInPlay(base, 'p1', makeCharacterDef({ baseCost: 2, types: ['Dressrosa'] }));
+    const dressrosa1 = putCharacterInPlay(dressrosa2.rig, 'p1', makeCharacterDef({ baseCost: 1, types: ['Dressrosa'] }));
+    const other2 = putCharacterInPlay(dressrosa1.rig, 'p1', makeCharacterDef({ baseCost: 2, types: ['Navy'] }));
+    const rig = other2.rig;
+
+    const group: PowerAuraGroup = { ownLeaderAndCharacters: true, charactersOnly: true, anyOfTypes: ['Dressrosa'], minBaseCost: 2 };
+    const state: GameState = { ...rig.state, continuousEffects: [costAura(group, 1, dressrosa2.instanceId)] };
+
+    expect(computeCurrentCost(rig.defs, state, dressrosa2.instanceId)).toBe(3); // 2 + 1
+    expect(computeCurrentCost(rig.defs, state, dressrosa1.instanceId)).toBe(1); // base cost too low
+    expect(computeCurrentCost(rig.defs, state, other2.instanceId)).toBe(2); // wrong type
+  });
+
   it("does not apply the [Opponent's Turn] aura on the controller's own turn", () => {
     const base = buildBaseRig({ activePlayerId: 'p1' }); // p1's own turn
     const navy = putCharacterInPlay(base, 'p1', makeCharacterDef({ baseCost: 3, types: ['Navy'] }));

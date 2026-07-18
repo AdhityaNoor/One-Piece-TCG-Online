@@ -348,11 +348,16 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP09-059 — [Counter] up to 1 Leader/Char +3000 this battle. [Trigger] Draw 1. PARTIAL: the "trash up to 2 → mill same number" clause needs dynamic-count mill (deferred).
+  // OP09-059 — [Counter] up to 1 Leader/Char +3000 this battle. Then trash up to 2 from hand; mill the same number.
+  //   [Trigger] Draw 1.
   {
     cardNumber: 'OP09-059',
     templates: [
-      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', optional: true },
+        { fn: 'optionalTrashFromHand', count: 2 },
+        { fn: 'trashTopDeck', countVar: 't', ifPrevious: 'previousMovedAny' },
+      ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },
@@ -541,11 +546,13 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // PARTIAL: first negate should be opponent Leader only; preventAttack should target the negated Character.
+  // OP09-093 — [Activate: Main] [OPT] If Leader {Blackbeard Pirates} and this was played this turn:
+  //   Negate up to 1 opponent Leader this turn. Negate up to 1 opponent Character this turn; that Character
+  //   also cannot attack until the end of your opponent's next turn.
   { cardNumber: 'OP09-093', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'Blackbeard Pirates' }, { kind: 'selfPlayedThisTurn' }], functions: [
-    { fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+    { fn: 'negateEffect', target: { group: 'leader', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
     { fn: 'negateEffect', target: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
-    { fn: 'preventAttack', target: { group: 'characters', player: 'opponent' }, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 1 },
+    { fn: 'preventAttack', target: { ref: 'previous' }, duration: 'endOfOpponentsTurn', ifPrevious: 'previousSelectedAny' },
   ] } },
 
   // OP09-095 — [Activate: Main] rest 1 DON!! + rest this: Look 5, reveal up to 1 {Blackbeard Pirates} to hand, rest to bottom.
