@@ -20,8 +20,14 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST29-003 — [Trigger] K.O. up to 1 opp Character cost ≤3. PARTIAL: static ≤-Life +1000 buff deferred.
-  { cardNumber: 'ST29-003', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+  // ST29-003 — static +1000 if Life ≤ opponent's; [Trigger] K.O. up to 1 opp Character cost ≤3.
+  {
+    cardNumber: 'ST29-003',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfLifeAtMostOpponent' }] } }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+    ],
+  },
 
   // ST29-004 — [On Play] Look 4, reveal up to 1 {Straw Hat Crew} to hand, rest to bottom. [Trigger] trash 1 → play this.
   {
@@ -97,8 +103,14 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST29-016 — [Counter] your Leader +3000 this battle. PARTIAL: the [Main] unblockable-Leader clause is deferred.
-  { cardNumber: 'ST29-016', templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+  // ST29-016 — [Main] Your [Monkey.D.Luffy] Leader gains [Unblockable] during this turn. [Counter] Your Leader gains +3000 power during this battle.
+  {
+    cardNumber: 'ST29-016',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'leaderName', name: 'Monkey.D.Luffy' }], functions: [{ fn: 'addKeyword', target: { group: 'leader', player: 'controller' }, keyword: 'unblockable', duration: 'duringThisTurn' }] } },
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
+    ],
+  },
 
   // ST29-017 — [Counter] up to 1 Leader/Char +4000 this battle, then if ≤2 Life K.O. opp cost ≤3. [Trigger] Draw 2, trash 1.
   {

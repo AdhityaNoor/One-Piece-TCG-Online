@@ -6,6 +6,7 @@
  * paid and the K.O. is skipped (no [On K.O.] for effect/battle K.O. paths).
  */
 import type { CardCategory } from '../../state/card';
+import { nameMatches } from '../../state/card';
 import type {
   ContinuousEffectRecord,
   ContinuousKoReplacementModifier,
@@ -92,7 +93,7 @@ function eligibleRestCharacters(
     const def = getDefinition(defs, inst);
     if (filter?.minCost !== undefined && (def.baseCost ?? 0) < filter.minCost) return false;
     if (filter?.typeIncludes && !typeIncludes(def.types, filter.typeIncludes)) return false;
-    if (sourceName !== undefined && def.name === sourceName) return false;
+    if (sourceName !== undefined && nameMatches(def, sourceName)) return false;
     return true;
   });
 }
@@ -170,7 +171,7 @@ function eligibleRestLeaderOrNamed(
   const leaderId = player.leaderInstanceId;
   const leader = state.cardsById[leaderId];
   if (leader && leader.orientation === 'active') {
-    if (!filter.leaderName || getDefinition(defs, leader).name === filter.leaderName) {
+    if (!filter.leaderName || nameMatches(getDefinition(defs, leader), filter.leaderName)) {
       ids.push(leaderId);
     }
   }
@@ -178,7 +179,7 @@ function eligibleRestLeaderOrNamed(
   for (const id of fieldIds) {
     const inst = state.cardsById[id];
     if (!inst || inst.orientation !== 'active') continue;
-    if (getDefinition(defs, inst).name !== filter.cardName) continue;
+    if (!nameMatches(getDefinition(defs, inst), filter.cardName)) continue;
     ids.push(id);
   }
   return ids;

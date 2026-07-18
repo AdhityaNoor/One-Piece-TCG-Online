@@ -85,7 +85,7 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP10-021 (stage) — [Activate: Main] rest this: If Leader [Caesar Clown], give 1 rested DON!! to Leader/1 Char.
   { cardNumber: 'OP10-021', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'leaderName', name: 'Caesar Clown' }], functions: [{ fn: 'giveDon', count: 1 }] } },
 
-  // OP10-022 — [DON!! x1][Activate: Main][Once Per Turn] if total Character cost ≥5, return 1 Char → reveal top Life → play Supernovas ≤5. PARTIAL: Life reveal approximated via move-to-hand.
+  // OP10-022 — [DON!! x1][Activate: Main][OPT] if total Character cost ≥5, return 1 Char → reveal top Life → play Supernovas ≤5.
   {
     cardNumber: 'OP10-022',
     templateId: 'ability',
@@ -96,8 +96,7 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
       gate: [{ kind: 'selfCharactersTotalCostAtLeast', atLeast: 5 }],
       functions: [
         { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true },
-        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' } },
-        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Supernovas', maxCost: 5 }, optional: true },
+        { fn: 'revealTopLifePlay', filter: { category: 'character', typeIncludes: 'Supernovas', maxCost: 5 }, ifPrevious: 'previousMovedAny' },
       ],
     },
   },

@@ -133,8 +133,15 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP11-023 — [Trigger] Rest up to 1 opp Character cost ≤4. PARTIAL: the static in-hand −cost clause is deferred.
-  { cardNumber: 'OP11-023', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+  // OP11-023 — If your Leader has {Fish-Man}, you have 3 or less Life, and your opponent has 5+ rested cards, give this card in your hand −3 cost.
+  //   [Trigger] Rest up to 1 opponent Character cost ≤4.
+  {
+    cardNumber: 'OP11-023',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'selfLife', atMost: 3 }, { kind: 'opponentRestedCardCount', atLeast: 5 }] }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+    ],
+  },
 
   // OP11-024 (character) Aladine —
   //   When this Character is K.O.'d by your opponent's effect, you may trash 1 card from your hand and rest
@@ -257,19 +264,25 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   opponent's Life cards. If you have 7 or less cards in your hand, draw 1 card.[DON!! x1] [On Your
   //   Opponent's Attack] [Once Per Turn] You may trash 1 card from your hand: This Leader gains +2000 power
   //   during this turn.
-  // PARTIAL: life-removed draw trigger deferred; onOpponentsAttack trash-for-power mapped.
+  //   The life-removed draw trigger fires on `onLifeDamageDealt` (during your turn, you remove a card from your
+  //   opponent's Life); the primarily-your-turn "or your Life" branch is covered by the same window.
   {
     cardNumber: 'OP11-041',
-    templateId: 'ability',
-    params: {
-      timing: 'onOpponentsAttack',
-      oncePerTurn: true,
-      condition: { donAttachedAtLeast: 1 },
-      functions: [
-        { fn: 'optionalTrashFromHand', count: 1 },
-        { fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
-      ],
-    },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onLifeDamageDealt', oncePerTurn: true, functions: [{ fn: 'draw', amount: 1, ifGate: [{ kind: 'selfHand', atMost: 7 }] }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onOpponentsAttack',
+          oncePerTurn: true,
+          condition: { donAttachedAtLeast: 1 },
+          functions: [
+            { fn: 'optionalTrashFromHand', count: 1 },
+            { fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
   },
 
 

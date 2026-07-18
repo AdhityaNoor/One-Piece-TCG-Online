@@ -13,6 +13,7 @@ import type { AbilityGate, RemovedFromFieldDestination } from './effectIr';
 import type { GameState } from '../state/game';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { getOpponentId } from '../rules/shared/players';
+import { nameMatches } from '../state/card';
 import { countControllerActiveUnattachedDon, fieldDonIds } from './abilityCost';
 import { computeCurrentPower } from '../rules/shared/power';
 import { cardHasNoBaseEffect } from './cardHasNoBaseEffect';
@@ -123,7 +124,7 @@ function evaluateGate(
       if (!leaderInst) return false;
       const def = defs[leaderInst.cardDefinitionId];
       if (!def) return false;
-      return def.name === gate.name;
+      return nameMatches(def, gate.name);
     }
 
     case 'leaderNameIncludes': {
@@ -205,6 +206,13 @@ function evaluateGate(
 
     case 'selfRestedCardCount': {
       const count = countControllerRestedCards(state, ownerId);
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      return true;
+    }
+
+    case 'opponentRestedCardCount': {
+      const count = countControllerRestedCards(state, getOpponentId(state, ownerId));
       if (gate.atLeast !== undefined && count < gate.atLeast) return false;
       if (gate.atMost !== undefined && count > gate.atMost) return false;
       return true;
@@ -327,7 +335,9 @@ function evaluateGate(
 
     case 'selfCharacterCostCount': {
       const count = player.characterArea.cardIds.filter((id) => currentCostForGate(state, defs, id) >= gate.minCost).length;
-      return count >= gate.atLeast;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      return gate.atLeast !== undefined || gate.atMost !== undefined;
     }
 
     case 'selfCharacterBaseCostCount': {
@@ -380,19 +390,19 @@ function evaluateGate(
       const ids = [...player.characterArea.cardIds, ...player.stageArea.cardIds, player.leaderInstanceId];
       return ids.some((id) => {
         const inst = state.cardsById[id];
-        if (defs[inst?.cardDefinitionId ?? '']?.name !== gate.name) return false;
+        if (!nameMatches(defs[inst?.cardDefinitionId ?? ''], gate.name)) return false;
         return gate.rested ? inst?.orientation === 'rested' : true;
       });
     }
 
     case 'selfDoesNotControlNamed': {
       const ids = [...player.characterArea.cardIds, ...player.stageArea.cardIds, player.leaderInstanceId];
-      return !ids.some((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name);
+      return !ids.some((id) => nameMatches(defs[state.cardsById[id]?.cardDefinitionId ?? ''], gate.name));
     }
 
     case 'selfNamedCardCount': {
       const ids = [...player.characterArea.cardIds, ...player.stageArea.cardIds, player.leaderInstanceId];
-      const c = ids.filter((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name).length;
+      const c = ids.filter((id) => nameMatches(defs[state.cardsById[id]?.cardDefinitionId ?? ''], gate.name)).length;
       if (gate.atLeast !== undefined && c < gate.atLeast) return false;
       if (gate.atMost !== undefined && c > gate.atMost) return false;
       return true;
@@ -486,7 +496,7 @@ function evaluateGate(
       const ids = [player.leaderInstanceId, ...player.characterArea.cardIds].filter((id): id is string => id != null);
       return ids.some((id) => {
         const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
-        if (!def || def.name !== gate.name) return false;
+        if (!def || !nameMatches(def, gate.name)) return false;
         return computeCurrentPower(defs, state, id) >= gate.power;
       });
     }
@@ -495,7 +505,7 @@ function evaluateGate(
       const mode = gate.mode ?? 'atLeast';
       return player.characterArea.cardIds.some((id) => {
         const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
-        if (!def || def.name !== gate.name) return false;
+        if (!def || !nameMatches(def, gate.name)) return false;
         const basePower = def.basePower ?? -1;
         return mode === 'exact' ? basePower === gate.power : basePower >= gate.power;
       });
@@ -534,7 +544,7 @@ function evaluateGate(
     case 'selfOtherNamedCharacterCount': {
       const c = player.characterArea.cardIds.filter((id) => {
         if (id === sourceInstanceId) return false;
-        return defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name;
+        return nameMatches(defs[state.cardsById[id]?.cardDefinitionId ?? ''], gate.name);
       }).length;
       if (gate.atLeast !== undefined && c < gate.atLeast) return false;
       if (gate.atMost !== undefined && c > gate.atMost) return false;
@@ -599,7 +609,7 @@ function evaluateGate(
         const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
         if (!def) return false;
         if (gate.category !== undefined && def.category !== gate.category) return false;
-        if (gate.name !== undefined && def.name !== gate.name) return false;
+        if (gate.name !== undefined && !nameMatches(def, gate.name)) return false;
         if (gate.typeIncludes !== undefined && !typeMatches(def.types, gate.typeIncludes)) return false;
         return true;
       }).length;

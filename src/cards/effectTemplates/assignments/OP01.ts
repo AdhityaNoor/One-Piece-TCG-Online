@@ -372,7 +372,7 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP01-121 — [Double Attack] + [Banish] templated. PARTIAL: name alias [Kouzuki Oden] is card metadata.
+  // OP01-121 — [Double Attack] + [Banish] templated. Name alias [Kouzuki Oden] auto-extracted into def.aliasNames (nameMatches).
   {
     cardNumber: 'OP01-121',
     templateId: 'ability',

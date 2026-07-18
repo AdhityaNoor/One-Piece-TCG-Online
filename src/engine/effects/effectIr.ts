@@ -391,6 +391,7 @@ export type IrTiming =
 export type AbilityCost =
   | { kind: 'donMinus'; count: number; activeOnly?: boolean } // return N DON!! from the field to the DON!! deck; activeOnly restricts to active cost-area DON!!
   | { kind: 'restThis' } // rest the source card
+  | { kind: 'restLeader' } // rest the controller's Leader ("You may rest your Leader:" / "rest this Leader:")
   | { kind: 'trashThis' } // trash the source card (not a K.O.; does not fire [On K.O.])
   | { kind: 'restDon'; count: number }; // rest N of your active DON!! cards
 
@@ -409,6 +410,7 @@ export type AbilityGate =
   | { kind: 'selfCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more/less Characters"
   | { kind: 'selfRestedCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more rested Characters"
   | { kind: 'selfRestedCardCount'; atLeast?: number; atMost?: number } // "If you have N or more rested cards" (Leader/Characters/Stage/rested cost-area DON!!)
+  | { kind: 'opponentRestedCardCount'; atLeast?: number; atMost?: number } // "If your opponent has N or more rested cards" (Leader/Characters/Stage/rested cost-area DON!!)
   | { kind: 'opponentCharacterCount'; atLeast?: number; atMost?: number } // "If your opponent has N or less Characters"
   | { kind: 'selfFewerCharactersThanOpponent' } // "If you have less Characters than your opponent"
   | { kind: 'selfDonFieldCount'; atLeast?: number; atMost?: number } // "If you have N or less DON!! cards on your field"
@@ -425,7 +427,7 @@ export type AbilityGate =
   | { kind: 'selfHandAtLeastLessThanOpponent'; count: number } // "If your hand count is at least N less than your opponent's"
   | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
   | { kind: 'selfHasCharacterCostAtLeast'; atLeast: number } // "If you have a Character with a cost of N or more"
-  | { kind: 'selfCharacterCostCount'; minCost: number; atLeast: number } // "If you have N or more Characters with a cost of M or more"
+  | { kind: 'selfCharacterCostCount'; minCost: number; atLeast?: number; atMost?: number } // "If you have N or more/fewer Characters with a cost of M or more"
   | { kind: 'selfCharacterBaseCostCount'; minBaseCost: number; atLeast: number } // "If you have N or more Characters with a base cost of M or more"
   | { kind: 'anyCharacterCostCount'; minCost: number; atLeast: number } // "If there are N or more Characters with a cost of M or more"
   | { kind: 'selfHasCharacterBasePowerAtLeast'; power: number } // "If you have a Character with a base power of N or more"

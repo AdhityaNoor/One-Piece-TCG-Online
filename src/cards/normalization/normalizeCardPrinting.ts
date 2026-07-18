@@ -134,9 +134,17 @@ export function normalizeCardPrintings(printings: CardPrintingDto[]): NormalizeC
   const { canonical, alternates, warnings } = pickCanonicalPrinting(printings);
   const cardNumber = canonical.card_set_id;
 
+  // "Also treat this card's name as [X] according to the rules." (2-1). Apostrophe
+  // may be straight or curly; there can be more than one alias.
+  const aliasNames: string[] = [];
+  for (const m of canonical.card_text.matchAll(/treat this card[’']s name as \[([^\]]+)\]/gi)) {
+    if (m[1] && !aliasNames.includes(m[1])) aliasNames.push(m[1]);
+  }
+
   const definition: CardDefinition = {
     cardDefinitionId: cardNumber,
     name: canonical.card_name,
+    ...(aliasNames.length > 0 ? { aliasNames } : {}),
     category: CARD_TYPE_TO_CATEGORY[canonical.card_type],
     colors: parseColors(canonical.card_color, cardNumber, warnings),
     types: parseTypes(canonical.sub_types, cardNumber, warnings),

@@ -134,9 +134,18 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   [Opponent's Turn] [Once Per Turn] When your opponent plays a Character, if your Leader has the
   //   {Donquixote Pirates} type, rest up to 1 of your opponent's Characters. Then, rest this Character.
   //   [On Play] Rest up to 1 of your opponent's Characters with a cost of 4 or less.
-  // PARTIAL: the [Opponent's Turn] "when your opponent plays a Character" trigger is deferred (needs an
-  // opponent-plays-a-Character reactive timing). The [On Play] rest is curated (mirrors OP04-025).
-  { cardNumber: 'OP04-024', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+  // OP04-024 — [Opponent's Turn][OPT] When your opponent plays a Character, if your Leader has {Donquixote Pirates},
+  //   rest up to 1 opponent Character, then rest this Character. [On Play] Rest up to 1 opponent Character cost ≤4.
+  {
+    cardNumber: 'OP04-024',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onOpponentCharacterPlayedFromHand', oncePerTurn: true, gate: [{ kind: 'leaderType', type: 'Donquixote Pirates' }], functions: [
+        { fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 1 },
+        { fn: 'restSelf' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
+    ],
+  },
 
   // OP04-025 — [On Your Opponent's Attack] rest 2 DON!!: rest up to 1 opp Character cost<=4.
   { cardNumber: 'OP04-025', templateId: 'ability', params: { timing: 'onOpponentsAttack', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } },
@@ -495,8 +504,18 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP04-080', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addKeyword', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Dressrosa' } }, keyword: 'canAttackActive', duration: 'duringThisTurn', optional: true }] } },
 
   // OP04-081 (character) Cavendish —
-  //   PARTIAL: the [DON!! x1] active-Character attack grant is implemented below; the attack-triggered K.O. line remains deferred.
-  { cardNumber: 'OP04-081', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+  // OP04-081 — [DON!! x1] This Character can also attack active Characters.
+  //   [When Attacking] You may rest your Leader: K.O. up to 1 opponent Character cost ≤1, then trash 2 from the top of your deck.
+  {
+    cardNumber: 'OP04-081',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent', condition: { donAttachedAtLeast: 1 } }] } },
+      { templateId: 'ability', params: { timing: 'whenAttacking', cost: [{ kind: 'restLeader' }], functions: [
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true },
+        { fn: 'trashTopDeck', count: 2 },
+      ] } },
+    ],
+  },
 
   // OP04-083 — [Blocker] [On Play] none of your Characters can be K.O.'d by effects until start of next turn; then draw 2 and trash 2.
   { cardNumber: 'OP04-083', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'koImmunityControllerCharactersAll', scope: 'effect', duration: 'untilStartOfNextTurn' }, { fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }] } },
@@ -552,12 +571,20 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-094 Trueno Bastardo — [Main] K.O. cost <=4, upgraded to cost <=6 at trash >=15.
-  //   PARTIAL: the [Trigger] "rest your Leader: K.O." line is deferred (rest-leader trigger cost).
-  { cardNumber: 'OP04-094', templateId: 'ability', params: { timing: 'activateMain', functions: [
-    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, ifGate: [{ kind: 'selfTrashCount', atMost: 14 }] },
-    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, ifGate: [{ kind: 'selfTrashCount', atLeast: 15 }] },
-  ] } },
+  // OP04-094 — [Main] K.O. up to 1 opponent Character cost ≤4 (≤6 if you have 15+ cards in trash).
+  //   [Trigger] You may rest your Leader: K.O. up to 1 opponent Character cost ≤5.
+  {
+    cardNumber: 'OP04-094',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, ifGate: [{ kind: 'selfTrashCount', atMost: 14 }] },
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, ifGate: [{ kind: 'selfTrashCount', atLeast: 15 }] },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'restLeader' }], functions: [
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true },
+      ] } },
+    ],
+  },
 
   // OP04-096 — If Leader {Dressrosa}, your {Dressrosa} Characters can attack Characters on the turn played.
   { cardNumber: 'OP04-096', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeywordAuraControllerCharacters', keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent', anyOfTypes: ['Dressrosa'], gate: [{ kind: 'leaderType', type: 'Dressrosa' }] }] } },
@@ -567,7 +594,7 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   //   add 1 card from the top of your deck to the top of your Life cards.
   // NOTE: not yet implemented (needs template).
 
-  // OP04-099 (character) Olin — PARTIAL: alternate-name [Charlotte Linlin] deferred.
+  // OP04-099 (character) Olin — alternate name [Charlotte Linlin] auto-extracted into def.aliasNames (nameMatches).
   {
     cardNumber: 'OP04-099',
     templateId: 'ability',

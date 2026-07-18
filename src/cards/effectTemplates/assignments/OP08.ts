@@ -612,8 +612,15 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'draw', amount: 1, ifPrevious: 'previousMovedAny' },
   ] } },
 
-  // OP08-105 — [Trigger] Draw 2, trash 1. PARTIAL: the [DON!! x1] custom "when a card leaves opp Life" trigger is deferred.
-  { cardNumber: 'OP08-105', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+  // OP08-105 — [DON!! x1][Your Turn][Once Per Turn] When a card is removed from your opponent's Life cards (you deal
+  //   Life damage), draw 2 and trash 1 from your hand. [Trigger] Draw 2 and trash 1 from your hand.
+  {
+    cardNumber: 'OP08-105',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onLifeDamageDealt', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 1 }] } },
+    ],
+  },
 
   // OP08-106 — [On Play] trash 1 [Trigger] from hand: K.O. opp cost<=5; if hand<=3 draw 1. [Trigger] Activate [On Play].
   {

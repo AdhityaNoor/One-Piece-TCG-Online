@@ -490,7 +490,7 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP03-077 — PARTIAL: life→deck top deferred; mapped DON!!−2 + trash 1 hand → deck top to Life at ≤1 Life.
+  // OP03-077 — [DON!! x2][When Attacking] rest 2 DON!! + trash 1 hand → if ≤1 Life, deck top to Life.
   {
     cardNumber: 'OP03-077',
     templateId: 'ability',

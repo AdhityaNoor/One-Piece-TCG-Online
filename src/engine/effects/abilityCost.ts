@@ -144,6 +144,14 @@ export function canPayAbilityCost(
         }
         break;
       }
+      case 'restLeader': {
+        const leaderId = state.players[playerId]?.leaderInstanceId;
+        const leader = leaderId ? state.cardsById[leaderId] : undefined;
+        if (!leader || leader.orientation !== 'active') {
+          reasons.push('Cost requires resting your Leader, but it is already rested or not in play.');
+        }
+        break;
+      }
     }
   }
   return reasons;
@@ -225,6 +233,26 @@ export function payAbilityCost(
       }
       case 'restDon': {
         working = payRestDon(working, playerId, cost.count, logger);
+        break;
+      }
+      case 'restLeader': {
+        const leaderId = working.players[playerId]?.leaderInstanceId;
+        const leader = leaderId ? working.cardsById[leaderId] : undefined;
+        if (leaderId && leader?.orientation === 'active') {
+          restedInstanceIds.push(leaderId);
+          working = {
+            ...working,
+            cardsById: { ...working.cardsById, [leaderId]: { ...leader, orientation: 'rested' } },
+          };
+          logger.push({
+            actorPlayerId: playerId,
+            type: 'CARD_RESTED',
+            message: `${playerId} rested their Leader as an activation cost.`,
+            data: { sourceInstanceId: leaderId },
+            relatedCardInstanceIds: [leaderId],
+            visibility: 'public',
+          });
+        }
         break;
       }
     }

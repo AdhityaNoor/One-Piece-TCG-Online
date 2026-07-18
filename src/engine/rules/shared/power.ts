@@ -12,6 +12,7 @@
  */
 import type { ContinuousEffectRecord, ContinuousFieldRemovalImmunityModifier, ContinuousKeyword, ContinuousKoImmunityModifier, ContinuousPowerCondition, ContinuousRestRestriction, ForbiddenAttackTargetFilter, GameState, PowerAuraGroup, PowerScale, SourceStateCondition } from '../../state/game';
 import type { CardDefinition } from '../../state/card';
+import { nameMatches } from '../../state/card';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
 
@@ -426,7 +427,7 @@ function attackTargetMatchesForbiddenFilter(
   const currentCost = target.currentCost ?? baseCost;
   if (filter.maxCost !== undefined && (currentCost ?? Infinity) > filter.maxCost) return false;
   if (filter.minCost !== undefined && (currentCost ?? 0) < filter.minCost) return false;
-  if (filter.excludeName !== undefined && def?.name === filter.excludeName) return false;
+  if (filter.excludeName !== undefined && nameMatches(def, filter.excludeName)) return false;
   return true;
 }
 

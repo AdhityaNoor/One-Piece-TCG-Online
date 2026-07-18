@@ -13,6 +13,7 @@ import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { cardHasNoBaseEffect } from './cardHasNoBaseEffect';
+import { nameMatches } from '../state/card';
 import { computeCurrentPower } from '../rules/shared/power';
 import { buildKoReplacementConfirmChoice, findKoReplacementRecord, resolveKoReplacementStep, findRestReplacementRecord, buildRestReplacementConfirmChoice, buildRestReplacementPayChoice, applyRestReplacementCost } from '../rules/shared/koAttempt';
 import type { KoReplacementTrigger } from '../state/game';
@@ -236,7 +237,7 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
   if (filter.anyOf !== undefined && !filter.anyOf.some((child) => matchesSearchFilter(id, child, ctx, bindings))) return false;
   const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
   if (filter.typeIncludes && !hasType(def.types, filter.typeIncludes)) return false;
-  if (filter.excludeSelfName && selfName !== undefined && def.name === selfName) return false;
+  if (filter.excludeSelfName && selfName !== undefined && nameMatches(def, selfName)) return false;
   if (filter.excludeCardNames?.includes(def.name)) return false;
   if (filter.category && def.category !== filter.category) return false;
   if (filter.color && !def.colors.includes(filter.color)) return false;
@@ -248,7 +249,7 @@ function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContex
     if (excludedColors.size > 0 && def.colors.some((c) => excludedColors.has(c))) return false;
   }
   if (filter.attribute && !def.attributes?.includes(filter.attribute)) return false;
-  if (filter.name && def.name !== filter.name) return false;
+  if (filter.name && !nameMatches(def, filter.name)) return false;
   const maxCost = effectiveMaxCost(filter, ctx);
   if (maxCost !== undefined && (def.baseCost ?? Infinity) > maxCost) return false;
   if (filter.minCost !== undefined && (def.baseCost ?? -Infinity) < filter.minCost) return false;
@@ -414,7 +415,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       ids = applyBaseFilters(ids, sel, ctx);
       if (sel.color !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.colors.includes(sel.color!) === true);
-      if (sel.name !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name === sel.name);
+      if (sel.name !== undefined) ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), sel.name));
       if (sel.excludeCardNames !== undefined) ids = ids.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
@@ -440,7 +441,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.anyOfTypes !== undefined) {
         ids = ids.filter((id) => (sel.typeFilterCharactersOnly && id === leaderId) || sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
       }
-      if (sel.name !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name === sel.name);
+      if (sel.name !== undefined) ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), sel.name));
       if (sel.minCost !== undefined) ids = ids.filter((id) => id === leaderId || ctx.costOf(id) >= sel.minCost!);
       const maxCost = effectiveMaxCost(sel, ctx);
       if (maxCost !== undefined) ids = ids.filter((id) => id === leaderId || ctx.costOf(id) <= maxCost);
@@ -488,7 +489,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const p = ctx.state().players[ctx.controllerId];
       let ids = [p.leaderInstanceId, ...p.stageArea.cardIds];
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
-      if (sel.name !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name === sel.name);
+      if (sel.name !== undefined) ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), sel.name));
       return ids;
     }
     case 'controllerRestedDon': {

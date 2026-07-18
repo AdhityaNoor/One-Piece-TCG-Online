@@ -6,11 +6,11 @@ import type { CardEffectAssignment } from '../assembler';
 
 export const ST26_ASSIGNMENTS: CardEffectAssignment[] = [
 
-  // ST26-001 — PARTIAL: hand −5 cost gate approximated; [On Play] return all [San-Gorou]/[Sanji] mapped.
+  // ST26-001 — hand −5 cost if [San-Gorou]/[Sanji] base power ≥7000; [On Play] return all [San-Gorou]/[Sanji].
   {
     cardNumber: 'ST26-001',
     templates: [
-      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -5, duration: 'permanent', gate: [{ kind: 'anyOf', gates: [{ kind: 'selfControlsNamedWithPowerAtLeast', name: 'San-Gorou', power: 7000 }, { kind: 'selfControlsNamedWithPowerAtLeast', name: 'Sanji', power: 7000 }] }] }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -5, duration: 'permanent', gate: [{ kind: 'anyOf', gates: [{ kind: 'selfControlsNamedCharacterBasePower', name: 'San-Gorou', power: 7000, mode: 'atLeast' }, { kind: 'selfControlsNamedCharacterBasePower', name: 'Sanji', power: 7000, mode: 'atLeast' }] }] }] } },
       { templateId: 'ability', params: { timing: 'onPlay', functions: [
         { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { name: 'San-Gorou' } }, to: { zone: 'hand', player: 'owner' } },
         { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { name: 'Sanji' } }, to: { zone: 'hand', player: 'owner' } },

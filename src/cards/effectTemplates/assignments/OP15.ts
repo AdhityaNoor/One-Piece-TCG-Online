@@ -382,8 +382,18 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This Leader cannot attack.[Activate: Main] You may rest this Leader and return 1 of your {Dressrosa}
   //   type Characters to the owner's hand: Play up to 1 {Dressrosa} type Character card with a cost of 3
   //   from your hand.
-  //   PARTIAL: the static "cannot attack" lock is implemented below; the activated bounce-then-play ability remains deferred.
-  { cardNumber: 'OP15-039', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+  // OP15-039 (leader) — This Leader cannot attack. [Activate: Main] rest this Leader and return 1 of your
+  //   {Dressrosa} Characters to hand: Play up to 1 {Dressrosa} Character with a cost of 3 from your hand.
+  {
+    cardNumber: 'OP15-039',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { group: 'leader', player: 'controller' }, duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restLeader' }], functions: [
+        { fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'Dressrosa' } }, to: { zone: 'hand', player: 'owner' } },
+        { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Dressrosa', exactCost: 3 }, ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
+  },
 
   // OP15-040 — [On Play] Look at 3; add up to 1 Dressrosa type.
   {
@@ -830,8 +840,13 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP15-086 — [On Play] If Leader {Straw Hat Crew}, play {Straw Hat Crew} cost ≤7 from trash (granted [Rush] dropped).
-  { cardNumber: 'OP15-086', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', maxCost: 7 } }] } },
+  // OP15-086 — [On Play] If Leader {Straw Hat Crew}, play {Straw Hat Crew} cost ≤7 from trash; that Character gains [Rush].
+  { cardNumber: 'OP15-086', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [
+    { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', maxCost: 7 } },
+    // playFromTrash remints the field instance; rebind `t` from __lastMovedIds so Rush lands on the live card.
+    { fn: 'captureCount', from: '__lastMovedIds', into: 't' },
+    { fn: 'addKeyword', target: { ref: 'previous' }, keyword: 'rush', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+  ] } },
 
   // OP15-087 — If you have 10+ trash, this gains [Blocker]. [On Play] Draw 2, trash 2.
   {
@@ -987,8 +1002,8 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // OP15-106 — [Trigger] Draw 1, then play up to 1 yellow Character cost ≤2 from hand (Stage option dropped).
-  { cardNumber: 'OP15-106', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { category: 'character', color: 'yellow', maxCost: 2 } }] } },
+  // OP15-106 — [Trigger] Draw 1, then play up to 1 yellow Character or Stage cost ≤2 from hand.
+  { cardNumber: 'OP15-106', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { anyOf: [{ category: 'character', color: 'yellow', maxCost: 2 }, { category: 'stage', color: 'yellow', maxCost: 2 }] } }] } },
 
   // OP15-108 — [On Play] Look at 3; add up to 1 Sky Island type.
   {

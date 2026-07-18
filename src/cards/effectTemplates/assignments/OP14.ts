@@ -974,12 +974,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP14-115 (character) Rindo —
-  //   PARTIAL: "you take 1 damage" on K.O. deferred; mapped life ramp + Kuja trigger play.
+  // OP14-115 (character) Rindo — [Opponent's Turn][On K.O.] Add up to 1 top-of-deck to top of Life, then you take 1 damage (top Life → hand). [Trigger] If Leader {Kuja Pirates}, play this.
   {
     cardNumber: 'OP14-115',
     templates: [
-      { templateId: 'ability', params: { timing: 'onKO', condition: { turn: 'opponent' }, functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'onKO', condition: { turn: 'opponent' }, functions: [
+        { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true },
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', count: 1 }, to: { zone: 'hand', player: 'owner' } },
+      ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'triggerPlaySelf' }] } },
     ],
   },

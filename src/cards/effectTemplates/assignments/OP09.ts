@@ -306,8 +306,11 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP09-050 — [When Attacking] Look at 5; reveal up to 1 blue Event and add it to hand.
   { cardNumber: 'OP09-050', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'event', color: 'blue' }, remainder: 'bottom' }] } },
 
-  // OP09-051 — [On Play] Place up to 1 opp Character at bottom of deck. PARTIAL: the conditional "place this Character at bottom" self-clause is deferred.
-  { cardNumber: 'OP09-051', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }] } },
+  // OP09-051 — [On Play] Place up to 1 opp Character at the bottom of the owner's deck. Then, if you do NOT have 5 Characters with a cost of 5 or more, place this Character at the bottom of your deck.
+  { cardNumber: 'OP09-051', templateId: 'ability', params: { timing: 'onPlay', functions: [
+    { fn: 'moveCards', from: { zone: 'characters', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true },
+    { fn: 'moveSelfToBottomDeck', ifGate: [{ kind: 'selfCharacterCostCount', minCost: 5, atMost: 4 }] },
+  ] } },
 
   // OP09-052 (character) Marco — [Opponent's Turn] onKO by opponent effect: trash hand → play self from trash rested.
   {

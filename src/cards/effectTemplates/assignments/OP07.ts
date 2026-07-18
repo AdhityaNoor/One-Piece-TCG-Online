@@ -300,13 +300,17 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP07-050', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], atLeast: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] } },
 
-  // OP07-051 — PARTIAL: place cost≤1 Character at bottom of deck deferred; preventAttack on opp char other than Luffy mapped.
+  // OP07-051 — [On Play] Up to 1 opponent Character other than [Monkey.D.Luffy] cannot attack until the end of your
+  //   opponent's next turn. Then, place up to 1 Character with a cost of 1 or less at the bottom of the owner's deck.
   {
     cardNumber: 'OP07-051',
     templateId: 'ability',
     params: {
       timing: 'onPlay',
-      functions: [{ fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { excludeName: 'Monkey.D.Luffy' } }, duration: 'endOfOpponentsTurn', optional: true }],
+      functions: [
+        { fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { excludeName: 'Monkey.D.Luffy' } }, duration: 'endOfOpponentsTurn', optional: true },
+        { fn: 'moveCards', from: { zone: 'characters', player: 'any', filter: { maxCost: 1 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true },
+      ],
     },
   },
 

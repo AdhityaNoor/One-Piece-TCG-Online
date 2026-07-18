@@ -5,8 +5,14 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST25_ASSIGNMENTS: CardEffectAssignment[] = [
-  // ST25-001 — [On Play] If Leader [Buggy], draw 3, trash 2. PARTIAL: static typed-count +1 cost deferred.
-  { cardNumber: 'ST25-001', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Buggy' }], functions: [{ fn: 'drawAndTrash', drawCount: 3, trashCount: 2 }] } },
+  // ST25-001 — static +1 cost if 2+ Characters base cost ≥5; [On Play] If Leader [Buggy], draw 3, trash 2.
+  {
+    cardNumber: 'ST25-001',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCost', target: { ref: 'self' }, amount: 1, duration: 'permanent', condition: { gate: [{ kind: 'selfCharacterBaseCostCount', minBaseCost: 5, atLeast: 2 }] } }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Buggy' }], functions: [{ fn: 'drawAndTrash', drawCount: 3, trashCount: 2 }] } },
+    ],
+  },
 
   // ST25-002 — Closed 2026-07-16: [Opponent's Turn] this Character +5000; static 2+ cost-5 Characters -> [Blocker] + cost via self-named aura fns.
   { cardNumber: 'ST25-002', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [

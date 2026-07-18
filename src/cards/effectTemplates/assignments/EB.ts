@@ -2343,7 +2343,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Foxy Pirates' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Foxy Pirates' } }] },
   },
 
-  // EB04-038 (character) Rosinante & Law — PARTIAL: alternate-name rules deferred. [Blocker] is a keyword flag.
+  // EB04-038 (character) Rosinante & Law — alternate names auto-extracted into def.aliasNames (nameMatches); [Blocker] is a keyword flag.
   {
     cardNumber: 'EB04-038',
     templateId: 'ability',

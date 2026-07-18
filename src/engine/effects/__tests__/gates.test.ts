@@ -247,6 +247,28 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], rested: true, atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(false);
   });
 
+  it('checks opponentRestedCardCount (OP11-023) across the opponent Leader/Characters/DON', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef(), { orientation: 'rested' }));
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef(), { orientation: 'rested' }));
+    ({ rig } = putDon(rig, 'p2', 1, { rested: true }));
+    // p2 has 3 rested cards (2 Characters + 1 DON); p1 has none.
+    expect(evaluateGates([{ kind: 'opponentRestedCardCount', atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'opponentRestedCardCount', atLeast: 4 }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'opponentRestedCardCount', atLeast: 1 }], rig.state, rig.defs, 'p2')).toBe(false); // p1 (p2's opponent) has none
+  });
+
+  it('checks selfCharacterCostCount atMost (OP09-051 "if you do NOT have 5 Characters cost 5+")', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ baseCost: 6 })));
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ baseCost: 5 })));
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ baseCost: 2 }))); // below minCost
+    // 2 Characters cost>=5 → atMost 4 passes, atMost 1 fails, atLeast 2 passes.
+    expect(evaluateGates([{ kind: 'selfCharacterCostCount', minCost: 5, atMost: 4 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfCharacterCostCount', minCost: 5, atMost: 1 }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'selfCharacterCostCount', minCost: 5, atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(true);
+  });
+
   it('checks selfFewerCharactersThanOpponent (EB04-059)', () => {
     let rig = buildBaseRig();
     ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef()));
@@ -267,6 +289,15 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', color: 'blue', atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(false);
     // Without the color filter all 3 count.
     expect(evaluateGates([{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(true);
+  });
+
+  it('matches an alias name in selfControlsNamed (OP04-099 Olin ≡ [Charlotte Linlin])', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ name: 'Olin', aliasNames: ['Charlotte Linlin'] })));
+    // The printed name and the alias both satisfy the "if you have [X]" gate.
+    expect(evaluateGates([{ kind: 'selfControlsNamed', name: 'Olin' }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfControlsNamed', name: 'Charlotte Linlin' }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfControlsNamed', name: 'Nami' }], rig.state, rig.defs, 'p1')).toBe(false);
   });
 
   it('checks selfControlsNamed with the rested flag (ST16-005 "if you have a rested [Uta]")', () => {

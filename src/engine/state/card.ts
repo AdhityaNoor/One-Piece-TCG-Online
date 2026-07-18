@@ -29,6 +29,13 @@ export type FaceState = 'faceUp' | 'faceDown';
 export interface CardDefinition {
   cardDefinitionId: string;
   name: string; // 2-1
+  /**
+   * Alternate names this card is ALSO treated as having ("Also treat this card's
+   * name as [X] according to the rules."). Any card-name check (gates, target
+   * filters, KO source-name) must match the printed name OR any alias — use
+   * {@link nameMatches}. Extracted from text in normalizeCardPrinting; usually undefined.
+   */
+  aliasNames?: string[];
   category: CardCategory; // 2-2
   colors: Color[]; // 2-3
   types: string[]; // 2-4, free-text tribal tags
@@ -147,4 +154,15 @@ export interface CardInstance {
    * Character during this turn" gates). undefined until the first such battle.
    */
   battledOpponentCharacterTurn?: number;
+}
+
+/**
+ * True when `name` matches a card's printed name OR one of its alias names
+ * ("Also treat this card's name as [X]"). Every card-name comparison in the
+ * engine should use this rather than `def.name === name` so aliased cards
+ * (e.g. OP04-099 Olin ≡ [Charlotte Linlin]) satisfy name gates/filters.
+ */
+export function nameMatches(def: CardDefinition | undefined, name: string): boolean {
+  if (!def) return false;
+  return def.name === name || (def.aliasNames?.includes(name) ?? false);
 }
