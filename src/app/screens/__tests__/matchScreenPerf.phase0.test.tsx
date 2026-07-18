@@ -98,11 +98,19 @@ function buildBoard() {
   return { rig, attackerId, blockerId, donId: donIds[0] };
 }
 
+// Type inferred from the actual working vi.spyOn() call below, rather than
+// hand-written against vitest's spyOn generics — those vary across vitest
+// versions/overloads and are easy to get subtly wrong; this way the
+// declaration below can never drift out of sync with what spyOn really returns.
+function createProjectPlayerBoardSpy() {
+  return vi.spyOn(projectionModule, 'projectPlayerBoard');
+}
+
 describe('Match screen Phase 0 performance baseline', () => {
   let container: HTMLDivElement;
   let root: Root;
   const commits: CommitRecord[] = [];
-  let projectSpy: ReturnType<typeof vi.spyOn>;
+  let projectSpy: ReturnType<typeof createProjectPlayerBoardSpy>;
 
   const onRender: ProfilerOnRenderCallback = (_id, phase, actualDuration, baseDuration) => {
     commits.push({ actualDuration, baseDuration, phase });
@@ -111,7 +119,7 @@ describe('Match screen Phase 0 performance baseline', () => {
   beforeEach(() => {
     useMatchStore.getState().reset();
     commits.length = 0;
-    projectSpy = vi.spyOn(projectionModule, 'projectPlayerBoard');
+    projectSpy = createProjectPlayerBoardSpy();
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);

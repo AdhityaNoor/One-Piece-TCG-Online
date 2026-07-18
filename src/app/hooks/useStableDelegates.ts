@@ -43,7 +43,8 @@ export function useStableDelegates<T extends Record<string, (...args: never[]) =
       // Each wrapper is created once and never changes identity; it always
       // calls through to the CURRENT render's real function via the ref
       // above, so behavior is never stale even though identity is frozen.
-      stable[key] = ((...args: unknown[]) => (latestRef.current[key] as (...a: unknown[]) => unknown)(...args)) as T[keyof T];
+      stable[key] = ((...args: unknown[]) =>
+        (latestRef.current[key] as unknown as (...a: unknown[]) => unknown)(...args)) as unknown as T[keyof T];
     }
     stableRef.current = stable;
   }
