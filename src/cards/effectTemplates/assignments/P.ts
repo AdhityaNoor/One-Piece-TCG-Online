@@ -10,8 +10,8 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'P-074', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'returnSelfToHand' }, { fn: 'searchTopDeck', look: 5, pick: 5, reveal: false, destination: 'deckTopOrBottom', ifPrevious: 'previousMovedAny' }] } },
 
 
-  // PARTIAL: "blue {Cross Guild}" character-count gate lacks color+type field-count support.
-  { cardNumber: 'P-081', templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', atLeast: 3 }], functions: [{ fn: 'returnSelfToHand' }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Cross Guild', exactCost: 5 }, ifPrevious: 'previousMovedAny' }] } },
+  // P-081 — [Activate: Main] return this to hand: If you have 3+ blue {Cross Guild} Characters, play up to 1 {Cross Guild} cost-5 Character from hand.
+  { cardNumber: 'P-081', templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', color: 'blue', atLeast: 3 }], functions: [{ fn: 'returnSelfToHand' }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Cross Guild', exactCost: 5 }, ifPrevious: 'previousMovedAny' }] } },
 
   // --- codegen batch ---
   { cardNumber: 'P-014', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
@@ -53,11 +53,14 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // P-059 — [Counter] if Leader [Uta], return any number of your Characters to hand, then +2000 battle.
-  //   PARTIAL: per-returned scaling deferred; mapped as optional return + flat +2000 after any return.
+  // P-059 — [Counter] If Leader [Uta], you may return any number of your Characters to hand.
+  //   Up to 1 of your Leader or Character cards gains +2000 during this battle for every returned Character.
+  //   maxTargets:-1 = any number; captureCount snapshots the returned count into `returned` before the
+  //   buff-target choice reuses `t`; the scaled addPower reads it via countVar/amountPer.
   { cardNumber: 'P-059', templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderName', name: 'Uta' }], functions: [
-    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true },
-    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true, ifPrevious: 'previousMovedAny' },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: -1 },
+    { fn: 'captureCount', into: 'returned' },
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 0, countVar: 'returned', amountPer: 2000, duration: 'duringThisBattle', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
   ] } },
 
   // P-060 — [Main] rest 1 [Uta]: rest up to 2 opp DON!!.
@@ -108,7 +111,17 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   // P-088 — [Trigger] if Leader {Supernovas} and combined Life ≤5, play this card.
   { cardNumber: 'P-088', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Supernovas' }, { kind: 'combinedLifeTotal', atMost: 5 }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // P-105 — [On Play] add 1 top/bottom Life to hand → give up to 1 rested DON!! to Leader/1 Char. PARTIAL: static [Blocker]/+4 cost deferred.
-  { cardNumber: 'P-105', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' }] } },
+  // P-105 — If your Leader has {Revolutionary Army}, this Character gains [Blocker] and +4 cost.
+  //   [On Play] You may add 1 top/bottom Life to hand: give up to 1 rested DON!! to your Leader or 1 Character.
+  {
+    cardNumber: 'P-105',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }] } },
+        { fn: 'addCost', target: { ref: 'self' }, amount: 4, duration: 'permanent', condition: { gate: [{ kind: 'leaderType', type: 'Revolutionary Army' }] } },
+      ] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
 ];

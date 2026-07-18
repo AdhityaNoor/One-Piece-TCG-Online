@@ -105,7 +105,7 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST13-006 — [Blocker][On Play] play up to 1 each of [Sabo], [Portgas.D.Ace], [Monkey.D.Luffy] with cost 2 from hand.
   { cardNumber: 'ST13-006', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Sabo', exactCost: 2 } }, { fn: 'playFromHand', filter: { category: 'character', name: 'Portgas.D.Ace', exactCost: 2 } }, { fn: 'playFromHand', filter: { category: 'character', name: 'Monkey.D.Luffy', exactCost: 2 } }] } },
 
-  // ST13-007 — PARTIAL: reveal-top-Life-then-play chain deferred; mapped trash-self → turn top Life face-up → play matching Character → Leader +2000.
+  // ST13-007 — [Activate: Main] trash this: Reveal top of Life; if it's a [Sabo] cost 5, you may play it; if you do, Leader +2000 until end of opponent's next turn.
   {
     cardNumber: 'ST13-007',
     templateId: 'ability',
@@ -113,9 +113,11 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'activateMain',
       cost: [{ kind: 'trashThis' }],
       functions: [
-        { fn: 'turnTopLifeFace', faceUp: true },
-        { fn: 'playFromHand', filter: { category: 'character', name: 'Sabo', exactCost: 5 }, optional: true, ifPrevious: 'previousSelectedAny' },
-        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true, ifPrevious: 'previousMovedAny' },
+        {
+          fn: 'revealTopLifePlay',
+          filter: { category: 'character', name: 'Sabo', exactCost: 5 },
+          then: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn' }],
+        },
       ],
     },
   },
@@ -140,7 +142,7 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // ST13-010 — PARTIAL: reveal-top-Life-then-play chain deferred; mapped trash-self → turn top Life face-up → play matching Character → Leader +2000.
+  // ST13-010 — [Activate: Main] trash this: Reveal top of Life; if it's a [Portgas.D.Ace] cost 5, you may play it; if you do, Leader +2000 until end of opponent's next turn.
   {
     cardNumber: 'ST13-010',
     templateId: 'ability',
@@ -148,9 +150,11 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'activateMain',
       cost: [{ kind: 'trashThis' }],
       functions: [
-        { fn: 'turnTopLifeFace', faceUp: true },
-        { fn: 'playFromHand', filter: { category: 'character', name: 'Portgas.D.Ace', exactCost: 5 }, optional: true, ifPrevious: 'previousSelectedAny' },
-        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true, ifPrevious: 'previousMovedAny' },
+        {
+          fn: 'revealTopLifePlay',
+          filter: { category: 'character', name: 'Portgas.D.Ace', exactCost: 5 },
+          then: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn' }],
+        },
       ],
     },
   },
@@ -173,7 +177,7 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST13-013 — [On Play] Look at 5; add [Sabo]/[Ace]/[Luffy] with cost 5 or less to hand.
   { cardNumber: 'ST13-013', templateId: 'ability', params: { timing: 'onPlay', functions: [SEARCH_BROTHERS] } },
 
-  // ST13-014 — PARTIAL: reveal-top-Life-then-play chain deferred; mapped trash-self → turn top Life face-up → play matching Character → Leader +2000.
+  // ST13-014 — [Activate: Main] trash this: Reveal top of Life; if it's a [Monkey.D.Luffy] cost 5, you may play it; if you do, Leader +2000 until end of opponent's next turn.
   {
     cardNumber: 'ST13-014',
     templateId: 'ability',
@@ -181,16 +185,22 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
       timing: 'activateMain',
       cost: [{ kind: 'trashThis' }],
       functions: [
-        { fn: 'turnTopLifeFace', faceUp: true },
-        { fn: 'playFromHand', filter: { category: 'character', name: 'Monkey.D.Luffy', exactCost: 5 }, optional: true, ifPrevious: 'previousSelectedAny' },
-        { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'untilStartOfNextTurn', optional: true, ifPrevious: 'previousMovedAny' },
+        {
+          fn: 'revealTopLifePlay',
+          filter: { category: 'character', name: 'Monkey.D.Luffy', exactCost: 5 },
+          then: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn' }],
+        },
       ],
     },
   },
 
-  // ST13-015 — [Activate: Main][OPT] this Character +2000 until start of next turn, then if 1+ Life draw 1.
-  //   PARTIAL: the "trash 1 from top of your Life" drawback needs a controller-Life-to-trash op (deferred).
-  { cardNumber: 'ST13-015', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn' }, { fn: 'draw', amount: 1, ifGate: [{ kind: 'selfLife', atLeast: 1 }] }] } },
+  // ST13-015 — [Activate: Main][OPT] this Character +2000 until start of next turn.
+  //   Then, if you have 1 or more Life cards, draw 1 card and trash 1 card from the top of your Life.
+  { cardNumber: 'ST13-015', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+    { fn: 'addPowerSelf', amount: 2000, duration: 'untilStartOfNextTurn' },
+    { fn: 'draw', amount: 1, ifGate: [{ kind: 'selfLife', atLeast: 1 }] },
+    { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', count: 1 }, to: { zone: 'trash', player: 'owner' }, ifGate: [{ kind: 'selfLife', atLeast: 1 }] },
+  ] } },
 
   // ST13-016 (character) Yamato —
   //   [Rush] (This card can attack on the turn in which it is played.)[On Play] Look at all your Life
@@ -203,18 +213,36 @@ export const ST13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST13-017 (event) Flame Dragon King — [Counter] Up to 1 of your Leader/Character +4000 this battle. (Life reorder + Trigger deferred.)
+  // ST13-017 (event) Flame Dragon King — [Counter] Up to 1 Leader/Character +4000 this battle. Then, look at all your
+  //   Life and place them back in any order. [Trigger] add 1 top/bottom Life to hand → add 1 from hand to top of Life.
   {
     cardNumber: 'ST13-017',
-    templateId: 'ability',
-    params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] },
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true },
+        { fn: 'lookLifeAndReorder' },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
   },
 
-  // ST13-018 (event) Gum-Gum Jet Spear — [Counter] Up to 1 of your Leader/Character +2000 this battle. (0-Life draw + Trigger deferred.)
+  // ST13-018 (event) Gum-Gum Jet Spear — [Counter] Up to 1 Leader/Character +2000 this battle. Then, if you have 0 Life,
+  //   draw 1. [Trigger] add 1 top/bottom Life to hand → add 1 from hand to top of Life.
   {
     cardNumber: 'ST13-018',
-    templateId: 'ability',
-    params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true }] },
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [
+        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 2000, duration: 'duringThisBattle', optional: true },
+        { fn: 'draw', amount: 1, ifGate: [{ kind: 'selfLife', atMost: 0 }] },
+      ] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
+        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true },
+        { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
   },
 
   // ST13-019 (event) The Three Brothers' Bond — [Main] Look at 5; add [Sabo]/[Ace]/[Luffy] cost <=5 to hand.

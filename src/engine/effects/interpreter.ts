@@ -1264,6 +1264,15 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       }
       return { selectedIds: ids, movedIds };
     }
+    case 'playFromLife': {
+      const ids = resolveSelector(op.target, ctx, bindings);
+      const movedIds: string[] = [];
+      for (const id of ids) {
+        const playedId = ctx.playCharacterFromLife(id, op.rested === true);
+        if (playedId) movedIds.push(playedId);
+      }
+      return { selectedIds: ids, movedIds };
+    }
     case 'moveToHand': {
       const ids = resolveSelector(op.target, ctx, bindings);
       for (const id of ids) ctx.moveToHand(id);
@@ -1303,7 +1312,9 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       ctx.addDonFromDeck(ctx.controllerId, op.count, op.rested);
       return { selectedIds: [], movedIds: op.count > 0 ? ['__addDonFromDeck'] : [] };
     case 'revealTopDeck':
-      // Handled specially in runOps (it must set the __lastRevealMatched binding);
+    case 'revealTopLife':
+    case 'copyVar':
+      // Handled specially in runOps (they mutate workingBindings directly);
       // this branch keeps the switch exhaustive and is never reached at runtime.
       return { selectedIds: [], movedIds: [] };
     case 'revealOpponentDeckTop':
@@ -1597,6 +1608,22 @@ function runOpList(
       let matched = false;
       if (topId) {
         ctx.revealCard(topId);
+        matched = op.filter ? matchesSearchFilter(topId, op.filter, ctx) : true;
+      }
+      workingBindings = { ...withResultBindings(workingBindings, EMPTY_RESULT), __lastRevealMatched: boolBinding(matched) };
+      continue;
+    }
+    if (op.op === 'copyVar') {
+      // Snapshot `from` into `into` without disturbing __lastMoved/__lastSelected
+      // (a following ifPrevious must still see the prior action's result).
+      workingBindings = { ...workingBindings, [op.into]: workingBindings[op.from] ?? [] };
+      continue;
+    }
+    if (op.op === 'revealTopLife') {
+      const [topId] = ctx.lifeIds(ctx.controllerId);
+      let matched = false;
+      if (topId) {
+        ctx.revealLifeCard(topId);
         matched = op.filter ? matchesSearchFilter(topId, op.filter, ctx) : true;
       }
       workingBindings = { ...withResultBindings(workingBindings, EMPTY_RESULT), __lastRevealMatched: boolBinding(matched) };

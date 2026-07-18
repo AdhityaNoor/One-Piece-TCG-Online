@@ -185,6 +185,30 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  /**
+   * Publicly reveal a card sitting in the Life area without moving it (e.g. "Reveal
+   * 1 card from the top of your Life cards"). Marks it revealed-to-all and emits a
+   * public log naming it; the card stays in place so a following play-from-Life sees
+   * it on top. No-op if the instance is unknown.
+   */
+  revealLifeCard(instanceId: string): void {
+    const inst = this.working.cardsById[instanceId];
+    if (!inst) return;
+    const def = this.defs[inst.cardDefinitionId];
+    this.working = {
+      ...this.working,
+      cardsById: { ...this.working.cardsById, [instanceId]: { ...inst, revealedTo: 'all' } },
+    };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${this.controllerId} revealed ${def?.name ?? instanceId} from the top of their Life cards.`,
+      data: { revealedInstanceId: instanceId, cardDefinitionId: inst.cardDefinitionId },
+      relatedCardInstanceIds: [instanceId],
+      visibility: 'public',
+    });
+  }
+
   revealCards(instanceIds: string[]): void {
     const ids = instanceIds.filter((id) => this.working.cardsById[id]);
     if (ids.length === 0) return;
@@ -1996,6 +2020,89 @@ export class EffectContextImpl implements EffectContext {
     return newId;
   }
 
+  /**
+   * Put a Character currently in the controller's Life area into play with no cost
+   * (e.g. ST13 "Reveal 1 card from the top of your Life cards. If that card is a
+   * [Name] with a cost of 5, you may play that card."). Mirrors
+   * {@link playCharacterFromTrash}: only Characters are playable, Character-play
+   * restrictions are honored, the Life instance is retired and a fresh field
+   * instance minted, and Character-area overflow is enforced. Returns the new field
+   * instance id, or null when the play is illegal (non-Character, prevented, or the
+   * card is not actually in the Life area).
+   */
+  playCharacterFromLife(lifeInstanceId: string, rested = false): string | null {
+    const lifeInst = this.working.cardsById[lifeInstanceId];
+    if (!lifeInst || lifeInst.currentZone !== 'lifeArea') return null;
+    const def = this.defs[lifeInst.cardDefinitionId];
+    if (!def || def.category !== 'character') return null; // only Characters can be played to the field
+    const controllerId = lifeInst.controllerId;
+    if (isControllerCharacterPlayPrevented(this.working, controllerId, this.defs, lifeInst.cardDefinitionId)) {
+      this.logger.push({
+        actorPlayerId: controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${controllerId} cannot play ${def.name} from their Life area — Character play is restricted this turn.`,
+        data: { instanceId: lifeInstanceId, prevented: true },
+        relatedCardInstanceIds: [lifeInstanceId],
+        visibility: 'public',
+      });
+      return null;
+    }
+    const player = this.working.players[controllerId];
+    if (!player) return null;
+
+    const minted = mintRuntimeInstanceId(this.working); // 3-1-6: fresh instance entering play
+    const newId = minted.id;
+    const newInstance: CardInstance = {
+      instanceId: newId,
+      cardDefinitionId: lifeInst.cardDefinitionId,
+      ownerId: lifeInst.ownerId,
+      controllerId,
+      currentZone: 'characterArea',
+      orientation: rested ? 'rested' : 'active',
+      faceState: 'faceUp',
+      donAttached: [],
+      currentPower: def.basePower ?? 0,
+      appliedContinuousEffectIds: [],
+      oncePerTurnUsed: [],
+      summoningSick: !def.hasRush, // 3-7-4, 10-1-6
+      revealedTo: 'all',
+      enteredPlayTurn: this.working.turnNumber,
+    };
+    const cardsById = { ...minted.state.cardsById, [newId]: newInstance };
+    delete cardsById[lifeInstanceId]; // old Life instance retired
+    const newCharacterArea = addToZoneBottom(player.characterArea, newId);
+    const newLifeArea = removeFromZone(player.lifeArea, lifeInstanceId);
+    this.working = {
+      ...minted.state,
+      cardsById,
+      players: { ...minted.state.players, [controllerId]: { ...player, lifeArea: newLifeArea, characterArea: newCharacterArea } },
+    };
+
+    this.logger.push({
+      actorPlayerId: controllerId,
+      type: 'CARD_PLAYED',
+      message: `${controllerId} played ${def.name} from their Life area via an effect (no cost, ${rested ? 'rested' : 'active'}).`,
+      data: { from: 'lifeArea', to: 'characterArea', cost: 0, oldInstanceId: lifeInstanceId },
+      relatedCardInstanceIds: [newId],
+      visibility: 'public',
+    });
+
+    const limit = newCharacterArea.maxSize ?? Infinity;
+    if (newCharacterArea.cardIds.length > limit) {
+      this.emitChoice({
+        id: `${controllerId}__character-overflow-${newId}`,
+        playerId: controllerId,
+        kind: 'SELECT_CARDS',
+        prompt: `Choose 1 Character to trash — more than ${limit} in your Character Area (3-7-6-1).`,
+        constraints: { min: 1, max: 1, zoneId: 'characterArea', filterDescription: 'Any Character currently in your Character Area.' },
+        sourceInstanceId: null,
+        sourceEffectId: 'rule:characterAreaOverflow',
+      });
+    }
+    this.recordPlayedCharacter(newId);
+    return newId;
+  }
+
   playCharacterFromDeck(deckInstanceId: string, rested = false): void {
     const deckInst = this.working.cardsById[deckInstanceId];
     if (!deckInst || deckInst.currentZone !== 'deck') return;
@@ -2568,6 +2675,9 @@ export class EffectContextImpl implements EffectContext {
       if (destination === 'lifeTop') {
         lifeArea = addToZoneTop(lifeArea, id);
         cardsById[id] = { ...cardsById[id], currentZone: 'lifeArea', revealedTo: reveal ? 'all' : [playerId] };
+      } else if (destination === 'trash') {
+        trash = addToZoneTop(trash, id);
+        cardsById[id] = { ...cardsById[id], currentZone: 'trash', revealedTo: 'all' };
       } else {
         hand = addToZoneBottom(hand, id);
         cardsById[id] = { ...cardsById[id], currentZone: 'hand', revealedTo: reveal ? 'all' : [playerId] };

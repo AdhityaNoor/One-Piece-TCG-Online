@@ -38,6 +38,22 @@ describe('continuous cost aura (addCostAura)', () => {
     expect(computeCurrentCost(rig.defs, state, opp.instanceId)).toBe(4); // opponent's card -> unaffected
   });
 
+  it('applies a color-filtered aura (black {Straw Hat Crew} +1 cost, ST14-017) only to matching color+type Characters', () => {
+    const base = buildBaseRig({ activePlayerId: 'p1' });
+    // Black Straw Hat (matches), red Straw Hat (wrong color), black Navy (wrong type).
+    const blackShc = putCharacterInPlay(base, 'p1', makeCharacterDef({ baseCost: 4, types: ['Straw Hat Crew'], colors: ['black'] }));
+    const redShc = putCharacterInPlay(blackShc.rig, 'p1', makeCharacterDef({ baseCost: 4, types: ['Straw Hat Crew'], colors: ['red'] }));
+    const blackNavy = putCharacterInPlay(redShc.rig, 'p1', makeCharacterDef({ baseCost: 4, types: ['Navy'], colors: ['black'] }));
+    const rig = blackNavy.rig;
+
+    const group: PowerAuraGroup = { ownLeaderAndCharacters: true, charactersOnly: true, anyOfTypes: ['Straw Hat Crew'], anyOfColors: ['black'] };
+    const state: GameState = { ...rig.state, continuousEffects: [costAura(group, 1, blackShc.instanceId)] };
+
+    expect(computeCurrentCost(rig.defs, state, blackShc.instanceId)).toBe(5); // 4 + 1 (black + Straw Hat Crew)
+    expect(computeCurrentCost(rig.defs, state, redShc.instanceId)).toBe(4); // wrong color -> unaffected
+    expect(computeCurrentCost(rig.defs, state, blackNavy.instanceId)).toBe(4); // wrong type -> unaffected
+  });
+
   it("does not apply the [Opponent's Turn] aura on the controller's own turn", () => {
     const base = buildBaseRig({ activePlayerId: 'p1' }); // p1's own turn
     const navy = putCharacterInPlay(base, 'p1', makeCharacterDef({ baseCost: 3, types: ['Navy'] }));

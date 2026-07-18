@@ -5,8 +5,8 @@
 import type { CardEffectAssignment } from '../assembler';
 
 export const ST17_ASSIGNMENTS: CardEffectAssignment[] = [
-  // ST17-001 (character) Crocodile —
-  //   PARTIAL: "place 1 card from your hand at the top of your deck" deferred.
+  // ST17-001 (character) Crocodile — [On Play] Reveal top of deck. If it's a {The Seven Warlords of the Sea}
+  //   card, draw 2 and place 1 card from your hand at the top of your deck.
   {
     cardNumber: 'ST17-001',
     templateId: 'ability',
@@ -15,7 +15,10 @@ export const ST17_ASSIGNMENTS: CardEffectAssignment[] = [
       functions: [{
         fn: 'revealTopThen',
         filter: { typeIncludes: 'The Seven Warlords of the Sea' },
-        then: [{ fn: 'draw', amount: 2 }],
+        then: [
+          { fn: 'draw', amount: 2 },
+          { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'top' } },
+        ],
       }],
     },
   },

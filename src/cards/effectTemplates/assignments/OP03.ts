@@ -59,8 +59,15 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-005 — [Activate: Main] [Once Per Turn] this +2000 this turn; trash this Character at end of turn.
   { cardNumber: 'OP03-005', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'duringThisTurn' }, { fn: 'trashSelfAtEndOfTurn' }] } },
 
-  // OP03-008 — PARTIAL: slash-attribute battle K.O. immunity deferred; mapped [On Play] red Event search.
-  { cardNumber: 'OP03-008', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'event', color: 'red' }, remainder: 'bottom' }] } },
+  // OP03-008 — This Character cannot be K.O.'d in battle by <Slash> attribute cards.
+  //   [On Play] Look at 5; reveal up to 1 red Event to hand, rest to bottom.
+  {
+    cardNumber: 'OP03-008',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'koImmunitySelf', scope: 'battle', duration: 'permanent', attackerAttribute: 'slash' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { category: 'event', color: 'red' }, remainder: 'bottom' }] } },
+    ],
+  },
 
   // OP03-009 - [Activate: Main] [Once Per Turn] Give up to 1 rested DON!! to Leader/Character.
   { cardNumber: 'OP03-009', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1 }] } },
@@ -505,8 +512,8 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-081 - [On Play] Draw 2, trash 2, then give opponent Character -2 cost.
   { cardNumber: 'OP03-081', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, optional: true }] } },
 
-  // OP03-083 — [On Play] look 5 trash up to 2, rest to bottom. PARTIAL: pick-to-trash → pick 1 to hand, remainder bottom.
-  { cardNumber: 'OP03-083', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', remainder: 'bottom' }] } },
+  // OP03-083 — [On Play] Look at 5 cards from the top of your deck and trash up to 2, then place the rest at the bottom in any order.
+  { cardNumber: 'OP03-083', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 5, pick: 2, reveal: true, destination: 'trash', remainder: 'bottom' }] } },
 
   // OP03-086 - [On Play] If Leader type includes CP, look at 3; add CP card other than this card's name, trash rest.
   {

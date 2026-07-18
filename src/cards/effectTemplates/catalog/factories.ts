@@ -1278,7 +1278,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         ...(f.scale ? { scale: f.scale } : {}),
       }];
     case 'addCostAuraControllerCharacters':
-      return [{ op: 'addCostAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}), ...(f.scale ? { scale: f.scale } : {}) }];
+      return [{ op: 'addCostAura', group: { ownLeaderAndCharacters: true, charactersOnly: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}), ...(f.anyOfColors ? { anyOfColors: f.anyOfColors } : {}) }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}), ...(f.scale ? { scale: f.scale } : {}) }];
     case 'addCostAuraControllerHandCards':
       return [{
         op: 'addCostAura',
@@ -1510,6 +1510,34 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       // must not carry their own ifPrevious — it is overwritten here.
       const branch = f.then.flatMap(functionOps).map((op) => ({ ...op, ifPrevious: 'previousRevealMatched' as const }));
       return [{ op: 'revealTopDeck', ...(f.filter ? { filter: f.filter } : {}) }, ...branch];
+    }
+    case 'captureCount':
+      return [{ op: 'copyVar', from: f.from ?? 't', into: f.into }];
+    case 'revealTopLifePlay': {
+      // Reveal the top Life card; the `revealTopLife` op records the filter match in
+      // __lastRevealMatched. Offer the optional play only when it matched (the
+      // chooseOption is gated on previousRevealMatched, so an unmatched reveal skips
+      // it entirely). The `then` branch runs inside the play option, so it fires only
+      // when the card was actually played ("If you do, ...").
+      const thenOps = (f.then ?? []).flatMap(functionOps);
+      return [
+        { op: 'revealTopLife', ...(f.filter ? { filter: f.filter } : {}) },
+        {
+          op: 'chooseOption',
+          ifPrevious: 'previousRevealMatched',
+          prompt: 'You may play the revealed card from the top of your Life cards.',
+          options: [
+            { label: 'doNotPlay', ops: [] },
+            {
+              label: 'play',
+              ops: [
+                { op: 'playFromLife', target: { sel: 'controllerLifeTop' }, ...(f.rested ? { rested: true } : {}) },
+                ...thenOps,
+              ],
+            },
+          ],
+        },
+      ];
     }
     case 'revealOpponentTopIfChosenCostMatches': {
       const branch = f.then.flatMap(functionOps).map((op) => ({ ...op, ifPrevious: 'previousRevealMatched' as const }));

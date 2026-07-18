@@ -118,8 +118,8 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'PRB02-016', templates: [{ templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 3000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' }] } }, { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true }] } }] },
 
 
-  // PARTIAL: opponent 6+ DON gate dropped.
-  { cardNumber: 'PRB02-010', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], gate: [{ kind: 'leaderType', type: 'Big Mom Pirates' }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Big Mom Pirates', minPower: 6000, maxPower: 8000 }, ifPrevious: 'previousSelectedAny' }] } },
+  // PRB02-010 — [On Play] DON!! −2: If Leader {Big Mom Pirates} and opponent has 6+ DON!!, draw 2, then play up to 1 {Big Mom Pirates} 6000–8000 power Character from hand.
+  { cardNumber: 'PRB02-010', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 2 }], gate: [{ kind: 'leaderType', type: 'Big Mom Pirates' }, { kind: 'opponentDonFieldCount', atLeast: 6 }], functions: [{ fn: 'draw', amount: 2 }, { fn: 'playFromHand', filter: { category: 'character', typeIncludes: 'Big Mom Pirates', minPower: 6000, maxPower: 8000 }, ifPrevious: 'previousSelectedAny' }] } },
 
 
   // Closed 2026-07-16 conditional keyword/cost aura pass: static −3 cost in hand (15+ trash) via addCostAuraSameCardInHand; [Blocker] is printed.

@@ -8,8 +8,8 @@ import type { CardEffectAssignment } from '../assembler';
 export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // --- Batch: OP08 cards expressible with existing primitives (+ new selfDonAtMostOpponent gate) ---
-  // OP08-001 — PARTIAL: "up to 2 total DON to 1 Character" and {Animal}/{Drum Kingdom} filter approximated.
-  { cardNumber: 'OP08-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 2, targetTypeIncludes: 'Animal' }] } },
+  // OP08-001 — [Activate: Main][OPT] Give up to 3 of your {Animal} or {Drum Kingdom} Characters up to 1 rested DON!! each.
+  { cardNumber: 'OP08-001', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [{ fn: 'giveDon', count: 1, maxTargets: 3, anyOfTypes: ['Animal', 'Drum Kingdom'], charactersOnly: true, optional: true }] } },
 
   // ── Triage batch (OP08 expressible). "top or bottom of deck" placement is approximated as bottom. ──
   // OP08-002 (leader) — [DON!! x1][Activate: Main][OPT] Draw 1, place 1 from hand at bottom of deck, then give up to 1 opp Character −2000.

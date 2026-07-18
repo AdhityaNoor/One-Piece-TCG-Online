@@ -1033,6 +1033,27 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     covers: ['Reveal 1 card from the top of your deck. If <filter>, <then>'],
     examples: [{ cardNumber: 'OP04-011', snippet: "{ fn: 'revealTopThen', filter: { category: 'character', minPower: 6000 }, then: [...] }" }],
   },
+  captureCount: {
+    id: 'captureCount',
+    summary: 'Snapshot the previous variable-count selection (var `from`, default t) into stable var `into`, so a later buff-target choice reusing t does not clobber the count.',
+    params: [
+      { name: 'from', type: 'string', required: false, note: "source var, default 't'" },
+      { name: 'into', type: 'string', required: true, note: 'stable var read by a later addPower countVar' },
+    ],
+    covers: ['... gains +N power for every returned/K.O.\'d Character (when the buff recipient is separately chosen)'],
+    examples: [{ cardNumber: 'P-059', snippet: "{ fn: 'captureCount', into: 'returned' }, { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 0, countVar: 'returned', amountPer: 2000, duration: 'duringThisBattle', optional: true, maxTargets: 1 }" }],
+  },
+  revealTopLifePlay: {
+    id: 'revealTopLifePlay',
+    summary: 'Reveal top Life card; if it matches `filter`, optionally play it from Life for no cost, then run `then` when played.',
+    params: [
+      { name: 'filter', type: 'SearchFilter', required: false },
+      { name: 'rested', type: 'boolean', required: false },
+      { name: 'then', type: 'SequencedAbilityFunction[]', required: false },
+    ],
+    covers: ['Reveal 1 card from the top of your Life cards. If that card is a <name> with a cost of <n>, you may play that card. If you do, <then>'],
+    examples: [{ cardNumber: 'ST13-007', snippet: "{ fn: 'revealTopLifePlay', filter: { category: 'character', name: 'Sabo', exactCost: 5 }, then: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'untilEndOfOpponentNextTurn' }] }" }],
+  },
   revealOpponentTopIfChosenCostMatches: {
     id: 'revealOpponentTopIfChosenCostMatches',
     summary: 'Player chooses a cost, reveals opponent deck top; runs `then` only when printed cost matches.',
@@ -1282,10 +1303,11 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'amount', type: 'number', required: true, note: 'negative for "−N cost"' },
       { name: 'duration', type: 'IrDuration', required: true },
       { name: 'anyOfTypes', type: 'string[]', required: false },
+      { name: 'anyOfColors', type: 'Color[]', required: false, note: 'restrict the aura to Characters of these colors (e.g. black {Straw Hat Crew})' },
       { name: 'sourceCondition', type: 'SourceStateCondition', required: false },
       { name: 'gate', type: 'AbilityGate[]', required: false, note: 'board gate re-evaluated each read against the source\'s controller (e.g. "if you have 3+ {type} Characters")' },
     ],
-    covers: ['[Opponent\'s Turn] all of your {type} Characters gain +{C} cost', 'all of your Characters gain +{C} cost', 'if <board state>, all of your {type} Characters gain +{C} cost'],
+    covers: ['[Opponent\'s Turn] all of your {type} Characters gain +{C} cost', 'all of your Characters gain +{C} cost', 'all of your {color} {type} Characters gain +{C} cost', 'if <board state>, all of your {type} Characters gain +{C} cost'],
     examples: [{ cardNumber: 'EB04-046', snippet: "{ fn: 'addCostAuraControllerCharacters', amount: 2, duration: 'permanent', anyOfTypes: ['Navy'], sourceCondition: { turn: 'opponent' } }" }],
   },
   addCostAuraControllerHandCards: {

@@ -192,12 +192,23 @@ export type AbilityFunction =
   // (omit filter for an unconditional reveal). `then` branch functions must not use
   // their own ifPrevious — the compiler gates every branch op on the reveal result.
   | { fn: 'revealTopThen'; filter?: SearchFilter; then: SequencedAbilityFunction[] }
+  // "Reveal 1 card from the top of your Life cards. If <filter>, you may play that
+  // card; if you do, <then>." Reveals the top Life card (public), and — only when it
+  // matches `filter` — offers to play it from Life for no cost, then runs the `then`
+  // branch when the card was actually played. `then` functions must not carry their
+  // own ifPrevious; the compiler gates them on the play result.
+  | { fn: 'revealTopLifePlay'; filter?: SearchFilter; rested?: boolean; then?: SequencedAbilityFunction[] }
   // Choose a cost, reveal opponent deck top; if printed cost matches, run `then`.
   | { fn: 'revealOpponentTopIfChosenCostMatches'; costMin?: number; costMax?: number; then: SequencedAbilityFunction[] }
   // Reveal (look at) the top card of the opponent's deck; optional unconditional `then` branch.
   | { fn: 'revealOpponentDeckTop' }
   | { fn: 'addPowerSelf'; amount: number; duration: IrDuration; condition?: IrCondition }
   | { fn: 'addPowerSelfPerPreviousTrashed'; amountPer: number; duration: IrDuration; countVar?: string; ifPrevious?: SequenceCondition }
+  // Snapshot the count of the previous variable-count selection (var `from`, default 't')
+  // into a stable var `into`, so a LATER buff whose own target selection reuses `t` does
+  // not clobber it. Pair with `addPower ... countVar: <into>, amountPer: N` for "<recipient>
+  // gains +N for every returned/K.O.'d Character" (e.g. P-059).
+  | { fn: 'captureCount'; from?: string; into: string }
   // Continuous self-buff that scales: +amountPer power for every `step` of `per` (e.g. cards in hand, Events in trash).
   | { fn: 'addPowerSelfScaling'; per: PowerScaleSource; step: number; amountPer: number; duration: IrDuration; condition?: IrCondition }
   | { fn: 'restSelf' }
@@ -253,7 +264,7 @@ export type AbilityFunction =
   // Dynamic aura over ALL the opponent's Characters ("give all of your opponent's Characters -N power").
   | { fn: 'addPowerAuraOpponentCharacters'; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // Continuous cost aura over ALL the controller's Characters (chars only), optionally type-filtered + gated on source state ("all of your {Navy} Characters gain +2 cost").
-  | { fn: 'addCostAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[]; scale?: PowerScale }
+  | { fn: 'addCostAuraControllerCharacters'; amount: number; duration: IrDuration; anyOfTypes?: string[]; anyOfNames?: string[]; anyOfColors?: Color[]; sourceCondition?: SourceStateCondition; gate?: AbilityGate[]; scale?: PowerScale }
   // Continuous cost aura over cards in the controller's hand, optionally filtered by category/color/type/name/base cost.
   | { fn: 'addCostAuraControllerHandCards'; amount: number; duration: IrDuration; filter?: { category?: Exclude<CardCategory, 'don'>; color?: Color; typeIncludes?: string; anyOfTypes?: string[]; anyOfNames?: string[]; minBaseCost?: number; maxBaseCost?: number }; sourceCondition?: SourceStateCondition; gate?: AbilityGate[]; scale?: PowerScale }
   // Continuous cost aura over ALL the opponent's Characters ("give all of your opponent's Characters -N cost").

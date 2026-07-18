@@ -1337,7 +1337,8 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB04-059 — PARTIAL: "fewer Characters than opponent" dual-K.O. Main deferred; mapped [Trigger] draw 2 trash 1.
+  // EB04-059 — [Main] turn 1 top Life face-up: If you have fewer Characters than your opponent, K.O. up to 1 opponent
+  //   Character cost ≤6 and up to 1 opponent Character cost ≤5. [Trigger] Draw 2, trash 1.
   {
     cardNumber: 'EB04-059',
     templates: [
@@ -1345,6 +1346,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
         templateId: 'ability',
         params: {
           timing: 'activateMain',
+          gate: [{ kind: 'selfFewerCharactersThanOpponent' }],
           functions: [
             { fn: 'turnTopLifeFace', faceUp: true },
             { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, ifPrevious: 'previousSelectedAny' },

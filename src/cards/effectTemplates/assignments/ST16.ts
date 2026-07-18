@@ -17,6 +17,6 @@ export const ST16_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST16-004 — [On Play] K.O. up to 1 of your opponent's rested Characters.
   { cardNumber: 'ST16-004', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true }] } },
 
-  // ST16-005 — PARTIAL: "rested [Uta]" approximated as selfControlsNamed (ignores rested state).
-  { cardNumber: 'ST16-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Uta' }] } }] } },
+  // ST16-005 — If you have a rested [Uta], this Character gains +1000 power.
+  { cardNumber: 'ST16-005', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfControlsNamed', name: 'Uta', rested: true }] } }] } },
 ];

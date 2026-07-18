@@ -149,7 +149,7 @@ export interface CharacterMoveFilter {
 }
 
 export type SearchRemainderDestination = 'bottom' | 'trash' | 'deckTopOrBottom';
-export type SearchPickDestination = 'hand' | 'lifeTop' | 'deckTopOrBottom' | 'play';
+export type SearchPickDestination = 'hand' | 'lifeTop' | 'deckTopOrBottom' | 'play' | 'trash';
 export type SequenceCondition = 'previousSelectedAny' | 'previousMovedAny' | 'previousRevealMatched';
 
 export interface EffectOpSequenceGate {
@@ -270,6 +270,7 @@ export type EffectOp =
   | ({ op: 'activateEventFromHand'; target: Selector } & EffectOpSequenceGate) // activate [Main] of a chosen Event from hand (no play cost)
   | ({ op: 'activateEventFromTrash'; target: Selector } & EffectOpSequenceGate) // activate [Main] of a chosen Event in trash
   | ({ op: 'playFromTrash'; target: Selector; rested?: boolean } & EffectOpSequenceGate) // put a chosen Character from trash into play (no cost); `rested` plays it rested
+  | ({ op: 'playFromLife'; target: Selector; rested?: boolean } & EffectOpSequenceGate) // put a Character referenced in the Life area (e.g. the revealed top Life card) into play (no cost); `rested` plays it rested
   | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string; rested?: boolean } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
   | ({ op: 'playStageFromDeck'; pick: number; filter: SearchFilter; prompt: string } & EffectOpSequenceGate) // search deck, play up to N matching Stages (replacing any existing Stage), then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
@@ -291,6 +292,19 @@ export type EffectOp =
   // binding. Non-suspending: the card stays on top; the conditional "then" branch
   // is expressed as following ops gated on `ifPrevious: 'previousRevealMatched'`.
   | ({ op: 'revealTopDeck'; filter?: SearchFilter } & EffectOpSequenceGate)
+  // Reveal the top card of the controller's own Life area (public), test it against an
+  // optional predicate, and record whether it matched via the __lastRevealMatched
+  // binding. Non-suspending: the card stays on top of Life; the conditional "then"
+  // branch (e.g. an optional play-from-Life) is expressed as following ops gated on
+  // `ifPrevious: 'previousRevealMatched'`.
+  | ({ op: 'revealTopLife'; filter?: SearchFilter } & EffectOpSequenceGate)
+  // Snapshot the instance-id list bound to var `from` into var `into`. Used to
+  // preserve the count of a variable-count selection (e.g. "return any number of
+  // Characters") across a LATER `chooseTargets` that reuses `t` (e.g. choosing the
+  // buff recipient), so a scaled `addPower` can read `amountPerVar: into`. Pure
+  // binding copy — non-suspending, moves no cards, leaves __lastMoved/__lastSelected
+  // from the prior op intact.
+  | ({ op: 'copyVar'; from: string; into: string } & EffectOpSequenceGate)
   // Reveal the top card of the opponent's deck and record cost-match against __chosenCost.
   | ({ op: 'revealOpponentDeckTop' } & EffectOpSequenceGate)
   | ({ op: 'revealCards'; target: Selector } & EffectOpSequenceGate)
@@ -396,6 +410,7 @@ export type AbilityGate =
   | { kind: 'selfRestedCharacterCount'; atLeast?: number; atMost?: number } // "If you have N or more rested Characters"
   | { kind: 'selfRestedCardCount'; atLeast?: number; atMost?: number } // "If you have N or more rested cards" (Leader/Characters/Stage/rested cost-area DON!!)
   | { kind: 'opponentCharacterCount'; atLeast?: number; atMost?: number } // "If your opponent has N or less Characters"
+  | { kind: 'selfFewerCharactersThanOpponent' } // "If you have less Characters than your opponent"
   | { kind: 'selfDonFieldCount'; atLeast?: number; atMost?: number } // "If you have N or less DON!! cards on your field"
   | { kind: 'selfAllFieldDonRested' } // "If all of your DON!! cards are rested" (field DON: cost area + attached; requires at least one)
   | { kind: 'selfActiveDonCount'; atLeast?: number; atMost?: number } // "If you have N or more active DON!! cards" (unattached in cost area)
@@ -418,7 +433,7 @@ export type AbilityGate =
   | { kind: 'opponentDonFieldCount'; atLeast?: number; atMost?: number } // "If your opponent has N or more/less DON!! cards on their field"
   | { kind: 'selfDonAtMostOpponent' } // "If the number of DON!! on your field is equal to or less than your opponent's"
   | { kind: 'selfDonAtLeastLessThanOpponent'; count: number } // "If your DON!! is at least N less than your opponent's"
-  | { kind: 'selfControlsNamed'; name: string } // "If you have [X]" — you control a Character named X
+  | { kind: 'selfControlsNamed'; name: string; rested?: boolean } // "If you have [X]" — you control a Character named X; rested=true requires a RESTED [X] ("If you have a rested [X]")
   | { kind: 'selfDoesNotControlNamed'; name: string } // "If you don't have [X]"
   | { kind: 'selfNamedCardCount'; name: string; atLeast?: number; atMost?: number } // "If you have N or more [X] cards" (Leader/Characters/Stage)
   | { kind: 'selfHandMatching'; atLeast: number; typeIncludes?: string; category?: Exclude<CardCategory, 'don'>; exactPower?: number; minPower?: number } // "reveal N {type}/Event/power cards from your hand"
@@ -433,7 +448,7 @@ export type AbilityGate =
   | { kind: 'opponentLeaderAttribute'; attribute: string }
   | { kind: 'selfTrashCount'; atLeast?: number; atMost?: number } // "N or more/less cards in your trash"
   | { kind: 'selfDeckCount'; atLeast?: number; atMost?: number } // "N or less cards in your deck"
-  | { kind: 'selfTypedCharacterCount'; typeIncludes: string; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {type} Characters"
+  | { kind: 'selfTypedCharacterCount'; typeIncludes: string; atLeast?: number; atMost?: number; rested?: boolean; color?: Color } // "if you have N or more {color} {type} Characters"
   | { kind: 'selfTypedCharacterDistinctNameCount'; typeIncludes: string; atLeast: number } // "if you have N {type} Characters with different card names"
   | { kind: 'selfAnyTypedCharacterCount'; anyOfTypes: string[]; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {A} or {B} type Characters"
   | { kind: 'selfAllCharactersTyped'; typeIncludes: string } // "if the only Characters on your field are {type} type Characters"

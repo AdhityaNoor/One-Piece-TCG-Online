@@ -557,13 +557,14 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // PARTIAL: counter negate and −4000 power should apply to the same target.
+  // OP09-097 — [Counter] Negate the effect of up to 1 opponent Leader/Character AND give THAT card −4000 this turn.
+  //   The −4000 targets `ref: 'previous'` (var `t` bound by the negate), so both hit the same chosen card.
   {
     cardNumber: 'OP09-097',
     templates: [
       { templateId: 'ability', params: { timing: 'counter', functions: [
         { fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
-        { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'opponent' }, amount: -4000, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+        { fn: 'addPower', target: { ref: 'previous' }, amount: -4000, duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny' },
       ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
     ],

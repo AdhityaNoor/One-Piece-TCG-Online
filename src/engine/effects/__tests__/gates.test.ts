@@ -247,6 +247,39 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfAnyTypedCharacterCount', anyOfTypes: ['Amazon Lily', 'Kuja Pirates'], rested: true, atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(false);
   });
 
+  it('checks selfFewerCharactersThanOpponent (EB04-059)', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef()));
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef()));
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef()));
+    // p1 has 1, p2 has 2 → p1 has fewer.
+    expect(evaluateGates([{ kind: 'selfFewerCharactersThanOpponent' }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfFewerCharactersThanOpponent' }], rig.state, rig.defs, 'p2')).toBe(false);
+  });
+
+  it('checks selfTypedCharacterCount with a color filter (P-081 "3+ blue {Cross Guild}")', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Cross Guild'], colors: ['blue'] })));
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Cross Guild'], colors: ['blue'] })));
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ types: ['Cross Guild'], colors: ['red'] }))); // wrong color
+    // 2 blue Cross Guild → passes atLeast 2, fails atLeast 3 (red one excluded by color).
+    expect(evaluateGates([{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', color: 'blue', atLeast: 2 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', color: 'blue', atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(false);
+    // Without the color filter all 3 count.
+    expect(evaluateGates([{ kind: 'selfTypedCharacterCount', typeIncludes: 'Cross Guild', atLeast: 3 }], rig.state, rig.defs, 'p1')).toBe(true);
+  });
+
+  it('checks selfControlsNamed with the rested flag (ST16-005 "if you have a rested [Uta]")', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ name: 'Uta' }), { orientation: 'active' }));
+    // Active Uta only: plain name gate passes, rested gate fails.
+    expect(evaluateGates([{ kind: 'selfControlsNamed', name: 'Uta' }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfControlsNamed', name: 'Uta', rested: true }], rig.state, rig.defs, 'p1')).toBe(false);
+    // Add a rested Uta: rested gate now passes.
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ name: 'Uta' }), { orientation: 'rested' }));
+    expect(evaluateGates([{ kind: 'selfControlsNamed', name: 'Uta', rested: true }], rig.state, rig.defs, 'p1')).toBe(true);
+  });
+
   it('checks selfRestedCardCount across Leader, Characters, Stage, and cost-area DON!!', () => {
     let rig = buildBaseRig();
     const leaderId = rig.state.players.p1.leaderInstanceId;

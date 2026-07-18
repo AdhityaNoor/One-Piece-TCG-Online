@@ -682,8 +682,8 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // ── Expressible batch (triage) ───────────────────────────────────────────
-  // OP04-004 — PARTIAL: "each" Alabasta Character → single-target giveDon.
-  { cardNumber: 'OP04-004', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'giveDon', count: 1, targetTypeIncludes: 'Alabasta', charactersOnly: true, optional: true }] } },
+  // OP04-004 — [Activate: Main] rest this: Give up to 1 rested DON!! card to EACH of your {Alabasta} Characters.
+  { cardNumber: 'OP04-004', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], functions: [{ fn: 'giveDon', count: 1, maxTargets: -1, targetTypeIncludes: 'Alabasta', charactersOnly: true, optional: true }] } },
 
   { cardNumber: 'OP04-012', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerAuraControllerCharacters', amount: 1000, duration: 'permanent', anyOfTypes: ['Alabasta'], sourceCondition: { turn: 'your' } }] } },
 

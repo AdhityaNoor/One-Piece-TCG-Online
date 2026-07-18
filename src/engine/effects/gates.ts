@@ -351,6 +351,13 @@ function evaluateGate(
       return fieldDonIds(state, opponentId).length > fieldDonIds(state, ownerId).length;
     }
 
+    case 'selfFewerCharactersThanOpponent': {
+      const opponentId = getOpponentId(state, ownerId);
+      const selfCount = player.characterArea.cardIds.length;
+      const oppCount = state.players[opponentId]?.characterArea.cardIds.length ?? 0;
+      return selfCount < oppCount;
+    }
+
     case 'opponentDonFieldCount': {
       const opponentId = getOpponentId(state, ownerId);
       const count = fieldDonIds(state, opponentId).length;
@@ -371,7 +378,11 @@ function evaluateGate(
 
     case 'selfControlsNamed': {
       const ids = [...player.characterArea.cardIds, ...player.stageArea.cardIds, player.leaderInstanceId];
-      return ids.some((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name === gate.name);
+      return ids.some((id) => {
+        const inst = state.cardsById[id];
+        if (defs[inst?.cardDefinitionId ?? '']?.name !== gate.name) return false;
+        return gate.rested ? inst?.orientation === 'rested' : true;
+      });
     }
 
     case 'selfDoesNotControlNamed': {
@@ -417,7 +428,9 @@ function evaluateGate(
     case 'selfTypedCharacterCount': {
       const c = player.characterArea.cardIds.filter((id) => {
         if (gate.rested !== undefined && (state.cardsById[id]?.orientation === 'rested') !== gate.rested) return false;
-        return typeMatches(defs[state.cardsById[id]?.cardDefinitionId ?? '']?.types ?? [], gate.typeIncludes);
+        const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
+        if (gate.color !== undefined && !(def?.colors ?? []).includes(gate.color)) return false;
+        return typeMatches(def?.types ?? [], gate.typeIncludes);
       }).length;
       if (gate.atLeast !== undefined && c < gate.atLeast) return false;
       if (gate.atMost !== undefined && c > gate.atMost) return false;

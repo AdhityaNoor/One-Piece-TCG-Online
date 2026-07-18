@@ -621,7 +621,10 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   }] } },
 
   // OP06-095 (event) Shadows Asgard —
-  //   PARTIAL: per-K.O. Leader power scaling and "any number" K.O. deferred; mapped +1000, optional 1 K.O., Trigger draw/trash.
+  //   [Main]/[Counter] Your Leader gains +1000 power during this turn. Then, you may K.O. any number of your
+  //   {Thriller Bark Pirates} cost ≤2 Characters. Your Leader gains an additional +1000 for every Character K.O.'d.
+  //   `maxTargets: -1` = "any number" (chooseTargets clamps a negative max to all candidates); the K.O. binds
+  //   var `t`, and the second addPower scales +1000 × count(t) via `countVar` / `amountPer`. [Trigger] draw 2, trash 1.
   {
     cardNumber: 'OP06-095',
     templates: [
@@ -631,7 +634,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
           timing: 'activateMain',
           functions: [
             { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'duringThisTurn' },
-            { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates', maxCost: 2 } }, optional: true, maxTargets: 1 },
+            { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates', maxCost: 2 } }, optional: true, maxTargets: -1 },
+            { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 0, countVar: 't', amountPer: 1000, duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny' },
           ],
         },
       },
@@ -641,7 +645,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
           timing: 'counter',
           functions: [
             { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'duringThisTurn' },
-            { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates', maxCost: 2 } }, optional: true, maxTargets: 1 },
+            { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates', maxCost: 2 } }, optional: true, maxTargets: -1 },
+            { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 0, countVar: 't', amountPer: 1000, duration: 'duringThisTurn', ifPrevious: 'previousSelectedAny' },
           ],
         },
       },

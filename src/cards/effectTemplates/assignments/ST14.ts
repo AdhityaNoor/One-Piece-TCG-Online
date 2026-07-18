@@ -136,10 +136,13 @@ export const ST14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST14-017 (stage) Thousand Sunny — [On Play] If your Leader has {Straw Hat Crew}, draw 1. (Cost aura deferred.)
+  // ST14-017 (stage) Thousand Sunny — All of your black {Straw Hat Crew} Characters gain +1 cost.
+  //   [On Play] If your Leader has {Straw Hat Crew}, draw 1.
   {
     cardNumber: 'ST14-017',
-    templateId: 'ability',
-    params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'draw', amount: 1 }] },
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraControllerCharacters', amount: 1, duration: 'permanent', anyOfTypes: ['Straw Hat Crew'], anyOfColors: ['black'] }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
   },
 ];

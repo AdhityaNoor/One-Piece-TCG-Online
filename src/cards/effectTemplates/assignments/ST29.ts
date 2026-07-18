@@ -35,8 +35,15 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
   // --- codegen batch ---
   { cardNumber: 'ST29-005', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Monkey.D.Luffy' }], functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // ST29-007 — [On K.O.] add 1 top/bottom Life to hand → add 1 from hand to top of Life. PARTIAL: name-target [Trigger] buff deferred.
-  { cardNumber: 'ST29-007', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+  // ST29-007 — [On K.O.] add 1 top/bottom Life to hand → add 1 from hand to top of Life.
+  //   [Trigger] Up to 1 of your [Monkey.D.Luffy] cards gains +2000 power during this turn.
+  {
+    cardNumber: 'ST29-007',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom' }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'moveCards', from: { zone: 'hand', player: 'controller' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'controller', filter: { name: 'Monkey.D.Luffy' } }, amount: 2000, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   { cardNumber: 'ST29-009', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderName', name: 'Monkey.D.Luffy' }], functions: [{ fn: 'triggerPlaySelf' }] } },
 

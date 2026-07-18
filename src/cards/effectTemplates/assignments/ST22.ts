@@ -120,8 +120,14 @@ export const ST22_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST22-016 — [Trigger] Draw 1. PARTIAL: the reveal-conditional [Counter] buff is deferred.
-  { cardNumber: 'ST22-016', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+  // ST22-016 — [Counter] Reveal top of deck; if its type includes {Whitebeard Pirates}, up to 1 Leader/Character +4000 this battle. [Trigger] Draw 1.
+  {
+    cardNumber: 'ST22-016',
+    templates: [
+      { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'revealTopThen', filter: { typeIncludes: 'Whitebeard Pirates' }, then: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true, maxTargets: 1 }] }] } },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
+    ],
+  },
 
   // ST22-017 — [Main] reveal 2 {Whitebeard Pirates}: draw 1, bottom-deck up to 1 cost≤5 Character. [Trigger] return cost≤3 Character to hand.
   {

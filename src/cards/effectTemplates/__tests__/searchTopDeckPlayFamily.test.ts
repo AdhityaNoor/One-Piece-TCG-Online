@@ -69,4 +69,29 @@ describe('family: searchTopDeck play destination', () => {
     expect(played?.orientation).toBe('rested');
     expect(resolved.players.p1.deck.cardIds).toEqual([seeded.deckIds[2], seeded.deckIds[0]]);
   });
+
+  it("trashes up to N looked cards (destination: 'trash', OP03-083) and bottoms the rest", () => {
+    const assignment: CardEffectAssignment = {
+      cardNumber: 'SYN-SRC',
+      templateId: 'ability',
+      params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 2, reveal: true, destination: 'trash', remainder: 'bottom' }] },
+    };
+    const registry = buildRegistryFromAssignments([assignment]);
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let sourceId: string;
+    ({ rig, instanceId: sourceId } = putCharacterInPlay(rig, 'p1', SRC));
+    const seeded = withDeck(rig, [MATCH, OFF, MATCH]);
+    rig = seeded.rig;
+
+    const fired = runTimings(registry['SYN-SRC'], ['onPlay'], rig.state, sourceId, rig.defs, null, registry);
+    const pickChoice = fired.state.pendingChoices[0];
+    expect(pickChoice.constraints.max).toBe(2); // "trash up to 2"
+    // Trash the first two looked cards; the third goes to the bottom.
+    const resolved = resumeProgram(registry['SYN-SRC'], fired.state, pickChoice, [seeded.deckIds[0], seeded.deckIds[1]], rig.defs, null, registry).state;
+
+    expect(resolved.players.p1.trash.cardIds).toEqual(expect.arrayContaining([seeded.deckIds[0], seeded.deckIds[1]]));
+    expect(resolved.cardsById[seeded.deckIds[0]].currentZone).toBe('trash');
+    expect(resolved.players.p1.deck.cardIds).toContain(seeded.deckIds[2]); // remainder bottomed, stays in deck
+    expect(resolved.players.p1.trash.cardIds).not.toContain(seeded.deckIds[2]);
+  });
 });
