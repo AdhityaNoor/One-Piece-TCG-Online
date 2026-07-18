@@ -26,7 +26,7 @@ export function AdminApp() {
   }, [status, init]);
 
   if (status === 'unknown') {
-    return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">Loading…</div>;
+    return <div className="flex min-h-screen items-center justify-center bg-[#050914] text-white/55">Loading…</div>;
   }
 
   if (status !== 'authenticated') {

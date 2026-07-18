@@ -57,19 +57,19 @@ export function BugReportDetailPage() {
   }
 
   if (error && !report) return <p className="text-sm text-red-400">{error}</p>;
-  if (!report) return <p className="text-slate-400">Loading…</p>;
+  if (!report) return <p className="text-white/55">Loading…</p>;
 
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <Link to="/admin/bugs" className="text-sm text-sky-400 hover:underline">
+        <Link to="/admin/bugs" className="text-sm text-[rgb(var(--op-gold-rgb))] hover:underline">
           ← Back to Bugs & Reports
         </Link>
       </div>
 
       <div>
         <h1 className="text-xl font-bold text-white">Bug report</h1>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-white/55">
           Reported by {report.reporterUsername ?? report.reporterUserId} at {new Date(report.createdAt).toLocaleString()} · app version{' '}
           {report.clientVersion ?? 'unknown'}
         </p>
@@ -78,22 +78,22 @@ export function BugReportDetailPage() {
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       <AdminCard>
-        <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Description</p>
-        <p className="whitespace-pre-wrap text-sm text-slate-200">{report.description}</p>
+        <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/55">Description</p>
+        <p className="whitespace-pre-wrap text-sm text-white/90">{report.description}</p>
       </AdminCard>
 
       <AdminCard>
-        <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Context</p>
-        <dl className="grid grid-cols-2 gap-2 text-sm text-slate-200">
-          <dt className="text-slate-500">Match mode</dt>
+        <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-white/55">Context</p>
+        <dl className="grid grid-cols-2 gap-2 text-sm text-white/90">
+          <dt className="text-white/40">Match mode</dt>
           <dd>{report.matchMode}</dd>
-          <dt className="text-slate-500">Match ID</dt>
+          <dt className="text-white/40">Match ID</dt>
           <dd>{report.matchId ?? '—'}</dd>
-          <dt className="text-slate-500">Turn / phase</dt>
+          <dt className="text-white/40">Turn / phase</dt>
           <dd>
             Turn {report.turnNumber} · {report.phase}
           </dd>
-          <dt className="text-slate-500">Selected card</dt>
+          <dt className="text-white/40">Selected card</dt>
           <dd>
             {report.selectedCard ? `${report.selectedCard.cardName ?? 'Unknown'} (${report.selectedCard.cardNumber ?? report.selectedCard.cardDefinitionId})` : '—'}
           </dd>
@@ -101,10 +101,10 @@ export function BugReportDetailPage() {
       </AdminCard>
 
       <AdminCard>
-        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Triage</p>
+        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/55">Triage</p>
         <div className="flex gap-4">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Validity</label>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/55">Validity</label>
             <AdminSelect value={report.validity} onChange={(e) => void handleUpdate({ validity: e.target.value as BugReportValidity })} disabled={saving}>
               <option value="unreviewed">Unreviewed</option>
               <option value="valid">Valid</option>
@@ -112,7 +112,7 @@ export function BugReportDetailPage() {
             </AdminSelect>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Status</label>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/55">Status</label>
             <AdminSelect value={report.status} onChange={(e) => void handleUpdate({ status: e.target.value as BugReportStatus })} disabled={saving}>
               <option value="open">Open</option>
               <option value="triaged">Triaged</option>
@@ -125,7 +125,7 @@ export function BugReportDetailPage() {
 
       <AdminCard>
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-400">Battle log ({report.logEntryCount} entries)</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-white/55">Battle log ({report.logEntryCount} entries)</p>
           <AdminButton
             variant="secondary"
             onClick={() => navigator.clipboard?.writeText(JSON.stringify(report.log, null, 2))}
@@ -133,10 +133,10 @@ export function BugReportDetailPage() {
             Copy raw JSON
           </AdminButton>
         </div>
-        <div className="max-h-[50vh] overflow-y-auto rounded border border-slate-800 bg-slate-950/60 p-3">
-          <ol className="flex flex-col gap-1 font-mono text-xs text-slate-300">
+        <div className="max-h-[50vh] overflow-y-auto rounded border border-[rgb(var(--op-gold-rgb)/0.18)] bg-black/40 p-3">
+          <ol className="flex flex-col gap-1 font-mono text-xs text-white/75">
             {report.log.map((entry, index) => (
-              <li key={index} className="border-b border-slate-900 pb-1">
+              <li key={index} className="border-b border-[rgb(var(--op-gold-rgb)/0.12)] pb-1">
                 {logEntryLine(entry)}
               </li>
             ))}

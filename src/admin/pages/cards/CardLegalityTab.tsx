@@ -70,18 +70,18 @@ export function CardLegalityTab() {
 
   return (
     <div>
-      <p className="mb-4 text-sm text-slate-400">
+      <p className="mb-4 text-sm text-white/55">
         These overrides are stored and served from the admin API, but the deck builder's own legality checks don't read them yet — see known
         limitations.
       </p>
 
-      <div className="mb-4 flex flex-wrap items-end gap-2 rounded border border-slate-800 bg-slate-900/60 p-3">
+      <div className="mb-4 flex flex-wrap items-end gap-2 rounded border border-[rgb(var(--op-gold-rgb)/0.18)] bg-[rgb(var(--op-gold-rgb)/0.06)] p-3">
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Card number</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/55">Card number</label>
           <AdminInput value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} placeholder="OP01-001" className="w-32" />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Status</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/55">Status</label>
           <AdminSelect value={status} onChange={(e) => setStatus(e.target.value as CardLegalityStatus)}>
             <option value="legal">Legal</option>
             <option value="extraLegal">Extra Legal</option>
@@ -89,7 +89,7 @@ export function CardLegalityTab() {
           </AdminSelect>
         </div>
         <div className="flex-1">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Note</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/55">Note</label>
           <AdminInput value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional ruling note…" className="w-full" />
         </div>
         <AdminButton onClick={() => void handleSave()} disabled={busy || !cardNumber.trim()}>
@@ -99,9 +99,9 @@ export function CardLegalityTab() {
 
       {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
 
-      <div className="overflow-hidden rounded-lg border border-slate-800">
+      <div className="overflow-hidden rounded-lg border border-[rgb(var(--op-gold-rgb)/0.18)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-900 text-slate-400">
+          <thead className="bg-[rgb(var(--op-gold-rgb)/0.08)] text-white/55">
             <tr>
               <th className="px-3 py-2 font-semibold">Card</th>
               <th className="px-3 py-2 font-semibold">Status</th>
@@ -112,13 +112,13 @@ export function CardLegalityTab() {
           </thead>
           <tbody>
             {overrides.map((override) => (
-              <tr key={override.cardNumber} className="border-t border-slate-800">
-                <td className="px-3 py-2 font-mono text-slate-200">{override.cardNumber}</td>
+              <tr key={override.cardNumber} className="border-t border-[rgb(var(--op-gold-rgb)/0.18)]">
+                <td className="px-3 py-2 font-mono text-white/90">{override.cardNumber}</td>
                 <td className="px-3 py-2">
                   <AdminBadge tone={tone(override.status)}>{override.status}</AdminBadge>
                 </td>
-                <td className="px-3 py-2 text-slate-400">{override.note ?? '—'}</td>
-                <td className="px-3 py-2 text-slate-500">{new Date(override.updatedAt).toLocaleDateString()}</td>
+                <td className="px-3 py-2 text-white/55">{override.note ?? '—'}</td>
+                <td className="px-3 py-2 text-white/40">{new Date(override.updatedAt).toLocaleDateString()}</td>
                 <td className="px-3 py-2 text-right">
                   <button type="button" onClick={() => void handleRemove(override.cardNumber)} className="text-xs text-red-400 hover:underline">
                     Remove
@@ -128,7 +128,7 @@ export function CardLegalityTab() {
             ))}
             {overrides.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
+                <td colSpan={5} className="px-3 py-6 text-center text-white/40">
                   No overrides set.
                 </td>
               </tr>

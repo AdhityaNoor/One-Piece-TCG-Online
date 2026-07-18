@@ -66,16 +66,16 @@ export function FeatureFlagsPage() {
   return (
     <div>
       <h1 className="mb-1 text-xl font-bold text-white">Game Management</h1>
-      <p className="mb-4 text-sm text-slate-400">
+      <p className="mb-4 text-sm text-white/55">
         Runtime feature switches, stored in Mongo and editable without a redeploy. Toggling a flag here does not yet change gameplay behavior on its
         own — wiring an individual flag into the client/server is a separate follow-up per flag (see known limitations).
       </p>
 
       {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
 
-      <div className="mb-5 overflow-hidden rounded-lg border border-slate-800">
+      <div className="mb-5 overflow-hidden rounded-lg border border-[rgb(var(--op-gold-rgb)/0.18)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-900 text-slate-400">
+          <thead className="bg-[rgb(var(--op-gold-rgb)/0.08)] text-white/55">
             <tr>
               <th className="px-3 py-2 font-semibold">Key</th>
               <th className="px-3 py-2 font-semibold">Label</th>
@@ -86,10 +86,10 @@ export function FeatureFlagsPage() {
           </thead>
           <tbody>
             {flags.map((flag) => (
-              <tr key={flag.key} className="border-t border-slate-800">
-                <td className="px-3 py-2 font-mono text-slate-200">{flag.key}</td>
-                <td className="px-3 py-2 text-slate-200">{flag.label}</td>
-                <td className="px-3 py-2 text-slate-400">{flag.description}</td>
+              <tr key={flag.key} className="border-t border-[rgb(var(--op-gold-rgb)/0.18)]">
+                <td className="px-3 py-2 font-mono text-white/90">{flag.key}</td>
+                <td className="px-3 py-2 text-white/90">{flag.label}</td>
+                <td className="px-3 py-2 text-white/55">{flag.description}</td>
                 <td className="px-3 py-2">
                   <button type="button" onClick={() => void handleToggle(flag)}>
                     <AdminBadge tone={flag.enabled ? 'good' : 'neutral'}>{flag.enabled ? 'Enabled' : 'Disabled'}</AdminBadge>
@@ -104,7 +104,7 @@ export function FeatureFlagsPage() {
             ))}
             {flags.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
+                <td colSpan={5} className="px-3 py-6 text-center text-white/40">
                   No flags yet.
                 </td>
               </tr>
@@ -113,19 +113,19 @@ export function FeatureFlagsPage() {
         </table>
       </div>
 
-      <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">New flag</p>
+      <div className="rounded-lg border border-[rgb(var(--op-gold-rgb)/0.18)] bg-[rgb(var(--op-gold-rgb)/0.06)] p-4">
+        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/55">New flag</p>
         <div className="flex flex-wrap items-end gap-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Key</label>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/55">Key</label>
             <AdminInput value={newKey} onChange={(e) => setNewKey(e.target.value)} placeholder="ranked_queue_enabled" className="w-56" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Label</label>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/55">Label</label>
             <AdminInput value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="Ranked Queue" className="w-56" />
           </div>
           <div className="flex-1">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Description</label>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/55">Description</label>
             <AdminTextarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} rows={1} className="w-full" />
           </div>
           <AdminButton onClick={() => void handleCreate()} disabled={busy || !newKey.trim() || !newLabel.trim()}>

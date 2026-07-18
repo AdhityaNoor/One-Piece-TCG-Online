@@ -59,9 +59,9 @@ export function PlayerListPage() {
 
       {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
 
-      <div className="overflow-hidden rounded-lg border border-slate-800">
+      <div className="overflow-hidden rounded-lg border border-[rgb(var(--op-gold-rgb)/0.18)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-900 text-slate-400">
+          <thead className="bg-[rgb(var(--op-gold-rgb)/0.08)] text-white/55">
             <tr>
               <th className="px-3 py-2 font-semibold">Username</th>
               <th className="px-3 py-2 font-semibold">Email</th>
@@ -72,15 +72,15 @@ export function PlayerListPage() {
           </thead>
           <tbody>
             {players.map((player) => (
-              <tr key={player.userId} className="border-t border-slate-800 hover:bg-slate-900/60">
+              <tr key={player.userId} className="border-t border-[rgb(var(--op-gold-rgb)/0.18)] hover:bg-[rgb(var(--op-gold-rgb)/0.08)]">
                 <td className="px-3 py-2">
-                  <Link to={`/admin/players/${player.userId}`} className="text-sky-400 hover:underline">
+                  <Link to={`/admin/players/${player.userId}`} className="text-[rgb(var(--op-gold-rgb))] hover:underline">
                     {player.username}
                   </Link>
                 </td>
-                <td className="px-3 py-2 text-slate-300">{player.email}</td>
-                <td className="px-3 py-2 text-slate-400">{new Date(player.createdAt).toLocaleDateString()}</td>
-                <td className="px-3 py-2 text-slate-400">{player.lastActiveAt ? new Date(player.lastActiveAt).toLocaleDateString() : '—'}</td>
+                <td className="px-3 py-2 text-white/75">{player.email}</td>
+                <td className="px-3 py-2 text-white/55">{new Date(player.createdAt).toLocaleDateString()}</td>
+                <td className="px-3 py-2 text-white/55">{player.lastActiveAt ? new Date(player.lastActiveAt).toLocaleDateString() : '—'}</td>
                 <td className="px-3 py-2">
                   <AdminBadge tone={statusTone(player.moderationStatus)}>{player.moderationStatus}</AdminBadge>
                 </td>
@@ -88,7 +88,7 @@ export function PlayerListPage() {
             ))}
             {players.length === 0 && !loading && (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
+                <td colSpan={5} className="px-3 py-6 text-center text-white/40">
                   No players found.
                 </td>
               </tr>

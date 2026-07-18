@@ -49,21 +49,21 @@ export function CardGalleryTab() {
         />
       </div>
 
-      <p className="mb-3 text-sm text-slate-500">{total} cards</p>
+      <p className="mb-3 text-sm text-white/40">{total} cards</p>
 
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(9rem, 1fr))' }}>
         {entries.map((entry) => (
           <div key={entry.cardNumber}>
             <CardImage src={entry.printings[0]?.imageUrl ?? null} alt={entry.definition.name} />
-            <p className="mt-1 truncate text-center text-xs text-slate-300">{entry.definition.name}</p>
-            <p className="text-center text-[10px] text-slate-500">{entry.cardNumber}</p>
+            <p className="mt-1 truncate text-center text-xs text-white/75">{entry.definition.name}</p>
+            <p className="text-center text-[10px] text-white/40">{entry.cardNumber}</p>
           </div>
         ))}
       </div>
 
       {entries.length < total && (
         <div className="mt-4 text-center">
-          <button type="button" onClick={loadMore} className="rounded border border-slate-700 px-4 py-1.5 text-sm text-slate-300 hover:bg-slate-800">
+          <button type="button" onClick={loadMore} className="rounded border border-[rgb(var(--op-gold-rgb)/0.3)] px-4 py-1.5 text-sm text-white/75 hover:bg-[rgb(var(--op-gold-rgb)/0.12)]">
             Load more
           </button>
         </div>

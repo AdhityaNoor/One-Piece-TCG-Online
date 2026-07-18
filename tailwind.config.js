@@ -1,6 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/app/**/*.{ts,tsx}', './src/board/**/*.{ts,tsx}', './src/animations/**/*.{ts,tsx}', './src/renderer3d/**/*.{ts,tsx}'],
+  content: [
+    './index.html',
+    './src/app/**/*.{ts,tsx}',
+    './src/board/**/*.{ts,tsx}',
+    './src/animations/**/*.{ts,tsx}',
+    './src/renderer3d/**/*.{ts,tsx}',
+    // Admin CMS lives outside src/app (own top-level folder — see
+    // src/admin/AdminApp.tsx) so it was missing from this list entirely.
+    // Tailwind only generates utility CSS for classes it finds by scanning
+    // these globs; any admin-only utility (e.g. bg-sky-600, which appears
+    // nowhere else in the scanned folders) was silently dropped from the
+    // production build, which is why the CMS rendered unstyled after
+    // `vite build` despite looking fine in local dev with a warm JIT cache.
+    './src/admin/**/*.{ts,tsx}',
+  ],
   theme: {
     extend: {
       // Visual-reference direction (UI polish only — Tailwind tokens carry

@@ -23,10 +23,10 @@ const TAB_LABELS: Record<Tab, string> = {
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="rounded border border-slate-800 bg-slate-900/60 p-3">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-sky-400">{label}</p>
+    <div className="rounded border border-[rgb(var(--op-gold-rgb)/0.18)] bg-[rgb(var(--op-gold-rgb)/0.06)] p-3">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-[rgb(var(--op-gold-rgb))]">{label}</p>
       <p className="mt-1 text-2xl font-black text-white">{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
+      {sub && <p className="mt-0.5 text-xs text-white/55">{sub}</p>}
     </div>
   );
 }
@@ -39,7 +39,7 @@ function pct(n: number, total: number): string {
 function tabButtonClass(active: boolean): string {
   return [
     'rounded border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors',
-    active ? 'border-sky-500 bg-sky-950 text-sky-300' : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-500',
+    active ? 'border-[rgb(var(--op-gold-rgb)/0.7)] bg-[rgb(var(--op-gold-rgb)/0.15)] text-[rgb(var(--op-gold-rgb))]' : 'border-[rgb(var(--op-gold-rgb)/0.3)] bg-[rgb(var(--op-gold-rgb)/0.08)] text-white/55 hover:border-[rgb(var(--op-gold-rgb)/0.5)]',
   ].join(' ');
 }
 
@@ -87,14 +87,14 @@ export function CurationStatusTab() {
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm text-slate-400">{statusLine}</p>
+        <p className="text-sm text-white/55">{statusLine}</p>
         <AdminButton variant="secondary" onClick={refresh} disabled={status === 'loading'}>
           Refresh
         </AdminButton>
       </div>
 
       <div className="grid gap-3 xl:grid-cols-[16rem_minmax(0,1fr)]">
-        <aside className="rounded border border-slate-800 bg-slate-900/60 p-3">
+        <aside className="rounded border border-[rgb(var(--op-gold-rgb)/0.18)] bg-[rgb(var(--op-gold-rgb)/0.06)] p-3">
           <div className="flex flex-wrap gap-1.5">
             {(['overview', 'coverage', 'partials', 'triage', 'audit'] as Tab[]).map((t) => (
               <button key={t} type="button" onClick={() => setTab(t)} className={tabButtonClass(tab === t)}>
@@ -105,7 +105,7 @@ export function CurationStatusTab() {
 
           <div className="mt-4 flex flex-col gap-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Set</label>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/55">Set</label>
               <AdminSelect value={setFilter} onChange={(e) => setSetFilter(e.target.value)} className="w-full">
                 <option value="">All sets</option>
                 {sets.map((s) => (
@@ -116,16 +116,16 @@ export function CurationStatusTab() {
               </AdminSelect>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Search</label>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/55">Search</label>
               <AdminInput type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Card ID or name…" className="w-full" />
             </div>
           </div>
 
-          {metrics && <p className="mt-4 text-[10px] text-slate-500">Updated {new Date(metrics.computedAt).toLocaleString()}</p>}
+          {metrics && <p className="mt-4 text-[10px] text-white/40">Updated {new Date(metrics.computedAt).toLocaleString()}</p>}
         </aside>
 
-        <section className="rounded border border-slate-800 bg-slate-900/60 p-3">
-          {status === 'loading' && <p className="text-sm text-slate-400">Computing metrics from catalog…</p>}
+        <section className="rounded border border-[rgb(var(--op-gold-rgb)/0.18)] bg-[rgb(var(--op-gold-rgb)/0.06)] p-3">
+          {status === 'loading' && <p className="text-sm text-white/55">Computing metrics from catalog…</p>}
           {status === 'error' && <p className="rounded border border-red-800 bg-red-950/40 p-3 text-sm text-red-300">{error ?? 'Failed to load metrics.'}</p>}
 
           {metrics && (
@@ -162,13 +162,13 @@ function OverviewTab({ metrics, setRows }: { metrics: NonNullable<ReturnType<typ
       </div>
 
       {metrics.topReasons.length > 0 && (
-        <div className="rounded border border-slate-800 bg-slate-950/40 p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-sky-400">Top triage blockers</p>
+        <div className="rounded border border-[rgb(var(--op-gold-rgb)/0.18)] bg-black/30 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[rgb(var(--op-gold-rgb))]">Top triage blockers</p>
           <ul className="mt-2 flex flex-col gap-1.5 text-sm">
             {metrics.topReasons.slice(0, 8).map((r) => (
-              <li key={r.reason} className="flex justify-between gap-2 border-b border-slate-800 pb-1.5 text-slate-300 last:border-0">
+              <li key={r.reason} className="flex justify-between gap-2 border-b border-[rgb(var(--op-gold-rgb)/0.18)] pb-1.5 text-white/75 last:border-0">
                 <span>{r.reason}</span>
-                <span className="font-mono text-sky-400">{r.count}</span>
+                <span className="font-mono text-[rgb(var(--op-gold-rgb))]">{r.count}</span>
               </li>
             ))}
           </ul>
@@ -182,13 +182,13 @@ function OverviewTab({ metrics, setRows }: { metrics: NonNullable<ReturnType<typ
 
 function SetBreakdownTable({ rows }: { rows: SetMetrics[] }) {
   return (
-    <div className="overflow-hidden rounded border border-slate-800">
-      <div className="border-b border-slate-800 px-3 py-2">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-sky-400">By set</p>
+    <div className="overflow-hidden rounded border border-[rgb(var(--op-gold-rgb)/0.18)]">
+      <div className="border-b border-[rgb(var(--op-gold-rgb)/0.18)] px-3 py-2">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-[rgb(var(--op-gold-rgb))]">By set</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[36rem] text-left text-xs">
-          <thead className="bg-slate-950/60 text-slate-500">
+          <thead className="bg-black/40 text-white/40">
             <tr>
               <th className="px-3 py-2 font-semibold uppercase tracking-wide">Set</th>
               <th className="px-2 py-2 text-right">Curated</th>
@@ -202,14 +202,14 @@ function SetBreakdownTable({ rows }: { rows: SetMetrics[] }) {
           </thead>
           <tbody>
             {rows.map((s) => (
-              <tr key={s.setCode} className="border-t border-slate-800 text-slate-200">
-                <td className="px-3 py-2 font-mono text-sky-400">{s.setCode}</td>
+              <tr key={s.setCode} className="border-t border-[rgb(var(--op-gold-rgb)/0.18)] text-white/90">
+                <td className="px-3 py-2 font-mono text-[rgb(var(--op-gold-rgb))]">{s.setCode}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{s.curated}</td>
                 <td className="px-2 py-2 text-right tabular-nums text-orange-300">{s.partialCurated || '—'}</td>
                 <td className="px-2 py-2 text-right tabular-nums text-amber-300">{s.needsTemplate}</td>
                 <td className="px-2 py-2 text-right tabular-nums text-emerald-300">{s.triageExpressible}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{s.triageNeedsPrimitive}</td>
-                <td className="px-2 py-2 text-right tabular-nums text-slate-500">{s.triageDefer}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-white/40">{s.triageDefer}</td>
                 <td className="px-2 py-2 text-right tabular-nums text-red-300">{s.auditFindings || '—'}</td>
               </tr>
             ))}
@@ -249,7 +249,7 @@ function CoverageTab({ rows }: { rows: CoverageRow[] }) {
 function TriageTab({ rows, topReasons }: { rows: TriageRow[]; topReasons: Array<{ reason: string; count: number }> }) {
   return (
     <div className="flex flex-col gap-3">
-      {topReasons.length > 0 && <p className="text-xs text-slate-400">Top blockers: {topReasons.slice(0, 5).map((r) => `${r.reason} (${r.count})`).join(' · ')}</p>}
+      {topReasons.length > 0 && <p className="text-xs text-white/55">Top blockers: {topReasons.slice(0, 5).map((r) => `${r.reason} (${r.count})`).join(' · ')}</p>}
       <CardTable
         title={`Triage worklist (${rows.length})`}
         empty="No uncurated cards for this filter."
@@ -275,16 +275,16 @@ function AuditTab({ rows, flagged }: { rows: AuditFinding[]; flagged: number }) 
 
 function CardTable({ title, empty, headers, rows, footnote }: { title: string; empty: string; headers: string[]; rows: string[][]; footnote?: string }) {
   return (
-    <div className="overflow-hidden rounded border border-slate-800">
-      <div className="border-b border-slate-800 px-3 py-2">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-sky-400">{title}</p>
+    <div className="overflow-hidden rounded border border-[rgb(var(--op-gold-rgb)/0.18)]">
+      <div className="border-b border-[rgb(var(--op-gold-rgb)/0.18)] px-3 py-2">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-[rgb(var(--op-gold-rgb))]">{title}</p>
       </div>
       {rows.length === 0 ? (
-        <p className="p-4 text-sm text-slate-500">{empty}</p>
+        <p className="p-4 text-sm text-white/40">{empty}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[40rem] text-left text-xs">
-            <thead className="bg-slate-950/60 text-slate-500">
+            <thead className="bg-black/40 text-white/40">
               <tr>
                 {headers.map((h) => (
                   <th key={h} className="px-2 py-2 font-semibold uppercase tracking-wide">
@@ -295,9 +295,9 @@ function CardTable({ title, empty, headers, rows, footnote }: { title: string; e
             </thead>
             <tbody>
               {rows.map((cells, i) => (
-                <tr key={i} className="border-t border-slate-800 align-top text-slate-300">
+                <tr key={i} className="border-t border-[rgb(var(--op-gold-rgb)/0.18)] align-top text-white/75">
                   {cells.map((cell, j) => (
-                    <td key={j} className={`px-2 py-2 ${j === 0 ? 'whitespace-nowrap font-mono text-sky-400' : ''}`}>
+                    <td key={j} className={`px-2 py-2 ${j === 0 ? 'whitespace-nowrap font-mono text-[rgb(var(--op-gold-rgb))]' : ''}`}>
                       {cell}
                     </td>
                   ))}
@@ -307,7 +307,7 @@ function CardTable({ title, empty, headers, rows, footnote }: { title: string; e
           </table>
         </div>
       )}
-      {footnote && <p className="border-t border-slate-800 px-3 py-2 text-[11px] text-slate-500">{footnote}</p>}
+      {footnote && <p className="border-t border-[rgb(var(--op-gold-rgb)/0.18)] px-3 py-2 text-[11px] text-white/40">{footnote}</p>}
     </div>
   );
 }

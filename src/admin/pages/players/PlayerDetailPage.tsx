@@ -68,14 +68,14 @@ export function PlayerDetailPage() {
   }
 
   if (error && !detail) return <p className="text-sm text-red-400">{error}</p>;
-  if (!detail) return <p className="text-slate-400">Loading…</p>;
+  if (!detail) return <p className="text-white/55">Loading…</p>;
 
   const isSuspended = detail.moderationStatus === 'suspended';
 
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <Link to="/admin/players" className="text-sm text-sky-400 hover:underline">
+        <Link to="/admin/players" className="text-sm text-[rgb(var(--op-gold-rgb))] hover:underline">
           ← Back to Player Data
         </Link>
       </div>
@@ -83,7 +83,7 @@ export function PlayerDetailPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">{detail.username}</h1>
-          <p className="text-sm text-slate-400">{detail.email}</p>
+          <p className="text-sm text-white/55">{detail.email}</p>
         </div>
         <AdminBadge tone={isSuspended ? 'bad' : 'good'}>{detail.moderationStatus}</AdminBadge>
       </div>
@@ -91,21 +91,21 @@ export function PlayerDetailPage() {
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       <AdminCard>
-        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Info</p>
-        <dl className="grid grid-cols-2 gap-2 text-sm text-slate-200">
-          <dt className="text-slate-500">Display name</dt>
+        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/55">Info</p>
+        <dl className="grid grid-cols-2 gap-2 text-sm text-white/90">
+          <dt className="text-white/40">Display name</dt>
           <dd>{detail.displayName || '—'}</dd>
-          <dt className="text-slate-500">Region</dt>
+          <dt className="text-white/40">Region</dt>
           <dd>{detail.region || '—'}</dd>
-          <dt className="text-slate-500">Favorite leader</dt>
+          <dt className="text-white/40">Favorite leader</dt>
           <dd>{detail.favoriteLeaderCardNumber || '—'}</dd>
-          <dt className="text-slate-500">Joined</dt>
+          <dt className="text-white/40">Joined</dt>
           <dd>{new Date(detail.createdAt).toLocaleString()}</dd>
-          <dt className="text-slate-500">Last active</dt>
+          <dt className="text-white/40">Last active</dt>
           <dd>{detail.lastActiveAt ? new Date(detail.lastActiveAt).toLocaleString() : '—'}</dd>
         </dl>
 
-        <div className="mt-4 border-t border-slate-800 pt-4">
+        <div className="mt-4 border-t border-[rgb(var(--op-gold-rgb)/0.18)] pt-4">
           {isSuspended ? (
             <AdminButton variant="secondary" onClick={() => void handleUnban()} disabled={banBusy}>
               {banBusy ? 'Unbanning…' : 'Unban player'}
@@ -113,7 +113,7 @@ export function PlayerDetailPage() {
           ) : (
             <div className="flex items-end gap-2">
               <div className="flex-1">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Ban reason</label>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/55">Ban reason</label>
                 <AdminTextarea value={banReason} onChange={(e) => setBanReason(e.target.value)} rows={2} className="w-full" placeholder="Reason shown in the moderation audit log…" />
               </div>
               <AdminButton variant="danger" onClick={() => void handleBan()} disabled={banBusy}>
@@ -125,20 +125,20 @@ export function PlayerDetailPage() {
       </AdminCard>
 
       <AdminCard>
-        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Decks ({decks.length})</p>
+        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/55">Decks ({decks.length})</p>
         {decks.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-white/40">
             No decks visible to admin. Casual / local-hotseat / VS-CPU decks never reach the server — only featured-profile decks and ranked-match
             snapshots are visible here.
           </p>
         ) : (
           <ul className="flex flex-col gap-2">
             {decks.map((deck) => (
-              <li key={`${deck.source}-${deck.deckId}`} className="flex items-center justify-between rounded border border-slate-800 px-3 py-2 text-sm">
-                <span className="text-slate-200">
-                  {deck.name} {deck.leaderName && <span className="text-slate-500">— {deck.leaderName}</span>}
+              <li key={`${deck.source}-${deck.deckId}`} className="flex items-center justify-between rounded border border-[rgb(var(--op-gold-rgb)/0.18)] px-3 py-2 text-sm">
+                <span className="text-white/90">
+                  {deck.name} {deck.leaderName && <span className="text-white/40">— {deck.leaderName}</span>}
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-white/40">
                   {deck.source === 'featured' ? 'Featured on profile' : 'Ranked match snapshot'} · {new Date(deck.capturedAt).toLocaleDateString()}
                 </span>
               </li>
@@ -148,12 +148,12 @@ export function PlayerDetailPage() {
       </AdminCard>
 
       <AdminCard>
-        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Match History ({matches.length})</p>
+        <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/55">Match History ({matches.length})</p>
         {matches.length === 0 ? (
-          <p className="text-sm text-slate-500">No matches recorded.</p>
+          <p className="text-sm text-white/40">No matches recorded.</p>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="text-slate-500">
+            <thead className="text-white/40">
               <tr>
                 <th className="py-1 pr-3 font-semibold">Type</th>
                 <th className="py-1 pr-3 font-semibold">Result</th>
@@ -163,13 +163,13 @@ export function PlayerDetailPage() {
             </thead>
             <tbody>
               {matches.map((match) => (
-                <tr key={match.matchId} className="border-t border-slate-800">
-                  <td className="py-1.5 pr-3 text-slate-300">{match.matchType}</td>
+                <tr key={match.matchId} className="border-t border-[rgb(var(--op-gold-rgb)/0.18)]">
+                  <td className="py-1.5 pr-3 text-white/75">{match.matchType}</td>
                   <td className="py-1.5 pr-3">
                     <AdminBadge tone={match.result === 'win' ? 'good' : match.result === 'loss' ? 'bad' : 'neutral'}>{match.result}</AdminBadge>
                   </td>
-                  <td className="py-1.5 pr-3 text-slate-300">{match.opponentName ?? '—'}</td>
-                  <td className="py-1.5 pr-3 text-slate-400">{match.endedAt ? new Date(match.endedAt).toLocaleString() : '—'}</td>
+                  <td className="py-1.5 pr-3 text-white/75">{match.opponentName ?? '—'}</td>
+                  <td className="py-1.5 pr-3 text-white/55">{match.endedAt ? new Date(match.endedAt).toLocaleString() : '—'}</td>
                 </tr>
               ))}
             </tbody>

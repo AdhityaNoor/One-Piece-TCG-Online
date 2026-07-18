@@ -18,13 +18,13 @@ export function CardManagementPage() {
     <div>
       <h1 className="mb-4 text-xl font-bold text-white">Card Management</h1>
 
-      <div className="mb-5 flex gap-2 border-b border-slate-800">
+      <div className="mb-5 flex gap-2 border-b border-[rgb(var(--op-gold-rgb)/0.18)]">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${tab === t.id ? 'border-sky-500 text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${tab === t.id ? 'border-[rgb(var(--op-gold-rgb)/0.7)] text-white' : 'border-transparent text-white/55 hover:text-white'}`}
           >
             {t.label}
           </button>

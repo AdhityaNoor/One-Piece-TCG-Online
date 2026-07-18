@@ -72,9 +72,9 @@ export function BugReportListPage() {
 
       {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
 
-      <div className="overflow-hidden rounded-lg border border-slate-800">
+      <div className="overflow-hidden rounded-lg border border-[rgb(var(--op-gold-rgb)/0.18)]">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-900 text-slate-400">
+          <thead className="bg-[rgb(var(--op-gold-rgb)/0.08)] text-white/55">
             <tr>
               <th className="px-3 py-2 font-semibold">Time</th>
               <th className="px-3 py-2 font-semibold">Reporter</th>
@@ -86,15 +86,15 @@ export function BugReportListPage() {
           </thead>
           <tbody>
             {reports.map((report) => (
-              <tr key={report.id} className="border-t border-slate-800 hover:bg-slate-900/60">
-                <td className="px-3 py-2 text-slate-400">{new Date(report.createdAt).toLocaleString()}</td>
-                <td className="px-3 py-2 text-slate-300">{report.reporterUsername ?? report.reporterUserId}</td>
+              <tr key={report.id} className="border-t border-[rgb(var(--op-gold-rgb)/0.18)] hover:bg-[rgb(var(--op-gold-rgb)/0.08)]">
+                <td className="px-3 py-2 text-white/55">{new Date(report.createdAt).toLocaleString()}</td>
+                <td className="px-3 py-2 text-white/75">{report.reporterUsername ?? report.reporterUserId}</td>
                 <td className="max-w-sm truncate px-3 py-2">
-                  <Link to={`/admin/bugs/${report.id}`} className="text-sky-400 hover:underline">
+                  <Link to={`/admin/bugs/${report.id}`} className="text-[rgb(var(--op-gold-rgb))] hover:underline">
                     {report.description}
                   </Link>
                 </td>
-                <td className="px-3 py-2 text-slate-400">{report.clientVersion ?? '—'}</td>
+                <td className="px-3 py-2 text-white/55">{report.clientVersion ?? '—'}</td>
                 <td className="px-3 py-2">
                   <AdminBadge tone={validityTone(report.validity)}>{report.validity}</AdminBadge>
                 </td>
@@ -105,7 +105,7 @@ export function BugReportListPage() {
             ))}
             {reports.length === 0 && !loading && (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-slate-500">
+                <td colSpan={6} className="px-3 py-6 text-center text-white/40">
                   No bug reports.
                 </td>
               </tr>
