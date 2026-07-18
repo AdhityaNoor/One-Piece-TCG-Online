@@ -3,11 +3,14 @@ import type { ContinuousEffectRecord, GameState } from '../../../state/game';
 import { computeCurrentCost, computeCurrentPower } from '../power';
 import { buildBaseRig, makeCharacterDef, putCharacterInPlay } from './testRig';
 
-/** Minimal "base power becomes N" record targeting a single instance. */
+/**
+ * Minimal continuous-effect helpers. `sourceInstanceId` must be an on-field
+ * card — permanent modifiers are suppressed when their source leaves the field.
+ */
 function setPower(appliesToInstanceId: string, value: number): ContinuousEffectRecord {
   return {
     id: `set-power-${appliesToInstanceId}-${value}`,
-    sourceInstanceId: 'src',
+    sourceInstanceId: appliesToInstanceId,
     ownerId: 'p1',
     duration: 'permanent',
     description: `base power becomes ${value}`,
@@ -18,7 +21,7 @@ function setPower(appliesToInstanceId: string, value: number): ContinuousEffectR
 function addPower(appliesToInstanceId: string, amount: number): ContinuousEffectRecord {
   return {
     id: `add-power-${appliesToInstanceId}-${amount}`,
-    sourceInstanceId: 'src',
+    sourceInstanceId: appliesToInstanceId,
     ownerId: 'p1',
     duration: 'permanent',
     description: `power ${amount >= 0 ? '+' : ''}${amount}`,
@@ -29,7 +32,7 @@ function addPower(appliesToInstanceId: string, amount: number): ContinuousEffect
 function setCost(appliesToInstanceId: string, value: number): ContinuousEffectRecord {
   return {
     id: `set-cost-${appliesToInstanceId}-${value}`,
-    sourceInstanceId: 'src',
+    sourceInstanceId: appliesToInstanceId,
     ownerId: 'p1',
     duration: 'permanent',
     description: `base cost becomes ${value}`,
@@ -40,7 +43,7 @@ function setCost(appliesToInstanceId: string, value: number): ContinuousEffectRe
 function addCost(appliesToInstanceId: string, amount: number): ContinuousEffectRecord {
   return {
     id: `add-cost-${appliesToInstanceId}-${amount}`,
-    sourceInstanceId: 'src',
+    sourceInstanceId: appliesToInstanceId,
     ownerId: 'p1',
     duration: 'permanent',
     description: `cost ${amount >= 0 ? '+' : ''}${amount}`,
@@ -82,7 +85,7 @@ describe('setBase power/cost ("becomes N")', () => {
     const { rig, instanceId } = putCharacterInPlay(buildBaseRig({ activePlayerId: 'p1' }), 'p1', def);
     const conditional: ContinuousEffectRecord = {
       id: 'set-opp-turn',
-      sourceInstanceId: 'src',
+      sourceInstanceId: instanceId,
       ownerId: 'p1',
       duration: 'permanent',
       description: 'base power becomes 7000 (opponent turn)',
