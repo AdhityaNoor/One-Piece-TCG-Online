@@ -18,7 +18,7 @@
  * exist and being shown, not in hiding it from a board that shows
  * everything else anyway).
  */
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import type { GameLogEntry } from '../../../engine/logs/logEntry';
 import { Modal } from '../Modal';
 import { Pill } from '../Pill';
@@ -52,21 +52,26 @@ function nameFor(playerId: string, playerNames?: PlayerNameMap): string {
   return playerNames?.[playerId] ?? playerId;
 }
 
-export function ActionLogPanel({ open, onClose, log, playerNames, viewerPlayerId = null }: ActionLogPanelProps) {
+// Both wrapped in React.memo — see docs/08-match-performance-plan.md Phase 1.
+// `log`/`playerNames` are direct reads off matchStore's state (already
+// reference-stable when unrelated re-renders happen — no MatchScreen-side
+// memoization needed for these props specifically), so this is a low-risk,
+// no-extra-wiring win.
+export const ActionLogPanel = memo(function ActionLogPanel({ open, onClose, log, playerNames, viewerPlayerId = null }: ActionLogPanelProps) {
   return (
     <Modal open={open} onClose={onClose} title="Action Log" maxWidthClassName="max-w-xl">
       <ActionLogContent log={log} playerNames={playerNames} viewerPlayerId={viewerPlayerId} />
     </Modal>
   );
-}
+});
 
-export function ActionLogDock({ log, playerNames, viewerPlayerId = null, className }: ActionLogDockProps) {
+export const ActionLogDock = memo(function ActionLogDock({ log, playerNames, viewerPlayerId = null, className }: ActionLogDockProps) {
   return (
     <aside className={['order-3 flex max-h-[28dvh] min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)] xl:order-none xl:max-h-none', className ?? ''].join(' ')}>
       <ActionLogDockContent log={log} playerNames={playerNames} viewerPlayerId={viewerPlayerId} />
     </aside>
   );
-}
+});
 
 function CompactLogBadge({ children, tone = 'neutral' }: { children: string; tone?: 'neutral' | 'brand' }) {
   return (

@@ -15,7 +15,7 @@
  * Tap-to-select is the ONLY interaction model implemented this milestone —
  * drag-and-drop is a documented known limitation (see MatchScreen.tsx).
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { validateAction, type GameAction } from '../../../engine/actions';
 import { createActionId, useMatchStore } from '../../store/matchStore';
 import type { CardView, PlayerBoardView } from '../../../board/projection';
@@ -31,6 +31,7 @@ import type { PendingChoice } from '../../../engine/events/pendingChoice';
 import { EFFECT_RUNTIME_MODE } from '../../config/effectRuntimeMode';
 import { evaluateCondition_V2 } from '../../../engine/effects_V2/conditions_V2';
 import type { EffectAbility_V2 } from '../../../cards/effectCompiler_V2/effectIr_V2';
+import { useStableDelegates } from '../../hooks/useStableDelegates';
 
 export type BoardZoneKind = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'attachedDon' | 'trash';
 
@@ -557,7 +558,15 @@ export function useBoardSelection(actingPlayerId: string | null) {
    * step (the live delta since the snapshot above) — together these render
    * as the "3000/5000" progress readout.
    */
-  const counterProgress: { selected: number; needed: number } | null = (() => {
+  // useMemo (not a plain IIFE) so this only produces a NEW object reference
+  // when `state`/`defs` actually change — ActionBar reads this through the
+  // `selection` object, which is itself memoized below; without this, a
+  // fresh object every render (even with identical selected/needed values)
+  // would defeat that outer memoization. counterBaselineRef.current is a
+  // ref, not a tracked dependency — it's mutated synchronously just above,
+  // earlier in this same render, so it already holds this render's correct
+  // value by the time this reads it (see the comment on that block).
+  const counterProgress: { selected: number; needed: number } | null = useMemo(() => {
     if (!state || !counterBaselineRef.current || state.currentBattle?.step !== 'counter') return null;
     const baseline = counterBaselineRef.current;
     const targetPowerNow = computeCurrentPower(defs, state, state.currentBattle.targetInstanceId);
@@ -566,7 +575,8 @@ export function useBoardSelection(actingPlayerId: string | null) {
       selected: Math.max(0, targetPowerNow - baseline.targetPowerAtStart),
       needed: Math.ceil(rawNeeded / 1000) * 1000,
     };
-  })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, defs]);
 
   function runDispatch(action: GameAction): void {
     const result = dispatch(action);
@@ -609,11 +619,20 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const isDonChoiceCandidate = (instanceId: string): boolean =>
     mode.kind === 'resolvingDonChoice' && mode.candidateInstanceIds.includes(instanceId);
 
-  /** `{selected, min, max, prompt}` for ActionBar's progress banner, or null outside this mode. */
-  const donChoiceProgress: { selected: number; min: number; max: number; prompt: string } | null =
-    mode.kind === 'resolvingDonChoice'
-      ? { selected: mode.selectedDonIds.length, min: mode.min, max: mode.max, prompt: mode.prompt }
-      : null;
+  /**
+   * `{selected, min, max, prompt}` for ActionBar's progress banner, or null
+   * outside this mode. useMemo'd (keyed on `mode` alone, which is already
+   * reference-stable across renders that don't call setMode) so this stays
+   * a stable reference across unrelated re-renders — see counterProgress's
+   * comment above for why that matters.
+   */
+  const donChoiceProgress: { selected: number; min: number; max: number; prompt: string } | null = useMemo(
+    () =>
+      mode.kind === 'resolvingDonChoice'
+        ? { selected: mode.selectedDonIds.length, min: mode.min, max: mode.max, prompt: mode.prompt }
+        : null,
+    [mode],
+  );
 
   function submitDonChoice(response: string[]): void {
     if (mode.kind !== 'resolvingDonChoice' || !actingPlayerId) return;
@@ -660,11 +679,18 @@ export function useBoardSelection(actingPlayerId: string | null) {
   const isFieldChoiceCandidate = (instanceId: string): boolean =>
     mode.kind === 'resolvingFieldChoice' && mode.candidateInstanceIds.includes(instanceId);
 
-  /** For MatchScreen's FieldChoiceBanner + ActionBar's confirm control, or null outside this mode. */
-  const fieldChoiceInfo: { choiceId: string; playerId: string; prompt: string; attribution: string | null; selected: number; min: number; max: number } | null =
-    mode.kind === 'resolvingFieldChoice'
-      ? { choiceId: mode.choiceId, playerId: mode.playerId, prompt: mode.prompt, attribution: mode.attribution, selected: mode.selectedIds.length, min: mode.min, max: mode.max }
-      : null;
+  /**
+   * For MatchScreen's FieldChoiceBanner + ActionBar's confirm control, or
+   * null outside this mode. useMemo'd for the same reference-stability
+   * reason as donChoiceProgress above.
+   */
+  const fieldChoiceInfo: { choiceId: string; playerId: string; prompt: string; attribution: string | null; selected: number; min: number; max: number } | null = useMemo(
+    () =>
+      mode.kind === 'resolvingFieldChoice'
+        ? { choiceId: mode.choiceId, playerId: mode.playerId, prompt: mode.prompt, attribution: mode.attribution, selected: mode.selectedIds.length, min: mode.min, max: mode.max }
+        : null,
+    [mode],
+  );
 
   /**
    * Dispatches as `mode.playerId` (the choice's OWN owner), not the closure's
@@ -1265,9 +1291,19 @@ export function useBoardSelection(actingPlayerId: string | null) {
     });
   }
 
-  return {
-    mode,
-    lastError,
+  // --- Stable function identities --------------------------------------
+  // Everything above is a plain closure recreated every render — this hook
+  // has exactly one call site (MatchScreen), so there was never a
+  // correctness reason to memoize per-function, only an identity reason:
+  // every function below flows straight into PlayerBoardPanel/DockHand/
+  // ActionBar as a prop (some directly, some called during THEIR render —
+  // e.g. hasActivateMain, canDeclareAttackWith, canGiveDonOnCard), and
+  // without stable identity, React.memo on those components does nothing —
+  // a new function reference every render always fails its shallow prop
+  // comparison. See docs/08-match-performance-plan.md Phase 1 and
+  // useStableDelegates.ts's doc comment for why this uses the "latest ref"
+  // pattern instead of a hand-written useCallback per function.
+  const stableFns = useStableDelegates({
     cancel,
     beginDeclareAttack,
     beginActivateBlocker,
@@ -1279,12 +1315,9 @@ export function useBoardSelection(actingPlayerId: string | null) {
     hasCounter,
     isCounterCardApplicable,
     counterEventDonInfo,
-    counterProgress,
     isDonChoiceCandidate,
-    donChoiceProgress,
     confirmDonChoice,
     isFieldChoiceCandidate,
-    fieldChoiceInfo,
     toggleFieldChoiceCard,
     confirmFieldChoice,
     canDeclareAttackWith,
@@ -1304,5 +1337,25 @@ export function useBoardSelection(actingPlayerId: string | null) {
     concede,
     handleCardTap,
     handleAttachedDonLabelTap,
-  };
+  });
+
+  // The whole returned object is memoized too: `stableFns` never changes
+  // identity (by construction) and `mode`/`lastError`/counterProgress/
+  // donChoiceProgress/fieldChoiceInfo are each already independently
+  // reference-stable when unchanged (useState / useMemo above) — so this
+  // object's own reference now only changes when something in it actually,
+  // meaningfully changed, which is exactly what lets `React.memo(ActionBar)`
+  // (whose single `selection` prop is this whole object) skip re-rendering
+  // on unrelated MatchScreen re-renders.
+  return useMemo(
+    () => ({
+      mode,
+      lastError,
+      counterProgress,
+      donChoiceProgress,
+      fieldChoiceInfo,
+      ...stableFns,
+    }),
+    [mode, lastError, counterProgress, donChoiceProgress, fieldChoiceInfo, stableFns],
+  );
 }

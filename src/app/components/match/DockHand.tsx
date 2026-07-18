@@ -21,7 +21,7 @@
  * Touch: TODO — mouse-driven only for now.
  */
 
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import type { CardView } from '../../../board/projection';
 import { useCardAnimationStore } from '../../store/cardAnimationStore';
 import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
@@ -277,7 +277,14 @@ function DockHandCard({
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
-export function DockHand({
+/**
+ * Wrapped in React.memo — see docs/08-match-performance-plan.md Phase 1.
+ * `selectable`/`canPlay`/`dimmed`/`cardBadge`/`onCardTap` must be
+ * reference-stable at the call site (MatchScreen builds these per-side via
+ * a single useMemo bundle) for this to actually skip re-rendering on
+ * unrelated re-renders — this component's own body is unchanged.
+ */
+export const DockHand = memo(function DockHand({
   playerId,
   cards,
   isOwn,
@@ -542,4 +549,4 @@ export function DockHand({
       </div>
     </>
   );
-}
+});

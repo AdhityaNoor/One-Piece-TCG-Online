@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import type { GameState } from '../../../engine/state/game';
 import type { CardView, PlayerBoardView } from '../../../board/projection';
 import { countAvailableDon } from '../../../board/projection';
@@ -84,7 +84,14 @@ function WarningCardRow({ card, tone = 'gold' }: { card: CardView; tone?: 'gold'
   );
 }
 
-export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }: ActionBarProps) {
+/**
+ * Wrapped in React.memo — see docs/08-match-performance-plan.md Phase 1.
+ * `selection` is the single biggest prop here (the whole useBoardSelection()
+ * return value); it's now itself memoized in useBoardSelection.ts, so this
+ * skips re-rendering whenever MatchScreen re-renders for reasons unrelated
+ * to phase/turn/battle/board/selection state.
+ */
+export const ActionBar = memo(function ActionBar({ phase, turnNumber, battle, actingBoard, selection }: ActionBarProps) {
   const {
     mode,
     lastError,
@@ -400,4 +407,4 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
       </Modal>
     </div>
   );
-}
+});

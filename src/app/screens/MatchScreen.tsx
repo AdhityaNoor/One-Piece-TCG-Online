@@ -20,7 +20,7 @@
  * scannable text list is more useful than card art. Card zoom/preview
  * (small-screen requirement) reuses the existing CardDetailModal as-is.
  */
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { CardDefinition } from '../../engine/state/card';
 import type { GameState } from '../../engine/state/game';
 import type { GameLogEntry } from '../../engine/logs/logEntry';
@@ -37,7 +37,7 @@ import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useOnlineStore } from '../store/onlineStore';
 import { usePhaseAnnounceStore } from '../store/phaseAnnounceStore';
-import type { CardView } from '../../board/projection';
+import type { CardView, PlayerBoardView } from '../../board/projection';
 import { logEffectText, logSourceCardLabel } from '../lib/logDisplay';
 import { buildBugReportCardOptions } from '../lib/bugReportCardOptions';
 import { EFFECT_RUNTIME_LABEL, EFFECT_RUNTIME_MODE } from '../config/effectRuntimeMode';
@@ -256,6 +256,80 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     }
   }, [onlineMode]);
 
+  // --- Phase 1 performance: memoized/stabilized derived values ----------
+  // Everything in this block MUST be computed here (before the early
+  // returns below) — these are hooks (useMemo/useCallback), and Rules of
+  // Hooks forbids calling a hook after a conditional return. Each is
+  // null-safe since `matchState` may not exist yet on this render. This is
+  // what lets React.memo on PlayerBoardPanel/DockHand/ActionBar actually
+  // skip re-rendering when something UNRELATED to the board changes (a
+  // modal open/close, a hover, a chat message) — see
+  // docs/08-match-performance-plan.md Phase 1 for the full writeup of why
+  // this was necessary (React.memo alone does nothing against a fresh
+  // closure/object every render).
+  const actingPlayerIdSafe = matchState ? getActingPlayerId(matchState) : null;
+  const bottomPlayerIdSafe = matchState ? (localPlayerId ?? matchState.activePlayerId) : null;
+  const topPlayerIdSafe = matchState && bottomPlayerIdSafe ? getOpponentId(matchState, bottomPlayerIdSafe) : null;
+
+  const bottomPlayerBoard = useMemo(() => {
+    if (!matchState || !bottomPlayerIdSafe) return null;
+    const v2Projection = EFFECT_RUNTIME_MODE === 'v2' ? { sidecars: v2EffectSidecars } : undefined;
+    return projectPlayerBoard(matchState, defs, images, bottomPlayerIdSafe, v2Projection);
+  }, [matchState, defs, images, bottomPlayerIdSafe, v2EffectSidecars]);
+
+  const topPlayerBoard = useMemo(() => {
+    if (!matchState || !topPlayerIdSafe) return null;
+    const v2Projection = EFFECT_RUNTIME_MODE === 'v2' ? { sidecars: v2EffectSidecars } : undefined;
+    return projectPlayerBoard(matchState, defs, images, topPlayerIdSafe, v2Projection);
+  }, [matchState, defs, images, topPlayerIdSafe, v2EffectSidecars]);
+
+  const battlePowerInstanceIds = useMemo(() => {
+    if (!matchState?.currentBattle) return new Set<string>();
+    return new Set([matchState.currentBattle.attackerInstanceId, matchState.currentBattle.targetInstanceId]);
+  }, [matchState?.currentBattle]);
+
+  // Zero real dependencies beyond React's own guaranteed-stable state
+  // setters — hoisted + useCallback purely so their IDENTITY is stable for
+  // the PlayerBoardPanel React.memo boundary below, not because their
+  // behavior needed to change.
+  const openZoom = useCallback((card: CardView) => setZoomDefinitionId(card.cardDefinitionId), []);
+  const handleAttackTargetHover = useCallback((card: CardView | null) => setHoveredAttackTargetId(card?.instanceId ?? null), []);
+
+  const selectedHandIdsMemo = useMemo(() => selectedHandIds(selection.mode), [selection.mode]);
+
+  // One bundle per side (rather than 4 separate useCallback hooks per side)
+  // — DockHand calls selectable/canPlay/dimmed/cardBadge per hand card
+  // during ITS OWN render, so these need to be stable, but they're only
+  // ever consumed together, so bundling them into one memoized object is
+  // simpler than 8 individual useCallback calls. Mirrors the exact
+  // isPinnedPerspective-gating asymmetry the original inline closures had
+  // (top seat is never "ours" under a pinned/Casual perspective; bottom
+  // always is) — see the pre-Phase-1 version of this file for the
+  // original per-JSX-site closures this replaces.
+  const bottomHandCallbacks = useMemo(() => {
+    if (!bottomPlayerIdSafe) return null;
+    const isActingSide = actingPlayerIdSafe === bottomPlayerIdSafe;
+    return {
+      onCardTap: (card: CardView) => selection.handleCardTap(bottomPlayerIdSafe, 'hand', card),
+      selectable: (card: CardView) => handSelectable(selection.mode, isActingSide, card, selection.isCounterCardApplicable),
+      canPlay: (card: CardView) => isActingSide && selection.canPlayHandCard(card),
+      dimmed: (card: CardView) => isActingSide && selection.mode.kind === 'selectCounterCard' && !selection.isCounterCardApplicable(card),
+      cardBadge: (card: CardView) => (actingPlayerIdSafe !== bottomPlayerIdSafe ? null : counterEventBadge(selection.mode, selection.counterEventDonInfo, card)),
+    };
+  }, [bottomPlayerIdSafe, actingPlayerIdSafe, selection.mode, selection.isCounterCardApplicable, selection.canPlayHandCard, selection.counterEventDonInfo, selection.handleCardTap]);
+
+  const topHandCallbacks = useMemo(() => {
+    if (!topPlayerIdSafe) return null;
+    const isActingSide = actingPlayerIdSafe === topPlayerIdSafe;
+    return {
+      onCardTap: (card: CardView) => selection.handleCardTap(topPlayerIdSafe, 'hand', card),
+      selectable: (card: CardView) => (isPinnedPerspective ? false : handSelectable(selection.mode, isActingSide, card, selection.isCounterCardApplicable)),
+      canPlay: (card: CardView) => (isPinnedPerspective ? false : isActingSide && selection.canPlayHandCard(card)),
+      dimmed: (card: CardView) => !isPinnedPerspective && isActingSide && selection.mode.kind === 'selectCounterCard' && !selection.isCounterCardApplicable(card),
+      cardBadge: (card: CardView) => (isPinnedPerspective || actingPlayerIdSafe !== topPlayerIdSafe ? null : counterEventBadge(selection.mode, selection.counterEventDonInfo, card)),
+    };
+  }, [topPlayerIdSafe, actingPlayerIdSafe, isPinnedPerspective, selection.mode, selection.isCounterCardApplicable, selection.canPlayHandCard, selection.counterEventDonInfo, selection.handleCardTap]);
+
   if (!isMatchScreen) {
     return null;
   }
@@ -265,7 +339,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
 
   const zoomDefinition: CardDefinition | null = zoomDefinitionId ? defs[zoomDefinitionId] ?? null : null;
   const zoomImageUrl = zoomDefinitionId ? images[zoomDefinitionId] ?? null : null;
-  const openZoom = (card: CardView) => setZoomDefinitionId(card.cardDefinitionId);
+  // openZoom is now defined above (hoisted + useCallback, Phase 1 performance) — not redefined here.
 
   function handleQuit(): void {
     if (onlineMode) leaveOnlineRoom();
@@ -293,6 +367,14 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
         {current.screen === 'online-match' ? <OnlineSyncLoading onCancel={handleQuit} /> : <p className="p-6 text-sm text-white/50">Starting match...</p>}
       </MatchGameShell>
     );
+  }
+
+  // Narrows the *Safe hook-computed values above from nullable back to
+  // non-null now that matchState is confirmed — they're all derived purely
+  // from matchState, so this is unreachable in practice, but keeps
+  // TypeScript's narrowing honest without an unsafe `!` assertion.
+  if (!bottomPlayerIdSafe || !topPlayerIdSafe || !actingPlayerIdSafe || !bottomPlayerBoard || !topPlayerBoard || !bottomHandCallbacks || !topHandCallbacks) {
+    return null;
   }
 
   // PhaseIndicator (both boards) shows the phase currently being announced by
@@ -355,16 +437,16 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // regardless of whose turn/authority it is. This is the online-client
   // perspective and still preserves the invariant above (position is a fixed
   // seat, never getActingPlayerId()).
-  const bottomPlayerId = localPlayerId ?? matchState.activePlayerId;
-  const topPlayerId = getOpponentId(matchState, bottomPlayerId);
-  const v2Projection = EFFECT_RUNTIME_MODE === 'v2' ? { sidecars: v2EffectSidecars } : undefined;
-  const bottomPlayerBoard = projectPlayerBoard(matchState, defs, images, bottomPlayerId, v2Projection);
-  const topPlayerBoard = projectPlayerBoard(matchState, defs, images, topPlayerId, v2Projection);
+  // bottomPlayerId/topPlayerId/bottomPlayerBoard/topPlayerBoard are computed
+  // above (hoisted, memoized — Phase 1 performance) as the *Safe variants;
+  // aliased here to the names the rest of this function already uses.
+  const bottomPlayerId = bottomPlayerIdSafe;
+  const topPlayerId = topPlayerIdSafe;
 
   // Action AUTHORITY (who may currently act, and whose hand/board ActionBar
   // should read for eligibility checks) still tracks getActingPlayerId() —
   // only the panels' on-screen position was the bug, not this.
-  const actingPlayerId = getActingPlayerId(matchState);
+  const actingPlayerId = actingPlayerIdSafe;
   const actingBoard = actingPlayerId === bottomPlayerId ? bottomPlayerBoard : topPlayerBoard;
   const isCpuTurn = cpuPlayerIds.includes(actingPlayerId);
   const canUseLocalActions = !isCpuTurn && (!isPinnedPerspective || actingPlayerId === localPlayerId);
@@ -404,9 +486,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           committed: false,
         }
       : null;
-  const battlePowerInstanceIds = matchState.currentBattle
-    ? new Set([matchState.currentBattle.attackerInstanceId, matchState.currentBattle.targetInstanceId])
-    : new Set<string>();
+  // battlePowerInstanceIds is computed above (hoisted, memoized — Phase 1 performance).
   const mobileBattleLineLabel = `${nameFor(matchState.activePlayerId)}:${matchState.currentPhase}`;
   const actionContent = matchState.gameOver ? (
     <p className="text-xs text-white/50">Match complete.</p>
@@ -515,19 +595,19 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           actingPlayerId={actingPlayerId}
           isPinnedPerspective={isPinnedPerspective}
           mode={selection.mode}
-          selectedHandIds={selectedHandIds(selection.mode)}
+          selectedHandIds={selectedHandIdsMemo}
           battlePowerInstanceIds={battlePowerInstanceIds}
-          onMatCardTap={(playerId, zone, card) => selection.handleCardTap(playerId, zone, card)}
+          onMatCardTap={selection.handleCardTap}
           onMatCardAttack={selection.beginAttackWithCard}
           onCardZoom={openZoom}
-          onAttachedDonLabelTap={(playerId, card) => selection.handleAttachedDonLabelTap(playerId, card)}
+          onAttachedDonLabelTap={selection.handleAttachedDonLabelTap}
           canAttackCard={selection.canDeclareAttackWith}
           canActivateCard={selection.hasActivateMain}
           canOnOppAttackCard={selection.hasOnOpponentsAttack}
           canPlayHandCard={selection.canPlayHandCard}
           onPlayHandCard={selection.playHandCard}
-          canGiveDonOnCard={(board, card) => selection.canGiveDonOnCard(board, card)}
-          onGiveDon={(board, card) => selection.giveDonToCard(board, card)}
+          canGiveDonOnCard={selection.canGiveDonOnCard}
+          onGiveDon={selection.giveDonToCard}
           onReturnGivenDon={selection.returnGivenDonFromCard}
           allowReturnGivenDon={!isCasual}
           handSelectable={(playerId, card) => handSelectable(selection.mode, actingPlayerId === playerId, card, selection.isCounterCardApplicable)}
@@ -647,14 +727,14 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                   canOnOppAttackCard={selection.hasOnOpponentsAttack}
                   canAttackCard={selection.canDeclareAttackWith}
                   battlePowerInstanceIds={battlePowerInstanceIds}
-                  onMatCardTap={(zone, card) => selection.handleCardTap(topPlayerId, zone, card)}
+                  onMatCardTap={selection.handleCardTap}
                   onMatCardAttack={selection.beginAttackWithCard}
-                  onAttachedDonLabelTap={(card) => selection.handleAttachedDonLabelTap(topPlayerId, card)}
+                  onAttachedDonLabelTap={selection.handleAttachedDonLabelTap}
                   onCardZoom={openZoom}
-                  onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
+                  onAttackTargetHover={handleAttackTargetHover}
                   boardFocused={boardHovered}
-                  canGiveDonOnCard={(card) => selection.canGiveDonOnCard(topPlayerBoard, card)}
-                  onGiveDon={(card) => selection.giveDonToCard(topPlayerBoard, card)}
+                  canGiveDonOnCard={selection.canGiveDonOnCard}
+                  onGiveDon={selection.giveDonToCard}
                   onReturnGivenDon={selection.returnGivenDonFromCard}
                   allowReturnGivenDon={!isCasual}
                 />
@@ -675,14 +755,14 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                   canOnOppAttackCard={selection.hasOnOpponentsAttack}
                   canAttackCard={selection.canDeclareAttackWith}
                   battlePowerInstanceIds={battlePowerInstanceIds}
-                  onMatCardTap={(zone, card) => selection.handleCardTap(bottomPlayerId, zone, card)}
+                  onMatCardTap={selection.handleCardTap}
                   onMatCardAttack={selection.beginAttackWithCard}
-                  onAttachedDonLabelTap={(card) => selection.handleAttachedDonLabelTap(bottomPlayerId, card)}
+                  onAttachedDonLabelTap={selection.handleAttachedDonLabelTap}
                   onCardZoom={openZoom}
-                  onAttackTargetHover={(card) => setHoveredAttackTargetId(card?.instanceId ?? null)}
+                  onAttackTargetHover={handleAttackTargetHover}
                   boardFocused={boardHovered}
-                  canGiveDonOnCard={(card) => selection.canGiveDonOnCard(bottomPlayerBoard, card)}
-                  onGiveDon={(card) => selection.giveDonToCard(bottomPlayerBoard, card)}
+                  canGiveDonOnCard={selection.canGiveDonOnCard}
+                  onGiveDon={selection.giveDonToCard}
                   onReturnGivenDon={selection.returnGivenDonFromCard}
                   allowReturnGivenDon={!isCasual}
                 />
@@ -729,12 +809,12 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               isOwn={isPinnedPerspective ? false : actingPlayerId === topPlayerId}
               allowHoverReveal={!isPinnedPerspective}
               position="top"
-              selectedIds={selectedHandIds(selection.mode)}
-              selectable={(card) => (isPinnedPerspective ? false : handSelectable(selection.mode, actingPlayerId === topPlayerId, card, selection.isCounterCardApplicable))}
-              canPlay={(card) => (isPinnedPerspective ? false : actingPlayerId === topPlayerId && selection.canPlayHandCard(card))}
-              dimmed={(card) => !isPinnedPerspective && actingPlayerId === topPlayerId && selection.mode.kind === 'selectCounterCard' && !selection.isCounterCardApplicable(card)}
-              cardBadge={(card) => (isPinnedPerspective || actingPlayerId !== topPlayerId ? null : counterEventBadge(selection.mode, selection.counterEventDonInfo, card))}
-              onCardTap={(card) => selection.handleCardTap(topPlayerId, 'hand', card)}
+              selectedIds={selectedHandIdsMemo}
+              selectable={topHandCallbacks.selectable}
+              canPlay={topHandCallbacks.canPlay}
+              dimmed={topHandCallbacks.dimmed}
+              cardBadge={topHandCallbacks.cardBadge}
+              onCardTap={topHandCallbacks.onCardTap}
               onPlayCard={selection.playHandCard}
               onCardZoom={openZoom}
               boardFocused={handsHidden}
@@ -746,12 +826,12 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               isOwn={isPinnedPerspective ? true : actingPlayerId === bottomPlayerId}
               allowHoverReveal={!isPinnedPerspective}
               position="bottom"
-              selectedIds={selectedHandIds(selection.mode)}
-              selectable={(card) => handSelectable(selection.mode, actingPlayerId === bottomPlayerId, card, selection.isCounterCardApplicable)}
-              canPlay={(card) => actingPlayerId === bottomPlayerId && selection.canPlayHandCard(card)}
-              dimmed={(card) => actingPlayerId === bottomPlayerId && selection.mode.kind === 'selectCounterCard' && !selection.isCounterCardApplicable(card)}
-              cardBadge={(card) => (actingPlayerId !== bottomPlayerId ? null : counterEventBadge(selection.mode, selection.counterEventDonInfo, card))}
-              onCardTap={(card) => selection.handleCardTap(bottomPlayerId, 'hand', card)}
+              selectedIds={selectedHandIdsMemo}
+              selectable={bottomHandCallbacks.selectable}
+              canPlay={bottomHandCallbacks.canPlay}
+              dimmed={bottomHandCallbacks.dimmed}
+              cardBadge={bottomHandCallbacks.cardBadge}
+              onCardTap={bottomHandCallbacks.onCardTap}
               onPlayCard={selection.playHandCard}
               onCardZoom={openZoom}
               boardFocused={handsHidden}
@@ -2458,9 +2538,9 @@ function PlayerSideRow({
   isOpponent: boolean;
   reverseRows: boolean;
   mode: MatchSelectionMode;
-  onMatCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'attachedDon', card: CardView) => void;
+  onMatCardTap: (ownerPlayerId: string, zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'attachedDon', card: CardView) => void;
   onMatCardAttack: (card: CardView) => void;
-  onAttachedDonLabelTap: (card: CardView) => void;
+  onAttachedDonLabelTap: (ownerPlayerId: string, card: CardView) => void;
   onCardZoom: (card: CardView) => void;
   onAttackTargetHover: (card: CardView | null) => void;
   canActivateCard: (card: CardView) => boolean;
@@ -2468,8 +2548,8 @@ function PlayerSideRow({
   canAttackCard: (card: CardView) => boolean;
   battlePowerInstanceIds: Set<string>;
   boardFocused: boolean;
-  canGiveDonOnCard: (card: CardView) => boolean;
-  onGiveDon: (card: CardView) => void;
+  canGiveDonOnCard: (board: PlayerBoardView, card: CardView) => boolean;
+  onGiveDon: (board: PlayerBoardView, card: CardView) => void;
   onReturnGivenDon: (card: CardView) => void;
   allowReturnGivenDon: boolean;
 }) {

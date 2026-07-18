@@ -42,7 +42,7 @@
  * piece of local-only UI state this component owns — opening/closing it
  * never touches game state, exactly like onCardZoom.
  */
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { AttachedDonHoverStack } from './AttachedDonHoverStack';
 import { BoardCardTile } from './BoardCardTile';
@@ -76,13 +76,23 @@ export interface PlayerBoardPanelProps {
   battlePowerInstanceIds?: Set<string>;
   /** Passed down to PileStack — hides ghost layers while board is active. */
   boardFocused?: boolean;
-  onCardTap: (zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'attachedDon', card: CardView) => void;
+  /**
+   * ownerPlayerId is supplied by THIS component (from its own `board.playerId`
+   * prop) rather than pre-bound by the caller into a wrapper closure — see
+   * docs/08-match-performance-plan.md Phase 1. Passing the raw, stable
+   * useBoardSelection function straight through (e.g. `onCardTap={selection.handleCardTap}`)
+   * lets MatchScreen avoid creating a new per-render closure just to bind
+   * "which side this panel is" ahead of time.
+   */
+  onCardTap: (ownerPlayerId: string, zone: 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea' | 'attachedDon', card: CardView) => void;
   onCardAttack?: (card: CardView) => void;
-  onAttachedDonLabelTap?: (card: CardView) => void;
+  /** See onCardTap's doc comment — same ownerPlayerId-supplied-internally pattern. Currently unused by this component's own render (kept for the mobile board's equivalent flow); still declared here so its identity is stabilizable at the call site. */
+  onAttachedDonLabelTap?: (ownerPlayerId: string, card: CardView) => void;
   onCardZoom: (card: CardView) => void;
   onAttackTargetHover?: (card: CardView | null) => void;
-  canGiveDonOnCard?: (card: CardView) => boolean;
-  onGiveDon?: (card: CardView) => void;
+  /** See onCardTap's doc comment — `board` is supplied internally (this component already has it as a prop) instead of being pre-bound by the caller. */
+  canGiveDonOnCard?: (board: PlayerBoardView, card: CardView) => boolean;
+  onGiveDon?: (board: PlayerBoardView, card: CardView) => void;
   onReturnGivenDon?: (card: CardView) => void;
   /** Hotseat-only undo for mis-clicks; disabled in Casual matches. */
   allowReturnGivenDon?: boolean;
@@ -376,7 +386,16 @@ function MatCell({
   );
 }
 
-export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, canOnOppAttackCard, canAttackCard, battlePowerInstanceIds, boardFocused = false, onCardTap, onCardAttack, onAttachedDonLabelTap, onCardZoom, onAttackTargetHover, canGiveDonOnCard, onGiveDon, onReturnGivenDon, allowReturnGivenDon = true }: PlayerBoardPanelProps) {
+/**
+ * Wrapped in React.memo (default shallow prop comparison) — this is the
+ * primary re-render firewall for the board: as of Phase 1, every prop
+ * passed in from MatchScreen/PlayerSideRow is reference-stable when
+ * nothing relevant to THIS side changed (see docs/08-match-performance-plan.md),
+ * so a re-render triggered by unrelated MatchScreen state (mobile panel
+ * toggle, chat, hover elsewhere) no longer re-renders this panel — or
+ * anything inside it (BoardCardTile/DonStack/PileStack per card) — at all.
+ */
+export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, canActivateCard, canOnOppAttackCard, canAttackCard, battlePowerInstanceIds, boardFocused = false, onCardTap, onCardAttack, onAttachedDonLabelTap, onCardZoom, onAttackTargetHover, canGiveDonOnCard, onGiveDon, onReturnGivenDon, allowReturnGivenDon = true }: PlayerBoardPanelProps) {
   const attackerSelected = selectedAttackerIds(mode);
   // Mark/select own in-play cards that can activate a [Activate: Main] effect.
   const canActivate = (card: CardView): boolean => isOwn && !!canActivateCard?.(card);
@@ -384,11 +403,11 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
   const canAttack = (card: CardView): boolean => isOwn && !!canAttackCard?.(card);
   const availableActiveDon = countAvailableDon(board);
   const giveDonControlsFor = (card: CardView) =>
-    canGiveDonOnCard?.(card)
+    canGiveDonOnCard?.(board, card)
       ? {
           availableActiveDon,
           allowReturnGivenDon,
-          onGive: () => onGiveDon?.(card),
+          onGive: () => onGiveDon?.(board, card),
           onReturn: () => onReturnGivenDon?.(card),
         }
       : undefined;
@@ -504,10 +523,10 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
         showBattlePower={battlePowerInstanceIds?.has(leaderCard.instanceId)}
         attachedDonSelectable={attachedDonSelectable(leaderCard)}
         attachedDonSelectedCount={selectedAttachedDonCount(leaderCard)}
-        onActivate={mode.kind === 'idle' && canActivate(leaderCard) ? () => onCardTap('leaderArea', leaderCard) : undefined}
+        onActivate={mode.kind === 'idle' && canActivate(leaderCard) ? () => onCardTap(board.playerId, 'leaderArea', leaderCard) : undefined}
         onAttack={mode.kind === 'idle' && canAttack(leaderCard) ? () => onCardAttack?.(leaderCard) : undefined}
         onAttachedDonSelect={attachedDonSelectable(leaderCard) ? () => toggleAttachedDonStack(leaderCard) : undefined}
-        onSelect={() => onCardTap('leaderArea', leaderCard)}
+        onSelect={() => onCardTap(board.playerId, 'leaderArea', leaderCard)}
         onZoom={() => onCardZoom(leaderCard)}
         onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(leaderCard) : undefined}
         onHoverEnd={mode.kind === 'selectAttackTarget' && isOpponent ? () => onAttackTargetHover?.(null) : undefined}
@@ -526,8 +545,8 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
       dimmed={fieldChoiceDimmed(mode, stageCard)}
       activatable={mode.kind === 'idle' && canActivate(stageCard)}
       showBattlePower={battlePowerInstanceIds?.has(stageCard.instanceId)}
-      onActivate={mode.kind === 'idle' && canActivate(stageCard) ? () => onCardTap('stageArea', stageCard) : undefined}
-      onSelect={() => onCardTap('stageArea', stageCard)}
+      onActivate={mode.kind === 'idle' && canActivate(stageCard) ? () => onCardTap(board.playerId, 'stageArea', stageCard) : undefined}
+      onSelect={() => onCardTap(board.playerId, 'stageArea', stageCard)}
       onZoom={() => onCardZoom(stageCard)}
     />
   ) : (
@@ -582,10 +601,10 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
               showBattlePower={battlePowerInstanceIds?.has(card.instanceId)}
               attachedDonSelectable={attachedDonSelectable(card)}
               attachedDonSelectedCount={selectedAttachedDonCount(card)}
-              onActivate={mode.kind === 'idle' && canActivate(card) ? () => onCardTap('characterArea', card) : undefined}
+              onActivate={mode.kind === 'idle' && canActivate(card) ? () => onCardTap(board.playerId, 'characterArea', card) : undefined}
               onAttack={mode.kind === 'idle' && canAttack(card) ? () => onCardAttack?.(card) : undefined}
               onAttachedDonSelect={attachedDonSelectable(card) ? () => toggleAttachedDonStack(card) : undefined}
-              onSelect={() => onCardTap('characterArea', card)}
+              onSelect={() => onCardTap(board.playerId, 'characterArea', card)}
               onZoom={() => onCardZoom(card)}
               onHoverStart={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(card) : undefined}
               onHoverEnd={mode.kind === 'selectAttackTarget' && isOpponent && card.orientation === 'rested' ? () => onAttackTargetHover?.(null) : undefined}
@@ -634,7 +653,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
         direction="horizontal"
         selectable={(card) => donSelectable(mode, isOwn, card)}
         selectedIds={selectedDon}
-        onDonSelect={(card) => onCardTap('costArea', card)}
+        onDonSelect={(card) => onCardTap(board.playerId, 'costArea', card)}
         reverseRows={reverseRows}
       />
     </MatCell>
@@ -648,7 +667,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
         direction="horizontal"
         selectable={(card) => donSelectable(mode, isOwn, card)}
         selectedIds={selectedDon}
-        onDonSelect={(card) => onCardTap('costArea', card)}
+        onDonSelect={(card) => onCardTap(board.playerId, 'costArea', card)}
         reverseRows={reverseRows}
       />
     </MatCell>
@@ -779,10 +798,10 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
         cards={(donStackCard?.donAttachedIds ?? []).map((id) => donCardById.get(id)).filter((don): don is CardView => !!don)}
         selectable={(don) => donSelectable(mode, isOwn, don)}
         selectedIds={selectedDon}
-        onSelect={(don) => onCardTap('attachedDon', don)}
+        onSelect={(don) => onCardTap(board.playerId, 'attachedDon', don)}
         onMouseEnter={clearDonStackCloseTimer}
         onMouseLeave={hideAttachedDonStack}
       />
     </div>
   );
-}
+});
