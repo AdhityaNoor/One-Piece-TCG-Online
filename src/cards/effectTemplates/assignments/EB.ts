@@ -1358,7 +1358,7 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB04-060 — PARTIAL: Life top/bottom → hand + Egghead hand → Life face-up Main deferred; mapped Trigger + opp −1000 on simplified Main.
+  // EB04-060 — [Main] Life top/bottom → hand: Egghead Char → Life top face-up; then opp Char −1000. [Trigger] draw 2 trash 1.
   {
     cardNumber: 'EB04-060',
     templates: [
@@ -1367,8 +1367,10 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'activateMain',
           functions: [
-            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true },
-            { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true },
+            { fn: 'captureCount', from: '__lastMovedIds', into: 'lifePaid' },
+            { fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { category: 'character', typeIncludes: 'Egghead' } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, ifPrevious: 'previousMovedAny' },
+            { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true, ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['lifePaid'], atLeast: 1 }] },
           ],
         },
       },

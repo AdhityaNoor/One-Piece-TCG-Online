@@ -164,17 +164,22 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   ko: {
     id: 'ko',
-    summary: 'K.O. targets (fires [On K.O.]). Use filters on the target for cost/power/type limits; maxCombinedPower caps total current power across a multi-select.',
+    summary: 'K.O. targets (fires [On K.O.]). Use filters on the target for cost/power/type limits; maxCombinedPower caps total current power across a multi-select. TargetFilter.costEqualsDonAttached matches current cost === DON!! given.',
     params: [
       { name: 'target', type: 'TargetSpec', required: true },
       { name: 'optional', type: 'boolean', required: false, note: '"up to"' },
       { name: 'maxTargets', type: 'number', required: false },
       { name: 'maxCombinedPower', type: 'number', required: false },
     ],
-    covers: ['K.O. up to {N} of your opponent\'s Characters with a cost of {C} or less', 'K.O. up to {N} ... with a total power of {P} or less', 'K.O. up to 1 ... with a cost equal to or less than your number of Life cards'],
+    covers: [
+      'K.O. up to {N} of your opponent\'s Characters with a cost of {C} or less',
+      'K.O. up to {N} ... with a total power of {P} or less',
+      'K.O. up to 1 ... with a cost equal to or less than your number of Life cards',
+      'K.O. a rested Character with a cost equal to the number of DON!! cards given to it',
+    ],
     examples: [
       { cardNumber: 'OP05-007', snippet: "{ fn: 'ko', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 2, maxCombinedPower: 4000 }" },
-      { cardNumber: 'OP08-102', snippet: "{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromSelfLife: true } }, optional: true }" },
+      { cardNumber: 'OP15-031', snippet: "{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, costEqualsDonAttached: true } }, optional: true }" },
     ],
   },
   koAllCharacters: {
@@ -1580,6 +1585,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   leaderRested: { id: 'leaderRested', summary: 'If your Leader is rested.', params: [], covers: ['If your Leader is rested'], examples: [{ cardNumber: 'EB01-004', snippet: "{ kind: 'leaderRested' }" }] },
   selfCharacterCount: { id: 'selfCharacterCount', summary: 'You have N or more/less Characters.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have {N} or more Characters'], examples: [{ cardNumber: 'OP07-033', snippet: "{ kind: 'selfCharacterCount', atLeast: 3 }" }] },
   selfRestedCharacterCount: { id: 'selfRestedCharacterCount', summary: 'You have N or more/less rested Characters.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have {N} or more rested Characters'], examples: [{ cardNumber: 'OP09-036', snippet: "{ kind: 'selfRestedCharacterCount', atLeast: 2 }" }] },
+  selfFewerCharactersThanOpponent: { id: 'selfFewerCharactersThanOpponent', summary: 'You control fewer Characters than your opponent.', params: [], covers: ['If you have less Characters than your opponent'], examples: [{ cardNumber: 'EB04-059', snippet: "{ kind: 'selfFewerCharactersThanOpponent' }" }] },
   selfRestedCardCount: { id: 'selfRestedCardCount', summary: 'You have N or more/less rested cards across Leader, Characters, Stage, and cost-area DON!!.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have {N} or more rested cards'], examples: [{ cardNumber: 'OP06-038', snippet: "{ kind: 'selfRestedCardCount', atLeast: 8 }" }] },
   opponentCharacterCount: { id: 'opponentCharacterCount', summary: 'Opponent has N or more/less Characters.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If your opponent has {N} or less Characters'], examples: [{ cardNumber: 'EB02-019', snippet: "{ kind: 'opponentCharacterCount', atLeast: 2 }" }] },
   selfDonFieldCount: { id: 'selfDonFieldCount', summary: 'DON!! on your field N or more/less.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have {N} or more DON!! cards on your field'], examples: [{ cardNumber: 'OP01-109', snippet: "{ kind: 'selfDonFieldCount', atLeast: 8 }" }] },
@@ -1609,6 +1615,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   selfNamedCardCount: { id: 'selfNamedCardCount', summary: 'You have N or more/less named cards among your Leader, Characters, or Stage.', params: [{ name: 'name', type: 'string', required: true }, { name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have {N} or more [{name}] cards'], examples: [{ cardNumber: 'OP16-057', snippet: "{ kind: 'selfNamedCardCount', name: 'Prisoner of Impel Down', atLeast: 2 }" }] },
   selfHandMatching: { id: 'selfHandMatching', summary: 'You can reveal N cards in hand matching a type/category/power/cost ("reveal ... from your hand").', params: [{ name: 'atLeast', type: 'number', required: true }, { name: 'typeIncludes', type: 'string', required: false }, { name: 'category', type: 'CardCategory', required: false }, { name: 'exactPower/minPower/exactCost', type: 'number', required: false }], covers: ['reveal {N} {type}/Event/{power}-power cards from your hand', 'reveal 1 Character card with a cost of 5 from your hand'], examples: [{ cardNumber: 'OP16-002', snippet: "{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }" }, { cardNumber: 'ST13-005', snippet: "{ kind: 'selfHandMatching', category: 'character', exactCost: 5, atLeast: 1 }" }] },
   opponentHand: { id: 'opponentHand', summary: 'Opponent has N or more/less cards in hand.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If your opponent has {N} or more cards in their hand'], examples: [{ cardNumber: 'OP05-082', snippet: "{ kind: 'opponentHand', atLeast: 6 }" }] },
+  opponentRestedCardCount: { id: 'opponentRestedCardCount', summary: 'Opponent has N or more/less rested cards (Leader/Characters/Stage/active-area DON!!).', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If your opponent has {N} or more rested cards'], examples: [{ cardNumber: 'OP11-023', snippet: "{ kind: 'opponentRestedCardCount', atLeast: 3 }" }] },
   selfPlayedThisTurn: { id: 'selfPlayedThisTurn', summary: 'This card was played this turn.', params: [], covers: ['If this Character was played on this turn'], examples: [{ cardNumber: 'EB03-013', snippet: "{ kind: 'selfPlayedThisTurn' }" }] },
   selfBattledOpponentCharacterThisTurn: { id: 'selfBattledOpponentCharacterThisTurn', summary: 'This card battled an opponent Character this turn.', params: [], covers: ['If this Leader battles your opponent\'s Character during this turn'], examples: [{ cardNumber: 'OP12-020', snippet: "{ kind: 'selfBattledOpponentCharacterThisTurn' }" }] },
   selfTrashCount: { id: 'selfTrashCount', summary: 'N or more/less cards in your trash.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['{N} or more cards in your trash'], examples: [{ cardNumber: 'OP08-096', snippet: "{ kind: 'selfTrashCount', atLeast: 1 }" }] },
@@ -1702,6 +1709,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
 export const COSTS: Record<AbilityCost['kind'], CapabilitySpec> = {
   donMinus: { id: 'donMinus', summary: 'DON!! −N: return N DON!! from the field to the DON!! deck.', params: [{ name: 'count', type: 'number', required: true }, { name: 'activeOnly', type: 'boolean', required: false }], covers: ['DON!! −{N}', 'return {N} active DON!! cards to your DON!! deck'], examples: [{ cardNumber: 'OP12-069', snippet: "cost: [{ kind: 'donMinus', count: 1 }]" }] },
   restThis: { id: 'restThis', summary: 'Rest the source card as a cost.', params: [], covers: ['You may rest this card:'], examples: [{ cardNumber: 'OP05-026', snippet: "cost: [{ kind: 'restThis' }]" }] },
+  restLeader: { id: 'restLeader', summary: "Rest the controller's Leader as a cost.", params: [], covers: ['You may rest your Leader:', 'rest this Leader:'], examples: [{ cardNumber: 'OP04-081', snippet: "cost: [{ kind: 'restLeader' }]" }] },
   trashThis: { id: 'trashThis', summary: 'Trash the source card as a cost (NOT a K.O.; does not fire [On K.O.]).', params: [], covers: ['You may trash this Character:'], examples: [{ cardNumber: 'EB01-042', snippet: "cost: [{ kind: 'trashThis' }]" }] },
   restDon: { id: 'restDon', summary: 'Rest N of your active DON!! cards as a cost.', params: [{ name: 'count', type: 'number', required: true }], covers: ['➀/➁/... (rest the specified number of DON!! cards)'], examples: [{ cardNumber: 'OP16-006', snippet: "cost: [{ kind: 'restDon', count: 2 }]" }] },
 };

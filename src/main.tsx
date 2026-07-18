@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { App } from './app/App';
+import { AdminApp } from './admin/AdminApp';
 import './app/styles/index.css';
 
 // Declared in useAppInit.ts's global augmentation; repeated here so this
@@ -12,9 +14,19 @@ if (!rootElement) {
   throw new Error('#root element not found in index.html');
 }
 
+// react-router is introduced here ONLY to carve out a real, bookmarkable
+// /admin URL for the Admin CMS. Every other path ("*") renders the existing
+// hand-rolled App unchanged — App/navigationStore.ts have no idea a router
+// exists, and never will; this is the one seam between the two. See
+// src/admin/AdminApp.tsx for the CMS's own nested routing.
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/admin/*" element={<AdminApp />} />
+        <Route path="*" element={<App />} />
+      </Routes>
+    </BrowserRouter>
   </React.StrictMode>,
 );
 

@@ -1,7 +1,8 @@
 /**
  * Backend entrypoint. Wires together, on ONE http server (so WebSocket
  * upgrades and REST share a port — required for Cloud Run):
- *   - Express REST: /health + /auth/* + /ranked/* + /profile/*
+ *   - Express REST: /health + /auth/* + /ranked/* + /profile/* + /support/*
+ *     + /banners (public) + /admin/auth/* (public login) + /admin/* (admin-only CMS)
  *   - Colyseus realtime: the GameRoom, registered under GAME_ROOM_NAME
  *   - MongoDB Atlas connection (opened before listen)
  *
@@ -20,6 +21,10 @@ import { authRouter } from './auth/routes';
 import { rankedRouter } from './ranked/routes';
 import { profileRouter } from './profile/routes';
 import { supportRouter } from './support/routes';
+import { adminAuthRouter } from './adminAuth/routes';
+import { requireAdminAuth } from './adminAuth/middleware';
+import { adminRouter } from './admin/routes';
+import { bannersPublicRouter } from './banners/publicRoutes';
 import { GameRoom } from './rooms/GameRoom';
 import { GAME_ROOM_NAME } from '../../shared/multiplayer';
 
@@ -72,6 +77,14 @@ async function main(): Promise<void> {
   app.use('/ranked', rankedRouter());
   app.use('/profile', profileRouter());
   app.use('/support', supportRouter());
+  app.use('/banners', bannersPublicRouter());
+
+  // Admin CMS. Login is mounted first and stays public; requireAdminAuth is
+  // applied ONCE here at the mount point for everything else under /admin,
+  // rather than inside each sub-router, so a newly-added resource can never
+  // forget to gate itself.
+  app.use('/admin/auth', adminAuthRouter());
+  app.use('/admin', requireAdminAuth, adminRouter());
 
   const httpServer = createServer(app);
 

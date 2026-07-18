@@ -63,6 +63,13 @@ export interface AppEnv {
   port: number;
   mongoUri: string;
   jwtSecret: string;
+  /**
+   * Separate secret for the Admin CMS (server/src/adminAuth). Deliberately
+   * NOT jwtSecret — an admin token and a player token must never verify
+   * against each other's secret, even if the code paths were ever merged by
+   * mistake (project decision: "fully separate admin credential store").
+   */
+  adminJwtSecret: string;
   /** Allowed browser origins for CORS + WebSocket. */
   clientOrigins: string[];
   /** Token lifetime; short-ish by default, refreshed by re-login. */
@@ -88,6 +95,7 @@ export function loadEnv(): AppEnv {
     port: Number(optional('PORT', '8080')),
     mongoUri: required('MONGODB_URI'),
     jwtSecret: required('JWT_SECRET'),
+    adminJwtSecret: required('ADMIN_JWT_SECRET'),
     clientOrigins: parseOrigins(optional('CLIENT_ORIGIN', 'http://localhost:5173')),
     jwtExpiresIn: optional('JWT_EXPIRES_IN', '7d'),
     rankedEnabled: optional('RANKED_ENABLED', 'false').toLowerCase() === 'true',

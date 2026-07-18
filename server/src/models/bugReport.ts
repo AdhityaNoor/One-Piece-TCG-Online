@@ -8,6 +8,7 @@
 import type { ObjectId } from 'mongodb';
 import type { GameLogEntry } from '../../../src/engine/logs/logEntry';
 import type { BugReportCardSnapshot, MatchModeTag } from '../../../shared/support';
+import type { BugReportValidity } from '../../../shared/admin';
 
 export type BugReportStatus = 'open' | 'triaged' | 'resolved' | 'wont_fix';
 
@@ -27,4 +28,6 @@ export interface BugReportDocument {
   clientVersion: string | null;
   createdAt: string;
   status: BugReportStatus;
+  /** Admin CMS triage field: has anyone judged whether this report is a real bug? Set via PATCH /admin/bug-reports/:id. */
+  validity: BugReportValidity;
 }

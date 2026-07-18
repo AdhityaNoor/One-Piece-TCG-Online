@@ -4,7 +4,6 @@ export * from './SplashScreen';
 export * from './CreditsScreen';
 export * from './SettingsScreen';
 export * from './DebugToolsScreen';
-export * from './CoverageMonitorScreen';
 export * from './PlayTestScreen';
 export * from './CardLibraryScreen';
 export * from './deckBuilder';

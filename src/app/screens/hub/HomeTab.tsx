@@ -5,17 +5,30 @@
  * as every other hub tab (Play/Decks/Social) instead of sitting on
  * AppShell's flat fill color.
  *
- * KNOWN LIMITATION: the carousel's text container is a placeholder (static
- * copy, no per-slide content model yet). Wire it to real
- * announcements/promo copy once that data source exists.
+ * The carousel is now wired to the Admin CMS's Banner & News Management
+ * section (GET /banners, public/unauthenticated — see
+ * multiplayer/net/bannerClient.ts and server/src/banners/publicRoutes.ts):
+ * active banners, if any, replace the static placeholder slides below. The
+ * placeholders remain as a fallback so Home never renders an empty
+ * carousel before an admin has published anything.
  */
 import { useEffect, useState } from 'react';
 import { GameCanvasScreen } from '../../components';
 import { useDeckEligibility } from '../../hooks/useDeckEligibility';
 import { useNavigationStore } from '../../store/navigationStore';
 import type { NavigationTarget } from '../../store/navigationStore';
+import { fetchActiveBanners } from '../../../multiplayer/net/bannerClient';
+import type { PublicHomeBanner } from '../../../../shared/admin';
 
-const CAROUSEL_SLIDES = [
+interface CarouselSlide {
+  image: string | null;
+  eyebrow: string;
+  title: string;
+  body: string;
+  linkUrl?: string | null;
+}
+
+const FALLBACK_SLIDES: CarouselSlide[] = [
   { image: '/ui/Banners/mv.webp', eyebrow: 'One Piece Online', title: 'Set Sail', body: 'Featured content coming soon.' },
   { image: '/ui/Banners/mv2.webp', eyebrow: 'One Piece Online', title: 'Build Your Fleet', body: 'Featured content coming soon.' },
   { image: '/ui/Banners/mv3.webp', eyebrow: 'One Piece Online', title: 'Challenge Rivals', body: 'Featured content coming soon.' },
@@ -23,6 +36,10 @@ const CAROUSEL_SLIDES = [
 ];
 
 const AUTO_ROTATE_MS = 6000;
+
+function toSlide(banner: PublicHomeBanner): CarouselSlide {
+  return { image: banner.imageUrl, eyebrow: 'Announcement', title: banner.title, body: banner.caption, linkUrl: banner.linkUrl };
+}
 
 export function HomeTab() {
   return (
@@ -37,15 +54,30 @@ export function HomeTab() {
 
 function HomeCarousel() {
   const [index, setIndex] = useState(0);
+  const [slides, setSlides] = useState<CarouselSlide[]>(FALLBACK_SLIDES);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchActiveBanners().then((banners) => {
+      if (!cancelled && banners.length > 0) setSlides(banners.map(toSlide));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [slides]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setIndex((current) => (current + 1) % CAROUSEL_SLIDES.length);
+      setIndex((current) => (current + 1) % slides.length);
     }, AUTO_ROTATE_MS);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [slides.length]);
 
-  const slide = CAROUSEL_SLIDES[index];
+  const slide = slides[index];
 
   return (
     <section
@@ -53,34 +85,43 @@ function HomeCarousel() {
       aria-roledescription="carousel"
       aria-label="Featured"
     >
-      {CAROUSEL_SLIDES.map((entry, entryIndex) => (
-        <img
-          key={entry.image}
-          src={entry.image}
-          alt=""
-          draggable={false}
-          className={[
-            'absolute inset-0 h-full w-full object-cover transition-opacity duration-700',
-            entryIndex === index ? 'opacity-100' : 'opacity-0',
-          ].join(' ')}
-        />
-      ))}
+      {slides.map((entry, entryIndex) =>
+        entry.image ? (
+          <img
+            key={entry.image + entryIndex}
+            src={entry.image}
+            alt=""
+            draggable={false}
+            className={[
+              'absolute inset-0 h-full w-full object-cover transition-opacity duration-700',
+              entryIndex === index ? 'opacity-100' : 'opacity-0',
+            ].join(' ')}
+          />
+        ) : null,
+      )}
 
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,_rgba(3,7,19,0.15)_0%,_rgba(3,7,19,0.35)_55%,_rgba(3,7,19,0.92)_100%)]" />
 
-      {/* Placeholder text container — see module TODO. */}
       <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-6">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{slide.eyebrow}</p>
-        <h2 className="mt-1 font-display text-2xl font-black uppercase tracking-[0.06em] text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] sm:text-3xl">
-          {slide.title}
-        </h2>
+        {slide.linkUrl ? (
+          <a href={slide.linkUrl} target="_blank" rel="noreferrer" className="group inline-block">
+            <h2 className="mt-1 font-display text-2xl font-black uppercase tracking-[0.06em] text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] group-hover:underline sm:text-3xl">
+              {slide.title}
+            </h2>
+          </a>
+        ) : (
+          <h2 className="mt-1 font-display text-2xl font-black uppercase tracking-[0.06em] text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] sm:text-3xl">
+            {slide.title}
+          </h2>
+        )}
         <p className="mt-2 max-w-md text-sm leading-6 text-slate-200/75">{slide.body}</p>
       </div>
 
       <div className="absolute right-4 top-4 z-10 flex gap-1.5 sm:right-6 sm:top-6">
-        {CAROUSEL_SLIDES.map((entry, entryIndex) => (
+        {slides.map((entry, entryIndex) => (
           <button
-            key={entry.image}
+            key={(entry.image ?? 'slide') + entryIndex}
             type="button"
             onClick={() => setIndex(entryIndex)}
             aria-label={`Go to slide ${entryIndex + 1}`}

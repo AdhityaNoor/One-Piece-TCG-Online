@@ -24,6 +24,7 @@ import { Room, type Client } from '@colyseus/core';
 import { ObjectId } from 'mongodb';
 import { GameRoomState, SeatState } from './schema';
 import { verifyToken } from '../auth/jwt';
+import { isSuspended } from '../auth/moderationGate';
 import { GameSession, parseClientDeck, SEAT_P1, SEAT_P2 } from '../game/matchEngine';
 import { filterLogForSeat } from '../game/redaction';
 import { matchHistory, rankedMatches } from '../db/mongo';
@@ -96,6 +97,13 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   async onAuth(_client: Client, options: { token?: string }): Promise<JwtClaims> {
     const claims = options.token ? verifyToken(options.token) : null;
     if (!claims) throw new Error('Unauthorized: a valid token is required to join a match.');
+    // Same ban-enforcement check as the REST requireAuth middleware (see
+    // auth/moderationGate.ts doc comment) — a suspended account's JWT is
+    // otherwise still cryptographically valid, so this is what actually
+    // keeps them out of matches.
+    if (await isSuspended(claims.sub)) {
+      throw new Error('Unauthorized: this account has been suspended.');
+    }
     if (this.rankedParticipants.length > 0 && !this.rankedParticipants.some((participant) => participant.playerId === claims.sub)) {
       throw new Error('Unauthorized: this ranked match was assigned to different players.');
     }

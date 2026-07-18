@@ -23,21 +23,13 @@ export function DebugToolsScreen() {
   return (
     <GameCanvasScreen onBack={goBack}>
       <div className="mx-auto flex h-full w-full max-w-2xl flex-col gap-4 overflow-y-auto pb-2">
-        <section className="op-panel p-4">
-          <p className="op-section-title">Effect Curation</p>
-          <p className="mt-2 text-sm leading-6 text-slate-200/70">
-            Monitor curated effect coverage, triage backlog, and curation-audit flags against the local card catalog.
-          </p>
-          <div className="mt-4 flex justify-center">
-            <CanvasMenuButton
-              label="Coverage Monitor"
-              prominence="primary"
-              size="sm"
-              onClick={() => navigateTo({ screen: 'coverage-monitor' })}
-            />
-          </div>
-        </section>
-
+        {/*
+          Effect Curation / Coverage Monitor lived here and has been MOVED to
+          the Admin CMS (src/admin/pages/cards/CurationStatusTab.tsx, under
+          Card Management > Curation Status) — it's an ops/QA tool, not
+          something a player needs in their own debug menu. Same underlying
+          hook (useEffectCoverageMetrics), just re-chromed there.
+        */}
         <section className="op-panel p-4">
           <p className="op-section-title">Play Test</p>
           <p className="mt-2 text-sm leading-6 text-slate-200/70">

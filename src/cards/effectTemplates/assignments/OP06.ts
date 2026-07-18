@@ -206,15 +206,15 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-031 — [Trigger] Play up to 1 {Fish-Man} or {Merfolk} Character cost<=3 from your hand.
   { cardNumber: 'OP06-031', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'playFromHand', filter: { category: 'character', anyOf: [{ typeIncludes: 'Fish-Man' }, { typeIncludes: 'Merfolk' }], maxCost: 3 } }] } },
 
-  // OP06-033 — [On Play] trash {Fish-Man} from hand or [The Ark Noah]: K.O. up to 1 opp rested Character.
-  // PARTIAL: [The Ark Noah] from hand deferred; mapped Fish-Man hand trash + field Noah trash via chooseOne.
+  // OP06-033 — [On Play] trash {Fish-Man} from hand or [The Ark Noah] from hand/field: K.O. up to 1 opp rested Character.
   { cardNumber: 'OP06-033', templateId: 'ability', params: { timing: 'onPlay', functions: [{
     fn: 'chooseOne',
     chooser: 'controller',
     prompt: 'Trash cost:',
     options: [
       { label: 'trashFishMan', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Fish-Man' } }] },
-      { label: 'trashArkNoah', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { name: 'The Ark Noah' } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }] },
+      { label: 'trashArkNoahHand', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { name: 'The Ark Noah' } }] },
+      { label: 'trashArkNoahField', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { name: 'The Ark Noah' } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }] },
     ],
   }, { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, optional: true, maxTargets: 1 }] } },
 

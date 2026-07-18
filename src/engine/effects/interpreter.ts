@@ -380,6 +380,15 @@ function applyDonAttachedFilter(ids: string[], minDonAttached: number | undefine
   return ids.filter((id) => (state.cardsById[id]?.donAttached.length ?? 0) >= minDonAttached);
 }
 
+function applyCostEqualsDonAttachedFilter(
+  ids: string[],
+  costEqualsDonAttached: boolean | undefined,
+  ctx: EffectContextImpl,
+): string[] {
+  if (costEqualsDonAttached !== true) return ids;
+  return ids.filter((id) => ctx.costOf(id) === (ctx.state().cardsById[id]?.donAttached.length ?? 0));
+}
+
 function effectiveMaxCost(
   sel: {
     maxCost?: number;
@@ -424,7 +433,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.maxPower !== undefined) ids = ids.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       ids = applyBaseFilters(ids, sel, ctx);
       if (sel.color !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.colors.includes(sel.color!) === true);
-      if (sel.name !== undefined) ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), sel.name));
+      if (sel.name !== undefined) { const name = sel.name; ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), name)); }
       if (sel.excludeCardNames !== undefined) ids = ids.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
@@ -438,6 +447,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
         if (selfName !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name !== selfName);
       }
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
+      ids = applyCostEqualsDonAttachedFilter(ids, sel.costEqualsDonAttached, ctx);
       return ids;
     }
     case 'controllerLeaderOrCharacters': {
@@ -450,7 +460,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.anyOfTypes !== undefined) {
         ids = ids.filter((id) => (sel.typeFilterCharactersOnly && id === leaderId) || sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
       }
-      if (sel.name !== undefined) ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), sel.name));
+      if (sel.name !== undefined) { const name = sel.name; ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), name)); }
       if (sel.minCost !== undefined) ids = ids.filter((id) => id === leaderId || ctx.costOf(id) >= sel.minCost!);
       const maxCost = effectiveMaxCost(sel, ctx);
       if (maxCost !== undefined) ids = ids.filter((id) => id === leaderId || ctx.costOf(id) <= maxCost);
@@ -505,7 +515,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const p = ctx.state().players[ctx.controllerId];
       let ids = [p.leaderInstanceId, ...p.stageArea.cardIds];
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
-      if (sel.name !== undefined) ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), sel.name));
+      if (sel.name !== undefined) { const name = sel.name; ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), name)); }
       return ids;
     }
     case 'controllerRestedDon': {
@@ -621,6 +631,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.excludeName !== undefined) ids = ids.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
       if (sel.excludeCardNames !== undefined) ids = ids.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       ids = applyDonAttachedFilter(ids, sel.minDonAttached, ctx.state());
+      ids = applyCostEqualsDonAttachedFilter(ids, sel.costEqualsDonAttached, ctx);
       if (sel.excludeIdsFromVar !== undefined) {
         const exclude = new Set(bindings[sel.excludeIdsFromVar] ?? []);
         ids = ids.filter((id) => !exclude.has(id));

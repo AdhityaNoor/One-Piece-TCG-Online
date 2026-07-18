@@ -1,5 +1,24 @@
 # Effect Curation — Coverage Addition Worklist
 
+## Progress update — 2026-07-18 (Life↔hand Egghead, Ark Noah hand, reveal-giveDon, cost=DON KO)
+
+Closed **4** more partials (**49 → 45**). New reusable piece:
+
+- **`TargetFilter.costEqualsDonAttached`** — current cost equals DON!! given (OP15-031).
+
+| Card | Closure |
+| --- | --- |
+| EB04-060 | Life top/bottom→hand → Egghead→Life face-up → −1000 (lifePaid via `boundVarsTotalCount`) |
+| OP06-033 | chooseOne: Fish-Man hand / Ark Noah hand / Ark Noah field → KO rested |
+| OP14-105 | reveal 3 Amazon Lily/Kuja → `giveDon` Leader+Characters `maxTargets: -1` |
+| OP15-031 | KO rested with `costEqualsDonAttached` |
+
+### Next recommended targets
+
+- OP10-098 — dual-K.O. with character-count-less-than-opponent gate.
+- OP12-075 — opponent may add DON!! from deck.
+- Hard defer: ST28-004, EB02-039, Counter-aura OP16-118.
+
 ## Progress update — 2026-07-18 (reveal-from-var play + trash pair one-rested)
 
 Closed **2** more partials (**51 → 49**). New reusable pieces:

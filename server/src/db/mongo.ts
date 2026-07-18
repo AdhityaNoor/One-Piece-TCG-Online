@@ -11,6 +11,10 @@ import { env } from '../config/env';
 import type { UserDocument } from '../auth/userModel';
 import type { MatchHistoryDocument } from '../models/matchHistory';
 import type { BugReportDocument } from '../models/bugReport';
+import type { AdminDocument } from '../models/admin';
+import type { FeatureFlagDocument } from '../models/featureFlag';
+import type { HomeBannerDocument } from '../models/homeBanner';
+import type { CardLegalityOverrideDocument } from '../models/cardLegalityOverride';
 import type {
   RankedAuditEventDocument,
   RankedLeaderboardSnapshotDocument,
@@ -116,6 +120,24 @@ export function bugReports(): Collection<BugReportDocument> {
   return getDb().collection<BugReportDocument>('bugReports');
 }
 
+// ---- Admin CMS (server/src/admin*, server/src/adminAuth) ------------------
+
+export function admins(): Collection<AdminDocument> {
+  return getDb().collection<AdminDocument>('admins');
+}
+
+export function featureFlags(): Collection<FeatureFlagDocument> {
+  return getDb().collection<FeatureFlagDocument>('featureFlags');
+}
+
+export function homeBanners(): Collection<HomeBannerDocument> {
+  return getDb().collection<HomeBannerDocument>('homeBanners');
+}
+
+export function cardLegalityOverrides(): Collection<CardLegalityOverrideDocument> {
+  return getDb().collection<CardLegalityOverrideDocument>('cardLegalityOverrides');
+}
+
 async function ensureIndexes(database: Db): Promise<void> {
   // Case-insensitive unique email so signup can't create duplicates by case.
   await database
@@ -176,6 +198,18 @@ async function ensureIndexes(database: Db): Promise<void> {
   // Bug reports — see server/src/support/routes.ts + models/bugReport.ts.
   await database.collection('bugReports').createIndex({ reporterUserId: 1, createdAt: -1 });
   await database.collection('bugReports').createIndex({ status: 1, createdAt: -1 });
+  await database.collection('bugReports').createIndex({ validity: 1, createdAt: -1 });
+
+  // Admin CMS — see server/src/models/{admin,featureFlag,homeBanner,cardLegalityOverride}.ts.
+  await database
+    .collection('admins')
+    .createIndex({ email: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
+
+  await database.collection('featureFlags').createIndex({ key: 1 }, { unique: true });
+
+  await database.collection('homeBanners').createIndex({ active: 1, sortOrder: 1 });
+
+  await database.collection('cardLegalityOverrides').createIndex({ cardNumber: 1 }, { unique: true });
 }
 
 /** For graceful shutdown / tests. */

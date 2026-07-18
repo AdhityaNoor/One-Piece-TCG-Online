@@ -50,6 +50,7 @@ export interface ApiErrorBody {
     | 'INVALID_CREDENTIALS'
     | 'UNAUTHORIZED'
     | 'NOT_FOUND'
+    | 'SUSPENDED'
     | 'INTERNAL';
 }
 

@@ -43,7 +43,7 @@ export type Selector =
   | { sel: 'controllerOrOpponentLifeTop' } // top Life card from either player, de-duplicated only by absent zones
   | { sel: 'controllerDeckTop' }
   | { sel: 'allCharacters'; minCost?: number; maxCost?: number; minPower?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; excludeSelf?: boolean; excludeCardNames?: string[] } // any player's Characters
-  | { sel: 'opponentCharacters'; minCost?: number; maxCost?: number; exactCost?: number; minPower?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; hasTrigger?: boolean; minDonAttached?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; maxCostFromSelfLife?: boolean; maxCostFromOpponentDon?: boolean; maxCostFromSelfDon?: boolean; noBaseEffect?: boolean; excludeName?: string; excludeCardNames?: string[]; attribute?: Attribute; excludeIdsFromVar?: string } // optional cost/power (current) + base cost/power + rested/blocker/trigger/given-DON!!/attribute filters
+  | { sel: 'opponentCharacters'; minCost?: number; maxCost?: number; exactCost?: number; minPower?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; rested?: boolean; hasBlocker?: boolean; hasTrigger?: boolean; minDonAttached?: number; costEqualsDonAttached?: boolean; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; maxCostFromSelfLife?: boolean; maxCostFromOpponentDon?: boolean; maxCostFromSelfDon?: boolean; noBaseEffect?: boolean; excludeName?: string; excludeCardNames?: string[]; attribute?: Attribute; excludeIdsFromVar?: string } // optional cost/power (current) + base cost/power + rested/blocker/trigger/given-DON!!/attribute filters
   | { sel: 'controllerAttachedDon' } // DON!! instance ids currently given to the controller's Leader/Characters/Stages
   | { sel: 'controllerHand'; filter?: SearchFilter; excludeSelf?: boolean } // controller's hand cards matching a filter (for play-from-hand); excludeSelf matters when the source card itself is sitting in hand at resolution time (e.g. a Life [Trigger] "trash 1 -> play this" ability — the source shouldn't be a legal cost for its own "play this" clause)
   | { sel: 'opponentHand'; filter?: SearchFilter } // opponent's hand cards, optionally filtered for effects where the opponent chooses/trashes/plays
@@ -132,6 +132,8 @@ export interface CharacterMoveFilter {
   typeIncludes?: string;
   anyOfTypes?: string[];
   minDonAttached?: number;
+  /** Current cost equals number of DON!! cards given to this Character. */
+  costEqualsDonAttached?: boolean;
   maxCostFromSelfLife?: boolean;
   maxCostFromOpponentLife?: boolean;
   maxCostFromCombinedLife?: boolean;

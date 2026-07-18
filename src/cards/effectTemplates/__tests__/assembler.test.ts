@@ -284,6 +284,17 @@ describe('template factories - structural correctness', () => {
     ]));
   });
 
+  it('ko can filter rested Characters with costEqualsDonAttached', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, costEqualsDonAttached: true } }, optional: true }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({
+      op: 'chooseTargets',
+      from: { sel: 'opponentCharacters', rested: true, costEqualsDonAttached: true },
+    });
+  });
+
   it('playPairOneRested picks two trash cards then chooses which enters rested', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onPlay',

@@ -56,6 +56,9 @@ export class BugReportService {
       clientVersion: body.clientVersion ?? null,
       createdAt: new Date().toISOString(),
       status: 'open',
+      // Admin CMS triage field — every report starts unreviewed; see
+      // admin/bugReportAdminService.ts for where this gets set.
+      validity: 'unreviewed',
     });
 
     return { id: result.insertedId.toHexString() };

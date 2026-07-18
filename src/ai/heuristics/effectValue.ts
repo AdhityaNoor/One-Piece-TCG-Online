@@ -164,7 +164,7 @@ function scoreEffectOp(ctx: EffectScoreContext, op: EffectOp, factor = 1): numbe
     case 'trashLife':
       return factor * (op.player === 'opponent' ? 12 : -8) * (op.count ?? 1);
     case 'trashTopDeck':
-      return factor * (op.count <= 2 ? 2 : -2);
+      return factor * ((op.count ?? 1) <= 2 ? 2 : -2);
     case 'playFromHand':
     case 'playFromTrash':
     case 'playFromDeck':

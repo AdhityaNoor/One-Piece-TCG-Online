@@ -67,7 +67,6 @@ export type NavigationTarget =
   | { screen: 'saved-decks' }
   | { screen: 'settings' }
   | { screen: 'debug-tools' }
-  | { screen: 'coverage-monitor' }
   | { screen: 'play-test' }
   | { screen: 'card-library' }
   | { screen: 'deck-builder'; deckIdToEdit?: string }

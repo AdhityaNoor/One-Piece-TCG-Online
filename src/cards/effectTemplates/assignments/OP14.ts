@@ -901,12 +901,26 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP14-106', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'triggerPlaySelf' }] } },
 
-  // OP14-105 (character) Gorgon Sisters —
-  //   [Activate: Main] [Once Per Turn] You may reveal 3 {Amazon Lily} or {Kuja Pirates} type cards from
-  //   your hand: Give your Leader and all of your Characters up to 1 rested DON!! card each. [Trigger] If
-  //   your Leader has the {Kuja Pirates} type, play this card.
-  // PARTIAL: reveal-3 hand cost and multi-target DON!! distribution remain deferred; Trigger is mapped.
-  { cardNumber: 'OP14-105', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'triggerPlaySelf' }] } },
+  // OP14-105 — [Activate: Main] OPT reveal 3 Amazon Lily/Kuja: give Leader + Characters up to 1 rested DON!! each. [Trigger] play this.
+  {
+    cardNumber: 'OP14-105',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          functions: [{
+            fn: 'optionalRevealTypeFromHand',
+            count: 3,
+            filter: { anyOf: [{ typeIncludes: 'Amazon Lily' }, { typeIncludes: 'Kuja Pirates' }] },
+            then: [{ fn: 'giveDon', count: 1, maxTargets: -1, optional: true }],
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'leaderType', type: 'Kuja Pirates' }], functions: [{ fn: 'triggerPlaySelf' }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP14-107',

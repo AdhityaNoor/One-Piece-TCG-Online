@@ -307,11 +307,8 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   end of your opponent's next End Phase.
   { cardNumber: 'OP15-029', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, duration: 'endOfOpponentsTurn', optional: true }] } },
 
-  // OP15-031 (character) Purinpurin —
-  //   [On Play] Select up to 1 of your opponent's rested Characters. If the chosen Character has a cost
-  //   equal to the number of DON!! cards given to it, K.O. it.
-  // PARTIAL: cost-equals-given-DON K.O. gate deferred; mapped K.O. rested Character with any given DON.
-  { cardNumber: 'OP15-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, minDonAttached: 1 } }, optional: true }] } },
+  // OP15-031 — [On Play] K.O. up to 1 opp rested Character whose current cost equals DON!! given to it.
+  { cardNumber: 'OP15-031', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, costEqualsDonAttached: true } }, optional: true }] } },
 
   // OP15-032 — [On Play] Rest up to 1 opp Character.
   //   [Activate: Main] You may trash this Character: if Leader {Straw Hat Crew}, set up to 1 of your Characters base cost <=8 as active.

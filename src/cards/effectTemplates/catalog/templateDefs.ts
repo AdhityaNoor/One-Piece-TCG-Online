@@ -76,6 +76,8 @@ export interface TargetFilter {
   excludeSelf?: boolean;
   /** Target must have at least N DON!! cards given (attached). */
   minDonAttached?: number;
+  /** Target's current cost must equal the number of DON!! cards given to it. */
+  costEqualsDonAttached?: boolean;
   /** When set, maxCost is resolved as the opponent's current Life count at selection time. */
   maxCostFromOpponentLife?: boolean;
   /** When set, maxCost is resolved as the combined Life count of both players at selection time. */

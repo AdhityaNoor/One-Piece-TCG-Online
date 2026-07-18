@@ -20,7 +20,6 @@ import {
   CreditsScreen,
   CpuDeckSelectScreen,
   CasualLobbyScreen,
-  CoverageMonitorScreen,
   DebugToolsScreen,
   DeckBuilderScreen,
   DeckSelectScreen,
@@ -70,8 +69,6 @@ export function App() {
         return <SettingsScreen />;
       case 'debug-tools':
         return <DebugToolsScreen />;
-      case 'coverage-monitor':
-        return <CoverageMonitorScreen />;
       case 'play-test':
         return <PlayTestScreen />;
       case 'card-library':
