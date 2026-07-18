@@ -452,13 +452,28 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP02-087 - [On K.O.] If Leader has Impel Down, add 1 DON!! rested.
   { cardNumber: 'OP02-087', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Impel Down' }], functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },
 
-  // OP02-089 (event) Judgment of Hell —
-  //   [Counter] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
-  //   deck.): Give up to a total of 2 of your opponent's Leader or Character cards −3000 power during this
-  //   turn. [Trigger] If your opponent has 6 or more DON!! cards on their field, your opponent returns 1
-  //   DON!! card from their field to their DON!! deck.
-  // PARTIAL: counter needs combined-total targeting.
-  { cardNumber: 'OP02-089', templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'opponentDonFieldCount', atLeast: 6 }], functions: [{ fn: 'returnOpponentDon', count: 1 }] } },
+  // OP02-089 — [Counter] DON!! −1: up to a total of 2 opp Leader/Characters −3000. [Trigger] if opp ≥6 DON!!, return 1.
+  {
+    cardNumber: 'OP02-089',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          cost: [{ kind: 'donMinus', count: 1 }],
+          functions: [{
+            fn: 'addPower',
+            target: { group: 'leaderOrCharacters', player: 'opponent' },
+            amount: -3000,
+            duration: 'duringThisTurn',
+            optional: true,
+            maxTargets: 2,
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'lifeTrigger', gate: [{ kind: 'opponentDonFieldCount', atLeast: 6 }], functions: [{ fn: 'returnOpponentDon', count: 1 }] } },
+    ],
+  },
 
   // OP02-090 (event) Hydra —
   //   [Main] DON!! −1 (You may return the specified number of DON!! cards from your field to your DON!!
@@ -605,7 +620,7 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP02-118 (event) Yasakani Sacred Jewel — PARTIAL: counter uses +0 power as target picker for koImmunityChosen.
+  // OP02-118 — [Counter] trash 1: select up to 1 Character → battle KO immunity. [Trigger] KO opp Stage cost ≤3.
   {
     cardNumber: 'OP02-118',
     templates: [
@@ -615,7 +630,7 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
           timing: 'counter',
           functions: [
             { fn: 'optionalTrashFromHand', count: 1 },
-            { fn: 'addPower', target: { group: 'characters', player: 'controller' }, amount: 0, duration: 'duringThisBattle', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+            { fn: 'selectTargets', target: { group: 'characters', player: 'controller' }, optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
             { fn: 'koImmunityChosen', scope: 'battle', duration: 'duringThisBattle', ifPrevious: 'previousSelectedAny' },
           ],
         },

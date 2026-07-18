@@ -26,6 +26,8 @@ export interface BoardCardTileProps {
   size?: BoardCardTileSize;
   selectable?: boolean;
   selected?: boolean;
+  /** Project rule "dim, don't hide" (see DockHand.tsx) applied to field cards: true while a selection mode is active and this card isn't one of its eligible candidates. */
+  dimmed?: boolean;
   /** Marks a card that has a usable [Activate: Main] effect right now. */
   activatable?: boolean;
   attackable?: boolean;
@@ -252,6 +254,7 @@ export function BoardCardTile({
   size = 'board',
   selectable,
   selected,
+  dimmed = false,
   activatable,
   attackable,
   showBattlePower,
@@ -330,11 +333,11 @@ export function BoardCardTile({
       onMouseMove={(event) => previewSrc && setPreviewPoint({ x: event.clientX, y: event.clientY })}
       onMouseLeave={() => setPreviewPoint(null)}
       className={[
-        'group relative flex-shrink-0',
+        'group relative flex-shrink-0 transition-opacity duration-200',
         isField ? 'aspect-square h-full max-h-full max-w-full' : '',
         hiddenDuringFlight ? 'invisible' : '',
       ].join(' ')}
-      style={isField ? undefined : { width: dims.box, height: dims.box }}
+      style={{ ...(isField ? undefined : { width: dims.box, height: dims.box }), opacity: dimmed ? 0.35 : undefined }}
     >
       <div
         role={selectable ? 'button' : undefined}

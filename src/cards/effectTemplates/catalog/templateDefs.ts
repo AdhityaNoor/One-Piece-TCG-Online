@@ -120,7 +120,7 @@ export type TargetSpec =
 export type AbilityFunction =
   | { fn: 'draw'; amount: number; optional?: boolean; player?: 'controller' | 'opponent' }
   | { fn: 'drawUntilHandCount'; targetCount: number; player?: 'controller' | 'opponent' }
-  | { fn: 'addDonFromDeck'; count: number; rested: boolean }
+  | { fn: 'addDonFromDeck'; count: number; rested: boolean; player?: 'controller' | 'opponent' }
   | { fn: 'giveDon'; count: number; optional?: boolean; targetTypeIncludes?: string; anyOfTypes?: string[]; charactersOnly?: boolean; targetName?: string; targetFilter?: TargetFilter; maxTargets?: number; activeDonOnly?: boolean; skipRestedDonGate?: boolean }
   | { fn: 'preventBlockersOnPreviousTarget'; duration: IrDuration }
   | { fn: 'preventAttackLeaderWhileSummoningSick'; duration: IrDuration }
@@ -149,6 +149,8 @@ export type AbilityFunction =
   | { fn: 'preventControllerCharacterPlay'; duration: IrDuration; player?: 'controller' | 'opponent'; minBaseCost?: number; maxBaseCost?: number }
   | { fn: 'preventControllerHandPlay'; duration: IrDuration; player?: 'controller' | 'opponent' }
   | { fn: 'preventControllerCharacterSetActiveDon'; duration: IrDuration; player?: 'controller' | 'opponent' }
+  /** Do not lose from empty deck; lose at end of the turn the deck became 0 (OP15-022). */
+  | { fn: 'deferEmptyDeckDefeatToEndOfTurn'; duration?: IrDuration }
   | { fn: 'addCost'; target: TargetSpec; amount: number; duration?: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; scale?: PowerScale; prompt?: string }
   | { fn: 'addPower'; target: TargetSpec; amount: number; duration: IrDuration; optional?: boolean; maxTargets?: number; condition?: IrCondition; scale?: PowerScale; amountPer?: number; amountPerStep?: number; countVar?: string; prompt?: string }
   // "This card's / your Leader's base power BECOMES N" (2-6): a SET (overwrite), not a +/− delta.
@@ -171,6 +173,8 @@ export type AbilityFunction =
   | { fn: 'trashFromOpponentHandChosenByOpponent'; count: number }
   | { fn: 'revealOpponentHand'; count?: number }
   | { fn: 'trashTopDeck'; count?: number; countVar?: string; optional?: boolean }
+  /** Deal N Life damage (Trigger-safe). optional → "You may deal …". */
+  | { fn: 'dealDamage'; amount: number; player?: 'controller' | 'opponent'; optional?: boolean }
   | { fn: 'trashSelf' }
   | { fn: 'returnSelfToHand' }
   | { fn: 'moveSelfToBottomDeck' }
@@ -180,6 +184,8 @@ export type AbilityFunction =
   | { fn: 'moveAllCharactersToBottomDeck'; filter?: { maxCost?: number; maxPower?: number; maxBaseCost?: number; maxBasePower?: number } }
   | { fn: 'peekLifeAndPlace'; from: 'controllerOrOpponentTop'; placement: 'topOrBottom' }
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
+  /** Bind var `t` via chooseTargets with no follow-up effect (for riders like koImmunityChosen). */
+  | { fn: 'selectTargets'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'playFromHand'; filter?: SearchFilter; fromVar?: string; maxTargets?: number; minTargets?: number; optional?: boolean; rested?: boolean; player?: 'controller' | 'opponent'; chooser?: 'controller' | 'opponent'; distinctNames?: boolean; prompt?: string }
   | { fn: 'activateEventFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'activateEventFromTrash'; filter: SearchFilter; maxTargets?: number }

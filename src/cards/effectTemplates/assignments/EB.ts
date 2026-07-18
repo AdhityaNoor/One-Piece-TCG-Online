@@ -1807,18 +1807,30 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB03-055 (character) Nico Robin —
-  //   PARTIAL: [Opponent's Turn] [On K.O.] deal 1 damage deferred.
+  // EB03-055 — [On Play] trash top Life → if Leader SHC, +2 Life from deck.
+  //   [Opponent's Turn] [On K.O.] You may deal 1 damage to your opponent.
   {
     cardNumber: 'EB03-055',
-    templateId: 'ability',
-    params: {
-      timing: 'onPlay',
-      functions: [
-        { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true },
-        { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 2 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifGate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], ifPrevious: 'previousMovedAny' },
-      ],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true },
+            { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 2 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifGate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onKO',
+          condition: { turn: 'opponent' },
+          functions: [{ fn: 'dealDamage', player: 'opponent', amount: 1, optional: true }],
+        },
+      },
+    ],
   },
 
   // EB03-057 — [On Play] give up to 3 rested DON!! to your Leader. [On K.O.] trash up to 1 top of opponent's Life.

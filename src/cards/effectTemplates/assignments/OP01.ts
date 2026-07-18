@@ -307,7 +307,7 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP01-062 — [DON!! x1] When you activate an Event, draw 1 if ≤4 cards in hand (once per turn).
   { cardNumber: 'OP01-062', templateId: 'ability', params: { timing: 'onYouEventActivated', oncePerTurn: true, condition: { donAttachedAtLeast: 1 }, gate: [{ kind: 'selfHand', atMost: 4 }], functions: [{ fn: 'draw', amount: 1, optional: true }] } },
 
-  // OP01-063 — PARTIAL: Event-branch gate after hand reveal deferred; mapped rest → choose opp hand → optional opp Life to deck bottom.
+  // OP01-063 — [DON!! x1] rest this: choose 1 opp hand card to reveal; if Event, up to 1 opp Life → deck bottom.
   {
     cardNumber: 'OP01-063',
     templateId: 'ability',
@@ -316,13 +316,13 @@ export const OP01_ASSIGNMENTS: CardEffectAssignment[] = [
       cost: [{ kind: 'restThis' }],
       condition: { donAttachedAtLeast: 1 },
       functions: [
-        { fn: 'trashFromOpponentHandChosenByOpponent', count: 1 },
+        { fn: 'revealOpponentHand', count: 1 },
         {
           fn: 'moveCards',
           from: { zone: 'life', player: 'opponent', position: 'top' },
           to: { zone: 'deck', player: 'owner', position: 'bottom' },
           optional: true,
-          ifPrevious: 'previousSelectedAny',
+          ifGate: [{ kind: 'boundVarMatching', varName: 't', category: 'event' }],
         },
       ],
     },

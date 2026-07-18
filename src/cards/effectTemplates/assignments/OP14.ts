@@ -559,11 +559,14 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP14-056 (character) Wadatsumi —
-  //   This Character cannot attack.When a card is trashed from your hand by an effect, this Character's
-  //   effect is negated during this turn.
-  //   PARTIAL: the static self attack lock is implemented below; the effect-negation trigger remains deferred.
-  { cardNumber: 'OP14-056', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent' }] } },
+  // OP14-056 — cannot attack; when a card is trashed from your hand by an effect, negate this Character's effects this turn.
+  {
+    cardNumber: 'OP14-056',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onHandTrashed', functions: [{ fn: 'negateEffect', target: { ref: 'self' }, duration: 'duringThisTurn' }] } },
+    ],
+  },
 
   {
     cardNumber: 'OP14-057',
@@ -648,11 +651,17 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   }] } },
 
-  // OP14-070 (character) Buffalo —
-  //   When this Character becomes rested by your opponent's Character's effect, you may return 1 DON!! card
-  //   from your field to your DON!! deck. If you do, set this Character as active.[Blocker]
-  // PARTIAL: opponent-Character-effect rested gate + DON return cost deferred; mapped setActiveSelf on onRested.
-  { cardNumber: 'OP14-070', templateId: 'ability', params: { timing: 'onRested', oncePerTurn: true, functions: [{ fn: 'setActiveSelf' }] } },
+  // OP14-070 — When rested by opponent's Character effect, you may DON!! −1: set this Character as active. [Blocker]
+  {
+    cardNumber: 'OP14-070',
+    templateId: 'ability',
+    params: {
+      timing: 'onRested',
+      gate: [{ kind: 'restedByOpponentEffect' }, { kind: 'restedByEffectSourceCategory', category: 'character' }],
+      cost: [{ kind: 'donMinus', count: 1 }],
+      functions: [{ fn: 'setActiveSelf' }],
+    },
+  },
 
   {
     cardNumber: 'OP14-072',

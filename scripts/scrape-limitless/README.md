@@ -21,15 +21,22 @@ npm run scrape:limitless:window
 ### Options
 
 ```bash
-npm run scrape:limitless -- --refresh        # re-enumerate sets/cards before scraping
-npm run scrape:limitless -- --set OP01        # only one set
-npm run scrape:limitless -- --limit 20        # cap cards this run (good for a first test)
-npm run scrape:limitless -- --concurrency 24  # cards fetched in parallel (default 12)
-npm run scrape:limitless -- --delay 500        # re-add an inter-request throttle (default 0 = none)
-npm run scrape:limitless -- --force           # re-scrape even already-completed cards
-npm run scrape:limitless -- --no-images       # skip downloading card art (data only)
-npm run scrape:limitless -- --no-variants      # base print only (skip alternate arts)
+npm run scrape:limitless -- --refresh         # re-enumerate ALL products/cards before scraping
+npm run scrape:limitless -- --refresh-promos  # merge /cards/promos into the existing worklist
+npm run scrape:limitless -- --set OP01         # only one set
+npm run scrape:limitless -- --set P            # promotional cards (P-*)
+npm run scrape:limitless -- --limit 20         # cap cards this run (good for a first test)
+npm run scrape:limitless -- --concurrency 24   # cards fetched in parallel (default 12)
+npm run scrape:limitless -- --delay 500         # re-add an inter-request throttle (default 0 = none)
+npm run scrape:limitless -- --force            # re-scrape even already-completed cards
+npm run scrape:limitless -- --no-images        # skip downloading card art (data only)
+npm run scrape:limitless -- --no-variants       # base print only (skip alternate arts)
 ```
+
+> **Promos.** Limitless lists promotional products on `/cards/promos` (not the
+> main `/cards` Products index). Full `--refresh` crawls **both** pages. After a
+> promo-catalog gap on an existing crawl, prefer the faster path:
+> `npm run scrape:limitless -- --refresh-promos --set P` then `npm run build:assets`.
 
 > **Alternate arts (resumes your existing crawl).** The scraper now captures
 > every printing of a card (base + each alternate art / SP / manga / promo

@@ -463,11 +463,28 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
 
 
 
-  // OP12-075 — [On Play] K.O. up to 1 opp Character cost ≤3. [Trigger] DON!! −1: Play this card. PARTIAL: opponent's DON!! ramp drawback deferred.
+  // OP12-075 — [On Play] K.O. up to 1 opp Character cost ≤3; then opp may add 1 active DON!!. [Trigger] DON!! −1: Play this.
   {
     cardNumber: 'OP12-075',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true },
+            {
+              fn: 'chooseOne',
+              chooser: 'opponent',
+              prompt: 'Add 1 DON!! card from your DON!! deck as active?',
+              options: [
+                { label: 'addDon', functions: [{ fn: 'addDonFromDeck', count: 1, rested: false, player: 'opponent' }] },
+                { label: 'decline', functions: [] },
+              ],
+            },
+          ],
+        },
+      },
       { templateId: 'ability', params: { timing: 'lifeTrigger', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'triggerPlaySelf' }] } },
     ],
   },

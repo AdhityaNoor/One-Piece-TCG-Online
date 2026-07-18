@@ -33,6 +33,21 @@ export interface ChoiceConstraints {
    * only filter-matching cards are eligible to add/select.
    */
   visibleInstanceIds?: string[];
+  /**
+   * UI hint: render ONLY candidateInstanceIds, ignoring visibleInstanceIds,
+   * even though visibleInstanceIds is populated. Set by opaque whole-deck
+   * search ops (playFromDeck / playStageFromDeck / searchDeck in
+   * interpreter.ts) where visibleInstanceIds intentionally lists the entire
+   * deck for log/AI-evaluator purposes (see e.g.
+   * effectTemplates/__tests__/searchDeckFamily.test.ts, which asserts
+   * visibleInstanceIds === the full deck) — but a picker showing 40+ mostly
+   * irrelevant deck cards is bad UX; the player only cares about the
+   * filter-matching subset. NOT set by genuinely bounded reveals
+   * (searchTopDeck, lookLifeAndReorder, peekLifeThenPlace), where showing
+   * every looked-at card (including non-matches) reflects what the player
+   * actually saw.
+   */
+  uiShowOnlyCandidates?: boolean;
   /** Discrete option labels for SELECT_OPTION choices; response is the selected option index. */
   options?: { label: string }[];
   /** Inclusive range for SELECT_NUMBER choices. */

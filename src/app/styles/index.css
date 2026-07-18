@@ -283,6 +283,29 @@
     }
   }
 
+  /* Trash gallery uses the generic Modal shell, whose own default styling
+     (rounded-3xl, solid navy-gradient panel) only gets overridden to the
+     dark-transparent look above under max-width:1279px. At wider desktop
+     viewports it fell back to Modal's solid look, visually mismatched
+     against every other match-screen popup (PendingChoicePrompt /
+     ChoicePromptShell, the settings gear menu, the DON!! popup above), which
+     all use this same rgba(0,0,0,0.55)-with-blur, square-cornered treatment
+     at every width. Scoped (not applied to Modal generally — other Modal
+     consumers like ActionLogPanel/CardDetailModal weren't reported as
+     mismatched) and unconditional so it also applies above 1280px. */
+  .op-trash-gallery-modal .op-modal-backdrop {
+    background: rgba(0, 0, 0, 0.35) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+
+  .op-trash-gallery-modal .op-modal-panel {
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 0 !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+
   .op-home-speed-bg {
     --op-speed-bg-width: 100vw;
     --op-speed-bg-overlap: 18vw;

@@ -245,18 +245,33 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Under the rules of this game, you do not lose when your deck has 0 cards. You lose at the end of the
   //   turn in which your deck becomes 0 cards.[Activate: Main] [Once Per Turn] Trash 4 cards from the top
   //   of your deck. Then, if your deck has 0 cards, set up to 1 of your Characters as active.
-  // PARTIAL: deck-empty loss rule deferred; mapped activateMain trash + conditional setActive.
   {
     cardNumber: 'OP15-022',
-    templateId: 'ability',
-    params: {
-      timing: 'activateMain',
-      oncePerTurn: true,
-      functions: [
-        { fn: 'trashTopDeck', count: 4 },
-        { fn: 'setActiveControllerCharacter', maxTargets: 1, ifGate: [{ kind: 'selfDeckCount', atMost: 0 }] },
-      ],
-    },
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'startOfGame',
+          functions: [{ fn: 'deferEmptyDeckDefeatToEndOfTurn' }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          functions: [
+            { fn: 'trashTopDeck', count: 4 },
+            {
+              fn: 'setActiveControllerCharacter',
+              maxTargets: 1,
+              filter: { rested: true },
+              ifGate: [{ kind: 'selfDeckCount', atMost: 0 }],
+            },
+          ],
+        },
+      },
+    ],
   },
 
 

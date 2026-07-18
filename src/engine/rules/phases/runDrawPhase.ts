@@ -7,13 +7,14 @@
  * normally).
  *
  * 9-2-1 / 1-2-1-1: attempting to draw from an empty deck is an immediate
- * loss for that player ("decked out"). Checked here, not just left to fail
- * later, since this is the only phase that ever draws from the main deck
- * outside of setup.
+ * loss for that player ("decked out"), unless an empty-deck defeat deferral
+ * is active (OP15-022) — then the draw is skipped as an impossible action
+ * and loss is deferred to end of turn.
  */
 import type { GameState } from '../../state/game';
 import { createActionLogger } from '../shared/actionLogger';
 import { addToZoneBottom } from '../shared/zoneOps';
+import { hasEmptyDeckDefeatDeferral, withDeckBecameZeroThisTurn } from '../shared/emptyDeckDefeat';
 import type { PhaseStepResult } from './phaseStepResult';
 
 export function runDrawPhase(state: GameState): PhaseStepResult {
@@ -34,6 +35,24 @@ export function runDrawPhase(state: GameState): PhaseStepResult {
   }
 
   if (player.deck.cardIds.length === 0) {
+    if (hasEmptyDeckDefeatDeferral(state, player.playerId)) {
+      const deferred = withDeckBecameZeroThisTurn(state, player.playerId);
+      logger.push({
+        actorPlayerId: player.playerId,
+        type: 'PHASE_CHANGED',
+        message: `${player.playerId} cannot draw — deck has 0 cards (draw skipped; empty-deck defeat deferred).`,
+        data: { phase: 'draw', skipped: true, reason: 'emptyDeckDrawSkipped' },
+        relatedCardInstanceIds: [],
+        visibility: 'public',
+      });
+      const nextState: GameState = {
+        ...deferred,
+        currentPhase: 'don',
+        log: [...deferred.log, ...logger.log],
+      };
+      return { state: nextState, log: logger.log };
+    }
+
     const opponentId = Object.keys(state.players).find((id) => id !== player.playerId) ?? null;
     logger.push({
       actorPlayerId: player.playerId,
@@ -52,7 +71,7 @@ export function runDrawPhase(state: GameState): PhaseStepResult {
   }
 
   const [drawnId, ...restDeck] = player.deck.cardIds;
-  const newPlayer = {
+  let newPlayer = {
     ...player,
     deck: { ...player.deck, cardIds: restDeck },
     hand: addToZoneBottom(player.hand, drawnId),
@@ -74,13 +93,16 @@ export function runDrawPhase(state: GameState): PhaseStepResult {
     visibility: { visibleTo: [player.playerId] },
   });
 
-  const nextState: GameState = {
+  let nextState: GameState = {
     ...state,
     players: { ...state.players, [player.playerId]: newPlayer },
     cardsById,
     currentPhase: 'don',
     log: [...state.log, ...logger.log],
   };
+  if (restDeck.length === 0) {
+    nextState = withDeckBecameZeroThisTurn(nextState, player.playerId);
+  }
 
   return { state: nextState, log: logger.log };
 }

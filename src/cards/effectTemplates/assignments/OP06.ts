@@ -559,11 +559,23 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-083 (character) Oars —
-  //   This Character cannot attack.[Activate: Main] You may K.O. 1 of your {Thriller Bark Pirates} type
-  //   Characters: This Character's effect is negated during this turn.
-  //   PARTIAL: the static self attack lock is implemented below; the effect-negation activated ability remains deferred.
-  { cardNumber: 'OP06-083', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent' }] } },
+  // OP06-083 — cannot attack; [Activate: Main] you may K.O. 1 of your {Thriller Bark Pirates}: negate this Character's effects this turn.
+  {
+    cardNumber: 'OP06-083',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'preventAttack', target: { ref: 'self' }, duration: 'permanent' }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          functions: [
+            { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates' } }, optional: true },
+            { fn: 'negateEffect', target: { ref: 'self' }, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP06-084 — [On K.O.] Up to 1 of your Leader or Character cards gains +1000 power during this turn.
   { cardNumber: 'OP06-084', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 1000, duration: 'duringThisTurn', optional: true }] } },
@@ -829,8 +841,7 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP06-116 (event) Reject —
-  //   PARTIAL: "deal 1 damage" when opponent has 1 Life deferred; mapped choose-one KO vs life-to-hand.
+  // OP06-116 — Choose one: K.O. opp ≤5; OR if opp has 1 Life, deal 1 damage, then your Life top → hand. [Trigger] Draw 1.
   {
     cardNumber: 'OP06-116',
     templates: [
@@ -844,7 +855,18 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
             prompt: 'Choose one:',
             options: [
               { label: 'ko', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] },
-              { label: 'life', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true, ifGate: [{ kind: 'opponentLife', atMost: 1 }] }] },
+              {
+                label: 'damage',
+                functions: [
+                  { fn: 'dealDamage', player: 'opponent', amount: 1, ifGate: [{ kind: 'opponentLife', atLeast: 1, atMost: 1 }] },
+                  {
+                    fn: 'moveCards',
+                    from: { zone: 'life', player: 'controller', position: 'top' },
+                    to: { zone: 'hand', player: 'owner' },
+                    ifPrevious: 'previousMovedAny',
+                  },
+                ],
+              },
             ],
           }],
         },

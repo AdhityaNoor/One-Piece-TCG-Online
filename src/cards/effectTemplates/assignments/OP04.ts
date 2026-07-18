@@ -575,9 +575,38 @@ export const OP04_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP04-090 (character) Monkey.D.Luffy —
-  //   PARTIAL: the static active-Character attack grant is implemented below; the recycle-to-set-active line remains deferred.
-  { cardNumber: 'OP04-090', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent' }] } },
+  // OP04-090 — can attack active Characters; [Activate: Main] [Once Per Turn] return 7 trash → bottom: set active, then skip next Refresh.
+  {
+    cardNumber: 'OP04-090',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent' }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          functions: [
+            {
+              fn: 'chooseOne',
+              chooser: 'controller',
+              prompt: 'Return 7 cards from your trash to the bottom of your deck?',
+              options: [
+                { label: 'skip', functions: [] },
+                {
+                  label: 'pay',
+                  functions: [
+                    { fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, minTargets: 7, maxTargets: 7 },
+                    { fn: 'setActiveSelf', ifPrevious: 'previousMovedAny' },
+                    { fn: 'preventRefresh', target: { ref: 'self' }, ifPrevious: 'previousMovedAny' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
 
   // OP04-092 - [On Play] Look at 3; add Dressrosa other than this card's name, trash rest.
   {

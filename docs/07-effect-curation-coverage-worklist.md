@@ -1,5 +1,110 @@
 # Effect Curation — Coverage Addition Worklist
 
+## Progress update — 2026-07-18 (onCharacterRested watcher)
+
+Closed **2** partials (**30 → 28**). New reusable pieces:
+
+- **`onCharacterRested`** — board-wide reactive when a Character is effect-rested (cascade from `ctx.rest()`).
+- **`restedByControllerEffect`** — gate for “rested by your effect”.
+
+| Card | Closure |
+| --- | --- |
+| OP07-031 | [Your Turn] OPT: onCharacterRested + restedByControllerEffect → drawAndTrash |
+| OP10-036 | [Your Turn] OPT: onCharacterRested + restedByControllerEffect → setActiveControllerDon |
+
+### Next recommended targets
+
+- Hard defer: ST28-004, EB02-039, Counter-aura OP16-118.
+- Scan remaining expressible partials in OP05 / OP13 clusters.
+
+## Progress update — 2026-07-18 (rest-cause gates)
+
+Closed **2** partials (**32 → 30**). New reusable pieces:
+
+- **`restedByOpponentEffect` / `restedByEffect` / `restedByEffectSourceCategory`** — onRested gates using effect-rest attribution (`ctx.rest()` → cascade with `restCause` / `restSourceInstanceId`).
+- Effect-rest cascade now **pays ability costs** (aligned with onKO); attack/cost rests via `fireRestTransitions` still omit restCause so opponent-effect gates fail closed.
+
+| Card | Closure |
+| --- | --- |
+| OP14-070 | onRested: opponent Character effect → DON!! −1 → setActiveSelf; [Blocker] |
+| PRB02-009 | onRested: opponent effect → trashThis → draw 2; [Blocker] |
+
+### Next recommended targets
+
+- See onCharacterRested update above.
+
+## Progress update — 2026-07-18 (Batch A + dealDamage)
+
+Closed **7** partials (**39 → 32**). New reusable piece:
+
+- **`dealDamage`** — effect Life damage (Life→hand + curated Trigger offer + 0-Life loss). Shared helper `dealLifeDamage.ts`.
+
+| Card | Closure |
+| --- | --- |
+| OP04-090 | Activate: return 7 trash → bottom, set active, preventRefresh |
+| OP03-076 | onCharacterKoed: optional trash 2 → set Leader active |
+| OP06-083 | Activate: KO own Thriller Bark → negate self this turn |
+| OP11-031 | Activate: grant canAttackCharactersWhileSummoningSick to Fish-Man/Merfolk |
+| OP14-056 | onHandTrashed → negateEffect self this turn |
+| OP06-116 | chooseOne: KO ≤5 **or** dealDamage (opp Life = 1) then Life→hand |
+| EB03-055 | [Opponent's Turn] [On K.O.] optional dealDamage 1 |
+
+### Next recommended targets
+
+- OP14-070 / PRB02-009 — `restedByOpponentEffect` (+ category) on `onRested`.
+- OP07-031 / OP10-036 — broader “Character rested by your effect” watcher.
+- Hard defer: ST28-004, EB02-039, Counter-aura OP16-118.
+
+## Progress update — 2026-07-18 (OP15-022 Brook empty-deck rules)
+
+Closed **OP15-022** (**40 → 39**). Engine + catalog:
+
+- **`deferEmptyDeckDefeatToEndOfTurn`** — permanent continuous: do not lose from empty deck; mark `deckBecameZeroThisTurn`; lose at End Phase via `cardEffect`.
+- **9-2-1-2 checkpoint on `END_MAIN_PHASE`** — ending Main with deck at 0 loses immediately (unless deferred). Fixes “only lose on next Refresh/Draw”.
+- Activate Main Then (`selfDeckCount` atMost 0 → set rested Character active) works with deck already at 0.
+
+### Next recommended targets
+
+- OP06-116 / EB03-055 — need real `dealDamage` (Life→hand + Trigger window).
+- OP14-070 / PRB02-009 — rest-cause gates on `onRested`.
+- Hard defer: ST28-004, EB02-039, Counter-aura OP16-118.
+
+## Progress update — 2026-07-18 (selectTargets binder + OP02 counter closures)
+
+Closed **2** more partials (**42 → 40**). New reusable piece:
+
+- **`selectTargets`** — choose into var `t` with no follow-up (replaces +0 `addPower` picker for `koImmunityChosen`).
+
+| Card | Closure |
+| --- | --- |
+| OP02-089 | Counter DON!!−1: up to 2 opp Leader/Characters −3000; Trigger kept |
+| OP02-118 | trash 1 → `selectTargets` Character → battle KO immunity |
+
+### Next recommended targets
+
+- OP06-116 / EB03-055 — need real `dealDamage` (Life→hand + Trigger window).
+- OP14-070 / PRB02-009 — rest-cause gates on `onRested`.
+- Hard defer: ST28-004, EB02-039, Counter-aura OP16-118.
+
+## Progress update — 2026-07-18 (character-deficit dual KO + opponent DON ramp + reveal-Event branch)
+
+Closed **3** more partials (**45 → 42**). New reusable pieces:
+
+- **`selfCharacterCountAtLeastLessThanOpponent`** — Character-count deficit gate (OP10-098).
+- **`addDonFromDeck.player: 'opponent'`** — opponent may ramp from their DON!! deck (OP12-075).
+- **`boundVarMatching`** — sequence gate on a prior binding's category (OP01-063 Event reveal).
+
+| Card | Closure |
+| --- | --- |
+| OP10-098 | Main: ≥2 fewer Characters → KO base≤6 + different base≤4; Trigger negate kept |
+| OP12-075 | KO ≤3, then opponent `chooseOne` add 1 active DON!! or decline |
+| OP01-063 | reveal 1 opp hand → if Event, up to 1 opp Life top → deck bottom |
+
+### Next recommended targets
+
+- OP06-116 / EB03-055 — need real `dealDamage` (Life→hand + Trigger window).
+- Hard defer: ST28-004, EB02-039, Counter-aura OP16-118.
+
 ## Progress update — 2026-07-18 (Life↔hand Egghead, Ark Noah hand, reveal-giveDon, cost=DON KO)
 
 Closed **4** more partials (**49 → 45**). New reusable piece:
@@ -15,8 +120,7 @@ Closed **4** more partials (**49 → 45**). New reusable piece:
 
 ### Next recommended targets
 
-- OP10-098 — dual-K.O. with character-count-less-than-opponent gate.
-- OP12-075 — opponent may add DON!! from deck.
+- OP01-063 — Event-branch after hand reveal.
 - Hard defer: ST28-004, EB02-039, Counter-aura OP16-118.
 
 ## Progress update — 2026-07-18 (reveal-from-var play + trash pair one-rested)

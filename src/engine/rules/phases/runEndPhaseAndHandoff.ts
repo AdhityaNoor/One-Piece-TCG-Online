@@ -19,10 +19,15 @@
  * turnNumber === 1), currentPhase returns to 'refresh' for the new turn
  * player. advanceAutomaticPhases (the orchestrator) picks this up and keeps
  * running Refresh -> Draw -> DON!! -> Main(stop) for them.
+ *
+ * Empty-deck defeat for non-deferred players is judged when Main ends
+ * (`END_MAIN_PHASE`). Leaders with empty-deck defeat deferral (OP15-022)
+ * lose here at end of turn via card text.
  */
 import type { GameState } from '../../state/game';
 import { createActionLogger } from '../shared/actionLogger';
 import type { CardDefinitionLookup } from '../shared/definitions';
+import { applyDeferredEmptyDeckEndOfTurnLoss } from '../shared/emptyDeckDefeat';
 import { fireEndOfTurn, type EffectTemplateRegistry } from '../../effects';
 import type { PhaseStepResult } from './phaseStepResult';
 import { consumeEndOfTurnDelayedEffects } from './delayedEffects';
@@ -38,7 +43,17 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
   // expire and before the turn passes, with each of the ending player's cards as source.
   const eot = fireEndOfTurn(state, endingPlayerId, registry, defs, null);
   const delayed = consumeEndOfTurnDelayedEffects(eot.state, endingPlayerId, defs);
-  const working = delayed.state;
+  let working = delayed.state;
+
+  // OP15-022-style: lose at end of the turn the deck became 0 (after EOT effects).
+  const deferredLoss = applyDeferredEmptyDeckEndOfTurnLoss(working, endingPlayerId);
+  working = deferredLoss.state;
+  if (working.gameOver) {
+    return {
+      state: working,
+      log: [...eot.log, ...delayed.log, ...deferredLoss.log],
+    };
+  }
 
   const logger = createActionLogger(working, null);
 
@@ -72,8 +87,20 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
     visibility: 'public',
   });
 
+  // Clear the ending player's deck-became-zero flag on handoff (safety; deferred
+  // loss above should have already ended the game when the flag was set).
+  const endingPlayer = working.players[endingPlayerId];
+  const players =
+    endingPlayer?.deckBecameZeroThisTurn
+      ? {
+          ...working.players,
+          [endingPlayerId]: { ...endingPlayer, deckBecameZeroThisTurn: false },
+        }
+      : working.players;
+
   const nextState: GameState = {
     ...working,
+    players,
     continuousEffects,
     turnNumber: working.turnNumber + 1,
     activePlayerId: nextPlayerId,
@@ -82,5 +109,8 @@ export function runEndPhaseAndHandoff(state: GameState, defs: CardDefinitionLook
     log: [...working.log, ...logger.log],
   };
 
-  return { state: nextState, log: [...eot.log, ...delayed.log, ...logger.log] };
+  return {
+    state: nextState,
+    log: [...eot.log, ...delayed.log, ...deferredLoss.log, ...logger.log],
+  };
 }

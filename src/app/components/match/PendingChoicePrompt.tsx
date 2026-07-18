@@ -21,6 +21,7 @@ import { ZoneSection } from './ZoneSection';
 import { CardChoiceGallery } from './CardChoiceGallery';
 import { StlCoinCanvas, COIN_FLIP_DURATION_MS } from './StlCoinCanvas';
 import { isDonReturnChoice } from './donChoiceUtils';
+import { isFieldCardChoice } from './fieldChoiceUtils';
 import {
   ChoicePromptActionList,
   ChoicePromptActionRow,
@@ -366,6 +367,13 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
   const choice = state.pendingChoices[0];
   if (!choice) return null;
 
+  // Field-card SELECT_CARDS choices (K.O. replacement's "rest 2 of your
+  // cards", 3-7-6-1 Character Area overflow, curated chooseTargets against
+  // in-play Leader/Character/Stage cards, etc.) are resolved by tapping the
+  // actual card on the mat — see useBoardSelection.ts's 'resolvingFieldChoice'
+  // mode and MatchScreen.tsx's FieldChoiceBanner — instead of this modal.
+  if (isFieldCardChoice(state, choice)) return null;
+
   if (choice.sourceEffectId === 'rule:characterAreaOverflow') {
     const board = projectPlayerBoard(state, defs, images, choice.playerId);
     return (
@@ -538,7 +546,12 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
 
     if (choice.kind === 'SELECT_CARDS') {
       const candidateIds = choice.constraints.candidateInstanceIds ?? [];
-      const visibleIds = choice.constraints.visibleInstanceIds ?? candidateIds;
+      // uiShowOnlyCandidates: opaque whole-deck search ops (playFromDeck /
+    // playStageFromDeck / searchDeck) keep the full deck in
+    // visibleInstanceIds for the engine's log/AI contract, but the picker
+    // should only ever render the actually-eligible subset — nobody wants to
+    // browse 40+ mostly-irrelevant deck cards to find the 1-2 that matter.
+    const visibleIds = choice.constraints.uiShowOnlyCandidates ? candidateIds : choice.constraints.visibleInstanceIds ?? candidateIds;
       const candidates = visibleIds.map((id) => buildCardView(defs, state, images, id));
       const { min, max } = choice.constraints;
       const count = selectedIrIds.length;
@@ -642,7 +655,12 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     }
 
     const candidateIds = choice.constraints.candidateInstanceIds ?? [];
-    const visibleIds = choice.constraints.visibleInstanceIds ?? candidateIds;
+    // uiShowOnlyCandidates: opaque whole-deck search ops (playFromDeck /
+    // playStageFromDeck / searchDeck) keep the full deck in
+    // visibleInstanceIds for the engine's log/AI contract, but the picker
+    // should only ever render the actually-eligible subset — nobody wants to
+    // browse 40+ mostly-irrelevant deck cards to find the 1-2 that matter.
+    const visibleIds = choice.constraints.uiShowOnlyCandidates ? candidateIds : choice.constraints.visibleInstanceIds ?? candidateIds;
     const candidates = visibleIds.map((id) => buildCardView(defs, state, images, id));
     const { min, max } = choice.constraints;
     const distinctNames = choice.constraints.distinctNames ?? false;

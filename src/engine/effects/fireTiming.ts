@@ -30,6 +30,7 @@ const REACTIVE_ONCE_PER_TURN_KEYS: Partial<Record<IrTiming, string>> = {
   onLifeToHand: 'onLifeToHand',
   onTriggerActivated: 'onTriggerActivated',
   onCharacterKoed: 'onCharacterKoed',
+  onCharacterRested: 'onCharacterRested',
   onRemovedFromField: 'onRemovedFromField',
   onCharacterPlayedFromTrash: 'onCharacterPlayedFromTrash',
   onHandTrashed: 'onHandTrashed',
@@ -700,6 +701,38 @@ export function fireCharacterKoedReactions(
       log = [...log, ...res.log];
       if (res.pendingChoices.length > 0) return { state: working, log, pendingChoices: res.pendingChoices };
     }
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
+/**
+ * Board-wide [When a Character is rested by … effect] (timing onCharacterRested).
+ * Called from finishWithCascade for each effect-rested Character (not Leaders/DON!!).
+ * Pair with restedByControllerEffect / restedByOpponentEffect gates.
+ */
+export function fireCharacterRestedReactions(
+  state: GameState,
+  event: { targetInstanceId: string; cause: 'effect'; sourceInstanceId: string },
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const target = state.cardsById[event.targetInstanceId];
+  if (!target) return noop(state);
+  const def = defs[target.cardDefinitionId];
+  if (!def || def.category !== 'character') return noop(state);
+
+  const eventContext: GateEvalContext = {
+    restCause: event.cause,
+    restSourceInstanceId: event.sourceInstanceId,
+  };
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const observerId of Object.keys(working.players)) {
+    const res = fireReactiveAbilitiesForPlayer(working, observerId, 'onCharacterRested', registry, defs, actionId, eventContext);
+    working = res.state;
+    log = [...log, ...res.log];
+    if (res.pendingChoices.length > 0) return { state: working, log, pendingChoices: res.pendingChoices };
   }
   return { state: working, log, pendingChoices: [] };
 }

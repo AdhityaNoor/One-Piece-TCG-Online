@@ -236,6 +236,8 @@ export type EffectOp =
   | ({ op: 'preventControllerCharacterPlay'; player?: 'controller' | 'opponent'; duration: IrDuration; minBaseCost?: number; maxBaseCost?: number } & EffectOpSequenceGate)
   | ({ op: 'preventControllerHandPlay'; player?: 'controller' | 'opponent'; duration: IrDuration } & EffectOpSequenceGate)
   | ({ op: 'preventControllerCharacterSetActiveDon'; player?: 'controller' | 'opponent'; duration: IrDuration } & EffectOpSequenceGate)
+  /** Do not lose from empty deck; lose at end of the turn the deck became 0 (OP15-022). */
+  | ({ op: 'deferEmptyDeckDefeatToEndOfTurn'; duration: IrDuration } & EffectOpSequenceGate)
   | ({ op: 'giveDon'; target: Selector; count: number } & EffectOpSequenceGate)
   // Reassign up to N DON!! cards already given on the controller's field onto a chosen Character.
   | ({ op: 'giveGivenDon'; donTarget: Selector; characterTarget: Selector } & EffectOpSequenceGate)
@@ -320,8 +322,10 @@ export type EffectOp =
   | ({ op: 'trashTopDeck'; count?: number; countVar?: string } & EffectOpSequenceGate)
   // Trash the top `count` Life cards of a player (e.g. "Trash up to 1 of your opponent's Life cards").
   | ({ op: 'trashLife'; player: 'opponent' | 'controller'; count?: number; untilLife?: number } & EffectOpSequenceGate)
+  /** Deal N Life damage (Life→hand + Trigger window + 0-Life loss). Handled in runOpList. */
+  | ({ op: 'dealDamage'; player?: 'controller' | 'opponent'; amount: number } & EffectOpSequenceGate)
   // Add `count` DON!! from the DON!! deck to the cost area, active or rested (DON!! ramp).
-  | ({ op: 'addDonFromDeck'; count: number; rested: boolean } & EffectOpSequenceGate)
+  | ({ op: 'addDonFromDeck'; count: number; rested: boolean; player?: 'controller' | 'opponent' } & EffectOpSequenceGate)
   // Draw N where N = count of controller's in-play Characters with a matching type.
   | ({ op: 'drawByTypedCharacterCount'; typeIncludes: string } & EffectOpSequenceGate)
   | ({ op: 'drawByEventCount'; countField: 'handTrashedCount' } & EffectOpSequenceGate)
@@ -366,6 +370,8 @@ export type IrTiming =
   | 'activateMain'
   | 'onKO'
   | 'onCharacterKoed'
+  /** When any Character is rested by an effect — board-wide watcher (not the rested card's own onRested). */
+  | 'onCharacterRested'
   | 'onRested'
   | 'onDonReturned'
   | 'onDonGiven'
@@ -434,6 +440,7 @@ export type AbilityGate =
   | { kind: 'selfHand'; atLeast?: number; atMost?: number } // "If you have N or less cards in your hand"
   | { kind: 'selfLifeAndHand'; atLeast?: number; atMost?: number } // "If you have a total of N or less cards in your Life area and hand"
   | { kind: 'selfHandAtLeastLessThanOpponent'; count: number } // "If your hand count is at least N less than your opponent's"
+  | { kind: 'selfCharacterCountAtLeastLessThanOpponent'; count: number } // "If your Character count is at least N less than your opponent's"
   | { kind: 'anyCharacterExactCost'; exactCost: number } // "If there is a Character with a cost of N"
   | { kind: 'selfHasCharacterCostAtLeast'; atLeast: number } // "If you have a Character with a cost of N or more"
   | { kind: 'selfCharacterCostCount'; minCost: number; atLeast?: number; atMost?: number } // "If you have N or more/fewer Characters with a cost of M or more"
@@ -485,6 +492,8 @@ export type AbilityGate =
   | { kind: 'anyCharacterCostAtLeast'; atLeast: number } // "if there is a Character with a cost of N or more"
   /** Sequence-local: total length of the named bindings (needs GateEvalContext.bindings). */
   | { kind: 'boundVarsTotalCount'; varNames: string[]; atLeast?: number; atMost?: number }
+  /** Sequence-local: at least one id in `varName` matches the filter (needs GateEvalContext.bindings). */
+  | { kind: 'boundVarMatching'; varName: string; category?: Exclude<CardCategory, 'don'> }
   | { kind: 'anyCharacterBasePowerAtLeast'; power: number } // "if there is a Character with a base power of N or more"
   | { kind: 'opponentHasCharacterExactCost'; exactCost: number } // "if your opponent has a Character with a cost of N"
   | { kind: 'selfDonReturnedThisAction'; atLeast?: number; atMost?: number } // "When N or more DON!! cards on your field are returned …"
@@ -508,6 +517,14 @@ export type AbilityGate =
   | { kind: 'koByOpponentEffect' }
   // onKO only: the Character was K.O.'d by any effect (not battle damage).
   | { kind: 'koByEffect' }
+  // onRested / onCharacterRested: rested by an opponent-controlled effect (not attack/cost rests).
+  | { kind: 'restedByOpponentEffect' }
+  // onRested / onCharacterRested: rested by any effect (not attack/cost rests).
+  | { kind: 'restedByEffect' }
+  // onRested / onCharacterRested: rested by an effect controlled by the ability owner ("by your effect").
+  | { kind: 'restedByControllerEffect' }
+  // onRested / onCharacterRested: the resting effect's source card category.
+  | { kind: 'restedByEffectSourceCategory'; category: Exclude<CardCategory, 'don'> }
   | { kind: 'removedFromFieldController'; player: 'opponent' | 'controller' } // onRemovedFromField: whose card left the field
   | { kind: 'removedByEffectController'; player: 'opponent' | 'controller' } // onRemovedFromField: whose effect caused the removal
   | { kind: 'removedFromFieldCategory'; category: Exclude<CardCategory, 'don'> } // onRemovedFromField: removed card category

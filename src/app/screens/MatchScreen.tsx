@@ -36,6 +36,7 @@ import { useMatchStore } from '../store/matchStore';
 import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useOnlineStore } from '../store/onlineStore';
+import { usePhaseAnnounceStore } from '../store/phaseAnnounceStore';
 import type { CardView } from '../../board/projection';
 import { logEffectText, logSourceCardLabel } from '../lib/logDisplay';
 import { buildBugReportCardOptions } from '../lib/bugReportCardOptions';
@@ -745,6 +746,21 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       </div>
 
       <TurnChangeBanner turnNumber={matchState.turnNumber} activePlayerId={matchState.activePlayerId} activePlayerName={nameFor(matchState.activePlayerId)} phase={matchState.currentPhase} gameOver={!!matchState.gameOver} />
+      <PhaseTransitionBanner nameFor={nameFor} gameOver={!!matchState.gameOver} />
+      {/* On-field SELECT_CARDS choices (see useBoardSelection.ts's
+          'resolvingFieldChoice') resolve via board dimming, not this banner
+          — but the banner is what tells the player WHAT they're choosing and
+          WHY (source card + effect text). Deliberately rendered unconditionally
+          (unlike PendingChoicePrompt below): the whole point of
+          'resolvingFieldChoice' being viewer-agnostic is that an online
+          opponent also sees this — as a read-only "they're selecting a card"
+          indicator — instead of nothing at all. */}
+      {selection.fieldChoiceInfo && (
+        <FieldChoiceBanner
+          info={selection.fieldChoiceInfo}
+          viewerLabel={isPinnedPerspective && selection.fieldChoiceInfo.playerId !== localPlayerId ? `${nameFor(selection.fieldChoiceInfo.playerId)} is selecting a card…` : null}
+        />
+      )}
       {/* Casual: a pending choice belonging to the opponent seat is theirs to
           resolve over the network, not this client's — suppress the prompt so
           the local human can't answer for the opponent (the WaitingForOpponent
@@ -1962,6 +1978,93 @@ function TurnChangeBanner({
           </p>
           <p className="mt-2 text-xs font-black uppercase tracking-[0.3em] text-white/72">Begin</p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Non-blocking prompt banner shown over the field while a
+ * 'resolvingFieldChoice' selection mode is active (see useBoardSelection.ts)
+ * — tells the player WHAT they're choosing and WHY. Pinned near the top
+ * (not centered like TurnChangeBanner) so it never covers the mat cards it's
+ * describing; pointer-events-none throughout so it can never block a tap on
+ * the dimmed/eligible cards underneath. `viewerLabel`, when set, means this
+ * client is the non-deciding online opponent looking in — same underlying
+ * banner, just with an attributed prefix instead of a bare instruction (see
+ * MatchScreen's call site for the exact condition).
+ */
+function FieldChoiceBanner({
+  info,
+  viewerLabel,
+}: {
+  info: { prompt: string; attribution: string | null };
+  viewerLabel: string | null;
+}) {
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-3 z-[108] flex justify-center px-4" aria-live="polite">
+      <div className="pointer-events-none max-w-[92vw] border border-gold/35 bg-black/60 px-4 py-2.5 text-center shadow-[0_18px_42px_rgba(0,0,0,0.4)] backdrop-blur-md sm:max-w-2xl">
+        {viewerLabel && <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-gold/85">{viewerLabel}</p>}
+        <p className="text-xs font-bold leading-snug text-white sm:text-sm">
+          {info.prompt}
+          {info.attribution && <span className="font-normal text-white/60"> ({info.attribution})</span>}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Plays back the phaseAnnounceStore queue one item at a time — "Refresh
+ * Phase", "Draw Phase", "DON!! Phase" — so a single dispatch that runs
+ * advanceAutomaticPhases through several phases at once (see
+ * parsePhaseAnnouncements.ts doc comment) still reads as a sequence rather
+ * than jumping straight to whatever phase the state settles at. Mirrors
+ * TurnChangeBanner's show/hide timing pattern, but is queue-driven instead
+ * of prop-diff-driven since it needs to display MULTIPLE transitions that
+ * all land in the same React update. Not gated by animationsEnabled — see
+ * phaseAnnounceStore.ts doc comment.
+ */
+function PhaseTransitionBanner({ nameFor, gameOver }: { nameFor: (id: string) => string; gameOver: boolean }) {
+  const queue = usePhaseAnnounceStore((s) => s.queue);
+  const dequeue = usePhaseAnnounceStore((s) => s.dequeue);
+  const current = queue[0] ?? null;
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (gameOver) usePhaseAnnounceStore.getState().clear();
+  }, [gameOver]);
+
+  useEffect(() => {
+    if (!current || gameOver) return;
+    setVisible(false);
+    const showFrame = window.requestAnimationFrame(() => setVisible(true));
+    const hideTimer = window.setTimeout(() => setVisible(false), 900);
+    const dequeueTimer = window.setTimeout(() => dequeue(), 1050);
+
+    return () => {
+      window.cancelAnimationFrame(showFrame);
+      window.clearTimeout(hideTimer);
+      window.clearTimeout(dequeueTimer);
+    };
+    // Re-trigger only when a NEW item reaches the front of the queue, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.id, gameOver]);
+
+  if (!current || gameOver) return null;
+
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-16 z-[107] flex justify-center px-4" aria-live="polite">
+      <div
+        key={current.id}
+        className={[
+          'pointer-events-none min-w-[14rem] max-w-[90vw] border border-gold/40 bg-black/65 px-5 py-2.5 text-center shadow-[0_14px_36px_rgba(0,0,0,0.45)] backdrop-blur-md transition-all duration-300 ease-out',
+          visible ? 'translate-y-0 scale-100 opacity-100' : '-translate-y-3 scale-95 opacity-0',
+        ].join(' ')}
+      >
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/55">{nameFor(current.playerId)}</p>
+        <p className="font-display text-base font-black uppercase tracking-[0.14em] text-gold sm:text-lg">{current.label}</p>
+        {current.detail && <p className="mt-0.5 text-[11px] font-semibold text-white/70">{current.detail}</p>}
       </div>
     </div>
   );

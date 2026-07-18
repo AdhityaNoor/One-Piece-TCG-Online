@@ -163,8 +163,18 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP07-031 — PARTIAL: fires on any Character rest during your turn, not only rests caused by your effects.
-  { cardNumber: 'OP07-031', templateId: 'ability', params: { timing: 'onRested', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }] } },
+  // OP07-031 — [Blocker]. [Your Turn] [Once Per Turn] If a Character is rested by your effect, draw 1 and trash 1.
+  {
+    cardNumber: 'OP07-031',
+    templateId: 'ability',
+    params: {
+      timing: 'onCharacterRested',
+      oncePerTurn: true,
+      condition: { turn: 'your' },
+      gate: [{ kind: 'restedByControllerEffect' }],
+      functions: [{ fn: 'drawAndTrash', drawCount: 1, trashCount: 1 }],
+    },
+  },
 
   // OP07-032 — Static: can attack Characters on the turn played. [On Play] if Leader {Fish-Man}/{Merfolk}: rest up to 1 opp Character cost <=6.
   {

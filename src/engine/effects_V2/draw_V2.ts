@@ -2,6 +2,7 @@ import type { PlayerReference_V2, ValueExpression_V2 } from '../../cards/effectC
 import type { GameLogEntry } from '../logs/logEntry';
 import { createActionLogger } from '../rules/shared/actionLogger';
 import { addToZoneBottom } from '../rules/shared/zoneOps';
+import { hasEmptyDeckDefeatDeferral, withDeckBecameZeroThisTurn } from '../rules/shared/emptyDeckDefeat';
 import type { GameState } from '../state/game';
 import type { SelectorContext_V2 } from './selectorResolver_V2';
 import { fixedNumberValue_V2 } from './damage_V2';
@@ -43,6 +44,18 @@ export function drawCards_V2(ctx: SelectorContext_V2, playerRef: PlayerReference
     if (!player) break;
 
     if (player.deck.cardIds.length === 0) {
+      if (hasEmptyDeckDefeatDeferral(state, playerId)) {
+        state = withDeckBecameZeroThisTurn(state, playerId);
+        logger.push({
+          actorPlayerId: playerId,
+          type: 'EFFECT_RESOLVED',
+          message: `${playerId} cannot draw — deck has 0 cards (draw skipped; empty-deck defeat deferred).`,
+          data: { reason: 'emptyDeckDrawSkipped', playerId },
+          relatedCardInstanceIds: [],
+          visibility: 'public',
+        });
+        break;
+      }
       const winnerId = opponentOf(state, playerId);
       logger.push({
         actorPlayerId: playerId,
@@ -72,6 +85,9 @@ export function drawCards_V2(ctx: SelectorContext_V2, playerRef: PlayerReference
         [drawnId]: { ...state.cardsById[drawnId], currentZone: 'hand' },
       },
     };
+    if (restDeck.length === 0) {
+      state = withDeckBecameZeroThisTurn(state, playerId);
+    }
     logger.push({
       actorPlayerId: playerId,
       type: 'CARD_DRAWN',

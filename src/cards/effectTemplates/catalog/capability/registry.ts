@@ -90,13 +90,21 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   addDonFromDeck: {
     id: 'addDonFromDeck',
-    summary: 'Add N DON!! from the DON!! deck, active or rested.',
+    summary: 'Add N DON!! from the DON!! deck (controller or opponent), active or rested.',
     params: [
       { name: 'count', type: 'number', required: true },
       { name: 'rested', type: 'boolean', required: true },
+      { name: 'player', type: "'controller' | 'opponent'", required: false, note: 'defaults to controller; opponent for "your opponent may add 1 DON!!"' },
     ],
-    covers: ['add up to {N} DON!! card from your DON!! deck and set it as active', '... and rest it'],
-    examples: [{ cardNumber: 'OP12-062', snippet: "{ fn: 'addDonFromDeck', count: 1, rested: true }" }],
+    covers: [
+      'add up to {N} DON!! card from your DON!! deck and set it as active',
+      '... and rest it',
+      'your opponent may add 1 DON!! card from their DON!! deck and set it as active',
+    ],
+    examples: [
+      { cardNumber: 'OP12-062', snippet: "{ fn: 'addDonFromDeck', count: 1, rested: true }" },
+      { cardNumber: 'OP12-075', snippet: "{ fn: 'addDonFromDeck', count: 1, rested: false, player: 'opponent' }" },
+    ],
   },
   giveDon: {
     id: 'giveDon',
@@ -508,6 +516,30 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     ],
     covers: ['you cannot play cards from your hand during this turn'],
     examples: [{ cardNumber: 'OP13-028', snippet: "{ fn: 'preventControllerHandPlay', duration: 'duringThisTurn' }" }],
+  },
+  deferEmptyDeckDefeatToEndOfTurn: {
+    id: 'deferEmptyDeckDefeatToEndOfTurn',
+    summary: 'Do not lose from having 0 cards in deck; instead lose at the end of the turn in which the deck became 0 (even if cards return to the deck). Register at startOfGame on Leaders.',
+    params: [{ name: 'duration', type: 'IrDuration', required: false, note: 'defaults to permanent' }],
+    covers: [
+      'Under the rules of this game, you do not lose when your deck has 0 cards. You lose at the end of the turn in which your deck becomes 0 cards.',
+    ],
+    examples: [{ cardNumber: 'OP15-022', snippet: "{ fn: 'deferEmptyDeckDefeatToEndOfTurn' }" }],
+  },
+  dealDamage: {
+    id: 'dealDamage',
+    summary: 'Deal N Life damage: top Life → hand with [Trigger] offer; 0 Life loses (9-2-1). Not the same as trashing Life or adding Life to hand without damage.',
+    params: [
+      { name: 'amount', type: 'number', required: true },
+      { name: 'player', type: "'controller' | 'opponent'", required: false, note: 'defaults to opponent' },
+      { name: 'optional', type: 'boolean', required: false, note: '"You may deal …"' },
+    ],
+    covers: ['deal {N} damage to your opponent', 'you may deal {N} damage to your opponent'],
+    excludes: ['trash {N} Life cards', 'add {N} Life cards to your hand (without dealing damage)'],
+    examples: [
+      { cardNumber: 'OP06-116', snippet: "{ fn: 'dealDamage', player: 'opponent', amount: 1, ifGate: [{ kind: 'opponentLife', atLeast: 1, atMost: 1 }] }" },
+      { cardNumber: 'EB03-055', snippet: "{ fn: 'dealDamage', player: 'opponent', amount: 1, optional: true }" },
+    ],
   },
   preventControllerCharacterSetActiveDon: {
     id: 'preventControllerCharacterSetActiveDon',
@@ -1477,6 +1509,18 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     ],
     examples: [{ cardNumber: 'OP07-033', snippet: "{ fn: 'koImmunityAuraControllerCharacters', scope: 'effect', duration: 'permanent', excludeSource: true, targetCondition: { maxCost: 3, gate: [{ kind: 'selfCharacterCount', atLeast: 3 }] }, effectSourceController: 'opponent' }" }],
   },
+  selectTargets: {
+    id: 'selectTargets',
+    summary: 'Choose targets into var t with no follow-up effect — for riders like koImmunityChosen.',
+    params: [
+      { name: 'target', type: 'TargetSpec', required: true },
+      { name: 'optional', type: 'boolean', required: false },
+      { name: 'maxTargets', type: 'number', required: false },
+      { name: 'prompt', type: 'string', required: false },
+    ],
+    covers: ['Select up to 1 of your Characters (then apply a rider)'],
+    examples: [{ cardNumber: 'OP02-118', snippet: "{ fn: 'selectTargets', target: { group: 'characters', player: 'controller' }, optional: true, maxTargets: 1 }" }],
+  },
   koImmunityChosen: {
     id: 'koImmunityChosen',
     summary: 'Grant K.O. immunity to the card chosen by the immediately preceding function (var t).',
@@ -1485,7 +1529,10 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { name: 'duration', type: 'IrDuration', required: true },
     ],
     covers: ['<after choosing a target> ... that Character cannot be K.O.\'d'],
-    examples: [{ cardNumber: 'OP02-004', snippet: "{ fn: 'koImmunityChosen', scope: 'any', duration: 'untilStartOfNextTurn' }" }],
+    examples: [
+      { cardNumber: 'OP02-004', snippet: "{ fn: 'koImmunityChosen', scope: 'any', duration: 'untilStartOfNextTurn' }" },
+      { cardNumber: 'OP02-118', snippet: "{ fn: 'selectTargets', target: { group: 'characters', player: 'controller' }, optional: true }, { fn: 'koImmunityChosen', scope: 'battle', duration: 'duringThisBattle', ifPrevious: 'previousSelectedAny' }" },
+    ],
   },
   registerKoReplacementSelf: {
     id: 'registerKoReplacementSelf',
@@ -1600,6 +1647,13 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   selfHand: { id: 'selfHand', summary: 'You have N or more/less cards in hand.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have {N} or less cards in your hand'], examples: [{ cardNumber: 'OP11-057', snippet: "{ kind: 'selfHand', atMost: 4 }" }] },
   selfLifeAndHand: { id: 'selfLifeAndHand', summary: 'Your Life count + hand count is at least/at most N.', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have a total of {N} or less cards in your Life area and hand'], examples: [{ cardNumber: 'OP04-040', snippet: "{ kind: 'selfLifeAndHand', atMost: 4 }" }] },
   selfHandAtLeastLessThanOpponent: { id: 'selfHandAtLeastLessThanOpponent', summary: 'Your hand count is at least N less than opponent\'s.', params: [{ name: 'count', type: 'number', required: true }], covers: ['If the number of cards in your hand is at least {N} less than the number in your opponent\'s hand'], examples: [{ cardNumber: 'OP09-092', snippet: "{ kind: 'selfHandAtLeastLessThanOpponent', count: 3 }" }] },
+  selfCharacterCountAtLeastLessThanOpponent: {
+    id: 'selfCharacterCountAtLeastLessThanOpponent',
+    summary: 'Your Character count is at least N less than opponent\'s.',
+    params: [{ name: 'count', type: 'number', required: true }],
+    covers: ['If the number of your Characters is at least {N} less than the number of your opponent\'s Characters'],
+    examples: [{ cardNumber: 'OP10-098', snippet: "{ kind: 'selfCharacterCountAtLeastLessThanOpponent', count: 2 }" }],
+  },
   anyCharacterExactCost: { id: 'anyCharacterExactCost', summary: 'There is a Character with a cost of exactly N (either player).', params: [{ name: 'exactCost', type: 'number', required: true }], covers: ['If there is a Character with a cost of {N}'], examples: [{ cardNumber: 'EB03-046', snippet: "{ kind: 'anyCharacterExactCost', exactCost: 0 }" }] },
   selfHasCharacterCostAtLeast: { id: 'selfHasCharacterCostAtLeast', summary: 'You have a Character with a cost of N or more.', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['If you have a Character with a cost of {N} or more'], examples: [{ cardNumber: 'OP08-085', snippet: "{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }" }] },
   selfCharacterCostCount: { id: 'selfCharacterCostCount', summary: 'You have N or more Characters with a cost of M or more.', params: [{ name: 'minCost', type: 'number', required: true }, { name: 'atLeast', type: 'number', required: true }], covers: ['If you have {N} or more Characters with a cost of {M} or more'], examples: [{ cardNumber: 'OP12-081', snippet: "{ kind: 'selfCharacterCostCount', minCost: 8, atLeast: 2 }" }] },
@@ -1654,6 +1708,16 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
     covers: ['if 2 cards were chosen from the prior picks (orientation / pair follow-ups)'],
     examples: [{ cardNumber: 'OP06-086', snippet: "{ kind: 'boundVarsTotalCount', varNames: ['pairA', 'pairB'], atLeast: 2 }" }],
   },
+  boundVarMatching: {
+    id: 'boundVarMatching',
+    summary: 'Sequence-local: at least one id in varName matches category (requires GateEvalContext.bindings).',
+    params: [
+      { name: 'varName', type: 'string', required: true },
+      { name: 'category', type: 'CardCategory', required: false },
+    ],
+    covers: ['if the revealed card is an Event'],
+    examples: [{ cardNumber: 'OP01-063', snippet: "{ kind: 'boundVarMatching', varName: 't', category: 'event' }" }],
+  },
   anyCharacterBasePowerAtLeast: { id: 'anyCharacterBasePowerAtLeast', summary: 'There is a Character with base power N or more (either player).', params: [{ name: 'power', type: 'number', required: true }], covers: ['unless there is a Character with {N} base power or more'], examples: [{ cardNumber: 'EB04-051', snippet: "{ kind: 'anyCharacterBasePowerAtLeast', power: 12000 }" }] },
   selfCharactersTotalCostAtLeast: { id: 'selfCharactersTotalCostAtLeast', summary: 'Total current cost of your Characters is N or more.', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['If the total cost of your Characters is {N} or more'], examples: [{ cardNumber: 'OP10-022', snippet: "{ kind: 'selfCharactersTotalCostAtLeast', atLeast: 5 }" }] },
   opponentHasCharacterExactCost: { id: 'opponentHasCharacterExactCost', summary: 'Opponent has a Character with a cost of exactly N.', params: [{ name: 'exactCost', type: 'number', required: true }], covers: ['if your opponent has a Character with a cost of {N}'], examples: [{ cardNumber: 'OP07-087', snippet: "{ kind: 'opponentHasCharacterExactCost', exactCost: 0 }" }] },
@@ -1684,6 +1748,34 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
     params: [],
     covers: ["When this Character is K.O.'d by an effect"],
     examples: [{ cardNumber: 'ST15-003', snippet: "{ kind: 'koByEffect' }" }],
+  },
+  restedByOpponentEffect: {
+    id: 'restedByOpponentEffect',
+    summary: 'onRested only: this card was rested by an opponent-controlled effect (not attack declaration, Blocker activation, or activation costs).',
+    params: [],
+    covers: ['When this Character becomes rested by your opponent\'s effect', 'when this Character is rested by your opponent\'s effect'],
+    examples: [{ cardNumber: 'PRB02-009', snippet: "{ kind: 'restedByOpponentEffect' }" }],
+  },
+  restedByEffect: {
+    id: 'restedByEffect',
+    summary: 'onRested / onCharacterRested: rested by any card effect (not attack/cost rests).',
+    params: [],
+    covers: ['When this Character becomes rested by an effect'],
+    examples: [{ cardNumber: 'OP14-070', snippet: "{ kind: 'restedByEffect' }" }],
+  },
+  restedByControllerEffect: {
+    id: 'restedByControllerEffect',
+    summary: 'onRested / onCharacterRested: the resting effect was controlled by the ability owner ("rested by your effect").',
+    params: [],
+    covers: ['If a Character is rested by your effect', 'when a Character is rested by your effect'],
+    examples: [{ cardNumber: 'OP07-031', snippet: "{ kind: 'restedByControllerEffect' }" }],
+  },
+  restedByEffectSourceCategory: {
+    id: 'restedByEffectSourceCategory',
+    summary: 'onRested only: the resting effect\'s source card is the given printed category (Leader/Character/Event/Stage).',
+    params: [{ name: 'category', type: "'leader' | 'character' | 'event' | 'stage'", required: true }],
+    covers: ['rested by your opponent\'s Character\'s effect', 'rested by a Leader effect'],
+    examples: [{ cardNumber: 'OP14-070', snippet: "{ kind: 'restedByEffectSourceCategory', category: 'character' }" }],
   },
   selfActiveDonCount: {
     id: 'selfActiveDonCount',
@@ -1728,7 +1820,8 @@ export const TIMINGS: Record<IrTiming, string> = {
   activateMain: '[Activate: Main] — controller may activate during their Main phase.',
   onKO: '[On K.O.] — when this card is K.O.\'d.',
   onCharacterKoed: 'When one of your Characters is K.O.\'d (event trigger).',
-  onRested: '[When this Character becomes rested] — fires when the card transitions active→rested (attack, cost, or effect).',
+  onCharacterRested: 'When a Character is rested by an effect — board-wide watcher on other in-play cards. Pair with restedByControllerEffect ("by your effect"). Distinct from the rested card\'s own onRested.',
+  onRested: '[When this Character becomes rested] — fires on active→rested (attack, cost, or effect). Use restedByOpponentEffect / restedByEffect / restedByEffectSourceCategory to restrict to effect rests.',
   onDonReturned: '[When DON!! on your field is returned to your DON!! deck] — fires after effect-sourced DON!! −N costs (not Refresh Phase returns).',
   onDonGiven: '[When … is given a DON!! card] — fires after effect or Main-Phase DON!! give resolves (not Refresh). Use donGivenTargetLeaderOrCharacter / donGivenTargetIsSelf gates.',
   onRemovedFromField: '[When a card is removed from the field by an effect] — fires after effect-sourced K.O./bounce/bottom-deck/trash from field (not battle K.O.). Use removedFromField* / removedByEffectController gates.',

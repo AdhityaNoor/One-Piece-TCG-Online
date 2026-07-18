@@ -95,7 +95,9 @@ function toLocalCard(scraped, prints) {
     life: scraped.life,
     counter: scraped.counter,
     attributes: scraped.attributes && scraped.attributes.length ? scraped.attributes : undefined,
-    rarity: scraped.rarity,
+    // Limitless promo pages often omit a rarity keyword — default so the
+    // catalog loader's shape check never silently drops the whole P set.
+    rarity: scraped.rarity ?? (scraped.setCode === 'P' ? 'Promo' : 'Unknown'),
     block: scraped.block,
     legality: scraped.legality,
     en: {

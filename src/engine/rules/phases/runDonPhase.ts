@@ -50,6 +50,19 @@ export function runDonPhase(state: GameState): PhaseStepResult {
     visibility: 'public',
   });
 
+  // Pushed after CARD_MOVED (not before) so existing log[0]-is-CARD_MOVED assertions in
+  // runDonPhase.test.ts stay valid — this entry exists purely so the UI (PhaseTransitionBanner)
+  // can announce "DON!! Phase" the same way it does for Refresh/Draw; refresh/draw phases don't
+  // have this ordering constraint since they only ever push one entry each.
+  logger.push({
+    actorPlayerId: player.playerId,
+    type: 'PHASE_CHANGED',
+    message: `${player.playerId}'s DON!! Phase: ${drawnIds.length} DON!! added to the cost area (6-4).`,
+    data: { phase: 'don' },
+    relatedCardInstanceIds: [],
+    visibility: 'public',
+  });
+
   const beforeMain: GameState = {
     ...state,
     players: { ...state.players, [player.playerId]: newPlayer },

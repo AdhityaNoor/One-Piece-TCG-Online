@@ -29,4 +29,10 @@ export interface PlayerState {
   hasGoneFirst: boolean;
   /** 5-2-1-6 — the once-only opening-hand redraw. */
   hasMulliganed: boolean;
+  /**
+   * Set when this player's deck hits 0 while an empty-deck defeat deferral is
+   * active (e.g. OP15-022 Brook). Cleared on turn handoff. Triggers loss at
+   * the end of that turn even if cards return to the deck beforehand.
+   */
+  deckBecameZeroThisTurn?: boolean;
 }

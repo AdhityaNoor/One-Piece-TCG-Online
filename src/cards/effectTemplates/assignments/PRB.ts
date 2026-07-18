@@ -48,11 +48,17 @@ export const PRB_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
 
-  // PRB02-009 (character) Mr.3(Galdino) —
-  //   This effect can be activated when this Character is rested by your opponent's effect. You may trash
-  //   this Character and draw 2 cards.[Blocker]
-  // PARTIAL: "rested by opponent's effect" trigger deferred; mapped onRested trash-self → draw 2.
-  { cardNumber: 'PRB02-009', templateId: 'ability', params: { timing: 'onRested', cost: [{ kind: 'trashThis' }], functions: [{ fn: 'draw', amount: 2 }] } },
+  // PRB02-009 — When rested by opponent's effect, you may trash this Character: draw 2. [Blocker]
+  {
+    cardNumber: 'PRB02-009',
+    templateId: 'ability',
+    params: {
+      timing: 'onRested',
+      gate: [{ kind: 'restedByOpponentEffect' }],
+      cost: [{ kind: 'trashThis' }],
+      functions: [{ fn: 'draw', amount: 2 }],
+    },
+  },
 
 
 

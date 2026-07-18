@@ -26,6 +26,8 @@ import { canPayAbilityCost, donMinusCandidateIds, evaluateGates, requiredDonMinu
 import type { Ability } from '../../../engine/effects/effectIr';
 import type { CardInstance } from '../../../engine/state/card';
 import { isDonReturnChoice } from './donChoiceUtils';
+import { isFieldCardChoice } from './fieldChoiceUtils';
+import type { PendingChoice } from '../../../engine/events/pendingChoice';
 import { EFFECT_RUNTIME_MODE } from '../../config/effectRuntimeMode';
 import { evaluateCondition_V2 } from '../../../engine/effects_V2/conditions_V2';
 import type { EffectAbility_V2 } from '../../../cards/effectCompiler_V2/effectIr_V2';
@@ -66,6 +68,21 @@ export type BoardSelectionMode =
    * rather than the generic card-gallery pending-choice modal.
    */
   | { kind: 'resolvingDonChoice'; choiceId: string; prompt: string; min: number; max: number; candidateInstanceIds: string[]; selectedDonIds: string[] }
+  /**
+   * A SELECT_CARDS pending choice whose every candidate currently sits on
+   * the field (Leader/Character/Stage area, either player's) — see
+   * fieldChoiceUtils.ts's isFieldCardChoice doc comment for the full list of
+   * shapes this covers (rule:characterAreaOverflow, battle K.O. replacement,
+   * curated V1/V2 chooseTargets). Resolved by tapping the actual card on the
+   * mat rather than a popup gallery (PlayerBoardPanel dims every non-
+   * candidate card and shows a prompt banner over the board — see
+   * MatchScreen.tsx's FieldChoiceBanner). Auto-entered/exited for BOTH
+   * clients regardless of `actingPlayerId` (unlike 'resolvingDonChoice')
+   * so an online opponent's client also renders the dimming + banner as a
+   * read-only "they're choosing" indicator — only the dispatch in
+   * toggleFieldChoiceCard is scoped to the choice's own playerId.
+   */
+  | { kind: 'resolvingFieldChoice'; choiceId: string; playerId: string; prompt: string; attribution: string | null; min: number; max: number; candidateInstanceIds: string[]; selectedIds: string[] }
   | { kind: 'selectActivateSource' }
   | { kind: 'payingActivateEffectCost'; sourceInstanceId: string; cost: number; selectedDonIds: string[] }
   | { kind: 'payingEventMainCost'; handCardInstanceId: string; cardName: string; cost: number; donInstanceIds: string[]; abilityCost: number; candidateInstanceIds: string[]; selectedDonIds: string[] }
@@ -104,6 +121,30 @@ function v2DonSelectionCostCount(cardNumber: string, timing: 'ACTIVATE_MAIN' | '
   return ability?.activationCost?.payments
     .filter((cost) => cost.type === 'DON_MINUS_COST' || cost.type === 'REST_DON_COST')
     .reduce((sum, cost) => sum + (cost.count.kind === 'NUMBER' ? cost.count.value : 0), 0) ?? 0;
+}
+
+/**
+ * "{cardNumber}-{name}'s effect: {raw card text}" attribution line for the
+ * field-choice prompt banner (MatchScreen.tsx's FieldChoiceBanner) — mirrors
+ * the same lookup PendingChoicePrompt.tsx's Life Trigger branch already does
+ * (card?.triggerText ?? card?.text) but via the raw definition rather than a
+ * full CardView, since this runs outside render. Returns null when the
+ * choice has no attributable source card (e.g. the 3-7-6-1 Character Area
+ * overflow rule choice), in which case the banner falls back to just
+ * `choice.prompt` on its own.
+ */
+function buildFieldChoiceAttribution(
+  state: NonNullable<ReturnType<typeof useMatchStore.getState>['state']>,
+  defs: ReturnType<typeof useMatchStore.getState>['defs'],
+  choice: PendingChoice,
+): string | null {
+  const sourceId = choice.sourceInstanceId;
+  if (!sourceId) return null;
+  const inst = state.cardsById[sourceId];
+  const def = inst ? defs[inst.cardDefinitionId] : undefined;
+  if (!def) return null;
+  const text = def.text?.trim();
+  return `${def.cardNumber}-${def.name}'s effect${text ? `: ${text}` : ''}`;
 }
 
 export function useBoardSelection(actingPlayerId: string | null) {
@@ -170,6 +211,36 @@ export function useBoardSelection(actingPlayerId: string | null) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.pendingChoices, actingPlayerId, defs]);
+
+  // Auto-enter (and auto-exit) 'resolvingFieldChoice' the instant a
+  // SELECT_CARDS choice whose candidates are all on-field cards
+  // appears/resolves — deliberately NOT gated on `choice.playerId ===
+  // actingPlayerId` (unlike the donChoice effect above): both clients in an
+  // online match should see the dimmed board + prompt banner (the acting
+  // player to actually choose, the opponent as a read-only "they're
+  // selecting a card" indicator — see BoardSelectionMode's doc comment).
+  useEffect(() => {
+    const choice = state?.pendingChoices[0];
+    const isFieldChoice = !!state && !!choice && isFieldCardChoice(state, choice);
+    if (isFieldChoice && choice && state) {
+      if (mode.kind !== 'resolvingFieldChoice' || mode.choiceId !== choice.id) {
+        setMode({
+          kind: 'resolvingFieldChoice',
+          choiceId: choice.id,
+          playerId: choice.playerId,
+          prompt: choice.prompt,
+          attribution: buildFieldChoiceAttribution(state, defs, choice),
+          min: choice.constraints.min,
+          max: choice.constraints.max,
+          candidateInstanceIds: choice.constraints.candidateInstanceIds ?? [],
+          selectedIds: [],
+        });
+      }
+    } else if (!isFieldChoice && mode.kind === 'resolvingFieldChoice') {
+      reset();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.pendingChoices, defs]);
 
   /** True if the card's curated program exposes an [Activate: Main] ability (8-1-3-2). */
   const hasActivateMain = (card: CardView): boolean => {
@@ -583,6 +654,63 @@ export function useBoardSelection(actingPlayerId: string | null) {
   function confirmDonChoice(): void {
     if (mode.kind !== 'resolvingDonChoice' || mode.selectedDonIds.length < mode.min) return;
     submitDonChoice(mode.selectedDonIds);
+  }
+
+  // --- Field choice (SELECT_CARDS whose candidates are all on-field cards
+  // — see BoardSelectionMode's 'resolvingFieldChoice' doc comment) ---
+
+  /** True if `instanceId` is one of the current field choice's candidates — drives PlayerBoardPanel's per-card dim/selectable state on BOTH boards. */
+  const isFieldChoiceCandidate = (instanceId: string): boolean =>
+    mode.kind === 'resolvingFieldChoice' && mode.candidateInstanceIds.includes(instanceId);
+
+  /** For MatchScreen's FieldChoiceBanner + ActionBar's confirm control, or null outside this mode. */
+  const fieldChoiceInfo: { choiceId: string; playerId: string; prompt: string; attribution: string | null; selected: number; min: number; max: number } | null =
+    mode.kind === 'resolvingFieldChoice'
+      ? { choiceId: mode.choiceId, playerId: mode.playerId, prompt: mode.prompt, attribution: mode.attribution, selected: mode.selectedIds.length, min: mode.min, max: mode.max }
+      : null;
+
+  /**
+   * Dispatches as `mode.playerId` (the choice's OWN owner), not the closure's
+   * `actingPlayerId` — unlike submitDonChoice, this mode is entered on both
+   * clients regardless of `actingPlayerId`, so on the non-deciding client
+   * `actingPlayerId` may not equal the choice's playerId at all. Online
+   * matches route dispatch() through onlineSendIntent regardless, which is
+   * validated against the connected socket's own identity server-side (see
+   * matchStore.ts's dispatch), so a wrong-seat tap here is a harmless no-op
+   * at worst — this is purely about attributing the RESOLVE_PENDING_CHOICE
+   * action correctly for the (normal) hotseat/single-seat cases.
+   */
+  function submitFieldChoice(response: string[]): void {
+    if (mode.kind !== 'resolvingFieldChoice') return;
+    const result = dispatch({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: mode.playerId, choiceId: mode.choiceId, response });
+    if (!result.ok) {
+      setLastError(result.reasons);
+      return;
+    }
+    setLastError(null);
+    reset(); // the pendingChoice effect above re-enters if another field choice is queued next
+  }
+
+  /** Tap a field card while resolving a field choice. Auto-submits the instant `max` is reached. */
+  function toggleFieldChoiceCard(instanceId: string): void {
+    if (mode.kind !== 'resolvingFieldChoice' || !mode.candidateInstanceIds.includes(instanceId)) return;
+    if (mode.selectedIds.includes(instanceId)) {
+      setMode({ ...mode, selectedIds: mode.selectedIds.filter((id) => id !== instanceId) });
+      return;
+    }
+    if (mode.selectedIds.length >= mode.max) return;
+    const next = [...mode.selectedIds, instanceId];
+    if (next.length === mode.max) {
+      submitFieldChoice(next);
+    } else {
+      setMode({ ...mode, selectedIds: next });
+    }
+  }
+
+  /** Manual confirm for "select at least min, up to max" field choices where the player wants to stop before reaching max (e.g. a min:0 optional trash). */
+  function confirmFieldChoice(): void {
+    if (mode.kind !== 'resolvingFieldChoice' || mode.selectedIds.length < mode.min) return;
+    submitFieldChoice(mode.selectedIds);
   }
 
   function withActingPlayer(build: (playerId: string) => GameAction): void {
@@ -1000,6 +1128,16 @@ export function useBoardSelection(actingPlayerId: string | null) {
         return;
       }
 
+      case 'resolvingFieldChoice': {
+        // No isOwnCard gate: unlike DON choices (always the controller's own
+        // DON!!), a field choice's candidates can belong to either player
+        // (e.g. "K.O. up to 1 opponent Character") — mode.candidateInstanceIds
+        // (checked inside toggleFieldChoiceCard) is the sole authority here.
+        if (zone !== 'leaderArea' && zone !== 'characterArea' && zone !== 'stageArea') return;
+        toggleFieldChoiceCard(card.instanceId);
+        return;
+      }
+
       case 'payingEventMainCost': {
         if (!isOwnCard || (zone !== 'costArea' && zone !== 'attachedDon')) return;
         if (!mode.candidateInstanceIds.includes(card.instanceId)) return;
@@ -1165,6 +1303,10 @@ export function useBoardSelection(actingPlayerId: string | null) {
     isDonChoiceCandidate,
     donChoiceProgress,
     confirmDonChoice,
+    isFieldChoiceCandidate,
+    fieldChoiceInfo,
+    toggleFieldChoiceCard,
+    confirmFieldChoice,
     canDeclareAttackWith,
     canGiveDonOnCard,
     giveDonToCard,

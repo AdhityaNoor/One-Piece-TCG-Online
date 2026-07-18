@@ -40,8 +40,10 @@ import type { GameLogEntry } from '../../engine/logs/logEntry';
 import { buildCardDefinitionLookup, buildCardImageLookup, resolveLeaderDonDeckSize, savedDeckToPlayerSetupInput } from '../lib/savedDeckToSetupInput';
 import { parseMovementSpecs } from '../../animations/cardMovement/parseLogEntries';
 import { applyMovementPresentation } from '../../animations/cardMovement/presentationHints';
+import { parsePhaseAnnouncements } from '../../animations/phaseAnnounce/parsePhaseAnnouncements';
 import { useSettingsStore } from './settingsStore';
 import { useCardAnimationStore } from './cardAnimationStore';
+import { usePhaseAnnounceStore } from './phaseAnnounceStore';
 import { EFFECT_RUNTIME_MODE } from '../config/effectRuntimeMode';
 
 /**
@@ -774,6 +776,10 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
             );
             useCardAnimationStore.getState().enqueue(specs);
           }
+          if (handled.log.length > 0) {
+            const announcements = parsePhaseAnnouncements(handled.log);
+            usePhaseAnnounceStore.getState().enqueue(announcements);
+          }
           set({ state: handled.state, v2EffectSidecars: handled.sidecars });
           return { ok: true };
         }
@@ -810,6 +816,9 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       );
       useCardAnimationStore.getState().enqueue(specs);
     }
+    if (result.log.length > 0) {
+      usePhaseAnnounceStore.getState().enqueue(parsePhaseAnnouncements(result.log));
+    }
     let nextState = result.state;
     let nextLog = result.log;
     let nextV2EffectSidecars = v2EffectSidecars;
@@ -843,12 +852,16 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       );
       useCardAnimationStore.getState().enqueue(specs);
     }
+    if (nextLog.length > result.log.length) {
+      usePhaseAnnounceStore.getState().enqueue(parsePhaseAnnouncements(nextLog.slice(result.log.length)));
+    }
     set({ state: nextState, v2EffectSidecars: nextV2EffectSidecars });
     return { ok: true };
   },
 
   reset() {
     useCardAnimationStore.getState().clear();
+    usePhaseAnnounceStore.getState().clear();
     set({ state: null, defs: {}, registry: {}, v2EffectRuntime: null, v2EffectSidecars: null, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {}, cpuPlayerIds: [], cpuDifficulty: 'normal', cpuDebug: false, playTestMode: false, onlineMode: false, onlineSendIntent: null });
   },
 }));

@@ -543,6 +543,14 @@ export interface ContinuousCharacterSetActiveDonRestriction {
   appliesToControllerId: string;
 }
 
+/**
+ * "Under the rules of this game, you do not lose when your deck has 0 cards.
+ * You lose at the end of the turn in which your deck becomes 0 cards."
+ */
+export interface ContinuousEmptyDeckDefeatDeferral {
+  appliesToControllerId: string;
+}
+
 /** While the source Stage is in play, Characters at or below maxCost do not become active during Refresh Phases. */
 export interface ContinuousRefreshCostRestriction {
   maxCost: number;
@@ -603,6 +611,8 @@ export interface ContinuousEffectRecord {
   handPlayRestriction?: ContinuousHandPlayRestriction;
   /** Blocks Character-sourced DON!! set-active effects for a controller. Omitted for unrelated continuous effects. */
   characterSetActiveDonRestriction?: ContinuousCharacterSetActiveDonRestriction;
+  /** Defers empty-deck defeat to end of the turn the deck became 0. Omitted otherwise. */
+  emptyDeckDefeatDeferral?: ContinuousEmptyDeckDefeatDeferral;
   /** Blocks Characters at or below a cost threshold from becoming active during Refresh Phases. Omitted otherwise. */
   refreshCostRestriction?: ContinuousRefreshCostRestriction;
   /**

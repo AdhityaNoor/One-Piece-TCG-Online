@@ -181,9 +181,35 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP11-030 — [Activate: Main] rest 1 DON!! + rest this: Look 5, reveal up to 1 {Neptunian}/{Fish-Man Island} to hand, rest to bottom.
   { cardNumber: 'OP11-030', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }, { kind: 'restThis' }], functions: [{ fn: 'searchTopDeck', look: 5, pick: 1, reveal: true, destination: 'hand', filter: { anyOf: [{ typeIncludes: 'Neptunian' }, { typeIncludes: 'Fish-Man Island' }] }, remainder: 'bottom' }] } },
 
-  // OP11-031 — [On Play] if Leader {Fish-Man}/{Merfolk}: rest up to 1 opp Character with a cost of 5 or less.
-  //   PARTIAL: the [Activate: Main] "your {Fish-Man}/{Merfolk} Character can attack Characters when played" grant is deferred.
-  { cardNumber: 'OP11-031', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }], functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }] } },
+  // OP11-031 — [On Play] if Leader {Fish-Man}/{Merfolk}: rest up to 1 opp ≤5.
+  //   [Activate: Main] [Once Per Turn] up to 1 of your {Fish-Man}/{Merfolk} can attack Characters the turn played.
+  {
+    cardNumber: 'OP11-031',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }],
+          functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, optional: true }],
+        },
+      },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          oncePerTurn: true,
+          functions: [{
+            fn: 'addKeyword',
+            target: { group: 'characters', player: 'controller', filter: { anyOfTypes: ['Fish-Man', 'Merfolk'] } },
+            keyword: 'canAttackCharactersWhileSummoningSick',
+            duration: 'duringThisTurn',
+            optional: true,
+          }],
+        },
+      },
+    ],
+  },
 
   // OP11-034 — [Activate: Main] rest this: if Leader {Fish-Man}/{Merfolk}, up to 1 opp cost≤3 cannot be rested.
   { cardNumber: 'OP11-034', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restThis' }], gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Fish-Man' }, { kind: 'leaderType', type: 'Merfolk' }] }], functions: [{ fn: 'preventRest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, duration: 'endOfOpponentsTurn', optional: true }] } },

@@ -232,8 +232,16 @@ export function parseCardPage(html: string, expectedCardNumber: string): ParsedC
   if (blockM) result.block = clean(blockM[0]);
 
   const printsText = text(doc.querySelector('.card-prints-current')) || text(doc.querySelector('.card-prints'));
-  const rarityM = printsText.match(/\b(Secret Rare|Super Rare|Treasure Rare|Special Card|Uncommon|Common|Leader|Promo|Rare)\b/);
-  if (rarityM) result.rarity = rarityM[1];
+  const rarityM = printsText.match(
+    /\b(Secret Rare|Super Rare|Treasure Rare|Special Card|Uncommon|Common|Leader|Promo|Promotion|Rare)\b/i,
+  );
+  if (rarityM) {
+    const label = rarityM[1];
+    // "Promotion Pack …" / "Promotion" → normalize to Promo for catalog consistency.
+    result.rarity = /^promotion$/i.test(label) ? 'Promo' : label;
+  } else if (/\bpromo/i.test(printsText)) {
+    result.rarity = 'Promo';
+  }
 
   return result;
 }

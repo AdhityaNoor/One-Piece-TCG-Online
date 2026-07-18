@@ -154,7 +154,9 @@ describe('validateAction — pending-choice gate (setup phase exception)', () =>
 describe('executeAction — routing, logging, and automatic-phase cascade', () => {
   it('routes END_MAIN_PHASE and cascades end -> refresh -> draw -> don -> main, handing the turn to the other player', () => {
     const base = buildBaseRig({ phase: 'main', turnNumber: 3, activePlayerId: 'p1' });
-    const { rig } = putDeckCards(base, 'p2', makeCharacterDef(), 5);
+    // Ending Main judges empty-deck defeat (9-2-1-2) — seed the ending player's deck.
+    const { rig: withP1 } = putDeckCards(base, 'p1', makeCharacterDef({ cardDefinitionId: 'DECK-P1' }), 3);
+    const { rig } = putDeckCards(withP1, 'p2', makeCharacterDef(), 5);
 
     const result = executeAction(rig.state, endMainPhase('p1'), rig.defs);
 
@@ -184,7 +186,8 @@ describe('executeAction — routing, logging, and automatic-phase cascade', () =
   it('regression: a card drawn via the automatic Draw Phase cascade is immediately playable (currentZone, not just hand.cardIds, must reflect the move)', () => {
     const base = buildBaseRig({ phase: 'main', turnNumber: 3, activePlayerId: 'p1' });
     const charDef = makeCharacterDef({ baseCost: 0 });
-    const { rig } = putDeckCards(base, 'p2', charDef, 5);
+    const { rig: withP1 } = putDeckCards(base, 'p1', makeCharacterDef({ cardDefinitionId: 'DECK-P1' }), 3);
+    const { rig } = putDeckCards(withP1, 'p2', charDef, 5);
 
     // Ending p1's turn cascades end -> refresh -> draw -> don -> main and hands
     // the turn to p2, drawing p2 exactly 1 card along the way (runDrawPhase.ts).

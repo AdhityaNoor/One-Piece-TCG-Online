@@ -52,6 +52,13 @@ export function runRefreshPhase(state: GameState, defs: CardDefinitionLookup = {
 
   const cardsById = { ...state.cardsById };
 
+  // Instance ids that actually flipped rested -> active this Refresh (leader/character/
+  // stage cards below, plus cost-area DON!! further down) — surfaced on the PHASE_CHANGED
+  // log entry's relatedCardInstanceIds so the UI (PhaseTransitionBanner) can say what was
+  // activated instead of just that Refresh happened. Cards already active, or held rested
+  // by skipNextRefresh, are deliberately excluded: nothing observably changed for them.
+  const refreshedIds: string[] = [];
+
   // A card flagged `skipNextRefresh` (a "will not become active" effect) stays rested for exactly
   // this one Refresh; the flag is consumed here so it never persists to a later Refresh.
   const setActiveUnlessFlagged = (id: string, extra: Partial<(typeof cardsById)[string]> = {}): void => {
@@ -59,6 +66,7 @@ export function runRefreshPhase(state: GameState, defs: CardDefinitionLookup = {
     if (inst.skipNextRefresh) {
       cardsById[id] = { ...inst, ...extra, skipNextRefresh: false };
     } else {
+      if (inst.orientation === 'rested') refreshedIds.push(id);
       cardsById[id] = { ...inst, ...extra, orientation: 'active' };
     }
   };
@@ -87,6 +95,7 @@ export function runRefreshPhase(state: GameState, defs: CardDefinitionLookup = {
     if (inst.skipNextRefresh) {
       cardsById[id] = { ...inst, skipNextRefresh: false }; // stays rested this Refresh
     } else {
+      if (inst.donRested) refreshedIds.push(id);
       cardsById[id] = { ...inst, donRested: false };
     }
   }
@@ -107,7 +116,7 @@ export function runRefreshPhase(state: GameState, defs: CardDefinitionLookup = {
     type: 'PHASE_CHANGED',
     message: `${player.playerId}'s Refresh Phase: rested cards and given DON!! returned to active (6-2).`,
     data: { phase: 'refresh' },
-    relatedCardInstanceIds: [],
+    relatedCardInstanceIds: refreshedIds,
     visibility: 'public',
   });
 

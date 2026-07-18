@@ -2,14 +2,17 @@
  * Limitless One Piece scraper — entry point.
  *
  *   npm run scrape:limitless              # full crawl (resumable)
- *   npm run scrape:limitless -- --refresh # re-enumerate sets/cards first
+ *   npm run scrape:limitless -- --refresh # re-enumerate all products/cards first
+ *   npm run scrape:limitless -- --refresh-promos # merge /cards/promos into worklist
  *   npm run scrape:limitless -- --set OP01
+ *   npm run scrape:limitless -- --set P
  *   npm run scrape:limitless -- --limit 20 --delay 2000
  *   npm run scrape:limitless -- --force   # re-scrape even completed cards
  *
  * Behavior:
- * - Enumerates sets from /cards, then card numbers per set (cached in
- *   progress.json; only re-enumerated with --refresh).
+ * - Enumerates sets from /cards AND promo products from /cards/promos, then
+ *   card numbers per product (cached in progress.json; only re-enumerated
+ *   with --refresh / --refresh-promos).
  * - For each card, fetches the EN and JP page, parses both, writes one
  *   self-contained JSON per card under scrape/limitless/cards/<set>/.
  * - RESUMABLE: already-completed cards are skipped; Ctrl+C saves progress and
@@ -20,7 +23,7 @@
  *   (see httpClient.ts).
  */
 import { DEFAULTS, SITE_BASE } from './config';
-import { fetchCardNumbersForSet, fetchSetSlugs } from './enumerate';
+import { fetchCardNumbersForSet, fetchPromoProductSlugs, fetchSetSlugs } from './enumerate';
 import { PoliteHttpClient } from './httpClient';
 import { downloadImage, ensureImagesDir, type ImageResult } from './imageDownloader';
 import { parseCardPage } from './parseCardPage';
@@ -40,6 +43,7 @@ import type { ParsedCardPage } from './types';
 
 interface Flags {
   refresh: boolean;
+  refreshPromos: boolean;
   force: boolean;
   limit: number | null;
   set: string | null;
@@ -53,6 +57,7 @@ interface Flags {
 function parseFlags(argv: string[]): Flags {
   const f: Flags = {
     refresh: false,
+    refreshPromos: false,
     force: false,
     limit: null,
     set: null,
@@ -65,6 +70,7 @@ function parseFlags(argv: string[]): Flags {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--refresh') f.refresh = true;
+    else if (a === '--refresh-promos') f.refreshPromos = true;
     else if (a === '--force') f.force = true;
     else if (a === '--no-images') f.images = false;
     else if (a === '--images') f.images = true;
@@ -82,9 +88,9 @@ function parseFlags(argv: string[]): Flags {
 let stopping = false;
 
 async function enumerate(client: PoliteHttpClient, progress: Progress): Promise<void> {
-  console.log('[limitless] enumerating sets from /cards …');
+  console.log('[limitless] enumerating products from /cards + /cards/promos …');
   progress.setSlugs = await fetchSetSlugs(client);
-  console.log(`[limitless] ${progress.setSlugs.length} sets found. Enumerating card numbers per set…`);
+  console.log(`[limitless] ${progress.setSlugs.length} products found. Enumerating card numbers per product…`);
   const all = new Set<string>();
   for (const slug of progress.setSlugs) {
     if (stopping) break;
@@ -95,7 +101,45 @@ async function enumerate(client: PoliteHttpClient, progress: Progress): Promise<
   }
   progress.cardNumbers = [...all].sort();
   await saveProgress(progress);
-  console.log(`[limitless] enumeration done: ${progress.cardNumbers.length} unique card numbers.`);
+  const promoCount = progress.cardNumbers.filter((n) => n.startsWith('P-')).length;
+  console.log(
+    `[limitless] enumeration done: ${progress.cardNumbers.length} unique card numbers` +
+      ` (${promoCount} promotional P-*).`,
+  );
+}
+
+/** Merge `/cards/promos` products into an existing worklist without re-walking boosters. */
+async function enumeratePromosOnly(client: PoliteHttpClient, progress: Progress): Promise<void> {
+  console.log('[limitless] enumerating promo products from /cards/promos …');
+  const promoSlugs = await fetchPromoProductSlugs(client);
+  const slugSet = new Set(progress.setSlugs);
+  for (const s of promoSlugs) slugSet.add(s);
+  progress.setSlugs = [...slugSet].sort();
+
+  const all = new Set(progress.cardNumbers);
+  const before = all.size;
+  let promoCardHits = 0;
+  for (const slug of promoSlugs) {
+    if (stopping) break;
+    const { cardNumbers, warning } = await fetchCardNumbersForSet(client, slug);
+    if (warning) console.warn(`[limitless] ${warning}`);
+    let addedHere = 0;
+    for (const n of cardNumbers) {
+      if (!all.has(n)) {
+        all.add(n);
+        addedHere++;
+      }
+      if (n.startsWith('P-')) promoCardHits++;
+    }
+    console.log(`[limitless]   ${slug}: ${cardNumbers.length} cards (+${addedHere} new, running total ${all.size})`);
+  }
+  progress.cardNumbers = [...all].sort();
+  await saveProgress(progress);
+  const promoCount = progress.cardNumbers.filter((n) => n.startsWith('P-')).length;
+  console.log(
+    `[limitless] promo merge done: +${all.size - before} new card numbers` +
+      ` (${promoCount} promotional P-* in worklist; ${promoCardHits} P-* links seen on promo pages).`,
+  );
 }
 
 async function main(): Promise<void> {
@@ -127,6 +171,8 @@ async function main(): Promise<void> {
 
   if (flags.refresh || progress.cardNumbers.length === 0) {
     await enumerate(client, progress);
+  } else if (flags.refreshPromos) {
+    await enumeratePromosOnly(client, progress);
   }
 
   // Graceful shutdown: first Ctrl+C stops after the current card; second forces exit.

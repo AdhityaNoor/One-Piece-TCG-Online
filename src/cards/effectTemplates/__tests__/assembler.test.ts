@@ -284,6 +284,28 @@ describe('template factories - structural correctness', () => {
     ]));
   });
 
+  it('selectTargets binds chooseTargets without a follow-up effect', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'counter',
+      functions: [
+        { fn: 'selectTargets', target: { group: 'characters', player: 'controller' }, optional: true, maxTargets: 1 },
+        { fn: 'koImmunityChosen', scope: 'battle', duration: 'duringThisBattle', ifPrevious: 'previousSelectedAny' },
+      ],
+    });
+    expect(p.abilities[0].ops).toEqual([
+      expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerCharacters' }, min: 0, max: 1 }),
+      expect.objectContaining({ op: 'addKoImmunity', target: { sel: 'var', name: 't' }, scope: 'battle', ifPrevious: 'previousSelectedAny' }),
+    ]);
+  });
+
+  it('addDonFromDeck can target the opponent', () => {
+    const p = applyTemplate('T', 'ability', {
+      timing: 'onPlay',
+      functions: [{ fn: 'addDonFromDeck', count: 1, rested: false, player: 'opponent' }],
+    });
+    expect(p.abilities[0].ops[0]).toMatchObject({ op: 'addDonFromDeck', count: 1, rested: false, player: 'opponent' });
+  });
+
   it('ko can filter rested Characters with costEqualsDonAttached', () => {
     const p = applyTemplate('T', 'ability', {
       timing: 'onPlay',

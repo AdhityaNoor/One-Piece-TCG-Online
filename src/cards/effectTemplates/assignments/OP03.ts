@@ -477,7 +477,7 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP03-080 — [On Play] place 2 CP from trash at bottom: K.O. up to 1 opp Character cost<=3.
   { cardNumber: 'OP03-080', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'CP' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 2 }, { fn: 'ko', ifPrevious: 'previousMovedAny', target: { group: 'characters', player: 'opponent', filter: { maxCost: 3 } }, optional: true }] } },
 
-  // OP03-076 — PARTIAL: "trash 2 hand to arm" reactive window deferred; mapped [Your Turn] onCharacterKoed set Leader active.
+  // OP03-076 — [Your Turn] [Once Per Turn] when opp Character is K.O.'d, you may trash 2 hand: set this Leader active.
   {
     cardNumber: 'OP03-076',
     templateId: 'ability',
@@ -486,7 +486,10 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
       oncePerTurn: true,
       condition: { turn: 'your' },
       gate: [{ kind: 'koedCharacterController', player: 'opponent' }],
-      functions: [{ fn: 'setActiveControllerLeader' }],
+      functions: [
+        { fn: 'optionalTrashFromHand', count: 2 },
+        { fn: 'setActiveControllerLeader', ifPrevious: 'previousMovedAny' },
+      ],
     },
   },
 

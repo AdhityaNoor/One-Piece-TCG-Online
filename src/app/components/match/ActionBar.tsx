@@ -97,6 +97,8 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
     counterProgress,
     donChoiceProgress,
     confirmDonChoice,
+    fieldChoiceInfo,
+    confirmFieldChoice,
     confirmEventMainCost,
     confirmCounterEventCost,
     confirmActivateMainCost,
@@ -137,6 +139,35 @@ export function ActionBar({ phase, turnNumber, battle, actingBoard, selection }:
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" size="sm" disabled={!met} onClick={confirmDonChoice}>
               Confirm ({selected}/{max})
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // A field-card pending choice (see useBoardSelection.ts's
+  // 'resolvingFieldChoice') — same priority/early-return reasoning as the
+  // donChoiceProgress block above. The prompt/attribution text itself is
+  // shown board-wide via MatchScreen's FieldChoiceBanner; this panel only
+  // needs the progress readout and, for "up to N" ranges, a manual Confirm.
+  if (fieldChoiceInfo) {
+    const { selected, min, max } = fieldChoiceInfo;
+    const met = selected >= min;
+    return (
+      <div className="flex flex-col gap-2">
+        {errorBanner}
+        <div className="flex items-center gap-2">
+          <span className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/50">Selected</span>
+          <span className={`text-base font-black tabular-nums tracking-[0.04em] ${met ? 'text-emerald-300' : 'text-white'}`}>
+            {selected}/{min === max ? max : `${min}-${max}`}
+          </span>
+        </div>
+        <p className="text-xs text-white/60">Tap the eligible card(s) on the field (dimmed cards aren't eligible).</p>
+        {min < max && (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="primary" size="sm" disabled={!met} onClick={confirmFieldChoice}>
+              {min === 0 && selected === 0 ? 'Decline' : `Confirm (${selected}/${max})`}
             </Button>
           </div>
         )}

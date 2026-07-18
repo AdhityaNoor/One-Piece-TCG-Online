@@ -31,6 +31,6 @@ export default defineConfig({
     // the first line of that specific test file (per-file override, no
     // config change needed) and add `jsdom` to devDependencies first.
     environment: 'node',
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.{ts,tsx}'],
   },
 });

@@ -568,10 +568,22 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // PARTIAL: [Main] dual-K.O. with character-count gate deferred; mapped [Trigger] negate bundle.
+  // OP10-098 — [Main] if Characters ≥2 fewer than opp: KO base≤6 + different base≤4. [Trigger] negate up to 1 Leader + 1 Character.
   {
     cardNumber: 'OP10-098',
     templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'activateMain',
+          gate: [{ kind: 'selfCharacterCountAtLeastLessThanOpponent', count: 2 }],
+          functions: [
+            { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 6 } }, optional: true },
+            { fn: 'captureCount', into: 'ko1' },
+            { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 4, excludeIdsFromVar: 'ko1' } }, optional: true },
+          ],
+        },
+      },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
         { fn: 'negateEffect', target: { group: 'leaderOrCharacters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
         { fn: 'negateEffect', target: { group: 'characters', player: 'opponent' }, duration: 'duringThisTurn', optional: true, maxTargets: 1 },
@@ -692,8 +704,18 @@ export const OP10_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP10-010', templateId: 'ability', params: { timing: 'whenAttacking', gate: [{ kind: 'selfCharacterCurrentPowerCount', power: 6000, atMost: 1 }], functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn' }] } },
 
-  // PARTIAL: on-rested-by-your-effect DON setActive deferred; mapped onRested setActive DON as weak stand-in.
-  { cardNumber: 'OP10-036', templateId: 'ability', params: { timing: 'onRested', oncePerTurn: true, condition: { turn: 'your' }, functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }] } },
+  // OP10-036 — [Your Turn] [Once Per Turn] If a Character is rested by your effect, set up to 1 of your DON!! as active.
+  {
+    cardNumber: 'OP10-036',
+    templateId: 'ability',
+    params: {
+      timing: 'onCharacterRested',
+      oncePerTurn: true,
+      condition: { turn: 'your' },
+      gate: [{ kind: 'restedByControllerEffect' }],
+      functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }],
+    },
+  },
 
   { cardNumber: 'OP10-047', templateId: 'ability', params: { timing: 'whenAttacking', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { typeIncludes: 'Revolutionary Army', minBaseCost: 3 } }, to: { zone: 'hand', player: 'owner' }, optional: true }, { fn: 'addPowerSelf', amount: 3000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' }] } },
 

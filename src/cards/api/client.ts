@@ -40,7 +40,8 @@ interface LocalCatalogCard {
   life?: number;
   counter?: number;
   attributes?: string[];
-  rarity: string;
+  /** Optional: Limitless promo pages often omit a standard rarity label. */
+  rarity?: string;
   en: {
     name: string;
     effectText: string;
@@ -100,13 +101,20 @@ function isLocalCatalogCardShape(row: unknown): row is LocalCatalogCard {
     typeof r.setName === 'string' &&
     typeof r.category === 'string' &&
     Array.isArray(r.colors) &&
-    typeof r.rarity === 'string' &&
+    (r.rarity === undefined || typeof r.rarity === 'string') &&
     typeof en === 'object' &&
     en !== null &&
     typeof en.name === 'string' &&
     typeof en.effectText === 'string' &&
     Array.isArray(en.types)
   );
+}
+
+/** Catalog rarity for DTOs — promos often lack a scraped rarity label. */
+function resolveCatalogRarity(card: LocalCatalogCard): string {
+  if (typeof card.rarity === 'string' && card.rarity.length > 0) return card.rarity;
+  if (card.setCode === 'P') return 'Promo';
+  return 'Unknown';
 }
 
 function categoryToCardType(category: LocalCatalogCard['category']): CardPrintingDto['card_type'] {
@@ -157,15 +165,16 @@ function localCardCommonFields(card: LocalCatalogCard) {
  */
 function localCardToPrintingDtos(card: LocalCatalogCard): CardPrintingDto[] {
   const common = localCardCommonFields(card);
+  const baseRarity = resolveCatalogRarity(card);
   const prints = card.prints?.length ? card.prints : null;
   if (!prints) {
-    return [{ ...common, rarity: card.rarity, card_image_id: card.cardNumber, card_image: card.en.image }];
+    return [{ ...common, rarity: baseRarity, card_image_id: card.cardNumber, card_image: card.en.image }];
   }
   return prints.map((print) => ({
     ...common,
     // Alternate arts surface their print kind (e.g. "Alternate Art") as rarity;
     // the base print keeps the card's real rarity.
-    rarity: print.isAlternateArt ? print.printKind ?? card.rarity : card.rarity,
+    rarity: print.isAlternateArt ? print.printKind ?? baseRarity : baseRarity,
     card_image_id: print.variantId ? `${card.cardNumber}_${print.variantId}` : card.cardNumber,
     card_image: print.image,
   }));

@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --packages=external --outfile=dist/index.cjs",
     "start": "node dist/index.cjs",
-    "seed:admin": "tsx src/adminAuth/seedAdmin.ts"
+    "seed:admin": "tsx src/adminAuth/seedAdmin.ts",
+    "seed:banners": "tsx src/admin/seedHomeBanners.ts"
   },
   "dependencies": {
     "@colyseus/core": "^0.17.42",

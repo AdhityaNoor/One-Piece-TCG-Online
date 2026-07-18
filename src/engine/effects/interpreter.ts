@@ -20,7 +20,8 @@ import type { KoReplacementTrigger } from '../state/game';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates, countSelfTypedCharacters } from './gates';
 import { canPayAbilityCost, donMinusCandidateIds, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
-import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, fireHandTrashedReactions } from './fireTiming';
+import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireCharacterRestedReactions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, fireHandTrashedReactions, fireLifeDamageDealtReactions, fireLifeToHandReactions } from './fireTiming';
+import { dealLifeDamage } from '../rules/shared/dealLifeDamage';
 import { isAbilityNegated } from './effectNegation';
 import type { GateEvalContext } from './gates';
 import type { EffectTemplateRegistry } from './effectTemplate';
@@ -108,14 +109,25 @@ function finishWithCascade(
   const restedQueue = ctx.takeRested();
   guard = 0;
   while (restedQueue.length > 0 && guard++ < 200) {
-    const id = restedQueue.shift()!;
-    const inst = working.cardsById[id];
+    const event = restedQueue.shift()!;
+    const eventContext: GateEvalContext = {
+      restCause: event.cause,
+      restSourceInstanceId: event.sourceInstanceId,
+    };
+    const inst = working.cardsById[event.targetInstanceId];
     const program = inst ? registry[inst.cardDefinitionId] : undefined;
-    if (!program?.abilities.some((a) => a.timing === 'onRested')) continue;
-    const subRes = runTimings(program, ['onRested'], working, id, defs, actionId, registry, false);
-    working = subRes.state;
-    log = [...log, ...subRes.log];
-    if (subRes.pendingChoices.length > 0) return { state: working, log, pendingChoices: subRes.pendingChoices };
+    if (program?.abilities.some((a) => a.timing === 'onRested')) {
+      // Pay costs (DON!! −N / trashThis / …) the same as onKO cascade — many onRested texts are "you may pay …".
+      const subRes = runTimings(program, ['onRested'], working, event.targetInstanceId, defs, actionId, registry, true, eventContext);
+      working = subRes.state;
+      log = [...log, ...subRes.log];
+      if (subRes.pendingChoices.length > 0) return { state: working, log, pendingChoices: subRes.pendingChoices };
+    }
+    // Board-wide "If a Character is rested by your effect" watchers (OP07-031 / OP10-036).
+    const board = fireCharacterRestedReactions(working, event, registry, defs, actionId);
+    working = board.state;
+    log = [...log, ...board.log];
+    if (board.pendingChoices.length > 0) return { state: working, log, pendingChoices: board.pendingChoices };
   }
 
   const donGivenQueue = ctx.takeDonGiven();
@@ -1001,6 +1013,10 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       ctx.preventControllerHandPlay({ appliesToControllerId: targetPlayerId, duration: op.duration });
       return EMPTY_RESULT;
     }
+    case 'deferEmptyDeckDefeatToEndOfTurn': {
+      ctx.deferEmptyDeckDefeatToEndOfTurn({ appliesToControllerId: ctx.controllerId, duration: op.duration });
+      return EMPTY_RESULT;
+    }
     case 'preventControllerCharacterSetActiveDon': {
       const targetPlayerId = op.player === 'opponent' ? ctx.opponentId : ctx.controllerId;
       ctx.preventControllerCharacterSetActiveDon({ appliesToControllerId: targetPlayerId, duration: op.duration });
@@ -1361,7 +1377,7 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       return { selectedIds: moved, movedIds: moved };
     }
     case 'addDonFromDeck':
-      ctx.addDonFromDeck(ctx.controllerId, op.count, op.rested);
+      ctx.addDonFromDeck(op.player === 'opponent' ? ctx.opponentId : ctx.controllerId, op.count, op.rested);
       return { selectedIds: [], movedIds: op.count > 0 ? ['__addDonFromDeck'] : [] };
     case 'revealTopDeck':
     case 'revealTopLife':
@@ -1376,6 +1392,9 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
     case 'returnHandShuffleDraw':
       // Handled specially in runOpList (draw-outside-draw-phase reactions need registry);
       // this branch keeps the switch exhaustive and is never reached at runtime.
+      return { selectedIds: [], movedIds: [] };
+    case 'dealDamage':
+      // Handled specially in runOpList (Trigger window + life reactions need registry).
       return { selectedIds: [], movedIds: [] };
   }
   return EMPTY_RESULT;
@@ -1537,7 +1556,10 @@ function runOpList(
         playerId: ctx.controllerId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
-        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: deckIds },
+        // visibleInstanceIds intentionally stays the full deck (log/AI-evaluator
+        // contract — see searchDeckFamily.test.ts); uiShowOnlyCandidates tells
+        // the picker to render only `eligible` instead of all 40+ deck cards.
+        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: deckIds, uiShowOnlyCandidates: true },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
         resumeState: resumeStateForSuspend(coords, i, workingBindings),
@@ -1558,7 +1580,10 @@ function runOpList(
         playerId: ctx.controllerId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
-        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: deckIds },
+        // visibleInstanceIds intentionally stays the full deck (log/AI-evaluator
+        // contract — see searchDeckFamily.test.ts); uiShowOnlyCandidates tells
+        // the picker to render only `eligible` instead of all 40+ deck cards.
+        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: deckIds, uiShowOnlyCandidates: true },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
         resumeState: resumeStateForSuspend(coords, i, workingBindings),
@@ -1579,7 +1604,10 @@ function runOpList(
         playerId: ctx.controllerId,
         kind: 'SELECT_CARDS',
         prompt: op.prompt,
-        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: deckIds },
+        // visibleInstanceIds intentionally stays the full deck (log/AI-evaluator
+        // contract — see searchDeckFamily.test.ts); uiShowOnlyCandidates tells
+        // the picker to render only `eligible` instead of all 40+ deck cards.
+        constraints: { min: 0, max: op.pick, candidateInstanceIds: eligible, visibleInstanceIds: deckIds, uiShowOnlyCandidates: true },
         sourceInstanceId: ctx.sourceInstanceId,
         sourceEffectId: 'ir',
         resumeState: resumeStateForSuspend(coords, i, workingBindings),
@@ -1853,6 +1881,54 @@ function runOpList(
       workingBindings = withResultBindings(workingBindings, {
         selectedIds: [],
         movedIds: returned > 0 || drawCount > 0 ? ['__returnHandShuffleDraw'] : [],
+      });
+      continue;
+    }
+    if (op.op === 'dealDamage') {
+      const targetPlayerId = op.player === 'controller' ? ctx.controllerId : ctx.opponentId;
+      const damaged = dealLifeDamage({
+        state: ctx.state(),
+        defs,
+        registry,
+        actorPlayerId: ctx.controllerId,
+        targetPlayerId,
+        amount: op.amount,
+        actionId,
+        sourceInstanceId: ctx.sourceInstanceId,
+      });
+      ctx.replaceState(damaged.state, damaged.log);
+      for (const choice of damaged.pendingChoices) ctx.emitChoice(choice);
+
+      if (damaged.hitsResolved > 0 && !ctx.state().gameOver) {
+        const lifeToHand = fireLifeToHandReactions(ctx.state(), targetPlayerId, registry, defs, actionId);
+        if (ctx.absorbActionResult(lifeToHand)) {
+          workingBindings = withResultBindings(workingBindings, {
+            selectedIds: [],
+            movedIds: ['__dealDamage'],
+          });
+          return { suspended: true, bindings: workingBindings };
+        }
+        const lifeDamage = fireLifeDamageDealtReactions(ctx.state(), ctx.controllerId, registry, defs, actionId);
+        if (ctx.absorbActionResult(lifeDamage)) {
+          workingBindings = withResultBindings(workingBindings, {
+            selectedIds: [],
+            movedIds: ['__dealDamage'],
+          });
+          return { suspended: true, bindings: workingBindings };
+        }
+      }
+
+      if (damaged.pendingChoices.length > 0) {
+        workingBindings = withResultBindings(workingBindings, {
+          selectedIds: [],
+          movedIds: damaged.hitsResolved > 0 ? ['__dealDamage'] : [],
+        });
+        return { suspended: true, bindings: workingBindings };
+      }
+
+      workingBindings = withResultBindings(workingBindings, {
+        selectedIds: [],
+        movedIds: damaged.hitsResolved > 0 ? ['__dealDamage'] : [],
       });
       continue;
     }

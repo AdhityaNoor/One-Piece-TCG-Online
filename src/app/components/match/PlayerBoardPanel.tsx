@@ -111,12 +111,30 @@ function leaderCharacterSelectable(
       return isOwn && canActivate;
     case 'selectOnOppAttackSource':
       return isOwn && canOnOppAttack;
+    case 'resolvingFieldChoice':
+      // Unlike every other case here, NOT gated on isOwn — a field choice's
+      // candidates can belong to either player (e.g. "K.O. up to 1 opponent
+      // Character"); candidateInstanceIds is the sole authority.
+      return mode.candidateInstanceIds.includes(card.instanceId);
     case 'idle':
       // Idle: an own card with a ready [Activate: Main] effect is tappable directly (the ⚡ badge).
       return isOwn && canActivate;
     default:
       return false;
   }
+}
+
+/**
+ * "Dim, don't hide" for field cards (mirrors DockHand's `dimmed` for hand
+ * cards): true for every card on EITHER board that is not one of the
+ * current field choice's candidates, so the eligible card(s) visually pop
+ * out of the rest of the mat. Deliberately independent of `isOwn`/selectable
+ * — an online opponent's client renders this identically (see
+ * BoardSelectionMode's 'resolvingFieldChoice' doc comment), it just can't
+ * click through it.
+ */
+function fieldChoiceDimmed(mode: BoardSelectionMode, card: CardView): boolean {
+  return mode.kind === 'resolvingFieldChoice' && !mode.candidateInstanceIds.includes(card.instanceId);
 }
 
 function selectedAttackerIds(mode: BoardSelectionMode): Set<string> {
@@ -480,6 +498,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
         size="field"
         selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'leaderArea', leaderCard, canActivate(leaderCard), canOnOppAttack(leaderCard))}
         selected={attackerSelected.has(leaderCard.instanceId)}
+        dimmed={fieldChoiceDimmed(mode, leaderCard)}
         activatable={mode.kind === 'idle' && canActivate(leaderCard)}
         attackable={mode.kind === 'idle' && canAttack(leaderCard)}
         showBattlePower={battlePowerInstanceIds?.has(leaderCard.instanceId)}
@@ -504,6 +523,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
       card={stageCard}
       size="field"
       selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'stageArea', stageCard, canActivate(stageCard), canOnOppAttack(stageCard))}
+      dimmed={fieldChoiceDimmed(mode, stageCard)}
       activatable={mode.kind === 'idle' && canActivate(stageCard)}
       showBattlePower={battlePowerInstanceIds?.has(stageCard.instanceId)}
       onActivate={mode.kind === 'idle' && canActivate(stageCard) ? () => onCardTap('stageArea', stageCard) : undefined}
@@ -556,6 +576,7 @@ export function PlayerBoardPanel({ board, isOwn, isOpponent, reverseRows, mode, 
               size="field"
               selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'characterArea', card, canActivate(card), canOnOppAttack(card))}
               selected={attackerSelected.has(card.instanceId)}
+              dimmed={fieldChoiceDimmed(mode, card)}
               activatable={mode.kind === 'idle' && canActivate(card)}
               attackable={mode.kind === 'idle' && canAttack(card)}
               showBattlePower={battlePowerInstanceIds?.has(card.instanceId)}

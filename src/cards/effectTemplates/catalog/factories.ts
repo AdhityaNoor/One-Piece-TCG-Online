@@ -366,7 +366,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
     case 'drawUntilHandCount':
       return [{ op: 'drawUntilHandCount', targetCount: f.targetCount, ...(f.player ? { player: f.player } : {}) }];
     case 'addDonFromDeck':
-      return [{ op: 'addDonFromDeck', count: f.count, rested: f.rested }];
+      return [{ op: 'addDonFromDeck', count: f.count, rested: f.rested, ...(f.player ? { player: f.player } : {}) }];
     case 'giveDon': {
       const optional = f.optional ?? false;
       if (f.targetName !== undefined) {
@@ -586,6 +586,22 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         player: f.player ?? 'controller',
         duration: f.duration,
       }];
+    case 'deferEmptyDeckDefeatToEndOfTurn':
+      return [{ op: 'deferEmptyDeckDefeatToEndOfTurn', duration: f.duration ?? 'permanent' }];
+    case 'dealDamage': {
+      const op = { op: 'dealDamage' as const, amount: f.amount, player: f.player ?? 'opponent' };
+      if (f.optional) {
+        return [{
+          op: 'chooseOption',
+          prompt: `You may deal ${f.amount} damage to your ${f.player === 'controller' ? 'self' : 'opponent'}.`,
+          options: [
+            { label: 'skip', ops: [] },
+            { label: 'deal', ops: [op] },
+          ],
+        }];
+      }
+      return [op];
+    }
     case 'preventControllerCharacterSetActiveDon':
       return [{
         op: 'preventControllerCharacterSetActiveDon',
@@ -934,6 +950,20 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           options: f.options.map((option) => ({ label: option.label, ops: option.functions.flatMap(functionOps) })),
         },
       ];
+    case 'selectTargets': {
+      const maxTargets = f.maxTargets ?? 1;
+      const optional = f.optional ?? true;
+      const from = chooseFromTarget(f.target);
+      if (!from) throw new Error(`selectTargets requires a choosable target group: ${JSON.stringify(f.target)}`);
+      return [{
+        op: 'chooseTargets',
+        var: 't',
+        from,
+        min: optional ? 0 : Math.min(1, maxTargets),
+        max: maxTargets,
+        prompt: f.prompt ?? `Choose ${optional ? 'up to ' : ''}${maxTargets} target${maxTargets === 1 ? '' : 's'}.`,
+      }];
+    }
     case 'playFromHand': {
       const maxTargets = f.maxTargets ?? 1;
       const category = f.filter?.category;

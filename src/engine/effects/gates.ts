@@ -93,6 +93,10 @@ export interface GateEvalContext {
   koCause?: 'battle' | 'effect';
   /** Instance id of the card/effect that K.O.'d the onKO source (onKO only). */
   koSourceInstanceId?: string;
+  /** How the current [When Becomes Rested] window was triggered (onRested only). */
+  restCause?: 'effect';
+  /** Instance id of the card/effect that rested the onRested source (onRested only). */
+  restSourceInstanceId?: string;
   /** Live effect-sequence bindings (for boundVarsTotalCount and similar sequence gates). */
   bindings?: Record<string, string[]>;
 }
@@ -332,6 +336,13 @@ function evaluateGate(
       const opponent = state.players[opponentId];
       if (!opponent) return false;
       return player.hand.cardIds.length + gate.count <= opponent.hand.cardIds.length;
+    }
+
+    case 'selfCharacterCountAtLeastLessThanOpponent': {
+      const opponentId = getOpponentId(state, ownerId);
+      const opponent = state.players[opponentId];
+      if (!opponent) return false;
+      return player.characterArea.cardIds.length + gate.count <= opponent.characterArea.cardIds.length;
     }
 
     case 'anyCharacterExactCost': {
@@ -613,6 +624,16 @@ function evaluateGate(
       return true;
     }
 
+    case 'boundVarMatching': {
+      const ids = eventContext?.bindings?.[gate.varName] ?? [];
+      return ids.some((id) => {
+        const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
+        if (!def) return false;
+        if (gate.category !== undefined && def.category !== gate.category) return false;
+        return true;
+      });
+    }
+
     case 'anyCharacterBasePowerAtLeast': {
       const opponentId = getOpponentId(state, ownerId);
       const ids = [...player.characterArea.cardIds, ...state.players[opponentId].characterArea.cardIds];
@@ -788,6 +809,35 @@ function evaluateGate(
 
     case 'koByEffect':
       return eventContext?.koCause === 'effect';
+
+    case 'restedByOpponentEffect': {
+      if (eventContext?.restCause !== 'effect') return false;
+      const restSourceId = eventContext.restSourceInstanceId;
+      if (!restSourceId) return false;
+      const restSource = state.cardsById[restSourceId];
+      if (!restSource) return false;
+      return restSource.controllerId === getOpponentId(state, ownerId);
+    }
+
+    case 'restedByEffect':
+      return eventContext?.restCause === 'effect';
+
+    case 'restedByControllerEffect': {
+      if (eventContext?.restCause !== 'effect') return false;
+      const restSourceId = eventContext.restSourceInstanceId;
+      if (!restSourceId) return false;
+      const restSource = state.cardsById[restSourceId];
+      if (!restSource) return false;
+      return restSource.controllerId === ownerId;
+    }
+
+    case 'restedByEffectSourceCategory': {
+      if (eventContext?.restCause !== 'effect') return false;
+      const restSourceId = eventContext.restSourceInstanceId;
+      if (!restSourceId) return false;
+      const def = defs[state.cardsById[restSourceId]?.cardDefinitionId ?? ''];
+      return !!def && def.category === gate.category;
+    }
 
     case 'removedFromFieldController': {
       const removedControllerId = eventContext?.removedFromFieldControllerId;

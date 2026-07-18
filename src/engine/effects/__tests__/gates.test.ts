@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { makeCharacterDef, makeStageDef, buildBaseRig, putCharacterInPlay, putStageInPlay, putDon, putLifeCards, putInHand } from '../../rules/shared/__tests__/testRig';
+import { makeCharacterDef, makeEventDef, makeStageDef, buildBaseRig, putCharacterInPlay, putStageInPlay, putDon, putLifeCards, putInHand } from '../../rules/shared/__tests__/testRig';
 import { evaluateGates } from '../gates';
 
 describe('evaluateGates', () => {
@@ -465,6 +465,42 @@ describe('evaluateGates', () => {
     expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { koCause: 'effect' })).toBe(true);
   });
 
+  it('checks restedByOpponentEffect / restedByEffect / restedByEffectSourceCategory', () => {
+    let rig = buildBaseRig();
+    const victimDef = makeCharacterDef({ cardDefinitionId: 'VICTIM-R', cardNumber: 'VICTIM-R' });
+    const oppCharDef = makeCharacterDef({ cardDefinitionId: 'OPP-CHAR', cardNumber: 'OPP-CHAR' });
+    const oppEventDef = makeEventDef({ cardDefinitionId: 'OPP-EVT', cardNumber: 'OPP-EVT' });
+    let victimId: string;
+    let oppCharId: string;
+    let oppEventId: string;
+    ({ rig, instanceId: victimId } = putCharacterInPlay(rig, 'p1', victimDef));
+    ({ rig, instanceId: oppCharId } = putCharacterInPlay(rig, 'p2', oppCharDef));
+    // Zone is irrelevant for the category gate — only the source definition's category matters.
+    ({ rig, instanceId: oppEventId } = putCharacterInPlay(rig, 'p2', oppEventDef));
+
+    const oppGate = [{ kind: 'restedByOpponentEffect' as const }];
+    const effectGate = [{ kind: 'restedByEffect' as const }];
+    const charSrc = [{ kind: 'restedByEffectSourceCategory' as const, category: 'character' as const }];
+    const eventSrc = [{ kind: 'restedByEffectSourceCategory' as const, category: 'event' as const }];
+
+    // Attack/cost rests pass no restCause → all effect gates fail.
+    expect(evaluateGates(oppGate, rig.state, rig.defs, 'p1', victimId, {})).toBe(false);
+    expect(evaluateGates(effectGate, rig.state, rig.defs, 'p1', victimId, {})).toBe(false);
+    expect(evaluateGates(charSrc, rig.state, rig.defs, 'p1', victimId, {})).toBe(false);
+
+    expect(evaluateGates(oppGate, rig.state, rig.defs, 'p1', victimId, { restCause: 'effect', restSourceInstanceId: oppCharId })).toBe(true);
+    expect(evaluateGates(oppGate, rig.state, rig.defs, 'p1', victimId, { restCause: 'effect', restSourceInstanceId: victimId })).toBe(false);
+    expect(evaluateGates(effectGate, rig.state, rig.defs, 'p1', victimId, { restCause: 'effect', restSourceInstanceId: victimId })).toBe(true);
+
+    const yourEffect = [{ kind: 'restedByControllerEffect' as const }];
+    expect(evaluateGates(yourEffect, rig.state, rig.defs, 'p1', victimId, { restCause: 'effect', restSourceInstanceId: victimId })).toBe(true);
+    expect(evaluateGates(yourEffect, rig.state, rig.defs, 'p1', victimId, { restCause: 'effect', restSourceInstanceId: oppCharId })).toBe(false);
+
+    expect(evaluateGates(charSrc, rig.state, rig.defs, 'p1', victimId, { restCause: 'effect', restSourceInstanceId: oppCharId })).toBe(true);
+    expect(evaluateGates(charSrc, rig.state, rig.defs, 'p1', victimId, { restCause: 'effect', restSourceInstanceId: oppEventId })).toBe(false);
+    expect(evaluateGates(eventSrc, rig.state, rig.defs, 'p1', victimId, { restCause: 'effect', restSourceInstanceId: oppEventId })).toBe(true);
+  });
+
   it('checks koedCharacter type/base-power gates from the K.O. event definition', () => {
     let rig = buildBaseRig();
     const dressrosa = makeCharacterDef({ types: ['Dressrosa'], basePower: 6000, cardNumber: 'DRESS-001' });
@@ -594,6 +630,18 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfHandAtLeastLessThanOpponent', count: 1 }], rig.state, rig.defs, 'p2')).toBe(false);
   });
 
+  it('checks selfCharacterCountAtLeastLessThanOpponent by Character-count deficit', () => {
+    let rig = buildBaseRig();
+    ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'C1' })));
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ cardDefinitionId: 'C2' })));
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ cardDefinitionId: 'C3' })));
+    ({ rig } = putCharacterInPlay(rig, 'p2', makeCharacterDef({ cardDefinitionId: 'C4' })));
+
+    expect(evaluateGates([{ kind: 'selfCharacterCountAtLeastLessThanOpponent', count: 2 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'selfCharacterCountAtLeastLessThanOpponent', count: 3 }], rig.state, rig.defs, 'p1')).toBe(false);
+    expect(evaluateGates([{ kind: 'selfCharacterCountAtLeastLessThanOpponent', count: 1 }], rig.state, rig.defs, 'p2')).toBe(false);
+  });
+
   it('checks anyCharacterCostCount across both players', () => {
     let rig = buildBaseRig();
     ({ rig } = putCharacterInPlay(rig, 'p1', makeCharacterDef({ cardDefinitionId: 'COST8-A', baseCost: 8 })));
@@ -691,6 +739,19 @@ describe('evaluateGates', () => {
     expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { bindings: { pairA: ['a'], pairB: ['b'] } })).toBe(true);
     expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { bindings: { pairA: ['a'], pairB: [] } })).toBe(false);
     expect(evaluateGates(gate, rig.state, rig.defs, 'p1')).toBe(false);
+  });
+
+  it('checks boundVarMatching against a bound card category', () => {
+    let rig = buildBaseRig();
+    const event = makeEventDef({ cardDefinitionId: 'EVT', cardNumber: 'EVT' });
+    const character = makeCharacterDef({ cardDefinitionId: 'CHR', cardNumber: 'CHR' });
+    let eventId: string;
+    let charId: string;
+    ({ rig, instanceId: eventId } = putInHand(rig, 'p2', event));
+    ({ rig, instanceId: charId } = putInHand(rig, 'p2', character));
+    const gate = [{ kind: 'boundVarMatching' as const, varName: 't', category: 'event' as const }];
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { bindings: { t: [eventId] } })).toBe(true);
+    expect(evaluateGates(gate, rig.state, rig.defs, 'p1', undefined, { bindings: { t: [charId] } })).toBe(false);
   });
 
   it('checks selfLifeAndHand as Life count + hand count', () => {

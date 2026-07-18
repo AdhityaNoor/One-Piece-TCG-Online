@@ -18,6 +18,7 @@ import { isControllerLifeToHandPrevented } from '../rules/shared/lifeToHandRestr
 import { isControllerCharacterPlayPrevented } from '../rules/shared/characterPlayRestriction';
 import { isControllerHandPlayPrevented } from '../rules/shared/handPlayRestriction';
 import { isControllerCharacterSetActiveDonPrevented } from '../rules/shared/characterSetActiveDonRestriction';
+import { hasEmptyDeckDefeatDeferral, withDeckBecameZeroThisTurn } from '../rules/shared/emptyDeckDefeat';
 import { koReplacementDescription, restReplacementDescription } from '../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import { createSeededRng } from '../rng/seededRng';
@@ -35,8 +36,8 @@ export class EffectContextImpl implements EffectContext {
   private readonly logger: ActionLogger;
   private readonly externalLog: GameLogEntry[] = [];
   private readonly pending: PendingChoice[] = [];
-  /** Instance ids this resolution rested via rest(); drained by the interpreter to cascade [When Becomes Rested] (onRested). */
-  private readonly rested: string[] = [];
+  /** Leader/Characters rested via rest(); drained by the interpreter to cascade [When Becomes Rested] (onRested). */
+  private readonly rested: { targetInstanceId: string; cause: 'effect'; sourceInstanceId: string }[] = [];
   /** Instance ids this resolution moved to the trash via ko(); drained by the interpreter to cascade [On K.O.] (10-2-17). */
   private readonly koed: { targetInstanceId: string; cause: 'effect'; sourceInstanceId: string }[] = [];
   /** DON!! given to Leader/Character targets this resolution; drained for onDonGiven cascade. */
@@ -236,6 +237,18 @@ export class EffectContextImpl implements EffectContext {
     const player = this.working.players[playerId];
     if (!player) return;
     if (player.deck.cardIds.length === 0) {
+      if (hasEmptyDeckDefeatDeferral(this.working, playerId)) {
+        this.working = withDeckBecameZeroThisTurn(this.working, playerId);
+        this.logger.push({
+          actorPlayerId: playerId,
+          type: 'EFFECT_RESOLVED',
+          message: `${playerId} cannot draw — deck has 0 cards (draw skipped; empty-deck defeat deferred).`,
+          data: { reason: 'emptyDeckDrawSkipped', playerId },
+          relatedCardInstanceIds: [],
+          visibility: 'public',
+        });
+        return;
+      }
       const opponentId = getOpponentId(this.working, playerId);
       this.logger.push({
         actorPlayerId: playerId,
@@ -249,12 +262,15 @@ export class EffectContextImpl implements EffectContext {
       return;
     }
     const [drawnId, ...restDeck] = player.deck.cardIds;
-    const newPlayer = { ...player, deck: { ...player.deck, cardIds: restDeck }, hand: addToZoneBottom(player.hand, drawnId) };
+    let newPlayer = { ...player, deck: { ...player.deck, cardIds: restDeck }, hand: addToZoneBottom(player.hand, drawnId) };
     this.working = {
       ...this.working,
       players: { ...this.working.players, [playerId]: newPlayer },
       cardsById: { ...this.working.cardsById, [drawnId]: { ...this.working.cardsById[drawnId], currentZone: 'hand' } },
     };
+    if (restDeck.length === 0) {
+      this.working = withDeckBecameZeroThisTurn(this.working, playerId);
+    }
     this.logger.push({
       actorPlayerId: playerId,
       type: 'CARD_DRAWN',
@@ -1131,6 +1147,30 @@ export class EffectContextImpl implements EffectContext {
     });
   }
 
+  deferEmptyDeckDefeatToEndOfTurn(spec: {
+    appliesToControllerId: string;
+    duration: ContinuousEffectDuration;
+    description?: string;
+  }): void {
+    const record: ContinuousEffectRecord = {
+      id: `ce-${this.sourceInstanceId}-${this.working.continuousEffects.length}`,
+      sourceInstanceId: this.sourceInstanceId,
+      ownerId: this.controllerId,
+      duration: spec.duration,
+      description: spec.description ?? 'do not lose when deck has 0 cards; lose at end of that turn',
+      emptyDeckDefeatDeferral: { appliesToControllerId: spec.appliesToControllerId },
+    };
+    this.working = { ...this.working, continuousEffects: [...this.working.continuousEffects, record] };
+    this.logger.push({
+      actorPlayerId: this.controllerId,
+      type: 'EFFECT_RESOLVED',
+      message: `${spec.appliesToControllerId} does not lose when their deck has 0 cards; they lose at the end of the turn their deck becomes 0.`,
+      data: { continuousEffectId: record.id, duration: spec.duration },
+      relatedCardInstanceIds: [this.sourceInstanceId],
+      visibility: 'public',
+    });
+  }
+
   preventControllerCharacterSetActiveDon(spec: {
     appliesToControllerId: string;
     duration: ContinuousEffectDuration;
@@ -1321,8 +1361,8 @@ export class EffectContextImpl implements EffectContext {
     this.koApply(targetInstanceId);
   }
 
-  /** Drain and return the ids rested via rest() this resolution (for onRested cascade). */
-  takeRested(): string[] {
+  /** Drain and return effect-rested Leader/Characters this resolution (for onRested cascade). */
+  takeRested(): { targetInstanceId: string; cause: 'effect'; sourceInstanceId: string }[] {
     const drained = [...this.rested];
     this.rested.length = 0;
     return drained;
@@ -2410,7 +2450,7 @@ export class EffectContextImpl implements EffectContext {
     } else {
       if (inst.orientation === 'rested') return;
       this.working = { ...this.working, cardsById: { ...this.working.cardsById, [targetInstanceId]: { ...inst, orientation: 'rested' } } };
-      this.rested.push(targetInstanceId);
+      this.rested.push({ targetInstanceId, cause: 'effect', sourceInstanceId: this.sourceInstanceId });
     }
     this.logger.push({
       actorPlayerId: this.controllerId,
@@ -2608,6 +2648,9 @@ export class EffectContextImpl implements EffectContext {
       players: { ...this.working.players, [playerId]: { ...player, deck: { ...player.deck, cardIds: remainingDeck }, trash } },
       cardsById,
     };
+    if (remainingDeck.length === 0) {
+      this.working = withDeckBecameZeroThisTurn(this.working, playerId);
+    }
     this.logger.push({
       actorPlayerId: playerId,
       type: 'CARD_MOVED',
