@@ -1,12 +1,21 @@
 /**
- * Builds the card-picker list for the "Report a Bug" modal from the match's
- * play history (requirement: "select the card played on board by the
- * playing history of the match"), PLUS both players' Leaders — a Leader is
- * never logged via CARD_PLAYED (3-6-3: it's placed during setup, not
- * "played"), so without adding it explicitly a reporter could never pin a
- * bug to their own or the opponent's Leader ability. Leaders are pinned to
- * the top of the list (Infinity sequence) since they're always relevant,
- * unlike a CARD_PLAYED entry which ages as the match goes on.
+ * Builds the card-picker list for the "Report a Bug" modal from three
+ * sources, highest-priority first:
+ *  1. Both players' Leaders — a Leader is never logged via CARD_PLAYED
+ *     (3-6-3: it's placed during setup, not "played"), so without adding it
+ *     explicitly a reporter could never pin a bug to a Leader ability.
+ *  2. The reporting player's OWN hand (`handOwnerPlayerId`) — a bug can be
+ *     about a card that hasn't been played yet (e.g. "this shows the wrong
+ *     cost in hand"). Deliberately only the reporter's own hand, never the
+ *     opponent's: the opponent's hand is secret game state (3-4) and the
+ *     picker has no business exposing it just because someone is filing a
+ *     report. Callers pass null to omit this source entirely (e.g. no
+ *     match in progress).
+ *  3. The match's play history (CARD_PLAYED log entries) — cards already on
+ *     the board or in the trash.
+ * Each tier sorts above the next via `sequence` (Leaders = Infinity, hand
+ * cards = MAX_SAFE_INTEGER, play history = the entry's real log sequence) —
+ * see the final sort at the bottom of this function.
  *
  * Each option also carries `subEffects`: the card's raw text broken into its
  * individual bracketed abilities (e.g. separate [On Play] / [Trigger]
@@ -82,10 +91,44 @@ function buildSnapshot(
   };
 }
 
+/** Shared per-instance option builder — Leaders, hand cards, and play-history entries all resolve identically once you have an instance id, a label suffix, and a sort tier. */
+function buildOption(
+  cardInstanceId: string,
+  labelSuffix: string,
+  turnNumber: number,
+  sequence: number,
+  state: Pick<GameState, 'cardsById'>,
+  defs: CardDefinitionLookup,
+): BugReportCardOption {
+  const instance = state.cardsById[cardInstanceId];
+  const definitionId = instance?.cardDefinitionId;
+  const definition = definitionId ? defs[definitionId] : undefined;
+  const cardName = definition?.name ?? null;
+  const cardNumber = definition?.cardNumber ?? null;
+  const cardText = definition?.text ?? null;
+
+  const titlePart = cardName && cardNumber ? `${cardName} (${cardNumber})` : cardName ?? cardNumber ?? `Card ${cardInstanceId}`;
+
+  return {
+    cardInstanceId,
+    label: `${titlePart} — ${labelSuffix}`,
+    turnNumber,
+    sequence,
+    snapshot: buildSnapshot(cardInstanceId, definitionId, cardName, cardNumber, cardText),
+    subEffects: buildSubEffects(cardNumber, cardText),
+  };
+}
+
+/** Sort tiers: Leaders always first, then the reporter's own hand, then real play-history sequence numbers (both comfortably below MAX_SAFE_INTEGER). */
+const LEADER_SEQUENCE = Number.POSITIVE_INFINITY;
+const HAND_CARD_SEQUENCE = Number.MAX_SAFE_INTEGER;
+
 export function buildBugReportCardOptions(
   log: GameLogEntry[],
   state: Pick<GameState, 'cardsById' | 'players'>,
   defs: CardDefinitionLookup,
+  /** The reporting player's own hand is offered too (requirement: "select cards in own hands"); the OPPONENT's hand never is — that's secret game state (3-4). Pass null when there's no meaningful "reporter" (e.g. no match in progress). */
+  handOwnerPlayerId: string | null = null,
 ): BugReportCardOption[] {
   const options: BugReportCardOption[] = [];
   const seenInstanceIds = new Set<string>();
@@ -95,24 +138,18 @@ export function buildBugReportCardOptions(
     const cardInstanceId = player.leaderInstanceId;
     if (seenInstanceIds.has(cardInstanceId)) continue;
     seenInstanceIds.add(cardInstanceId);
+    options.push(buildOption(cardInstanceId, `${player.playerId}'s Leader`, 0, LEADER_SEQUENCE, state, defs));
+  }
 
-    const instance = state.cardsById[cardInstanceId];
-    const definitionId = instance?.cardDefinitionId;
-    const definition = definitionId ? defs[definitionId] : undefined;
-    const cardName = definition?.name ?? null;
-    const cardNumber = definition?.cardNumber ?? null;
-    const cardText = definition?.text ?? null;
-
-    const titlePart = cardName && cardNumber ? `${cardName} (${cardNumber})` : cardName ?? cardNumber ?? `Card ${cardInstanceId}`;
-
-    options.push({
-      cardInstanceId,
-      label: `${titlePart} — ${player.playerId}'s Leader`,
-      turnNumber: 0,
-      sequence: Number.POSITIVE_INFINITY,
-      snapshot: buildSnapshot(cardInstanceId, definitionId, cardName, cardNumber, cardText),
-      subEffects: buildSubEffects(cardNumber, cardText),
-    });
+  // The reporter's own hand — every entry shares HAND_CARD_SEQUENCE; Array.sort is
+  // stable (ES2019+), so ties preserve this loop's order (i.e. hand order).
+  const handOwner = handOwnerPlayerId ? state.players[handOwnerPlayerId] : undefined;
+  if (handOwner) {
+    for (const cardInstanceId of handOwner.hand.cardIds) {
+      if (seenInstanceIds.has(cardInstanceId)) continue;
+      seenInstanceIds.add(cardInstanceId);
+      options.push(buildOption(cardInstanceId, 'In Hand', 0, HAND_CARD_SEQUENCE, state, defs));
+    }
   }
 
   for (const entry of log) {
@@ -124,30 +161,12 @@ export function buildBugReportCardOptions(
       // in case a future handler ever logs the same instance twice.
       if (seenInstanceIds.has(cardInstanceId)) continue;
       seenInstanceIds.add(cardInstanceId);
-
-      const instance = state.cardsById[cardInstanceId];
-      const definitionId = instance?.cardDefinitionId;
-      const definition = definitionId ? defs[definitionId] : undefined;
-      const cardName = definition?.name ?? null;
-      const cardNumber = definition?.cardNumber ?? null;
-      const cardText = definition?.text ?? null;
-
-      const titlePart = cardName && cardNumber ? `${cardName} (${cardNumber})` : cardName ?? cardNumber ?? `Card ${cardInstanceId}`;
-      const label = `${titlePart} — Turn ${entry.turnNumber}`;
-
-      options.push({
-        cardInstanceId,
-        label,
-        turnNumber: entry.turnNumber,
-        sequence: entry.sequence,
-        snapshot: buildSnapshot(cardInstanceId, definitionId, cardName, cardNumber, cardText),
-        subEffects: buildSubEffects(cardNumber, cardText),
-      });
+      options.push(buildOption(cardInstanceId, `Turn ${entry.turnNumber}`, entry.turnNumber, entry.sequence, state, defs));
     }
   }
 
-  // Leaders (Infinity) first, then most-recently-played first — the reporter
-  // is almost always describing something that just happened, same
+  // Leaders, then the reporter's hand, then most-recently-played first — the
+  // reporter is almost always describing something that just happened, same
   // "newest first" convention ActionLogDock uses.
   return options.sort((a, b) => b.sequence - a.sequence);
 }

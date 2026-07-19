@@ -1,23 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdminAuthStore } from '../../store/adminAuthStore';
-import { fetchBugReports } from '../../net/bugReportAdminClient';
+import { fetchBugReports, updateBugReport } from '../../net/bugReportAdminClient';
 import { AdminApiError } from '../../net/shared';
-import { AdminBadge, AdminButton, AdminSelect } from '../../components/ui';
+import { AdminButton, AdminSelect } from '../../components/ui';
 import { downloadBugReportsAsCsv, downloadBugReportsAsJson, fetchAllBugReports } from '../../lib/exportBugReports';
 import type { AdminBugReportSummary, BugReportStatus, BugReportValidity } from '../../../../shared/admin';
-
-function validityTone(validity: BugReportValidity): 'good' | 'warn' | 'bad' {
-  if (validity === 'valid') return 'good';
-  if (validity === 'invalid') return 'bad';
-  return 'warn';
-}
-
-function statusTone(status: BugReportStatus): 'good' | 'warn' | 'neutral' {
-  if (status === 'resolved') return 'good';
-  if (status === 'open') return 'warn';
-  return 'neutral';
-}
 
 export function BugReportListPage() {
   const token = useAdminAuthStore((s) => s.token)!;
@@ -28,6 +16,20 @@ export function BugReportListPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<'json' | 'csv' | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  async function handleRowUpdate(id: string, patch: { status?: BugReportStatus; validity?: BugReportValidity }): Promise<void> {
+    setSavingId(id);
+    setError(null);
+    try {
+      const updated = await updateBugReport(token, id, patch);
+      setReports((prev) => prev.map((report) => (report.id === id ? updated : report)));
+    } catch (cause) {
+      setError(cause instanceof AdminApiError ? cause.message : 'Could not update this report.');
+    } finally {
+      setSavingId(null);
+    }
+  }
 
   async function handleExport(format: 'json' | 'csv'): Promise<void> {
     setExporting(format);
@@ -104,6 +106,8 @@ export function BugReportListPage() {
             <tr>
               <th className="px-3 py-2 font-semibold">Time</th>
               <th className="px-3 py-2 font-semibold">Reporter</th>
+              <th className="px-3 py-2 font-semibold">Card #</th>
+              <th className="px-3 py-2 font-semibold">Card Name</th>
               <th className="px-3 py-2 font-semibold">Description</th>
               <th className="px-3 py-2 font-semibold">App version</th>
               <th className="px-3 py-2 font-semibold">Validity</th>
@@ -111,27 +115,49 @@ export function BugReportListPage() {
             </tr>
           </thead>
           <tbody>
-            {reports.map((report) => (
-              <tr key={report.id} className="border-t border-[rgb(var(--op-gold-rgb)/0.18)] hover:bg-[rgb(var(--op-gold-rgb)/0.08)]">
-                <td className="px-3 py-2 text-white/55">{new Date(report.createdAt).toLocaleString()}</td>
-                <td className="px-3 py-2 text-white/75">{report.reporterUsername ?? report.reporterUserId}</td>
-                <td className="max-w-sm truncate px-3 py-2">
-                  <Link to={`/admin/bugs/${report.id}`} className="text-[rgb(var(--op-gold-rgb))] hover:underline">
-                    {report.description}
-                  </Link>
-                </td>
-                <td className="px-3 py-2 text-white/55">{report.clientVersion ?? '—'}</td>
-                <td className="px-3 py-2">
-                  <AdminBadge tone={validityTone(report.validity)}>{report.validity}</AdminBadge>
-                </td>
-                <td className="px-3 py-2">
-                  <AdminBadge tone={statusTone(report.status)}>{report.status}</AdminBadge>
-                </td>
-              </tr>
-            ))}
+            {reports.map((report) => {
+              const rowSaving = savingId === report.id;
+              return (
+                <tr key={report.id} className="border-t border-[rgb(var(--op-gold-rgb)/0.18)] hover:bg-[rgb(var(--op-gold-rgb)/0.08)]">
+                  <td className="px-3 py-2 text-white/55">{new Date(report.createdAt).toLocaleString()}</td>
+                  <td className="px-3 py-2 text-white/75">{report.reporterUsername ?? report.reporterUserId}</td>
+                  <td className="px-3 py-2 text-white/75">{report.selectedCardNumber ?? '—'}</td>
+                  <td className="px-3 py-2 text-white/75">{report.selectedCardName ?? '—'}</td>
+                  <td className="max-w-sm truncate px-3 py-2">
+                    <Link to={`/admin/bugs/${report.id}`} className="text-[rgb(var(--op-gold-rgb))] hover:underline">
+                      {report.description}
+                    </Link>
+                  </td>
+                  <td className="px-3 py-2 text-white/55">{report.clientVersion ?? '—'}</td>
+                  <td className="px-3 py-2">
+                    <AdminSelect
+                      value={report.validity}
+                      disabled={rowSaving}
+                      onChange={(e) => void handleRowUpdate(report.id, { validity: e.target.value as BugReportValidity })}
+                    >
+                      <option value="unreviewed">Unreviewed</option>
+                      <option value="valid">Valid</option>
+                      <option value="invalid">Invalid</option>
+                    </AdminSelect>
+                  </td>
+                  <td className="px-3 py-2">
+                    <AdminSelect
+                      value={report.status}
+                      disabled={rowSaving}
+                      onChange={(e) => void handleRowUpdate(report.id, { status: e.target.value as BugReportStatus })}
+                    >
+                      <option value="open">Open</option>
+                      <option value="triaged">Triaged</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="wont_fix">Won't fix</option>
+                    </AdminSelect>
+                  </td>
+                </tr>
+              );
+            })}
             {reports.length === 0 && !loading && (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-white/40">
+                <td colSpan={8} className="px-3 py-6 text-center text-white/40">
                   No bug reports.
                 </td>
               </tr>

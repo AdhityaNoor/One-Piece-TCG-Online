@@ -412,6 +412,17 @@ interface MatchStoreState {
   recordPlayTestError(message: string, data?: Omit<PlayTestErrorLogEntry, 'id' | 'timestamp' | 'message'>): void;
   clearPlayTestErrors(): void;
   dispatch(action: GameAction): MatchDispatchResult;
+  /**
+   * Phase 2 asset preload seam (see matchAssetPreload.ts): swaps
+   * `cardImagesByDefinitionId` for a preloaded map (remote URLs replaced by
+   * local `blob:` URLs where caching succeeded). Deliberately a separate
+   * action from startMatch() rather than a parameter on it — preloading is
+   * async and startMatch() itself must stay synchronous, so MatchScreen
+   * calls this once startMatch() has returned and the preload promise
+   * resolves. A plain `set()` would work too; this exists so callers outside
+   * the store never reach for raw `.setState()`.
+   */
+  applyCardImages(images: Record<string, string | null>): void;
   reset(): void;
 }
 
@@ -862,6 +873,10 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     }
     set({ state: nextState, v2EffectSidecars: nextV2EffectSidecars });
     return { ok: true };
+  },
+
+  applyCardImages(images) {
+    set({ cardImagesByDefinitionId: images });
   },
 
   reset() {

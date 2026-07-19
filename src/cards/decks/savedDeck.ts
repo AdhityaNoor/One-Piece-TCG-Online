@@ -19,6 +19,20 @@
  *
  * Everything here is plain JSON-serializable data (project ground rule) —
  * no functions, no Map/Set, no class instances.
+ *
+ * Hard rule, not just a convention: nothing in this file may ever carry
+ * effect-CURATION data (an effect template/program id, a compiled effect, an
+ * effect version, etc). `definition`/`rawPrinting` are card IDENTITY and
+ * STATS only. Effect behavior is resolved live, by `cardNumber`, at match
+ * start (src/app/store/matchStore.ts `startMatch` ->
+ * `buildRegistryFromDefs`/`buildV2RuntimeFromDefs`, both rebuilt from the
+ * CURRENT curated-effect tables every single call — see
+ * src/cards/effectTemplates/curatedPrograms.ts and
+ * src/cards/effectCompiler_V2/runtimeCatalog_V2.ts). This is what lets a
+ * curation fix/addition for a card number apply automatically to every
+ * already-saved deck containing that card, with zero deck migration. See
+ * __tests__/savedDeck.test.ts's "stays free of effect-curation data" suite
+ * for the compile-time guard that enforces this.
  */
 import type { CardDefinition } from '../../engine/state/card';
 import type { CardPrintingDto } from '../api/types';

@@ -1,4 +1,4 @@
-import type { AdminBugReportDetail, AdminBugReportListPage, BugReportStatus, BugReportValidity, UpdateBugReportRequest } from '../../../shared/admin';
+import type { AdminBugReportDetail, AdminBugReportListPage, AdminBugReportSummary, BugReportStatus, BugReportValidity, UpdateBugReportRequest } from '../../../shared/admin';
 import { adminAuthHeaders, adminUrl, parseAdminOrThrow } from './shared';
 
 export async function fetchBugReports(
@@ -18,8 +18,9 @@ export async function fetchBugReportDetail(token: string, id: string): Promise<A
   return parseAdminOrThrow(await fetch(adminUrl(`/admin/bug-reports/${encodeURIComponent(id)}`), { headers: adminAuthHeaders(token) }));
 }
 
-export async function updateBugReport(token: string, id: string, body: UpdateBugReportRequest): Promise<void> {
-  await parseAdminOrThrow(
+/** Returns the server's updated row (BugReportAdminService.update already returns the fresh AdminBugReportSummary) so callers can apply it directly instead of re-fetching or trusting the locally-sent patch. */
+export async function updateBugReport(token: string, id: string, body: UpdateBugReportRequest): Promise<AdminBugReportSummary> {
+  return parseAdminOrThrow(
     await fetch(adminUrl(`/admin/bug-reports/${encodeURIComponent(id)}`), { method: 'PATCH', headers: adminAuthHeaders(token), body: JSON.stringify(body) }),
   );
 }

@@ -13,6 +13,7 @@ import {
   putCharacterInPlay,
   putStageInPlay,
   nextTestId,
+  type Rig,
 } from '../../rules/shared/__tests__/testRig';
 import { createPreGameState } from '../../setup/createPreGameState';
 import { executeChooseGoingFirst } from '../../setup/applyChooseGoingFirst';
@@ -132,8 +133,12 @@ describe('OP16-080 Teach opponent-turn +1 cost aura', () => {
     expect(aura?.costModifier?.sourceCondition).toEqual({ turn: 'opponent' });
 
     // Drop a Character onto Teach's side after setup and confirm the aura applies only on the opponent's turn.
-    let mid = {
-      state: { ...advanced.state, activePlayerId: 'p2' as const, currentPhase: 'main' as const },
+    // Explicitly typed as Rig (not inferred from this literal) so `mid` stays
+    // assignable from putCharacterInPlay()'s return below — an inferred type
+    // here would narrow `state.activePlayerId` to the literal "p2", which
+    // Rig's GameState (activePlayerId: string) can never satisfy back.
+    let mid: Rig = {
+      state: { ...advanced.state, activePlayerId: 'p2', currentPhase: 'main' },
       defs,
     };
     const ally = putCharacterInPlay(mid, 'p1', ALLY_DEF);

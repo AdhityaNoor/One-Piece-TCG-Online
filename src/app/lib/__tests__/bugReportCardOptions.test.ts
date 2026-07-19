@@ -176,6 +176,43 @@ describe('buildBugReportCardOptions', () => {
     expect(options[0].label).toContain("Leader");
   });
 
+  it('includes the handOwnerPlayerId player\'s hand, sorted after Leaders but before play history', () => {
+    const log: GameLogEntry[] = [playedEntry({ relatedCardInstanceIds: ['played-1'], sequence: 4 })];
+    const state = {
+      cardsById: {
+        'leader-p1': instance({ instanceId: 'leader-p1', cardDefinitionId: 'OP01-001', currentZone: 'leaderArea' }),
+        'hand-1': instance({ instanceId: 'hand-1', currentZone: 'hand' }),
+        'hand-2': instance({ instanceId: 'hand-2', currentZone: 'hand' }),
+        'played-1': instance({ instanceId: 'played-1' }),
+      },
+      players: {
+        p1: player({ playerId: 'p1', leaderInstanceId: 'leader-p1', hand: zone('hand', 'secret') }),
+      },
+    };
+    state.players.p1.hand.cardIds.push('hand-1', 'hand-2');
+    const defs: CardDefinitionLookup = { 'OP01-001': definition() };
+
+    const options = buildBugReportCardOptions(log, state, defs, 'p1');
+    expect(options.map((o) => o.cardInstanceId)).toEqual(['leader-p1', 'hand-1', 'hand-2', 'played-1']);
+    expect(options[1].label).toContain('In Hand');
+  });
+
+  it('omits hand cards when handOwnerPlayerId is null (default)', () => {
+    const log: GameLogEntry[] = [];
+    const state = {
+      cardsById: { 'hand-1': instance({ instanceId: 'hand-1', currentZone: 'hand' }) },
+      players: {
+        p1: player({ playerId: 'p1', leaderInstanceId: 'leader-p1', hand: zone('hand', 'secret') }),
+      },
+    };
+    state.players.p1.hand.cardIds.push('hand-1');
+    const defs: CardDefinitionLookup = { 'OP01-001': definition() };
+
+    // No handOwnerPlayerId passed — only the Leader (auto-included) should show up, never the hand card.
+    const options = buildBugReportCardOptions(log, state, defs);
+    expect(options.some((o) => o.cardInstanceId === 'hand-1')).toBe(false);
+  });
+
   it('splits a multi-ability card into subEffects, one per bracketed ability', () => {
     const log: GameLogEntry[] = [playedEntry({ relatedCardInstanceIds: ['inst-1'] })];
     const state = {

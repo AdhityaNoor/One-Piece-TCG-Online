@@ -35,7 +35,8 @@ function toSummary(doc: BugReportDocument, reporterUsername: string | null): Adm
     validity: doc.validity,
     status: doc.status,
     logEntryCount: doc.logEntryCount,
-    hasSelectedCard: doc.selectedCard !== null,
+    selectedCardNumber: doc.selectedCard?.cardNumber ?? null,
+    selectedCardName: doc.selectedCard?.cardName ?? null,
   };
 }
 

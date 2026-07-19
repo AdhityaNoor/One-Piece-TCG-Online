@@ -4,12 +4,13 @@
  * page(s) already loaded on screen — by walking fetchBugReports' cursor to
  * the end, same cursor contract fetchBugReports/BugReportListPage already use.
  *
- * Exports full AdminBugReportSummary rows (every field, not just the table's
- * visible columns) — matches/detail log data is deliberately NOT fetched
+ * Both formats export exactly 5 fields per report (Time, Reporter, Card
+ * number, Description, App version) — a deliberately narrow export, not the
+ * full AdminBugReportSummary. Matches/detail log data is never fetched
  * per-row here: that would mean one extra request per report (a report's log
  * can be up to 5000 entries — see server/src/support/bugReportService.ts),
- * which does not belong in a bulk list export. Reuses the Blob + temporary
- * <a download> pattern from PlayTestScreen.downloadPlayTestLog.
+ * which does not belong in a bulk list export anyway. Reuses the Blob +
+ * temporary <a download> pattern from PlayTestScreen.downloadPlayTestLog.
  */
 import type { AdminBugReportSummary, BugReportStatus, BugReportValidity } from '../../../shared/admin';
 import { fetchBugReports } from '../net/bugReportAdminClient';
@@ -57,22 +58,35 @@ function timestampForFilename(): string {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
 
-export function downloadBugReportsAsJson(reports: AdminBugReportSummary[]): void {
-  triggerDownload(JSON.stringify(reports, null, 2), 'application/json', `bug-reports-${timestampForFilename()}.json`);
+/** The 5 fields both export formats carry per report, per the requested "download" shape. */
+interface BugReportExportRow {
+  time: string;
+  reporter: string;
+  cardNumber: string | null;
+  description: string;
+  appVersion: string | null;
 }
 
-const CSV_COLUMNS: Array<{ key: keyof AdminBugReportSummary; header: string }> = [
-  { key: 'id', header: 'ID' },
-  { key: 'createdAt', header: 'Created At' },
-  { key: 'reporterUserId', header: 'Reporter User ID' },
-  { key: 'reporterUsername', header: 'Reporter Username' },
+function toExportRow(report: AdminBugReportSummary): BugReportExportRow {
+  return {
+    time: new Date(report.createdAt).toLocaleString(),
+    reporter: report.reporterUsername ?? report.reporterUserId,
+    cardNumber: report.selectedCardNumber,
+    description: report.description,
+    appVersion: report.clientVersion,
+  };
+}
+
+export function downloadBugReportsAsJson(reports: AdminBugReportSummary[]): void {
+  triggerDownload(JSON.stringify(reports.map(toExportRow), null, 2), 'application/json', `bug-reports-${timestampForFilename()}.json`);
+}
+
+const CSV_COLUMNS: Array<{ key: keyof BugReportExportRow; header: string }> = [
+  { key: 'time', header: 'Time' },
+  { key: 'reporter', header: 'Reporter' },
+  { key: 'cardNumber', header: 'Card Number' },
   { key: 'description', header: 'Description' },
-  { key: 'matchMode', header: 'Match Mode' },
-  { key: 'clientVersion', header: 'App Version' },
-  { key: 'validity', header: 'Validity' },
-  { key: 'status', header: 'Status' },
-  { key: 'logEntryCount', header: 'Log Entry Count' },
-  { key: 'hasSelectedCard', header: 'Has Selected Card' },
+  { key: 'appVersion', header: 'App Version' },
 ];
 
 /** RFC 4180-ish escaping: quote any field containing a comma, quote, or newline; double up embedded quotes. */
@@ -83,9 +97,10 @@ function csvCell(value: unknown): string {
 }
 
 export function downloadBugReportsAsCsv(reports: AdminBugReportSummary[]): void {
+  const rows = reports.map(toExportRow);
   const lines = [
     CSV_COLUMNS.map((column) => csvCell(column.header)).join(','),
-    ...reports.map((report) => CSV_COLUMNS.map((column) => csvCell(report[column.key])).join(',')),
+    ...rows.map((row) => CSV_COLUMNS.map((column) => csvCell(row[column.key])).join(',')),
   ];
   triggerDownload(lines.join('\r\n'), 'text/csv', `bug-reports-${timestampForFilename()}.csv`);
 }

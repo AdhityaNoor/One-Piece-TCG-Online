@@ -167,7 +167,9 @@ export interface AdminBugReportSummary {
   validity: BugReportValidity;
   status: BugReportStatus;
   logEntryCount: number;
-  hasSelectedCard: boolean;
+  /** From the reporter's selected-card snapshot (BugReportCardSnapshot), if any — both null when no card was selected. */
+  selectedCardNumber: string | null;
+  selectedCardName: string | null;
 }
 
 export interface AdminBugReportListPage {

@@ -41,6 +41,9 @@ import type { CardView, PlayerBoardView } from '../../board/projection';
 import { logEffectText, logSourceCardLabel } from '../lib/logDisplay';
 import { buildBugReportCardOptions } from '../lib/bugReportCardOptions';
 import { EFFECT_RUNTIME_LABEL, EFFECT_RUNTIME_MODE } from '../config/effectRuntimeMode';
+import type { AssetCacheManager } from '../../cards/assets/assetCache';
+import { createCacheStorageAssetManager } from '../../cards/assets/cacheStorageAssetManager';
+import { preloadMatchAssets, revokeMatchAssetBlobUrls } from '../lib/matchAssetPreload';
 
 function EffectRuntimeBadge() {
   const summary = useMatchStore((s) => s.v2EffectRuntime?.summary);
@@ -100,14 +103,20 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
 
   const [pauseOpen, setPauseOpen] = useState(false);
   const [reportBugOpen, setReportBugOpen] = useState(false);
-  // Card-play history for the bug-report picker (CARD_PLAYED log entries
-  // only — see bugReportCardOptions.ts doc comment). Recomputed whenever the
-  // log or cardsById changes; a match's log is small (a few hundred entries
-  // at most) so this is cheap enough to keep unconditional rather than
-  // gating it behind reportBugOpen.
+  // Card-play history for the bug-report picker (CARD_PLAYED log entries,
+  // both Leaders, and the reporter's own hand — see bugReportCardOptions.ts
+  // doc comment). "Own hand" resolves the same way DockHand's
+  // bottomHandIsOwn does: the pinned local seat when isPinnedPerspective
+  // (Casual/VS CPU/Online), otherwise whoever currently has agency in
+  // hotseat (there's no fixed "local" seat there — the reporter is
+  // whoever's turn/choice it is right now). Recomputed whenever the log or
+  // cardsById changes; a match's log is small (a few hundred entries at
+  // most) so this is cheap enough to keep unconditional rather than gating
+  // it behind reportBugOpen.
+  const bugReportHandOwnerId = isPinnedPerspective ? localPlayerId : matchState ? getActingPlayerId(matchState) : null;
   const bugReportCardOptions = useMemo(
-    () => (matchState ? buildBugReportCardOptions(matchState.log, matchState, defs) : []),
-    [matchState, defs],
+    () => (matchState ? buildBugReportCardOptions(matchState.log, matchState, defs, bugReportHandOwnerId) : []),
+    [matchState, defs, bugReportHandOwnerId],
   );
   const bugReportMatchMode: MatchModeTag = onlineMode ? 'online' : isCpuMatch ? 'vs-cpu' : isCasual ? 'casual-mock' : 'local-hotseat';
   // Left Actions aside: online matches (Casual + Ranked) get an always-visible
@@ -128,6 +137,27 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const tableShellRef = useRef<HTMLDivElement | null>(null);
   const mobileLogNotificationCursorRef = useRef<number | null>(null);
   const navyBackgroundEnabled = useSettingsStore((state) => state.matchNavyBackgroundEnabled);
+  const applyCardImages = useMatchStore((s) => s.applyCardImages);
+
+  // Phase 2 asset preload (see matchAssetPreload.ts doc comment): before a
+  // standard hotseat/CPU match's board mounts, every deck's card art is
+  // fetched into Cache Storage once and swapped for local blob: URLs, so
+  // no image request happens mid-battle. Scoped to `current.screen ===
+  // 'match'` only — Online/Casual matches hydrate via hydrateOnlineMatch()
+  // (art is already being fetched incrementally as opponents' cards
+  // reveal, and blocking on a full-deck preload would stall room join) and
+  // Play Test's generated decks restart so often that preloading would
+  // fight its own churn. Both are explicitly out of scope for this pass.
+  const assetCacheManagerRef = useRef<AssetCacheManager | null>(null);
+  if (!assetCacheManagerRef.current) {
+    assetCacheManagerRef.current = createCacheStorageAssetManager();
+  }
+  const preloadedBlobUrlsRef = useRef<Record<string, string | null>>({});
+  const [assetPreload, setAssetPreload] = useState<{ ready: boolean; loaded: number; total: number }>({
+    ready: false,
+    loaded: 0,
+    total: 0,
+  });
 
   const isMatchScreen = current.screen === 'match' || current.screen === 'online-match' || current.screen === 'play-test';
   const deckIdA = current.screen === 'match' ? current.deckIdA : null;
@@ -164,6 +194,57 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     // presentationKey stands in for the presentation object (stable string).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckIdA, deckIdB, presentationKey, startedWithDeckIds, load, startMatch]);
+
+  // Fires once per distinct startMatch() call (startedWithDeckIds is a fresh
+  // object identity each time matchStore.startMatch() succeeds — see
+  // matchStore.ts) — never on every render. `startedWithDeckIds` going back
+  // to null (reset()/handleQuit(), or a not-yet-started match) both skips
+  // preloading and releases the previous match's blob: URLs, since nothing
+  // else in this always-mounted component's lifecycle will ever call
+  // revokeMatchAssetBlobUrls() for us (see doc comment on that function).
+  useEffect(() => {
+    if (current.screen !== 'match' || !startedWithDeckIds) {
+      if (Object.keys(preloadedBlobUrlsRef.current).length > 0) {
+        revokeMatchAssetBlobUrls(preloadedBlobUrlsRef.current);
+        preloadedBlobUrlsRef.current = {};
+      }
+      setAssetPreload({ ready: false, loaded: 0, total: 0 });
+      return;
+    }
+
+    let cancelled = false;
+    setAssetPreload({ ready: false, loaded: 0, total: 0 });
+    const sourceImages = useMatchStore.getState().cardImagesByDefinitionId;
+    const cacheManager = assetCacheManagerRef.current as AssetCacheManager;
+
+    preloadMatchAssets(sourceImages, cacheManager, (progress) => {
+      if (!cancelled) setAssetPreload({ ready: false, loaded: progress.loaded, total: progress.total });
+    }).then((result) => {
+      if (cancelled) return;
+      revokeMatchAssetBlobUrls(preloadedBlobUrlsRef.current);
+      preloadedBlobUrlsRef.current = result.images;
+      applyCardImages(result.images);
+      const total = Object.values(sourceImages).filter((url) => typeof url === 'string' && url.length > 0).length;
+      setAssetPreload({ ready: true, loaded: total, total });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current.screen, startedWithDeckIds, applyCardImages]);
+
+  // Safety net: release any still-held blob: URLs if this component ever
+  // truly unmounts (it normally doesn't — see file doc comment — but a
+  // future refactor or an error boundary could change that).
+  useEffect(() => {
+    return () => {
+      if (Object.keys(preloadedBlobUrlsRef.current).length > 0) {
+        revokeMatchAssetBlobUrls(preloadedBlobUrlsRef.current);
+        preloadedBlobUrlsRef.current = {};
+      }
+    };
+  }, []);
 
   // Hooks must run unconditionally on every render of this component (it
   // stays mounted across screen navigation and just returns null when
@@ -365,6 +446,27 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     return (
       <MatchGameShell title="Match">
         {current.screen === 'online-match' ? <OnlineSyncLoading onCancel={handleQuit} /> : <p className="p-6 text-sm text-white/50">Starting match...</p>}
+      </MatchGameShell>
+    );
+  }
+
+  // Phase 2 asset-preload gate — standard hotseat/CPU matches only (see the
+  // effect above for why Online/Casual and Play Test are excluded). Blocks
+  // the board from mounting until every deck's card art is cached, so the
+  // very first paint of the match already has zero pending image requests.
+  if (current.screen === 'match' && !assetPreload.ready) {
+    const percent = assetPreload.total > 0 ? Math.round((assetPreload.loaded / assetPreload.total) * 100) : 100;
+    return (
+      <MatchGameShell title="Match">
+        <div className="flex flex-col items-center justify-center gap-3 p-6 text-sm text-white/70">
+          <p>Loading card art…</p>
+          <div className="h-1.5 w-64 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-white/60 transition-[width]" style={{ width: `${percent}%` }} />
+          </div>
+          <p className="text-xs text-white/40">
+            {assetPreload.total > 0 ? `${assetPreload.loaded} / ${assetPreload.total} images cached` : 'No card art to cache'}
+          </p>
+        </div>
       </MatchGameShell>
     );
   }
