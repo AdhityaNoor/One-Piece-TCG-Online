@@ -4,4 +4,5 @@ export * from './unlimitedCopyCards';
 export * from './saveDeck';
 export * from './clipboardImport';
 export * from './deckStorage';
+export * from './deckSyncPlan';
 export * from './genericDonCard';

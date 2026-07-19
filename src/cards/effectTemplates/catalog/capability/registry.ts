@@ -2035,7 +2035,7 @@ export const TIMINGS: Record<IrTiming, string> = {
   onCharacterPlayedFromHand: '[When you play a Character from your hand] — fires on your other in-play cards.',
   onOpponentCharacterPlayedFromHand: '[When your opponent plays a Character] — fires on your in-play cards (Leader/Characters).',
   onCharacterPlayedFromTrash: '[When you play a Character from your trash] — fires on your other in-play cards.',
-  onStartOfTurn: '[Start of your turn] — optional activated effect at the beginning of Refresh (before returning given DON!! / set-active / Draw / DON!!). OP11-040 FAQ.',
+  onStartOfTurn: '[Start of your turn] — optional activated effect at the beginning of Refresh (before returning given DON!! / set-active / Draw / DON!!). Prompt only when ability gate already passes (e.g. OP11-040 8+ DON!!).',
   onHandTrashed: '[When a card is trashed from your hand by your card\'s effect] — reactive draw/buff window.',
   counter: '[Counter] — during the opponent\'s attack, from hand.',
   lifeTrigger: '[Trigger] — when this card is revealed from Life.',

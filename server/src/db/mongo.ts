@@ -32,6 +32,7 @@ import type {
   SocialGraphDocument,
   UsernameHistoryDocument,
 } from '../models/profile';
+import type { SavedDeckDocument } from '../models/deck';
 
 let client: MongoClient | null = null;
 let db: Db | null = null;
@@ -120,6 +121,11 @@ export function bugReports(): Collection<BugReportDocument> {
   return getDb().collection<BugReportDocument>('bugReports');
 }
 
+// Account-backed deck library — see server/src/models/deck.ts + decks/routes.ts.
+export function savedDecks(): Collection<SavedDeckDocument> {
+  return getDb().collection<SavedDeckDocument>('savedDecks');
+}
+
 // ---- Admin CMS (server/src/admin*, server/src/adminAuth) ------------------
 
 export function admins(): Collection<AdminDocument> {
@@ -199,6 +205,10 @@ async function ensureIndexes(database: Db): Promise<void> {
   await database.collection('bugReports').createIndex({ reporterUserId: 1, createdAt: -1 });
   await database.collection('bugReports').createIndex({ status: 1, createdAt: -1 });
   await database.collection('bugReports').createIndex({ validity: 1, createdAt: -1 });
+
+  // Account-backed deck library — see server/src/models/deck.ts + decks/routes.ts.
+  await database.collection('savedDecks').createIndex({ userId: 1, deckId: 1 }, { unique: true });
+  await database.collection('savedDecks').createIndex({ userId: 1, updatedAt: -1 });
 
   // Admin CMS — see server/src/models/{admin,featureFlag,homeBanner,cardLegalityOverride}.ts.
   await database

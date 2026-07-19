@@ -270,8 +270,9 @@ export const OP11_ASSIGNMENTS: CardEffectAssignment[] = [
   //   This effect can be activated at the start of your turn. If you have 8 or more DON!! cards on your
   //   field, look at 5 cards from the top of your deck; reveal up to 1 {Straw Hat Crew} type card and
   //   add it to your hand. Then, place the rest at the top or bottom of the deck in any order.
-  //   Official FAQ: activates at the beginning of Refresh (before draw / DON!! placement). You may
-  //   activate with ≤7 DON!! but then nothing happens — gate is checked on resolve, not before the prompt.
+  //   Official FAQ: activates at the beginning of Refresh (before draw / DON!! placement). FAQ also
+  //   allows activating with ≤7 DON!! as a no-op; we only prompt when the 8+ DON!! gate already passes
+  //   so the Activate/Decline dialog is not shown when nothing can happen.
   {
     cardNumber: 'OP11-040',
     templateId: 'ability',

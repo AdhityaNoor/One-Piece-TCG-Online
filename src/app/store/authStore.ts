@@ -21,7 +21,14 @@ import type { PublicUser } from '../../../shared/auth';
 import { AuthApiError, fetchMe, login as apiLogin, signup as apiSignup } from '../../multiplayer/net/authClient';
 import { isBackendConfigured } from '../../multiplayer/net/backendConfig';
 import { browserStorage } from '../lib/runtime';
+import { syncDecksWithAccount } from '../lib/deckSync';
+import { useSavedDecksStore } from './savedDecksStore';
 import { useSettingsStore } from './settingsStore';
+
+/** Runs the account deck sync then refreshes the Saved Decks screen's list — deckSync.ts writes straight to the underlying DeckStore (bypassing useSavedDecksStore's own save()/remove(), which would otherwise re-push what was just pulled), so this is what makes newly-synced decks actually show up without a manual reload. */
+function syncDecksAndRefresh(token: string): void {
+  void syncDecksWithAccount(token).then(() => useSavedDecksStore.getState().refresh());
+}
 
 const TOKEN_KEY = 'optcg.auth.token';
 
@@ -77,6 +84,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await fetchMe(token);
       adoptUsername(user);
       set({ status: 'authenticated', user, token });
+      syncDecksAndRefresh(token);
     } catch {
       persistToken(null);
       set({ status: 'anonymous', user: null, token: null });
@@ -90,6 +98,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       persistToken(token);
       adoptUsername(user);
       set({ status: 'authenticated', user, token, busy: false, offlineMode: false });
+      syncDecksAndRefresh(token);
       return true;
     } catch (cause) {
       set({ busy: false, error: messageFor(cause) });
@@ -104,6 +113,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       persistToken(token);
       adoptUsername(user);
       set({ status: 'authenticated', user, token, busy: false, offlineMode: false });
+      syncDecksAndRefresh(token);
       return true;
     } catch (cause) {
       set({ busy: false, error: messageFor(cause) });

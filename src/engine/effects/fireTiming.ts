@@ -962,8 +962,11 @@ export function fireHandTrashedReactions(
 /**
  * Fires [Start of your turn] abilities for the active player's in-play cards.
  * Official timing (OP11-040 FAQ): beginning of Refresh, before returning given DON!!,
- * set-active, Draw, or DON!! placement. Optional activates are offered even when board
- * gates fail; unmet gates make resolution a no-op (same FAQ).
+ * set-active, Draw, or DON!! placement.
+ *
+ * Optional activates only prompt when the ability gate already passes (e.g. 8+ DON!!
+ * for OP11-040). UX choice: do not show Activate/Decline when resolution would be a
+ * no-op. Gates are still re-checked on YES resolve as a safety net.
  */
 export function fireStartOfTurnReactions(
   state: GameState,
@@ -986,16 +989,13 @@ export function fireStartOfTurnReactions(
       if (working.startOfTurnHandledKeys?.[handledKey]) continue;
 
       if (ability.optionalActivate) {
-        // Offer even when ability.gate fails (checked on YES resolve). Still honor
-        // [DON!! xN] / [Your Turn] style condition fields before prompting.
-        const c = ability.condition;
-        if (c) {
-          if (c.donAttachedAtLeast !== undefined && inst.donAttached.length < c.donAttachedAtLeast) continue;
-          if (c.turn !== undefined) {
-            const isOwnersTurn = working.activePlayerId === inst.ownerId;
-            if (c.turn === 'your' && !isOwnersTurn) continue;
-            if (c.turn === 'opponent' && isOwnersTurn) continue;
-          }
+        // Only prompt when condition + gate already pass — no empty Activate/Decline.
+        if (!triggeredAbilityWouldFire(ability, inst, working, defs)) {
+          working = {
+            ...working,
+            startOfTurnHandledKeys: { ...working.startOfTurnHandledKeys, [handledKey]: true },
+          };
+          continue;
         }
         working = {
           ...working,

@@ -20,6 +20,7 @@ import { connectMongo, closeMongo } from './db/mongo';
 import { authRouter } from './auth/routes';
 import { rankedRouter } from './ranked/routes';
 import { profileRouter } from './profile/routes';
+import { decksRouter } from './decks/routes';
 import { supportRouter } from './support/routes';
 import { adminAuthRouter } from './adminAuth/routes';
 import { requireAdminAuth } from './adminAuth/middleware';
@@ -76,6 +77,7 @@ async function main(): Promise<void> {
   app.use('/auth', authRouter());
   app.use('/ranked', rankedRouter());
   app.use('/profile', profileRouter());
+  app.use('/decks', decksRouter());
   app.use('/support', supportRouter());
   app.use('/banners', bannersPublicRouter());
 
