@@ -140,8 +140,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     chooser: 'controller',
     prompt: 'Choose one:',
     options: [
-      { label: 'restCost4', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, maxTargets: 1 }] },
-      { label: 'minus1Cost', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -1, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] },
+      { label: 'rest', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, maxTargets: 1 }] },
+      { label: 'reduceCost', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -1, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] },
     ],
   }] } },
 
@@ -267,8 +267,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
         chooser: 'controller',
         prompt: 'Choose one:',
         options: [
-          { label: 'restCost6', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, maxTargets: 1 }] },
-          { label: 'koRestedCost6', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 6 } }, optional: true, maxTargets: 1 }] },
+          { label: 'rest', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, maxTargets: 1 }] },
+          { label: 'koRested', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 6 } }, optional: true, maxTargets: 1 }] },
         ],
       }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{
@@ -276,8 +276,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
         chooser: 'controller',
         prompt: 'Choose one:',
         options: [
-          { label: 'restCost6', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, maxTargets: 1 }] },
-          { label: 'koRestedCost6', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 6 } }, optional: true, maxTargets: 1 }] },
+          { label: 'rest', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true, maxTargets: 1 }] },
+          { label: 'koRested', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, maxCost: 6 } }, optional: true, maxTargets: 1 }] },
         ],
       }] } },
     ],
@@ -465,8 +465,8 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     chooser: 'controller',
     prompt: 'Choose one:',
     options: [
-      { label: 'koCost2', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, maxTargets: 1 }] },
-      { label: 'returnHandCost4', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 }] },
+      { label: 'ko', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, maxTargets: 1 }] },
+      { label: 'returnToHand', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: 1 }] },
     ],
   }] } },
 
@@ -621,13 +621,15 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP06-091 — [On Play] If Leader {Thriller Bark Pirates}, trash 5 cards from the top of your deck.
   { cardNumber: 'OP06-091', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Thriller Bark Pirates' }], functions: [{ fn: 'trashTopDeck', count: 5 }] } },
 
-  // OP06-092 — [On Play] choose one: K.O. opp cost<=4 or opp places 3 trash cards at deck bottom.
+  // OP06-092 — [On Play] choose one: Trash opp cost<=4 Character or opp places 3 trash cards at deck bottom.
+  // Field Trash ≠ ko (must not fire the target's [On K.O.]).
+  // chooseOne labels are UI option ids; cost filters live on the reusable fn params.
   { cardNumber: 'OP06-092', templateId: 'ability', params: { timing: 'onPlay', functions: [{
     fn: 'chooseOne',
     chooser: 'controller',
     prompt: 'Choose one:',
     options: [
-      { label: 'koCost4', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, maxTargets: 1 }] },
+      { label: 'trash', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 4 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }] },
       { label: 'oppTrashToDeck', functions: [{ fn: 'moveCards', from: { zone: 'trash', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, maxTargets: 3 }] },
     ],
   }] } },
@@ -639,7 +641,7 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
     prompt: 'Choose one:',
     options: [
       { label: 'oppTrashHand', functions: [{ fn: 'trashFromOpponentHandChosenByOpponent', count: 1 }] },
-      { label: 'minus3Cost', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] },
+      { label: 'reduceCost', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -3, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] },
     ],
   }] } },
 

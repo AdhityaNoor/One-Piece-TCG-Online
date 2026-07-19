@@ -47,6 +47,7 @@ import { fireCharacterKoedReactions, type EffectTemplateRegistry } from '../effe
 import { advanceAutomaticPhases } from '../rules/phases';
 import { settleLifeTriggerTrash } from '../rules/shared/settleLifeTriggerTrash';
 import { settleEntryTriggers } from '../rules/shared/settleEntryTriggers';
+import { settleOnKoTriggers } from '../rules/shared/settleOnKoTriggers';
 import {
   validatePlayCharacter,
   executePlayCharacter,
@@ -245,7 +246,11 @@ export function executeAction(
   // suspended for input. Fires the next one, in order, once no choice is
   // outstanding — same choke-point pattern as settleLifeTriggerTrash below.
   const entryTriggers = settleEntryTriggers(result.state, registry, defs, action.actionId);
-  const cascade = advanceAutomaticPhases(entryTriggers.state, defs, registry);
+  // Deferred [On K.O.] after an effect K.O. suspended on a later choice (OP14-079 /
+  // own-Leader K.O. of allies). Must run before phase advance so the trigger can
+  // still suspend for its own input on this action.
+  const onKoTriggers = settleOnKoTriggers(entryTriggers.state, registry, defs, action.actionId);
+  const cascade = advanceAutomaticPhases(onKoTriggers.state, defs, registry);
   // Reactive [When a Character is K.O.'d] abilities (e.g. ST08-001): a single choke point
   // that catches K.O.s from any source this action (battle or effect), by diffing play->trash.
   const reactive = fireCharacterKoedReactions(state, cascade.state, registry, defs, action.actionId);
@@ -258,7 +263,12 @@ export function executeAction(
   const settled = settleLifeTriggerTrash(reactive.state, action.actionId);
   return {
     state: settled.state,
-    log: [...result.log, ...entryTriggers.log, ...cascade.log, ...reactive.log, ...settled.log],
-    pendingChoices: [...result.pendingChoices, ...entryTriggers.pendingChoices, ...reactive.pendingChoices],
+    log: [...result.log, ...entryTriggers.log, ...onKoTriggers.log, ...cascade.log, ...reactive.log, ...settled.log],
+    pendingChoices: [
+      ...result.pendingChoices,
+      ...entryTriggers.pendingChoices,
+      ...onKoTriggers.pendingChoices,
+      ...reactive.pendingChoices,
+    ],
   };
 }

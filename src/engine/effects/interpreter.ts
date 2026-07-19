@@ -84,12 +84,29 @@ function finishWithCascade(
   registry: EffectTemplateRegistry,
 ): ActionExecuteResult {
   const first = ctx.finish();
-  // Suspended (a choice is outstanding): the K.O.s, if any, cascade after resume.
-  if (first.pendingChoices.length > 0) return first;
+  // Suspended (a choice is outstanding): persist any K.O.s already applied so
+  // [On K.O.] still fires after the choice chain resolves (settleOnKoTriggers /
+  // the next non-suspending finishWithCascade). Without this, ally K.O. costs
+  // followed by optional follow-ups (OP14-079 / Leader K.O. abilities) drop onKO.
+  if (first.pendingChoices.length > 0) {
+    const pendingKo = ctx.takeKoed();
+    if (pendingKo.length === 0) return first;
+    return {
+      state: {
+        ...first.state,
+        pendingOnKoTriggers: [...(first.state.pendingOnKoTriggers ?? []), ...pendingKo],
+      },
+      log: first.log,
+      pendingChoices: first.pendingChoices,
+    };
+  }
 
   let working = first.state;
   let log = [...first.log];
-  const queue = ctx.takeKoed();
+  const queue = [...(working.pendingOnKoTriggers ?? []), ...ctx.takeKoed()];
+  if (working.pendingOnKoTriggers?.length) {
+    working = { ...working, pendingOnKoTriggers: [] };
+  }
   let guard = 0;
   while (queue.length > 0 && guard++ < 200) {
     const event = queue.shift()!;
@@ -103,7 +120,16 @@ function finishWithCascade(
     const subRes = runTimings(program, ['onKO'], working, event.targetInstanceId, defs, actionId, registry, true, eventContext);
     working = subRes.state;
     log = [...log, ...subRes.log];
-    if (subRes.pendingChoices.length > 0) return { state: working, log, pendingChoices: subRes.pendingChoices };
+    if (subRes.pendingChoices.length > 0) {
+      return {
+        state: {
+          ...working,
+          pendingOnKoTriggers: [...queue, ...(working.pendingOnKoTriggers ?? [])],
+        },
+        log,
+        pendingChoices: subRes.pendingChoices,
+      };
+    }
   }
 
   const restedQueue = ctx.takeRested();

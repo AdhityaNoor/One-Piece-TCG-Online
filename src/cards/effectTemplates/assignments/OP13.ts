@@ -659,11 +659,11 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP13-098 — [Main] Rest 1 DON!!: if Leader [Imu], trash opponent Stage cost 7. [Counter] If Leader [Imu], +4000.
+  // OP13-098 — [Main] Rest 1 DON!!: if Leader [Imu], K.O. opponent Stage cost 7. [Counter] If Leader [Imu], +4000.
   {
     cardNumber: 'OP13-098',
     templates: [
-      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }], gate: [{ kind: 'leaderName', name: 'Imu' }], functions: [{ fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { exactCost: 7 } }, to: { zone: 'trash', player: 'owner' }, optional: true }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 1 }], gate: [{ kind: 'leaderName', name: 'Imu' }], functions: [{ fn: 'ko', target: { group: 'stages', player: 'opponent', filter: { exactCost: 7 } }, optional: true }] } },
       { templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderName', name: 'Imu' }], functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true }] } },
     ],
   },

@@ -937,8 +937,8 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
         chooser: 'controller',
         prompt: 'Choose one:',
         options: [
-          { label: 'koCost2', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] },
-          { label: 'minus4Cost', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, duration: 'duringThisTurn', optional: true }] },
+          { label: 'ko', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true }] },
+          { label: 'reduceCost', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, duration: 'duringThisTurn', optional: true }] },
         ],
       }],
     },

@@ -620,7 +620,7 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP02-118 — [Counter] trash 1: select up to 1 Character → battle KO immunity. [Trigger] KO opp Stage cost ≤3.
+  // OP02-118 — [Counter] trash 1: select up to 1 Character → battle KO immunity. [Trigger] K.O. opp Stage cost ≤3.
   {
     cardNumber: 'OP02-118',
     templates: [
@@ -639,7 +639,7 @@ export const OP02_ASSIGNMENTS: CardEffectAssignment[] = [
         templateId: 'ability',
         params: {
           timing: 'lifeTrigger',
-          functions: [{ fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'trash', player: 'owner' }, optional: true }],
+          functions: [{ fn: 'ko', target: { group: 'stages', player: 'opponent', filter: { maxCost: 3 } }, optional: true }],
         },
       },
     ],

@@ -724,7 +724,10 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // OP14-079 — Opp Characters cannot be removed by your effects.
-  //   [Activate: Main] [OPT] KO 1 {Baroque Works}: opp Character −10 cost this turn, then trash 2 deck.
+  //   [Activate: Main] [OPT] You may K.O. 1 {Baroque Works}: opp Character −10 cost this turn.
+  //   Then, you may trash 2 from the top of your deck.
+  // Cost uses chooseOne (like OP14-080) so the Then mill is not gated on addCost's
+  // previousMovedAny (addCost never sets movedIds — the mill was being skipped).
   {
     cardNumber: 'OP14-079',
     templates: [
@@ -736,11 +739,20 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'activateMain',
           oncePerTurn: true,
-          functions: [
-            { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Baroque Works' } }, optional: true, maxTargets: 1 },
-            { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -10, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
-            { fn: 'trashTopDeck', count: 2, optional: true, ifPrevious: 'previousMovedAny' },
-          ],
+          functions: [{
+            fn: 'chooseOne',
+            chooser: 'controller',
+            prompt: 'K.O. 1 Baroque Works Character?',
+            options: [
+              { label: 'skip', functions: [] },
+              { label: 'pay', functions: [
+                { fn: 'ko', target: { group: 'characters', player: 'controller', filter: { typeIncludes: 'Baroque Works' } }, maxTargets: 1 },
+                // addCost never sets movedIds — do not gate the Then mill on previousMovedAny after it.
+                { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -10, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' },
+                { fn: 'trashTopDeck', count: 2, optional: true },
+              ] },
+            ],
+          }],
         },
       },
     ],
@@ -805,7 +817,8 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'searchTopDeck', look: 4, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Baroque Works', excludeSelfName: true }, remainder: 'trash' }] },
   },
 
-  { cardNumber: 'OP14-088', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { exactCost: 1 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }] } },
+  // OP14-088 — [On K.O.] If Leader type Baroque Works, draw 1 and K.O. up to 1 opp Stage cost 1.
+  { cardNumber: 'OP14-088', templateId: 'ability', params: { timing: 'onKO', gate: [{ kind: 'leaderType', type: 'Baroque Works' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'ko', target: { group: 'stages', player: 'opponent', filter: { exactCost: 1 } }, optional: true, maxTargets: 1 }] } },
 
   {
     cardNumber: 'OP14-089',

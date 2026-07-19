@@ -83,6 +83,7 @@ function selectorFromTarget(target: TargetSpec): Selector {
   if (target.group === 'leaderOrCharacters' && target.player === 'controller') return { sel: 'var', name: 't' };
   if (target.group === 'leaderOrCharacters' && target.player === 'opponent') return { sel: 'var', name: 't' };
   if (target.group === 'characters') return { sel: 'var', name: 't' };
+  if (target.group === 'stages') return { sel: 'var', name: 't' };
   if (target.group === 'don') return { sel: 'var', name: 't' };
   if (target.group === 'charactersOrDon' && target.player === 'opponent') return { sel: 'var', name: 't' };
   if (target.group === 'charactersOrStages') return { sel: 'var', name: 't' };
@@ -129,6 +130,12 @@ function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTa
   }
   if (target.group === 'characters' && target.player === 'controller') return { sel: 'controllerCharacters', ...target.filter };
   if (target.group === 'characters' && target.player === 'opponent') return { sel: 'opponentCharacters', ...target.filter };
+  if (target.group === 'stages') {
+    const stageFilter = stageFilterFromTarget(target.filter);
+    if (target.player === 'controller') return { sel: 'controllerStages', ...stageFilter };
+    if (target.player === 'opponent') return { sel: 'opponentStages', ...stageFilter };
+    return { sel: 'allStages', ...stageFilter };
+  }
   if (target.group === 'don') {
     if (target.player === 'controller') {
       if (target.filter?.rested === true) return { sel: 'controllerRestedDon' };
@@ -959,11 +966,28 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         { op: 'revealCards', target: { sel: 'var', name: 't' } },
       ];
     }
-    case 'trashTopDeck':
-      return [{
-        op: 'trashTopDeck',
+    case 'trashTopDeck': {
+      const trashOp = {
+        op: 'trashTopDeck' as const,
         ...(f.countVar !== undefined ? { countVar: f.countVar } : { count: f.count ?? 0 }),
-      }];
+      };
+      // "You may trash N from the top of your deck" needs an explicit confirm —
+      // unlike targeted "up to" ops, milling has no min=0 chooseTargets decline.
+      if (f.optional) {
+        const n = f.count ?? 0;
+        return [{
+          op: 'chooseOption',
+          prompt: n === 1
+            ? 'You may trash 1 card from the top of your deck.'
+            : `You may trash ${n} cards from the top of your deck.`,
+          options: [
+            { label: 'skip', ops: [] },
+            { label: 'trash', ops: [trashOp] },
+          ],
+        }];
+      }
+      return [trashOp];
+    }
     case 'trashSelf':
       return [{ op: 'trashCards', target: { sel: 'self' } }];
     case 'returnSelfToHand':

@@ -25,12 +25,12 @@ export const ST19_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // ST19-003 Tashigi — [On Play] If your Leader is [Smoker], give up to 1 of your opponent's Characters
   //   −4 cost during this turn.[Activate: Main] [Once Per Turn] If this Character was played on this turn,
-  //   trash up to 1 of your opponent's Characters with a cost of 0.
+  //   Trash up to 1 of your opponent's Characters with a cost of 0. Field Trash ≠ ko.
   {
     cardNumber: 'ST19-003',
     templates: [
       { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Smoker' }], functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, duration: 'duringThisTurn', optional: true }] } },
-      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfPlayedThisTurn' }], functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 0 } }, optional: true, maxTargets: 1 }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, gate: [{ kind: 'selfPlayedThisTurn' }], functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 0 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }] } },
     ],
   },
 

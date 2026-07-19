@@ -2730,6 +2730,21 @@ export class EffectContextImpl implements EffectContext {
     const owner = this.working.players[inst.ownerId];
     if (!owner) return;
     const fromZone = inst.currentZone;
+    // Trash of a field card is a field removal, not a K.O. — never record koed.
+    if (
+      (fromZone === 'characterArea' || fromZone === 'stageArea') &&
+      cannotBeRemovedFromFieldByEffect(this.working, instanceId, this.sourceInstanceId, this.defs)
+    ) {
+      this.logger.push({
+        actorPlayerId: this.controllerId,
+        type: 'EFFECT_RESOLVED',
+        message: `${instanceId} cannot be removed from the field — the trash is prevented.`,
+        data: { targetInstanceId: instanceId, fieldRemovalPrevented: true },
+        relatedCardInstanceIds: [instanceId],
+        visibility: 'public',
+      });
+      return;
+    }
     const newOwner = {
       ...owner,
       hand: removeFromZone(owner.hand, instanceId),

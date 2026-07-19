@@ -566,9 +566,9 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
         chooser: 'controller',
         prompt: 'Choose one:',
         options: [
-          { label: 'koCost1', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] },
-          { label: 'returnCost1', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] },
-          { label: 'lifeCost1', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] },
+          { label: 'ko', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] },
+          { label: 'returnToHand', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] },
+          { label: 'addToLife', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'life', player: 'owner', position: 'topOrBottom', faceUp: true }, optional: true }] },
         ],
       }, { fn: 'draw', amount: 1, ifGate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Celestial Dragons', atLeast: 1 }] }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{
@@ -576,8 +576,8 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
         chooser: 'controller',
         prompt: 'Choose one:',
         options: [
-          { label: 'koCost6', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] },
-          { label: 'returnCost6', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 6 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] },
+          { label: 'ko', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 6 } }, optional: true }] },
+          { label: 'returnToHand', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 6 } }, to: { zone: 'hand', player: 'owner' }, optional: true }] },
         ],
       }] } },
     ],

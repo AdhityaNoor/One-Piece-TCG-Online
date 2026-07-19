@@ -152,7 +152,9 @@ export const OP09_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP09-008', templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'controller', filter: { excludeSelf: true } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true, ifPrevious: 'previousMovedAny' }] } },
 
 
-  { cardNumber: 'OP09-009', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 6000 } }, optional: true }] } },
+  // OP09-009 — [On Play] Trash up to 1 of your opponent's Characters with 6000 power or less.
+  // Field Trash ≠ ko: printed "Trash" must use moveCards→trash (not fn:'ko') so the target's [On K.O.] does not fire.
+  { cardNumber: 'OP09-009', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxPower: 6000 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }] } },
 
 
   { cardNumber: 'OP09-013', templates: [{ templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 1000, duration: 'untilStartOfNextTurn' }] } }, { templateId: 'ability', params: { timing: 'whenAttacking', condition: { donAttachedAtLeast: 1 }, functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true }] } }] },

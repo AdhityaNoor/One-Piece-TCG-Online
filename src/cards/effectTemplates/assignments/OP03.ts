@@ -579,7 +579,8 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP03-096 — [Main] choose one: K.O. cost-0 Character or trash opp Stage cost<=3. [Trigger] draw 2.
+  // OP03-096 — [Main] choose one: K.O. cost-0 Character or K.O. opp Stage cost≤3. [Trigger] draw 2.
+  // chooseOne labels are UI option ids; cost/zone filters live on the reusable fn params.
   {
     cardNumber: 'OP03-096',
     templates: [
@@ -588,8 +589,8 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
         chooser: 'controller',
         prompt: 'Choose one:',
         options: [
-          { label: 'koCost0', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { exactCost: 0 } }, optional: true, maxTargets: 1 }] },
-          { label: 'trashStage', functions: [{ fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { maxCost: 3 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 }] },
+          { label: 'koCharacter', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { exactCost: 0 } }, optional: true, maxTargets: 1 }] },
+          { label: 'koStage', functions: [{ fn: 'ko', target: { group: 'stages', player: 'opponent', filter: { maxCost: 3 } }, optional: true, maxTargets: 1 }] },
         ],
       }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }] } },

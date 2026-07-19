@@ -865,6 +865,20 @@ export interface GameState {
    * On Play triggers all resolve, in order, each pausing for its own input.
    */
   pendingEntryTriggers?: string[];
+  /**
+   * [On K.O.] events deferred because the effect that K.O.'d the Character(s)
+   * suspended on a later player choice (e.g. OP14-079 K.O. cost → optional −cost
+   * → optional mill). The ephemeral koed queue on EffectContextImpl does not
+   * survive that round-trip; these events are persisted here and drained by
+   * settleOnKoTriggers.ts (dispatch choke point) / finishWithCascade once no
+   * PendingChoice is outstanding. Only true K.O.s are queued — trash/bounce
+   * field removals must never appear here.
+   */
+  pendingOnKoTriggers?: {
+    targetInstanceId: string;
+    cause: 'battle' | 'effect';
+    sourceInstanceId: string;
+  }[];
   log: GameLogEntry[];
   gameOver: { winnerId: string | null; reason: GameOverReason } | null;
   /**

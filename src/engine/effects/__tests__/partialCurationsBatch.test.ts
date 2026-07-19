@@ -1116,9 +1116,10 @@ describe('partial curation batch: EB expressible fixes', () => {
           expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentCharacters', maxPower: 3000 }, min: 0, max: 1 }),
           expect.objectContaining({ op: 'ko', target: { sel: 'var', name: 't' } }),
           expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentStages', maxCost: 1 }, min: 0, max: 1 }),
-          expect.objectContaining({ op: 'trashCards', target: { sel: 'var', name: 't' } }),
         ]),
       );
+      expect(ability.ops.filter((op) => op.op === 'ko')).toHaveLength(2);
+      expect(ability.ops.some((op) => op.op === 'trashCards')).toBe(false);
     }
 
     expect(programs['OP07-032'].abilities.map((a) => a.timing)).toEqual(['onEnterPlay', 'onPlay']);
@@ -1299,7 +1300,13 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
       amount: 1000,
     });
     expect(programs['OP14-063'].abilities.find((a) => a.timing === 'onKO')?.gate).toEqual([{ kind: 'opponentDonFieldCount', atLeast: 6 }]);
-    expect(programs['OP14-088'].abilities[0].ops.some((op) => op.op === 'chooseTargets' && op.from?.sel === 'opponentStages')).toBe(true);
+    expect(programs['OP14-088'].abilities[0].ops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentStages', exactCost: 1 }, min: 0, max: 1 }),
+        expect.objectContaining({ op: 'ko', target: { sel: 'var', name: 't' } }),
+      ]),
+    );
+    expect(programs['OP14-088'].abilities[0].ops.some((op) => op.op === 'trashCards')).toBe(false);
     expect(programs['OP14-098'].abilities.find((a) => a.timing === 'onPlay')?.ops[0]).toMatchObject({
       op: 'addCostAura',
       amount: 3,

@@ -343,7 +343,7 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     prompt: 'Choose one:',
     options: [
       { label: 'drawIfLowHand', functions: [{ fn: 'draw', amount: 1, ifGate: [{ kind: 'selfHand', atMost: 5 }] }] },
-      { label: 'minus2Cost', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] },
+      { label: 'reduceCost', functions: [{ fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -2, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] },
     ],
   }] } },
 
@@ -423,7 +423,8 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP08-079 (character) Kaido —
+  // OP08-079 (character) Kaido — [Activate: Main] [OPT] trash 1 from hand: if played this turn,
+  //   Trash up to 1 opp Character cost ≤7, then opp trashes 1 from hand. Field Trash ≠ ko.
   {
     cardNumber: 'OP08-079',
     templateId: 'ability',
@@ -432,7 +433,7 @@ export const OP08_ASSIGNMENTS: CardEffectAssignment[] = [
       oncePerTurn: true,
       functions: [
         { fn: 'optionalTrashFromHand', count: 1 },
-        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 7 } }, optional: true, maxTargets: 1, ifGate: [{ kind: 'selfPlayedThisTurn' }], ifPrevious: 'previousMovedAny' },
+        { fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 7 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1, ifGate: [{ kind: 'selfPlayedThisTurn' }], ifPrevious: 'previousMovedAny' },
         { fn: 'trashFromOpponentHandChosenByOpponent', count: 1, ifPrevious: 'previousMovedAny' },
       ],
     },

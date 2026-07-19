@@ -1,5 +1,9 @@
 # Effect Curation — Coverage Addition Worklist
 
+## Curation rule — field Trash ≠ ko
+
+Printed **Trash** of a Character (or Stage) from the field is **not** `fn: 'ko'`. Use `moveCards` → `trash` so the target's **[On K.O.]** does not fire (canonical: OP09-009). Printed **K.O.** of a Stage uses `fn: 'ko'` with `target.group: 'stages'`.
+
 ## Progress update — 2026-07-18 (P-set triage defer → 0)
 
 Closed remaining **7** defer promo cards. Triage now: **expressible 0 / needsPrimitive 0 / defer 0**.

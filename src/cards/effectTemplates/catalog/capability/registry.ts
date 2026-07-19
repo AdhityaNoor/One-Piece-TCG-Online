@@ -172,7 +172,7 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   ko: {
     id: 'ko',
-    summary: 'K.O. targets (fires [On K.O.]). Use filters on the target for cost/power/type limits; maxCombinedPower caps total current power across a multi-select. TargetFilter.costEqualsDonAttached matches current cost === DON!! given.',
+    summary: 'K.O. targets (fires [On K.O.]). Use filters on the target for cost/power/type limits; maxCombinedPower caps total current power across a multi-select. TargetFilter.costEqualsDonAttached matches current cost === DON!! given. TargetSpec group `stages` K.O.s Stages only (koApply already handles stageArea).',
     params: [
       { name: 'target', type: 'TargetSpec', required: true },
       { name: 'optional', type: 'boolean', required: false, note: '"up to"' },
@@ -184,10 +184,15 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       'K.O. up to {N} ... with a total power of {P} or less',
       'K.O. up to 1 ... with a cost equal to or less than your number of Life cards',
       'K.O. a rested Character with a cost equal to the number of DON!! cards given to it',
+      'K.O. up to 1 of your opponent\'s Stages with a cost of {C} or less',
+    ],
+    excludes: [
+      'Trash up to {N} ... Character (field Trash ≠ ko — use moveCards characters→trash so [On K.O.] does not fire)',
     ],
     examples: [
       { cardNumber: 'OP05-007', snippet: "{ fn: 'ko', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 2, maxCombinedPower: 4000 }" },
       { cardNumber: 'OP15-031', snippet: "{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, costEqualsDonAttached: true } }, optional: true }" },
+      { cardNumber: 'OP07-017', snippet: "{ fn: 'ko', target: { group: 'stages', player: 'opponent', filter: { maxCost: 1 } }, optional: true, maxTargets: 1 }" },
     ],
   },
   koAllCharacters: {

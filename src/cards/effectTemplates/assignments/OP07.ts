@@ -94,17 +94,18 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
   },
 
   // ── Triage batch (OP07 expressible): Warlords/Fish-Man/Foxy/Egghead lines. ──
-  // OP07-017 Bombardment — [Main]/[Trigger] K.O. up to 1 opp Character with 3000 power or less.
+  // OP07-017 Bombardment — [Main]/[Trigger] K.O. up to 1 opp Character with 3000 power or less
+  //   and up to 1 opp Stage with cost ≤1.
   {
     cardNumber: 'OP07-017',
     templates: [
       { templateId: 'ability', params: { timing: 'activateMain', functions: [
         { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true },
-        { fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+        { fn: 'ko', target: { group: 'stages', player: 'opponent', filter: { maxCost: 1 } }, optional: true, maxTargets: 1 },
       ] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [
         { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxPower: 3000 } }, optional: true },
-        { fn: 'moveCards', from: { zone: 'stages', player: 'opponent', filter: { maxCost: 1 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
+        { fn: 'ko', target: { group: 'stages', player: 'opponent', filter: { maxCost: 1 } }, optional: true, maxTargets: 1 },
       ] } },
     ],
   },
@@ -546,9 +547,10 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
 
   { cardNumber: 'OP07-090', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'trashFromOpponentHandChosenByOpponent', count: 1 }, { fn: 'revealOpponentHand' }, { fn: 'draw', amount: 1, player: 'opponent' }] } },
 
-  // OP07-091 — K.O. a small Character, bottom-deck any number of cost 4+ Characters from trash, then +1000 per 3 placed.
+  // OP07-091 — [When Attacking] Trash up to 1 opp Character cost ≤2, bottom-deck any number of cost 4+
+  //   Characters from trash, then +1000 per 3 placed. Field Trash ≠ ko.
   { cardNumber: 'OP07-091', templateId: 'ability', params: { timing: 'whenAttacking', functions: [
-    { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true },
+    { fn: 'moveCards', from: { zone: 'characters', player: 'opponent', filter: { maxCost: 2 } }, to: { zone: 'trash', player: 'owner' }, optional: true, maxTargets: 1 },
     { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { category: 'character', minCost: 4 } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 9 },
     { fn: 'addPower', target: { ref: 'self' }, amount: 0, amountPer: 1000, amountPerStep: 3, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
   ] } },

@@ -113,6 +113,7 @@ export type TargetSpec =
   | { group: 'leader'; player: 'opponent'; filter?: { rested?: boolean } }
   | { group: 'leaderOrStages'; player: 'controller'; filter?: { typeIncludes?: string; name?: string } }
   | { group: 'characters'; player: 'controller' | 'opponent' | 'any'; filter?: TargetFilter }
+  | { group: 'stages'; player: 'controller' | 'opponent' | 'any'; filter?: { maxCost?: number; exactCost?: number; rested?: boolean } }
   | { group: 'don'; player: 'controller' | 'opponent'; filter?: { rested?: boolean } }
   | { group: 'charactersOrDon'; player: 'opponent'; filter?: { maxCost?: number } }
   | { group: 'charactersOrStages'; player: 'controller' | 'opponent' | 'any'; filter?: TargetFilter }

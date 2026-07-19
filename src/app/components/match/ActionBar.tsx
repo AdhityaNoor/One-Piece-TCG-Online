@@ -15,31 +15,6 @@ export interface ActionBarProps {
   selection: ReturnType<typeof useBoardSelection>;
 }
 
-/**
- * True whenever ActionBar is about to render one of its "must respond"
- * branches (DON!! payment progress, field-choice progress, the Block/Counter
- * Step buttons, or a cancellable mode's instruction+Confirm/Cancel row)
- * rather than its default idle state (End Main Phase / CpuThinking /
- * WaitingForOpponent, which callers render separately and aren't gated by
- * this — see MatchScreen.tsx's `actionContent`). Desktop only: MatchScreen
- * uses this to decide whether ActionBar renders inline in the left Actions
- * aside (false — idle) or inside the floating popup hovering over the
- * opponent's side (true — needs a decision). Mirrors this file's own
- * branch-priority order exactly (donChoiceProgress > fieldChoiceInfo >
- * battle.step block/counter > cancellable mode) so it never drifts out of
- * sync with what ActionBar would actually render.
- */
-export function actionBarHasBlockingPrompt(
-  selection: Pick<ReturnType<typeof useBoardSelection>, 'mode' | 'donChoiceProgress' | 'fieldChoiceInfo'>,
-  battle: GameState['currentBattle'],
-): boolean {
-  if (selection.donChoiceProgress) return true;
-  if (selection.fieldChoiceInfo) return true;
-  if (battle && (battle.step === 'block' || battle.step === 'counter')) return true;
-  if (selection.mode.kind !== 'idle' && CANCELLABLE_MODE_KINDS.has(selection.mode.kind)) return true;
-  return false;
-}
-
 interface EndPhaseWarning {
   id: string;
   kind: 'don' | 'attackers' | 'effects';
@@ -61,14 +36,8 @@ const INSTRUCTIONS: Record<string, string> = {
   payingOnOppAttackCost: 'Tap DON!! in your Cost Area to return for the ability cost, then Confirm.',
 };
 
-/**
- * User-started selection flows that can be abandoned. Auto-entered modes
- * (counter / pending choices) must not show Cancel. Exported so MatchScreen
- * can reuse the exact same set in `actionBarHasBlockingPrompt` (desktop
- * floating-popup placement — see that function's doc comment) without
- * re-deriving/duplicating the list.
- */
-export const CANCELLABLE_MODE_KINDS = new Set([
+/** User-started selection flows that can be abandoned. Auto-entered modes (counter / pending choices) must not show Cancel. */
+const CANCELLABLE_MODE_KINDS = new Set([
   'confirmPlayCost',
   'selectAttacker',
   'selectAttackTarget',
