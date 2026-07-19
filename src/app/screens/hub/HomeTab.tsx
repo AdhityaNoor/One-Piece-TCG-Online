@@ -81,7 +81,7 @@ function HomeCarousel() {
 
   return (
     <section
-      className="relative min-h-[12rem] flex-shrink-0 overflow-hidden border border-white/10 bg-black/30 backdrop-blur-md sm:min-h-[15rem] lg:h-full lg:min-h-0"
+      className="relative min-h-[12rem] flex-shrink-0 overflow-hidden border border-white/10 bg-black/30 shadow-[0_20px_50px_rgba(0,0,0,0.4)] backdrop-blur-md sm:min-h-[15rem] lg:h-full lg:min-h-0"
       aria-roledescription="carousel"
       aria-label="Featured"
     >
@@ -127,8 +127,10 @@ function HomeCarousel() {
             aria-label={`Go to slide ${entryIndex + 1}`}
             aria-current={entryIndex === index ? 'true' : undefined}
             className={[
-              'h-1.5 w-5 border transition-all',
-              entryIndex === index ? 'border-gold bg-gold' : 'border-white/40 bg-white/10 hover:border-white/70',
+              'h-1.5 w-5 border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--op-gold-rgb))] focus-visible:ring-offset-2 focus-visible:ring-offset-[#030713]',
+              entryIndex === index
+                ? 'border-gold bg-gold shadow-[0_0_10px_rgba(217,164,65,0.65)]'
+                : 'border-white/40 bg-white/10 hover:border-white/70',
             ].join(' ')}
           />
         ))}
@@ -188,7 +190,7 @@ function HomeActions() {
   ];
 
   return (
-    <nav className="flex h-full min-h-0 flex-col gap-3" aria-label="Play shortcuts">
+    <nav className="flex h-full min-h-0 flex-col gap-0" aria-label="Play shortcuts">
       {cards.map((card) => (
         <button
           key={card.title}
@@ -196,8 +198,11 @@ function HomeActions() {
           disabled={card.disabled}
           onClick={() => navigateTo(card.target)}
           className={[
-            'group relative flex-1 overflow-hidden border border-white/10 text-left transition',
-            card.disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer hover:-translate-y-0.5 hover:border-red-500/50',
+            'group relative flex-1 overflow-hidden border border-white/10 text-left shadow-[0_10px_26px_rgba(0,0,0,0.35)] transition',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--op-gold-rgb))] focus-visible:ring-offset-2 focus-visible:ring-offset-[#030713]',
+            card.disabled
+              ? 'cursor-not-allowed opacity-45'
+              : 'cursor-pointer hover:-translate-y-0.5 hover:border-red-500/50 hover:shadow-[0_16px_34px_rgba(0,0,0,0.48)]',
           ].join(' ')}
         >
           {/* Shared texture behind every card. bg.png itself is ~73% fully

@@ -104,8 +104,8 @@ function PlaySection({
   return (
     <section className="relative flex min-h-[18rem] min-w-0 flex-col px-1 py-2 lg:min-h-0 lg:px-0 lg:[&:not(:first-child)]:before:absolute lg:[&:not(:first-child)]:before:-left-4 lg:[&:not(:first-child)]:before:top-14 lg:[&:not(:first-child)]:before:h-[calc(100%-4.5rem)] lg:[&:not(:first-child)]:before:w-px lg:[&:not(:first-child)]:before:bg-gradient-to-b lg:[&:not(:first-child)]:before:from-transparent lg:[&:not(:first-child)]:before:via-gold/28 lg:[&:not(:first-child)]:before:to-transparent">
       <div className="pb-3 text-center">
-        <p className="text-[11px] font-black uppercase tracking-[0.24em] text-gold">{title}</p>
-        <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/38">{deckHint}</p>
+        <p className="text-[19px] font-black uppercase tracking-[0.24em] text-gold">{title}</p>
+        <p className="mt-1 text-[14px] font-bold uppercase tracking-[0.14em] text-white/38">{deckHint}</p>
       </div>
 
       <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
@@ -124,7 +124,8 @@ function ModeCard({ item }: { item: PlayModeItem }) {
       disabled={item.disabled}
       onClick={item.onClick}
       className={[
-        'group flex min-h-[9.5rem] w-full flex-col gap-2 border border-white/10 bg-[#08101f] p-3 text-left transition sm:gap-3 sm:border-2 sm:border-cyan-200/20 sm:bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] sm:p-5 sm:shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]',
+        'group flex min-h-[9.5rem] w-full flex-col gap-2 border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] p-3 text-left shadow-[0_10px_0_rgba(1,5,16,0.5),_0_18px_32px_rgba(0,0,0,0.28)] transition sm:gap-3 sm:p-5 sm:shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--op-gold-rgb))] focus-visible:ring-offset-2 focus-visible:ring-offset-[#061024]',
         item.disabled
           ? 'cursor-not-allowed opacity-45'
           : 'cursor-pointer hover:-translate-y-0.5 hover:border-gold/60 hover:bg-[linear-gradient(180deg,_rgba(18,45,94,0.86),_rgba(5,14,34,0.94))] hover:shadow-[0_18px_0_rgba(1,5,16,0.6),_0_30px_48px_rgba(0,0,0,0.36)]',
