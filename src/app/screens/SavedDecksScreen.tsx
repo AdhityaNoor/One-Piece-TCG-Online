@@ -303,6 +303,22 @@ interface CardRowSnapshot {
   definition: { name: string; category: CardCategory };
 }
 
+// Per-category rail color on the art — no text label (the type badge was
+// dropped on purpose), just a quiet color-code down the image's left edge.
+const CATEGORY_BAR: Record<CardCategory, string> = {
+  leader: 'bg-gradient-to-b from-gold/90 via-gold/35 to-transparent',
+  character: 'bg-gradient-to-b from-cyan-300/90 via-cyan-300/35 to-transparent',
+  event: 'bg-gradient-to-b from-violet-300/90 via-violet-300/35 to-transparent',
+  stage: 'bg-gradient-to-b from-emerald-300/90 via-emerald-300/35 to-transparent',
+  don: 'bg-gradient-to-b from-amber-300/90 via-amber-300/35 to-transparent',
+};
+
+/**
+ * Image-gallery tile: name + card number caption above the art (no type
+ * badge — dropped on purpose), the card's own scan below it, and the copy
+ * count as a bold corner badge. Hovering still pops a bigger preview near
+ * the cursor on top of the inline art.
+ */
 function DeckCardRow({ snap }: { snap: CardRowSnapshot }) {
   const [previewPoint, setPreviewPoint] = useState<{ x: number; y: number } | null>(null);
   const imageSrc = resolveAssetUrl(snap.imageUrl);
@@ -317,24 +333,34 @@ function DeckCardRow({ snap }: { snap: CardRowSnapshot }) {
 
   return (
     <div
-      className="group flex items-center gap-2.5 rounded border border-white/8 bg-white/4 px-2.5 py-1.5 transition-colors hover:bg-white/8"
+      className="group relative flex flex-col overflow-hidden bg-black/60 shadow-[0_8px_18px_rgba(0,0,0,0.28)]"
       onMouseEnter={(event) => imageSrc && setPreviewPoint({ x: event.clientX, y: event.clientY })}
       onMouseMove={(event) => imageSrc && setPreviewPoint({ x: event.clientX, y: event.clientY })}
       onMouseLeave={() => setPreviewPoint(null)}
     >
-      <div className="h-9 w-6 flex-shrink-0 overflow-hidden rounded-sm border border-white/15 bg-slate-900">
+      {/* Name / code caption sits above the art, gallery-style. */}
+      <div className="px-2 py-1.5">
+        <p className="truncate text-[11px] font-bold uppercase tracking-[0.03em] text-white/90">{snap.definition.name}</p>
+        <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-[0.1em] text-white/40">{snap.cardNumber}</p>
+      </div>
+
+      <div className="relative aspect-[63/88] w-full flex-shrink-0 overflow-hidden bg-black/40">
+        <span aria-hidden="true" className={['absolute inset-y-0 left-0 z-10 w-1', CATEGORY_BAR[snap.definition.category]].join(' ')} />
         {imageSrc && (
           <img src={imageSrc} alt={snap.definition.name} className="h-full w-full object-cover object-top" />
         )}
+        {/* Copy count, centered over the art as a plain white-on-black chip
+            instead of outlined text. */}
+        <span className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+          <span className="rounded bg-black/70 px-3 py-1 font-display text-3xl font-black text-white">
+            {snap.quantity}
+          </span>
+        </span>
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[11px] font-bold uppercase tracking-[0.05em] text-white/85">{snap.definition.name}</p>
-        <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-white/35 capitalize">{snap.definition.category}</p>
-      </div>
-      <span className="flex-shrink-0 text-[11px] font-black text-gold/75">x{snap.quantity}</span>
+
       {imageSrc && previewPoint && (
         <div
-          className="pointer-events-none fixed z-[90] hidden w-[30rem] max-w-[min(30rem,calc(100vw-2rem))] overflow-hidden border border-gold/45 bg-black shadow-[0_18px_44px_rgba(0,0,0,0.65)] sm:block"
+          className="pointer-events-none fixed z-[90] hidden w-[30rem] max-w-[min(30rem,calc(100vw-2rem))] overflow-hidden bg-black/85 shadow-[0_18px_44px_rgba(0,0,0,0.65)] sm:block"
           style={{ left: previewLeft, top: previewTop }}
         >
           <img src={imageSrc} alt="" className="h-auto w-full object-contain" />
@@ -349,37 +375,23 @@ type SavedDeckRow = { entry: DeckStoreListEntry; deck: DeckLoadResult };
 
 function DeckInfoStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="px-1 py-1.5">
-      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-gold/70">{label}</p>
-      <p className="mt-1 truncate text-xs font-bold uppercase tracking-[0.08em] text-white/78">{value}</p>
+    <div className="bg-gray-500/20 px-3 py-2.5 shadow-[0_6px_14px_rgba(0,0,0,0.22)]">
+      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-gold/80">{label}</p>
+      <p className="mt-1 truncate text-sm font-bold uppercase tracking-[0.06em] text-white/90">{value}</p>
     </div>
   );
 }
 
-function TabButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? 'page' : undefined}
-      className={[
-        'relative flex-shrink-0 px-3 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition-colors',
-        active ? 'text-gold' : 'text-white/45 hover:text-white/70',
-      ].join(' ')}
-    >
-      {label}
-      {active && <span aria-hidden="true" className="absolute inset-x-2 bottom-0 h-0.5 bg-gold" />}
-    </button>
-  );
-}
-
 /**
- * Two-pane layout: a deck picker (the one, obvious way to switch decks) next
- * to a detail panel. The detail panel shows exactly ONE dense view at a
- * time — the 3D showcase, or the full card list — behind a tab switch,
- * instead of stacking the box + stat grid + full card grid all at once.
- * That stacking was the screen's core "too cluttered" problem; tabbing
- * fixes it without giving up either view.
+ * Two-pane layout: a deck picker (the one, obvious way to switch decks) —
+ * now a large vertical gallery of leader art, poster-style, rather than a
+ * row of small thumbnails — next to a detail panel. The detail panel used to
+ * hide Overview behind a tab switch from the card list; both now render side
+ * by side (deck showcase + stats on the left, full card list on the right)
+ * since a tab switch just hid information the deck box's narrow column had
+ * room to share with anyway. The prev/next deck-cycle arrows moved off the
+ * title row (which they had nothing structurally to do with) to flank the
+ * deck box they actually cycle.
  */
 function DecksRevampLayout({
   rows,
@@ -410,102 +422,66 @@ function DecksRevampLayout({
   onEditDeck: (deckId: string) => void;
   onDeleteDeck: (deckId: string) => void;
 }) {
-  const [tab, setTab] = useState<'overview' | 'cards'>('overview');
-
-  // Land back on the showcase whenever the selected deck changes, so you
-  // never end up staring at a stale/empty card-list tab after switching.
-  useEffect(() => {
-    setTab('overview');
-  }, [clampedIndex]);
-
   return (
-    <div className="grid h-full min-h-0 gap-3 overflow-hidden p-2 sm:gap-4 sm:p-3 xl:grid-cols-[19rem_minmax(0,1fr)]">
-      {/* Deck picker — the single, obvious way to switch decks. */}
-      <aside className="flex min-h-[9rem] max-h-[13rem] flex-col border border-white/10 bg-[rgba(1,5,16,0.58)] xl:max-h-none xl:min-h-0">
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-white/8 px-4 py-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.20em] text-gold">Your Decks</p>
-          <p className="text-[10px] text-white/35">{rows.length}</p>
+    <div className="grid h-full min-h-0 gap-3 overflow-hidden p-2 sm:gap-4 sm:p-3 xl:grid-cols-[17rem_minmax(0,1fr)]">
+      {/* Deck picker — plain list keyed off each deck's leader (name + card
+          number), the one obvious way to switch decks. No art thumbnails:
+          just enough to identify a deck by its leader at a glance. */}
+      <aside className="flex max-h-[28rem] flex-col bg-black/60 shadow-[0_14px_0_rgba(1,5,16,0.5),_0_24px_40px_rgba(0,0,0,0.3)] xl:max-h-none xl:min-h-0">
+        <div className="flex flex-shrink-0 items-center justify-between px-4 py-3">
+          <div className="inline-flex items-center gap-2">
+            <span aria-hidden="true" className="h-2 w-2 flex-shrink-0 rounded-full bg-gold shadow-[0_0_10px_rgba(217,164,65,0.65)]" />
+            <p className="font-display text-sm font-black uppercase tracking-[0.18em] text-gold">Your Decks</p>
+          </div>
+          <p className="text-[10px] font-bold text-white/40">{rows.length}</p>
         </div>
-        <div className="flex min-h-0 flex-1 gap-2 overflow-x-auto p-2 xl:flex-col xl:overflow-x-hidden xl:overflow-y-auto">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
           {rows.map((row, index) => {
             const active = index === clampedIndex;
             const loadedDeck = row.deck.ok ? row.deck.deck : null;
             const leaderName = loadedDeck?.leader.definition.name ?? 'Unavailable';
-            const leaderImg = loadedDeck?.leader.imageUrl ?? null;
-            const formatStatus = loadedDeck ? evaluateSavedDeckFormatStatus(loadedDeck).status : null;
+            const leaderCardNumber = loadedDeck?.leader.cardNumber ?? '—';
             return (
               <button
                 key={row.entry.deckId}
                 type="button"
                 onClick={() => onSelectDeck(index)}
                 className={[
-                  'flex min-w-[15rem] flex-shrink-0 items-center gap-2.5 border px-2.5 py-2 text-left transition-colors xl:min-w-0 xl:flex-shrink',
-                  active ? 'border-gold/60 bg-gold/12' : 'border-white/8 bg-white/4 hover:bg-white/8',
+                  'flex w-full flex-shrink-0 items-center justify-between gap-2 px-3 py-2.5 text-left shadow-[0_6px_14px_rgba(0,0,0,0.28)] transition',
+                  active ? 'bg-gray-500/35' : 'bg-gray-500/15 hover:bg-gray-500/25',
                 ].join(' ')}
               >
-                <div className="h-12 w-8 flex-shrink-0 overflow-hidden rounded-sm border border-white/15 bg-slate-900">
-                  {leaderImg && (
-                    <img src={resolveAssetUrl(leaderImg) ?? undefined} alt="" className="h-full w-full object-cover object-top" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className={['truncate text-[11px] font-bold uppercase leading-tight tracking-[0.04em]', active ? 'text-white' : 'text-white/80'].join(' ')}>
-                    {row.entry.name}
+                <div className="min-w-0">
+                  <p className={['truncate text-[12px] font-bold uppercase leading-tight tracking-[0.04em]', active ? 'text-white' : 'text-white/85'].join(' ')}>
+                    {leaderName}
                   </p>
-                  <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-[0.08em] text-white/35">{leaderName}</p>
-                  {formatStatus && <DeckFormatBadge status={formatStatus} size="sm" className="mt-1 w-fit" />}
+                  <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-[0.08em] text-white/40">{leaderCardNumber}</p>
                 </div>
-                {active && <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gold" />}
+                {active && <span aria-hidden="true" className="h-2 w-2 flex-shrink-0 rounded-full bg-gold shadow-[0_0_8px_rgba(217,164,65,0.8)]" />}
               </button>
             );
           })}
         </div>
       </aside>
 
-      {/* Detail panel. */}
-      <section className="flex min-h-0 flex-col border border-white/10 bg-[rgba(1,5,16,0.58)]">
-        <div className="flex flex-shrink-0 flex-wrap items-start justify-between gap-3 border-b border-white/8 px-4 py-3 sm:px-5">
-          <div className="flex min-w-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={onPrevious}
-              disabled={rows.length <= 1}
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center border border-white/18 bg-white/6 text-white/55 transition hover:border-gold/50 hover:bg-white/12 hover:text-gold disabled:pointer-events-none disabled:opacity-30"
-              aria-label="Previous deck"
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-
-            <div className="min-w-0">
-              <h2 className="truncate font-heading text-lg font-black uppercase tracking-[0.06em] text-white sm:text-2xl">
-                {current?.entry.name}
-              </h2>
-              <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                {currentFormatStatus && <DeckFormatBadge status={currentFormatStatus} size="sm" />}
-                <span className="border border-white/10 bg-white/5 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-white/55">
-                  {cardCount}/50 cards
+      {/* Detail panel — overview and card list side by side, no tab switch. */}
+      <section className="flex min-h-0 flex-col bg-black/60 shadow-[0_14px_0_rgba(1,5,16,0.5),_0_24px_40px_rgba(0,0,0,0.3)]">
+        <div className="flex flex-shrink-0 flex-wrap items-start justify-between gap-3 px-4 py-3 sm:px-5">
+          <div className="min-w-0">
+            <h2 className="truncate font-heading text-lg font-black uppercase tracking-[0.06em] text-white sm:text-2xl">
+              {current?.entry.name}
+            </h2>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {currentFormatStatus && <DeckFormatBadge status={currentFormatStatus} size="sm" />}
+              <span className="bg-black/45 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-white/55">
+                {cardCount}/50 cards
+              </span>
+              {updatedAt && (
+                <span className="hidden bg-black/45 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-white/55 sm:inline-flex">
+                  {updatedAt}
                 </span>
-                {updatedAt && (
-                  <span className="hidden border border-white/10 bg-white/5 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-white/55 sm:inline-flex">
-                    {updatedAt}
-                  </span>
-                )}
-              </div>
+              )}
             </div>
-
-            <button
-              type="button"
-              onClick={onNext}
-              disabled={rows.length <= 1}
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center border border-white/18 bg-white/6 text-white/55 transition hover:border-gold/50 hover:bg-white/12 hover:text-gold disabled:pointer-events-none disabled:opacity-30"
-              aria-label="Next deck"
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
           </div>
 
           <div className="flex flex-shrink-0 gap-2">
@@ -525,49 +501,82 @@ function DecksRevampLayout({
           </div>
         </div>
 
-        <div className="flex flex-shrink-0 gap-1 border-b border-white/8 px-3 sm:px-4">
-          <TabButton label="Overview" active={tab === 'overview'} onClick={() => setTab('overview')} />
-          <TabButton label={`Card List (${cardListItems.length})`} active={tab === 'cards'} onClick={() => setTab('cards')} />
-        </div>
+        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden p-4 sm:grid-cols-[minmax(13rem,1fr)_minmax(0,3fr)] sm:gap-5 sm:p-5">
+          {/* Overview: deck box flanked by its own prev/next cycle arrows — a more
+              befitting home for them than the title row, since they cycle the
+              box, not the deck's name. Column is 1 of the 1:3 split with the
+              card list. */}
+          <div className="flex min-h-0 flex-col overflow-hidden">
+            {/* Top: the box itself, given the rest of the column's height to
+                sit in (full scale, not the compact one used elsewhere) —
+                this is the showcase, so it should be the bigger of the two
+                regions, not squeezed to match the stat rows below it. */}
+            <div className="flex min-h-0 w-full flex-1 items-center justify-between gap-2 overflow-visible">
+              <button
+                type="button"
+                onClick={onPrevious}
+                disabled={rows.length <= 1}
+                className="group flex h-14 w-10 flex-shrink-0 items-center justify-center text-white/55 transition-colors hover:text-gold disabled:pointer-events-none disabled:opacity-30"
+                aria-label="Previous deck"
+              >
+                <svg viewBox="0 0 24 24" className="h-8 w-8 animate-[op-mobile-chevron-left_1.05s_ease-in-out_infinite]" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
-          {tab === 'overview' ? (
-            <div className="flex h-full min-h-0 flex-col items-center justify-center gap-6 lg:flex-row lg:gap-10">
-              <div className="flex flex-shrink-0 items-center justify-center overflow-visible">
-                {current && (
-                  <>
-                    <div className="sm:hidden">
-                      <DeckBox3D entry={current.entry} deck={current.deck} compact />
-                    </div>
-                    <div className="hidden sm:block">
-                      <DeckBox3D entry={current.entry} deck={current.deck} />
-                    </div>
-                  </>
-                )}
+              <div className="flex min-w-0 flex-1 items-center justify-center overflow-visible">
+                {current && <DeckBox3D entry={current.entry} deck={current.deck} />}
               </div>
 
+              <button
+                type="button"
+                onClick={onNext}
+                disabled={rows.length <= 1}
+                className="group flex h-14 w-10 flex-shrink-0 items-center justify-center text-white/55 transition-colors hover:text-gold disabled:pointer-events-none disabled:opacity-30"
+                aria-label="Next deck"
+              >
+                <svg viewBox="0 0 24 24" className="h-8 w-8 animate-[op-mobile-chevron-right_1.05s_ease-in-out_infinite]" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Bottom: label/description stats, pinned to the container's
+                bottom edge instead of floating in the middle. */}
+            <div className="flex-shrink-0 pt-3">
               {currentDeck ? (
-                <div className="grid w-full max-w-xs gap-2 text-left">
+                <div className="grid w-full gap-2 text-left">
                   <DeckInfoStat label="Leader" value={currentDeck.leader.definition.name} />
                   <DeckInfoStat label="Colors" value={currentDeck.leader.definition.colors.join(' / ') || 'None'} />
                   <DeckInfoStat label="Entries" value={`${currentDeck.cards.length}`} />
                   <DeckInfoStat label="DON!! Deck" value={`${currentDeck.donDeckSize}`} />
                 </div>
               ) : (
-                <p className="border border-red-400/20 bg-red-500/10 p-3 text-sm font-bold text-red-100">
+                <p className="bg-black/45 p-3 text-sm font-bold text-red-100">
                   Load error - data may be corrupted.
                 </p>
               )}
             </div>
-          ) : cardListItems.length === 0 ? (
-            <p className="py-4 text-center text-xs text-white/25">No cards to display</p>
-          ) : (
-            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-              {cardListItems.map((snap, index) => (
-                <DeckCardRow key={`${snap.cardNumber}-${index}`} snap={snap} />
-              ))}
+          </div>
+
+          {/* Card list */}
+          <div className="flex min-h-0 flex-col overflow-hidden pt-4 sm:pl-5 sm:pt-0">
+            <div className="inline-flex flex-shrink-0 items-center gap-2 pb-3">
+              <span aria-hidden="true" className="h-2 w-2 flex-shrink-0 rounded-full bg-gold shadow-[0_0_10px_rgba(217,164,65,0.65)]" />
+              <p className="font-display text-sm font-black uppercase tracking-[0.18em] text-gold">Card List ({cardListItems.length})</p>
             </div>
-          )}
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+              {cardListItems.length === 0 ? (
+                <p className="py-4 text-center text-xs text-white/35">No cards to display</p>
+              ) : (
+                <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(9.5rem,1fr))]">
+                  {cardListItems.map((snap, index) => (
+                    <DeckCardRow key={`${snap.cardNumber}-${index}`} snap={snap} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </section>
     </div>
