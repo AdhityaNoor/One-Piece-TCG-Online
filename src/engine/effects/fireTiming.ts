@@ -13,8 +13,21 @@ import { runTimings, resumeProgram } from './interpreter';
 import { evaluateGates, type GateEvalContext } from './gates';
 import { autoSelectDonMinusIds, canPayAbilityCost, payAbilityCost } from './abilityCost';
 import { recordEventActivation } from './eventActivationHistory';
-import type { Ability, IrTiming, RemovedFromFieldDestination } from './effectIr';
+import type { Ability, EffectProgram, IrTiming, RemovedFromFieldDestination } from './effectIr';
 import type { EffectTemplateRegistry } from './effectTemplate';
+
+/**
+ * Resolve a card's curated program. Prefer the instance's cardDefinitionId
+ * (buildCuratedEffectRegistry dual-keys both), then fall back to printed
+ * cardNumber for registries keyed only by set number / older snapshots.
+ */
+export function resolveEffectProgram(
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  cardDefinitionId: string,
+): EffectProgram | undefined {
+  return registry[cardDefinitionId] ?? registry[defs[cardDefinitionId]?.cardNumber ?? ''];
+}
 
 /** Per-instance once-per-turn key for a triggered [On Battle] ability. Cleared in the Refresh Phase. */
 const ON_BATTLE_OPT_KEY = 'onBattle';
@@ -418,7 +431,7 @@ export function fireOnPlay(
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   if (!program) return noop(state);
   return runTimings(program, ['onEnterPlay', 'onPlay'], state, instanceId, defs, actionId, registry);
 }

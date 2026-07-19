@@ -19,7 +19,7 @@ import type { GameState } from '../../state/game';
 import type { GameLogEntry } from '../../logs/logEntry';
 import type { PendingChoice } from '../../events/pendingChoice';
 import type { CardDefinitionLookup } from './definitions';
-import { runTimings, type EffectTemplateRegistry } from '../../effects';
+import { resolveEffectProgram, runTimings, type EffectTemplateRegistry } from '../../effects';
 
 export interface SettleEntryTriggersResult {
   state: GameState;
@@ -49,7 +49,7 @@ export function settleEntryTriggers(
   while (remaining.length > 0 && guard++ < 200) {
     const instanceId = remaining.shift()!;
     const inst = working.cardsById[instanceId];
-    const program = inst ? registry[inst.cardDefinitionId] : undefined;
+    const program = inst ? resolveEffectProgram(registry, defs, inst.cardDefinitionId) : undefined;
     // Card left the field (K.O.'d by a prior sibling's On Play, bounced, etc.)
     // or has no entry ability — nothing to fire, just stop tracking it.
     if (!program?.abilities.some((a) => a.timing === 'onEnterPlay' || a.timing === 'onPlay')) continue;
