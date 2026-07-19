@@ -15,13 +15,20 @@
 import { useEffect, type CSSProperties } from 'react';
 import type { GameLogEntry } from '../../../engine/logs/logEntry';
 import type { MatchModeTag } from '../../../../shared/support';
-import type { BugReportCardOption } from '../../lib/bugReportCardOptions';
+import type { BugReportCardOption, BugReportCardSection } from '../../lib/bugReportCardOptions';
 import { useBugReportStore } from '../../store/bugReportStore';
 import { Modal } from '../Modal';
 import { Button } from '../Button';
 
 /** navy-950 from tailwind.config.js — see the card-select <option> doc comment below for why this has to be inline rather than a Tailwind class. */
 const OPTION_STYLE: CSSProperties = { backgroundColor: '#070b1c', color: '#ffffff' };
+
+/** Render order for the picker's <optgroup> sections — Leader/Hand/Field mirror bugReportCardOptions.ts's own priority tiers. */
+const CARD_SECTIONS: Array<{ section: BugReportCardSection; label: string }> = [
+  { section: 'leader', label: 'Leader' },
+  { section: 'hand', label: 'Hand' },
+  { section: 'field', label: 'Field' },
+];
 
 export interface ReportBugModalProps {
   open: boolean;
@@ -110,11 +117,19 @@ export function ReportBugModal({ open, onClose, matchMode, matchId, turnNumber, 
               <option value="" style={OPTION_STYLE}>
                 No specific card
               </option>
-              {cardOptions.map((option) => (
-                <option key={option.cardInstanceId} value={option.cardInstanceId} style={OPTION_STYLE}>
-                  {option.label}
-                </option>
-              ))}
+              {CARD_SECTIONS.map(({ section, label }) => {
+                const sectionOptions = cardOptions.filter((option) => option.section === section);
+                if (sectionOptions.length === 0) return null;
+                return (
+                  <optgroup key={section} label={label}>
+                    {sectionOptions.map((option) => (
+                      <option key={option.cardInstanceId} value={option.cardInstanceId} style={OPTION_STYLE}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
             {cardOptions.length === 0 && (
               <p className="text-xs text-white/40">No cards have been played onto the board yet this match.</p>

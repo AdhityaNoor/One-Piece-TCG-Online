@@ -195,6 +195,7 @@ describe('buildBugReportCardOptions', () => {
     const options = buildBugReportCardOptions(log, state, defs, 'p1');
     expect(options.map((o) => o.cardInstanceId)).toEqual(['leader-p1', 'hand-1', 'hand-2', 'played-1']);
     expect(options[1].label).toContain('In Hand');
+    expect(options.map((o) => o.section)).toEqual(['leader', 'hand', 'hand', 'field']);
   });
 
   it('omits hand cards when handOwnerPlayerId is null (default)', () => {

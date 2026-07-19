@@ -47,6 +47,9 @@ export interface BugReportSubEffectOption {
   text: string;
 }
 
+/** Which of the picker's three <optgroup> sections (ReportBugModal) this option belongs to. */
+export type BugReportCardSection = 'leader' | 'hand' | 'field';
+
 export interface BugReportCardOption {
   /** React key + the value actually submitted. */
   cardInstanceId: string;
@@ -58,6 +61,8 @@ export interface BugReportCardOption {
   snapshot: BugReportCardSnapshot;
   /** This card's text split into individually-selectable abilities; empty when there's only one (nothing to choose between). */
   subEffects: BugReportSubEffectOption[];
+  /** Which picker section (Leader/Hand/Field) this option renders under. */
+  section: BugReportCardSection;
 }
 
 const SUB_EFFECT_LABEL_MAX_LENGTH = 70;
@@ -91,12 +96,13 @@ function buildSnapshot(
   };
 }
 
-/** Shared per-instance option builder — Leaders, hand cards, and play-history entries all resolve identically once you have an instance id, a label suffix, and a sort tier. */
+/** Shared per-instance option builder — Leaders, hand cards, and play-history entries all resolve identically once you have an instance id, a label suffix, a sort tier, and a section. */
 function buildOption(
   cardInstanceId: string,
   labelSuffix: string,
   turnNumber: number,
   sequence: number,
+  section: BugReportCardSection,
   state: Pick<GameState, 'cardsById'>,
   defs: CardDefinitionLookup,
 ): BugReportCardOption {
@@ -116,6 +122,7 @@ function buildOption(
     sequence,
     snapshot: buildSnapshot(cardInstanceId, definitionId, cardName, cardNumber, cardText),
     subEffects: buildSubEffects(cardNumber, cardText),
+    section,
   };
 }
 
@@ -138,7 +145,7 @@ export function buildBugReportCardOptions(
     const cardInstanceId = player.leaderInstanceId;
     if (seenInstanceIds.has(cardInstanceId)) continue;
     seenInstanceIds.add(cardInstanceId);
-    options.push(buildOption(cardInstanceId, `${player.playerId}'s Leader`, 0, LEADER_SEQUENCE, state, defs));
+    options.push(buildOption(cardInstanceId, `${player.playerId}'s Leader`, 0, LEADER_SEQUENCE, 'leader', state, defs));
   }
 
   // The reporter's own hand — every entry shares HAND_CARD_SEQUENCE; Array.sort is
@@ -148,7 +155,7 @@ export function buildBugReportCardOptions(
     for (const cardInstanceId of handOwner.hand.cardIds) {
       if (seenInstanceIds.has(cardInstanceId)) continue;
       seenInstanceIds.add(cardInstanceId);
-      options.push(buildOption(cardInstanceId, 'In Hand', 0, HAND_CARD_SEQUENCE, state, defs));
+      options.push(buildOption(cardInstanceId, 'In Hand', 0, HAND_CARD_SEQUENCE, 'hand', state, defs));
     }
   }
 
@@ -161,7 +168,7 @@ export function buildBugReportCardOptions(
       // in case a future handler ever logs the same instance twice.
       if (seenInstanceIds.has(cardInstanceId)) continue;
       seenInstanceIds.add(cardInstanceId);
-      options.push(buildOption(cardInstanceId, `Turn ${entry.turnNumber}`, entry.turnNumber, entry.sequence, state, defs));
+      options.push(buildOption(cardInstanceId, `Turn ${entry.turnNumber}`, entry.turnNumber, entry.sequence, 'field', state, defs));
     }
   }
 

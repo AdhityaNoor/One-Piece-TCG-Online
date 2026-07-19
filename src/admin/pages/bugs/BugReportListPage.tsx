@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdminAuthStore } from '../../store/adminAuthStore';
 import { fetchBugReports, updateBugReport } from '../../net/bugReportAdminClient';
@@ -6,6 +6,38 @@ import { AdminApiError } from '../../net/shared';
 import { AdminButton, AdminSelect } from '../../components/ui';
 import { downloadBugReportsAsCsv, downloadBugReportsAsJson, fetchAllBugReports } from '../../lib/exportBugReports';
 import type { AdminBugReportSummary, BugReportStatus, BugReportValidity } from '../../../../shared/admin';
+
+type Tone = 'neutral' | 'good' | 'warn' | 'bad';
+
+function validityTone(validity: BugReportValidity): Tone {
+  if (validity === 'valid') return 'good';
+  if (validity === 'invalid') return 'bad';
+  return 'warn';
+}
+
+function statusTone(status: BugReportStatus): Tone {
+  if (status === 'resolved') return 'good';
+  if (status === 'open') return 'warn';
+  return 'neutral';
+}
+
+/**
+ * Same palette as AdminBadge's `tones` map (src/admin/components/ui.tsx) —
+ * these dropdowns replaced the read-only badges but should still carry the
+ * same at-a-glance color coding. Applied as inline `style` rather than
+ * Tailwind classes because AdminSelect's `.op-input` base class (a
+ * hand-authored CSS rule in src/app/styles/index.css, not a Tailwind
+ * utility) already sets background/border/color — whichever of the two
+ * single-class rules is LAST in the compiled stylesheet would otherwise win
+ * regardless of className order, which is fragile. Inline style always beats
+ * a class-based rule, so it's the reliable way to override op-input here.
+ */
+const TONE_SELECT_STYLE: Record<Tone, CSSProperties> = {
+  neutral: { backgroundColor: 'rgb(var(--op-gold-rgb) / 0.12)', borderColor: 'rgb(var(--op-gold-rgb) / 0.4)', color: 'rgb(var(--op-gold-rgb))' },
+  good: { backgroundColor: 'rgba(4, 120, 87, 0.25)', borderColor: 'rgba(16, 185, 129, 0.4)', color: '#a7f3d0' },
+  warn: { backgroundColor: 'rgba(217, 119, 6, 0.25)', borderColor: 'rgba(251, 191, 36, 0.4)', color: '#fef3c7' },
+  bad: { backgroundColor: 'rgba(185, 28, 28, 0.25)', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fecaca' },
+};
 
 export function BugReportListPage() {
   const token = useAdminAuthStore((s) => s.token)!;
@@ -133,6 +165,7 @@ export function BugReportListPage() {
                     <AdminSelect
                       value={report.validity}
                       disabled={rowSaving}
+                      style={TONE_SELECT_STYLE[validityTone(report.validity)]}
                       onChange={(e) => void handleRowUpdate(report.id, { validity: e.target.value as BugReportValidity })}
                     >
                       <option value="unreviewed">Unreviewed</option>
@@ -144,6 +177,7 @@ export function BugReportListPage() {
                     <AdminSelect
                       value={report.status}
                       disabled={rowSaving}
+                      style={TONE_SELECT_STYLE[statusTone(report.status)]}
                       onChange={(e) => void handleRowUpdate(report.id, { status: e.target.value as BugReportStatus })}
                     >
                       <option value="open">Open</option>
