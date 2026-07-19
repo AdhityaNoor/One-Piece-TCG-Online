@@ -2,7 +2,7 @@
  * Floating choice panel — exact coloring and chrome as BacksoundControl's gear menu.
  */
 import { createPortal } from 'react-dom';
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import {
   SETTINGS_PANEL_BODY,
   SETTINGS_PANEL_INSET,
@@ -21,10 +21,27 @@ export interface ChoicePromptShellProps {
   maxWidthClassName?: string;
 }
 
+/**
+ * Desktop-only visibility switch for every ChoicePromptShell-based popup —
+ * provided by MatchScreen's floating-popup hide/show chevron (see its
+ * "hovering popup" doc comment) so the player can peek at the board without
+ * losing the outstanding choice underneath. PendingChoicePrompt.tsx's own
+ * component instance (and all its local useState) stays mounted either way;
+ * only the shell's rendered output is suppressed. Defaults to never-hidden
+ * so any other/future ChoicePromptShell caller without a provider is
+ * unaffected. NOT consulted by SetupTossOverlay (the 5-2-1-4 coin-toss
+ * cinematic) — that one deliberately stays a permanent full-screen sequence,
+ * see PendingChoicePrompt.tsx's doc comment on SetupTossOverlay.
+ */
+export const ChoicePromptVisibilityContext = createContext<{ hidden: boolean }>({ hidden: false });
+
 export function ChoicePromptShell({ title, children, maxWidthClassName = 'max-w-md' }: ChoicePromptShellProps) {
+  const { hidden } = useContext(ChoicePromptVisibilityContext);
+  if (hidden) return null;
+
   return createPortal(
     <div
-      className="op-choice-prompt-root fixed inset-0 z-50 flex items-center justify-center p-4 font-body text-white"
+      className="op-choice-prompt-root fixed inset-0 z-50 flex items-start justify-center p-4 pt-[7vh] font-body text-white xl:pt-[9vh]"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -32,7 +49,7 @@ export function ChoicePromptShell({ title, children, maxWidthClassName = 'max-w-
       <div className={`op-choice-prompt-scrim absolute inset-0 ${SETTINGS_PANEL_SCRIM}`} aria-hidden="true" />
       <div
         className={[
-          'op-choice-prompt-panel relative z-10 flex w-full max-h-[min(88vh,920px)] flex-col overflow-y-auto p-3',
+          'op-choice-prompt-panel relative z-10 flex w-full max-h-[min(80vh,920px)] flex-col overflow-y-auto p-3',
           maxWidthClassName,
           SETTINGS_PANEL_SHELL,
         ].join(' ')}

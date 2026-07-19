@@ -3,11 +3,11 @@ import { NavLink } from 'react-router-dom';
 import { useAdminAuthStore } from './store/adminAuthStore';
 
 const NAV_SECTIONS: { to: string; label: string }[] = [
-  { to: '/admin/players', label: 'Player Data' },
-  { to: '/admin/cards', label: 'Card Management' },
-  { to: '/admin/game', label: 'Game Management' },
-  { to: '/admin/banners', label: 'Banner & News Management' },
-  { to: '/admin/bugs', label: 'Bugs & Reports Management' },
+  { to: '/admin/players', label: 'Players' },
+  { to: '/admin/cards', label: 'Cards' },
+  { to: '/admin/game', label: 'Games' },
+  { to: '/admin/banners', label: 'Banner & News' },
+  { to: '/admin/bugs', label: 'Bugs & Reports' },
 ];
 
 export function AdminLayout({ children }: { children: ReactNode }) {

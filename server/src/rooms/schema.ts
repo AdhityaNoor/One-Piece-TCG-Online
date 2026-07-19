@@ -14,6 +14,14 @@ export class SeatState extends Schema {
   @type('string') username = '';
   @type('boolean') connected = false;
   @type('boolean') ready = false;
+  /**
+   * Ranked-only chess-clock time remaining, in ms. -1 means "not tracked"
+   * (Casual/VS-CPU/hotseat never set this — see GameRoomState.isRanked).
+   * Ticks down server-side (GameRoom's clock interval) only while this seat
+   * is the engine's activePlayerId; Colyseus's normal schema sync pushes the
+   * updated value to both clients automatically, no extra message needed.
+   */
+  @type('number') remainingMs = -1;
 }
 
 export class GameRoomState extends Schema {
@@ -25,6 +33,8 @@ export class GameRoomState extends Schema {
   @type('string') winnerId = '';
   /** GameOverReason once ended (empty otherwise). */
   @type('string') endReason = '';
+  /** True for ranked rooms only — gates the client's per-seat chess-clock display. */
+  @type('boolean') isRanked = false;
   /** sessionId -> seat. Two entries max. */
   @type({ map: SeatState }) seats = new MapSchema<SeatState>();
 }

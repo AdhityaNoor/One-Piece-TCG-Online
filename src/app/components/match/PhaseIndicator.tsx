@@ -1,18 +1,28 @@
-import { useEffect, useState } from 'react';
 import type { GameState } from '../../../engine/state/game';
 
-const PHASES: GameState['currentPhase'][] = ['refresh', 'draw', 'don', 'main', 'end'];
-
-/** Must match each phase row's fixed height below (ROW_H) plus its gap-1 spacing (GAP), in px —
- * the sliding highlight's translateY is computed from these rather than measured via ref, since
- * the row count/order is static and this is far cheaper than a ResizeObserver for five fixed rows. */
-const ROW_H = 22;
-const GAP = 4;
+/**
+ * Compact per-player header: 2 rows normally (Player Name, Current Phase —
+ * swaps text the instant `currentPhase` changes, no per-phase row list to
+ * animate through), 3 rows for ranked matches (+ a live mm:ss chess-clock
+ * row). Replaces the earlier 5-row "glide" layout (one row per phase with a
+ * sliding highlight) — see git history for that version if it's ever needed
+ * again.
+ */
 
 function phaseLabel(phase: GameState['currentPhase']): string {
-  if (phase === 'don') return 'DON!!';
-  return phase;
+  const word = phase === 'don' ? 'DON!!' : `${phase[0].toUpperCase()}${phase.slice(1)}`;
+  return `${word} Phase`;
 }
+
+/** mm:ss, rounding UP to the nearest second so the clock never visibly shows 0:00 while time remains. */
+function formatClock(ms: number): string {
+  const totalSeconds = Math.ceil(Math.max(0, ms) / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+const LOW_TIME_THRESHOLD_MS = 60_000;
 
 export interface PhaseIndicatorProps {
   playerId: string;
@@ -20,52 +30,49 @@ export interface PhaseIndicatorProps {
   label?: string;
   currentPhase: GameState['currentPhase'];
   active: boolean;
+  /**
+   * Ranked-only chess-clock ms remaining for THIS seat. Pass `null`/omit for
+   * every non-ranked match (hotseat, VS CPU, Casual) — that's what keeps the
+   * component to its plain 2-row layout. Ticks only while `active` is true
+   * (server-authoritative; this just renders whatever value it's given —
+   * see server/src/rooms/GameRoom.ts's clock tick, project rule "the UI
+   * must never directly mutate game state").
+   */
+  timerMs?: number | null;
 }
 
-export function PhaseIndicator({ playerId, label, currentPhase, active }: PhaseIndicatorProps) {
-  // Frozen at this player's last-known phase row while `active` is false, instead of
-  // unmounting the highlight — that's what makes it GLIDE: when this player's next turn
-  // starts (active flips true, currentPhase resets to 'refresh'), the bar animates from
-  // wherever it was parked (typically 'end', the bottom row) back UP to 'refresh' at the
-  // top, then down again through draw/don/main as the turn progresses. A never-yet-active
-  // seat (e.g. the second player before their first turn) has no prior position to park
-  // at, so it simply isn't rendered until `active` fires for the first time.
-  const [displayIndex, setDisplayIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (active) setDisplayIndex(PHASES.indexOf(currentPhase));
-  }, [active, currentPhase]);
+export function PhaseIndicator({ playerId, label, currentPhase, active, timerMs = null }: PhaseIndicatorProps) {
+  const ranked = timerMs !== null && timerMs !== undefined;
+  const lowTime = ranked && (timerMs as number) <= LOW_TIME_THRESHOLD_MS;
 
   return (
-    <section className={['rounded-lg border p-2', active ? 'border-gold/30 bg-gold/10' : 'border-white/10 bg-white/[0.03]'].join(' ')}>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="max-w-[70%] truncate text-[10px] font-black uppercase tracking-[0.16em] text-white/45" title={label ?? playerId}>{label ?? playerId}</span>
-        {active && <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-gold">Turn</span>}
+    <section className={['flex flex-col gap-1 rounded-lg border p-2', active ? 'border-gold/30 bg-gold/10' : 'border-white/10 bg-white/[0.03]'].join(' ')}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-[10px] font-black uppercase tracking-[0.16em] text-white/45" title={label ?? playerId}>
+          {label ?? playerId}
+        </span>
+        {active && <span className="flex-shrink-0 rounded-full bg-gold/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-gold">Turn</span>}
       </div>
-      <div className="relative flex flex-col gap-1">
-        {displayIndex !== null && (
-          <div
+
+      <p className={['truncate text-xs font-bold uppercase tracking-[0.1em] transition-colors duration-300', active ? 'text-gold' : 'text-white/55'].join(' ')}>
+        {phaseLabel(currentPhase)}
+      </p>
+
+      {ranked && (
+        <p
+          className={[
+            'flex items-center gap-1.5 text-[11px] font-black tabular-nums tracking-[0.04em] transition-colors duration-300',
+            !active ? 'text-white/35' : lowTime ? 'text-red-300' : 'text-white/78',
+          ].join(' ')}
+        >
+          <span
             aria-hidden="true"
-            className={[
-              'pointer-events-none absolute inset-x-0 rounded shadow-[0_0_0_1px_rgba(255,211,74,0.25)] transition-[transform,background-color,opacity] duration-300 ease-out',
-              active ? 'bg-gold/20 opacity-100' : 'bg-gold/10 opacity-60',
-            ].join(' ')}
-            style={{ height: ROW_H, transform: `translateY(${displayIndex * (ROW_H + GAP)}px)` }}
+            className={['h-1.5 w-1.5 flex-shrink-0 rounded-full', active ? (lowTime ? 'bg-red-400' : 'bg-emerald-400') : 'bg-white/25'].join(' ')}
           />
-        )}
-        {PHASES.map((phase, index) => (
-          <div
-            key={phase}
-            style={{ height: ROW_H }}
-            className={[
-              'relative z-[1] flex items-center rounded px-2 text-[10px] font-bold uppercase tracking-[0.1em] transition-colors duration-300',
-              displayIndex === index ? (active ? 'text-gold' : 'text-gold/50') : 'text-white/40',
-            ].join(' ')}
-          >
-            {phaseLabel(phase)} Phase
-          </div>
-        ))}
-      </div>
+          {formatClock(timerMs as number)}
+          {!active && <span className="text-[9px] font-bold normal-case tracking-normal text-white/30">(paused)</span>}
+        </p>
+      )}
     </section>
   );
 }

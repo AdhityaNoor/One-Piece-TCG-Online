@@ -26,7 +26,8 @@ export type GameActionType =
   | 'END_MAIN_PHASE'
   | 'MULLIGAN_DECISION'
   | 'CHOOSE_GOING_FIRST'
-  | 'CONCEDE';
+  | 'CONCEDE'
+  | 'TIMEOUT_LOSS';
 
 interface BaseAction<T extends GameActionType> {
   type: T;
@@ -133,6 +134,19 @@ export interface ChooseGoingFirstAction extends BaseAction<'CHOOSE_GOING_FIRST'>
 /** 1-2-3, 1-2-4. Cannot be replaced or forced by any card effect. */
 export interface ConcedeAction extends BaseAction<'CONCEDE'> {}
 
+/**
+ * System-triggered loss when `playerId`'s ranked chess-clock (see
+ * server/src/rooms/GameRoom.ts) reaches 0 on their turn. NOT a printed CR
+ * action and never dispatched by a client — only the authoritative ranked
+ * server invokes this (GameSession.forceTimeout), the same way it already
+ * invokes CONCEDE on a departed player's behalf (forceConcede). Modeled as a
+ * real GameAction rather than a special-cased state mutation so it still
+ * goes through the same validate/execute dispatch pipeline as everything
+ * else (project rule: "every player action must go through a serializable
+ * action dispatch system").
+ */
+export interface TimeoutLossAction extends BaseAction<'TIMEOUT_LOSS'> {}
+
 export type GameAction =
   | PlayCharacterAction
   | PlayStageAction
@@ -150,7 +164,8 @@ export type GameAction =
   | EndMainPhaseAction
   | MulliganDecisionAction
   | ChooseGoingFirstAction
-  | ConcedeAction;
+  | ConcedeAction
+  | TimeoutLossAction;
 
 /** Returned by the (not-yet-implemented) validator — see blueprint Section 12. */
 export interface ValidationResult {

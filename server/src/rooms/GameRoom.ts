@@ -20,7 +20,7 @@
  *    count) so the lobby can list real open rooms.
  *  - Persist final result to Mongo when the match ends.
  */
-import { Room, type Client } from '@colyseus/core';
+import { Room, type Client, type Delayed } from '@colyseus/core';
 import { ObjectId } from 'mongodb';
 import { GameRoomState, SeatState } from './schema';
 import { verifyToken } from '../auth/jwt';
@@ -50,6 +50,9 @@ import {
 } from '../../../shared/multiplayer';
 
 const RECONNECT_WINDOW_SECONDS = 30;
+/** Ranked-only per-seat chess clock: 20 minutes, ticking only on that seat's own turn. */
+const RANKED_CLOCK_MS = 20 * 60 * 1000;
+const CLOCK_TICK_MS = 1000;
 /** Table-talk chat, not a rules action — kept well clear of the engine (see
  *  shared/multiplayer.ts ClientMessage.Chat doc). Guards are deliberately
  *  minimal: a length clamp and a per-seat send interval, nothing smarter. */
@@ -75,6 +78,9 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   private rankedSeasonId: string | null = null;
   private rankedParticipants: RankedRoomParticipant[] = [];
   private lastChatAt = new Map<string, number>();
+  /** Ranked-only chess-clock driver (see startRankedClock/tickRankedClock). Null in Casual/VS-CPU rooms. */
+  private clockTimer: Delayed | null = null;
+  private clockLastTickAt = 0;
 
   onCreate(options: { roomCode?: string } & RankedRoomOptions): void {
     this.seatReservationTimeout = 5;
@@ -83,6 +89,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     this.rankedMatchId = options.rankedMatchId ?? null;
     this.rankedSeasonId = options.rankedSeasonId ?? null;
     this.rankedParticipants = options.rankedParticipants ?? [];
+    this.state.isRanked = this.rankedMatchId !== null;
 
     this.onMessage(ClientMessage.Ready, (client, payload: ReadyPayload) => this.handleReady(client, payload));
     this.onMessage(ClientMessage.Unready, (client) => this.handleUnready(client));
@@ -196,6 +203,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     this.session = started.session;
     this.startedAt = new Date();
     this.state.phase = 'in-game';
+    this.startRankedClock();
     if (this.rankedMatchId) {
       void rankedMatches().updateOne(
         { _id: new ObjectId(this.rankedMatchId) },
@@ -205,6 +213,67 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     this.syncMetadata();
     this.broadcast(ServerMessage.MatchStarted, {});
     this.broadcastStatePerSeat();
+  }
+
+  /**
+   * Ranked only. Both seats start with the full 20 minutes; the interval
+   * below decrements only whichever seat currently holds `activePlayerId`
+   * (i.e. whose TURN it is — not fine-grained action/priority ownership, so
+   * e.g. a defending player's Block/Counter Step still counts against the
+   * attacking player's clock, matching "resumes only on their respective
+   * turn" from the design ask; a priority-level clock is a possible future
+   * refinement, not implemented here). Colyseus syncs `SeatState.remainingMs`
+   * to both clients automatically on every mutation — no extra message type
+   * needed for the live countdown.
+   */
+  private startRankedClock(): void {
+    if (!this.rankedMatchId || !this.session) return;
+    for (const seat of this.state.seats.values()) seat.remainingMs = RANKED_CLOCK_MS;
+    this.clockLastTickAt = Date.now();
+    this.clockTimer?.clear();
+    this.clockTimer = this.clock.setInterval(() => this.tickRankedClock(), CLOCK_TICK_MS);
+  }
+
+  private stopRankedClock(): void {
+    this.clockTimer?.clear();
+    this.clockTimer = null;
+  }
+
+  private findSeatStateBySeatId(seatId: string): SeatState | null {
+    for (const seat of this.state.seats.values()) {
+      if (seat.seatId === seatId) return seat;
+    }
+    return null;
+  }
+
+  private tickRankedClock(): void {
+    if (!this.rankedMatchId || !this.session || this.state.phase !== 'in-game') return;
+    const now = Date.now();
+    const elapsed = now - this.clockLastTickAt;
+    this.clockLastTickAt = now;
+
+    const activeSeatId = this.session.state.activePlayerId;
+    const seatState = this.findSeatStateBySeatId(activeSeatId);
+    if (!seatState) return;
+
+    seatState.remainingMs = Math.max(0, seatState.remainingMs - elapsed);
+    if (seatState.remainingMs <= 0) void this.handleClockTimeout(activeSeatId);
+  }
+
+  private async handleClockTimeout(seatId: string): Promise<void> {
+    if (!this.session || this.session.isOver()) return;
+    this.stopRankedClock();
+
+    const result = this.session.forceTimeout(seatId, `server-timeout-${seatId}-${Date.now()}`);
+    if (!result.ok) {
+      console.error('[GameRoom] failed to end match on clock timeout:', result.reasons);
+      return;
+    }
+
+    this.actionCount += 1;
+    this.broadcastStatePerSeat();
+    this.broadcastLogPerSeat(result.log);
+    await this.endMatch();
   }
 
   private handleIntent(client: Client, payload: IntentPayload): void {
@@ -296,6 +365,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
   private async endMatch(): Promise<void> {
     if (!this.session || this.state.phase === 'ended') return;
+    this.stopRankedClock();
     this.state.phase = 'ended';
     this.state.winnerId = this.session.winnerId() ?? '';
     this.state.endReason = this.session.reason();
@@ -406,6 +476,10 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
   private reject(client: Client, of: RejectedPayload['of'], reasons: string[]): void {
     client.send(ServerMessage.Rejected, { of, reasons } satisfies RejectedPayload);
+  }
+
+  onDispose(): void {
+    this.stopRankedClock();
   }
 }
 

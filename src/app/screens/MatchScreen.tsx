@@ -28,7 +28,26 @@ import type { MatchModeTag } from '../../../shared/support';
 import { countAvailableDon, getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
 import { Button, CardDetailModal, CardImage, GlitterWrap, Modal, ScaleToFit } from '../components';
-import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, MatchChatPanel, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, ReportBugModal, TrashGalleryModal, useBoardSelection } from '../components/match';
+import {
+  ActionBar,
+  ActionLogDock,
+  actionBarHasBlockingPrompt,
+  BoardCardTile,
+  CardBackArt,
+  CardMovementOverlay,
+  ChoicePromptVisibilityContext,
+  DockHand,
+  MatchChatPanel,
+  PendingChoicePrompt,
+  PhaseIndicator,
+  PlayerBoardPanel,
+  ReportBugModal,
+  TrashGalleryModal,
+  useBoardSelection,
+} from '../components/match';
+import { isFieldCardChoice } from '../components/match/fieldChoiceUtils';
+import { isDonReturnChoice } from '../components/match/donChoiceUtils';
+import { SETTINGS_PANEL_SHELL, SETTINGS_PANEL_TITLE } from '../components/settingsPanelStyles';
 import { useCpuTurnController } from '../hooks/useCpuTurnController';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -92,6 +111,17 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const sendChat = useOnlineStore((s) => s.sendChat);
   const onlineStatus = useOnlineStore((s) => s.status);
   const onlineRoomCode = useOnlineStore((s) => s.roomCode);
+  // Ranked-only per-seat chess clock (PhaseIndicator's 3rd row). isRanked/seats
+  // come from the synced Colyseus room state (see onlineStore.ts's
+  // wireRoom/onStateChange) — never derived or ticked client-side, just
+  // rendered as given (project rule: UI never mutates game state).
+  const isRankedMatch = useOnlineStore((s) => s.isRanked);
+  const onlineSeats = useOnlineStore((s) => s.seats);
+  const timerMsFor = (pid: string): number | null => {
+    if (!isRankedMatch) return null;
+    const seat = onlineSeats.find((s) => s.seatId === pid);
+    return seat && seat.remainingMs >= 0 ? seat.remainingMs : null;
+  };
   const isCasual = localPlayerId !== null && cpuPlayerIds.length === 0;
   const isCpuMatch = cpuPlayerIds.length > 0;
   /** Casual + VS CPU: board stays on the local seat; never hotseat-flip by turn. */
@@ -133,6 +163,37 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // True while the mouse is over the playmat — forces both dock hands shut.
   const [boardHovered, setBoardHovered] = useState(false);
   const [handsHidden, setHandsHidden] = useState(false);
+  // Desktop-only collapsible battle-log sidebar (mobile keeps its own
+  // separate log panel via mobilePanel==='log', untouched). Default
+  // collapsed per design — the log is opt-in, not something that eats
+  // 330px of board width every match.
+  const [desktopLogOpen, setDesktopLogOpen] = useState(false);
+  // Desktop-only floating prompt popup (hovers over the opponent's side
+  // instead of living inline in the Actions aside / dead-center modal — see
+  // actionBarHasBlockingPrompt's and ChoicePromptVisibilityContext's doc
+  // comments). Hidden=false by default so a fresh prompt is never
+  // accidentally suppressed; the player can still toggle it away to see the
+  // board underneath.
+  const [promptPopupHidden, setPromptPopupHidden] = useState(false);
+  // Browser Fullscreen API toggle for the Actions aside's Fullscreen button.
+  // Presentation-only — never touches GameState/the engine. `isFullscreen`
+  // tracks the real DOM state (not just "did we last click the button") so
+  // it stays correct if the browser exits fullscreen on its own (Esc key,
+  // OS gesture, etc — the fullscreenchange listener below is what catches
+  // that).
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const handleFullscreenChange = (): void => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+  const toggleFullscreen = (): void => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void document.documentElement.requestFullscreen?.().catch(() => {});
+    }
+  };
   const [handToggleHovered, setHandToggleHovered] = useState(false);
   const tableShellRef = useRef<HTMLDivElement | null>(null);
   const mobileLogNotificationCursorRef = useRef<number | null>(null);
@@ -595,6 +656,41 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       selection={selection}
     />
   );
+  // Desktop-only: whether ActionBar (above) is currently a "must respond"
+  // prompt rather than its idle End-Main-Phase state — exactly mirrors when
+  // `actionContent` above resolves to the plain <ActionBar/> branch (the
+  // canUseLocalActions/isCpuTurn/gameOver guard is identical on purpose), so
+  // this never fires for CpuThinking/WaitingForOpponent/"Match complete."
+  const desktopActionPromptVisible =
+    canUseLocalActions && !isCpuTurn && !matchState.gameOver && actionBarHasBlockingPrompt(selection, matchState.currentBattle);
+  // Same "may this client see it" gate PendingChoicePrompt's own render site
+  // already used (Casual: only the seat whose choice it actually is) —
+  // reused for both the floating-popup visibility signal below AND the real
+  // render further down, so the two can never disagree.
+  const mayViewPendingChoice = !isPinnedPerspective || actingPlayerId === localPlayerId;
+  // Best-effort external mirror of PendingChoicePrompt's own top-of-render
+  // gating (see that file's setup-stage/choice branches) — duplicated here
+  // rather than exported from that file because it's a pure, side-effect-free
+  // read of the same `state`/`defs`, and this is only used to decide whether
+  // to show the floating popup's chevron toggle, not to gate any actual
+  // dispatch. Deliberately excludes 'awaitingGoingFirstChoice' (the 5-2-1-4
+  // coin-toss cinematic never uses ChoicePromptShell / is never hideable —
+  // see SetupTossOverlay) and the two board-driven SELECT_CARDS cases
+  // (field-card / DON!! return choices resolve by tapping the board itself,
+  // not this popup).
+  const setupStageForPromptVisibility = matchState.currentPhase === 'setup' ? matchState.setupState?.stage ?? null : null;
+  const mulliganPromptReady =
+    setupStageForPromptVisibility === 'awaitingMulliganDecision' &&
+    !!matchState.setupState?.goingFirstPlayerId &&
+    !!matchState.setupState?.goingSecondPlayerId;
+  const topPendingChoice = matchState.pendingChoices[0] ?? null;
+  const topPendingChoiceIsBoardDriven =
+    topPendingChoice !== null &&
+    (isFieldCardChoice(matchState, topPendingChoice) ||
+      (topPendingChoice.sourceEffectId === 'ir' && isDonReturnChoice(matchState, defs, topPendingChoice)));
+  const desktopChoicePromptVisible =
+    mayViewPendingChoice && (mulliganPromptReady || (topPendingChoice !== null && !topPendingChoiceIsBoardDriven));
+  const anyDesktopPromptVisible = desktopActionPromptVisible || desktopChoicePromptVisible;
   const battleLineActions = buildMobileBattleLineActions({
     phase: matchState.currentPhase,
     turnNumber: matchState.turnNumber,
@@ -628,8 +724,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         <div className="mb-3 flex flex-col gap-2">
-          <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={phaseDisplayFor(topPlayerId).phase} active={phaseDisplayFor(topPlayerId).active} />
-          <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={phaseDisplayFor(bottomPlayerId).phase} active={phaseDisplayFor(bottomPlayerId).active} />
+          <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={phaseDisplayFor(topPlayerId).phase} active={phaseDisplayFor(topPlayerId).active} timerMs={timerMsFor(topPlayerId)} />
+          <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={phaseDisplayFor(bottomPlayerId).phase} active={phaseDisplayFor(bottomPlayerId).active} timerMs={timerMsFor(bottomPlayerId)} />
         </div>
         {actionContent}
       </div>
@@ -724,7 +820,10 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           viewerPlayerId={bottomPlayerId}
         />
 
-        <div className="hidden min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid xl:grid-cols-[330px_minmax(0,1fr)_330px]">
+        <div
+          className="hidden min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden xl:grid"
+          style={{ gridTemplateColumns: `330px minmax(0,1fr) ${desktopLogOpen ? '330px' : '2.75rem'}` }}
+        >
           {leftPanelOverride}
           <aside className={[leftPanelOverride ? 'hidden' : 'flex', 'min-h-0 flex-col border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]'].join(' ')}>
             <div className="border-b border-gold/25 bg-black/18 px-4 py-3">
@@ -744,10 +843,22 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               <div className="mb-3 flex flex-col gap-2">
-                <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} />
-                <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} />
+                <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} timerMs={timerMsFor(topPlayerId)} />
+                <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} timerMs={timerMsFor(bottomPlayerId)} />
               </div>
-              {actionContent}
+              {desktopActionPromptVisible ? (
+                <div className="flex flex-col items-center gap-2 border border-dashed border-gold/30 bg-black/18 px-3 py-6 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gold">Action Required</p>
+                  <p className="text-xs text-white/55">Respond to the prompt hovering over the board.</p>
+                  {promptPopupHidden && (
+                    <Button variant="secondary" size="sm" onClick={() => setPromptPopupHidden(false)}>
+                      Show Prompt
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                actionContent
+              )}
             </div>
             {onlineMode && (
               <div className="flex min-h-0 flex-1 flex-col border-t border-gold/25">
@@ -764,13 +875,31 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                 />
               </div>
             )}
-            <div className="border-t border-gold/25 bg-black/18 p-3">
+            <div className="flex gap-2 border-t border-gold/25 bg-black/18 p-3">
               <button
                 type="button"
                 onClick={() => setPauseOpen(true)}
-                className="h-10 w-full border border-white/15 bg-black/28 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold"
+                className="h-10 flex-1 border border-white/15 bg-black/28 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold"
               >
                 Pause
+              </button>
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                aria-pressed={isFullscreen}
+                aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center border border-white/15 bg-black/28 text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold"
+              >
+                {isFullscreen ? (
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 4v3a2 2 0 0 1-2 2H4M20 9h-3a2 2 0 0 1-2-2V4M4 15h3a2 2 0 0 1 2 2v3M15 20v-3a2 2 0 0 1 2-2h3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 9V6a2 2 0 0 1 2-2h3M20 9V6a2 2 0 0 1-2-2h-3M4 15v3a2 2 0 0 0 2 2h3M20 15v3a2 2 0 0 1-2 2h-3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
               </button>
             </div>
           </aside>
@@ -947,7 +1076,31 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
             />
           </div>
 
-          <ActionLogDock log={matchState.log} playerNames={playerNames} viewerPlayerId={bottomPlayerId} />
+          {/* Collapsible battle-log sidebar — default collapsed to a slim
+              chevron-only strip; opening it doesn't reflow the board (the
+              middle column is minmax(0,1fr), so it just gives up 330px-44px
+              of width). See desktopLogOpen's declaration doc comment. */}
+          <div className="relative min-h-0">
+            <button
+              type="button"
+              onClick={() => setDesktopLogOpen((open) => !open)}
+              aria-expanded={desktopLogOpen}
+              aria-label={desktopLogOpen ? 'Collapse battle log' : 'Expand battle log'}
+              className="absolute -left-3 top-1/2 z-20 flex h-11 w-6 -translate-y-1/2 items-center justify-center border border-cyan-200/25 bg-[rgba(10,28,66,0.94)] text-cyan-100/75 shadow-[0_8px_20px_rgba(0,0,0,0.35)] transition-colors hover:border-gold/55 hover:text-gold"
+            >
+              <svg viewBox="0 0 24 24" className={['h-3.5 w-3.5 transition-transform duration-200', desktopLogOpen ? 'rotate-180' : ''].join(' ')} fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M14 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            {desktopLogOpen ? (
+              <ActionLogDock log={matchState.log} playerNames={playerNames} viewerPlayerId={bottomPlayerId} className="h-full" />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-2 border-2 border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] py-4">
+                <span className="[writing-mode:vertical-rl] text-[9px] font-black uppercase tracking-[0.24em] text-white/40">Battle Log</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -966,11 +1119,55 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           viewerLabel={isPinnedPerspective && selection.fieldChoiceInfo.playerId !== localPlayerId ? `${nameFor(selection.fieldChoiceInfo.playerId)} is selecting a card…` : null}
         />
       )}
+      {/* Desktop-only floating prompt popup: hovers over the opponent's side
+          of the board instead of living inline in the left Actions aside
+          (ActionBar's "must respond" branches, via actionBarHasBlockingPrompt)
+          or dead-center blocking the whole board (PendingChoicePrompt, via
+          ChoicePromptVisibilityContext just below). One shared chevron
+          toggles both — they're rarely visible at the same time in practice
+          (PendingChoice-driven prompts vs. ActionBar's own local selection
+          modes gate each other out), so a single control is enough. Hidden
+          entirely on mobile/tablet (`hidden xl:flex`) — that layout keeps its
+          existing inline ActionBar + centered PendingChoicePrompt modal. */}
+      {anyDesktopPromptVisible && (
+        <div className="pointer-events-none fixed inset-x-0 top-[6vh] z-[125] hidden justify-center px-4 xl:flex">
+          <div className="pointer-events-auto flex w-full max-w-md flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPromptPopupHidden((hidden) => !hidden)}
+              aria-expanded={!promptPopupHidden}
+              className="flex h-7 items-center gap-1.5 border border-white/15 bg-black/55 px-3 text-[9px] font-black uppercase tracking-[0.18em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.3)] backdrop-blur-md transition-all hover:border-gold/55 hover:text-gold"
+            >
+              <svg viewBox="0 0 24 24" className={['h-3 w-3 transition-transform duration-200', promptPopupHidden ? 'rotate-180' : ''].join(' ')} fill="none" stroke="currentColor" strokeWidth="3">
+                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {promptPopupHidden ? 'Show Prompt' : 'Hide (view board)'}
+            </button>
+
+            {!promptPopupHidden && desktopActionPromptVisible && (
+              <div className={`w-full p-3 ${SETTINGS_PANEL_SHELL}`}>
+                <p className={SETTINGS_PANEL_TITLE}>Action Required</p>
+                <div className="mt-3 flex flex-col gap-3">
+                  <ActionBar
+                    phase={matchState.currentPhase}
+                    turnNumber={matchState.turnNumber}
+                    battle={matchState.currentBattle}
+                    actingBoard={actingBoard}
+                    selection={selection}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {/* Casual: a pending choice belonging to the opponent seat is theirs to
           resolve over the network, not this client's — suppress the prompt so
           the local human can't answer for the opponent (the WaitingForOpponent
           panel covers this state instead). */}
-      {(!isPinnedPerspective || actingPlayerId === localPlayerId) && <PendingChoicePrompt state={matchState} defs={defs} images={images} />}
+      <ChoicePromptVisibilityContext.Provider value={{ hidden: promptPopupHidden }}>
+        {mayViewPendingChoice && <PendingChoicePrompt state={matchState} defs={defs} images={images} />}
+      </ChoicePromptVisibilityContext.Provider>
       <CardDetailModal open={zoomDefinitionId !== null} onClose={() => setZoomDefinitionId(null)} definition={zoomDefinition} imageUrl={zoomImageUrl} mobileImageOnly />
 
       <Modal open={battleLinePromptOpen} onClose={() => setBattleLinePromptOpen(false)} title={mobileBattleLineLabel} rootClassName="op-mobile-battle-actions-modal" maxWidthClassName="max-w-md">
@@ -2019,6 +2216,7 @@ function formatGameOverReason(reason: string): string {
     concession: 'Concession',
     cardEffect: 'Card effect',
     draw: 'Draw',
+    timeout: 'Timed out',
   };
   return labels[reason] ?? reason;
 }

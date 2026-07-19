@@ -16,8 +16,8 @@
  *    is legal. No exceptions — there is no action that un-ends a finished
  *    game.
  * 2. Pending-choice gate (blueprint Section 11): while ANY PendingChoice is
- *    outstanding, only RESOLVE_PENDING_CHOICE or CONCEDE may be dispatched —
- *    EXCEPT during the 'setup' phase, where the outstanding PendingChoice is
+ *    outstanding, only RESOLVE_PENDING_CHOICE, CONCEDE, or TIMEOUT_LOSS may
+ *    be dispatched — EXCEPT during the 'setup' phase, where the outstanding PendingChoice is
  *    always the going-first or mulligan YES_NO prompt, which is resolved
  *    through its OWN dedicated action type (CHOOSE_GOING_FIRST /
  *    MULLIGAN_DECISION), never through RESOLVE_PENDING_CHOICE — see
@@ -64,6 +64,8 @@ import {
   executeResolvePendingChoice,
   validateConcede,
   executeConcede,
+  validateTimeoutLoss,
+  executeTimeoutLoss,
   validateActivateCardEffect,
   executeActivateCardEffect,
   validateActivateCounterEvent,
@@ -94,9 +96,9 @@ import {
  */
 function pendingChoiceGateAllowedTypes(state: GameState): GameActionType[] {
   if (state.currentPhase === 'setup') {
-    return ['RESOLVE_PENDING_CHOICE', 'CONCEDE', 'CHOOSE_GOING_FIRST', 'MULLIGAN_DECISION'];
+    return ['RESOLVE_PENDING_CHOICE', 'CONCEDE', 'TIMEOUT_LOSS', 'CHOOSE_GOING_FIRST', 'MULLIGAN_DECISION'];
   }
-  return ['RESOLVE_PENDING_CHOICE', 'CONCEDE'];
+  return ['RESOLVE_PENDING_CHOICE', 'CONCEDE', 'TIMEOUT_LOSS'];
 }
 
 export function validateAction(
@@ -156,6 +158,8 @@ export function validateAction(
       return validateChooseGoingFirst(state, action);
     case 'CONCEDE':
       return validateConcede(state, action);
+    case 'TIMEOUT_LOSS':
+      return validateTimeoutLoss(state, action);
     default: {
       const exhaustiveCheck: never = action;
       return { legal: false, reasons: [`Unrecognized action type '${(exhaustiveCheck as GameAction).type}'.`] };
@@ -226,6 +230,9 @@ export function executeAction(
       break;
     case 'CONCEDE':
       result = executeConcede(state, action);
+      break;
+    case 'TIMEOUT_LOSS':
+      result = executeTimeoutLoss(state, action);
       break;
     default: {
       const exhaustiveCheck: never = action;

@@ -54,6 +54,8 @@ interface OnlineState {
   role: 'host' | 'guest' | null;
   roomCode: string | null;
   phase: RoomPhase | null;
+  /** True only for ranked rooms — gates the Match Screen's per-seat chess-clock row. */
+  isRanked: boolean;
   seats: SeatView[];
   localSeatId: string | null;
   /** Per-seat-redacted authoritative GameState (null until match start). */
@@ -86,6 +88,7 @@ export const useOnlineStore = create<OnlineState>((set, get) => ({
   role: null,
   roomCode: null,
   phase: null,
+  isRanked: false,
   seats: [],
   localSeatId: null,
   gameState: null,
@@ -155,6 +158,7 @@ export const useOnlineStore = create<OnlineState>((set, get) => ({
       role: null,
       roomCode: null,
       phase: null,
+      isRanked: false,
       seats: [],
       localSeatId: null,
       gameState: null,
@@ -206,12 +210,14 @@ function wireRoom(room: Room, set: SetFn): void {
         username: seat.username,
         connected: seat.connected,
         ready: seat.ready,
+        remainingMs: typeof seat.remainingMs === 'number' ? seat.remainingMs : -1,
       });
     });
     const localSeat = state.seats?.get(room.sessionId);
     set({
       roomCode: state.roomCode || null,
       phase: (state.phase as RoomPhase) || null,
+      isRanked: !!state.isRanked,
       seats,
       localSeatId: localSeat?.seatId ?? null,
     });

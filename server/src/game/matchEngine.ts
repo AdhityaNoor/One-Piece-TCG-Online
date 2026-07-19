@@ -111,6 +111,11 @@ export class GameSession {
     return this.apply({ type: 'CONCEDE', actionId, playerId });
   }
 
+  /** Ranked chess-clock expiry (see rooms/GameRoom.ts's clock tick). */
+  forceTimeout(playerId: string, actionId: string): ApplyResult {
+    return this.apply({ type: 'TIMEOUT_LOSS', actionId, playerId });
+  }
+
   isOver(): boolean {
     return this.state.gameOver !== null;
   }

@@ -31,6 +31,8 @@ export interface SeatView {
   username: string;
   connected: boolean;
   ready: boolean;
+  /** Ranked-only chess-clock time remaining, in ms. -1 when not tracked (Casual/VS-CPU/hotseat). */
+  remainingMs: number;
 }
 
 /**

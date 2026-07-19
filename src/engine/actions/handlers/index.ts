@@ -12,5 +12,6 @@ export * from './returnGivenDon';
 export * from './endMainPhase';
 export * from './resolvePendingChoice';
 export * from './concede';
+export * from './timeoutLoss';
 export * from './activateCardEffect';
 export * from './activateCounterEvent';
