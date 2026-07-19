@@ -59,7 +59,8 @@ class FakeCache {
 
 describe('createCacheStorageAssetManager (Cache Storage available)', () => {
   const IMAGE_URL = 'https://example.com/OP01-001.webp';
-  const IMAGE_BYTES = new TextEncoder().encode('pretend-this-is-webp-bytes');
+  const IMAGE_TEXT = 'pretend-this-is-webp-bytes';
+  const IMAGE_BYTES = new TextEncoder().encode(IMAGE_TEXT);
   let fakeCache: FakeCache;
   let originalCaches: unknown;
   let originalFetch: typeof fetch;
@@ -87,9 +88,20 @@ describe('createCacheStorageAssetManager (Cache Storage available)', () => {
     const dataUrl = await manager.get(IMAGE_URL);
     expect(dataUrl).toMatch(/^data:image\/webp;base64,/);
 
+    // Decode back to text and compare strings rather than comparing
+    // Uint8Array instances via toEqual() — a prior version of this
+    // assertion (`expect(decoded).toEqual(IMAGE_BYTES)`) failed locally
+    // with "Compared values have no visual difference", a known
+    // Vitest/chai symptom of comparing two typed arrays that hold identical
+    // bytes but differ in constructor/realm identity (environment-specific,
+    // not a real bug — see cacheStorageAssetManager.ts's responseToDataUrl
+    // doc comment for the related Response.arrayBuffer() fix). Comparing
+    // plain strings sidesteps that entirely while still proving the
+    // round-trip is byte-for-byte correct.
     const base64 = (dataUrl as string).split(',')[1];
-    const decoded = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-    expect(decoded).toEqual(IMAGE_BYTES);
+    const decodedBytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    const decodedText = new TextDecoder().decode(decodedBytes);
+    expect(decodedText).toBe(IMAGE_TEXT);
   });
 
   it('put() does not re-fetch a URL that is already cached', async () => {

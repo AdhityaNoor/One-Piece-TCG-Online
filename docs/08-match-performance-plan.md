@@ -95,6 +95,12 @@ After the `data:` URL fix, the user reported EVERY card blank (leader `<img>` co
 
 **Pattern across all three Phase 2 incidents:** every one was a case of new preload code re-deriving or bypassing logic that a DIFFERENT, already-correct call site (`CardImage.tsx`/`resolveAssetUrl()`) already handled — first the CDN-prefix scheme guard, then blob: URL lifecycle, now skipping URL resolution entirely. The lesson (see [[project_phase2_match_asset_preload]] memory): any new consumer of `cardImagesByDefinitionId` values must go through the exact same resolution path existing renderers use, not assume the raw stored value is directly usable.
 
+### Phase 2 fix #4: `Response.blob().arrayBuffer` missing in the user's local Vitest run (2026-07-19, same day)
+
+Running the full suite locally (`npx vitest run`, 1370 tests) surfaced one real, reproducible failure: `TypeError: blob.arrayBuffer is not a function` inside `responseToDataUrl` (then still named `blobToDataUrl`), at the `await blob.arrayBuffer()` line. This never reproduced in this sandbox's `tsx`/`vite-node`/Vitest runs — a genuine cross-environment difference, most likely a Node/undici version gap between this sandbox and the user's local machine, where `Response.prototype.blob()`'s returned `Blob`-like object doesn't fully implement `.arrayBuffer()` even though the originating `Response`'s own `.arrayBuffer()` does.
+
+**Fix:** stopped going through `Blob` at all. `get()` now calls `response.arrayBuffer()` directly on the `Response` object returned by `cache.match()`, and reads the `Content-Type` straight from `response.headers.get('content-type')` instead of `blob.type`. `Response.arrayBuffer()` is a longer-standing, more consistently-implemented part of the Fetch spec than `Blob.prototype.arrayBuffer()`, and removing the intermediate `Blob` object removes an entire class of "which environment's Blob implementation is this" risk. Verified via a standalone script in this sandbox (unchanged pass/fail behavior here, as expected) — the real test of this fix is the user's own `npx vitest run` locally, which is what surfaced the bug in the first place.
+
 ## Plan (in order — each phase should be measured before starting the next)
 
 **Phase 0 — Baseline measurement.** Profile before touching anything: React DevTools Profiler render count per action, Chrome Performance panel with 4x CPU throttle, on a standard turn (attack + block + DON attach). Without this, "should be faster" isn't verifiable.

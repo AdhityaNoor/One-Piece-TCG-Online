@@ -10,7 +10,7 @@ import { makeLeaderDef } from '../../rules/shared/__tests__/testRig';
 
 const stubProgram = (cardNumber: string): EffectProgram => ({
   cardNumber,
-  abilities: [{ timing: 'onOpponentsAttack', functions: [] }],
+  abilities: [{ timing: 'onOpponentsAttack', ops: [] }],
 });
 
 describe('resolveEffectProgram', () => {

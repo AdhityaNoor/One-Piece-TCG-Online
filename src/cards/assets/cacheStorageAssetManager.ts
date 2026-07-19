@@ -39,22 +39,31 @@ import type { AssetCacheManager } from './assetCache';
 const BASE64_CHUNK_SIZE = 0x8000;
 
 /**
- * Blob -> data: URL conversion via ArrayBuffer + btoa, deliberately NOT
- * FileReader.readAsDataURL() — FileReader is browser-only (no global in
- * Node), so using it here would make this function untestable outside a
- * real browser. ArrayBuffer/Uint8Array/btoa are all standard and available
- * in both Node and every browser, so the exact same code path that runs in
- * production can run in this project's Node-environment Vitest suite too.
+ * Response -> data: URL conversion via ArrayBuffer + btoa, deliberately NOT
+ * `response.blob()` + `Blob.prototype.arrayBuffer()`. `Response.arrayBuffer()`
+ * is read directly off the Response instead — one fewer intermediary object,
+ * and it sidesteps a real cross-environment gotcha this project hit: some
+ * Node/Vitest setups' `Response.prototype.blob()` returns a `Blob`-like
+ * object that doesn't actually implement `.arrayBuffer()` (`TypeError:
+ * blob.arrayBuffer is not a function`), even though the same `Response`'s
+ * own `.arrayBuffer()` works fine. Also deliberately NOT
+ * `FileReader.readAsDataURL()` — `FileReader` is browser-only (no Node
+ * global), so using it here would make this function untestable outside a
+ * real browser. `Response.arrayBuffer()` + `Uint8Array` + `btoa` are all
+ * standard and available in both Node and every browser, so the exact same
+ * code path that runs in production can run in this project's
+ * Node-environment Vitest suite too.
  */
-async function blobToDataUrl(blob: Blob): Promise<string> {
-  const buffer = await blob.arrayBuffer();
+async function responseToDataUrl(response: Response): Promise<string> {
+  const contentType = response.headers.get('content-type') || 'application/octet-stream';
+  const buffer = await response.arrayBuffer();
   const bytes = new Uint8Array(buffer);
   let binary = '';
   for (let i = 0; i < bytes.length; i += BASE64_CHUNK_SIZE) {
     binary += String.fromCharCode(...bytes.subarray(i, i + BASE64_CHUNK_SIZE));
   }
   const base64 = btoa(binary);
-  return `data:${blob.type || 'application/octet-stream'};base64,${base64}`;
+  return `data:${contentType};base64,${base64}`;
 }
 
 // v2: a production bug (matchAssetPreload.ts fetching the raw root-relative
@@ -97,8 +106,7 @@ export function createCacheStorageAssetManager(): AssetCacheManager {
       if (!cache) return undefined;
       const match = await cache.match(cacheKey);
       if (!match) return undefined;
-      const blob = await match.blob();
-      return blobToDataUrl(blob);
+      return responseToDataUrl(match);
     },
 
     async put(cacheKey, remoteUrl) {
