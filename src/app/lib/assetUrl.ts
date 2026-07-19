@@ -31,11 +31,17 @@ export function resolveAssetUrl(path: string | null): string | null {
   if (path === null) return null;
   // Idempotency guard: some saved-deck snapshots (created before deck
   // snapshots stored root-relative paths) captured a FULLY resolved Blob
-  // URL, and a few raw API rows carry a full http(s) source. Such a value is
-  // already final — re-prefixing ASSET_BASE would produce a doubled origin
-  // like "<blob>/https://<blob>/card-images/..." that 404s (the match-screen
-  // bug). Resolving an absolute URL must be a no-op.
-  if (/^https?:\/\//i.test(path)) return path;
+  // URL, a few raw API rows carry a full http(s) source, and Phase 2's
+  // match-asset preload (matchAssetPreload.ts) now stores real blob: object
+  // URLs (from URL.createObjectURL()) straight into cardImagesByDefinitionId.
+  // Any of these is already final — re-prefixing ASSET_BASE would produce a
+  // doubled origin like "<blob-origin>/https://.../..." or
+  // "<blob-origin>/blob:https://.../<uuid>" that 404s (the match-screen
+  // bug, twice now). Detect "already has its own URI scheme" generically
+  // (http:, https:, blob:, data:, ...) rather than special-casing each
+  // scheme one at a time as new ones turn up — resolving an absolute URL
+  // must always be a no-op.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return path;
   if (!ASSET_BASE) return path; // local dev — served by Vite from /public/
   // Ensure no double-slash when joining.
   return `${ASSET_BASE}${path.startsWith('/') ? path : `/${path}`}`;
