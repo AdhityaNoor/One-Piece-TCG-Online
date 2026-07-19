@@ -22,10 +22,14 @@ import { isControllerCharacterPlayPrevented } from '../../rules/shared/character
 import { isControllerHandPlayPrevented } from '../../rules/shared/handPlayRestriction';
 import { mintRuntimeInstanceId } from '../../rules/shared/mintInstance';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { fireOnPlay, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, type EffectTemplateRegistry } from '../../effects';
+import { fireOnPlay, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, resolveEffectProgram, type EffectTemplateRegistry } from '../../effects';
 
-function hasCuratedConditionalRushGrant(registry: EffectTemplateRegistry, cardDefinitionId: string): boolean {
-  return !!registry[cardDefinitionId]?.abilities.some((ability) =>
+function hasCuratedConditionalRushGrant(
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  cardDefinitionId: string,
+): boolean {
+  return !!resolveEffectProgram(registry, defs, cardDefinitionId)?.abilities.some((ability) =>
     ability.ops.some((op) =>
       op.op === 'addKeyword' &&
       op.keyword === 'rush' &&
@@ -131,7 +135,7 @@ export function executePlayCharacter(
     currentPower: def.basePower,
     appliedContinuousEffectIds: [],
     oncePerTurnUsed: [],
-    summoningSick: hasCuratedConditionalRushGrant(registry, handInstance.cardDefinitionId) ? true : !def.hasRush, // 3-7-4, 10-1-6
+    summoningSick: hasCuratedConditionalRushGrant(registry, defs, handInstance.cardDefinitionId) ? true : !def.hasRush, // 3-7-4, 10-1-6
     revealedTo: 'all', // 3-7-2, open zone
     enteredPlayTurn: state.turnNumber,
   };

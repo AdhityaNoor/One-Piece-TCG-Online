@@ -13,7 +13,7 @@ import type { ActivateOnOpponentsAttackAction, ValidationResult } from '../../ac
 import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import type { CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
-import { fireOnOpponentsAttack, evaluateGates, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, battleAttackerIsCharacterWithAttribute, type EffectTemplateRegistry } from '../../effects';
+import { fireOnOpponentsAttack, evaluateGates, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, battleAttackerIsCharacterWithAttribute, resolveEffectProgram, type EffectTemplateRegistry } from '../../effects';
 import type { Ability } from '../../effects/effectIr';
 import type { CardInstance } from '../../state/card';
 
@@ -56,7 +56,7 @@ export function hasAnyUsableOnOpponentsAttack(
     if (used.has(id)) continue;
     const source = state.cardsById[id];
     if (!source || source.controllerId !== defendingPlayerId) continue;
-    const ability = registry[source.cardDefinitionId]?.abilities.find((a) => a.timing === 'onOpponentsAttack');
+    const ability = resolveEffectProgram(registry, defs, source.cardDefinitionId)?.abilities.find((a) => a.timing === 'onOpponentsAttack');
     if (!ability) continue;
     if (ability.oncePerTurn && source.oncePerTurnUsed.includes('onOpponentsAttack')) continue;
     if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, defendingPlayerId, id)) continue;
@@ -100,7 +100,7 @@ export function validateActivateOnOpponentsAttack(
     return { legal: reasons.length === 0, reasons };
   }
 
-  const program = registry[source.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, source.cardDefinitionId);
   const ability = program?.abilities.find((a) => a.timing === 'onOpponentsAttack');
   if (!ability) {
     reasons.push(`'${source.cardDefinitionId}' has no [On Your Opponent's Attack] ability.`);
@@ -137,7 +137,7 @@ export function executeActivateOnOpponentsAttack(
   registry: EffectTemplateRegistry,
 ): ActionExecuteResult {
   const source = state.cardsById[action.sourceInstanceId];
-  const program = registry[source.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, source.cardDefinitionId);
   const ability = program?.abilities.find((a) => a.timing === 'onOpponentsAttack');
 
   // Pay the activation cost first (8-3-1-5), then resolve on the paid state.

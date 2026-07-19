@@ -41,7 +41,7 @@ import { computeCurrentPower, findKoImmunityRecord, hasContinuousKeyword, withKo
 import { resolveLifeLeaveDestination } from '../shared/lifeLeaveDestination';
 import { getOpponentId } from '../shared/players';
 import { buildKoReplacementConfirmChoice, findKoReplacementRecord } from '../shared/koAttempt';
-import { fireOnKO, fireOnBattle, fireOnBattleKoedOpponent, fireLifeDamageDealtReactions, fireLifeRemovedReactions, fireLifeToHandReactions, type EffectTemplateRegistry } from '../../effects';
+import { fireOnKO, fireOnBattle, fireOnBattleKoedOpponent, fireLifeDamageDealtReactions, fireLifeRemovedReactions, fireLifeToHandReactions, resolveEffectProgram, type EffectTemplateRegistry } from '../../effects';
 import { consumeEndOfBattleDelayedEffects } from '../phases/delayedEffects';
 import type { KoReplacementResumeState } from '../../events/pendingChoice';
 import { effectLogDataForSource } from '../../logs/effectLogData';
@@ -129,7 +129,7 @@ export function resolveDamageAndEndOfBattle(
     const target = nextState.cardsById[targetId];
 
     if (target.currentZone === 'leaderArea') {
-      const hasCuratedDoubleAttackGrant = registry[attackerDef.cardDefinitionId]?.abilities.some((ability) =>
+      const hasCuratedDoubleAttackGrant = resolveEffectProgram(registry, defs, attackerDef.cardDefinitionId)?.abilities.some((ability) =>
         ability.ops.some((op) => op.op === 'addKeyword' && op.keyword === 'doubleAttack'),
       );
       const hasDoubleAttack = (!hasCuratedDoubleAttackGrant && attackerDef.hasDoubleAttack) || hasContinuousKeyword(defs, nextState, attackerId, 'doubleAttack');

@@ -17,7 +17,7 @@ import type { GameState } from '../../state/game';
 import type { ActivateCardEffectAction, ValidationResult } from '../action';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import type { CardDefinitionLookup } from '../../rules/shared/definitions';
-import { fireActivate, evaluateGates, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, type EffectTemplateRegistry } from '../../effects';
+import { fireActivate, evaluateGates, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, resolveEffectProgram, type EffectTemplateRegistry } from '../../effects';
 import type { Ability } from '../../effects/effectIr';
 import type { CardInstance } from '../../state/card';
 
@@ -58,7 +58,7 @@ export function validateActivateCardEffect(
     return { legal: reasons.length === 0, reasons };
   }
 
-  const program = registry[source.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, source.cardDefinitionId);
   const ability = program?.abilities.find((a) => a.timing === 'activateMain');
   if (!ability) {
     reasons.push(`'${source.cardDefinitionId}' has no activatable [Activate: Main] effect.`);
@@ -88,7 +88,7 @@ export function executeActivateCardEffect(
   registry: EffectTemplateRegistry,
 ): ActionExecuteResult {
   const source = state.cardsById[action.sourceInstanceId];
-  const program = registry[source.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, source.cardDefinitionId);
   const ability = program?.abilities.find((a) => a.timing === 'activateMain');
 
   // Pay the activation cost first (8-3-1-5), then resolve the effect on the paid state.

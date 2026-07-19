@@ -4,7 +4,7 @@ import { computeCurrentCost, computeCurrentPower } from '../../engine/rules/shar
 import { getDefinition } from '../../engine/rules/shared/definitions';
 import { getOpponentId } from '../../engine/rules/shared';
 import type { EffectTemplateRegistry } from '../../engine/effects';
-import { canPayAbilityCost, evaluateGates, fieldDonIds, requiredDonMinusCount } from '../../engine/effects';
+import { canPayAbilityCost, evaluateGates, fieldDonIds, requiredDonMinusCount, resolveEffectProgram } from '../../engine/effects';
 import type { Ability } from '../../engine/effects/effectIr';
 import type { GameState } from '../../engine/state/game';
 import type { PendingChoice } from '../../engine/events/pendingChoice';
@@ -218,7 +218,7 @@ function enumerateMainPhaseActions(ctx: LegalActionContext): GameAction[] {
   for (const sourceId of ownFieldCardIds(state, playerId)) {
     const inst = state.cardsById[sourceId];
     if (!inst) continue;
-    const program = registry[inst.cardDefinitionId];
+    const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
     const ability = program?.abilities.find((a) => a.timing === 'activateMain');
     if (!ability) continue;
     if (ability.oncePerTurn && inst.oncePerTurnUsed.includes('activateMain')) continue;
@@ -283,7 +283,7 @@ function enumerateBlockStepActions(ctx: LegalActionContext): GameAction[] {
     if (usedOnOppAttack.has(sourceId)) continue;
     const inst = state.cardsById[sourceId];
     if (!inst) continue;
-    const program = ctx.registry[inst.cardDefinitionId];
+    const program = resolveEffectProgram(ctx.registry, ctx.defs, inst.cardDefinitionId);
     const ability = program?.abilities.find((a) => a.timing === 'onOpponentsAttack');
     if (!ability) continue;
     if (ability.oncePerTurn && inst.oncePerTurnUsed.includes('onOpponentsAttack')) continue;
@@ -339,7 +339,7 @@ function enumerateCounterStepActions(ctx: LegalActionContext): GameAction[] {
       }
     }
     if (def.category === 'event') {
-      const program = ctx.registry[inst.cardDefinitionId];
+      const program = resolveEffectProgram(ctx.registry, defs, inst.cardDefinitionId);
       if (!program?.abilities.some((a) => a.timing === 'counter')) continue;
       const cost = computeCurrentCost(defs, state, handId, ctx.registry);
       const donInstanceIds = pickDonForCost(ctx, cost);

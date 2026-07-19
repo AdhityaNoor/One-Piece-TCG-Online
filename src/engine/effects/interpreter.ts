@@ -20,7 +20,7 @@ import type { KoReplacementTrigger } from '../state/game';
 import { EffectContextImpl } from './effectContext';
 import { evaluateGates, countSelfTypedCharacters } from './gates';
 import { canPayAbilityCost, donMinusCandidateIds, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
-import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireCharacterRestedReactions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, fireHandTrashedReactions, fireLifeDamageDealtReactions, fireLifeRemovedReactions, fireLifeToHandReactions } from './fireTiming';
+import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireCharacterRestedReactions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, fireHandTrashedReactions, fireLifeDamageDealtReactions, fireLifeRemovedReactions, fireLifeToHandReactions, resolveEffectProgram } from './fireTiming';
 import { dealLifeDamage } from '../rules/shared/dealLifeDamage';
 import { isAbilityNegated } from './effectNegation';
 import type { GateEvalContext } from './gates';
@@ -94,7 +94,7 @@ function finishWithCascade(
   while (queue.length > 0 && guard++ < 200) {
     const event = queue.shift()!;
     const inst = working.cardsById[event.targetInstanceId];
-    const program = inst ? registry[inst.cardDefinitionId] : undefined;
+    const program = inst ? resolveEffectProgram(registry, defs, inst.cardDefinitionId) : undefined;
     if (!program?.abilities.some((a) => a.timing === 'onKO')) continue;
     const eventContext: GateEvalContext = {
       koCause: event.cause,
@@ -115,7 +115,7 @@ function finishWithCascade(
       restSourceInstanceId: event.sourceInstanceId,
     };
     const inst = working.cardsById[event.targetInstanceId];
-    const program = inst ? registry[inst.cardDefinitionId] : undefined;
+    const program = inst ? resolveEffectProgram(registry, defs, inst.cardDefinitionId) : undefined;
     if (program?.abilities.some((a) => a.timing === 'onRested')) {
       // Pay costs (DON!! −N / trashThis / …) the same as onKO cascade — many onRested texts are "you may pay …".
       const subRes = runTimings(program, ['onRested'], working, event.targetInstanceId, defs, actionId, registry, true, eventContext);
@@ -180,7 +180,7 @@ function finishWithCascade(
   while (playedCharacterEntryQueue.length > 0 && guard++ < 200) {
     const event = playedCharacterEntryQueue.shift()!;
     const inst = working.cardsById[event.instanceId];
-    const program = inst ? registry[inst.cardDefinitionId] : undefined;
+    const program = inst ? resolveEffectProgram(registry, defs, inst.cardDefinitionId) : undefined;
     if (!program?.abilities.some((a) => a.timing === 'onEnterPlay' || a.timing === 'onPlay')) continue;
     const fired = runTimings(program, ['onEnterPlay', 'onPlay'], working, event.instanceId, defs, actionId, registry);
     working = fired.state;

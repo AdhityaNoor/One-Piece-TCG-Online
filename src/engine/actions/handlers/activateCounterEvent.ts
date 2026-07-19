@@ -20,7 +20,7 @@ import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/def
 import { computeCurrentCost } from '../../rules/shared/power';
 import { getOpponentId } from '../../rules/shared/players';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { fireCounter, canAffordAbilityCost, canPayAbilityCost, countControllerActiveUnattachedDon, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, requiredDonMinusCount, type EffectTemplateRegistry } from '../../effects';
+import { fireCounter, canAffordAbilityCost, canPayAbilityCost, countControllerActiveUnattachedDon, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, requiredDonMinusCount, resolveEffectProgram, type EffectTemplateRegistry } from '../../effects';
 import { recordEventActivation } from '../../effects/eventActivationHistory';
 import { effectLogDataForSource } from '../../logs/effectLogData';
 
@@ -68,7 +68,7 @@ export function validateActivateCounterEvent(
     reasons.push(`'${def.name}' is a ${def.category}, not an Event.`);
   }
 
-  const program = registry[handInstance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, handInstance.cardDefinitionId);
   const ability = program?.abilities.find((a) => a.timing === 'counter');
   if (!ability) {
     reasons.push(`'${def.name}' has no [Counter] effect to activate.`);
@@ -121,7 +121,7 @@ export function executeActivateCounterEvent(
   const player = state.players[action.playerId];
   const handInstance = state.cardsById[action.handCardInstanceId];
   const def = getDefinition(defs, handInstance);
-  const ability = registry[handInstance.cardDefinitionId]?.abilities.find((a) => a.timing === 'counter');
+  const ability = resolveEffectProgram(registry, defs, handInstance.cardDefinitionId)?.abilities.find((a) => a.timing === 'counter');
   const logger = createActionLogger(state, action.actionId);
 
   const cardsById = { ...state.cardsById };

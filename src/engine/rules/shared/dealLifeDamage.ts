@@ -87,9 +87,10 @@ export function dealLifeDamage(args: {
     hitsResolved += 1;
 
     if (leaveTo === 'hand' && lifeDef?.hasTrigger) {
-      const hasCuratedTrigger = !!args.registry[working.cardsById[lifeCardId].cardDefinitionId]?.abilities.some(
-        (ab) => ab.timing === 'lifeTrigger',
-      );
+      const lifeDefId = working.cardsById[lifeCardId].cardDefinitionId;
+      const hasCuratedTrigger = !!(
+        args.registry[lifeDefId] ?? args.registry[args.defs[lifeDefId]?.cardNumber ?? '']
+      )?.abilities.some((ab) => ab.timing === 'lifeTrigger');
       if (hasCuratedTrigger) {
         pending.push({
           id: `${args.targetPlayerId}__life-trigger-${lifeCardId}`,

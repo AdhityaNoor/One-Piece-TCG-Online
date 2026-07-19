@@ -106,10 +106,9 @@ export class EffectContextImpl implements EffectContext {
     this.logger = createActionLogger(state, actionId);
   }
 
+  /** Prefer definition id, then printed cardNumber (same as resolveEffectProgram). */
   private programFor(cardDefinitionId: string) {
-    if (this.registry[cardDefinitionId]) return this.registry[cardDefinitionId];
-    const def = this.defs[cardDefinitionId];
-    return def?.cardNumber ? this.registry[def.cardNumber] : undefined;
+    return this.registry[cardDefinitionId] ?? this.registry[this.defs[cardDefinitionId]?.cardNumber ?? ''];
   }
 
   state(): GameState {

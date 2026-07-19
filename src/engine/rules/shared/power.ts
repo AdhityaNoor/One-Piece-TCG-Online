@@ -32,6 +32,7 @@ function handSelfCostDelta(
 ): number {
   const instance = state.cardsById[instanceId];
   if (!instance || instance.currentZone !== 'hand') return 0;
+  // Inline cardNumber fallback (same as resolveEffectProgram; avoid importing fireTiming).
   const program = registry[instance.cardDefinitionId] ?? registry[defs[instance.cardDefinitionId]?.cardNumber ?? ''];
   if (!program) return 0;
   let delta = 0;

@@ -16,7 +16,7 @@ import { addToZoneTop, removeFromZone } from '../../rules/shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../../rules/shared/definitions';
 import { computeCurrentCost } from '../../rules/shared/power';
 import type { ActionExecuteResult } from '../actionExecuteResult';
-import { evaluateGates, fireActivate, canAffordAbilityCost, canPayAbilityCost, countControllerActiveUnattachedDon, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, requiredDonMinusCount, type EffectTemplateRegistry } from '../../effects';
+import { evaluateGates, fireActivate, canAffordAbilityCost, canPayAbilityCost, countControllerActiveUnattachedDon, payAbilityCost, afterAbilityCostPaid, fireEventActivatedReactions, requiredDonMinusCount, resolveEffectProgram, type EffectTemplateRegistry } from '../../effects';
 import { isControllerHandPlayPrevented } from '../../rules/shared/handPlayRestriction';
 import { recordEventActivation } from '../../effects/eventActivationHistory';
 import { effectLogDataForSource } from '../../logs/effectLogData';
@@ -59,7 +59,7 @@ export function validateActivateEventMain(
     reasons.push('You cannot play cards from your hand during this turn.');
   }
 
-  const program = registry[handInstance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, handInstance.cardDefinitionId);
   const ability = program?.abilities.find((a) => a.timing === 'activateMain');
   if (!ability) {
     reasons.push(`'${def.name}' has no curated [Main] effect to activate.`);
@@ -118,7 +118,7 @@ export function executeActivateEventMain(
   const player = state.players[action.playerId];
   const handInstance = state.cardsById[action.handCardInstanceId];
   const def = getDefinition(defs, handInstance);
-  const ability = registry[handInstance.cardDefinitionId]?.abilities.find((a) => a.timing === 'activateMain');
+  const ability = resolveEffectProgram(registry, defs, handInstance.cardDefinitionId)?.abilities.find((a) => a.timing === 'activateMain');
   const logger = createActionLogger(state, action.actionId);
 
   const cardsById = { ...state.cardsById };

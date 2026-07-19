@@ -72,7 +72,7 @@ function fireReactiveAbilitiesForPlayer(
     if (opts?.onlyInstanceId && id !== opts.onlyInstanceId) continue;
     const inst = working.cardsById[id];
     if (!inst) continue;
-    const program = registry[inst.cardDefinitionId];
+    const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
     if (!program?.abilities.some((a) => a.timing === timing)) continue;
     for (const ability of program.abilities.filter((a) => a.timing === timing)) {
       const optKey = ability.oncePerTurnKey ?? timingOptKey;
@@ -219,7 +219,7 @@ export function fireCharacterPlayedFromHandReactions(
     if (id === playedInstanceId) continue;
     const inst = working.cardsById[id];
     if (!inst) continue;
-    const program = registry[inst.cardDefinitionId];
+    const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
     if (!program?.abilities.some((a) => a.timing === 'onCharacterPlayedFromHand')) continue;
     const fired = runTimings(program, ['onCharacterPlayedFromHand'], working, id, defs, actionId, registry, false, eventContext);
     working = fired.state;
@@ -269,7 +269,7 @@ export function fireOpponentCharacterPlayedFromHandReactions(
   for (const id of fieldInstanceIds(working, defendingPlayerId)) {
     const inst = working.cardsById[id];
     if (!inst) continue;
-    const program = registry[inst.cardDefinitionId];
+    const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
     if (!program?.abilities.some((a) => a.timing === 'onOpponentCharacterPlayedFromHand')) continue;
     const fired = runTimings(program, ['onOpponentCharacterPlayedFromHand'], working, id, defs, actionId, registry, false, eventContext);
     working = fired.state;
@@ -295,7 +295,7 @@ export function fireCharacterPlayedFromTrashReactions(
     if (id === playedInstanceId) continue;
     const inst = working.cardsById[id];
     if (!inst) continue;
-    const program = registry[inst.cardDefinitionId];
+    const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
     if (!program?.abilities.some((a) => a.timing === 'onCharacterPlayedFromTrash')) continue;
     const fired = runTimings(program, ['onCharacterPlayedFromTrash'], working, id, defs, actionId, registry, false, eventContext);
     working = fired.state;
@@ -340,7 +340,7 @@ export function fireNestedEventActivation(
   if (!instance) return noop(state);
   const def = defs[instance.cardDefinitionId];
   if (!def || def.category !== 'event') return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   const ability = program?.abilities.find((a) => a.timing === 'activateMain');
   if (!ability) return noop(state);
 
@@ -451,7 +451,7 @@ export function fireActivate(
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   if (!program) return noop(state);
   return runTimings(program, ['activateMain'], state, instanceId, defs, actionId, registry, payCosts);
 }
@@ -469,7 +469,7 @@ export function fireWhenAttacking(
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   if (!program) return noop(state);
   return runTimings(program, ['whenAttacking'], state, instanceId, defs, actionId, registry);
 }
@@ -487,7 +487,7 @@ export function fireOnBlock(
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   if (!program) return noop(state);
   return runTimings(program, ['onBlock'], state, instanceId, defs, actionId, registry);
 }
@@ -506,7 +506,7 @@ export function fireOnOpponentsAttack(
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   if (!program) return noop(state);
   const ability = program.abilities.find((a) => a.timing === 'onOpponentsAttack');
   if (ability?.battlingOpponentAttribute && !battleAttackerIsCharacterWithAttribute(state, defs, ability.battlingOpponentAttribute)) {
@@ -529,7 +529,7 @@ export function fireOnKO(
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   if (!program) return noop(state);
   const eventContext: GateEvalContext | undefined = koContext
     ? { koCause: koContext.cause, koSourceInstanceId: koContext.sourceInstanceId }
@@ -552,7 +552,7 @@ export function fireCounter(
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   if (!program) return noop(state);
   return runTimings(program, ['counter'], state, instanceId, defs, actionId, registry, payCosts);
 }
@@ -570,7 +570,7 @@ export function fireLifeTrigger(
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   if (!program) return noop(state);
   return runTimings(program, ['lifeTrigger'], state, instanceId, defs, actionId, registry);
 }
@@ -590,7 +590,7 @@ export function fireOnBattle(
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance) return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   if (!program) return noop(state);
   const ability = program.abilities.find((a) => a.timing === 'onBattle' && !a.requiresOpponentKoed);
   if (!ability) return noop(state);
@@ -634,7 +634,7 @@ export function fireOnBattleKoedOpponent(
 ): ActionExecuteResult {
   const instance = state.cardsById[instanceId];
   if (!instance || instance.currentZone !== 'characterArea') return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   if (!program) return noop(state);
   const ability = program.abilities.find((a) => a.timing === 'onBattle' && a.requiresOpponentKoed);
   if (!ability) return noop(state);
@@ -676,7 +676,7 @@ export function fireEndOfTurn(
   for (const id of ids) {
     const inst = working.cardsById[id];
     if (!inst) continue;
-    const program = registry[inst.cardDefinitionId];
+    const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
     if (!program || !program.abilities.some((a) => a.timing === 'endOfTurn')) continue;
     const res = runTimings(program, ['endOfTurn'], working, id, defs, actionId, registry);
     working = res.state;
@@ -796,7 +796,7 @@ export function fireRestTransitions(
     seen.add(id);
     const inst = working.cardsById[id];
     if (!inst || inst.orientation !== 'rested') continue;
-    const program = registry[inst.cardDefinitionId];
+    const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
     if (!program?.abilities.some((a) => a.timing === 'onRested')) continue;
     const fired = runTimings(program, ['onRested'], working, id, defs, actionId, registry, false);
     working = fired.state;
@@ -826,7 +826,7 @@ export function fireDonReturnedReactions(
   for (const id of fieldInstanceIds(working, playerId)) {
     const inst = working.cardsById[id];
     if (!inst) continue;
-    const program = registry[inst.cardDefinitionId];
+    const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
     if (!program?.abilities.some((a) => a.timing === 'onDonReturned')) continue;
     const abilities = program.abilities.filter((a) => a.timing === 'onDonReturned');
     for (const ability of abilities) {
@@ -873,7 +873,7 @@ export function fireDonGivenReactions(
   for (const id of fieldInstanceIds(working, playerId)) {
     const inst = working.cardsById[id];
     if (!inst) continue;
-    const program = registry[inst.cardDefinitionId];
+    const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
     if (!program?.abilities.some((a) => a.timing === 'onDonGiven')) continue;
     const abilities = program.abilities.filter((a) => a.timing === 'onDonGiven');
     for (const ability of abilities) {
@@ -993,7 +993,7 @@ export function fireStartOfTurnReactions(
   for (const id of fieldInstanceIds(working, playerId)) {
     const inst = working.cardsById[id];
     if (!inst) continue;
-    const program = registry[inst.cardDefinitionId];
+    const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
     if (!program?.abilities.some((a) => a.timing === 'onStartOfTurn')) continue;
     for (let abilityIndex = 0; abilityIndex < program.abilities.length; abilityIndex += 1) {
       const ability = program.abilities[abilityIndex];
@@ -1064,7 +1064,7 @@ export function resumeChoice(
   if (!choice || choice.sourceEffectId !== 'ir' || !choice.sourceInstanceId) return noop(state);
   const instance = state.cardsById[choice.sourceInstanceId];
   if (!instance) return noop(state);
-  const program = registry[instance.cardDefinitionId];
+  const program = resolveEffectProgram(registry, defs, instance.cardDefinitionId);
   if (!program) return noop(state);
   const result = resumeProgram(program, state, choice, response, defs, actionId, registry);
   // DECLARE_ATTACK rests the attacker before [When Attacking]. When that ability
