@@ -57,7 +57,15 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   return `data:${blob.type || 'application/octet-stream'};base64,${base64}`;
 }
 
-const CACHE_NAME = 'op-tcg-card-images-v1';
+// v2: a production bug (matchAssetPreload.ts fetching the raw root-relative
+// stored path instead of resolving it through assetUrl.ts's resolveAssetUrl
+// first) had every v1 entry silently cache a 0-byte text/html response
+// instead of the actual image. Bumping the cache name guarantees a clean
+// slate rather than leaving those bad entries orphaned in users' browsers
+// (matched by nothing anymore anyway, since the fix also changes the cache
+// key from the raw path to the resolved absolute URL — but a name bump is
+// a clearer, one-time fresh start than relying on that side effect alone).
+const CACHE_NAME = 'op-tcg-card-images-v2';
 
 /** `caches` is absent in Node/test environments and some older/locked-down browsers — every method degrades to "not cached" rather than throwing, so a missing Cache Storage API never blocks a match from starting. */
 function isCacheStorageAvailable(): boolean {
@@ -101,6 +109,19 @@ export function createCacheStorageAssetManager(): AssetCacheManager {
       const response = await fetch(remoteUrl);
       if (!response.ok) {
         throw new Error(`Failed to fetch asset for caching: ${remoteUrl} (HTTP ${response.status})`);
+      }
+      // Defensive guard against exactly the production bug this module
+      // already caused once (see the CACHE_NAME v2 comment above): a
+      // misrouted fetch (wrong origin, SPA fallback route, etc.) can return
+      // a 200 OK with the WRONG body — e.g. an HTML page instead of an
+      // image — which response.ok alone can't catch. Refuse to cache
+      // anything that isn't actually image bytes, so a future routing
+      // mistake fails loudly (falls back to the original URL, degrading
+      // gracefully) instead of silently caching garbage that renders as a
+      // permanently blank card.
+      const contentType = response.headers.get('content-type') ?? '';
+      if (!contentType.startsWith('image/')) {
+        throw new Error(`Refusing to cache non-image response for ${remoteUrl} (Content-Type: ${contentType || 'unknown'})`);
       }
       await cache.put(cacheKey, response);
     },

@@ -21,8 +21,21 @@
  * importing cacheStorageAssetManager.ts directly, so this orchestration
  * logic — dedup, progress reporting, per-asset fault tolerance — stays
  * testable against an in-memory fake without touching real Cache Storage.
+ *
+ * `cardImagesByDefinitionId` values are root-relative paths (e.g.
+ * "/card-images/OP16/OP16-038_EN.webp"), NOT fetchable URLs on their own —
+ * see assetUrl.ts's doc comment: only `resolveAssetUrl()` knows whether that
+ * should resolve against the current origin (local dev) or the production
+ * Vercel Blob CDN origin (`VITE_ASSET_BASE_URL`). This module fetches
+ * through `resolveAssetUrl()` for exactly that reason — an earlier version
+ * called `fetch()` on the raw stored path directly, which in production
+ * resolved against the APP's own origin instead of the Blob CDN (that path
+ * is deliberately excluded from the app's own deployment bundle via
+ * .vercelignore), silently "succeeding" with a 0-byte text/html response
+ * for every single card and caching THAT as if it were the image.
  */
 import type { AssetCacheManager } from '../../cards/assets/assetCache';
+import { resolveAssetUrl } from './assetUrl';
 
 export interface MatchAssetPreloadProgress {
   loaded: number;
@@ -61,14 +74,23 @@ export async function preloadMatchAssets(
   let loaded = 0;
   onProgress?.({ loaded, total });
 
-  const resolvedByUrl = new Map<string, string>(); // url -> local data: URL
+  const resolvedByUrl = new Map<string, string>(); // original (stored) url -> local data: URL
   const failedUrls: string[] = [];
 
   await Promise.all(
     distinctUrls.map(async (url) => {
       try {
-        await cacheManager.put(url, url);
-        const local = await cacheManager.get(url);
+        // `url` is the raw stored value (root-relative in production — see
+        // this file's top comment); `fetchUrl` is what's actually reachable.
+        // The cache is keyed by fetchUrl too, so caching stays consistent
+        // with whatever origin actually served the bytes.
+        const fetchUrl = resolveAssetUrl(url);
+        if (!fetchUrl) {
+          failedUrls.push(url);
+          return;
+        }
+        await cacheManager.put(fetchUrl, fetchUrl);
+        const local = await cacheManager.get(fetchUrl);
         if (local) {
           resolvedByUrl.set(url, local);
         } else {
