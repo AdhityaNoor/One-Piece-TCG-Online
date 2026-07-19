@@ -12,17 +12,50 @@
  * doesn't care which convention a given caller uses, as long as that caller
  * is consistent with itself.
  *
- * `get()` returns a `blob:` object URL, not the cached Response's own URL —
- * substituting that in place of the original remote URL in
- * `cardImagesByDefinitionId` (see matchAssetPreload.ts) is what actually
- * guarantees zero network involvement during a match, regardless of
- * whatever HTTP cache-control headers the asset host does or doesn't send.
- * Callers own revoking these via `URL.revokeObjectURL` once done with them
- * (MatchScreen.tsx tracks and revokes its own batch on match teardown) —
- * this module never revokes on its own, since it has no way to know when a
- * caller is finished with a URL it handed out.
+ * `get()` returns a `data:` URL (base64-inlined image bytes), NOT a `blob:`
+ * object URL. This was a deliberate correction after `blob:` URLs broke in
+ * production: this module hands the resolved URL to a caller
+ * (matchAssetPreload.ts) that stores it in Zustand state to be read by React
+ * far LATER — a card's `<img>` might not actually render until it's drawn or
+ * played, and `CardImage.tsx` uses `loading="lazy"`, so the browser may not
+ * even attempt to load it until well after this function returns. `blob:`
+ * URLs are only reliably valid for immediate, synchronous use in the same
+ * task that created them (or until explicitly revoked) — storing one for
+ * indeterminate later use, across renders/lazy-load timing, is a known-fragile
+ * pattern (observed in production: well-formed blob: URLs that 404/fail once
+ * actually requested). `data:` URLs have no such lifecycle — they're inert,
+ * self-contained strings, safe to store and reuse for as long as JS still
+ * holds a reference, with zero cleanup/revocation required. The tradeoff is
+ * ~33% larger in-memory size (base64 overhead) versus a blob reference; for
+ * card-art-sized images (tens to ~150KB) this is an acceptable, worthwhile
+ * trade for correctness.
  */
 import type { AssetCacheManager } from './assetCache';
+
+// Chunk size for building the base64 binary string below — well under any
+// engine's max call-stack/argument-list size for String.fromCharCode(...),
+// so this stays correct for full-resolution card art (tens to ~150KB),
+// not just small test fixtures.
+const BASE64_CHUNK_SIZE = 0x8000;
+
+/**
+ * Blob -> data: URL conversion via ArrayBuffer + btoa, deliberately NOT
+ * FileReader.readAsDataURL() — FileReader is browser-only (no global in
+ * Node), so using it here would make this function untestable outside a
+ * real browser. ArrayBuffer/Uint8Array/btoa are all standard and available
+ * in both Node and every browser, so the exact same code path that runs in
+ * production can run in this project's Node-environment Vitest suite too.
+ */
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += BASE64_CHUNK_SIZE) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + BASE64_CHUNK_SIZE));
+  }
+  const base64 = btoa(binary);
+  return `data:${blob.type || 'application/octet-stream'};base64,${base64}`;
+}
 
 const CACHE_NAME = 'op-tcg-card-images-v1';
 
@@ -57,7 +90,7 @@ export function createCacheStorageAssetManager(): AssetCacheManager {
       const match = await cache.match(cacheKey);
       if (!match) return undefined;
       const blob = await match.blob();
-      return URL.createObjectURL(blob);
+      return blobToDataUrl(blob);
     },
 
     async put(cacheKey, remoteUrl) {

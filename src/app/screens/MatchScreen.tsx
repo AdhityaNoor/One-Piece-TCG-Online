@@ -43,7 +43,7 @@ import { buildBugReportCardOptions } from '../lib/bugReportCardOptions';
 import { EFFECT_RUNTIME_LABEL, EFFECT_RUNTIME_MODE } from '../config/effectRuntimeMode';
 import type { AssetCacheManager } from '../../cards/assets/assetCache';
 import { createCacheStorageAssetManager } from '../../cards/assets/cacheStorageAssetManager';
-import { preloadMatchAssets, revokeMatchAssetBlobUrls } from '../lib/matchAssetPreload';
+import { preloadMatchAssets } from '../lib/matchAssetPreload';
 
 function EffectRuntimeBadge() {
   const summary = useMatchStore((s) => s.v2EffectRuntime?.summary);
@@ -141,18 +141,27 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
 
   // Phase 2 asset preload (see matchAssetPreload.ts doc comment): before a
   // standard hotseat/CPU match's board mounts, every deck's card art is
-  // fetched into Cache Storage once and swapped for local blob: URLs, so
+  // fetched into Cache Storage once and swapped for local data: URLs, so
   // no image request happens mid-battle. Scoped to `current.screen ===
   // 'match'` only — Online/Casual matches hydrate via hydrateOnlineMatch()
   // (art is already being fetched incrementally as opponents' cards
   // reveal, and blocking on a full-deck preload would stall room join) and
   // Play Test's generated decks restart so often that preloading would
   // fight its own churn. Both are explicitly out of scope for this pass.
+  //
+  // Resolved URLs are data: URLs, not blob: object URLs — an earlier
+  // version of this used blob: URLs and broke in production (a blob: URL
+  // stored in matchStore to be read much later, once a card's <img> with
+  // loading="lazy" actually decides to load, turned out to be unreliable —
+  // see cacheStorageAssetManager.ts's doc comment). data: URLs are
+  // self-contained strings with no such lifecycle, so unlike blob: URLs
+  // there is nothing here to explicitly revoke/clean up — the previous
+  // match's image map is simply replaced and garbage-collected normally
+  // when matchStore.applyCardImages()/reset() overwrite it.
   const assetCacheManagerRef = useRef<AssetCacheManager | null>(null);
   if (!assetCacheManagerRef.current) {
     assetCacheManagerRef.current = createCacheStorageAssetManager();
   }
-  const preloadedBlobUrlsRef = useRef<Record<string, string | null>>({});
   const [assetPreload, setAssetPreload] = useState<{ ready: boolean; loaded: number; total: number }>({
     ready: false,
     loaded: 0,
@@ -198,16 +207,11 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // Fires once per distinct startMatch() call (startedWithDeckIds is a fresh
   // object identity each time matchStore.startMatch() succeeds — see
   // matchStore.ts) — never on every render. `startedWithDeckIds` going back
-  // to null (reset()/handleQuit(), or a not-yet-started match) both skips
-  // preloading and releases the previous match's blob: URLs, since nothing
-  // else in this always-mounted component's lifecycle will ever call
-  // revokeMatchAssetBlobUrls() for us (see doc comment on that function).
+  // to null (reset()/handleQuit(), or a not-yet-started match) resets the
+  // gate so the NEXT match shows its own loading screen instead of
+  // inheriting `ready: true` from whatever match just ended.
   useEffect(() => {
     if (current.screen !== 'match' || !startedWithDeckIds) {
-      if (Object.keys(preloadedBlobUrlsRef.current).length > 0) {
-        revokeMatchAssetBlobUrls(preloadedBlobUrlsRef.current);
-        preloadedBlobUrlsRef.current = {};
-      }
       setAssetPreload({ ready: false, loaded: 0, total: 0 });
       return;
     }
@@ -221,8 +225,6 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       if (!cancelled) setAssetPreload({ ready: false, loaded: progress.loaded, total: progress.total });
     }).then((result) => {
       if (cancelled) return;
-      revokeMatchAssetBlobUrls(preloadedBlobUrlsRef.current);
-      preloadedBlobUrlsRef.current = result.images;
       applyCardImages(result.images);
       const total = Object.values(sourceImages).filter((url) => typeof url === 'string' && url.length > 0).length;
       setAssetPreload({ ready: true, loaded: total, total });
@@ -233,18 +235,6 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.screen, startedWithDeckIds, applyCardImages]);
-
-  // Safety net: release any still-held blob: URLs if this component ever
-  // truly unmounts (it normally doesn't — see file doc comment — but a
-  // future refactor or an error boundary could change that).
-  useEffect(() => {
-    return () => {
-      if (Object.keys(preloadedBlobUrlsRef.current).length > 0) {
-        revokeMatchAssetBlobUrls(preloadedBlobUrlsRef.current);
-        preloadedBlobUrlsRef.current = {};
-      }
-    };
-  }, []);
 
   // Hooks must run unconditionally on every render of this component (it
   // stays mounted across screen navigation and just returns null when

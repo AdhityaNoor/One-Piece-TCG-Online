@@ -24,7 +24,12 @@ function createFakeManager(): { manager: AssetCacheManager; putCalls: () => numb
       if (remoteUrl.includes('broken')) {
         throw new Error('simulated fetch failure');
       }
-      store.set(key, `blob:local/${key}`);
+      // A plain marker string stands in for whatever "local, already-cached"
+      // reference the real AssetCacheManager hands back (a data: URL in
+      // production — see cacheStorageAssetManager.ts). This orchestration
+      // logic (preloadMatchAssets itself) treats it as an opaque string, so
+      // the fake doesn't need to produce a real data: URL to exercise it.
+      store.set(key, `cached:${key}`);
     },
     async evict(key) {
       store.delete(key);
@@ -48,10 +53,10 @@ describe('preloadMatchAssets', () => {
     expect(putCalls()).toBe(3); // leaderA, charA1(==charA2), charBroken -- 3 distinct urls
   });
 
-  it('resolves successfully-cached entries to their local blob url, and shares it across duplicate-URL entries', async () => {
+  it('resolves successfully-cached entries to their local cached reference, and shares it across duplicate-URL entries', async () => {
     const { manager } = createFakeManager();
     const result = await preloadMatchAssets(IMAGES, manager);
-    expect(result.images.leaderA).toBe('blob:local/https://example.com/leaderA.webp');
+    expect(result.images.leaderA).toBe('cached:https://example.com/leaderA.webp');
     expect(result.images.charA1).toBe(result.images.charA2);
   });
 
@@ -85,6 +90,10 @@ describe('preloadMatchAssets', () => {
   });
 });
 
+// Dormant in the current data: URL design (preloadMatchAssets() no longer
+// produces blob: URLs — see matchAssetPreload.ts's top doc comment) but
+// kept as a defensive utility; this coverage stays as a contract test for
+// if/when it's ever needed again.
 describe('revokeMatchAssetBlobUrls', () => {
   it('revokes every blob: URL in the map and leaves non-blob URLs (fallback originals) untouched', () => {
     const revoked: string[] = [];

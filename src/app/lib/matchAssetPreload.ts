@@ -4,9 +4,18 @@
  * `cardImagesByDefinitionId`, built by buildCardImageLookup() in
  * savedDeckToSetupInput.ts) — into Cache Storage BEFORE the board mounts,
  * via a loading screen (see MatchScreen.tsx's preload gate). During the
- * match itself, board components then read already-cached `blob:` URLs
+ * match itself, board components then read already-cached `data:` URLs
  * instead of the original remote URLs, so no image request happens
  * mid-battle regardless of network conditions.
+ *
+ * Resolved URLs are `data:` URLs (base64-inlined bytes), not `blob:` object
+ * URLs — see cacheStorageAssetManager.ts's doc comment for why: a `blob:`
+ * URL stored in Zustand state to be read by React much later (a card's art
+ * may not even attempt to load until it's drawn/played, and CardImage.tsx
+ * uses `loading="lazy"` on top of that) turned out to be fragile in
+ * production — well-formed blob: URLs that failed once actually requested.
+ * `data:` URLs are inert, self-contained strings with no such lifecycle, so
+ * this "resolve once, use whenever" pattern is safe with them.
  *
  * Deliberately generic over `AssetCacheManager` (assetCache.ts) rather than
  * importing cacheStorageAssetManager.ts directly, so this orchestration
@@ -21,7 +30,7 @@ export interface MatchAssetPreloadProgress {
 }
 
 export interface MatchAssetPreloadResult {
-  /** cardDefinitionId -> local blob: URL (successfully cached) or the original remote URL (fetch/cache failed — falls back to normal network load) or null (card has no art). Same shape/keys as matchStore's cardImagesByDefinitionId, safe to swap in directly via applyCardImages(). */
+  /** cardDefinitionId -> local data: URL (successfully cached) or the original remote URL (fetch/cache failed — falls back to normal network load) or null (card has no art). Same shape/keys as matchStore's cardImagesByDefinitionId, safe to swap in directly via applyCardImages(). */
   images: Record<string, string | null>;
   /** Remote URLs that failed to fetch/cache, for diagnostics — callers are not required to surface these; the returned `images` map already degrades those entries to their original remote URL. */
   failedUrls: string[];
@@ -52,7 +61,7 @@ export async function preloadMatchAssets(
   let loaded = 0;
   onProgress?.({ loaded, total });
 
-  const resolvedByUrl = new Map<string, string>(); // url -> local blob: URL
+  const resolvedByUrl = new Map<string, string>(); // url -> local data: URL
   const failedUrls: string[] = [];
 
   await Promise.all(
@@ -92,7 +101,15 @@ export async function preloadMatchAssets(
   return { images: resultImages, failedUrls };
 }
 
-/** Revokes every `blob:` URL produced by a previous preloadMatchAssets() call. Safe to call with URLs that aren't blob: URLs (e.g. fallback originals) — those are left untouched. MatchScreen.tsx calls this at the START of each new preload run, since it never actually unmounts on navigation (see its `if (!isMatchScreen) return null` pattern) — component-unmount cleanup would never fire. */
+/**
+ * Defensive no-op in the current data: URL design (see this file's top
+ * comment — preloadMatchAssets() no longer produces blob: URLs, so there is
+ * nothing here for MatchScreen.tsx to call this for). Kept exported rather
+ * than deleted: if any future caller of AssetCacheManager ever DOES hand out
+ * a real blob: URL again (a different cache implementation, a manual
+ * `URL.createObjectURL()` somewhere), this is the one place that knows how
+ * to clean one up, and it's harmless to call unconditionally either way.
+ */
 export function revokeMatchAssetBlobUrls(images: Record<string, string | null>): void {
   for (const url of Object.values(images)) {
     if (url && url.startsWith('blob:')) {
