@@ -17,7 +17,7 @@ import { fireOnOpponentsAttack, evaluateGates, canPayAbilityCost, payAbilityCost
 import type { Ability } from '../../effects/effectIr';
 import type { CardInstance } from '../../state/card';
 
-function abilityConditionMet(ability: Ability, source: CardInstance, state: GameState, defs: CardDefinitionLookup): boolean {
+function abilityConditionMet(ability: Ability, source: CardInstance, sourceInstanceId: string, state: GameState, defs: CardDefinitionLookup): boolean {
   const c = ability.condition;
   if (!c) return true;
   if (c.donAttachedAtLeast !== undefined && source.donAttached.length < c.donAttachedAtLeast) return false;
@@ -26,8 +26,46 @@ function abilityConditionMet(ability: Ability, source: CardInstance, state: Game
     if (c.turn === 'your' && !isOwnersTurn) return false;
     if (c.turn === 'opponent' && isOwnersTurn) return false;
   }
-  if (c.gate && !evaluateGates(c.gate, state, defs, source.controllerId)) return false;
+  if (c.gate && !evaluateGates(c.gate, state, defs, source.controllerId, sourceInstanceId)) return false;
   return true;
+}
+
+/**
+ * True when the defending player has at least one in-play Leader/Character/Stage
+ * whose curated program exposes a currently usable [On Your Opponent's Attack]
+ * ability. Used by declareAttack to keep the Block Step open even when there
+ * are no legal Blockers (OP09-001 and similar Leaders).
+ */
+export function hasAnyUsableOnOpponentsAttack(
+  state: GameState,
+  defendingPlayerId: string,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+): boolean {
+  const battle = state.currentBattle;
+  if (!battle) return false;
+  const player = state.players[defendingPlayerId];
+  if (!player) return false;
+  const fieldIds = [
+    ...(player.leaderInstanceId ? [player.leaderInstanceId] : []),
+    ...player.characterArea.cardIds,
+    ...player.stageArea.cardIds,
+  ];
+  const used = new Set(battle.onOpponentsAttackUsedInstanceIds ?? []);
+  for (const id of fieldIds) {
+    if (used.has(id)) continue;
+    const source = state.cardsById[id];
+    if (!source || source.controllerId !== defendingPlayerId) continue;
+    const ability = registry[source.cardDefinitionId]?.abilities.find((a) => a.timing === 'onOpponentsAttack');
+    if (!ability) continue;
+    if (ability.oncePerTurn && source.oncePerTurnUsed.includes('onOpponentsAttack')) continue;
+    if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, defendingPlayerId, id)) continue;
+    if (ability.battlingOpponentAttribute && !battleAttackerIsCharacterWithAttribute(state, defs, ability.battlingOpponentAttribute)) continue;
+    if (!abilityConditionMet(ability, source, id, state, defs)) continue;
+    if (ability.cost?.length && canPayAbilityCost(state, id, defendingPlayerId, ability.cost, []).length > 0) continue;
+    return true;
+  }
+  return false;
 }
 
 export function validateActivateOnOpponentsAttack(
@@ -67,13 +105,13 @@ export function validateActivateOnOpponentsAttack(
   if (!ability) {
     reasons.push(`'${source.cardDefinitionId}' has no [On Your Opponent's Attack] ability.`);
   }
-  if (ability?.gate && !evaluateGates(ability.gate, state, defs, action.playerId)) {
+  if (ability?.gate && !evaluateGates(ability.gate, state, defs, action.playerId, action.sourceInstanceId)) {
     reasons.push(`'${source.cardDefinitionId}' can't be activated — its "If …" condition isn't met.`);
   }
   if (ability?.battlingOpponentAttribute && !battleAttackerIsCharacterWithAttribute(state, defs, ability.battlingOpponentAttribute)) {
     reasons.push(`'${source.cardDefinitionId}' can't be activated — the attacking Character does not have the required attribute.`);
   }
-  if (ability && !abilityConditionMet(ability, source, state, defs)) {
+  if (ability && !abilityConditionMet(ability, source, action.sourceInstanceId, state, defs)) {
     reasons.push(`'${source.cardDefinitionId}' can't be activated — its activation condition isn't met.`);
   }
   if (ability?.cost?.length) {

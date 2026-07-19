@@ -1053,5 +1053,21 @@ export function resumeChoice(
   if (!instance) return noop(state);
   const program = registry[instance.cardDefinitionId];
   if (!program) return noop(state);
-  return resumeProgram(program, state, choice, response, defs, actionId, registry);
+  const result = resumeProgram(program, state, choice, response, defs, actionId, registry);
+  // DECLARE_ATTACK rests the attacker before [When Attacking]. When that ability
+  // suspends on a choice, continueAfterDeclareAttackSetup skips fireRestTransitions
+  // until the choice resolves — finish that cascade here so a second attack in the
+  // same turn (and onRested watchers) see a consistent post-declare state.
+  if (result.pendingChoices.length > 0) return result;
+  const abilityIndex = choice.resumeState?.abilityIndex;
+  const ability = abilityIndex !== undefined ? program.abilities[abilityIndex] : undefined;
+  const battle = result.state.currentBattle;
+  if (
+    ability?.timing === 'whenAttacking' &&
+    battle &&
+    choice.sourceInstanceId === battle.attackerInstanceId
+  ) {
+    return mergeResults(result, fireRestTransitions(result.state, [choice.sourceInstanceId], registry, defs, actionId));
+  }
+  return result;
 }

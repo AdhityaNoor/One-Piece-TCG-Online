@@ -34,7 +34,12 @@ function hasCuratedConditionalRushGrant(registry: EffectTemplateRegistry, cardDe
   );
 }
 
-export function validatePlayCharacter(state: GameState, action: PlayCharacterAction, defs: CardDefinitionLookup): ValidationResult {
+export function validatePlayCharacter(
+  state: GameState,
+  action: PlayCharacterAction,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+): ValidationResult {
   const reasons: string[] = [];
   if (state.currentPhase !== 'main') {
     reasons.push('PLAY_CHARACTER is only legal during the Main Phase (6-5-3-1).');
@@ -71,7 +76,7 @@ export function validatePlayCharacter(state: GameState, action: PlayCharacterAct
     reasons.push(`You cannot play Character cards matching this restriction during this turn.`);
   }
 
-  const cost = computeCurrentCost(defs, state, action.handCardInstanceId);
+  const cost = computeCurrentCost(defs, state, action.handCardInstanceId, registry);
   if (action.donInstanceIds.length !== cost) {
     reasons.push(`'${def.name}' costs ${cost} DON!!, but ${action.donInstanceIds.length} were supplied (2-7-2).`);
   }

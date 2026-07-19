@@ -7,11 +7,13 @@ export const ST23_ASSIGNMENTS: CardEffectAssignment[] = [
   // ST23-001 — Closed: 10000+ current power gate via selfCharacterCurrentPowerCount; hand −4 cost mapped fully.
   { cardNumber: 'ST23-001', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -4, duration: 'permanent', gate: [{ kind: 'selfCharacterCurrentPowerCount', power: 10000, atLeast: 1 }] }] } },
 
-  // ST23-002 — Closed: opponent 8000+ base power hand discount via opponentHasCharacterBasePowerAtLeast; [On Play] Leader +2000 mapped.
+  // ST23-002 — If opponent has a Character with 8000+ base power, this card in hand −3 cost.
+  //   Hand-self discount is resolved by computeCurrentCost (handSelfCostDelta) from this
+  //   onEnterPlay aura shape; gate is Character-only (not Leader). [On Play] Leader +2000 mapped.
   {
     cardNumber: 'ST23-002',
     templates: [
-      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'opponentHasCharacterBasePowerAtLeast', power: 8000 }] }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCostAuraSameCardInHand', amount: -3, duration: 'permanent', gate: [{ kind: 'opponentCharacterBasePowerCount', power: 8000, atLeast: 1 }] }] } },
       { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }, { kind: 'leaderName', name: 'Uta' }] }], functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 2000, duration: 'endOfOpponentsTurn' }] } },
     ],
   },

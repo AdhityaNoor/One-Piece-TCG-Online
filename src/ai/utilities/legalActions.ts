@@ -202,7 +202,7 @@ function enumerateMainPhaseActions(ctx: LegalActionContext): GameAction[] {
     const inst = state.cardsById[handId];
     if (!inst) continue;
     const def = getDefinition(defs, inst);
-    const cost = computeCurrentCost(defs, state, handId);
+    const cost = computeCurrentCost(defs, state, handId, registry);
     const donInstanceIds = pickDonForCost(ctx, cost);
     if (donInstanceIds.length < cost) continue;
 
@@ -341,7 +341,7 @@ function enumerateCounterStepActions(ctx: LegalActionContext): GameAction[] {
     if (def.category === 'event') {
       const program = ctx.registry[inst.cardDefinitionId];
       if (!program?.abilities.some((a) => a.timing === 'counter')) continue;
-      const cost = computeCurrentCost(defs, state, handId);
+      const cost = computeCurrentCost(defs, state, handId, ctx.registry);
       const donInstanceIds = pickDonForCost(ctx, cost);
       if (donInstanceIds.length < cost) continue;
       actions.push({ type: 'ACTIVATE_COUNTER_EVENT', ...base, handCardInstanceId: handId, donInstanceIds });

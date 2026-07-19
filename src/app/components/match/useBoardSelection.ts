@@ -182,11 +182,35 @@ export function useBoardSelection(actingPlayerId: string | null) {
   // reaches it — no "Activate Counter" button to click through first (see
   // BoardSelectionMode's 'selectCounterCard' doc comment). Only fires from
   // 'idle' so it never clobbers an unrelated in-progress selection.
+  // Also clear a stale selectCounterCard when the battle leaves Counter
+  // (otherwise ActionBar can show a stranded Cancel / empty instruction).
   useEffect(() => {
     if (state?.currentBattle?.step === 'counter' && mode.kind === 'idle') {
       setMode({ kind: 'selectCounterCard' });
+    } else if (mode.kind === 'selectCounterCard' && state?.currentBattle?.step !== 'counter') {
+      reset();
     }
   }, [state?.currentBattle?.step, mode.kind]);
+
+  // Drop user-started selection modes when the phase / battle window no longer
+  // matches (e.g. End Main while still in selectAttacker) so Cancel cannot linger.
+  useEffect(() => {
+    if (mode.kind === 'idle') return;
+    const battleStep = state?.currentBattle?.step;
+    const phase = state?.currentPhase;
+    const attackModes = mode.kind === 'selectAttacker' || mode.kind === 'selectAttackTarget';
+    const blockModes = mode.kind === 'selectBlocker' || mode.kind === 'selectOnOppAttackSource' || mode.kind === 'payingOnOppAttackCost';
+    const mainModes =
+      mode.kind === 'confirmPlayCost' ||
+      mode.kind === 'selectActivateSource' ||
+      mode.kind === 'payingActivateEffectCost' ||
+      mode.kind === 'payingEventMainCost';
+    if (attackModes && (phase !== 'main' || battleStep)) reset();
+    else if (blockModes && battleStep !== 'block') reset();
+    else if (mainModes && (phase !== 'main' || battleStep)) reset();
+    else if (mode.kind === 'payingCounterEventCost' && battleStep !== 'counter') reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.currentPhase, state?.currentBattle?.step, mode.kind]);
 
   // Auto-enter (and auto-exit) 'resolvingDonChoice' the instant a donMinus
   // pending choice belonging to this player appears/resolves — takes
@@ -380,7 +404,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
   const currentCostOf = (card: CardView): number => {
     if (!state) return card.cost ?? 0;
-    return computeCurrentCost(defs, state, card.instanceId);
+    return computeCurrentCost(defs, state, card.instanceId, registry);
   };
 
   const activeCostAreaDonIds = (playerId: string): string[] => {

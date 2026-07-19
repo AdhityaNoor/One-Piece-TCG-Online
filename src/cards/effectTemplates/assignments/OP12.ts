@@ -416,9 +416,21 @@ export const OP12_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP12-066 — if 4+ Events in trash, [Blocker]
   { cardNumber: 'OP12-066', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }] } },
 
-  // OP12-063 — if 4+ Events in trash: this Character gains +2000 power and +5 cost.
-  //   [Blocker] is an unconditional printed keyword (handled by card keyword metadata, not templated here).
-  { cardNumber: 'OP12-063', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }, { fn: 'addCost', target: { ref: 'self' }, amount: 5, duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } }] } },
+  // OP12-063 — [Blocker] (unconditional). If 4+ Events in trash: +2000 power and +5 cost.
+  //   hasBlocker is also set by normalizeCardPrinting for new snapshots; addKeyword covers
+  //   older saved decks that normalized [Blocker] as false when it was not a leading tag.
+  {
+    cardNumber: 'OP12-063',
+    templateId: 'ability',
+    params: {
+      timing: 'onEnterPlay',
+      functions: [
+        { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'blocker', duration: 'permanent' },
+        { fn: 'addPowerSelf', amount: 2000, duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } },
+        { fn: 'addCost', target: { ref: 'self' }, amount: 5, duration: 'permanent', condition: { gate: [{ kind: 'selfTrashMatching', category: 'event', atLeast: 4 }] } },
+      ],
+    },
+  },
 
   // OP12-065 — if 4+ Events in trash, this Character gains [Blocker]. [On K.O.] add up to 1 Event from trash to hand.
   {

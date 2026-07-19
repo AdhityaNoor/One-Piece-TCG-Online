@@ -122,6 +122,18 @@ function hasLeadingKeywordTag(text: string, tag: string): boolean {
   return leadingBracketTags(text).includes(tag);
 }
 
+/**
+ * True when [Blocker] is a printed keyword ability on this card.
+ * Leading tag runs count, and so do trailing keyword clauses after a prior
+ * sentence ("…+5 cost.[Blocker] (After your opponent…)") — but not effect text
+ * that merely mentions activating/gaining Blocker on another card.
+ */
+function hasPrintedBlockerKeyword(text: string): boolean {
+  if (hasLeadingKeywordTag(text, '[Blocker]')) return true;
+  // Unconditional keyword ability after a prior clause (OP12-063-style).
+  return /(?:^|[.!?])\s*\[Blocker\](?:\s*(?:\(|\[|$))/m.test(text);
+}
+
 export interface NormalizeCardPrintingsResult {
   definition: CardDefinition;
   /** card_image_id of every non-canonical printing (Parallel/SP/manga/etc.) — for library/UI art-picker use, not gameplay. */
@@ -156,10 +168,11 @@ export function normalizeCardPrintings(printings: CardPrintingDto[]): NormalizeC
     counter: coerceCounterAmount(canonical.counter_amount),
     hasTrigger: canonical.card_text.includes('[Trigger]'),
     triggerText: extractTriggerText(canonical.card_text, cardNumber, warnings),
-    // Static keyword flags. [Blocker] must be in the leading tag run; text like
-    // "cannot activate [Blocker]" does not make this card a Blocker.
+    // Static keyword flags. [Blocker] is a printed keyword ability (leading tags
+    // or a trailing keyword clause). Text like "cannot activate [Blocker]" or
+    // "gains [Blocker]" does not make this card a static Blocker.
     hasRush: canonical.card_text.includes('[Rush]') || canonical.card_text.includes('[Rush: Character]'),
-    hasBlocker: hasLeadingKeywordTag(canonical.card_text, '[Blocker]'),
+    hasBlocker: hasPrintedBlockerKeyword(canonical.card_text),
     hasDoubleAttack: canonical.card_text.includes('[Double Attack]'),
     hasBanish: canonical.card_text.includes('[Banish]'),
     isUnblockable: canonical.card_text.includes('[Unblockable]'),

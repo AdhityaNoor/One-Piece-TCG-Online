@@ -91,7 +91,7 @@ export function validateActivateCounterEvent(
     reasons.push('This Counter Event has no DON!! -N ability cost, so abilityCostDonInstanceIds must be empty.');
   }
 
-  const cost = computeCurrentCost(defs, state, action.handCardInstanceId);
+  const cost = computeCurrentCost(defs, state, action.handCardInstanceId, registry);
   if (action.donInstanceIds.length !== cost) {
     reasons.push(`'${def.name}' costs ${cost} DON!!, but ${action.donInstanceIds.length} were supplied (7-1-3-2-2).`);
   }

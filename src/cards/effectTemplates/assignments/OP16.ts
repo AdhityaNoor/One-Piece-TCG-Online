@@ -554,7 +554,18 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'OP16-011', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'draw', amount: 1 }] } },
 
 
-  { cardNumber: 'OP16-012', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'selfHandMatching', category: 'character', exactPower: 8000, atLeast: 1 }], functions: [{ fn: 'giveDon', count: 1 }] } },
+  // OP16-012 — [Blocker] is card-data (hasBlocker). [On Play] You may rest 1 DON!!:
+  //   If Leader {Red-Haired Pirates} and you have 10 DON!! on your field, play up to 1 [Shanks] from hand.
+  {
+    cardNumber: 'OP16-012',
+    templateId: 'ability',
+    params: {
+      timing: 'onPlay',
+      cost: [{ kind: 'restDon', count: 1 }],
+      gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }, { kind: 'selfDonFieldCount', atLeast: 10 }],
+      functions: [{ fn: 'playFromHand', filter: { category: 'character', name: 'Shanks' }, optional: true }],
+    },
+  },
 
 
   { cardNumber: 'OP16-017', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 1000, duration: 'permanent', condition: { gate: [{ kind: 'selfHand', atMost: 3 }] } }] } },

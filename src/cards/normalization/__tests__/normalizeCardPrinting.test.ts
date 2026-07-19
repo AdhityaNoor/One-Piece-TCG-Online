@@ -220,6 +220,20 @@ describe('normalizeCardPrintings — battle keyword detection (10-1, 10-2)', () 
     expect(definition.hasBlocker).toBe(true);
   });
 
+  it('detects trailing printed [Blocker] after a prior clause (OP12-063-style)', () => {
+    const { definition } = normalizeCardPrintings([withText(
+      'If you have 4 or more Events in your trash, this Character gains +2000 power and +5 cost.[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)',
+    )]);
+    expect(definition.hasBlocker).toBe(true);
+  });
+
+  it('does not treat "gains [Blocker]" conditional grants as a static Blocker', () => {
+    const { definition } = normalizeCardPrintings([withText(
+      'If you have 4 or more Events in your trash, this Character gains [Blocker].',
+    )]);
+    expect(definition.hasBlocker).toBe(false);
+  });
+
   it('detects [Double Attack] presence', () => {
     const { definition } = normalizeCardPrintings([withText('[Double Attack]')]);
     expect(definition.hasDoubleAttack).toBe(true);

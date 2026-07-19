@@ -36,6 +36,20 @@ const INSTRUCTIONS: Record<string, string> = {
   payingOnOppAttackCost: 'Tap DON!! in your Cost Area to return for the ability cost, then Confirm.',
 };
 
+/** User-started selection flows that can be abandoned. Auto-entered modes (counter / pending choices) must not show Cancel. */
+const CANCELLABLE_MODE_KINDS = new Set([
+  'confirmPlayCost',
+  'selectAttacker',
+  'selectAttackTarget',
+  'selectBlocker',
+  'selectActivateSource',
+  'payingActivateEffectCost',
+  'payingEventMainCost',
+  'payingCounterEventCost',
+  'selectOnOppAttackSource',
+  'payingOnOppAttackCost',
+]);
+
 function formatCardNames(cards: { name: string }[]): string {
   const names = cards.slice(0, 3).map((card) => card.name);
   const rest = cards.length - names.length;
@@ -231,7 +245,7 @@ export const ActionBar = memo(function ActionBar({ phase, turnNumber, battle, ac
     );
   }
 
-  if (mode.kind !== 'idle') {
+  if (mode.kind !== 'idle' && CANCELLABLE_MODE_KINDS.has(mode.kind)) {
     return (
       <div className="flex flex-col gap-2">
         {errorBanner}

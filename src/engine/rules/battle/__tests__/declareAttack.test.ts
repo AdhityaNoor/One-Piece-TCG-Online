@@ -180,7 +180,7 @@ describe('executeDeclareAttack', () => {
     expect(result.log.some((e) => e.type === 'PHASE_CHANGED')).toBe(true);
   });
 
-  it('skips straight to the Counter Step when the defending player has no legal Blocker (e.g. Leader-only field)', () => {
+  it('skips straight to the Counter Step when the defending player has no legal Blocker and no On Opp Attack (e.g. Leader-only field)', () => {
     const { state, defs } = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
     const leaderId = state.players.p1.leaderInstanceId;
     const opponentLeaderId = state.players.p2.leaderInstanceId;
@@ -188,7 +188,7 @@ describe('executeDeclareAttack', () => {
     const result = executeDeclareAttack(state, declareAttack('p1', leaderId, opponentLeaderId), defs);
 
     expect(result.state.currentBattle?.step).toBe('counter');
-    expect(result.log.some((e) => e.type === 'PHASE_CHANGED' && String(e.message).includes('no legal Blocker'))).toBe(true);
+    expect(result.log.some((e) => e.type === 'PHASE_CHANGED' && String(e.message).includes('Block Step is skipped'))).toBe(true);
   });
 
   it('skips the Block Step when the defender only has a Character without [Blocker] (7-1-2: no legal Blocker)', () => {

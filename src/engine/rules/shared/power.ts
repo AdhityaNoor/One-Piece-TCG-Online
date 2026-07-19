@@ -16,6 +16,37 @@ import type { Attribute, CardDefinition } from '../../state/card';
 import { nameMatches } from '../../state/card';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
+import type { EffectTemplateRegistry } from '../../effects/effectTemplate';
+
+/**
+ * "Give this card in your hand −N cost" while the card itself is still in hand.
+ * Assignments register this as onEnterPlay + addCostAuraSameCardInHand (field-copy
+ * aura). That shape never fires for the first copy in hand, so cost reads also
+ * evaluate the same permanent hand-aura ops from the card's curated program.
+ */
+function handSelfCostDelta(
+  defs: CardDefinitionLookup,
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry,
+): number {
+  const instance = state.cardsById[instanceId];
+  if (!instance || instance.currentZone !== 'hand') return 0;
+  const program = registry[instance.cardDefinitionId] ?? registry[defs[instance.cardDefinitionId]?.cardNumber ?? ''];
+  if (!program) return 0;
+  let delta = 0;
+  for (const ability of program.abilities) {
+    if (ability.timing !== 'onEnterPlay') continue;
+    for (const op of ability.ops) {
+      if (op.op !== 'addCostAura') continue;
+      if (!op.group?.controllerSameDefinitionInHand) continue;
+      if (op.duration !== 'permanent') continue;
+      if (op.condition?.gate?.length && !evaluateGates(op.condition.gate, state, defs, instance.controllerId, instanceId)) continue;
+      delta += op.amount + scaleAmount(op.scale, instance.controllerId, state, defs, instanceId);
+    }
+  }
+  return delta;
+}
 
 /** True if any of `types` (possibly slash/comma-joined tribal strings) includes `required` (case-insensitive substring). */
 function typeIncludes(types: string[], required: string): boolean {
@@ -300,7 +331,12 @@ export function computeCurrentPower(defs: CardDefinitionLookup, state: GameState
   return base + donBonus + battleBonus + continuousBonus;
 }
 
-export function computeCurrentCost(defs: CardDefinitionLookup, state: GameState, instanceId: string): number {
+export function computeCurrentCost(
+  defs: CardDefinitionLookup,
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry = {},
+): number {
   const instance = state.cardsById[instanceId];
   const def = getDefinition(defs, instance);
   let base = def.baseCost ?? 0;
@@ -312,6 +348,7 @@ export function computeCurrentCost(defs: CardDefinitionLookup, state: GameState,
     if (mod.setBase !== undefined) base = mod.setBase;
     else continuousDelta += mod.amount + scaleAmount(mod.scale, record.ownerId, state, defs, instanceId);
   }
+  continuousDelta += handSelfCostDelta(defs, state, instanceId, registry);
   return Math.max(0, base + continuousDelta);
 }
 

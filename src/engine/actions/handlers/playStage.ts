@@ -22,7 +22,12 @@ import { mintRuntimeInstanceId } from '../../rules/shared/mintInstance';
 import type { ActionExecuteResult } from '../actionExecuteResult';
 import { fireOnPlay, type EffectTemplateRegistry } from '../../effects';
 
-export function validatePlayStage(state: GameState, action: PlayStageAction, defs: CardDefinitionLookup): ValidationResult {
+export function validatePlayStage(
+  state: GameState,
+  action: PlayStageAction,
+  defs: CardDefinitionLookup,
+  registry: EffectTemplateRegistry = {},
+): ValidationResult {
   const reasons: string[] = [];
   if (state.currentPhase !== 'main') {
     reasons.push('PLAY_STAGE is only legal during the Main Phase (6-5-3-1).');
@@ -55,7 +60,7 @@ export function validatePlayStage(state: GameState, action: PlayStageAction, def
     reasons.push('You cannot play cards from your hand during this turn.');
   }
 
-  const cost = computeCurrentCost(defs, state, action.handCardInstanceId);
+  const cost = computeCurrentCost(defs, state, action.handCardInstanceId, registry);
   if (action.donInstanceIds.length !== cost) {
     reasons.push(`'${def.name}' costs ${cost} DON!!, but ${action.donInstanceIds.length} were supplied (2-7-4).`);
   }

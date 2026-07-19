@@ -123,9 +123,9 @@ export function validateAction(
 
   switch (action.type) {
     case 'PLAY_CHARACTER':
-      return validatePlayCharacter(state, action, defs);
+      return validatePlayCharacter(state, action, defs, registry);
     case 'PLAY_STAGE':
-      return validatePlayStage(state, action, defs);
+      return validatePlayStage(state, action, defs, registry);
     case 'ACTIVATE_EVENT_MAIN':
       return validateActivateEventMain(state, action, defs, registry);
     case 'ACTIVATE_CARD_EFFECT':

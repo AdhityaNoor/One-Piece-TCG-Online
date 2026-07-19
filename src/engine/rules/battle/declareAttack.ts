@@ -9,11 +9,11 @@
  *
  * 7-1-2: the Block Step is skipped entirely for [Unblockable] attackers —
  * currentBattle.step starts at 'counter' rather than 'block' in that case.
- * It is also skipped whenever the defending player has no legal Blocker on
- * the field at all (see hasAnyLegalBlocker in activateBlocker.ts) — with
- * nothing to activate, forcing a Block Step just to immediately PASS_STEP
- * through it is pure friction, in every game mode (hotseat, VS CPU, casual,
- * ranked alike).
+ * It is also skipped whenever the defending player has no legal Blocker AND
+ * no usable [On Your Opponent's Attack] ability (see hasAnyLegalBlocker /
+ * hasAnyUsableOnOpponentsAttack) — with nothing to activate, forcing a Block
+ * Step just to immediately PASS_STEP through it is pure friction. Leaders
+ * like OP09-001 must still see the Block Step window.
  */
 import type { GameState } from '../../state/game';
 import type { DeclareAttackAction, ValidationResult } from '../../actions/action';
@@ -24,6 +24,7 @@ import { getOpponentId } from '../shared/players';
 import { hasContinuousKeyword, cannotAttack, isAttackTargetForbidden, getForcedAttackTargetId, getAttackTrashTax } from '../shared/power';
 import { fireWhenAttacking, fireRestTransitions, type EffectTemplateRegistry } from '../../effects';
 import { hasAnyLegalBlocker } from './activateBlocker';
+import { hasAnyUsableOnOpponentsAttack } from './activateOnOpponentsAttack';
 import type { PendingChoice } from '../../events/pendingChoice';
 
 export function validateDeclareAttack(state: GameState, action: DeclareAttackAction, defs: CardDefinitionLookup): ValidationResult {
@@ -141,17 +142,23 @@ export function executeDeclareAttack(
     log: [...state.log, ...logger.log],
   };
 
-  // No [Unblockable] skip above, but the defending player has no legal
-  // Blocker anywhere on their field either — skip straight to the Counter
-  // Step (7-1-2) rather than making them PASS_STEP through an empty choice.
+  // No [Unblockable] skip above, but the defending player has neither a legal
+  // Blocker nor a usable [On Your Opponent's Attack] ability — skip straight
+  // to the Counter Step rather than making them PASS_STEP through an empty
+  // choice. Keep the Block Step when On Opp Attack is available (OP09-001).
   // hasAnyLegalBlocker needs currentBattle populated (attacker-scoped
   // restrictions read battle.attackerInstanceId), so this check runs after
   // nextState above, not before.
-  if (nextState.currentBattle!.step === 'block' && !hasAnyLegalBlocker(nextState, getOpponentId(nextState, action.playerId), defs)) {
+  const defenderId = getOpponentId(nextState, action.playerId);
+  if (
+    nextState.currentBattle!.step === 'block' &&
+    !hasAnyLegalBlocker(nextState, defenderId, defs) &&
+    !hasAnyUsableOnOpponentsAttack(nextState, defenderId, registry, defs)
+  ) {
     logger.push({
       actorPlayerId: action.playerId,
       type: 'PHASE_CHANGED',
-      message: 'The defending player has no legal Blocker on the field — the Block Step is skipped (7-1-2).',
+      message: 'The defending player has no legal Blocker or [On Opponent\'s Attack] ability — the Block Step is skipped (7-1-2).',
       data: { step: 'counter' },
       relatedCardInstanceIds: [],
       visibility: 'public',
