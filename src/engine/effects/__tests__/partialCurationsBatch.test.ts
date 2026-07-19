@@ -302,7 +302,14 @@ describe('partial curation batch: OP03-001 / OP11-088 / OP12-081', () => {
       expect(damage).toMatchObject({
         condition: { donAttachedAtLeast: 1 },
       });
-      expect(damage.ops[0]).toMatchObject({ op: 'trashTopDeck', count: 7 });
+      // Printed "you may trash 7…" → factory wraps trashTopDeck in chooseOption (skip | trash).
+      expect(damage.ops[0]).toMatchObject({
+        op: 'chooseOption',
+        options: [
+          { label: 'skip', ops: [] },
+          { label: 'trash', ops: [{ op: 'trashTopDeck', count: 7 }] },
+        ],
+      });
     }
     expect(programs['OP03-047'].abilities.map((a) => a.timing)).toEqual(['onLifeDamageDealt', 'onPlay']);
     expect(programs['OP03-051'].abilities.map((a) => a.timing)).toEqual(['onLifeDamageDealt', 'onKO']);

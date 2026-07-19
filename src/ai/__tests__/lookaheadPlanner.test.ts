@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { executePlayCharacter } from '../../engine/actions/handlers/playCharacter';
 import { buildRegistryFromAssignments } from '../../cards/effectTemplates/assembler';
-import { OP09_ASSIGNMENTS } from '../../cards/effectTemplates/assignments/OP09';
+import { OP02_ASSIGNMENTS } from '../../cards/effectTemplates/assignments/OP02';
 import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putDon, putInHand } from '../../engine/rules/shared/__tests__/testRig';
 import { evaluateState, buildStrategicContext } from '../evaluation/stateEvaluator';
 import { autoResolvePendingChoices, canContinueLookahead, cloneGameState, simulateAction } from '../planning/stateSimulator';
 import { scoreActionWithLookahead } from '../planning/lookaheadPlanner';
 import { planActionScore } from '../planning/strategicPlanner';
 
-const registry = buildRegistryFromAssignments(OP09_ASSIGNMENTS);
+// OP02-011 keeps a real onPlay `op: 'ko'`. OP09-009 is Field Trash (moveCards→trash), not KO.
+const registry = buildRegistryFromAssignments(OP02_ASSIGNMENTS);
 
 describe('CPU lookahead simulation', () => {
   it('cloneGameState produces an independent copy', () => {
@@ -51,7 +52,7 @@ describe('CPU lookahead simulation', () => {
   });
 
   it('lookahead prefers onPlay KO over vanilla when opponent has a character', () => {
-    const koChar = makeCharacterDef({ cardDefinitionId: 'OP09-009', cardNumber: 'OP09-009', baseCost: 1, basePower: 1000 });
+    const koChar = makeCharacterDef({ cardDefinitionId: 'OP02-011', cardNumber: 'OP02-011', baseCost: 1, basePower: 1000 });
     const vanilla = makeCharacterDef({ cardDefinitionId: 'VANILLA-LA', cardNumber: 'VANILLA-LA', baseCost: 1, basePower: 1000 });
     let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 5 });
     rig = putCharacterInPlay(rig, 'p2', makeCharacterDef({ cardNumber: 'FOE-LA', baseCost: 2, basePower: 3000 })).rig;

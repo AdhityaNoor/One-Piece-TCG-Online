@@ -459,9 +459,13 @@ describe('reactive triggers reusing already-wired firing points (custom-trigger)
     rig = { ...rig, state: { ...rig.state, cardsById: { ...rig.state.cardsById, [namiId]: { ...rig.state.cardsById[namiId], donAttached: [donRes.donIds[0]] } } } };
 
     const deckBefore = rig.state.players.p1.deck.cardIds.length;
+    // Printed: "you may trash 1 card from the top of your deck" → optional chooseOption (skip | trash).
     const fired = runTimings(registry['OP03-040'], ['onLifeDamageDealt'], rig.state, namiId, rig.defs, null, registry);
-    expect(fired.pendingChoices).toHaveLength(0);
-    expect(fired.state.players.p1.deck.cardIds.length).toBe(deckBefore - 1);
+    expect(fired.pendingChoices).toHaveLength(1);
+    expect(fired.pendingChoices[0]).toMatchObject({ kind: 'SELECT_OPTION' });
+    const resolved = resumeChoice(fired.state, fired.pendingChoices[0].id, 1, registry, rig.defs, null);
+    expect(resolved.pendingChoices).toHaveLength(0);
+    expect(resolved.state.players.p1.deck.cardIds.length).toBe(deckBefore - 1);
   });
 
   it('OP03-040 (Nami) does nothing without the [DON!! x1] condition met', () => {
