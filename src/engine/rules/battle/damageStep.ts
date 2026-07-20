@@ -196,7 +196,8 @@ export function resolveDamageAndEndOfBattle(
             visibility: 'public',
           });
         } else if (lifeDef?.hasTrigger) {
-          const hasCuratedTrigger = !!registry[lifeCardId ? cardsById[lifeCardId].cardDefinitionId : '']?.abilities.some((ab) => ab.timing === 'lifeTrigger');
+          const lifeDefId = cardsById[lifeCardId]?.cardDefinitionId;
+          const hasCuratedTrigger = !!(lifeDefId && resolveEffectProgram(registry, defs, lifeDefId)?.abilities.some((ab) => ab.timing === 'lifeTrigger'));
           if (hasCuratedTrigger) {
             // Offer to activate it (10-1-5-2). The card is in hand for now; a
             // "yes" moves it to the trash and resolves the trigger.

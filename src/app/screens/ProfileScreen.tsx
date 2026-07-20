@@ -57,14 +57,22 @@ export function ProfileScreen() {
 
   return (
     <GameCanvasScreen onBack={goBack} dense>
-      <div className="grid h-full min-h-0 gap-4 overflow-y-auto px-3 py-2 lg:grid-cols-[24rem_minmax(0,1fr)] lg:overflow-hidden">
-        <aside className="min-h-0 border border-gold/30 bg-black/45 p-5 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
+      <div className="h-full min-h-0 w-full max-w-full space-y-4 overflow-x-hidden overflow-y-auto px-3 py-2 lg:grid lg:space-y-0 lg:grid-cols-[24rem_minmax(0,1fr)] lg:overflow-hidden">
+        <aside className="min-w-0 overflow-hidden border border-gold/30 bg-black/45 p-5 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
           <ProfileHeader />
         </aside>
 
-        <section className="flex min-h-[28rem] min-w-0 flex-col overflow-hidden border border-white/10 bg-[linear-gradient(180deg,_rgba(0,0,0,0.5),_rgba(0,0,0,0.72))] shadow-[0_14px_0_rgba(1,5,16,0.5)]">
-          <ProfileNavigation sections={visibleSections} current={section} onChange={setSection} />
-          <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+        <section className="flex min-h-[28rem] w-full min-w-0 max-w-full flex-col overflow-x-hidden border border-white/10 bg-[linear-gradient(180deg,_rgba(0,0,0,0.5),_rgba(0,0,0,0.72))] shadow-[0_14px_0_rgba(1,5,16,0.5)] lg:overflow-hidden">
+          {/* Isolating wrapper: a plain block div (not itself a flex item of
+              anything) with a hard `overflow-hidden` boundary around the tab
+              bar specifically. Belt-and-suspenders on top of the min-w-0/w-full
+              already on `nav` itself, in case that alone isn't enough to stop
+              its many un-wrapping tab labels from pushing this column wider
+              than the viewport. */}
+          <div className="w-full max-w-full overflow-hidden">
+            <ProfileNavigation sections={visibleSections} current={section} onChange={setSection} />
+          </div>
+          <div className="p-4 sm:p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
             {!backendConfigured ? (
               <EmptyState title="Backend Missing" body="Set VITE_API_BASE_URL to use player profiles." />
             ) : profile.status === 'loading' ? (
@@ -143,14 +151,14 @@ function ProfileHeader() {
         <h2 className="mt-4 truncate font-display text-2xl font-black uppercase tracking-[0.1em] text-white">{profile.displayName}</h2>
         <p className="mt-1 truncate text-xs font-bold uppercase tracking-[0.14em] text-white/50">@{profile.username}</p>
         {profile.statusMessage && <p className="mt-3 text-sm leading-5 text-slate-200/75">{profile.statusMessage}</p>}
-        <div className="mt-4 flex items-center gap-3 border border-white/10 bg-black/25 p-3 text-left">
+        <div className="mt-4 flex min-w-0 items-center gap-3 overflow-hidden border border-white/10 bg-black/25 p-3 text-left">
           <RankBadge
             rank={ranked?.rank}
             division={ranked?.division}
             inPlacement={ranked?.inPlacement ?? !ranked}
             size="lg"
           />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-[9px] font-black uppercase tracking-[0.22em] text-gold/70">Current Rank</p>
             <p className="mt-1 truncate text-sm font-black uppercase tracking-[0.1em] text-white">{ranked?.rankName ?? 'Unranked'}</p>
             <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">
@@ -282,7 +290,7 @@ function ProfileNavigation({
 }) {
   return (
     <nav
-      className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/10 bg-black/30 px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="flex w-full min-w-0 shrink-0 gap-1 overflow-x-auto border-b border-white/10 bg-black/30 px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       aria-label="Profile sections"
     >
       {sections.map((id) => {
@@ -343,12 +351,12 @@ function OverviewSection() {
 
   return (
     <Panel title="Overview" subtitle="A compact snapshot of this player's current voyage.">
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <Metric label="Rank" value={header.ranked?.rankName ?? 'Unranked'} />
         <Metric label="Lifetime Matches" value={String(statistics?.lifetime.combined.matches ?? 0)} />
         <Metric label="Win Rate" value={`${statistics?.lifetime.combined.winRate ?? 0}%`} />
       </div>
-      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <MiniList title="Recent Matches" empty="No visible matches yet.">
           {(history?.entries ?? []).slice(0, 4).map((match) => (
             <ListRow key={match.matchId} left={match.result.toUpperCase()} right={match.opponentName ? `vs ${match.opponentName}` : match.matchType} />
@@ -370,9 +378,9 @@ function RankedSection() {
   if (!header?.ranked) return <EmptyState title="Ranked Private" body="Ranked information is unavailable or private." />;
   return (
     <Panel title="Grand Line Record" subtitle="Ranked data is loaded from the ranked system, not recalculated here.">
-      <div className="mb-4 flex items-center gap-4 border border-white/10 bg-black/25 p-4">
+      <div className="mb-4 flex min-w-0 items-center gap-4 overflow-hidden border border-white/10 bg-black/25 p-4">
         <RankBadge rank={header.ranked.rank} division={header.ranked.division} inPlacement={header.ranked.inPlacement} size="lg" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate font-display text-lg font-black uppercase tracking-[0.08em] text-white">{header.ranked.rankName}</p>
           <p className="mt-1 truncate text-xs font-bold uppercase tracking-[0.12em] text-white/55">
             {header.ranked.inPlacement
@@ -383,13 +391,13 @@ function RankedSection() {
           </p>
         </div>
       </div>
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <Metric label="Rank" value={header.ranked.rankName} />
         <Metric label="Division" value={header.ranked.division ?? (header.ranked.inPlacement ? 'Placement' : 'Elite')} />
         <Metric label="Bounty Points" value={String(header.ranked.rankedPoints)} />
         <Metric label="Season" value={header.ranked.seasonId ?? 'None'} />
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-4">
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
         <Metric label="Wins" value={String(statistics?.currentSeason.ranked.wins ?? 0)} />
         <Metric label="Losses" value={String(statistics?.currentSeason.ranked.losses ?? 0)} />
         <Metric label="Win Rate" value={`${statistics?.currentSeason.ranked.winRate ?? 0}%`} />
@@ -430,7 +438,7 @@ function DeckShowcaseSection() {
   return (
     <Panel title="Fleet" subtitle="Featured deck summaries only. Full private decklists are not sent through profile APIs.">
       {header?.featuredDecks.length ? (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {header.featuredDecks.map((deck) => (
             <div key={deck.deckId} className="border border-white/10 bg-black/25 p-3">
               <p className="font-black uppercase tracking-[0.1em] text-white">{deck.name}</p>
@@ -453,13 +461,13 @@ function StatisticsSection() {
   if (!statistics) return <EmptyState title="Statistics Unavailable" body="Battle records are private or still being computed." />;
   return (
     <Panel title="Battle Records" subtitle={statistics.complete ? `Computed ${formatDate(statistics.computedAt)}` : 'Partial statistics'}>
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <Metric label="Matches" value={String(statistics.lifetime.combined.matches)} />
         <Metric label="Wins" value={String(statistics.lifetime.combined.wins)} />
         <Metric label="Losses" value={String(statistics.lifetime.combined.losses)} />
         <Metric label="Win Rate" value={`${statistics.lifetime.combined.winRate}%`} />
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
         <Metric label="Most Played Leader" value={statistics.mostPlayedLeader?.leaderName ?? 'Unknown'} />
         <Metric label="Highest Rank" value={statistics.highestLifetimeRank} />
       </div>
@@ -472,7 +480,7 @@ function AchievementsSection() {
   return (
     <Panel title="Milestones" subtitle="Achievement integration surface. Progress is real when the service has source data.">
       {achievements.length ? (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {achievements.map((entry) => (
             <div key={entry.definition.id} className="border border-white/10 bg-black/25 p-3">
               <p className="font-black uppercase tracking-[0.1em] text-white">{entry.definition.name}</p>
@@ -536,7 +544,7 @@ function CosmeticsSection() {
         {COSMETIC_TYPE_ORDER.filter((type) => (groups[type]?.length ?? 0) > 0).map((type) => (
           <div key={type}>
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-gold">{COSMETIC_TYPE_LABELS[type]}</p>
-            <div className="grid gap-2 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
               {(groups[type] ?? []).map((entry) => (
                 <CosmeticRow
                   key={entry.item.id}
@@ -564,7 +572,7 @@ function CosmeticRow({
 }) {
   const { item, owned, equipped } = entry;
   return (
-    <div className="flex items-center justify-between gap-3 border border-white/10 bg-black/25 px-3 py-2">
+    <div className="flex min-w-0 items-center justify-between gap-3 overflow-hidden border border-white/10 bg-black/25 px-3 py-2">
       <div className="min-w-0">
         <p className="truncate text-sm font-bold text-white">{item.name}</p>
         <p className="truncate text-xs text-white/45">{item.description}</p>
@@ -587,7 +595,7 @@ function SocialSection() {
     <Panel title="Social" subtitle="Friend requests live on the Social tab (Hub menu). Blocked players are managed here.">
       {social ? (
         <>
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <Metric label="Friends" value={String((social.friends ?? []).length)} />
             <Metric label="Incoming" value={String((social.incomingRequests ?? []).length)} />
             <Metric label="Outgoing" value={String((social.outgoingRequests ?? []).length)} />
@@ -597,9 +605,9 @@ function SocialSection() {
           <div className="mt-5">
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-gold">Blocked Players</p>
             {(social.blocked ?? []).length ? (
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 {(social.blocked ?? []).map((entry) => (
-                  <div key={entry.userId} className="flex items-center justify-between gap-3 border border-white/10 bg-black/25 px-3 py-2">
+                  <div key={entry.userId} className="flex min-w-0 items-center justify-between gap-3 overflow-hidden border border-white/10 bg-black/25 px-3 py-2">
                     <span className="min-w-0 truncate text-sm font-bold text-white">{entry.username}</span>
                     <CanvasMenuButton label="Unblock" size="sm" onClick={() => void unblockUser(entry.username)} />
                   </div>
@@ -637,7 +645,7 @@ function SettingsSection() {
 
   return (
     <Panel title="Settings" subtitle="Edit public profile fields and privacy. Validation is enforced by the server.">
-      <div className="grid gap-3">
+      <div className="space-y-3">
         <input
           value={draft.displayName ?? ''}
           onChange={(event) => setDraft((value) => ({ ...value, displayName: event.target.value }))}
@@ -660,7 +668,7 @@ function SettingsSection() {
       </div>
 
       {header.privacy && (
-        <div className="mt-6 grid gap-3 md:grid-cols-2">
+        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
           <PrivacySelect label="Profile Visibility" value={header.privacy.profileVisibility} onChange={(value) => void savePrivacy({ profileVisibility: value })} />
           <PrivacySelect label="Match History" value={header.privacy.matchHistoryVisibility} onChange={(value) => void savePrivacy({ matchHistoryVisibility: value })} />
           <PrivacySelect label="Ranked Stats" value={header.privacy.rankedStatsVisibility} onChange={(value) => void savePrivacy({ rankedStatsVisibility: value })} />
@@ -676,7 +684,7 @@ function AccountSection() {
   if (!account) return <EmptyState title="Account Unavailable" body="Account details are owner-only." />;
   return (
     <Panel title="Account" subtitle="Security-sensitive account details are kept out of public profile APIs.">
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <Metric label="Email" value={account.email} />
         <Metric label="Email Verified" value={account.emailVerified ? 'Yes' : 'No'} />
         <Metric label="Linked Providers" value={account.linkedProviders.join(', ') || 'None'} />
@@ -710,9 +718,14 @@ function Panel({ title, subtitle, children }: { title: string; subtitle: string;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
+  // `min-w-0` is load-bearing here, not decoration: as a bare grid item (see
+  // every `grid grid-cols-1 ... md:grid-cols-N` caller) this div's default
+  // `min-width: auto` would otherwise let the truncating value paragraph
+  // force the whole grid track wide enough to fit its untruncated text —
+  // exactly what was pushing the Profile screen wider than the viewport.
   return (
-    <div className="border border-white/10 bg-black/25 p-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/40">{label}</p>
+    <div className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-3">
+      <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-white/40">{label}</p>
       <p className="mt-2 truncate text-lg font-black uppercase tracking-[0.06em] text-white">{value}</p>
     </div>
   );
@@ -722,14 +735,14 @@ function MiniList({ title, empty, children }: { title: string; empty: string; ch
   return (
     <div className="border border-white/10 bg-black/20 p-3">
       <p className="text-xs font-black uppercase tracking-[0.16em] text-gold">{title}</p>
-      <div className="mt-3 grid gap-2">{children.length ? children : <p className="text-sm text-white/45">{empty}</p>}</div>
+      <div className="mt-3 space-y-2">{children.length ? children : <p className="text-sm text-white/45">{empty}</p>}</div>
     </div>
   );
 }
 
 function ListRow({ left, right }: { left: string; right: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 border border-white/10 bg-black/25 px-3 py-2">
+    <div className="flex min-w-0 items-center justify-between gap-3 overflow-hidden border border-white/10 bg-black/25 px-3 py-2">
       <span className="min-w-0 truncate text-sm font-bold text-white">{left}</span>
       <span className="shrink-0 text-xs font-bold uppercase tracking-[0.12em] text-white/45">{right}</span>
     </div>
@@ -738,7 +751,7 @@ function ListRow({ left, right }: { left: string; right: string }) {
 
 function PrivacySelect({ label, value, onChange }: { label: string; value: ProfileVisibility; onChange: (value: ProfileVisibility) => void }) {
   return (
-    <label className="grid gap-2 border border-white/10 bg-black/20 p-3">
+    <label className="flex flex-col gap-2 border border-white/10 bg-black/20 p-3">
       <span className="text-[10px] font-black uppercase tracking-[0.16em] text-gold">{label}</span>
       <OpSelect
         value={value}

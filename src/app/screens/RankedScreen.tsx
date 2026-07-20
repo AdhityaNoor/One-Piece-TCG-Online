@@ -271,9 +271,9 @@ function QueueSpinner() {
 function LeaderboardPanel() {
   const entries = useRankedStore((state) => state.leaderboard);
   return (
-    <div className="min-h-0 overflow-hidden border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4">
+    <div className="border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4 lg:min-h-0 lg:overflow-hidden">
       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">World Rankings</p>
-      <div className="mt-3 max-h-full overflow-y-auto">
+      <div className="mt-3 lg:max-h-full lg:overflow-y-auto">
         {entries.length === 0 ? (
           <p className="text-sm text-slate-200/60">No ranked standings yet.</p>
         ) : (
@@ -295,9 +295,9 @@ function LeaderboardPanel() {
 function HistoryPanel() {
   const history = useRankedStore((state) => state.history);
   return (
-    <div className="min-h-0 overflow-hidden border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4">
+    <div className="border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4 lg:min-h-0 lg:overflow-hidden">
       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Voyage Log</p>
-      <div className="mt-3 max-h-full overflow-y-auto">
+      <div className="mt-3 lg:max-h-full lg:overflow-y-auto">
         {history.length === 0 ? (
           <p className="text-sm text-slate-200/60">No ranked matches recorded yet.</p>
         ) : (

@@ -108,7 +108,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
     cardNumber: 'OP14-017',
     templateId: 'ability',
     params: {
-      timing: 'onPlay',
+      timing: 'activateMain',
       functions: [{
         fn: 'swapBasePower',
         target: { group: 'characters', player: 'opponent', filter: { maxBasePower: 9000 } },
@@ -571,7 +571,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'OP14-057',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPowerAuraControllerTypes', amount: 1000, duration: 'duringThisTurn', anyOfTypes: ['Fish-Man', 'Merfolk'] }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'addPowerAuraControllerTypes', amount: 1000, duration: 'duringThisTurn', anyOfTypes: ['Fish-Man', 'Merfolk'] }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 2 }] } },
     ],
   },
@@ -890,7 +890,7 @@ export const OP14_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'OP14-098',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'anyCharacterExactCost', exactCost: 0 }, { kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }], functions: [{ fn: 'addCostAuraControllerCharacters', amount: 3, duration: 'endOfOpponentsTurn', anyOfTypes: ['Baroque Works'] }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', gate: [{ kind: 'anyOf', gates: [{ kind: 'anyCharacterExactCost', exactCost: 0 }, { kind: 'anyCharacterCostAtLeast', atLeast: 8 }] }], functions: [{ fn: 'addCostAuraControllerCharacters', amount: 3, duration: 'endOfOpponentsTurn', anyOfTypes: ['Baroque Works'] }] } },
       { templateId: 'ability', params: { timing: 'counter', functions: [{ fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle' }] } },
     ],
   },

@@ -798,7 +798,7 @@ export const OP13_ASSIGNMENTS: CardEffectAssignment[] = [
   {
     cardNumber: 'OP13-117',
     templates: [
-      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'turnTopLifeFace', faceUp: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 6 } }, optional: true, ifPrevious: 'previousSelectedAny' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', functions: [{ fn: 'turnTopLifeFace', faceUp: true }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxBaseCost: 6 } }, optional: true, ifPrevious: 'previousSelectedAny' }] } },
       { templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'draw', amount: 1 }] } },
     ],
   },

@@ -97,7 +97,18 @@ export function AppHeader() {
   }, [activeTab]);
 
   return (
-    <header className="relative z-30 flex h-16 w-full flex-shrink-0 items-stretch gap-2 border-b border-white/10 bg-black/15 px-3 shadow-[0_8px_30px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:h-20 sm:px-6">
+    <header className="relative z-30 h-16 w-full flex-shrink-0 border-b border-white/10 bg-black/15 shadow-[0_8px_30px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:h-20">
+    {/* Row content lives in its own overflow-hidden wrapper, separate from
+        `header` itself, because the mobile dropdown below needs to render
+        OUTSIDE this row's box (positioned off `header`, which stays
+        overflow-visible) — clipping had to move one level in rather than
+        living on `header` directly, or the dropdown would clip itself.
+        This wrapper's `overflow-hidden` is also a hard guarantee: whatever
+        intrinsic-sizing quirk was pushing the profile avatar out of its own
+        box on iOS Safari, it now physically cannot spill past this row and
+        overlap the nav trigger — the browser has no choice but to clip it
+        to the row's real width. */}
+    <div className="flex h-full w-full items-stretch gap-2 overflow-hidden px-3 sm:gap-2 sm:px-6">
       <button
         type="button"
         onClick={() => setHubTab('home')}
@@ -190,20 +201,26 @@ export function AppHeader() {
         onClick={() => navigateTo({ screen: 'profile' })}
         aria-label="Your profile"
         aria-current={isProfileActive ? 'page' : undefined}
-        className="group relative z-10 flex min-w-0 flex-shrink-0 items-center gap-1.5 px-1 sm:gap-2 sm:px-1.5"
+        className="group relative z-10 ml-auto flex max-w-[3.25rem] flex-shrink-0 items-center gap-1.5 px-1 sm:max-w-none sm:min-w-0 sm:gap-2 sm:px-1.5"
       >
         {/* No fill/box behind the art — the button itself carries no
             background either, so only the character's own silhouette (the
-            source webp's alpha) ever shows against the header. `h-full`
-            (no fixed h-8/h-10) so the avatar spans the header's full height,
-            same as the logo mark on the left; width follows from the
-            source image's own aspect ratio via object-contain. */}
+            source webp's alpha) ever shows against the header. Below `sm`
+            the art gets an explicit fixed height (`h-10`, not a `h-full`
+            percentage) — percentage-height images inside a flex-stretched
+            row were rendering at the wrong intrinsic width on iOS Safari
+            specifically, ballooning the button and overlapping the nav
+            trigger next to it. A fixed rem value has no ancestor-height
+            chain to resolve against, so there's nothing left for that to go
+            wrong on. `sm:h-full` restores the original "spans the header's
+            full height" treatment once the row has the extra breathing room
+            of the desktop layout. */}
         <img
           src={resolveAvatarUrl(avatarId)}
           alt=""
           draggable={false}
           className={[
-            'h-full w-auto flex-shrink-0 object-contain py-1.5 transition-all sm:py-2',
+            'h-10 w-auto flex-shrink-0 object-contain transition-all sm:h-full sm:py-2',
             isProfileActive ? 'drop-shadow-[0_0_6px_rgba(217,164,65,0.75)]' : 'opacity-80 group-hover:opacity-100',
           ].join(' ')}
         />
@@ -216,6 +233,7 @@ export function AppHeader() {
           {username}
         </span>
       </button>
+    </div>
 
       {/* Mobile dropdown menu — anchored to the header (which is `relative`),
           so it spans the full header width regardless of where the trigger

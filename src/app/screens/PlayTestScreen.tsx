@@ -70,6 +70,7 @@ export function PlayTestScreen() {
   const state = useMatchStore((s) => s.state);
   const startPlayTest = useMatchStore((s) => s.startPlayTest);
   const addCardToHand = useMatchStore((s) => s.playTestAddCardToHand);
+  const addCardToDeckTop = useMatchStore((s) => s.playTestAddCardToDeckTop);
   const setLeader = useMatchStore((s) => s.playTestSetLeader);
   const adjustDon = useMatchStore((s) => s.playTestAdjustDon);
   const forceTurn = useMatchStore((s) => s.playTestForceTurn);
@@ -231,6 +232,12 @@ export function PlayTestScreen() {
                           </Button>
                           <Button size="sm" variant="secondary" disabled={!playable} onClick={() => run(`add ${def.cardNumber} to p2 hand`, () => addCardToHand(PLAYER_B_ID, def.cardDefinitionId))}>
                             P2 Hand
+                          </Button>
+                          <Button size="sm" variant="secondary" disabled={!playable} onClick={() => run(`put ${def.cardNumber} on p1 deck top`, () => addCardToDeckTop(PLAYER_A_ID, def.cardDefinitionId))}>
+                            P1 Top
+                          </Button>
+                          <Button size="sm" variant="secondary" disabled={!playable} onClick={() => run(`put ${def.cardNumber} on p2 deck top`, () => addCardToDeckTop(PLAYER_B_ID, def.cardDefinitionId))}>
+                            P2 Top
                           </Button>
                         </>
                       )}

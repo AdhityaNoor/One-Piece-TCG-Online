@@ -80,7 +80,7 @@ function PlayerSearch() {
   const outgoingUsernames = new Set(outgoingRequests.map((entry) => entry.username));
 
   return (
-    <section className="min-h-0 border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4 shadow-[0_14px_0_rgba(1,5,16,0.5)]">
+    <section className="border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4 shadow-[0_14px_0_rgba(1,5,16,0.5)] lg:min-h-0 lg:overflow-y-auto">
       <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Find Players</p>
       <input
         type="text"
@@ -102,12 +102,12 @@ function PlayerSearch() {
             const isFriend = friendUsernames.has(entry.username);
             const isPending = outgoingUsernames.has(entry.username) || pendingActions[entry.username];
             return (
-              <div key={entry.userId} className="flex items-center justify-between gap-2 border border-white/10 bg-black/25 px-3 py-2">
+              <div key={entry.userId} className="flex flex-col gap-2 overflow-hidden border border-white/10 bg-black/25 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-2">
                   <AvatarThumb avatarCatalogId={entry.avatarCatalogId} />
                   <span className="min-w-0 truncate text-sm font-bold text-white">{entry.username}</span>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex items-center gap-2 sm:shrink-0">
                   {isFriend ? (
                     <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white/40">Friends</span>
                   ) : (
@@ -161,7 +161,7 @@ function FriendsPanel() {
 
   if (status === 'loading' || status === 'idle') {
     return (
-      <section className="min-h-0 overflow-y-auto border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4 shadow-[0_14px_0_rgba(1,5,16,0.5)]">
+      <section className="border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4 shadow-[0_14px_0_rgba(1,5,16,0.5)] lg:min-h-0 lg:overflow-y-auto">
         <p className="text-sm text-white/45">Loading your crew...</p>
       </section>
     );
@@ -172,18 +172,18 @@ function FriendsPanel() {
   }
 
   return (
-    <section className="min-h-0 space-y-4 overflow-y-auto border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4 shadow-[0_14px_0_rgba(1,5,16,0.5)]">
+    <section className="space-y-4 border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4 shadow-[0_14px_0_rgba(1,5,16,0.5)] lg:min-h-0 lg:overflow-y-auto">
       {incomingRequests.length > 0 && (
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Incoming Requests</p>
           <div className="mt-2 space-y-2">
             {incomingRequests.map((entry) => (
-              <div key={entry.userId} className="flex items-center justify-between gap-2 border border-white/10 bg-black/25 px-3 py-2">
+              <div key={entry.userId} className="flex flex-col gap-2 overflow-hidden border border-white/10 bg-black/25 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-2">
                   <AvatarThumb avatarCatalogId={entry.avatarCatalogId} />
                   <span className="min-w-0 truncate text-sm font-bold text-white">{entry.username}</span>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex gap-2 sm:shrink-0">
                   <button
                     type="button"
                     disabled={pendingActions[entry.username]}
@@ -212,12 +212,12 @@ function FriendsPanel() {
           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Sent Requests</p>
           <div className="mt-2 space-y-2">
             {outgoingRequests.map((entry) => (
-              <div key={entry.userId} className="flex items-center justify-between gap-2 border border-white/10 bg-black/20 px-3 py-2">
+              <div key={entry.userId} className="flex flex-col gap-1 overflow-hidden border border-white/10 bg-black/20 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
                 <div className="flex min-w-0 items-center gap-2">
                   <AvatarThumb avatarCatalogId={entry.avatarCatalogId} />
                   <span className="min-w-0 truncate text-sm text-white/70">{entry.username}</span>
                 </div>
-                <span className="shrink-0 text-[10px] font-black uppercase tracking-[0.12em] text-white/35">Pending</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white/35 sm:shrink-0">Pending</span>
               </div>
             ))}
           </div>
@@ -231,7 +231,7 @@ function FriendsPanel() {
         ) : (
           <div className="mt-2 space-y-2">
             {friends.map((entry) => (
-              <div key={entry.userId} className="flex items-center justify-between gap-2 border border-white/10 bg-black/25 px-3 py-2">
+              <div key={entry.userId} className="flex flex-col gap-2 overflow-hidden border border-white/10 bg-black/25 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
                   onClick={() => navigateTo({ screen: 'profile', username: entry.username })}
@@ -240,7 +240,7 @@ function FriendsPanel() {
                   <AvatarThumb avatarCatalogId={entry.avatarCatalogId} />
                   <span className="min-w-0 truncate text-sm font-bold text-white">{entry.username}</span>
                 </button>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex items-center gap-2 sm:shrink-0">
                   <span
                     className={[
                       'text-[10px] font-black uppercase tracking-[0.12em]',
@@ -275,13 +275,13 @@ function FriendsPanel() {
           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Blocked Players ({blocked.length})</p>
           <div className="mt-2 space-y-2">
             {blocked.map((entry) => (
-              <div key={entry.userId} className="flex items-center justify-between gap-2 border border-white/10 bg-black/20 px-3 py-2">
+              <div key={entry.userId} className="flex flex-col gap-2 overflow-hidden border border-white/10 bg-black/20 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                 <span className="min-w-0 truncate text-sm text-white/60">{entry.username}</span>
                 <button
                   type="button"
                   disabled={pendingActions[entry.username]}
                   onClick={() => void unblockUser(entry.username)}
-                  className="shrink-0 border border-white/15 bg-white/[0.04] px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/55 hover:border-gold/45 hover:text-gold disabled:opacity-45"
+                  className="self-start border border-white/15 bg-white/[0.04] px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/55 hover:border-gold/45 hover:text-gold disabled:opacity-45 sm:shrink-0"
                 >
                   Unblock
                 </button>

@@ -406,6 +406,7 @@ interface MatchStoreState {
   }): void;
   startPlayTest(entries: PlayTestCatalogEntry[]): MatchStartResult;
   playTestAddCardToHand(playerId: string, cardDefinitionId: string): MatchDispatchResult;
+  playTestAddCardToDeckTop(playerId: string, cardDefinitionId: string): MatchDispatchResult;
   playTestSetLeader(playerId: string, cardDefinitionId: string): MatchDispatchResult;
   playTestAdjustDon(playerId: string, delta: number): MatchDispatchResult;
   playTestForceTurn(playerId: string): MatchDispatchResult;
@@ -661,6 +662,50 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
         },
       },
       `Play Test added ${definition.cardNumber} ${definition.name} to ${playerId}'s hand.`,
+      playerId,
+    );
+    set({ state: next });
+    return { ok: true };
+  },
+
+  playTestAddCardToDeckTop(playerId, cardDefinitionId) {
+    const { state, defs } = get();
+    if (!state) return { ok: false, reasons: ['No match is in progress.'] };
+    const definition = defs[cardDefinitionId];
+    if (!definition) return { ok: false, reasons: [`Unknown card definition ${cardDefinitionId}.`] };
+    if (definition.category === 'leader' || definition.category === 'don') {
+      return { ok: false, reasons: ['Only Character, Event, and Stage cards can be injected into deck.'] };
+    }
+    const player = state.players[playerId];
+    if (!player) return { ok: false, reasons: [`Unknown player ${playerId}.`] };
+
+    const minted = mintRuntimeInstanceId(state);
+    const instance: CardInstance = {
+      instanceId: minted.id,
+      cardDefinitionId,
+      ownerId: playerId,
+      controllerId: playerId,
+      currentZone: 'deck',
+      orientation: null,
+      faceState: 'faceDown',
+      donAttached: [],
+      appliedContinuousEffectIds: [],
+      oncePerTurnUsed: [],
+      summoningSick: false,
+      revealedTo: [],
+      ...(definition.basePower !== undefined ? { currentPower: definition.basePower } : {}),
+      ...(definition.baseCost !== undefined ? { currentCost: definition.baseCost } : {}),
+    };
+    const next = appendGameLog(
+      {
+        ...minted.state,
+        cardsById: { ...minted.state.cardsById, [minted.id]: instance },
+        players: {
+          ...minted.state.players,
+          [playerId]: { ...player, deck: { ...player.deck, cardIds: [minted.id, ...player.deck.cardIds] } },
+        },
+      },
+      `Play Test placed ${definition.cardNumber} ${definition.name} on top of ${playerId}'s deck.`,
       playerId,
     );
     set({ state: next });

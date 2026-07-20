@@ -34,13 +34,16 @@ import {
   buildBaseRig,
   makeCharacterDef,
   makeEventDef,
+  makeStageDef,
   nextTestId,
   putCharacterInPlay,
   putDeckCards,
   putDon,
   putInHand,
   putLifeCards,
+  putStageInPlay,
 } from '../../rules/shared/__tests__/testRig';
+import { resolveDamageAndEndOfBattle } from '../../rules/battle/damageStep';
 import type { GameState } from '../../state/game';
 import type { EffectOp, Selector } from '../effectIr';
 
@@ -586,6 +589,217 @@ describe('partial curation batch: OP03-001 / OP11-088 / OP12-081', () => {
       currentZone: 'lifeArea',
       faceState: 'faceUp',
       revealedTo: 'all',
+    });
+  });
+
+  it('OP09-099 Fullalead keeps Blackbeard Pirates cards eligible after the hand-trash cost step', () => {
+    const entry = OP09_ASSIGNMENTS.find((a) => a.cardNumber === 'OP09-099')!;
+    const fullaleadDef = makeStageDef({
+      cardDefinitionId: 'OP09-099',
+      cardNumber: 'OP09-099',
+      name: 'Fullalead',
+      category: 'stage',
+      baseCost: 1,
+    });
+    const spareHandDef = makeCharacterDef({
+      cardDefinitionId: nextTestId('spare'),
+      cardNumber: 'TEST-SPARE',
+      name: 'Spare Hand Card',
+    });
+    const teachDef = makeCharacterDef({
+      cardDefinitionId: 'OP16-119_snapshot',
+      cardNumber: 'OP16-119',
+      name: 'Marshall.D.Teach',
+      category: 'character',
+      baseCost: 8,
+      types: ['The Seven Warlords of the Sea', 'Blackbeard Pirates'],
+    });
+    const offTypeDef = makeCharacterDef({
+      cardDefinitionId: nextTestId('off-type'),
+      cardNumber: 'TEST-OFF-TYPE',
+      name: 'Off Type',
+      types: ['Whitebeard Pirates'],
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let fullaleadId: string;
+    let spareHandId: string;
+    let teachDeckId: string;
+    ({ rig, instanceId: fullaleadId } = putStageInPlay(rig, 'p1', fullaleadDef));
+    ({ rig, instanceId: spareHandId } = putInHand(rig, 'p1', spareHandDef));
+    ({ rig, deckIds: [teachDeckId] } = putDeckCards(rig, 'p1', teachDef, 1));
+    ({ rig } = putDeckCards(rig, 'p1', offTypeDef, 1));
+
+    const registry = buildRegistryFromAssignments([entry]);
+    const activated = executeAction(
+      rig.state,
+      { type: 'ACTIVATE_CARD_EFFECT', actionId: nextTestId('action'), playerId: 'p1', sourceInstanceId: fullaleadId, effectId: 'activateMain', donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+    const trashChoice = activated.state.pendingChoices[0];
+    expect(trashChoice).toMatchObject({
+      kind: 'SELECT_CARDS',
+      constraints: { min: 0, max: 1, candidateInstanceIds: [spareHandId] },
+    });
+
+    const afterTrash = executeAction(
+      activated.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: trashChoice.id, response: [spareHandId] },
+      rig.defs,
+      registry,
+    );
+    const searchChoice = afterTrash.state.pendingChoices[0];
+    expect(searchChoice).toMatchObject({
+      kind: 'SELECT_CARDS',
+      constraints: {
+        min: 0,
+        max: 1,
+        candidateInstanceIds: [teachDeckId],
+      },
+    });
+  });
+
+  it('OP16-080 can redirect an attack to a Blackbeard Pirates Character after trashing a Trigger card', () => {
+    const entry = OP16_ASSIGNMENTS.find((a) => a.cardNumber === 'OP16-080')!;
+    const blackbeardTargetDef = makeCharacterDef({
+      cardDefinitionId: nextTestId('bbp-target'),
+      cardNumber: 'TEST-BBP-TARGET',
+      name: 'Blackbeard Pirates Target',
+      category: 'character',
+      baseCost: 1,
+      basePower: 1000,
+      types: ['Blackbeard Pirates'],
+    });
+    const triggerHandDef = makeEventDef({
+      cardDefinitionId: nextTestId('trigger-hand'),
+      cardNumber: 'TEST-TRIGGER-HAND',
+      name: 'Trigger Hand Card',
+      hasTrigger: true,
+    });
+
+    let rig = buildBaseRig({
+      activePlayerId: 'p1',
+      phase: 'main',
+      leaderOverridesP2: {
+        cardDefinitionId: 'OP16-080_snapshot',
+        cardNumber: 'OP16-080',
+        name: 'Marshall.D.Teach',
+        colors: ['black', 'yellow'],
+        types: ['The Seven Warlords of the Sea', 'Blackbeard Pirates'],
+        life: 4,
+      },
+    });
+    let blackbeardTargetId: string;
+    let triggerHandId: string;
+    ({ rig, instanceId: blackbeardTargetId } = putCharacterInPlay(rig, 'p2', blackbeardTargetDef, { summoningSick: false }));
+    ({ rig, instanceId: triggerHandId } = putInHand(rig, 'p2', triggerHandDef));
+
+    const registry = buildRegistryFromAssignments([entry]);
+    const attackerId = rig.state.players.p1.leaderInstanceId;
+    const defenderLeaderId = rig.state.players.p2.leaderInstanceId;
+    const attacked = executeAction(
+      rig.state,
+      { type: 'DECLARE_ATTACK', actionId: nextTestId('action'), playerId: 'p1', attackerInstanceId: attackerId, targetInstanceId: defenderLeaderId },
+      rig.defs,
+      registry,
+    );
+    expect(attacked.state.currentBattle?.step).toBe('block');
+
+    const activated = executeAction(
+      attacked.state,
+      { type: 'ACTIVATE_ON_OPPONENTS_ATTACK', actionId: nextTestId('action'), playerId: 'p2', sourceInstanceId: defenderLeaderId, effectId: 'onOpponentsAttack', donInstanceIds: [] },
+      rig.defs,
+      registry,
+    );
+    const trashChoice = activated.state.pendingChoices[0];
+    expect(trashChoice).toMatchObject({
+      kind: 'SELECT_CARDS',
+      constraints: { min: 0, max: 1, candidateInstanceIds: [triggerHandId] },
+    });
+
+    const afterTrash = executeAction(
+      activated.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p2', choiceId: trashChoice.id, response: [triggerHandId] },
+      rig.defs,
+      registry,
+    );
+    const redirectChoice = afterTrash.state.pendingChoices[0];
+    expect(redirectChoice).toMatchObject({
+      kind: 'SELECT_CARDS',
+      constraints: { min: 0, max: 1 },
+    });
+    expect(redirectChoice.constraints.candidateInstanceIds).toEqual(expect.arrayContaining([defenderLeaderId, blackbeardTargetId]));
+
+    const redirected = executeAction(
+      afterTrash.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p2', choiceId: redirectChoice.id, response: [blackbeardTargetId] },
+      rig.defs,
+      registry,
+    );
+    expect(redirected.state.currentBattle?.targetInstanceId).toBe(blackbeardTargetId);
+  });
+
+  it('OP16-109 Life trigger activates from battle damage with a snapshot definition id', () => {
+    const entry = OP16_ASSIGNMENTS.find((a) => a.cardNumber === 'OP16-109')!;
+    const docQDef = makeCharacterDef({
+      cardDefinitionId: 'OP16-109_snapshot',
+      cardNumber: 'OP16-109',
+      name: 'Doc Q',
+      category: 'character',
+      baseCost: 1,
+      basePower: 0,
+      types: ['Blackbeard Pirates'],
+      hasTrigger: true,
+    });
+    const drawDef = makeCharacterDef({ cardDefinitionId: nextTestId('draw'), cardNumber: 'TEST-DRAW' });
+    const koTargetDef = makeCharacterDef({
+      cardDefinitionId: nextTestId('ko-target'),
+      cardNumber: 'TEST-KO-TARGET',
+      baseCost: 1,
+      basePower: 1000,
+    });
+
+    let rig = buildBaseRig({
+      activePlayerId: 'p2',
+      phase: 'main',
+      leaderOverridesP1: { types: ['Blackbeard Pirates'] },
+    });
+    let lifeId: string;
+    let drawId: string;
+    let koTargetId: string;
+    ({ rig, lifeIds: [lifeId] } = putLifeCards(rig, 'p1', [docQDef]));
+    ({ rig, deckIds: [drawId] } = putDeckCards(rig, 'p1', drawDef, 1));
+    ({ rig, instanceId: koTargetId } = putCharacterInPlay(rig, 'p2', koTargetDef, { summoningSick: false }));
+
+    const attackerId = rig.state.players.p2.leaderInstanceId;
+    const defenderLeaderId = rig.state.players.p1.leaderInstanceId;
+    const battleState: GameState = {
+      ...rig.state,
+      currentBattle: {
+        attackerInstanceId: attackerId,
+        targetInstanceId: defenderLeaderId,
+        originalTargetInstanceId: defenderLeaderId,
+        step: 'damage',
+        blockerUsed: false,
+        battlePowerBonuses: {},
+      },
+    };
+    const registry = buildRegistryFromAssignments([entry]);
+    const damaged = resolveDamageAndEndOfBattle(battleState, rig.defs, 'test', registry);
+    expect(damaged.state.pendingChoices[0]).toMatchObject({ sourceEffectId: 'rule:lifeTrigger', sourceInstanceId: lifeId });
+
+    const activated = executeAction(
+      damaged.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: damaged.state.pendingChoices[0].id, response: [lifeId] },
+      rig.defs,
+      registry,
+    );
+
+    expect(activated.state.players.p1.hand.cardIds).toContain(drawId);
+    expect(activated.state.pendingChoices[0]).toMatchObject({
+      kind: 'SELECT_CARDS',
+      constraints: { candidateInstanceIds: [koTargetId] },
     });
   });
 
@@ -1372,7 +1586,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
       ]),
     );
     expect(programs['OP14-048'].abilities[0].ops.some((op) => op.op === 'trashHandDownTo')).toBe(true);
-    expect(programs['OP14-057'].abilities.find((a) => a.timing === 'onPlay')?.ops[0]).toMatchObject({
+    expect(programs['OP14-057'].abilities.find((a) => a.timing === 'activateMain')?.ops[0]).toMatchObject({
       op: 'addPowerAura',
       amount: 1000,
     });
@@ -1384,7 +1598,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
       ]),
     );
     expect(programs['OP14-088'].abilities[0].ops.some((op) => op.op === 'trashCards')).toBe(false);
-    expect(programs['OP14-098'].abilities.find((a) => a.timing === 'onPlay')?.ops[0]).toMatchObject({
+    expect(programs['OP14-098'].abilities.find((a) => a.timing === 'activateMain')?.ops[0]).toMatchObject({
       op: 'addCostAura',
       amount: 3,
     });
@@ -1835,7 +2049,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
       ]),
     );
     expect(programs['OP13-114'].abilities.find((a) => a.timing === 'whenAttacking')?.ops.some((op) => op.op === 'turnLifeFace')).toBe(true);
-    expect(programs['OP13-117'].abilities.find((a) => a.timing === 'onPlay')?.ops.some((op) => op.op === 'ko')).toBe(true);
+    expect(programs['OP13-117'].abilities.find((a) => a.timing === 'activateMain')?.ops.some((op) => op.op === 'ko')).toBe(true);
     expect(programs['OP13-119'].abilities.find((a) => a.timing === 'onPlay')?.ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'giveDon', target: { sel: 'controllerLeader' } }),

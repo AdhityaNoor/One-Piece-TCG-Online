@@ -79,18 +79,32 @@ export function GameCanvasScreen({ onBack, topRight, footer, dense = false, chil
         {/* Always rendered (even empty) so it keeps its explicit grid row —
             conditionally omitting this node would shift auto-placement and
             make the content row collapse to shrink-to-fit instead of 1fr. */}
-        <div className={['relative z-20 flex items-start justify-between gap-3 px-3 sm:px-4', hasControlRow ? '' : 'pointer-events-none'].join(' ')}>
+        {/* `section` above is `display:grid` with only `grid-rows-*` set — no
+            `grid-template-columns`. That leaves one implicit auto column, and
+            an implicit grid track's `auto` sizing function still factors in
+            each item's max-content width UNLESS the item itself has
+            `min-width: 0`. Every direct child of `section` is therefore a
+            grid item that — without `min-w-0` — can be stretched wider than
+            the viewport by any wide descendant (e.g. a tab bar with many
+            unwrapping labels), silently growing this whole row (and the
+            grid's single column, and every sibling row with it) past 100%
+            width. `main`'s `overflow-hidden` then clips the excess, which is
+            what produced the "content cut off exactly at the screen edge"
+            bug — no visible scrollbar, just missing pixels. `min-w-0` on all
+            three rows is the actual fix; it was never inside the screens
+            themselves. */}
+        <div className={['relative z-20 flex min-w-0 items-start justify-between gap-3 px-3 sm:px-4', hasControlRow ? '' : 'pointer-events-none'].join(' ')}>
           <div className="flex min-w-0 items-start gap-2">
             {onBack && <CanvasMenuButton label="Back" onClick={onBack} size="sm" expandOnHover={!dense} className={dense ? "h-10 w-[5.75rem] max-w-none px-3" : "max-w-[7rem]"} />}
           </div>
-          {topRight && <div className="flex flex-shrink-0">{topRight}</div>}
+          {topRight && <div className="flex min-w-0 flex-shrink-0">{topRight}</div>}
         </div>
 
-        <div className={['min-h-0 w-full', dense ? 'pt-2 pb-0 sm:py-4' : 'py-4 sm:py-5'].join(' ')}>
-          <div className="relative z-10 h-full min-h-0 w-full">{children}</div>
+        <div className={['min-h-0 min-w-0 w-full', dense ? 'pt-2 pb-0 sm:py-4' : 'py-4 sm:py-5'].join(' ')}>
+          <div className="relative z-10 h-full min-h-0 min-w-0 w-full">{children}</div>
         </div>
 
-        <div className={['relative z-20 items-end justify-center', dense ? 'hidden sm:flex sm:min-h-3' : 'flex min-h-4'].join(' ')}>
+        <div className={['relative z-20 min-w-0 items-end justify-center', dense ? 'hidden sm:flex sm:min-h-3' : 'flex min-h-4'].join(' ')}>
           {footer}
         </div>
       </section>
