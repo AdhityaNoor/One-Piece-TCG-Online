@@ -20,6 +20,9 @@ import {
 import { useAuthStore } from './authStore';
 
 export type RankedLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
+// Tracks an in-flight join/leave request so the UI can disable the trigger button
+// and show a "Searching..." / "Leaving..." state instead of allowing repeat clicks.
+export type RankedQueueAction = 'idle' | 'joining' | 'leaving';
 
 interface RankedState {
   status: RankedLoadStatus;
@@ -29,6 +32,7 @@ interface RankedState {
   season: RankedSeasonConfig | null;
   profile: PublicRankedProfile | null;
   queue: RankedQueueStatus | null;
+  queueAction: RankedQueueAction;
   leaderboard: RankedLeaderboardEntry[];
   history: RankedMatchHistoryEntry[];
   selectedDeckId: string | null;
@@ -41,7 +45,7 @@ interface RankedState {
   leaveQueue(): Promise<void>;
 }
 
-export const useRankedStore = create<RankedState>((set) => ({
+export const useRankedStore = create<RankedState>((set, get) => ({
   status: 'idle',
   enabled: false,
   ranks: [],
@@ -49,6 +53,7 @@ export const useRankedStore = create<RankedState>((set) => ({
   season: null,
   profile: null,
   queue: null,
+  queueAction: 'idle',
   leaderboard: [],
   history: [],
   selectedDeckId: null,
@@ -101,22 +106,27 @@ export const useRankedStore = create<RankedState>((set) => ({
   },
 
   async joinQueue(deck) {
-    set({ error: null });
+    // Guard against spam-clicking "Set Sail": ignore re-entrant calls while a
+    // join is already in flight instead of firing duplicate requests that the
+    // server would just reject with a queue conflict.
+    if (get().queueAction !== 'idle') return;
+    set({ error: null, queueAction: 'joining' });
     try {
       const queue = await joinRankedQueue(requireToken(), deck);
-      set({ queue });
+      set({ queue, queueAction: 'idle' });
     } catch (cause) {
-      set({ error: cause instanceof Error ? cause.message : 'Could not join ranked queue.' });
+      set({ error: cause instanceof Error ? cause.message : 'Could not join ranked queue.', queueAction: 'idle' });
     }
   },
 
   async leaveQueue() {
-    set({ error: null });
+    if (get().queueAction !== 'idle') return;
+    set({ error: null, queueAction: 'leaving' });
     try {
       const queue = await leaveRankedQueue(requireToken());
-      set({ queue });
+      set({ queue, queueAction: 'idle' });
     } catch (cause) {
-      set({ error: cause instanceof Error ? cause.message : 'Could not leave ranked queue.' });
+      set({ error: cause instanceof Error ? cause.message : 'Could not leave ranked queue.', queueAction: 'idle' });
     }
   },
 }));
