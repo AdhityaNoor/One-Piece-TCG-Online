@@ -297,7 +297,7 @@ function MatchFoundToast({
     <div
       role="status"
       aria-live="assertive"
-      className="mt-4 flex items-center justify-between gap-3 border border-gold/60 bg-[linear-gradient(180deg,_rgba(58,38,4,0.92),_rgba(10,7,1,0.96))] px-4 py-3 shadow-[0_0_0_1px_rgba(212,175,55,0.25),_0_10px_30px_rgba(0,0,0,0.45)] animate-[pulse_1.8s_ease-in-out_infinite]"
+      className="mt-4 flex animate-pulse items-center justify-between gap-3 border border-gold/60 bg-[linear-gradient(180deg,_rgba(58,38,4,0.92),_rgba(10,7,1,0.96))] px-4 py-3 shadow-[0_0_0_1px_rgba(212,175,55,0.25),_0_10px_30px_rgba(0,0,0,0.45)]"
     >
       <div className="text-left">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Match Found</p>

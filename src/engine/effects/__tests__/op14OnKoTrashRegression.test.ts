@@ -14,11 +14,13 @@ import {
   buildBaseRig,
   makeCharacterDef,
   makeLeaderDef,
+  putDon,
   putCharacterInPlay,
   putDeckCards,
   putInHand,
   putStageInPlay,
 } from '../../rules/shared/__tests__/testRig';
+import { executeAction } from '../../actions/dispatch';
 import { fireActivate, fireOnPlay, fireWhenAttacking, resumeProgram, runTimings } from '../index';
 
 function pick(cardNumber: string) {
@@ -43,6 +45,51 @@ function expectTrashWithoutOnKo(
 }
 
 describe('OP14-079 / OP14-091 / OP09-009 On K.O. vs trash regressions', () => {
+  it('OP14-120 played from hand prompts and applies its opponent attack lock', () => {
+    const registry = buildRegistryFromAssignments([pick('OP14-120')]);
+    const crocodileDef = makeCharacterDef({
+      cardDefinitionId: 'OP14-120',
+      cardNumber: 'OP14-120',
+      name: 'Crocodile',
+      types: ['Baroque Works'],
+      baseCost: 9,
+      basePower: 9000,
+    });
+    const foeDef = makeCharacterDef({ cardDefinitionId: 'FOE-NINE', cardNumber: 'FOE-NINE', baseCost: 9, basePower: 9000 });
+
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 3 });
+    let handId: string;
+    let foeId: string;
+    ({ rig, instanceId: handId } = putInHand(rig, 'p1', crocodileDef));
+    ({ rig } = putDon(rig, 'p1', 9));
+    ({ rig, instanceId: foeId } = putCharacterInPlay(rig, 'p2', foeDef));
+
+    const donIds = rig.state.players.p1.costArea.cardIds.slice(0, 9);
+    let result = executeAction(rig.state, {
+      type: 'PLAY_CHARACTER',
+      actionId: 'play-op14-120',
+      playerId: 'p1',
+      handCardInstanceId: handId,
+      donInstanceIds: donIds,
+    }, rig.defs, registry);
+
+    expect(result.pendingChoices[0]?.sourceInstanceId).not.toBeNull();
+    expect(result.pendingChoices[0]?.constraints.candidateInstanceIds).toEqual([foeId]);
+
+    result = executeAction(result.state, {
+      type: 'RESOLVE_PENDING_CHOICE',
+      actionId: 'resolve-op14-120-lock',
+      playerId: 'p1',
+      choiceId: result.pendingChoices[0].id,
+      response: [foeId],
+    }, rig.defs, registry);
+
+    expect(result.state.continuousEffects.some((effect) =>
+      effect.attackRestriction?.appliesToInstanceId === foeId &&
+      effect.duration === 'endOfOpponentsTurn'
+    )).toBe(true);
+  });
+
   it('OP14-079 prompts optional trash-2 from deck after K.O.ing own Baroque Works', () => {
     const registry = buildRegistryFromAssignments([pick('OP14-079')]);
     const stageDef = makeCharacterDef({
@@ -337,5 +384,101 @@ describe('OP14-079 / OP14-091 / OP09-009 On K.O. vs trash regressions', () => {
     const onKoChoice = result.pendingChoices[0];
     expect(onKoChoice.sourceInstanceId).toBe(benthamId);
     expect(onKoChoice.prompt).toMatch(/Baroque Works|from:/i);
+  });
+
+  it('OP14-120 [On K.O.] revives after a leader K.O. effect resumes through a follow-up choice', () => {
+    const leaderAssignment = {
+      cardNumber: 'SYN-LEADER-KO',
+      templateId: 'ability' as const,
+      params: {
+        timing: 'activateMain' as const,
+        oncePerTurn: true,
+        functions: [
+          {
+            fn: 'chooseOne' as const,
+            chooser: 'controller' as const,
+            prompt: 'K.O. 1 of your Characters?',
+            options: [
+              { label: 'skip', functions: [] },
+              {
+                label: 'pay',
+                functions: [
+                  { fn: 'ko' as const, target: { group: 'characters' as const, player: 'controller' as const, filter: { typeIncludes: 'Baroque Works' } }, maxTargets: 1 },
+                  {
+                    fn: 'addCost' as const,
+                    target: { group: 'characters' as const, player: 'opponent' as const },
+                    amount: -1,
+                    duration: 'duringThisTurn' as const,
+                    optional: true,
+                    ifPrevious: 'previousMovedAny' as const,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const registry = buildRegistryFromAssignments([leaderAssignment, pick('OP14-120')]);
+    const leaderDef = makeLeaderDef({
+      cardDefinitionId: 'SYN-LEADER-KO',
+      cardNumber: 'SYN-LEADER-KO',
+      name: 'Own Leader',
+      types: ['Baroque Works'],
+    });
+    const crocodileDef = makeCharacterDef({
+      cardDefinitionId: 'OP14-120',
+      cardNumber: 'OP14-120',
+      name: 'Crocodile',
+      types: ['Baroque Works'],
+      basePower: 9000,
+      baseCost: 9,
+    });
+    const oppDef = makeCharacterDef({ cardDefinitionId: 'OPP-C', cardNumber: 'OPP-C', baseCost: 3 });
+    const handCostDef = makeCharacterDef({ cardDefinitionId: 'HAND-COST', cardNumber: 'HAND-COST' });
+
+    let rig = buildBaseRig({
+      activePlayerId: 'p1',
+      phase: 'main',
+      turnNumber: 3,
+      leaderOverridesP1: leaderDef,
+    });
+    const leaderId = rig.state.players.p1.leaderInstanceId;
+    rig = {
+      ...rig,
+      defs: { ...rig.defs, [leaderDef.cardDefinitionId]: leaderDef, [crocodileDef.cardDefinitionId]: crocodileDef, [oppDef.cardDefinitionId]: oppDef, [handCostDef.cardDefinitionId]: handCostDef },
+      state: {
+        ...rig.state,
+        cardsById: {
+          ...rig.state.cardsById,
+          [leaderId]: { ...rig.state.cardsById[leaderId], cardDefinitionId: leaderDef.cardDefinitionId },
+        },
+      },
+    };
+
+    let crocodileId: string;
+    let handCostId: string;
+    ({ rig, instanceId: crocodileId } = putCharacterInPlay(rig, 'p1', crocodileDef));
+    ({ rig, instanceId: handCostId } = putInHand(rig, 'p1', handCostDef));
+    ({ rig } = putCharacterInPlay(rig, 'p2', oppDef));
+
+    let result = runTimings(registry['SYN-LEADER-KO'], ['activateMain'], rig.state, leaderId, rig.defs, 'test', registry);
+    result = resumeProgram(registry['SYN-LEADER-KO'], result.state, result.pendingChoices[0], 1, rig.defs, 'test', registry);
+    result = resumeProgram(registry['SYN-LEADER-KO'], result.state, result.pendingChoices[0], [crocodileId], rig.defs, 'test', registry);
+    expect(result.state.pendingOnKoTriggers?.some((event) => event.targetInstanceId === crocodileId)).toBe(true);
+
+    result = resumeProgram(registry['SYN-LEADER-KO'], result.state, result.pendingChoices[0], [], rig.defs, 'test', registry);
+    if (result.pendingChoices.length === 0 && (result.state.pendingOnKoTriggers?.length ?? 0) > 0) {
+      result = settleOnKoTriggers(result.state, registry, rig.defs, 'test');
+    }
+
+    expect(result.pendingChoices[0]?.sourceInstanceId).toBe(crocodileId);
+    result = resumeProgram(registry['OP14-120'], result.state, result.pendingChoices[0], [handCostId], rig.defs, 'test', registry);
+
+    const revivedIds = result.state.players.p1.characterArea.cardIds.filter((id) =>
+      result.state.cardsById[id]?.cardDefinitionId === crocodileDef.cardDefinitionId
+    );
+    expect(revivedIds.length).toBe(1);
+    expect(revivedIds[0]).not.toBe(crocodileId);
   });
 });

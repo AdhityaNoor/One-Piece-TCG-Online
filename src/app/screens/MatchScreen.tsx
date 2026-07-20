@@ -28,7 +28,23 @@ import type { MatchModeTag } from '../../../shared/support';
 import { countAvailableDon, getActingPlayerId, projectPlayerBoard } from '../../board/projection';
 import { getOpponentId } from '../../engine/rules/shared';
 import { Button, CardDetailModal, CardImage, GlitterWrap, Modal, ScaleToFit } from '../components';
-import { ActionBar, ActionLogDock, BoardCardTile, CardBackArt, CardMovementOverlay, DockHand, MatchChatPanel, PendingChoicePrompt, PhaseIndicator, PlayerBoardPanel, ReportBugModal, TrashGalleryModal, useBoardSelection } from '../components/match';
+import {
+  ActionBar,
+  ActionLogDock,
+  actionBarHasBlockingPrompt,
+  BoardCardTile,
+  CardBackArt,
+  CardMovementOverlay,
+  DockHand,
+  MatchChatPanel,
+  PendingChoicePrompt,
+  PhaseIndicator,
+  PlayerBoardPanel,
+  ReportBugModal,
+  TrashGalleryModal,
+  useBoardSelection,
+} from '../components/match';
+import { SETTINGS_PANEL_SHELL, SETTINGS_PANEL_TITLE } from '../components/settingsPanelStyles';
 import { useCpuTurnController } from '../hooks/useCpuTurnController';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -149,6 +165,15 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // collapsed per design — the log is opt-in, not something that eats
   // 330px of board width every match.
   const [desktopLogOpen, setDesktopLogOpen] = useState(false);
+  // Desktop-only floating prompt popup for ActionBar's inline "must respond"
+  // instructions (hovers over the board instead of living inline in the
+  // Actions aside — see actionBarHasBlockingPrompt's doc comment).
+  // PendingChoicePrompt's own ChoicePromptShell popups hide themselves
+  // independently now (see ChoicePromptPanel.tsx), on every breakpoint.
+  // Hidden=false by default so a fresh prompt is never accidentally
+  // suppressed; the player can still toggle it away to see the board
+  // underneath.
+  const [promptPopupHidden, setPromptPopupHidden] = useState(false);
   // Browser Fullscreen API toggle for the Actions aside's Fullscreen button.
   // Presentation-only — never touches GameState/the engine. `isFullscreen`
   // tracks the real DOM state (not just "did we last click the button") so
@@ -630,6 +655,25 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
       selection={selection}
     />
   );
+  // Desktop-only: whether ActionBar (above) is currently a "must respond"
+  // prompt rather than its idle End-Main-Phase state — exactly mirrors when
+  // `actionContent` above resolves to the plain <ActionBar/> branch (the
+  // canUseLocalActions/isCpuTurn/gameOver guard is identical on purpose), so
+  // this never fires for CpuThinking/WaitingForOpponent/"Match complete."
+  const desktopActionPromptVisible =
+    canUseLocalActions && !isCpuTurn && !matchState.gameOver && actionBarHasBlockingPrompt(selection, matchState.currentBattle, actingBoard);
+  // Same "may this client see it" gate PendingChoicePrompt's own render site
+  // already used (Casual: only the seat whose choice it actually is) —
+  // reused for both the floating-popup visibility signal below AND the real
+  // render further down, so the two can never disagree.
+  const mayViewPendingChoice = !isPinnedPerspective || actingPlayerId === localPlayerId;
+  // The floating popup below now only ever carries ActionBar's inline "must
+  // respond" content — PendingChoicePrompt's ChoicePromptShell popups
+  // (search galleries, mulligan, K.O. replacement, etc.) manage their own
+  // minimize/reopen state internally (see ChoicePromptPanel.tsx) so they can
+  // be hidden-to-view-the-board on mobile too, not just desktop. So this
+  // widget's visibility is just desktopActionPromptVisible now.
+  const anyDesktopPromptVisible = desktopActionPromptVisible;
   const battleLineActions = buildMobileBattleLineActions({
     phase: matchState.currentPhase,
     turnNumber: matchState.turnNumber,
@@ -785,7 +829,19 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                 <PhaseIndicator playerId={topPlayerId} label={nameFor(topPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === topPlayerId} timerMs={timerMsFor(topPlayerId)} />
                 <PhaseIndicator playerId={bottomPlayerId} label={nameFor(bottomPlayerId)} currentPhase={matchState.currentPhase} active={matchState.activePlayerId === bottomPlayerId} timerMs={timerMsFor(bottomPlayerId)} />
               </div>
-              {actionContent}
+              {desktopActionPromptVisible ? (
+                <div className="flex flex-col items-center gap-2 border border-dashed border-gold/30 bg-black/18 px-3 py-6 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gold">Action Required</p>
+                  <p className="text-xs text-white/55">Respond to the prompt hovering over the board.</p>
+                  {promptPopupHidden && (
+                    <Button variant="secondary" size="sm" onClick={() => setPromptPopupHidden(false)}>
+                      Show Prompt
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                actionContent
+              )}
             </div>
             {onlineMode && (
               <div className="flex min-h-0 flex-1 flex-col border-t border-gold/25">
@@ -1060,11 +1116,60 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           viewerLabel={isPinnedPerspective && selection.fieldChoiceInfo.playerId !== localPlayerId ? `${nameFor(selection.fieldChoiceInfo.playerId)} is selecting a card…` : null}
         />
       )}
+      {/* Desktop-only floating prompt popup: hovers over the board instead
+          of living inline in the left Actions aside (ActionBar's "must
+          respond" branches, via actionBarHasBlockingPrompt). Only carries
+          ActionBar's inline instructions now — PendingChoicePrompt's own
+          ChoicePromptShell popups hide/reopen themselves independently (see
+          ChoicePromptPanel.tsx), on every breakpoint, not just desktop.
+          z-[45] is deliberately BELOW TurnAndPhaseBanner (z-[108]) and the
+          board-overlay-root layer (zIndex 110) so this can never visually
+          cover either of them, and anchored to top-3 (very close to the top
+          edge) rather than viewport-center to stay clear of the turn
+          banner's dead-center flash and the board's own card-play
+          animations — see actionBarHasBlockingPrompt's doc comment for the
+          OTHER half of this fix (it also no longer fires on every
+          Block/Counter Step, only when there's a real decision). Hidden
+          entirely on mobile/tablet (`hidden xl:flex`) — that layout keeps
+          its existing inline ActionBar. */}
+      {anyDesktopPromptVisible && (
+        <div className="pointer-events-none fixed inset-x-0 top-3 z-[45] hidden justify-center px-4 xl:flex">
+          <div className="pointer-events-auto flex w-full max-w-md flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPromptPopupHidden((hidden) => !hidden)}
+              aria-expanded={!promptPopupHidden}
+              className="flex h-7 items-center gap-1.5 border border-white/15 bg-black/55 px-3 text-[9px] font-black uppercase tracking-[0.18em] text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.3)] backdrop-blur-md transition-all hover:border-gold/55 hover:text-gold"
+            >
+              <svg viewBox="0 0 24 24" className={['h-3 w-3 transition-transform duration-200', promptPopupHidden ? 'rotate-180' : ''].join(' ')} fill="none" stroke="currentColor" strokeWidth="3">
+                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {promptPopupHidden ? 'Show Prompt' : 'Hide (view board)'}
+            </button>
+
+            {!promptPopupHidden && desktopActionPromptVisible && (
+              <div className={`w-full p-3 ${SETTINGS_PANEL_SHELL}`}>
+                <p className={SETTINGS_PANEL_TITLE}>Action Required</p>
+                <div className="mt-3 flex flex-col gap-3">
+                  <ActionBar
+                    phase={matchState.currentPhase}
+                    turnNumber={matchState.turnNumber}
+                    battle={matchState.currentBattle}
+                    actingBoard={actingBoard}
+                    selection={selection}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {/* Casual: a pending choice belonging to the opponent seat is theirs to
           resolve over the network, not this client's — suppress the prompt so
           the local human can't answer for the opponent (the WaitingForOpponent
-          panel covers this state instead). */}
-      {(!isPinnedPerspective || actingPlayerId === localPlayerId) && <PendingChoicePrompt state={matchState} defs={defs} images={images} />}
+          panel covers this state instead). ChoicePromptShell handles its own
+          hide-to-view-the-board minimize internally now (mobile + desktop). */}
+      {mayViewPendingChoice && <PendingChoicePrompt state={matchState} defs={defs} images={images} />}
       <CardDetailModal open={zoomDefinitionId !== null} onClose={() => setZoomDefinitionId(null)} definition={zoomDefinition} imageUrl={zoomImageUrl} mobileImageOnly />
 
       <Modal open={battleLinePromptOpen} onClose={() => setBattleLinePromptOpen(false)} title={mobileBattleLineLabel} rootClassName="op-mobile-battle-actions-modal" maxWidthClassName="max-w-md">
@@ -1878,7 +1983,8 @@ function MobileCardZone({
   const selectedAttachedDonCount = card.donAttachedIds.filter((id) => selectedDon.has(id)).length;
   const selectable = mobileLeaderCharacterSelectable(mode, isOwn, isOpponent, zone, card, canActivate, canOnOppAttack);
   const attackerSelected = mode.kind === 'selectAttackTarget' && mode.attackerInstanceId === card.instanceId;
-  const canGiveDon = canGiveDonOnCard(board, card);
+  const canGiveDon = isOwn && canGiveDonOnCard(board, card);
+  const canReturnGivenDon = isOwn && allowReturnGivenDon && card.donAttachedCount > 0;
   const activeDonCount = mobileCostAreaCards(board, false).length;
 
   const closeAfter = (action: () => void): void => {
@@ -1931,7 +2037,7 @@ function MobileCardZone({
               Give DON!!
             </button>
           )}
-          {allowReturnGivenDon && card.donAttachedCount > 0 && (
+          {canReturnGivenDon && (
             <button type="button" onClick={() => closeAfter(() => onReturnGivenDon(card))}>
               Return DON!!
             </button>

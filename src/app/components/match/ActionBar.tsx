@@ -36,8 +36,13 @@ const INSTRUCTIONS: Record<string, string> = {
   payingOnOppAttackCost: 'Tap DON!! in your Cost Area to return for the ability cost, then Confirm.',
 };
 
-/** User-started selection flows that can be abandoned. Auto-entered modes (counter / pending choices) must not show Cancel. */
-const CANCELLABLE_MODE_KINDS = new Set([
+/**
+ * User-started selection flows that can be abandoned. Auto-entered modes
+ * (counter / pending choices) must not show Cancel. Exported so MatchScreen
+ * can reuse the exact same set in `actionBarHasBlockingPrompt` (desktop
+ * floating-popup placement) without re-deriving/duplicating the list.
+ */
+export const CANCELLABLE_MODE_KINDS = new Set([
   'confirmPlayCost',
   'selectAttacker',
   'selectAttackTarget',
@@ -49,6 +54,50 @@ const CANCELLABLE_MODE_KINDS = new Set([
   'selectOnOppAttackSource',
   'payingOnOppAttackCost',
 ]);
+
+/**
+ * True whenever ActionBar is about to render one of its "must respond"
+ * branches rather than its default idle state (End Main Phase / CpuThinking
+ * / WaitingForOpponent — those are rendered separately by MatchScreen's
+ * `actionContent` and aren't gated by this at all). Desktop only:
+ * MatchScreen uses this to decide whether ActionBar renders inline in the
+ * left Actions aside (false — idle) or inside the floating popup hovering
+ * over the board (true — needs a decision).
+ *
+ * IMPORTANT: the Block/Counter Step branches are NOT just "battle.step ===
+ * 'block' | 'counter'" — those steps exist on literally every attack even
+ * when the defender has zero real options (nothing to do but Pass), and an
+ * earlier version of this predicate fired the floating popup unconditionally
+ * for both, which meant it appeared on every single attack and visually sat
+ * over the turn/phase banner. This version only reports true for those two
+ * steps when the acting player actually has an eligible Blocker /
+ * [On Your Opponent's Attack] source / Counter card — mirroring the exact
+ * eligibility checks ActionBar's own block/counter branches already compute
+ * for button enablement, so it never drifts out of sync with what's really
+ * on offer. The remaining branches (DON!! payment progress, field-choice
+ * progress, cancellable modes) are all user-INITIATED flows — the player
+ * tapped something to start them — so those stay unconditional.
+ */
+export function actionBarHasBlockingPrompt(
+  selection: Pick<ReturnType<typeof useBoardSelection>, 'mode' | 'donChoiceProgress' | 'fieldChoiceInfo' | 'hasOnOpponentsAttack' | 'isCounterCardApplicable'>,
+  battle: GameState['currentBattle'],
+  actingBoard: PlayerBoardView,
+): boolean {
+  if (selection.donChoiceProgress) return true;
+  if (selection.fieldChoiceInfo) return true;
+  if (battle && battle.step === 'block') {
+    const hasEligibleBlocker = actingBoard.characterArea.some((card) => card.orientation === 'active' && card.hasBlocker);
+    const hasEligibleOnOppAttack = [actingBoard.leader, ...actingBoard.characterArea, ...actingBoard.stageArea]
+      .filter(isCardView)
+      .some((card) => selection.hasOnOpponentsAttack(card));
+    return hasEligibleBlocker || hasEligibleOnOppAttack;
+  }
+  if (battle && battle.step === 'counter') {
+    return actingBoard.hand.some((card) => selection.isCounterCardApplicable(card));
+  }
+  if (selection.mode.kind !== 'idle' && CANCELLABLE_MODE_KINDS.has(selection.mode.kind)) return true;
+  return false;
+}
 
 function formatCardNames(cards: { name: string }[]): string {
   const names = cards.slice(0, 3).map((card) => card.name);
