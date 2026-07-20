@@ -8,7 +8,7 @@
  * CHOICE later calls resumeProgram to continue from exactly that op with the
  * player's selection bound.
  */
-import type { GameState } from '../state/game';
+import type { GameState, PendingEffectCascadeEvent } from '../state/game';
 import type { ActionExecuteResult } from '../actions/actionExecuteResult';
 import type { PendingChoice } from '../events/pendingChoice';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
@@ -69,6 +69,184 @@ function withResultBindings(bindings: Record<string, string[]>, result: OpResult
   };
 }
 
+function collectCascadeEvents(ctx: EffectContextImpl): PendingEffectCascadeEvent[] {
+  const playedCharacters = ctx.takePlayedCharacters();
+  return [
+    ...ctx.takeRested().map((event): PendingEffectCascadeEvent => ({ kind: 'rested', ...event })),
+    ...ctx.takeDonGiven().map((event): PendingEffectCascadeEvent => ({ kind: 'donGiven', ...event })),
+    ...ctx.takeFieldRemovals().map((event): PendingEffectCascadeEvent => ({ kind: 'fieldRemoval', ...event })),
+    ...ctx.takeLifeLeaves().map((instanceId): PendingEffectCascadeEvent => ({ kind: 'lifeLeave', instanceId })),
+    ...ctx.takePendingEventActivations().map((eventInstanceId): PendingEffectCascadeEvent => ({ kind: 'nestedEventActivation', eventInstanceId })),
+    ...playedCharacters.map((event): PendingEffectCascadeEvent => ({ kind: 'entry', ...event })),
+    ...ctx.takePlayedFromTrash().map((instanceId): PendingEffectCascadeEvent => ({ kind: 'playedFromTrash', instanceId })),
+    ...ctx.takeHandTrashed().map((event): PendingEffectCascadeEvent => ({ kind: 'handTrashed', ...event })),
+    ...playedCharacters.map((event): PendingEffectCascadeEvent => ({ kind: 'playedCharacterReaction', ...event })),
+  ];
+}
+
+function withPersistedCascade(working: GameState, remaining: PendingEffectCascadeEvent[]): GameState {
+  const pending = working.pendingEffectCascade ?? [];
+  return remaining.length > 0 || pending.length > 0
+    ? { ...working, pendingEffectCascade: [...remaining, ...pending] }
+    : working;
+}
+
+function drainCascadeEvents(
+  state: GameState,
+  events: PendingEffectCascadeEvent[],
+  log: ActionExecuteResult['log'],
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+  registry: EffectTemplateRegistry,
+): ActionExecuteResult {
+  let working = state;
+  let outputLog = [...log];
+  const queue = [...events];
+  let guard = 0;
+
+  while (queue.length > 0 && guard++ < 1000) {
+    const event = queue.shift()!;
+    switch (event.kind) {
+      case 'rested': {
+        const eventContext: GateEvalContext = {
+          restCause: event.cause,
+          restSourceInstanceId: event.sourceInstanceId,
+        };
+        const inst = working.cardsById[event.targetInstanceId];
+        const program = inst ? resolveEffectProgram(registry, defs, inst.cardDefinitionId) : undefined;
+        if (program?.abilities.some((a) => a.timing === 'onRested')) {
+          const subRes = runTimings(program, ['onRested'], working, event.targetInstanceId, defs, actionId, registry, true, eventContext);
+          working = subRes.state;
+          outputLog = [...outputLog, ...subRes.log];
+          if (subRes.pendingChoices.length > 0) {
+            return { state: withPersistedCascade(working, queue), log: outputLog, pendingChoices: subRes.pendingChoices };
+          }
+        }
+        const board = fireCharacterRestedReactions(working, event, registry, defs, actionId);
+        working = board.state;
+        outputLog = [...outputLog, ...board.log];
+        if (board.pendingChoices.length > 0) {
+          return { state: withPersistedCascade(working, queue), log: outputLog, pendingChoices: board.pendingChoices };
+        }
+        break;
+      }
+      case 'donGiven': {
+        const target = working.cardsById[event.targetInstanceId];
+        if (!target) break;
+        const fired = fireDonGivenReactions(working, target.controllerId, event.targetInstanceId, event.count, registry, defs, actionId);
+        working = fired.state;
+        outputLog = [...outputLog, ...fired.log];
+        if (fired.pendingChoices.length > 0) {
+          return { state: withPersistedCascade(working, queue), log: outputLog, pendingChoices: fired.pendingChoices };
+        }
+        break;
+      }
+      case 'fieldRemoval': {
+        const removed = fireRemovedFromFieldReactions(working, event, registry, defs, actionId);
+        working = removed.state;
+        outputLog = [...outputLog, ...removed.log];
+        if (removed.pendingChoices.length > 0) {
+          return { state: withPersistedCascade(working, queue), log: outputLog, pendingChoices: removed.pendingChoices };
+        }
+        break;
+      }
+      case 'lifeLeave': {
+        const lifeRemoved = fireLifeRemovedReactions(working, registry, defs, actionId);
+        working = lifeRemoved.state;
+        outputLog = [...outputLog, ...lifeRemoved.log];
+        if (lifeRemoved.pendingChoices.length > 0) {
+          return { state: withPersistedCascade(working, queue), log: outputLog, pendingChoices: lifeRemoved.pendingChoices };
+        }
+        break;
+      }
+      case 'nestedEventActivation': {
+        const inst = working.cardsById[event.eventInstanceId];
+        if (!inst) break;
+        const fired = fireNestedEventActivation(working, event.eventInstanceId, inst.controllerId, registry, defs, actionId);
+        working = fired.state;
+        outputLog = [...outputLog, ...fired.log];
+        if (fired.pendingChoices.length > 0) {
+          return { state: withPersistedCascade(working, queue), log: outputLog, pendingChoices: fired.pendingChoices };
+        }
+        break;
+      }
+      case 'entry': {
+        const inst = working.cardsById[event.instanceId];
+        const program = inst ? resolveEffectProgram(registry, defs, inst.cardDefinitionId) : undefined;
+        if (!program?.abilities.some((a) => a.timing === 'onEnterPlay' || a.timing === 'onPlay')) break;
+        const fired = runTimings(program, ['onEnterPlay', 'onPlay'], working, event.instanceId, defs, actionId, registry);
+        working = fired.state;
+        outputLog = [...outputLog, ...fired.log];
+        if (fired.pendingChoices.length > 0) {
+          return { state: withPersistedCascade(working, queue), log: outputLog, pendingChoices: fired.pendingChoices };
+        }
+        break;
+      }
+      case 'playedFromTrash': {
+        const inst = working.cardsById[event.instanceId];
+        if (!inst) break;
+        const fired = fireCharacterPlayedFromTrashReactions(working, inst.controllerId, event.instanceId, registry, defs, actionId);
+        working = fired.state;
+        outputLog = [...outputLog, ...fired.log];
+        if (fired.pendingChoices.length > 0) {
+          return { state: withPersistedCascade(working, queue), log: outputLog, pendingChoices: fired.pendingChoices };
+        }
+        break;
+      }
+      case 'handTrashed': {
+        const fired = fireHandTrashedReactions(working, event, registry, defs, actionId);
+        working = fired.state;
+        outputLog = [...outputLog, ...fired.log];
+        if (fired.pendingChoices.length > 0) {
+          return { state: withPersistedCascade(working, queue), log: outputLog, pendingChoices: fired.pendingChoices };
+        }
+        break;
+      }
+      case 'playedCharacterReaction': {
+        const samePlayer = fireCharacterPlayedFromHandReactions(working, event.controllerId, event.instanceId, registry, defs, actionId);
+        working = samePlayer.state;
+        outputLog = [...outputLog, ...samePlayer.log];
+        if (samePlayer.pendingChoices.length > 0) {
+          return { state: withPersistedCascade(working, queue), log: outputLog, pendingChoices: samePlayer.pendingChoices };
+        }
+        const opponent = fireOpponentCharacterPlayedFromHandReactions(
+          working,
+          event.controllerId,
+          event.instanceId,
+          event.fromCharacterEffect,
+          registry,
+          defs,
+          actionId,
+        );
+        working = opponent.state;
+        outputLog = [...outputLog, ...opponent.log];
+        if (opponent.pendingChoices.length > 0) {
+          return { state: withPersistedCascade(working, queue), log: outputLog, pendingChoices: opponent.pendingChoices };
+        }
+        break;
+      }
+      default: {
+        const exhaustiveCheck: never = event;
+        throw new Error(`Unknown pending effect cascade event '${(exhaustiveCheck as PendingEffectCascadeEvent).kind}'.`);
+      }
+    }
+  }
+
+  return { state: working, log: outputLog, pendingChoices: [] };
+}
+
+export function settleEffectCascade(
+  state: GameState,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const queue = state.pendingEffectCascade;
+  if (!queue || queue.length === 0) return { state, log: [], pendingChoices: [] };
+  if (state.pendingChoices.length > 0) return { state, log: [], pendingChoices: [] };
+  return drainCascadeEvents({ ...state, pendingEffectCascade: [] }, queue, [], defs, actionId, registry);
+}
+
 /**
  * After a resolution finishes WITHOUT suspending, fire [On K.O.] (10-2-17) for
  * every Character it K.O.'d, in order — a card K.O.'d by an effect triggers its
@@ -90,11 +268,13 @@ function finishWithCascade(
   // followed by optional follow-ups (OP14-079 / Leader K.O. abilities) drop onKO.
   if (first.pendingChoices.length > 0) {
     const pendingKo = ctx.takeKoed();
-    if (pendingKo.length === 0) return first;
+    const pendingCascade = collectCascadeEvents(ctx);
+    if (pendingKo.length === 0 && pendingCascade.length === 0) return first;
     return {
       state: {
         ...first.state,
         pendingOnKoTriggers: [...(first.state.pendingOnKoTriggers ?? []), ...pendingKo],
+        pendingEffectCascade: [...(first.state.pendingEffectCascade ?? []), ...pendingCascade],
       },
       log: first.log,
       pendingChoices: first.pendingChoices,
@@ -132,145 +312,7 @@ function finishWithCascade(
     }
   }
 
-  const restedQueue = ctx.takeRested();
-  guard = 0;
-  while (restedQueue.length > 0 && guard++ < 200) {
-    const event = restedQueue.shift()!;
-    const eventContext: GateEvalContext = {
-      restCause: event.cause,
-      restSourceInstanceId: event.sourceInstanceId,
-    };
-    const inst = working.cardsById[event.targetInstanceId];
-    const program = inst ? resolveEffectProgram(registry, defs, inst.cardDefinitionId) : undefined;
-    if (program?.abilities.some((a) => a.timing === 'onRested')) {
-      // Pay costs (DON!! −N / trashThis / …) the same as onKO cascade — many onRested texts are "you may pay …".
-      const subRes = runTimings(program, ['onRested'], working, event.targetInstanceId, defs, actionId, registry, true, eventContext);
-      working = subRes.state;
-      log = [...log, ...subRes.log];
-      if (subRes.pendingChoices.length > 0) return { state: working, log, pendingChoices: subRes.pendingChoices };
-    }
-    // Board-wide "If a Character is rested by your effect" watchers (OP07-031 / OP10-036).
-    const board = fireCharacterRestedReactions(working, event, registry, defs, actionId);
-    working = board.state;
-    log = [...log, ...board.log];
-    if (board.pendingChoices.length > 0) return { state: working, log, pendingChoices: board.pendingChoices };
-  }
-
-  const donGivenQueue = ctx.takeDonGiven();
-  guard = 0;
-  while (donGivenQueue.length > 0 && guard++ < 200) {
-    const event = donGivenQueue.shift()!;
-    const target = working.cardsById[event.targetInstanceId];
-    if (!target) continue;
-    const fired = fireDonGivenReactions(working, target.controllerId, event.targetInstanceId, event.count, registry, defs, actionId);
-    working = fired.state;
-    log = [...log, ...fired.log];
-    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
-  }
-
-  const removalQueue = ctx.takeFieldRemovals();
-  guard = 0;
-  while (removalQueue.length > 0 && guard++ < 200) {
-    const event = removalQueue.shift()!;
-    const removed = fireRemovedFromFieldReactions(working, event, registry, defs, actionId);
-    working = removed.state;
-    log = [...log, ...removed.log];
-    if (removed.pendingChoices.length > 0) return { state: working, log, pendingChoices: removed.pendingChoices };
-  }
-
-  const lifeLeaveQueue = ctx.takeLifeLeaves();
-  guard = 0;
-  while (lifeLeaveQueue.length > 0 && guard++ < 200) {
-    lifeLeaveQueue.shift();
-    const lifeRemoved = fireLifeRemovedReactions(working, registry, defs, actionId);
-    working = lifeRemoved.state;
-    log = [...log, ...lifeRemoved.log];
-    if (lifeRemoved.pendingChoices.length > 0) return { state: working, log, pendingChoices: lifeRemoved.pendingChoices };
-  }
-
-  const eventQueue = ctx.takePendingEventActivations();
-  guard = 0;
-  while (eventQueue.length > 0 && guard++ < 200) {
-    const eventId = eventQueue.shift()!;
-    const inst = working.cardsById[eventId];
-    if (!inst) continue;
-    const fired = fireNestedEventActivation(working, eventId, inst.controllerId, registry, defs, actionId);
-    working = fired.state;
-    log = [...log, ...fired.log];
-    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
-  }
-
-  const playedCharacterQueue = ctx.takePlayedCharacters();
-  const playedCharacterEntryQueue = [...playedCharacterQueue];
-  guard = 0;
-  while (playedCharacterEntryQueue.length > 0 && guard++ < 200) {
-    const event = playedCharacterEntryQueue.shift()!;
-    const inst = working.cardsById[event.instanceId];
-    const program = inst ? resolveEffectProgram(registry, defs, inst.cardDefinitionId) : undefined;
-    if (!program?.abilities.some((a) => a.timing === 'onEnterPlay' || a.timing === 'onPlay')) continue;
-    const fired = runTimings(program, ['onEnterPlay', 'onPlay'], working, event.instanceId, defs, actionId, registry);
-    working = fired.state;
-    log = [...log, ...fired.log];
-    if (fired.pendingChoices.length > 0) {
-      // This card's On Play suspended for input. Any characters that entered
-      // play alongside it (same effect, e.g. OP13-082's 5 cards) still owe
-      // their own entry triggers — persist them on state so they aren't lost
-      // across the client round-trip. settleEntryTriggers (dispatch.ts) fires
-      // them, in order, once this card's choice chain resolves.
-      const remaining = playedCharacterEntryQueue.map((e) => e.instanceId);
-      const deferred =
-        remaining.length > 0
-          ? { ...working, pendingEntryTriggers: [...(working.pendingEntryTriggers ?? []), ...remaining] }
-          : working;
-      return { state: deferred, log, pendingChoices: fired.pendingChoices };
-    }
-  }
-
-  const playedFromTrashQueue = ctx.takePlayedFromTrash();
-  guard = 0;
-  while (playedFromTrashQueue.length > 0 && guard++ < 200) {
-    const id = playedFromTrashQueue.shift()!;
-    const inst = working.cardsById[id];
-    if (!inst) continue;
-    const fired = fireCharacterPlayedFromTrashReactions(working, inst.controllerId, id, registry, defs, actionId);
-    working = fired.state;
-    log = [...log, ...fired.log];
-    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
-  }
-
-  const handTrashedQueue = ctx.takeHandTrashed();
-  guard = 0;
-  while (handTrashedQueue.length > 0 && guard++ < 200) {
-    const event = handTrashedQueue.shift()!;
-    const fired = fireHandTrashedReactions(working, event, registry, defs, actionId);
-    working = fired.state;
-    log = [...log, ...fired.log];
-    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
-  }
-
-  const playedCharacterReactionQueue = [...playedCharacterQueue];
-  guard = 0;
-  while (playedCharacterReactionQueue.length > 0 && guard++ < 200) {
-    const event = playedCharacterReactionQueue.shift()!;
-    const samePlayer = fireCharacterPlayedFromHandReactions(working, event.controllerId, event.instanceId, registry, defs, actionId);
-    working = samePlayer.state;
-    log = [...log, ...samePlayer.log];
-    if (samePlayer.pendingChoices.length > 0) return { state: working, log, pendingChoices: samePlayer.pendingChoices };
-    const opponent = fireOpponentCharacterPlayedFromHandReactions(
-      working,
-      event.controllerId,
-      event.instanceId,
-      event.fromCharacterEffect,
-      registry,
-      defs,
-      actionId,
-    );
-    working = opponent.state;
-    log = [...log, ...opponent.log];
-    if (opponent.pendingChoices.length > 0) return { state: working, log, pendingChoices: opponent.pendingChoices };
-  }
-
-  return { state: working, log, pendingChoices: [] };
+  return drainCascadeEvents(working, collectCascadeEvents(ctx), log, defs, actionId, registry);
 }
 
 /** From a set of card instance ids, those whose definition satisfies a filter (all present fields ANDed). */

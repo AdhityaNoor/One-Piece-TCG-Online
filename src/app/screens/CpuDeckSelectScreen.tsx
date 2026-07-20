@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { CpuDifficulty } from '../../ai';
 import { evaluateSavedDeckFormatStatus } from '../../cards/format';
 import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
 import { Button, CanvasMenuButton, DeckListSummary, GameCanvasScreen, OpSelect } from '../components';
+import { useLastUsedDeckStore } from '../store/lastUsedDeckStore';
 import { PLAYER_A_ID, PLAYER_B_ID } from '../store/matchStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { useMatchSetupStore } from '../store/matchSetupStore';
@@ -80,9 +81,19 @@ export function CpuDeckSelectScreen() {
   const swapSides = useMatchSetupStore((state) => state.swapSides);
   const cpuDifficulty = useMatchSetupStore((state) => state.cpuDifficulty);
   const setCpuDifficulty = useMatchSetupStore((state) => state.setCpuDifficulty);
+  const lastUsedDeckId = useLastUsedDeckStore((state) => state.lastUsedDeckId);
+  const setLastUsedDeckId = useLastUsedDeckStore((state) => state.setLastUsedDeckId);
 
   const rows = useMemo(() => entries.map((entry) => ({ entry, deck: load(entry.deckId) })), [entries, load]);
   const ready = deckIdA !== null && deckIdB !== null;
+
+  // "Your Deck" defaults to the last deck actually played, the first time
+  // this screen sees a deck list and nothing is picked yet — never overrides
+  // an explicit choice. The CPU's deck always starts blank (distinct pick).
+  useEffect(() => {
+    if (deckIdA !== null || !lastUsedDeckId) return;
+    if (rows.some(({ entry }) => entry.deckId === lastUsedDeckId)) setDeckA(lastUsedDeckId);
+  }, [rows, lastUsedDeckId, deckIdA, setDeckA]);
 
   return (
     <GameCanvasScreen onBack={goBack} dense>
@@ -140,6 +151,7 @@ export function CpuDeckSelectScreen() {
               className="h-11 max-w-none sm:h-14"
               onClick={() => {
                 if (!deckIdA || !deckIdB) return;
+                setLastUsedDeckId(deckIdA);
                 navigateTo({
                   screen: 'match',
                   deckIdA,

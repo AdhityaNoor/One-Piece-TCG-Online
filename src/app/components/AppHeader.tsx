@@ -26,6 +26,13 @@
  * doesn't shear it. The first appearance (and any hidden->shown transition,
  * e.g. leaving the profile screen) jumps without animating so the highlight
  * never streaks in from the far left.
+ *
+ * Mobile/tablet (below `sm`): the desktop tab row (`hidden sm:flex`, still
+ * pixel-identical above `sm`) is swapped for a single trigger button showing
+ * the active tab's label + a chevron; tapping it drops a full-width menu of
+ * all five tabs beneath the header. A fixed-position backdrop behind the
+ * menu closes it on outside-tap. This is purely a `sm:hidden` / `sm:flex`
+ * split — no desktop layout, sizing, or spacing changed.
  */
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { HubTab } from '../store/navigationStore';
@@ -58,6 +65,8 @@ export function AppHeader() {
     visible: false,
     animate: false,
   });
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const activeTabLabel = TABS.find((tab) => tab.id === activeTab)?.label ?? 'Menu';
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -78,6 +87,13 @@ export function AppHeader() {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
+  }, [activeTab]);
+
+  // Collapse the mobile dropdown whenever the active tab changes for any
+  // reason (a tab tap already closes it locally, but this also covers
+  // navigating away and back, e.g. via the profile shortcut).
+  useLayoutEffect(() => {
+    setMobileNavOpen(false);
   }, [activeTab]);
 
   return (
@@ -104,7 +120,34 @@ export function AppHeader() {
         />
       </button>
 
-      <nav className="relative z-10 ml-1 flex h-full min-w-0 flex-1 items-stretch gap-1 overflow-x-auto pl-3 sm:ml-6 sm:gap-2 sm:pl-4" aria-label="Main navigation">
+      {/* Mobile/tablet trigger — replaces the whole tab row below `sm`. */}
+      <button
+        type="button"
+        onClick={() => setMobileNavOpen((value) => !value)}
+        aria-expanded={mobileNavOpen}
+        aria-haspopup="true"
+        aria-label="Toggle navigation menu"
+        className="relative z-10 ml-1 flex h-full min-w-0 flex-1 items-center justify-between gap-2 pl-3 sm:hidden"
+      >
+        <span className="truncate font-heading text-base font-black uppercase tracking-[0.06em] text-white">
+          {activeTabLabel}
+        </span>
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className={[
+            'h-5 w-5 flex-shrink-0 text-white/70 transition-transform duration-200',
+            mobileNavOpen ? 'rotate-180' : '',
+          ].join(' ')}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+        >
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      <nav className="relative z-10 ml-1 hidden h-full min-w-0 flex-1 items-stretch gap-1 overflow-x-auto pl-3 sm:ml-6 sm:flex sm:gap-2 sm:pl-4" aria-label="Main navigation">
         <span
           aria-hidden="true"
           className={[
@@ -173,6 +216,49 @@ export function AppHeader() {
           {username}
         </span>
       </button>
+
+      {/* Mobile dropdown menu — anchored to the header (which is `relative`),
+          so it spans the full header width regardless of where the trigger
+          button sits in the flex row. `sm:hidden` so it can never render at
+          desktop widths even if state is somehow left open through a resize. */}
+      {mobileNavOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-20 sm:hidden"
+            aria-hidden="true"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <div
+            className="absolute inset-x-0 top-full z-30 flex flex-col border-b border-white/10 bg-[#050d1e] shadow-[0_16px_30px_rgba(0,0,0,0.45)] sm:hidden"
+            role="menu"
+          >
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setHubTab(tab.id);
+                    setMobileNavOpen(false);
+                  }}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={[
+                    'flex items-center justify-between px-4 py-3.5 text-left font-heading text-sm font-black uppercase tracking-[0.08em] transition-colors',
+                    isActive ? 'bg-red-600/20 text-white' : 'text-white/60 active:bg-white/5',
+                  ].join(' ')}
+                >
+                  {tab.label}
+                  {isActive && (
+                    <span aria-hidden="true" className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gold shadow-[0_0_8px_rgba(217,164,65,0.8)]" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
     </header>
   );
 }

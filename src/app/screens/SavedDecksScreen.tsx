@@ -1,4 +1,5 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useIsWideDeckLayout } from '../hooks/useIsWideDeckLayout';
 import { evaluateSavedDeckFormatStatus } from '../../cards/format';
 import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
 import type { CardCategory, Color } from '../../engine/state/card';
@@ -422,8 +423,21 @@ function DecksRevampLayout({
   onEditDeck: (deckId: string) => void;
   onDeleteDeck: (deckId: string) => void;
 }) {
+  // Below `xl` the picker stacks above the detail panel instead of sitting
+  // beside it (see the grid className just below), so the showcase column is
+  // much narrower than on desktop — the deck box needs to shrink to fit or
+  // it overflows/clips inside its `overflow-hidden` column on tablet/phone.
+  const isWideLayout = useIsWideDeckLayout();
+
   return (
-    <div className="grid h-full min-h-0 gap-3 overflow-hidden p-2 sm:gap-4 sm:p-3 xl:grid-cols-[17rem_minmax(0,1fr)]">
+    // Below `xl` the picker and detail panel stack into a single column
+    // instead of sitting side by side in a fixed-height fit (see the
+    // grid-cols swap below) — `overflow-hidden` on that fixed 2-column fit
+    // is exactly right at `xl`, but on a stacked single column the combined
+    // content is routinely taller than the viewport, so it needs to scroll
+    // instead of silently clipping. `xl:overflow-hidden` restores the
+    // original desktop behavior unchanged.
+    <div className="h-full min-h-0 space-y-3 overflow-y-auto p-2 sm:space-y-4 sm:p-3 xl:grid xl:space-y-0 xl:gap-4 xl:grid-cols-[17rem_minmax(0,1fr)] xl:overflow-hidden">
       {/* Deck picker — plain list keyed off each deck's leader (name + card
           number), the one obvious way to switch decks. No art thumbnails:
           just enough to identify a deck by its leader at a glance. */}
@@ -501,41 +515,50 @@ function DecksRevampLayout({
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden p-4 sm:grid-cols-[minmax(13rem,1fr)_minmax(0,3fr)] sm:gap-5 sm:p-5">
+        <div className="space-y-4 p-4 sm:p-5 xl:grid xl:min-h-0 xl:flex-1 xl:space-y-0 xl:grid-cols-[minmax(13rem,1fr)_minmax(0,3fr)] xl:gap-5 xl:overflow-hidden">
           {/* Overview: deck box flanked by its own prev/next cycle arrows — a more
               befitting home for them than the title row, since they cycle the
               box, not the deck's name. Column is 1 of the 1:3 split with the
-              card list. */}
-          <div className="flex min-h-0 flex-col overflow-hidden">
-            {/* Top: the box itself, given the rest of the column's height to
-                sit in (full scale, not the compact one used elsewhere) —
-                this is the showcase, so it should be the bigger of the two
-                regions, not squeezed to match the stat rows below it. */}
-            <div className="flex min-h-0 w-full flex-1 items-center justify-between gap-2 overflow-visible">
+              card list, but that split (like the aside/detail split above)
+              only kicks in at `xl` — below that both stack full-width and the
+              screen scrolls instead of squeezing two columns into a phone or
+              tablet's width. The whole flex/min-h-0/overflow-hidden "fit
+              exactly, clip, scroll internally" machinery below is likewise
+              xl-only: below xl nothing here should fight the page's own
+              scroll with its own nested scroll region — that's what was
+              collapsing/overlapping content on real phones. */}
+          <div className="flex flex-col sm:min-h-0 sm:overflow-hidden">
+            {/* The 3D box itself is disabled below `sm` entirely (not just
+                shrunk) — its perspective/3D-transform geometry doesn't play
+                well with an unbounded-height mobile flow, and the stats
+                below already cover the same info (leader, colors, deck
+                size) without it. Chevrons go with it since they have
+                nothing to cycle without the box on screen. */}
+            <div className="hidden w-full items-center justify-between gap-2 sm:flex sm:min-h-0 sm:flex-1">
               <button
                 type="button"
                 onClick={onPrevious}
                 disabled={rows.length <= 1}
-                className="group flex h-14 w-10 flex-shrink-0 items-center justify-center text-white/55 transition-colors hover:text-gold disabled:pointer-events-none disabled:opacity-30"
+                className="group flex h-10 w-7 flex-shrink-0 items-center justify-center text-white/55 transition-colors hover:text-gold disabled:pointer-events-none disabled:opacity-30 sm:h-14 sm:w-10"
                 aria-label="Previous deck"
               >
-                <svg viewBox="0 0 24 24" className="h-8 w-8 animate-[op-mobile-chevron-left_1.05s_ease-in-out_infinite]" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg viewBox="0 0 24 24" className="h-6 w-6 animate-[op-mobile-chevron-left_1.05s_ease-in-out_infinite] sm:h-8 sm:w-8" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
 
               <div className="flex min-w-0 flex-1 items-center justify-center overflow-visible">
-                {current && <DeckBox3D entry={current.entry} deck={current.deck} />}
+                {current && <DeckBox3D entry={current.entry} deck={current.deck} compact={!isWideLayout} />}
               </div>
 
               <button
                 type="button"
                 onClick={onNext}
                 disabled={rows.length <= 1}
-                className="group flex h-14 w-10 flex-shrink-0 items-center justify-center text-white/55 transition-colors hover:text-gold disabled:pointer-events-none disabled:opacity-30"
+                className="group flex h-10 w-7 flex-shrink-0 items-center justify-center text-white/55 transition-colors hover:text-gold disabled:pointer-events-none disabled:opacity-30 sm:h-14 sm:w-10"
                 aria-label="Next deck"
               >
-                <svg viewBox="0 0 24 24" className="h-8 w-8 animate-[op-mobile-chevron-right_1.05s_ease-in-out_infinite]" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg viewBox="0 0 24 24" className="h-6 w-6 animate-[op-mobile-chevron-right_1.05s_ease-in-out_infinite] sm:h-8 sm:w-8" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
@@ -543,7 +566,7 @@ function DecksRevampLayout({
 
             {/* Bottom: label/description stats, pinned to the container's
                 bottom edge instead of floating in the middle. */}
-            <div className="flex-shrink-0 pt-3">
+            <div className="flex-shrink-0 pt-3 sm:pt-3">
               {currentDeck ? (
                 <div className="grid w-full gap-2 text-left">
                   <DeckInfoStat label="Leader" value={currentDeck.leader.definition.name} />
@@ -559,13 +582,17 @@ function DecksRevampLayout({
             </div>
           </div>
 
-          {/* Card list */}
-          <div className="flex min-h-0 flex-col overflow-hidden pt-4 sm:pl-5 sm:pt-0">
+          {/* Card list — plain natural-height flow below `xl` (no nested
+              scroll region: the outer screen grid is the one and only
+              scroll container down there). Only at `xl`, where this column
+              sits beside a fixed-height overview column, does it need its
+              own internal scroll. */}
+          <div className="flex flex-col pt-4 xl:min-h-0 xl:overflow-hidden xl:pl-5 xl:pt-0">
             <div className="inline-flex flex-shrink-0 items-center gap-2 pb-3">
               <span aria-hidden="true" className="h-2 w-2 flex-shrink-0 rounded-full bg-gold shadow-[0_0_10px_rgba(217,164,65,0.65)]" />
               <p className="font-display text-sm font-black uppercase tracking-[0.18em] text-gold">Card List ({cardListItems.length})</p>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            <div className="pr-1 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
               {cardListItems.length === 0 ? (
                 <p className="py-4 text-center text-xs text-white/35">No cards to display</p>
               ) : (
@@ -659,20 +686,20 @@ export function SavedDecksScreen() {
     <GameCanvasScreen
       dense
       topRight={
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <CanvasMenuButton
             label="Card Library"
             size="sm"
             onClick={() => navigateTo({ screen: 'card-library' })}
             expandOnHover={false}
-            className="h-10 w-[7.5rem] max-w-none px-2 text-[11px]"
+            className="h-9 w-[5.75rem] max-w-none px-1.5 text-[10px] sm:h-10 sm:w-[7.5rem] sm:px-2 sm:text-[11px]"
           />
           <CanvasMenuButton
             label="New Deck"
             size="sm"
             onClick={() => navigateTo({ screen: 'deck-builder' })}
             expandOnHover={false}
-            className="h-10 w-[6.5rem] max-w-none px-2 text-[11px]"
+            className="h-9 w-[5rem] max-w-none px-1.5 text-[10px] sm:h-10 sm:w-[6.5rem] sm:px-2 sm:text-[11px]"
           />
         </div>
       }

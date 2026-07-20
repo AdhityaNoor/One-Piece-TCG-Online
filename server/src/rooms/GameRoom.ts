@@ -34,6 +34,7 @@ import type { GameAction } from '../../../src/engine/actions';
 import type { GameLogEntry } from '../../../src/engine/logs/logEntry';
 import { RankedResultService } from '../ranked/resultService';
 import { RankedSeasonService } from '../ranked/seasonService';
+import { RankedQueueService } from '../ranked/queueService';
 import type { RankedRoomOptions, RankedRoomParticipant } from '../ranked/roomOptions';
 import type { RankedResultType } from '../../../shared/ranked';
 import {
@@ -90,6 +91,11 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     this.rankedSeasonId = options.rankedSeasonId ?? null;
     this.rankedParticipants = options.rankedParticipants ?? [];
     this.state.isRanked = this.rankedMatchId !== null;
+    // Ranked rooms are pre-assigned to exactly two matched players (enforced in
+    // onAuth below) — they must never show up in the Casual lobby's open-room
+    // list, or a matched player could join their own ranked room directly from
+    // the room browser, skipping the queue's "Enter Match" step entirely.
+    void this.setPrivate(this.state.isRanked);
 
     this.onMessage(ClientMessage.Ready, (client, payload: ReadyPayload) => this.handleReady(client, payload));
     this.onMessage(ClientMessage.Unready, (client) => this.handleUnready(client));
@@ -480,6 +486,24 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
   onDispose(): void {
     this.stopRankedClock();
+    this.clearRankedAssignments();
+  }
+
+  /** Release both players' ranked-queue "matched" assignment once this room is
+   *  torn down — covers a normal match end, a forced-concession end, AND the
+   *  case where nobody (or only one player) ever actually joined before the
+   *  seat-reservation window expired. Without this, RankedQueueService.status()
+   *  would keep reporting `state: 'matched'` with this room's (now-dead)
+   *  roomId forever — a stale assignment that never expires — so a player's
+   *  next visit to the Ranked screen would show "Enter Match" immediately
+   *  without ever queueing. clearAssignment() is a plain Map.delete, so this
+   *  is safe to call unconditionally on every dispose. */
+  private clearRankedAssignments(): void {
+    if (this.rankedParticipants.length === 0) return;
+    const queueService = new RankedQueueService();
+    for (const participant of this.rankedParticipants) {
+      queueService.clearAssignment(participant.playerId);
+    }
   }
 }
 

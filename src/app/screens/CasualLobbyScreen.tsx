@@ -9,6 +9,7 @@ import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
 import { isBackendConfigured } from '../../multiplayer/net/backendConfig';
 import { CanvasMenuButton, DeckListSummary, GameCanvasScreen, OpSelect } from '../components';
 import { useCasualStore } from '../store/casualStore';
+import { useLastUsedDeckStore } from '../store/lastUsedDeckStore';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
 import { OnlineMatchPanel } from './online/OnlineMatchPanel';
@@ -20,6 +21,8 @@ export function CasualLobbyScreen() {
   const load = useSavedDecksStore((state) => state.load);
   const selectedDeckId = useCasualStore((state) => state.selectedDeckId);
   const selectDeck = useCasualStore((state) => state.selectDeck);
+  const lastUsedDeckId = useLastUsedDeckStore((state) => state.lastUsedDeckId);
+  const setLastUsedDeckId = useLastUsedDeckStore((state) => state.setLastUsedDeckId);
   const backendConfigured = isBackendConfigured();
 
   const regulation = current.screen === 'casual-lobby' ? (current.regulation ?? 'casualStandard') : 'casualStandard';
@@ -32,6 +35,14 @@ export function CasualLobbyScreen() {
       return status === 'legal' || status === 'extraLegal';
     });
   }, [entries, load, regulation]);
+
+  // Default to the last deck actually played, the first time this screen sees
+  // a deck list and nothing is selected yet — never overrides an explicit pick.
+  useEffect(() => {
+    if (selectedDeckId !== null || !lastUsedDeckId) return;
+    if (rows.some(({ entry }) => entry.deckId === lastUsedDeckId)) selectDeck(lastUsedDeckId);
+  }, [rows, lastUsedDeckId, selectedDeckId, selectDeck]);
+
   const selectedDeck = selectedDeckId ? load(selectedDeckId) : null;
   const selectedDeckAllowed = selectedDeck?.ok
     ? rows.some(({ entry }) => entry.deckId === selectedDeckId)
@@ -44,7 +55,15 @@ export function CasualLobbyScreen() {
   return (
     <GameCanvasScreen onBack={goBack} dense>
       <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto px-3 py-2 sm:gap-4 sm:px-0">
-        <OnlineDeckRow rows={rows} selectedDeckId={selectedDeckAllowed ? selectedDeckId : null} onSelect={selectDeck} regulation={regulation} />
+        <OnlineDeckRow
+          rows={rows}
+          selectedDeckId={selectedDeckAllowed ? selectedDeckId : null}
+          onSelect={(deckId) => {
+            selectDeck(deckId);
+            if (deckId) setLastUsedDeckId(deckId);
+          }}
+          regulation={regulation}
+        />
         <section className="min-h-[22rem] flex-1 overflow-y-auto border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.92))] p-3 shadow-[0_14px_0_rgba(1,5,16,0.5),_0_24px_38px_rgba(0,0,0,0.28)] sm:p-4">
           {backendConfigured ? <OnlineMatchPanel selectedDeck={selectedDeckAllowed ? selectedDeck : null} /> : <OnlineUnavailablePanel />}
         </section>

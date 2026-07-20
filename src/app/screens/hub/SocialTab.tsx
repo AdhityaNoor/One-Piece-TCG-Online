@@ -35,7 +35,7 @@ export function SocialTab() {
       ) : authStatus !== 'authenticated' ? (
         <EmptyState title="Sign In Required" body="Social features need a signed-in account, not offline mode." />
       ) : (
-        <div className="grid h-full min-h-0 gap-4 overflow-y-auto px-1 py-1 lg:grid-cols-[20rem_minmax(0,1fr)] lg:overflow-hidden">
+        <div className="h-full min-h-0 space-y-4 overflow-y-auto px-1 py-1 lg:grid lg:gap-4 lg:space-y-0 lg:grid-cols-[20rem_minmax(0,1fr)] lg:overflow-hidden">
           <PlayerSearch />
           <FriendsPanel />
         </div>

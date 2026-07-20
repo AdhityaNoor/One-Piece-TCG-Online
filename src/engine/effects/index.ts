@@ -20,7 +20,7 @@ export type {
   Selector,
 } from './effectIr';
 export { EffectContextImpl } from './effectContext';
-export { runTimings, resumeProgram } from './interpreter';
+export { runTimings, resumeProgram, settleEffectCascade } from './interpreter';
 export { fireOnPlay, fireActivate, fireWhenAttacking, fireOnBlock, fireOnOpponentsAttack, fireOnKO, fireCounter, fireLifeTrigger, fireOnBattle, fireOnBattleKoedOpponent, fireEndOfTurn, fireCharacterKoedReactions, fireCharacterRestedReactions, fireRestTransitions, fireDonReturnedReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, afterAbilityCostPaid, resumeChoice, fireEventActivatedReactions, fireOpponentBlockerActivatedReactions, fireLifeDamageDealtReactions, fireLifeRemovedReactions, fireLifeToHandReactions, fireTriggerActivatedReactions, fireDrawOutsideDrawPhaseReactions, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, fireHandTrashedReactions, fireStartOfTurnReactions, battleAttackerIsCharacterWithAttribute, resolveEffectProgram } from './fireTiming';
 export { evaluateGates } from './gates';
 export { canAffordAbilityCost, canPayAbilityCost, countControllerActiveUnattachedDon, donMinusCandidateIds, fieldDonIds, givenDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';

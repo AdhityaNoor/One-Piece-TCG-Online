@@ -3,11 +3,15 @@ import { evaluateSavedDeckFormatStatus } from '../../cards/format';
 import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
 import { isBackendConfigured } from '../../multiplayer/net/backendConfig';
 import { CanvasMenuButton, DeckListSummary, GameCanvasScreen, OpSelect } from '../components';
+import { useLastUsedDeckStore } from '../store/lastUsedDeckStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { useOnlineStore } from '../store/onlineStore';
-import type { RankedQueueAction } from '../store/rankedStore';
 import { useRankedStore } from '../store/rankedStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
+
+/** Drives the single inline status box: idle deck-pick state, the queue
+ *  spinner, or the "match found, entering" hand-off — see QueuePanel. */
+type QueuePhase = 'idle' | 'searching' | 'entering';
 
 export function RankedScreen() {
   const goBack = useNavigationStore((state) => state.goBack);
@@ -15,11 +19,11 @@ export function RankedScreen() {
   const load = useSavedDecksStore((state) => state.load);
   const ranked = useRankedStore();
   const joinAssignedRoom = useOnlineStore((state) => state.joinById);
-  const connectionStatus = useOnlineStore((state) => state.status);
+  const lastUsedDeckId = useLastUsedDeckStore((state) => state.lastUsedDeckId);
+  const setLastUsedDeckId = useLastUsedDeckStore((state) => state.setLastUsedDeckId);
   const backendConfigured = isBackendConfigured();
   const [entering, setEntering] = useState(false);
-  const [showMatchToast, setShowMatchToast] = useState(false);
-  const previousQueueState = useRef<string | undefined>(ranked.queue?.state);
+  const autoEnteredMatchId = useRef<string | null>(null);
 
   useEffect(() => {
     if (backendConfigured) void ranked.refresh();
@@ -32,25 +36,19 @@ export function RankedScreen() {
     return () => window.clearInterval(id);
   }, [backendConfigured, ranked.queue?.state, ranked.refreshQueue]);
 
-  // Fire a "match found" notification the moment the queue transitions into
-  // 'matched', regardless of what triggered the poll. Dismissed automatically
-  // once the player enters the match or leaves/loses the matched state.
-  useEffect(() => {
-    const current = ranked.queue?.state;
-    if (current === 'matched' && previousQueueState.current !== 'matched') {
-      setShowMatchToast(true);
-    }
-    if (current !== 'matched') {
-      setShowMatchToast(false);
-    }
-    previousQueueState.current = current;
-  }, [ranked.queue?.state]);
-
   const rows = useMemo(() => {
     return entries
       .map((entry) => ({ entry, deck: load(entry.deckId) }))
       .filter(({ deck }) => deck.ok && evaluateSavedDeckFormatStatus(deck.deck).status === 'legal');
   }, [entries, load]);
+
+  // Default to the last deck actually played, the first time this screen sees
+  // a deck list and nothing is selected yet — never overrides an explicit pick.
+  useEffect(() => {
+    if (ranked.selectedDeckId !== null || !lastUsedDeckId) return;
+    if (rows.some(({ entry }) => entry.deckId === lastUsedDeckId)) ranked.selectDeck(lastUsedDeckId);
+  }, [rows, lastUsedDeckId, ranked.selectedDeckId, ranked.selectDeck]);
+
   const selectedDeck = ranked.selectedDeckId ? load(ranked.selectedDeckId) : null;
   const selectedDeckAllowed = selectedDeck?.ok ? rows.some(({ entry }) => entry.deckId === ranked.selectedDeckId) : ranked.selectedDeckId === null;
   const activeDeck = selectedDeckAllowed ? selectedDeck : null;
@@ -60,25 +58,27 @@ export function RankedScreen() {
       ranked.enabled &&
       activeDeck?.ok &&
       ranked.queueAction === 'idle' &&
-      ranked.queue?.state !== 'queued' &&
-      ranked.queue?.state !== 'matched',
+      (ranked.queue?.state ?? 'idle') === 'idle',
   );
-  const canEnterMatch = Boolean(
-    !entering && connectionStatus !== 'connecting' && activeDeck?.ok && ranked.queue?.state === 'matched' && ranked.queue.roomId,
-  );
+  const searching = ranked.queueAction === 'joining' || ranked.queue?.state === 'queued';
+  const matchFound = ranked.queue?.state === 'matched';
+  const phase: QueuePhase = matchFound || entering ? 'entering' : searching ? 'searching' : 'idle';
 
-  async function enterMatch(): Promise<void> {
-    // Guard against double-clicking "Enter Match" firing a second concurrent
-    // joinById call while the first connection attempt is still in flight.
-    if (entering || !activeDeck?.ok || !ranked.queue?.roomId) return;
+  // Step 3 -> 4 of the flow: the instant the queue reports a match, enter the
+  // assigned room automatically — no separate "Enter Match" click. Guarded by
+  // matchId so it fires exactly once per match even as refreshQueue() keeps
+  // polling and re-delivering the same 'matched' status.
+  useEffect(() => {
+    const queue = ranked.queue;
+    if (!queue || queue.state !== 'matched' || !queue.roomId) return;
+    const matchId = queue.matchId ?? queue.roomId;
+    if (autoEnteredMatchId.current === matchId) return;
+    if (!activeDeck?.ok) return;
+    autoEnteredMatchId.current = matchId;
     setEntering(true);
-    setShowMatchToast(false);
-    try {
-      await joinAssignedRoom(ranked.queue.roomId, activeDeck.deck);
-    } finally {
-      setEntering(false);
-    }
-  }
+    setLastUsedDeckId(activeDeck.deck.deckId);
+    void joinAssignedRoom(queue.roomId, activeDeck.deck).finally(() => setEntering(false));
+  }, [ranked.queue, activeDeck, joinAssignedRoom, setLastUsedDeckId]);
 
   return (
     <GameCanvasScreen onBack={goBack} dense>
@@ -90,21 +90,19 @@ export function RankedScreen() {
           <QueuePanel
             backendConfigured={backendConfigured}
             enabled={ranked.enabled}
-            queueState={ranked.queue?.state ?? 'idle'}
-            queueAction={ranked.queueAction}
-            entering={entering}
-            message={ranked.queue?.estimatedMessage ?? 'Choose a legal deck to set sail.'}
+            phase={phase}
+            cancelling={ranked.queueAction === 'leaving'}
+            message={ranked.queue?.estimatedMessage ?? 'Choose a legal deck to find a match.'}
             error={ranked.error}
             canQueue={canQueue}
-            canEnterMatch={canEnterMatch}
             opponentName={ranked.queue?.opponentName ?? null}
-            onJoin={() => activeDeck?.ok && void ranked.joinQueue(activeDeck.deck)}
-            onLeave={() => void ranked.leaveQueue()}
-            onEnter={() => void enterMatch()}
+            onFindMatch={() => {
+              if (!activeDeck?.ok) return;
+              setLastUsedDeckId(activeDeck.deck.deckId);
+              void ranked.joinQueue(activeDeck.deck);
+            }}
+            onCancel={() => void ranked.leaveQueue()}
           />
-          {showMatchToast && (
-            <MatchFoundToast opponentName={ranked.queue?.opponentName ?? null} onEnter={() => void enterMatch()} entering={entering} />
-          )}
         </section>
 
         <section className="grid min-h-0 gap-4 lg:grid-rows-[minmax(12rem,0.9fr)_minmax(12rem,1fr)]">
@@ -199,78 +197,64 @@ function DeckPicker({
 function QueuePanel({
   backendConfigured,
   enabled,
-  queueState,
-  queueAction,
-  entering,
+  phase,
+  cancelling,
   message,
   error,
   canQueue,
-  canEnterMatch,
   opponentName,
-  onJoin,
-  onLeave,
-  onEnter,
+  onFindMatch,
+  onCancel,
 }: {
   backendConfigured: boolean;
   enabled: boolean;
-  queueState: string;
-  queueAction: RankedQueueAction;
-  entering: boolean;
+  phase: 'idle' | 'searching' | 'entering';
+  cancelling: boolean;
   message: string;
   error: string | null;
   canQueue: boolean;
-  canEnterMatch: boolean;
   opponentName: string | null;
-  onJoin: () => void;
-  onLeave: () => void;
-  onEnter: () => void;
+  onFindMatch: () => void;
+  onCancel: () => void;
 }) {
   const blocked = !backendConfigured || !enabled;
-  const searching = queueState === 'queued' || queueAction === 'joining';
-  return (
-    <div className="mt-4 border border-cyan-200/20 bg-[#08101f] p-4 text-center">
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Set Sail</p>
-      <p className="mt-2 flex items-center justify-center gap-2 text-sm leading-6 text-slate-200/72">
-        {searching && <QueueSpinner />}
-        {!backendConfigured
-          ? 'Online backend is not configured for this build.'
-          : !enabled
-            ? 'Ranked mode is disabled on this backend.'
-            : queueAction === 'joining'
-              ? 'Finding a match...'
-              : queueAction === 'leaving'
-                ? 'Leaving queue...'
-                : message}
-      </p>
-      {opponentName && <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-white/55">Opponent: {opponentName}</p>}
-      {error && <p className="mt-3 text-xs font-bold text-red-200">{error}</p>}
-      <div className="mt-4 flex flex-wrap justify-center gap-2">
-        {queueState === 'queued' ? (
-          <CanvasMenuButton
-            label={queueAction === 'leaving' ? 'Leaving...' : 'Leave Queue'}
-            size="sm"
-            prominence="danger"
-            disabled={queueAction === 'leaving'}
-            onClick={onLeave}
-          />
-        ) : canEnterMatch || queueState === 'matched' ? (
-          <CanvasMenuButton
-            label={entering ? 'Entering...' : 'Enter Match'}
-            size="sm"
-            prominence="primary"
-            disabled={!canEnterMatch}
-            onClick={onEnter}
-          />
-        ) : (
-          <CanvasMenuButton
-            label={blocked ? 'Unavailable' : queueAction === 'joining' ? 'Finding a match...' : 'Set Sail'}
-            size="sm"
-            prominence="primary"
-            disabled={!canQueue}
-            onClick={onJoin}
-          />
-        )}
+
+  if (phase === 'idle') {
+    return (
+      <div className="mt-4 border border-cyan-200/20 bg-[#08101f] p-4 text-center">
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Ranked Match</p>
+        <p className="mt-2 text-sm leading-6 text-slate-200/72">
+          {!backendConfigured ? 'Online backend is not configured for this build.' : !enabled ? 'Ranked mode is disabled on this backend.' : message}
+        </p>
+        {error && <p className="mt-3 text-xs font-bold text-red-200">{error}</p>}
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          <CanvasMenuButton label={blocked ? 'Unavailable' : 'Find Match'} size="sm" prominence="primary" disabled={!canQueue} onClick={onFindMatch} />
+        </div>
       </div>
+    );
+  }
+
+  // 'searching' and 'entering' both render the same inline status box — the
+  // exact 3-step flow requested: Find Match -> "Queueing for a ranked
+  // match..." spinner -> "Match found, entering the room..." with no manual
+  // click in between.
+  const searching = phase === 'searching';
+  return (
+    <div role="status" aria-live="polite" className="mt-4 border border-gold/50 bg-[#0c0f08] p-4 text-center">
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">{searching ? 'Queueing' : 'Match Found'}</p>
+      <p className="mt-2 flex items-center justify-center gap-2 text-sm font-bold leading-6 text-slate-100">
+        <QueueSpinner />
+        {searching ? 'Queueing for a ranked match...' : 'Match found, entering the room...'}
+      </p>
+      {opponentName && !searching && (
+        <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-white/55">Opponent: {opponentName}</p>
+      )}
+      {error && <p className="mt-3 text-xs font-bold text-red-200">{error}</p>}
+      {searching && (
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          <CanvasMenuButton label={cancelling ? 'Cancelling...' : 'Cancel'} size="sm" prominence="danger" disabled={cancelling} onClick={onCancel} />
+        </div>
+      )}
     </div>
   );
 }
@@ -281,32 +265,6 @@ function QueueSpinner() {
       aria-hidden="true"
       className="inline-block h-3.5 w-3.5 flex-none animate-spin rounded-full border-2 border-white/25 border-t-gold"
     />
-  );
-}
-
-function MatchFoundToast({
-  opponentName,
-  onEnter,
-  entering,
-}: {
-  opponentName: string | null;
-  onEnter: () => void;
-  entering: boolean;
-}) {
-  return (
-    <div
-      role="status"
-      aria-live="assertive"
-      className="mt-4 flex animate-pulse items-center justify-between gap-3 border border-gold/60 bg-[linear-gradient(180deg,_rgba(58,38,4,0.92),_rgba(10,7,1,0.96))] px-4 py-3 shadow-[0_0_0_1px_rgba(212,175,55,0.25),_0_10px_30px_rgba(0,0,0,0.45)]"
-    >
-      <div className="text-left">
-        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold">Match Found</p>
-        <p className="mt-1 text-xs font-bold uppercase tracking-[0.1em] text-white/80">
-          {opponentName ? `Opponent: ${opponentName}` : 'An opponent is ready.'}
-        </p>
-      </div>
-      <CanvasMenuButton label={entering ? 'Entering...' : 'Enter Match'} size="sm" prominence="primary" disabled={entering} onClick={onEnter} />
-    </div>
   );
 }
 

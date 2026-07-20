@@ -44,7 +44,7 @@ function toSlide(banner: PublicHomeBanner): CarouselSlide {
 export function HomeTab() {
   return (
     <GameCanvasScreen dense>
-      <div className="grid h-full min-h-0 gap-4 overflow-y-auto px-2 py-2 sm:px-3 sm:py-3 lg:grid-cols-[3fr_1fr] lg:gap-6 lg:overflow-hidden">
+      <div className="h-full min-h-0 space-y-4 overflow-y-auto px-2 py-2 sm:px-3 sm:py-3 lg:grid lg:space-y-0 lg:grid-cols-[3fr_1fr] lg:gap-6 lg:overflow-hidden">
         <HomeCarousel />
         <HomeActions />
       </div>

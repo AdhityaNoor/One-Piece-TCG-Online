@@ -879,6 +879,13 @@ export interface GameState {
     cause: 'battle' | 'effect';
     sourceInstanceId: string;
   }[];
+  /**
+   * Generic FIFO for effect-cascade events that were already produced by a
+   * resolving effect, but could not be fully processed because an earlier
+   * cascade event suspended on a PendingChoice. This prevents later sibling
+   * reactions from being dropped across the UI round-trip.
+   */
+  pendingEffectCascade?: PendingEffectCascadeEvent[];
   log: GameLogEntry[];
   gameOver: { winnerId: string | null; reason: GameOverReason } | null;
   /**
@@ -897,3 +904,14 @@ export interface GameState {
    */
   nextInstanceSeq: number;
 }
+
+export type PendingEffectCascadeEvent =
+  | { kind: 'rested'; targetInstanceId: string; cause: 'effect'; sourceInstanceId: string }
+  | { kind: 'donGiven'; targetInstanceId: string; count: number }
+  | { kind: 'fieldRemoval'; targetInstanceId: string; removedControllerId: string; effectControllerId: string; removedToZone: 'hand' | 'deck' | 'trash' | 'life' }
+  | { kind: 'lifeLeave'; instanceId: string }
+  | { kind: 'nestedEventActivation'; eventInstanceId: string }
+  | { kind: 'entry'; instanceId: string; controllerId: string; fromCharacterEffect: boolean }
+  | { kind: 'playedFromTrash'; instanceId: string }
+  | { kind: 'handTrashed'; ownerId: string; count: number; effectSourceInstanceId: string }
+  | { kind: 'playedCharacterReaction'; instanceId: string; controllerId: string; fromCharacterEffect: boolean };

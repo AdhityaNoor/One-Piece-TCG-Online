@@ -53,7 +53,19 @@ export function PlayMenuScreen() {
 
   return (
     <GameCanvasScreen dense>
-      <div className="grid h-full min-h-0 gap-5 overflow-y-auto px-2 py-2 sm:px-3 lg:grid-cols-3 lg:gap-8 lg:overflow-hidden">
+      {/* Below `lg` this is plain block flow — no flexbox, no grid, nothing
+          with any layout-engine ambiguity. `<section>` is block-level by
+          default, so three of them just stack top to bottom, full stop;
+          `space-y-5` (margin-top on every sibling after the first) is the
+          spacing, not `gap`, so there's no flex/grid container involved at
+          all down here. Both the CSS Grid + `grid-cols-1` version and the
+          `flex flex-col` version of this still overlapped section headers
+          onto the previous section's cards on the actual device this was
+          tested on, so this drops every layout mechanism that could
+          possibly explain that and keeps only plain document flow. Grid
+          only takes over at `lg`, matching the desktop-only fixed 3-column
+          fit. */}
+      <div className="h-full min-h-0 space-y-5 overflow-y-auto px-2 py-2 sm:px-3 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0 lg:overflow-hidden">
         <PlaySection
           title="Local"
           accent="gold"
@@ -144,7 +156,7 @@ function PlaySection({
         <p className="mt-1.5 text-xs font-bold uppercase tracking-[0.16em] text-white/42 sm:text-sm">{deckHint}</p>
       </div>
 
-      <div className="mt-2 flex min-h-0 flex-1 flex-col gap-3.5">
+      <div className="mt-2 flex flex-col gap-3.5 lg:min-h-0 lg:flex-1">
         {items.map((item) => (
           <ModeCard key={`${title}-${item.label}-${item.eyebrow}`} item={item} accent={accent} />
         ))}
