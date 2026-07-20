@@ -17,6 +17,7 @@ import { nameMatches } from '../../state/card';
 import { type CardDefinitionLookup, getDefinition } from './definitions';
 import { evaluateGates } from '../../effects/gates';
 import type { EffectTemplateRegistry } from '../../effects/effectTemplate';
+import { cardTypeIncludes } from './typeMatching';
 
 /**
  * "Give this card in your hand −N cost" while the card itself is still in hand.
@@ -49,20 +50,9 @@ function handSelfCostDelta(
   return delta;
 }
 
-/** True if any of `types` (possibly slash/comma-joined tribal strings) includes `required` (case-insensitive substring). */
-function typeIncludes(types: string[], required: string): boolean {
-  const needle = required.toLowerCase();
-  return types.some((t) =>
-    t
-      .split(/[\/,]+/)
-      .map((p) => p.trim().toLowerCase())
-      .some((p) => p.includes(needle)),
-  );
-}
-
 function definitionMatchesAuraFilters(def: CardDefinition, group: Pick<PowerAuraGroup, 'anyOfTypes' | 'anyOfNames' | 'anyOfAttributes' | 'anyOfColors' | 'category' | 'minBaseCost' | 'maxBaseCost'>): boolean {
   if (group.category !== undefined && def.category !== group.category) return false;
-  if (group.anyOfTypes !== undefined && !group.anyOfTypes.some((t) => typeIncludes(def.types, t))) return false;
+  if (group.anyOfTypes !== undefined && !group.anyOfTypes.some((t) => cardTypeIncludes(def.types, t))) return false;
   if (group.anyOfNames !== undefined && !group.anyOfNames.includes(def.name)) return false;
   if (group.anyOfAttributes !== undefined) {
     const attrs = def.attributes ?? [];

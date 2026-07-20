@@ -82,7 +82,7 @@ export function RankedScreen() {
 
   return (
     <GameCanvasScreen onBack={goBack} dense>
-      <div className="grid h-full min-h-0 gap-4 overflow-y-auto px-3 py-2 lg:grid-cols-[minmax(18rem,0.95fr)_minmax(0,1.35fr)] lg:overflow-hidden">
+      <div className="h-full min-h-0 space-y-4 overflow-y-auto px-3 py-2 lg:grid lg:space-y-0 lg:grid-cols-[minmax(18rem,0.95fr)_minmax(0,1.35fr)] lg:overflow-hidden">
         <section className="min-h-0 border border-gold/30 bg-black/45 p-4 shadow-[0_14px_0_rgba(1,5,16,0.55),_0_26px_45px_rgba(0,0,0,0.3)]">
           <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">{ranked.season?.name ?? 'Voyage'}</p>
           <RankCard />
@@ -105,7 +105,7 @@ export function RankedScreen() {
           />
         </section>
 
-        <section className="grid min-h-0 gap-4 lg:grid-rows-[minmax(12rem,0.9fr)_minmax(12rem,1fr)]">
+        <section className="min-h-0 space-y-4 lg:grid lg:space-y-0 lg:grid-rows-[minmax(12rem,0.9fr)_minmax(12rem,1fr)]">
           <LeaderboardPanel />
           <HistoryPanel />
         </section>

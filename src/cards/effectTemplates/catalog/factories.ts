@@ -359,13 +359,13 @@ function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>)
 function functionOps(f: SequencedAbilityFunction): EffectOp[] {
   const withSequenceGate = (ops: EffectOp[]): EffectOp[] =>
     f.ifPrevious || f.ifPreviousMovedAnyCostAtLeast !== undefined || f.ifPreviousSelectedPowerAtMost !== undefined || f.ifGate
-      ? ops.map((op) => ({
+      ? ops.map((op, index) => index === 0 ? ({
           ...op,
           ...(f.ifPrevious ? { ifPrevious: f.ifPrevious } : {}),
           ...(f.ifPreviousMovedAnyCostAtLeast !== undefined ? { ifPreviousMovedAnyCostAtLeast: f.ifPreviousMovedAnyCostAtLeast } : {}),
           ...(f.ifPreviousSelectedPowerAtMost !== undefined ? { ifPreviousSelectedPowerAtMost: f.ifPreviousSelectedPowerAtMost } : {}),
           ...(f.ifGate ? { ifGate: f.ifGate } : {}),
-        }))
+        }) : op)
       : ops;
 
   const ops = ((): EffectOp[] => {

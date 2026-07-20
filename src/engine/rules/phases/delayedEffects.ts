@@ -7,6 +7,7 @@ import { getOpponentId } from '../shared/players';
 import { evaluateGates } from '../../effects/gates';
 import { addToZoneBottom, addToZoneTop, removeFromZone } from '../shared/zoneOps';
 import type { PhaseStepResult } from './phaseStepResult';
+import { cardTypeIncludes } from '../shared/typeMatching';
 
 function setDonRested(state: GameState, ids: string[], rested: boolean): GameState {
   let cardsById = state.cardsById;
@@ -16,16 +17,6 @@ function setDonRested(state: GameState, ids: string[], rested: boolean): GameSta
     cardsById = { ...cardsById, [id]: { ...card, donRested: rested } };
   }
   return { ...state, cardsById };
-}
-
-function hasType(defTypes: string[], required: string): boolean {
-  const normalized = required.toLowerCase();
-  return defTypes.some((type) =>
-    type
-      .split(/[\/,]+/)
-      .map((part) => part.trim().toLowerCase())
-      .some((part) => part.includes(normalized)),
-  );
 }
 
 function trashCardState(state: GameState, instanceId: string): GameState {
@@ -233,7 +224,7 @@ export function consumeEndOfTurnDelayedEffects(
         if (!inst) return false;
         const def = defs[inst.cardDefinitionId];
         if (!def || def.category !== 'character') return false;
-        if (effect.typeIncludes && !hasType(def.types ?? [], effect.typeIncludes)) return false;
+        if (effect.typeIncludes && !cardTypeIncludes(def.types, effect.typeIncludes)) return false;
         return true;
       });
       if (!targetId) continue;

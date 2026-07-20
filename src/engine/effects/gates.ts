@@ -17,11 +17,7 @@ import { nameMatches } from '../state/card';
 import { countControllerActiveUnattachedDon, fieldDonIds } from './abilityCost';
 import { computeCurrentPower, getEffectiveAttributes } from '../rules/shared/power';
 import { cardHasNoBaseEffect } from './cardHasNoBaseEffect';
-
-function typeMatches(defTypes: string[], required: string): boolean {
-  const normalized = required.toLowerCase();
-  return defTypes.some((type) => type.toLowerCase().includes(normalized));
-}
+import { cardTypeIncludes } from '../rules/shared/typeMatching';
 
 /** Count the controller's in-play Characters whose types include `typeIncludes`. */
 export function countSelfTypedCharacters(
@@ -32,13 +28,13 @@ export function countSelfTypedCharacters(
 ): number {
   const player = state.players[controllerId];
   return player.characterArea.cardIds.filter((id) =>
-    typeMatches(defs[state.cardsById[id]?.cardDefinitionId ?? '']?.types ?? [], typeIncludes),
+    cardTypeIncludes(defs[state.cardsById[id]?.cardDefinitionId ?? '']?.types, typeIncludes),
   ).length;
 }
 
 function characterMatchesAnyType(state: GameState, defs: CardDefinitionLookup, instanceId: string, anyOfTypes: string[]): boolean {
   const types = defs[state.cardsById[instanceId]?.cardDefinitionId ?? '']?.types ?? [];
-  return anyOfTypes.some((required) => typeMatches(types, required));
+  return anyOfTypes.some((required) => cardTypeIncludes(types, required));
 }
 
 function currentCostForGate(state: GameState, defs: CardDefinitionLookup, instanceId: string): number {
@@ -148,7 +144,7 @@ function evaluateGate(
       if (!leaderInst) return false;
       const def = defs[leaderInst.cardDefinitionId];
       if (!def) return false;
-      return typeMatches(def.types, gate.type);
+      return cardTypeIncludes(def.types, gate.type);
     }
 
     case 'leaderAttribute': {
@@ -436,7 +432,7 @@ function evaluateGate(
       const n = player.hand.cardIds.filter((id) => {
         const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
         if (!def) return false;
-        if (gate.typeIncludes !== undefined && !typeMatches(def.types, gate.typeIncludes)) return false;
+        if (gate.typeIncludes !== undefined && !cardTypeIncludes(def.types, gate.typeIncludes)) return false;
         if (gate.category !== undefined && def.category !== gate.category) return false;
         if (gate.exactPower !== undefined && (def.basePower ?? -1) !== gate.exactPower) return false;
         if (gate.minPower !== undefined && (def.basePower ?? -1) < gate.minPower) return false;
@@ -466,7 +462,7 @@ function evaluateGate(
         const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
         if (gate.color !== undefined && !(def?.colors ?? []).includes(gate.color)) return false;
         if (gate.minCost !== undefined && currentCostForGate(state, defs, id) < gate.minCost) return false;
-        return typeMatches(def?.types ?? [], gate.typeIncludes);
+        return cardTypeIncludes(def?.types, gate.typeIncludes);
       }).length;
       if (gate.atLeast !== undefined && c < gate.atLeast) return false;
       if (gate.atMost !== undefined && c > gate.atMost) return false;
@@ -477,7 +473,7 @@ function evaluateGate(
       const names = new Set<string>();
       for (const id of player.characterArea.cardIds) {
         const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
-        if (!def || !typeMatches(def.types, gate.typeIncludes)) continue;
+        if (!def || !cardTypeIncludes(def.types, gate.typeIncludes)) continue;
         names.add(def.name);
       }
       return names.size >= gate.atLeast;
@@ -496,7 +492,7 @@ function evaluateGate(
     case 'selfAllCharactersTyped': {
       const chars = player.characterArea.cardIds;
       if (chars.length === 0) return true;
-      return chars.every((id) => typeMatches(defs[state.cardsById[id]?.cardDefinitionId ?? '']?.types ?? [], gate.typeIncludes));
+      return chars.every((id) => cardTypeIncludes(defs[state.cardsById[id]?.cardDefinitionId ?? '']?.types, gate.typeIncludes));
     }
 
     case 'selfLeaderPowerAtMost': {
@@ -540,7 +536,7 @@ function evaluateGate(
     case 'selfTypedCharacterPowerAtLeast': {
       return player.characterArea.cardIds.some((id) => {
         const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
-        if (!def || !typeMatches(def.types, gate.typeIncludes)) return false;
+        if (!def || !cardTypeIncludes(def.types, gate.typeIncludes)) return false;
         return computeCurrentPower(defs, state, id) >= gate.power;
       });
     }
@@ -654,7 +650,7 @@ function evaluateGate(
         if (!def) return false;
         if (gate.category !== undefined && def.category !== gate.category) return false;
         if (gate.name !== undefined && !nameMatches(def, gate.name)) return false;
-        if (gate.typeIncludes !== undefined && !typeMatches(def.types, gate.typeIncludes)) return false;
+        if (gate.typeIncludes !== undefined && !cardTypeIncludes(def.types, gate.typeIncludes)) return false;
         return true;
       }).length;
       if (gate.atLeast !== undefined && c < gate.atLeast) return false;
@@ -753,7 +749,7 @@ function evaluateGate(
       if (!playedId) return false;
       const def = defs[state.cardsById[playedId]?.cardDefinitionId ?? ''];
       if (!def) return false;
-      return typeMatches(def.types, gate.typeIncludes);
+      return cardTypeIncludes(def.types, gate.typeIncludes);
     }
 
     case 'playedCharacterHasTrigger': {
@@ -785,14 +781,14 @@ function evaluateGate(
     case 'koedCharacterTypeIncludes': {
       const defId = eventContext?.koedCharacterDefinitionId;
       if (!defId) return false;
-      return typeMatches(defs[defId]?.types ?? [], gate.typeIncludes);
+      return cardTypeIncludes(defs[defId]?.types, gate.typeIncludes);
     }
 
     case 'koedCharacterAnyOfTypes': {
       const defId = eventContext?.koedCharacterDefinitionId;
       if (!defId) return false;
       const types = defs[defId]?.types ?? [];
-      return gate.anyOfTypes.some((required) => typeMatches(types, required));
+      return gate.anyOfTypes.some((required) => cardTypeIncludes(types, required));
     }
 
     case 'koedCharacterMinBasePower': {
@@ -868,7 +864,7 @@ function evaluateGate(
       if (!removedId) return false;
       const def = defs[state.cardsById[removedId]?.cardDefinitionId ?? ''];
       if (!def) return false;
-      return typeMatches(def.types, gate.typeIncludes);
+      return cardTypeIncludes(def.types, gate.typeIncludes);
     }
 
     case 'removedToZone':
@@ -879,7 +875,7 @@ function evaluateGate(
       if (!sourceId) return false;
       const def = defs[state.cardsById[sourceId]?.cardDefinitionId ?? ''];
       if (!def) return false;
-      return typeMatches(def.types, gate.typeIncludes);
+      return cardTypeIncludes(def.types, gate.typeIncludes);
     }
 
     case 'selfPlayedThisTurn': {

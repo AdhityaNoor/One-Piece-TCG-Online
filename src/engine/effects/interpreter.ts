@@ -22,6 +22,7 @@ import { evaluateGates, countSelfTypedCharacters } from './gates';
 import { canPayAbilityCost, donMinusCandidateIds, fieldDonIds, payAbilityCost, requiredDonMinusCount } from './abilityCost';
 import { afterAbilityCostPaid, fireOnKO, fireRestTransitions, fireCharacterRestedReactions, fireDrawOutsideDrawPhaseReactions, fireDonGivenReactions, fireRemovedFromFieldReactions, fireNestedEventActivation, fireCharacterPlayedFromTrashReactions, fireCharacterPlayedFromHandReactions, fireOpponentCharacterPlayedFromHandReactions, fireHandTrashedReactions, fireLifeDamageDealtReactions, fireLifeRemovedReactions, fireLifeToHandReactions, resolveEffectProgram } from './fireTiming';
 import { dealLifeDamage } from '../rules/shared/dealLifeDamage';
+import { cardTypeIncludes } from '../rules/shared/typeMatching';
 import { isAbilityNegated } from './effectNegation';
 import type { GateEvalContext } from './gates';
 import type { EffectTemplateRegistry } from './effectTemplate';
@@ -315,23 +316,12 @@ function finishWithCascade(
   return drainCascadeEvents(working, collectCascadeEvents(ctx), log, defs, actionId, registry);
 }
 
-/** From a set of card instance ids, those whose definition satisfies a filter (all present fields ANDed). */
-function hasType(defTypes: string[], required: string): boolean {
-  const normalized = required.toLowerCase();
-  return defTypes.some((type) =>
-    type
-      .split(/[\/,]+/)
-      .map((part) => part.trim().toLowerCase())
-      .some((part) => part.includes(normalized))
-  );
-}
-
 function matchesSearchFilter(id: string, filter: SearchFilter, ctx: EffectContextImpl, bindings: Record<string, string[]> = {}): boolean {
   const def = ctx.definitionOf(id);
   if (!def) return false;
   if (filter.anyOf !== undefined && !filter.anyOf.some((child) => matchesSearchFilter(id, child, ctx, bindings))) return false;
   const selfName = ctx.definitionOf(ctx.sourceInstanceId)?.name;
-  if (filter.typeIncludes && !hasType(def.types, filter.typeIncludes)) return false;
+  if (filter.typeIncludes && !cardTypeIncludes(def.types, filter.typeIncludes)) return false;
   if (filter.excludeSelfName && selfName !== undefined && nameMatches(def, selfName)) return false;
   if (filter.excludeCardNames?.includes(def.name)) return false;
   if (filter.category && def.category !== filter.category) return false;
@@ -533,8 +523,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.name !== undefined) { const name = sel.name; ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), name)); }
       if (sel.excludeCardNames !== undefined) ids = ids.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
       if (sel.rested !== undefined) ids = ids.filter((id) => (ctx.state().cardsById[id]?.orientation === 'rested') === sel.rested);
-      if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
-      if (sel.anyOfTypes !== undefined) ids = ids.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
+      if (sel.typeIncludes !== undefined) ids = ids.filter((id) => cardTypeIncludes(ctx.definitionOf(id)?.types, sel.typeIncludes!));
+      if (sel.anyOfTypes !== undefined) ids = ids.filter((id) => sel.anyOfTypes!.some((t) => cardTypeIncludes(ctx.definitionOf(id)?.types, t)));
       if (sel.hasTrigger !== undefined) ids = ids.filter((id) => (ctx.definitionOf(id)?.hasTrigger === true) === sel.hasTrigger);
       if (sel.noBaseEffect === true) ids = ids.filter((id) => { const def = ctx.definitionOf(id); return !!def && cardHasNoBaseEffect(def); });
       if (sel.attribute !== undefined) ids = ids.filter((id) => ctx.effectiveAttributesOf(id).includes(sel.attribute!));
@@ -552,10 +542,10 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       const leaderId = ctx.controllerLeaderId();
       if (sel.typeIncludes !== undefined) {
         const type = sel.typeIncludes;
-        ids = ids.filter((id) => (sel.typeFilterCharactersOnly && id === leaderId) || hasType(ctx.definitionOf(id)?.types ?? [], type));
+        ids = ids.filter((id) => (sel.typeFilterCharactersOnly && id === leaderId) || cardTypeIncludes(ctx.definitionOf(id)?.types, type));
       }
       if (sel.anyOfTypes !== undefined) {
-        ids = ids.filter((id) => (sel.typeFilterCharactersOnly && id === leaderId) || sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
+        ids = ids.filter((id) => (sel.typeFilterCharactersOnly && id === leaderId) || sel.anyOfTypes!.some((t) => cardTypeIncludes(ctx.definitionOf(id)?.types, t)));
       }
       if (sel.name !== undefined) { const name = sel.name; ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), name)); }
       if (sel.minCost !== undefined) ids = ids.filter((id) => id === leaderId || ctx.costOf(id) >= sel.minCost!);
@@ -583,8 +573,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.restedLeader !== undefined) {
         includeLeader = (leader?.orientation === 'rested') === sel.restedLeader;
       }
-      if (sel.typeIncludes !== undefined && !hasType(leaderDef?.types ?? [], sel.typeIncludes)) includeLeader = false;
-      if (sel.anyOfTypes !== undefined && !sel.anyOfTypes.some((t) => hasType(leaderDef?.types ?? [], t))) includeLeader = false;
+      if (sel.typeIncludes !== undefined && !cardTypeIncludes(leaderDef?.types, sel.typeIncludes)) includeLeader = false;
+      if (sel.anyOfTypes !== undefined && !sel.anyOfTypes.some((t) => cardTypeIncludes(leaderDef?.types, t))) includeLeader = false;
       if (sel.attribute !== undefined && !ctx.effectiveAttributesOf(leaderId).includes(sel.attribute)) includeLeader = false;
       if (includeLeader) ids.push(leaderId);
       let charIds = ctx.opponentCharacterIds();
@@ -595,8 +585,8 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       if (sel.minPower !== undefined) charIds = charIds.filter((id) => ctx.powerOf(id) >= sel.minPower!);
       if (sel.maxPower !== undefined) charIds = charIds.filter((id) => ctx.powerOf(id) <= sel.maxPower!);
       charIds = applyBaseFilters(charIds, sel, ctx);
-      if (sel.typeIncludes !== undefined) charIds = charIds.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
-      if (sel.anyOfTypes !== undefined) charIds = charIds.filter((id) => sel.anyOfTypes!.some((t) => hasType(ctx.definitionOf(id)?.types ?? [], t)));
+      if (sel.typeIncludes !== undefined) charIds = charIds.filter((id) => cardTypeIncludes(ctx.definitionOf(id)?.types, sel.typeIncludes!));
+      if (sel.anyOfTypes !== undefined) charIds = charIds.filter((id) => sel.anyOfTypes!.some((t) => cardTypeIncludes(ctx.definitionOf(id)?.types, t)));
       if (sel.attribute !== undefined) charIds = charIds.filter((id) => ctx.effectiveAttributesOf(id).includes(sel.attribute!));
       if (sel.excludeName !== undefined) charIds = charIds.filter((id) => ctx.definitionOf(id)?.name !== sel.excludeName);
       if (sel.excludeCardNames !== undefined) charIds = charIds.filter((id) => !sel.excludeCardNames!.includes(ctx.definitionOf(id)?.name ?? ''));
@@ -611,7 +601,7 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
     case 'controllerLeaderOrStage': {
       const p = ctx.state().players[ctx.controllerId];
       let ids = [p.leaderInstanceId, ...p.stageArea.cardIds];
-      if (sel.typeIncludes !== undefined) ids = ids.filter((id) => hasType(ctx.definitionOf(id)?.types ?? [], sel.typeIncludes!));
+      if (sel.typeIncludes !== undefined) ids = ids.filter((id) => cardTypeIncludes(ctx.definitionOf(id)?.types, sel.typeIncludes!));
       if (sel.name !== undefined) { const name = sel.name; ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), name)); }
       return ids;
     }

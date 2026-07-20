@@ -415,7 +415,8 @@ describe('template factories - structural correctness', () => {
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'chooseTargets', from: { sel: 'controllerHand' }, min: 0, max: 1 });
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'trashCards' });
     expect(p.abilities[0].ops[2]).toMatchObject({ op: 'chooseTargets', from: { sel: 'opponentCharacters', exactCost: 0 }, ifPrevious: 'previousMovedAny' });
-    expect(p.abilities[0].ops[3]).toMatchObject({ op: 'ko', ifPrevious: 'previousMovedAny' });
+    expect(p.abilities[0].ops[3]).toMatchObject({ op: 'ko' });
+    expect(p.abilities[0].ops[3]).not.toHaveProperty('ifPrevious');
   });
 
   it('trashTopDeck function mills from the controller deck without a choice', () => {
@@ -531,7 +532,8 @@ describe('template factories - structural correctness', () => {
     });
     expect(p.abilities[0].ops[0]).toMatchObject({ op: 'searchTopDeck' });
     expect(p.abilities[0].ops[1]).toMatchObject({ op: 'chooseTargets', ifPrevious: 'previousMovedAny' });
-    expect(p.abilities[0].ops[2]).toMatchObject({ op: 'trashCards', ifPrevious: 'previousMovedAny' });
+    expect(p.abilities[0].ops[2]).toMatchObject({ op: 'trashCards' });
+    expect(p.abilities[0].ops[2]).not.toHaveProperty('ifPrevious');
   });
 
   it('addPowerSelf function has permanent duration and donAttachedAtLeast condition', () => {

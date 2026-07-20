@@ -90,7 +90,7 @@ function PlayerSearch() {
         className="mt-3 h-10 w-full border border-white/15 bg-black/30 px-3 text-sm font-bold tracking-[0.04em] text-white outline-none transition-all focus:border-gold/55"
       />
 
-      <div className="mt-3 grid gap-2">
+      <div className="mt-3 space-y-2">
         {searchStatus === 'searching' && <p className="text-xs text-white/45">Searching...</p>}
         {searchStatus === 'error' && <p className="text-xs text-red-200">{searchError}</p>}
         {searchStatus === 'ready' && searchResults.length === 0 && draft.trim() && (
@@ -172,11 +172,11 @@ function FriendsPanel() {
   }
 
   return (
-    <section className="grid min-h-0 gap-4 overflow-y-auto border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4 shadow-[0_14px_0_rgba(1,5,16,0.5)]">
+    <section className="min-h-0 space-y-4 overflow-y-auto border border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.84),_rgba(3,9,24,0.94))] p-4 shadow-[0_14px_0_rgba(1,5,16,0.5)]">
       {incomingRequests.length > 0 && (
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Incoming Requests</p>
-          <div className="mt-2 grid gap-2">
+          <div className="mt-2 space-y-2">
             {incomingRequests.map((entry) => (
               <div key={entry.userId} className="flex items-center justify-between gap-2 border border-white/10 bg-black/25 px-3 py-2">
                 <div className="flex min-w-0 items-center gap-2">
@@ -210,7 +210,7 @@ function FriendsPanel() {
       {outgoingRequests.length > 0 && (
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Sent Requests</p>
-          <div className="mt-2 grid gap-2">
+          <div className="mt-2 space-y-2">
             {outgoingRequests.map((entry) => (
               <div key={entry.userId} className="flex items-center justify-between gap-2 border border-white/10 bg-black/20 px-3 py-2">
                 <div className="flex min-w-0 items-center gap-2">
@@ -229,7 +229,7 @@ function FriendsPanel() {
         {friends.length === 0 ? (
           <p className="mt-2 text-sm text-white/45">No friends yet — search for a player to send a request.</p>
         ) : (
-          <div className="mt-2 grid gap-2">
+          <div className="mt-2 space-y-2">
             {friends.map((entry) => (
               <div key={entry.userId} className="flex items-center justify-between gap-2 border border-white/10 bg-black/25 px-3 py-2">
                 <button
@@ -273,7 +273,7 @@ function FriendsPanel() {
       {blocked.length > 0 && (
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gold">Blocked Players ({blocked.length})</p>
-          <div className="mt-2 grid gap-2">
+          <div className="mt-2 space-y-2">
             {blocked.map((entry) => (
               <div key={entry.userId} className="flex items-center justify-between gap-2 border border-white/10 bg-black/20 px-3 py-2">
                 <span className="min-w-0 truncate text-sm text-white/60">{entry.username}</span>

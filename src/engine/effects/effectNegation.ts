@@ -6,6 +6,7 @@ import type { GameState } from '../state/game';
 import type { CardCategory } from '../state/card';
 import type { IrTiming } from './effectIr';
 import type { CardDefinitionLookup } from '../rules/shared/definitions';
+import { cardTypeIncludes } from '../rules/shared/typeMatching';
 
 type NegatableCategory = Exclude<CardCategory, 'don'>;
 
@@ -36,7 +37,7 @@ export function isAbilityNegated(
       if (neg.appliesToCategories?.length) {
         if (!def || !isNegatableCategory(def.category) || !neg.appliesToCategories.includes(def.category)) continue;
       }
-      if (neg.exceptTypeIncludes && def?.types.includes(neg.exceptTypeIncludes)) continue;
+      if (neg.exceptTypeIncludes && cardTypeIncludes(def?.types, neg.exceptTypeIncludes)) continue;
       return true;
     }
   }

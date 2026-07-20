@@ -27,20 +27,11 @@ import { fieldDonIds, payAbilityCost, requiredDonMinusCount } from '../../effect
 import { EffectContextImpl } from '../../effects/effectContext';
 import type { KoReplacementAction } from '../../state/game';
 import { evaluateGates } from '../../effects/gates';
+import { cardTypeIncludes } from './typeMatching';
 
 export type KoCause = 'battle' | 'effect';
 
 const REPLACEMENT_OPT_KEY = (recordId: string) => `koReplacement:${recordId}`;
-
-function typeIncludes(types: string[], required: string): boolean {
-  const needle = required.toLowerCase();
-  return types.some((t) =>
-    t
-      .split(/[\/,]+/)
-      .map((p) => p.trim().toLowerCase())
-      .some((p) => p.includes(needle)),
-  );
-}
 
 function handMatchesFilter(
   defs: CardDefinitionLookup,
@@ -53,7 +44,7 @@ function handMatchesFilter(
   const def = getDefinition(defs, inst);
   if (filter?.categories?.length && !filter.categories.includes(def.category as Exclude<CardCategory, 'don' | 'leader'>)) return false;
   if (filter?.category && def.category !== filter.category) return false;
-  if (filter?.typeIncludes && !typeIncludes(def.types, filter.typeIncludes)) return false;
+  if (filter?.typeIncludes && !cardTypeIncludes(def.types, filter.typeIncludes)) return false;
   if (filter?.maxCurrentPower !== undefined && computeCurrentPower(defs, state, instanceId) > filter.maxCurrentPower) return false;
   if (filter?.minCurrentPower !== undefined && computeCurrentPower(defs, state, instanceId) < filter.minCurrentPower) return false;
   return true;
@@ -92,7 +83,7 @@ function eligibleRestCharacters(
     if (!inst || inst.currentZone !== 'characterArea') return false;
     const def = getDefinition(defs, inst);
     if (filter?.minCost !== undefined && (def.baseCost ?? 0) < filter.minCost) return false;
-    if (filter?.typeIncludes && !typeIncludes(def.types, filter.typeIncludes)) return false;
+    if (filter?.typeIncludes && !cardTypeIncludes(def.types, filter.typeIncludes)) return false;
     if (sourceName !== undefined && nameMatches(def, sourceName)) return false;
     return true;
   });

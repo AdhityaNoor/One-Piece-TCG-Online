@@ -4,6 +4,7 @@ import type { CardDefinitionLookup } from '../rules/shared/definitions';
 import type { EffectRuntimeBundle_V2 } from './runtime_V2';
 import type { EffectRuntimeSidecars_V2 } from './dispatcher_V2';
 import { computeCurrentCost, computeCurrentPower, hasContinuousKeyword } from '../rules/shared/power';
+import { cardTypeIncludes } from '../rules/shared/typeMatching';
 import { cardHasNoBaseEffect } from '../effects/cardHasNoBaseEffect';
 import type {
   CardCategory_V2,
@@ -314,8 +315,7 @@ function effectiveHasNoBaseEffect_V2(def: CardDefinition, modifiers: readonly Ca
 }
 
 function hasEffectiveType(types: readonly string[], required: string): boolean {
-  const needle = required.toLowerCase();
-  return types.some((type) => type.toLowerCase().split(/[\/,]+/).some((part) => part.trim().includes(needle)));
+  return cardTypeIncludes(types, required);
 }
 
 function matchesBaseEffectStatus(hasNoBaseEffect: boolean, status: Selector_V2['baseEffectStatus']): boolean {

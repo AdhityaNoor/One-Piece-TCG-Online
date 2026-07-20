@@ -77,7 +77,6 @@ describe('partial curation batch: OP05 target unions', () => {
           op: 'addPower',
           target: { sel: 'var', name: 't' },
           amount: 3000,
-          ifPrevious: 'previousSelectedAny',
         }),
       ]),
     );
@@ -522,6 +521,74 @@ describe('partial curation batch: OP03-001 / OP11-088 / OP12-081', () => {
     expect(finalState.cardsById[topId]).toMatchObject({ currentZone: 'lifeArea' });
   });
 
+  it('OP16-108 continues from hand-trash into trash-to-Life top face-up', () => {
+    const entry = OP16_ASSIGNMENTS.find((a) => a.cardNumber === 'OP16-108')!;
+    const augurDef = makeCharacterDef({
+      cardDefinitionId: 'OP16-108',
+      cardNumber: 'OP16-108',
+      name: 'Van Augur',
+      category: 'character',
+      baseCost: 5,
+    });
+    const blackbeardHandDef = makeCharacterDef({
+      cardDefinitionId: nextTestId('bbp-hand'),
+      cardNumber: 'TEST-BBP-HAND',
+      name: 'Blackbeard Pirates Hand Card',
+      category: 'character',
+      baseCost: 6,
+      types: ['Blackbeard Pirates'],
+    });
+
+    let rig = buildBaseRig({ phase: 'main', activePlayerId: 'p1', turnNumber: 3 });
+    let augurId: string;
+    let blackbeardHandId: string;
+    ({ rig, instanceId: augurId } = putInHand(rig, 'p1', augurDef));
+    ({ rig, instanceId: blackbeardHandId } = putInHand(rig, 'p1', blackbeardHandDef));
+    const { rig: withDon, donIds } = putDon(rig, 'p1', 5);
+
+    const registry = buildRegistryFromAssignments([entry]);
+    const played = executeAction(
+      withDon.state,
+      { type: 'PLAY_CHARACTER', actionId: nextTestId('action'), playerId: 'p1', handCardInstanceId: augurId, donInstanceIds: donIds },
+      withDon.defs,
+      registry,
+    );
+    const trashChoice = played.state.pendingChoices[0];
+    expect(trashChoice).toMatchObject({
+      playerId: 'p1',
+      kind: 'SELECT_CARDS',
+      constraints: { min: 0, max: 1, candidateInstanceIds: [blackbeardHandId] },
+    });
+
+    const afterTrash = executeAction(
+      played.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: trashChoice.id, response: [blackbeardHandId] },
+      withDon.defs,
+      registry,
+    );
+    const lifeChoice = afterTrash.state.pendingChoices[0];
+    expect(lifeChoice).toMatchObject({
+      playerId: 'p1',
+      kind: 'SELECT_CARDS',
+      constraints: { min: 0, max: 1, candidateInstanceIds: [blackbeardHandId] },
+    });
+
+    const afterLife = executeAction(
+      afterTrash.state,
+      { type: 'RESOLVE_PENDING_CHOICE', actionId: nextTestId('action'), playerId: 'p1', choiceId: lifeChoice.id, response: [blackbeardHandId] },
+      withDon.defs,
+      registry,
+    );
+
+    expect(afterLife.state.pendingChoices).toEqual([]);
+    expect(afterLife.state.players.p1.lifeArea.cardIds[0]).toBe(blackbeardHandId);
+    expect(afterLife.state.cardsById[blackbeardHandId]).toMatchObject({
+      currentZone: 'lifeArea',
+      faceState: 'faceUp',
+      revealedTo: 'all',
+    });
+  });
+
   it('OP16-116 [Main] then adds optional opponent top Life to owner hand without 10 DON gate', () => {
     const entry = OP16_ASSIGNMENTS.find((a) => a.cardNumber === 'OP16-116')!;
     const program = programFor(entry);
@@ -601,21 +668,21 @@ describe('partial curation batch: OP03-001 / OP11-088 / OP12-081', () => {
             }),
           ]),
         }),
-        expect.objectContaining({ op: 'addPower', amount: -6000, ifPrevious: 'previousSelectedAny' }),
+        expect.objectContaining({ op: 'addPower', amount: -6000 }),
       ]),
     );
     expect(programs['OP16-007'].abilities[0].ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerHand', filter: { category: 'character', exactPower: 8000 } } }),
         expect.objectContaining({ op: 'revealCards', ifPrevious: 'previousSelectedAny' }),
-        expect.objectContaining({ op: 'addPower', amount: -1000, ifPrevious: 'previousSelectedAny' }),
+        expect.objectContaining({ op: 'addPower', amount: -1000 }),
       ]),
     );
     expect(programs['OP16-008'].abilities[0].ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerCharacters', exactBasePower: 10000 } }),
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentCharacters', maxPower: 8000 }, ifPrevious: 'previousMovedAny' }),
-        expect.objectContaining({ op: 'ko', target: { sel: 'var', name: 't' }, ifPrevious: 'previousMovedAny' }),
+        expect.objectContaining({ op: 'ko', target: { sel: 'var', name: 't' } }),
       ]),
     );
     expect(programs['OP16-020'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
@@ -694,7 +761,8 @@ describe('partial curation batch: OP03-001 / OP11-088 / OP12-081', () => {
     expect(programs['OP16-063'].abilities.find((a) => a.timing === 'activateMain')?.ops.some((op) => op.op === 'suppressBlockerActivation')).toBe(true);
     expect(programs['OP16-076'].abilities.find((a) => a.timing === 'counter')).toMatchObject({ gate: [{ kind: 'selfTypedCharacterCount', typeIncludes: 'Admiral', atLeast: 1 }] });
     expect(programs['OP16-087'].abilities[0].ops[0]).toMatchObject({ op: 'chooseOption' });
-    expect(programs['OP16-101'].abilities[0].ops.some((op) => op.op === 'ko' && op.ifGate?.[0]?.kind === 'selfTrashCount')).toBe(true);
+    expect(programs['OP16-101'].abilities[0].ops.some((op) => op.op === 'chooseTargets' && op.ifGate?.[0]?.kind === 'selfTrashCount')).toBe(true);
+    expect(programs['OP16-101'].abilities[0].ops.some((op) => op.op === 'ko')).toBe(true);
     expect(programs['OP16-104'].abilities.find((a) => a.timing === 'whenAttacking')?.ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentCharacters' }, min: 0, max: 1 }),
@@ -898,7 +966,6 @@ describe('partial curation batch: EB expressible fixes', () => {
         expect.objectContaining({
           op: 'addPower',
           amount: -2000,
-          ifPrevious: 'previousMovedAny',
         }),
       ]),
     );
@@ -922,8 +989,7 @@ describe('partial curation batch: EB expressible fixes', () => {
         }),
         expect.objectContaining({
           op: 'moveToBottomDeck',
-          ifPrevious: 'previousMovedAny',
-          ifGate: [{ kind: 'opponentHand', atLeast: 6 }],
+          target: { sel: 'var', name: 't' },
         }),
       ]),
     );
@@ -983,7 +1049,7 @@ describe('partial curation batch: EB expressible fixes', () => {
       max: 1,
       ifPrevious: 'previousMovedAny',
     });
-    expect(main.ops[2]).toMatchObject({ op: 'moveToBottomDeck', target: { sel: 'var', name: 't' }, ifPrevious: 'previousMovedAny' });
+    expect(main.ops[2]).toMatchObject({ op: 'moveToBottomDeck', target: { sel: 'var', name: 't' } });
     expect(main.ops[3]).toMatchObject({ op: 'draw', amount: 2, ifPrevious: 'previousMovedAny' });
   });
 
@@ -1002,7 +1068,8 @@ describe('partial curation batch: EB expressible fixes', () => {
     expect(programs['OP08-005'].abilities[0].ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'addPower', amount: -2000 }),
-        expect.objectContaining({ op: 'playFromHand', ifGate: [{ kind: 'selfDoesNotControlNamed', name: 'Kuromarimo' }] }),
+        expect.objectContaining({ op: 'chooseTargets', ifGate: [{ kind: 'selfDoesNotControlNamed', name: 'Kuromarimo' }] }),
+        expect.objectContaining({ op: 'playFromHand' }),
       ]),
     );
     expect(programs['OP08-006'].abilities[0].ops[0]).toMatchObject({
@@ -1071,7 +1138,8 @@ describe('partial curation batch: EB expressible fixes', () => {
     expect(programs['OP08-096'].abilities.find((a) => a.timing === 'counter')?.ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'trashTopDeck', count: 1 }),
-        expect.objectContaining({ op: 'addPower', amount: 5000, ifPreviousMovedAnyCostAtLeast: 6 }),
+        expect.objectContaining({ op: 'chooseTargets', ifPreviousMovedAnyCostAtLeast: 6 }),
+        expect.objectContaining({ op: 'addPower', amount: 5000 }),
       ]),
     );
     expect(programs['OP08-098'].abilities[0].ops).toEqual(
@@ -1144,7 +1212,7 @@ describe('partial curation batch: EB expressible fixes', () => {
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerCharacters', minCost: 3 }, min: 0, max: 1 }),
         expect.objectContaining({ op: 'rest', target: { sel: 'var', name: 't' } }),
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentCharacters', maxCost: 5 }, min: 0, max: 1, ifPrevious: 'previousSelectedAny' }),
-        expect.objectContaining({ op: 'rest', target: { sel: 'var', name: 't' }, ifPrevious: 'previousSelectedAny' }),
+        expect.objectContaining({ op: 'rest', target: { sel: 'var', name: 't' } }),
       ]),
     );
 
@@ -1188,14 +1256,16 @@ describe('partial curation batch: EB expressible fixes', () => {
     expect(programs['OP07-094'].abilities.find((a) => a.timing === 'lifeTrigger')?.ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'moveToHand' }),
-        expect.objectContaining({ op: 'moveToHand', ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] }),
+        expect.objectContaining({ op: 'chooseTargets', ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] }),
+        expect.objectContaining({ op: 'moveToHand' }),
       ]),
     );
 
     expect(programs['OP07-096'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'draw', amount: 1 }),
-        expect.objectContaining({ op: 'addCost', amount: -3, ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] }),
+        expect.objectContaining({ op: 'chooseTargets', ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] }),
+        expect.objectContaining({ op: 'addCost', amount: -3 }),
       ]),
     );
   });
@@ -1252,7 +1322,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
     expect(programs['OP15-099'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'turnLifeFace', faceUp: false }),
-        expect.objectContaining({ op: 'giveDon', ifPrevious: 'previousSelectedAny' }),
+        expect.objectContaining({ op: 'giveDon' }),
       ]),
     );
     expect(programs['OP15-105'].abilities[0].ops[0]).toMatchObject({ op: 'registerKoReplacement', condition: { maxBasePower: 7000 } });
@@ -1261,8 +1331,8 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
     expect(op15114.ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'turnLifeFace', faceUp: true }),
-        expect.objectContaining({ op: 'addPowerAura', amount: -2000, ifPrevious: 'previousSelectedAny' }),
-        expect.objectContaining({ op: 'ko', target: { sel: 'opponentCharacters', maxPower: 0 }, ifPrevious: 'previousSelectedAny' }),
+        expect.objectContaining({ op: 'addPowerAura', amount: -2000 }),
+        expect.objectContaining({ op: 'ko', target: { sel: 'opponentCharacters', maxPower: 0 } }),
       ]),
     );
     expect(programs['OP15-116'].abilities.map((a) => a.timing)).toEqual(['activateMain', 'counter']);
@@ -1270,9 +1340,9 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
       expect.arrayContaining([
         expect.objectContaining({ op: 'trashLife', player: 'controller' }),
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerDeckTop' }, ifPrevious: 'previousMovedAny' }),
-        expect.objectContaining({ op: 'moveToLifeTop', ifPrevious: 'previousMovedAny' }),
+        expect.objectContaining({ op: 'moveToLifeTop' }),
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerHand' }, ifPrevious: 'previousMovedAny' }),
-        expect.objectContaining({ op: 'trashCards', ifPrevious: 'previousMovedAny' }),
+        expect.objectContaining({ op: 'trashCards' }),
       ]),
     );
   });
@@ -1298,7 +1368,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
             ],
           },
         }),
-        expect.objectContaining({ op: 'preventRefresh', target: { sel: 'var', name: 't' }, ifPrevious: 'previousMovedAny' }),
+        expect.objectContaining({ op: 'preventRefresh', target: { sel: 'var', name: 't' } }),
       ]),
     );
     expect(programs['OP14-048'].abilities[0].ops.some((op) => op.op === 'trashHandDownTo')).toBe(true);
@@ -1407,7 +1477,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
     expect(programs['OP04-116'].abilities.find((a) => a.timing === 'counter')?.ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'addPower', amount: 6000 }),
-        expect.objectContaining({ op: 'ko', ifGate: [{ kind: 'combinedLifeTotal', atMost: 4 }] }),
+        expect.objectContaining({ op: 'ko' }),
       ]),
     );
   });
@@ -1587,7 +1657,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
     expect(programs['OP11-097'].abilities[0].ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'addPower', amount: 1000 }),
-        expect.objectContaining({ op: 'moveToHand', ifGate: [{ kind: 'selfTrashCount', atLeast: 10 }] }),
+        expect.objectContaining({ op: 'moveToHand' }),
       ]),
     );
     expect(programs['OP11-114'].abilities.map((a) => a.timing)).toEqual(['activateMain', 'counter']);
@@ -1605,7 +1675,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
     expect(programs['OP11-119'].abilities.find((a) => a.timing === 'whenAttacking')?.ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op: 'moveToBottomDeck' }),
-        expect.objectContaining({ op: 'addPower', amount: 1000, duration: 'endOfOpponentsTurn', ifPrevious: 'previousMovedAny' }),
+        expect.objectContaining({ op: 'addPower', amount: 1000, duration: 'endOfOpponentsTurn' }),
       ]),
     );
   });
@@ -1650,7 +1720,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
         expect.arrayContaining([
           expect.objectContaining({ op: 'moveToBottomDeck', target: { sel: 'var', name: 't' } }),
           expect.objectContaining({ op: 'moveToBottomDeck', target: { sel: 'self' } }),
-          expect.objectContaining({ op: 'playFromHand', ifPrevious: 'previousMovedAny' }),
+          expect.objectContaining({ op: 'playFromHand' }),
         ]),
       );
     }
@@ -1831,7 +1901,8 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
       ]),
     );
     expect(programs['OP12-113'].abilities.find((a) => a.timing === 'onKO')?.ops.some((op) => op.op === 'playFromHand' && op.rested === true)).toBe(true);
-    expect(programs['OP12-115'].abilities[0].ops.some((op) => op.op === 'moveToHand' && op.ifGate?.[0]?.kind === 'selfLife')).toBe(true);
+    expect(programs['OP12-115'].abilities[0].ops.some((op) => op.op === 'chooseTargets' && op.ifGate?.[0]?.kind === 'selfLife')).toBe(true);
+    expect(programs['OP12-115'].abilities[0].ops.some((op) => op.op === 'moveToHand')).toBe(true);
   });
 
   it('OP14-033 compiles onPlay preventRest and onKO rest-then-play', () => {
@@ -1889,8 +1960,6 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
         expect.objectContaining({
           op: 'moveToBottomDeck',
           target: { sel: 'var', name: 't' },
-          ifPrevious: 'previousMovedAny',
-          ifGate: [{ kind: 'opponentHand', atLeast: 6 }],
         }),
       ]),
     );
@@ -2018,7 +2087,7 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
           max: 1,
           ifPrevious: 'previousMovedAny',
         }),
-        expect.objectContaining({ op: 'giveDon', count: 2, ifPrevious: 'previousMovedAny' }),
+        expect.objectContaining({ op: 'giveDon', count: 2 }),
       ]),
     );
   });
@@ -2173,7 +2242,7 @@ describe('partial curation batch: KO replacement cluster', () => {
     const program = programFor(entry);
     expect(program.abilities[0].ops).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ op: 'addPower', ifGate: [{ kind: 'anyCharacterCostCount', minCost: 8, atLeast: 2 }] }),
+        expect.objectContaining({ op: 'addPower' }),
       ]),
     );
   });
@@ -2348,7 +2417,7 @@ describe('partial curation batch: promo assignment-only closures', () => {
           max: 1,
         }),
         expect.objectContaining({ op: 'trashCards', target: { sel: 'var', name: 't' } }),
-        expect.objectContaining({ op: 'addPower', amount: -1000, ifPrevious: 'previousMovedAny' }),
+        expect.objectContaining({ op: 'addPower', amount: -1000 }),
         expect.objectContaining({ op: 'draw', amount: 1, ifPrevious: 'previousMovedAny' }),
       ]),
     );
