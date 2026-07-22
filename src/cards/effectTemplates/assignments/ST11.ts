@@ -114,9 +114,10 @@ export const ST11_ASSIGNMENTS: CardEffectAssignment[] = [
         templateId: 'ability',
         params: {
           timing: 'activateMain',
+          gate: [{ kind: 'leaderName', name: 'Uta' }],
           functions: [
             {
-              fn: 'setActiveSelf',
+              fn: 'setActiveControllerLeader',
             },
           ],
         },

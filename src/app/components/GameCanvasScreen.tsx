@@ -72,8 +72,6 @@ export function GameCanvasScreen({ onBack, topRight, footer, dense = false, chil
   return (
     <main className="relative h-full w-full overflow-hidden bg-[#071126] font-body text-white">
       <div className="absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-30 grayscale" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,_rgba(255,211,74,0.18),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.2)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
-      <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(180deg,_rgba(255,255,255,0.16),_transparent)]" />
 
       <section className={['relative z-10 grid h-full w-full grid-rows-[auto_minmax(0,1fr)_auto]', dense ? 'pt-3 pb-0 sm:py-5' : 'py-5 sm:py-7'].join(' ')}>
         {/* Always rendered (even empty) so it keeps its explicit grid row —

@@ -17,6 +17,7 @@ import { create } from 'zustand';
 import type { Room } from '@colyseus/sdk';
 import type { GameState } from '../../engine/state';
 import type { GameAction } from '../../engine/actions';
+import type { GameLogEntry } from '../../engine/logs/logEntry';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import type { SavedDeck } from '../../cards/decks/savedDeck';
 import type { ChatBroadcastPayload, RoomPhase, SeatView, StatePayload } from '../../../shared/multiplayer';
@@ -223,10 +224,22 @@ function wireRoom(room: Room, set: SetFn): void {
     });
   });
 
+  // Captured from the State message immediately before it overwrites
+  // `gameState`, so the paired Log message below (the server always sends
+  // State then Log for the same action — see GameRoom.ts
+  // broadcastStatePerSeat()/broadcastLogPerSeat()) can hand matchStore the
+  // exact (prevState, delta) pair its own local dispatch() would have
+  // produced. Without this, the turn-change/phase-announce banner queue
+  // (usePhaseAnnounceStore) and the card-flight queue never got fed in
+  // online matches — dispatch() short-circuits to onlineSendIntent and never
+  // reaches presentLogDelta for online play.
+  let prevGameStateForLog: GameState | null = null;
+
   room.onMessage(ServerMessage.State, (payload: StatePayload) => {
     const gameState = payload?.json ? (JSON.parse(payload.json) as GameState) : null;
     const defs = (payload?.defs ?? {}) as CardDefinitionLookup;
     const images = (payload?.images ?? {}) as Record<string, string | null>;
+    prevGameStateForLog = useOnlineStore.getState().gameState;
     set({
       gameState,
       defs,
@@ -235,8 +248,13 @@ function wireRoom(room: Room, set: SetFn): void {
   });
 
   room.onMessage(ServerMessage.Log, (payload: { entries: unknown[] }) => {
+    const entries = payload?.entries ?? [];
     const existing = useOnlineStore.getState().logs;
-    set({ logs: [...existing, ...(payload?.entries ?? [])] });
+    set({ logs: [...existing, ...entries] });
+    if (prevGameStateForLog && entries.length > 0) {
+      useMatchStore.getState().presentOnlineLogDelta(prevGameStateForLog, entries as GameLogEntry[]);
+    }
+    prevGameStateForLog = null;
   });
 
   room.onMessage(ServerMessage.Chat, (payload: ChatBroadcastPayload) => {

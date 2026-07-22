@@ -55,7 +55,6 @@ function CardLibraryGameShell({ onBack, headerRight, children }: { onBack?: () =
   return (
     <main className="op-theme-blue relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden bg-[#071126] font-body text-white xl:overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgb(var(--op-gold-rgb)/0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
       <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 px-3 py-3">
         {onBack && <CanvasMenuButton label="Back" onClick={onBack} size="sm" className="max-w-[7rem]" />}
         {headerRight && <div className="flex flex-shrink-0 items-center gap-2">{headerRight}</div>}

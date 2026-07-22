@@ -2602,10 +2602,9 @@ function MatchGameShell({ title, headerRight, children }: { title: string; heade
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-[#071126] font-body text-white">
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,_rgba(255,211,74,0.14),_transparent_24%),linear-gradient(180deg,_rgba(5,9,20,0.36)_0%,_rgba(5,10,24,0.92)_72%,_#030713_100%)]" />
-      {/* Layer 5 (animation/visual polish) — decorative starfield warp on top
-          of the static background image/gradient above, below the actual
-          board content (z-10 section). Reads/writes nothing in GameState. */}
+      {/* Layer 5 (animation/visual polish) — decorative starfield warp, below
+          the actual board content (z-10 section). Reads/writes nothing in
+          GameState. */}
       <GlitterWrap />
       <h1 className="sr-only">{title}</h1>
       <section className="absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden p-0 xl:p-2">{children}</section>

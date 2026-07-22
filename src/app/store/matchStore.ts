@@ -404,6 +404,17 @@ interface MatchStoreState {
     playerNames: Record<string, string>;
     sendIntent: (action: GameAction) => void;
   }): void;
+  /**
+   * Online-mode counterpart to dispatch()'s own presentLogDelta calls below.
+   * dispatch() short-circuits (sends the intent to the server, never runs
+   * the engine locally) whenever onlineMode is true, so the turn-change/
+   * phase-announce queue and card-flight queue never got fed for online
+   * matches — see onlineStore.ts's wireRoom(), which calls this from its
+   * ServerMessage.Log handler using the GameState captured just before the
+   * paired ServerMessage.State message overwrote it (the server always sends
+   * State then Log for the same action).
+   */
+  presentOnlineLogDelta(prevState: GameState, delta: GameLogEntry[]): void;
   startPlayTest(entries: PlayTestCatalogEntry[]): MatchStartResult;
   playTestAddCardToHand(playerId: string, cardDefinitionId: string): MatchDispatchResult;
   playTestAddCardToDeckTop(playerId: string, cardDefinitionId: string): MatchDispatchResult;
@@ -579,6 +590,11 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       onlineMode: true,
       onlineSendIntent: sendIntent,
     });
+  },
+
+  presentOnlineLogDelta(prevState, delta) {
+    const { cardImagesByDefinitionId, localPlayerId } = get();
+    presentLogDelta(prevState, delta, cardImagesByDefinitionId, localPlayerId);
   },
 
   startPlayTest(entries) {

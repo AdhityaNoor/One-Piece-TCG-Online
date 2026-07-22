@@ -39,6 +39,7 @@ type RuntimeStatus = 'executed' | 'scenarioRejected' | 'registeredOnly';
 interface RuntimeResult {
   status: RuntimeStatus;
   reasons: string[];
+  semanticSignals: string[];
 }
 
 const ACTION_TIMINGS = new Set<Ability['timing']>([
@@ -111,6 +112,41 @@ function addDefs(rig: Rig, defs: CardDefinition[]): Rig {
   return { state: rig.state, defs: { ...rig.defs, ...indexedDefs(defs) } };
 }
 
+function putInTrash(rig: Rig, playerId: 'p1' | 'p2', def: CardDefinition): { rig: Rig; instanceId: string } {
+  const instanceId = nextTestId('trash-card');
+  const player = rig.state.players[playerId];
+  return {
+    instanceId,
+    rig: {
+      defs: { ...rig.defs, [def.cardDefinitionId]: def, [def.cardNumber]: def },
+      state: {
+        ...rig.state,
+        cardsById: {
+          ...rig.state.cardsById,
+          [instanceId]: {
+            instanceId,
+            cardDefinitionId: def.cardDefinitionId,
+            ownerId: playerId,
+            controllerId: playerId,
+            currentZone: 'trash',
+            orientation: null,
+            faceState: 'faceUp',
+            donAttached: [],
+            appliedContinuousEffectIds: [],
+            oncePerTurnUsed: [],
+            summoningSick: false,
+            revealedTo: 'all',
+          },
+        },
+        players: {
+          ...rig.state.players,
+          [playerId]: { ...player, trash: { ...player.trash, cardIds: [...player.trash.cardIds, instanceId] } },
+        },
+      },
+    },
+  };
+}
+
 function attachDonTo(rig: Rig, playerId: 'p1' | 'p2', targetId: string, donIds: string[]): Rig {
   let costArea = rig.state.players[playerId].costArea;
   const cardsById = { ...rig.state.cardsById };
@@ -153,6 +189,7 @@ function matchesFilter(def: CardDefinition, filter: SearchFilter | undefined, so
   if (filter.category && def.category !== filter.category) return false;
   if (filter.color && !def.colors.includes(filter.color)) return false;
   if (filter.typeIncludes && !typeIncludes(def.types, filter.typeIncludes)) return false;
+  if (filter.anyOfTypes?.length && !filter.anyOfTypes.some((type) => typeIncludes(def.types, type))) return false;
   if (filter.attribute && !(def.attributes ?? []).includes(filter.attribute)) return false;
   if (filter.name && def.name !== filter.name) return false;
   if (filter.excludeSelfName && def.name === sourceDef.name) return false;
@@ -177,6 +214,22 @@ function filtersFromAbility(ability: Ability): SearchFilter[] {
     if (op.op === 'chooseTargets') {
       const from = op.from;
       if ('filter' in from && from.filter) return [from.filter];
+      if (
+        'typeIncludes' in from ||
+        'anyOfTypes' in from ||
+        'category' in from ||
+        'color' in from ||
+        'name' in from ||
+        'maxCost' in from ||
+        'minCost' in from ||
+        'exactCost' in from ||
+        'maxPower' in from ||
+        'minPower' in from ||
+        'maxBasePower' in from ||
+        'minBasePower' in from
+      ) {
+        return [from as SearchFilter];
+      }
     }
     return [];
   });
@@ -241,6 +294,8 @@ function addScenarioCards(rig: Rig, sourceDef: CardDefinition, ability: Ability)
     ({ rig } = putInHand(rig, 'p2', def));
     ({ rig } = putDeckCards(rig, 'p1', def, 1));
     ({ rig } = putDeckCards(rig, 'p2', def, 1));
+    ({ rig } = putInTrash(rig, 'p1', def));
+    ({ rig } = putInTrash(rig, 'p2', def));
   }
   ({ rig } = putLifeCards(rig, 'p1', [typedAlly, genericEvent]));
   ({ rig } = putLifeCards(rig, 'p2', [typedAlly, genericEvent]));
@@ -359,6 +414,10 @@ function ensureRestedDonCount(rig: Rig, playerId: 'p1' | 'p2', count: number): R
   return next;
 }
 
+function totalAttachedDonCount(state: GameState): number {
+  return Object.values(state.cardsById).reduce((sum, card) => sum + card.donAttached.length, 0);
+}
+
 function ensureCharacterCount(rig: Rig, playerId: 'p1' | 'p2', count: number, sourceDef: CardDefinition): Rig {
   let next = rig;
   while (next.state.players[playerId].characterArea.cardIds.length < count) {
@@ -463,7 +522,18 @@ function satisfyGateScenario(rig: Rig, playerId: 'p1' | 'p2', sourceId: string, 
     const available = next.state.players[playerId].costArea.cardIds.filter((id) => !next.state.cardsById[id]?.donRested).slice(0, Math.max(0, needed));
     if (available.length > 0) next = attachDonTo(next, playerId, sourceId, available);
   }
+  const giveDonCount = ability.ops
+    .filter((op): op is Extract<EffectProgram['abilities'][number]['ops'][number], { op: 'giveDon' }> => op.op === 'giveDon')
+    .reduce((sum, op) => sum + op.count, 0);
+  if (giveDonCount > 0) next = ensureRestedDonCount(next, playerId, giveDonCount);
   if (ability.timing === 'whenAttacking') next = setOrientation(next, sourceId, 'active');
+  const paysRestThis = (ability.cost ?? []).some((cost) => cost.kind === 'restThis');
+  if (ability.timing !== 'whenAttacking' && !paysRestThis && ability.ops.some((op) => op.op === 'setActive' && 'target' in op && JSON.stringify(op.target).includes('"self"'))) {
+    next = setOrientation(next, sourceId, 'rested');
+  }
+  if (ability.ops.some((op) => op.op === 'setActive' && 'target' in op && JSON.stringify(op.target).includes('controllerLeader'))) {
+    next = setOrientation(next, next.state.players[playerId].leaderInstanceId, 'rested');
+  }
   return next;
 }
 
@@ -542,6 +612,127 @@ function scenarioRejectIsExpected(reasons: readonly string[]): boolean {
     'Only the defending player',
     'does not have the required attribute',
   ].some((snippet) => joined.includes(snippet));
+}
+
+function selectorUsesVar(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  if ('sel' in value && value.sel === 'var') return true;
+  return Object.values(value as Record<string, unknown>).some((child) => Array.isArray(child) ? child.some(selectorUsesVar) : selectorUsesVar(child));
+}
+
+function opIsSequenceGated(op: EffectProgram['abilities'][number]['ops'][number]): boolean {
+  return !!(
+    ('ifPrevious' in op && op.ifPrevious) ||
+    ('ifGate' in op && op.ifGate?.length) ||
+    ('condition' in op && op.condition) ||
+    ('target' in op && selectorUsesVar(op.target))
+  );
+}
+
+function abilityRequiresSemanticSignal(ability: Ability): boolean {
+  return ability.ops.some((op) => {
+    if (opIsSequenceGated(op)) return false;
+    switch (op.op) {
+      case 'draw':
+        return op.amount > 0;
+      case 'drawUntilHandCount':
+      case 'searchTopDeck':
+      case 'searchDeck':
+      case 'playSelf':
+      case 'playFromHand':
+      case 'playFromTrash':
+      case 'playFromDeck':
+      case 'playStageFromDeck':
+      case 'addPower':
+      case 'addPowerAura':
+      case 'addCostAura':
+      case 'addCounterAura':
+      case 'addKeyword':
+      case 'addKeywordAura':
+      case 'addAttribute':
+      case 'addKoImmunity':
+      case 'preventAttack':
+      case 'preventRefresh':
+      case 'preventRest':
+      case 'preventFieldRemoval':
+      case 'preventControllerCharacterPlay':
+      case 'preventControllerHandPlay':
+      case 'preventControllerCharacterSetActiveDon':
+      case 'registerKoReplacement':
+      case 'dealDamage':
+      case 'trashTopDeck':
+      case 'returnHandShuffleDraw':
+      case 'redirectAttackTarget':
+      case 'setActive':
+      case 'rest':
+      case 'ko':
+      case 'trashCards':
+      case 'moveToHand':
+      case 'moveToTopDeck':
+      case 'moveToBottomDeck':
+      case 'moveToLifeTop':
+      case 'moveCards':
+      case 'giveDon':
+        return true;
+      case 'chooseTargets':
+      case 'chooseCost':
+        return op.min > 0;
+      case 'chooseOption':
+        return true;
+      default:
+        return false;
+    }
+  });
+}
+
+function countOptional<T>(items: readonly T[] | undefined): number {
+  return items?.length ?? 0;
+}
+
+function semanticEffectSignals(
+  before: GameState,
+  after: GameState,
+  pendingChoices: readonly PendingChoice[],
+  actionLog: readonly GameState['log'][number][],
+  ability: Ability,
+  sourceId: string,
+): string[] {
+  const signals: string[] = [];
+  const semanticLogTypes = new Set([
+    'CARD_DRAWN',
+    'CARD_MOVED',
+    'CARD_RESTED',
+    'DON_GIVEN',
+    'DON_RETURNED',
+    'DON_RESTED',
+    'CHARACTER_KO',
+    'DAMAGE_DEALT',
+    'TRIGGER_REVEALED',
+    'CHOICE_REQUESTED',
+    'EFFECT_RESOLVED',
+    'GAME_OVER',
+  ]);
+
+  if (pendingChoices.length > 0 || after.pendingChoices.length > before.pendingChoices.length) signals.push('pendingChoice');
+  if (actionLog.some((entry) => semanticLogTypes.has(entry.type)) || after.log.slice(before.log.length).some((entry) => semanticLogTypes.has(entry.type))) {
+    signals.push('semanticLog');
+  }
+  if (after.continuousEffects.length > before.continuousEffects.length) signals.push('continuousEffect');
+  if (countOptional(after.delayedEffects) > countOptional(before.delayedEffects)) signals.push('delayedEffect');
+  if (countOptional(after.pendingLifeTriggerTrash) > countOptional(before.pendingLifeTriggerTrash)) signals.push('pendingLifeTriggerTrash');
+  if (countOptional(after.pendingEntryTriggers) > countOptional(before.pendingEntryTriggers)) signals.push('pendingEntryTriggers');
+  if (countOptional(after.pendingOnKoTriggers) > countOptional(before.pendingOnKoTriggers)) signals.push('pendingOnKoTriggers');
+  if (countOptional(after.pendingEffectCascade) > countOptional(before.pendingEffectCascade)) signals.push('pendingEffectCascade');
+  if (after.gameOver && !before.gameOver) signals.push('gameOver');
+  if (totalAttachedDonCount(after) > totalAttachedDonCount(before)) signals.push('donAttached');
+  if (ability.timing === 'lifeTrigger' && before.cardsById[sourceId]?.currentZone !== after.cardsById[sourceId]?.currentZone) {
+    signals.push('lifeTriggerSourceMoved');
+  }
+  if (before.currentBattle && after.currentBattle) {
+    if (after.currentBattle.targetInstanceId !== before.currentBattle.targetInstanceId) signals.push('battleTargetChanged');
+    if (JSON.stringify(after.currentBattle.battlePowerBonuses) !== JSON.stringify(before.currentBattle.battlePowerBonuses)) signals.push('battlePowerBonus');
+  }
+  return [...new Set(signals)].sort();
 }
 
 function runtimeActionFor(def: CardDefinition, ability: Ability, sourceId: string, rig: Rig, playerId: 'p1' | 'p2'): GameAction | null {
@@ -700,7 +891,7 @@ function exerciseRuntimeCase(cardNumber: string, abilityIndex: number): RuntimeR
   expect(resolved, `${cardNumber} did not bind into registry for runtime smoke`).toBe(program);
 
   if (!ACTION_TIMINGS.has(ability.timing)) {
-    return done({ status: 'registeredOnly', reasons: [`timing ${ability.timing} is reactive/automatic and is registry-smoked only`] });
+    return done({ status: 'registeredOnly', reasons: [`timing ${ability.timing} is reactive/automatic and is registry-smoked only`], semanticSignals: [] });
   }
 
   let rig = baseRig;
@@ -709,12 +900,12 @@ function exerciseRuntimeCase(cardNumber: string, abilityIndex: number): RuntimeR
   if (ability.timing === 'lifeTrigger') rig = withSyntheticLifeTriggerChoice(rig, sourceId!, playerId);
 
   const action = runtimeActionFor(def!, ability, sourceId!, rig, playerId);
-  if (!action) return done({ status: 'registeredOnly', reasons: [`no generic action for ${def!.category}/${ability.timing}`] });
+  if (!action) return done({ status: 'registeredOnly', reasons: [`no generic action for ${def!.category}/${ability.timing}`], semanticSignals: [] });
 
   const validation = validateAction(rig.state, action, rig.defs, registry);
   if (!validation.legal) {
     expect(scenarioRejectIsExpected(validation.reasons), `${cardNumber} ${ability.timing} rejected unexpectedly: ${validation.reasons.join('; ')}`).toBe(true);
-    return done({ status: 'scenarioRejected', reasons: validation.reasons });
+    return done({ status: 'scenarioRejected', reasons: validation.reasons, semanticSignals: [] });
   }
 
   const result = executeAction(rig.state, action, rig.defs, registry);
@@ -722,7 +913,7 @@ function exerciseRuntimeCase(cardNumber: string, abilityIndex: number): RuntimeR
   expect(JSON.parse(JSON.stringify(result.state.pendingChoices)), `${cardNumber} pending choices must be serializable`).toEqual(result.state.pendingChoices);
   pendingChoicesAreUiSupported(result.state, result.pendingChoices);
   pendingChoicesAreUiSupported(result.state, result.state.pendingChoices);
-  return done({ status: 'executed', reasons: [] });
+  return done({ status: 'executed', reasons: [], semanticSignals: semanticEffectSignals(rig.state, result.state, result.pendingChoices, result.log, ability, sourceId!) });
 }
 
 describe('curated card runtime smoke coverage', () => {
@@ -763,6 +954,25 @@ describe('curated card runtime smoke coverage', () => {
     expect(
       failures.slice(0, 80),
       `Gated direct player-action abilities may reject only for explicit availability gates. Total failures: ${failures.length}`,
+    ).toEqual([]);
+  });
+
+  it('requires executed direct player-action abilities to produce an observable semantic effect signal', () => {
+    const failures = RUNTIME_CASES.flatMap((runtimeCase) => {
+      if (!ACTION_TIMINGS.has(runtimeCase.timing)) return [];
+      const result = exerciseRuntimeCase(runtimeCase.cardNumber, runtimeCase.abilityIndex);
+      if (result.status !== 'executed') return [];
+      const ability = CURATED_EFFECT_PROGRAMS[runtimeCase.cardNumber]?.abilities[runtimeCase.abilityIndex];
+      if (!ability || abilityHasExplicitAvailabilityGate(ability)) return [];
+      if (ability.timing === 'lifeTrigger') return [];
+      if (!abilityRequiresSemanticSignal(ability)) return [];
+      if (result.semanticSignals.length > 0) return [];
+      return [`${runtimeCase.cardNumber} ability[${runtimeCase.abilityIndex}] ${runtimeCase.timing}: executed without semantic signal`];
+    });
+
+    expect(
+      failures.slice(0, 80),
+      `Executed direct player-action curated abilities must do something beyond the wrapper action. Total failures: ${failures.length}`,
     ).toEqual([]);
   });
 });

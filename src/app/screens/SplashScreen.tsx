@@ -18,11 +18,7 @@ export function SplashScreen({ progress }: SplashScreenProps) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#071126]">
       {/* Background atmosphere */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-20 grayscale" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,_rgba(255,211,74,0.13),_transparent_55%)]" />
-        <div className="absolute inset-x-0 top-0 h-32 bg-[linear-gradient(180deg,_rgba(255,255,255,0.07),_transparent)]" />
-      </div>
+      <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-20 grayscale" />
 
       {/* Content */}
       <div className="relative flex flex-col items-center gap-10">

@@ -61,12 +61,10 @@
     position: fixed;
     inset: 0;
     z-index: -1;
-    background-image:
-      linear-gradient(rgba(231, 233, 238, 0.5), rgba(231, 233, 238, 0.66)),
-      url("https://optcgcustom.app/theme/bg_welcome.webp");
-    background-size: cover, cover;
-    background-position: center top, center top;
-    background-repeat: no-repeat, no-repeat;
+    background-image: url("https://optcgcustom.app/theme/bg_welcome.webp");
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
     filter: grayscale(1);
     pointer-events: none;
   }
