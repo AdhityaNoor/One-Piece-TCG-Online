@@ -5,6 +5,7 @@ import { getDefinition } from '../../engine/rules/shared/definitions';
 import type { CardStrategicProfile, ModeWeights } from '../strategy/types';
 import { analyzeAbility, emptyProfile, mergeProfiles } from './abilityAnalyzer';
 import type { EffectScoreContext } from '../heuristics/effectValue';
+import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 
 export function buildCardStrategicProfile(
   cardDefinitionId: string,
@@ -25,10 +26,10 @@ export function buildCardStrategicProfile(
   if (ctx) {
     const inst = ctx.sourceInstanceId ? ctx.state.cardsById[ctx.sourceInstanceId] : undefined;
     const def = inst ? getDefinition(ctx.defs, inst) : undefined;
-    if (def?.category === 'character') {
+    if (inst && def?.category === 'character') {
       profile.boardDevelopment += (def.basePower ?? 0) / 1200 + 4;
-      if (def.hasBlocker) profile.defensiveValue += 5;
-      if (def.hasRush) profile.offensiveValue += 4;
+      if (hasEffectiveCombatKeyword(ctx.defs, ctx.state, inst.instanceId, 'blocker')) profile.defensiveValue += 5;
+      if (hasEffectiveCombatKeyword(ctx.defs, ctx.state, inst.instanceId, 'rush')) profile.offensiveValue += 4;
     }
   }
 

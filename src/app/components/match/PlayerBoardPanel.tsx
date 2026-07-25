@@ -741,7 +741,12 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   );
 
   const leaderGroup = (
-    <div className="absolute inset-y-0 left-1/2 z-10 grid -translate-x-1/2" style={{ gridTemplateColumns: BOARD_ZONE_TRACK }}>
+    <div
+      className="absolute inset-y-0 left-1/2 z-10 grid -translate-x-1/2"
+      style={{ gridTemplateColumns: BOARD_ZONE_TRACK }}
+      data-board-zone="leaderArea"
+      data-board-player={board.playerId}
+    >
       {leaderCell}
     </div>
   );

@@ -15,6 +15,7 @@ import {
   scoreHandCardPlay,
   type EffectScoreContext,
 } from '../heuristics/effectValue';
+import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 import {
   buildCardStrategicProfile,
   contextualHandValue,
@@ -205,7 +206,9 @@ function ownCardValue(
     value += (def.counter ?? 0) / 400;
   } else if (inst.currentZone === 'characterArea' || inst.currentZone === 'leaderArea') {
     value += computeCurrentPower(ctx.defs, ctx.state, instanceId) / 900;
-    if (def.hasBlocker) value += 6 * strategic.modeWeights.survival;
+    if (hasEffectiveCombatKeyword(ctx.defs, ctx.state, instanceId, 'blocker')) {
+      value += 6 * strategic.modeWeights.survival;
+    }
   } else if (inst.currentZone === 'trash' || inst.currentZone === 'deck') {
     value += scoreHandCardPlay(ctx, instanceId) * 0.5;
     value += (def.basePower ?? 0) / 1200;
@@ -237,7 +240,7 @@ function scoreRemovalTarget(
 
   if (intent === 'rest') {
     score += inst.orientation === 'active' ? 8 : -4;
-    if (def.hasBlocker && inst.orientation === 'active') score += 10;
+    if (hasEffectiveCombatKeyword(ctx.defs, ctx.state, instanceId, 'blocker') && inst.orientation === 'active') score += 10;
   }
   if (intent === 'bounce') score += 4; // tempo + replay cost
   if (intent === 'debuff') score += inst.orientation === 'active' ? 5 : 2;
@@ -317,7 +320,9 @@ function scoreTrashOwnField(
   const def = getDefinition(ctx.defs, inst);
   const value = ownCardValue(ctx, strategic, instanceId);
   let score = 50 - value - power / 800;
-  if (def.hasBlocker && lifeSafetyUrgency(strategic.survival) >= 20) score -= 18;
+  if (hasEffectiveCombatKeyword(ctx.defs, ctx.state, instanceId, 'blocker') && lifeSafetyUrgency(strategic.survival) >= 20) {
+    score -= 18;
+  }
   if (inst.summoningSick) score += 4; // prefer trashing sick bodies
   score += scoreOwnSacrificeWithOnKo(
     ctx.state,
@@ -336,6 +341,31 @@ function scoreSearchOrPlayTarget(
   instanceId: string,
 ): number {
   return scoreSearchTargetForPlan(ctx, strategic, instanceId);
+}
+
+function scoreOptionalSearchSelection(
+  ctx: EffectScoreContext,
+  strategic: StrategicContext,
+  choice: PendingChoice,
+  selected: string[],
+  candidates: Set<string>,
+): number {
+  if (selected.length === 0) {
+    return Math.min(scoreOptionalSelectResponse(ctx, strategic, choice, []), 18);
+  }
+
+  const threshold = strategic.gamePhase === 'early' ? 20 : 18;
+  let score = 30;
+  for (const id of selected) {
+    if (candidates.size > 0 && !candidates.has(id)) return -60;
+    const targetScore = scoreSearchOrPlayTarget(ctx, strategic, id);
+    score += targetScore - threshold;
+    if (targetScore < threshold) {
+      score -= (threshold - targetScore) * 1.4;
+    }
+  }
+
+  return score;
 }
 
 function scoreSelectedCard(
@@ -410,6 +440,8 @@ export function scoreStrategicChoice(
     const selected = response as string[];
     const isOptionalCost =
       choice.constraints.min === 0 && (intent === 'discard' || intent === 'payDon');
+    const isOptionalSearch =
+      choice.constraints.min === 0 && intent === 'search';
 
     if (selected.length === 0) {
       if (choice.constraints.min === 0) {
@@ -419,6 +451,10 @@ export function scoreStrategicChoice(
         return optionalSkip;
       }
       return -50;
+    }
+
+    if (isOptionalSearch) {
+      return scoreOptionalSearchSelection(ctx, strategic, choice, selected, candidates);
     }
 
     // Optional trash/DON costs: score as payoff − opportunity cost, not "happy to pitch".

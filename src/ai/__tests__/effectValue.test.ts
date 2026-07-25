@@ -4,6 +4,7 @@ import { scoreHandCardValue } from '../heuristics/effectValue';
 import { buildRegistryFromAssignments } from '../../cards/effectTemplates/assembler';
 import { OP02_ASSIGNMENTS } from '../../cards/effectTemplates/assignments/OP02';
 import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putInHand } from '../../engine/rules/shared/__tests__/testRig';
+import type { ContinuousEffectRecord } from '../../engine/state/game';
 
 // OP02-011 keeps a real onPlay `op: 'ko'`. OP09-009 was intentionally re-curated to
 // moveCards→trash (Field Trash ≠ K.O.), so it is no longer a KO scoring fixture.
@@ -52,5 +53,46 @@ describe('CPU effect-aware evaluation', () => {
       'hard',
     );
     expect(playKo).toBeGreaterThan(playVanilla);
+  });
+
+  it('values combat keywords granted by active continuous effects', () => {
+    const card = makeCharacterDef({
+      cardDefinitionId: 'CPU-LIVE-KEYWORD',
+      cardNumber: 'CPU-LIVE-KEYWORD',
+      baseCost: 2,
+      basePower: 3000,
+      hasBlocker: false,
+      hasRush: false,
+    });
+    const withHand = putInHand(buildBaseRig({ activePlayerId: 'p1', phase: 'main' }), 'p1', card);
+    const keywordRecord = (keyword: 'blocker' | 'rush'): ContinuousEffectRecord => ({
+      id: `grant-${keyword}`,
+      sourceInstanceId: withHand.instanceId,
+      ownerId: 'p1',
+      duration: 'permanent',
+      description: `Test grant ${keyword}`,
+      keywordModifier: {
+        appliesToInstanceId: withHand.instanceId,
+        keyword,
+      },
+    });
+    const baseCtx = {
+      state: withHand.rig.state,
+      playerId: 'p1' as const,
+      defs: withHand.rig.defs,
+      registry: {},
+    };
+    const blockerCtx = {
+      ...baseCtx,
+      state: { ...baseCtx.state, continuousEffects: [keywordRecord('blocker')] },
+    };
+    const rushCtx = {
+      ...baseCtx,
+      state: { ...baseCtx.state, continuousEffects: [keywordRecord('rush')] },
+    };
+
+    const base = scoreHandCardValue(baseCtx, withHand.instanceId);
+    expect(scoreHandCardValue(blockerCtx, withHand.instanceId)).toBeGreaterThan(base);
+    expect(scoreHandCardValue(rushCtx, withHand.instanceId)).toBeGreaterThan(base);
   });
 });

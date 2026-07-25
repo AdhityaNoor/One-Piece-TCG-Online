@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useDeckEligibility } from '../hooks/useDeckEligibility';
 import { GameCanvasScreen } from '../components';
 import { useNavigationStore } from '../store/navigationStore';
+import { hasCompletedCurrentTutorialVersion, useTutorialPersistenceStore } from '../../features/tutorial';
 
 type PlayModeItem = {
   label: string;
@@ -9,6 +11,12 @@ type PlayModeItem = {
   disabled: boolean;
   disabledReason?: string;
   onClick: () => void;
+  /** "NEW" badge (project spec: shown for first-time players, removed permanently once the tutorial is completed — see hasCompletedCurrentTutorialVersion). */
+  badge?: string;
+  /** First-launch highlight (project spec: "Automatically highlight the Tutorial game mode"). */
+  highlighted?: boolean;
+  /** First-launch callout bubble (project spec mockup: "New to One Piece Card Game? Start here!"). */
+  callout?: { text: string; onDismiss: () => void };
 };
 
 /**
@@ -46,6 +54,26 @@ export function PlayMenuScreen() {
   const navigateTo = useNavigationStore((state) => state.navigateTo);
   const deckCounts = useDeckEligibility();
 
+  const tutorialCompleted = useTutorialPersistenceStore((state) => state.tutorialCompleted);
+  const tutorialVersion = useTutorialPersistenceStore((state) => state.tutorialVersion);
+  const hasSeenFirstLaunchCallout = useTutorialPersistenceStore((state) => state.hasSeenFirstLaunchCallout);
+  const markFirstLaunchCalloutSeen = useTutorialPersistenceStore((state) => state.markFirstLaunchCalloutSeen);
+  const tutorialIsNew = !hasCompletedCurrentTutorialVersion({ tutorialCompleted, tutorialVersion });
+
+  // First-launch highlight (project spec: "Automatically highlight the
+  // Tutorial game mode" + "Display a small callout" — never forces the
+  // player into it, see the dismiss button on the callout itself). Shown
+  // once per player until either dismissed or the tutorial is completed;
+  // never shown again after that even if hasSeenFirstLaunchCallout is somehow
+  // reset, since a completed tutorial has nothing left to call out.
+  const [calloutDismissed, setCalloutDismissed] = useState(false);
+  const showFirstLaunchCallout = tutorialIsNew && !hasSeenFirstLaunchCallout && !calloutDismissed;
+
+  function dismissCallout(): void {
+    setCalloutDismissed(true);
+    markFirstLaunchCalloutSeen();
+  }
+
   const hasLocalDecks = deckCounts.local > 0;
   const hasStandardDecks = deckCounts.standard > 0;
   const hasExtraDecks = deckCounts.extra > 0;
@@ -71,6 +99,19 @@ export function PlayMenuScreen() {
           accent="gold"
           deckHint={`${deckCounts.local} decks available`}
           items={[
+            {
+              label: 'Tutorial',
+              eyebrow: 'Learn to Play',
+              description: 'A guided, chapter-by-chapter walkthrough of the rules — start here if this is your first match.',
+              disabled: false,
+              badge: tutorialIsNew ? 'NEW' : undefined,
+              onClick: () => {
+                dismissCallout();
+                navigateTo({ screen: 'tutorial' });
+              },
+              highlighted: showFirstLaunchCallout,
+              callout: showFirstLaunchCallout ? { text: 'New to One Piece Card Game? Start here!', onDismiss: dismissCallout } : undefined,
+            },
             {
               label: 'VS Self',
               eyebrow: 'Local Hotseat',
@@ -168,26 +209,51 @@ function PlaySection({
 function ModeCard({ item, accent }: { item: PlayModeItem; accent: AccentKey }) {
   const styles = ACCENT_STYLES[accent];
   return (
-    <button
-      type="button"
-      disabled={item.disabled}
-      onClick={item.onClick}
-      className={[
-        'group relative flex min-h-[10rem] w-full items-stretch gap-3 overflow-hidden bg-black/60 p-3 text-left transition sm:gap-4 sm:p-5',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--op-gold-rgb))] focus-visible:ring-offset-2 focus-visible:ring-offset-[#061024]',
-        item.disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer hover:-translate-y-0.5 hover:bg-black/75',
-      ].join(' ')}
-    >
-      <span aria-hidden="true" className={['w-1 flex-shrink-0 rounded-full', styles.bar].join(' ')} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <p className={['text-[10px] font-black uppercase tracking-[0.22em] sm:text-[11px] sm:tracking-[0.26em]', styles.title].join(' ')}>{item.eyebrow}</p>
-        <h2 className="mt-0.5 font-display text-lg font-black uppercase tracking-[0.1em] text-white sm:text-xl">{item.label}</h2>
-        <p className="mt-1.5 text-xs leading-5 text-slate-200/75 sm:text-sm sm:leading-6">{item.description}</p>
+    <div className="relative">
+      {item.callout && (
+        <div className="absolute -top-3 left-4 z-10 flex -translate-y-full items-center gap-2 rounded-lg border border-gold/60 bg-[#0b1c3e] px-3 py-2 text-xs font-semibold text-white shadow-lg">
+          <span>{item.callout.text}</span>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={(event) => {
+              event.stopPropagation();
+              item.callout?.onDismiss();
+            }}
+            className="text-white/50 hover:text-white"
+          >
+            ✕
+          </button>
+          <span aria-hidden="true" className="absolute left-6 top-full h-2 w-2 -translate-y-1 rotate-45 border-b border-r border-gold/60 bg-[#0b1c3e]" />
+        </div>
+      )}
+      <button
+        type="button"
+        disabled={item.disabled}
+        onClick={item.onClick}
+        className={[
+          'group relative flex min-h-[10rem] w-full items-stretch gap-3 overflow-hidden bg-black/60 p-3 text-left transition sm:gap-4 sm:p-5',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--op-gold-rgb))] focus-visible:ring-offset-2 focus-visible:ring-offset-[#061024]',
+          item.disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer hover:-translate-y-0.5 hover:bg-black/75',
+          item.highlighted ? 'ring-2 ring-gold/80 animate-pulse' : '',
+        ].join(' ')}
+      >
+        <span aria-hidden="true" className={['w-1 flex-shrink-0 rounded-full', styles.bar].join(' ')} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex items-center gap-2">
+            <p className={['text-[10px] font-black uppercase tracking-[0.22em] sm:text-[11px] sm:tracking-[0.26em]', styles.title].join(' ')}>{item.eyebrow}</p>
+            {item.badge && (
+              <span className="rounded-sm border border-gold/70 bg-gold/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-gold">{item.badge}</span>
+            )}
+          </div>
+          <h2 className="mt-0.5 font-display text-lg font-black uppercase tracking-[0.1em] text-white sm:text-xl">{item.label}</h2>
+          <p className="mt-1.5 text-xs leading-5 text-slate-200/75 sm:text-sm sm:leading-6">{item.description}</p>
 
-        {item.disabled && item.disabledReason && (
-          <p className="mt-auto pt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">{item.disabledReason}</p>
-        )}
-      </div>
-    </button>
+          {item.disabled && item.disabledReason && (
+            <p className="mt-auto pt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">{item.disabledReason}</p>
+          )}
+        </div>
+      </button>
+    </div>
   );
 }

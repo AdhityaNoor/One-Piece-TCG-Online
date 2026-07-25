@@ -9,6 +9,7 @@ import type { Ability } from '../../engine/effects/effectIr';
 import type { GameState } from '../../engine/state/game';
 import type { PendingChoice } from '../../engine/events/pendingChoice';
 import { ownActiveDonIds, ownFieldCardIds, ownHandIds, opponentPublicCardIds } from '../visibility/playerView';
+import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 import { isLegalAction, uniqueActions } from './actionProbe';
 
 export interface LegalActionContext {
@@ -101,6 +102,52 @@ function resolveSelectCardCandidates(state: GameState, playerId: string, choice:
   return [];
 }
 
+type CandidateOrder = 'highValueFirst' | 'lowValueFirst' | 'natural';
+
+function pendingChoiceCandidateOrder(choice: PendingChoice): CandidateOrder {
+  if (choice.sourceEffectId === 'rule:characterAreaOverflow') return 'lowValueFirst';
+  if (choice.constraints.visibleInstanceIds?.length) return 'highValueFirst';
+
+  const prompt = choice.prompt.toLowerCase();
+  if (prompt.includes('search') || (prompt.includes('add') && prompt.includes('hand')) || prompt.includes('play')) {
+    return 'highValueFirst';
+  }
+  if (prompt.includes('trash') || prompt.includes('discard')) return 'lowValueFirst';
+  if (prompt.includes('k.o') || prompt.includes('ko') || prompt.includes('rest')) return 'highValueFirst';
+
+  return 'natural';
+}
+
+function candidateValue(ctx: LegalActionContext, instanceId: string): number {
+  const inst = ctx.state.cardsById[instanceId];
+  if (!inst) return 0;
+  const def = getDefinition(ctx.defs, inst);
+  const power = computeCurrentPower(ctx.defs, ctx.state, instanceId);
+  const cost = computeCurrentCost(ctx.defs, ctx.state, instanceId, ctx.registry);
+  const counter = def.counter ?? 0;
+  let score = power / 1000 + cost * 1.4 + counter / 1000;
+  if (def.category === 'character') score += 3;
+  if (def.category === 'stage') score += 2.5;
+  if (def.category === 'event') score += 2;
+  if (hasEffectiveCombatKeyword(ctx.defs, ctx.state, instanceId, 'blocker')) score += 2.5;
+  if (hasEffectiveCombatKeyword(ctx.defs, ctx.state, instanceId, 'rush')) score += 2;
+  if (hasEffectiveCombatKeyword(ctx.defs, ctx.state, instanceId, 'doubleAttack')) score += 3;
+  if (hasEffectiveCombatKeyword(ctx.defs, ctx.state, instanceId, 'banish')) score += 2.5;
+  return score;
+}
+
+function orderChoiceCandidates(ctx: LegalActionContext, choice: PendingChoice, candidates: string[]): string[] {
+  const order = pendingChoiceCandidateOrder(choice);
+  if (order === 'natural' || candidates.length <= 1) return candidates;
+  return candidates
+    .map((id, index) => ({ id, index, value: candidateValue(ctx, id) }))
+    .sort((a, b) => {
+      const delta = order === 'highValueFirst' ? b.value - a.value : a.value - b.value;
+      return delta || a.index - b.index;
+    })
+    .map((entry) => entry.id);
+}
+
 function enumerateChoiceResponses(ctx: LegalActionContext, choice: PendingChoice): GameAction[] {
   const base = baseAction(ctx);
   const actions: GameAction[] = [];
@@ -131,7 +178,7 @@ function enumerateChoiceResponses(ctx: LegalActionContext, choice: PendingChoice
   }
 
   if (choice.kind === 'SELECT_CARDS') {
-    const candidates = resolveSelectCardCandidates(ctx.state, ctx.playerId, choice);
+    const candidates = orderChoiceCandidates(ctx, choice, resolveSelectCardCandidates(ctx.state, ctx.playerId, choice));
     const { min, max } = choice.constraints;
     if (max <= 0) {
       actions.push({ type: 'RESOLVE_PENDING_CHOICE', ...base, choiceId: choice.id, response: [] });
@@ -306,8 +353,7 @@ function enumerateBlockStepActions(ctx: LegalActionContext): GameAction[] {
   for (const charId of state.players[playerId]?.characterArea.cardIds ?? []) {
     const inst = state.cardsById[charId];
     if (!inst || inst.orientation !== 'active') continue;
-    const def = getDefinition(ctx.defs, inst);
-    if (!def.hasBlocker) continue;
+    if (!hasEffectiveCombatKeyword(ctx.defs, state, charId, 'blocker')) continue;
     actions.push({ type: 'ACTIVATE_BLOCKER', ...base, blockerInstanceId: charId });
   }
 

@@ -77,6 +77,7 @@ export type NavigationTarget =
   | { screen: 'casual-lobby'; regulation?: 'casualStandard' | 'casualExtra' | 'rankedStandard' }
   | { screen: 'online-match' }
   | { screen: 'credits' }
+  | { screen: 'tutorial' }
   | { screen: 'match'; deckIdA: string; deckIdB: string; presentation?: MatchPresentation };
 
 interface NavigationState {

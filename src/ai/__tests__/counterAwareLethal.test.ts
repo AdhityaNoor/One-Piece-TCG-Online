@@ -19,6 +19,7 @@ import { estimateOpponentCounterCapacity } from '../evaluation/opponentCounterEs
 import { analyzeLethalLine } from '../planning/lethalLineAnalyzer';
 import { analyzeSequencedLethalInsight } from '../planning/lethalSequencePlanner';
 import { chooseAction } from '../cpuPlayer';
+import type { ContinuousEffectRecord } from '../../engine/state/game';
 
 describe('counter-aware lethal', () => {
   const filler = makeCharacterDef({ cardNumber: 'DECK', baseCost: 0, basePower: 1000 });
@@ -313,5 +314,107 @@ describe('counter-aware lethal', () => {
     if (decision?.action.type === 'DECLARE_ATTACK') {
       expect(decision.action.targetInstanceId).toBe(baitPlay.instanceId);
     }
+  });
+
+  it('rewards live unblockable leader pressure through active blockers', () => {
+    const attacker = makeCharacterDef({ cardNumber: 'UNB-ATK', baseCost: 0, basePower: 7000, isUnblockable: false });
+    const blocker = makeCharacterDef({ cardNumber: 'UNB-BLK', baseCost: 2, basePower: 5000, hasBlocker: true });
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 6 });
+    const attackPlay = putCharacterInPlay(rig, 'p1', attacker);
+    rig = putCharacterInPlay(attackPlay.rig, 'p2', blocker).rig;
+    rig = putLifeCards(rig, 'p2', [makeCharacterDef({ cardNumber: 'UNB-LIFE', baseCost: 0 })]).rig;
+
+    const baseState = { ...rig.state, setupState: null, currentBattle: null, pendingChoices: [] };
+    const unblockableRecord: ContinuousEffectRecord = {
+      id: 'grant-unblockable',
+      sourceInstanceId: attackPlay.instanceId,
+      ownerId: 'p1',
+      duration: 'duringThisTurn',
+      description: 'Test grant unblockable',
+      keywordModifier: {
+        appliesToInstanceId: attackPlay.instanceId,
+        keyword: 'unblockable',
+      },
+    };
+    const unblockableState = {
+      ...baseState,
+      continuousEffects: [...baseState.continuousEffects, unblockableRecord],
+    };
+    const action = {
+      type: 'DECLARE_ATTACK' as const,
+      actionId: 'unblockable-pressure',
+      playerId: 'p1',
+      attackerInstanceId: attackPlay.instanceId,
+      targetInstanceId: baseState.players.p2.leaderInstanceId!,
+    };
+
+    const baseScore = scoreActionStrategic(
+      baseState,
+      action,
+      'p1',
+      rig.defs,
+      {},
+      buildStrategicContext(baseState, 'p1', rig.defs, {}),
+    );
+    const unblockableScore = scoreActionStrategic(
+      unblockableState,
+      action,
+      'p1',
+      rig.defs,
+      {},
+      buildStrategicContext(unblockableState, 'p1', rig.defs, {}),
+    );
+
+    expect(unblockableScore).toBeGreaterThan(baseScore + 15);
+  });
+
+  it('rewards live banish leader pressure', () => {
+    const attacker = makeCharacterDef({ cardNumber: 'BAN-ATK', baseCost: 0, basePower: 7000, hasBanish: false });
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 6 });
+    const attackPlay = putCharacterInPlay(rig, 'p1', attacker);
+    rig = putLifeCards(attackPlay.rig, 'p2', [makeCharacterDef({ cardNumber: 'BAN-LIFE', baseCost: 0 })]).rig;
+
+    const baseState = { ...rig.state, setupState: null, currentBattle: null, pendingChoices: [] };
+    const banishRecord: ContinuousEffectRecord = {
+      id: 'grant-banish',
+      sourceInstanceId: attackPlay.instanceId,
+      ownerId: 'p1',
+      duration: 'duringThisTurn',
+      description: 'Test grant banish',
+      keywordModifier: {
+        appliesToInstanceId: attackPlay.instanceId,
+        keyword: 'banish',
+      },
+    };
+    const banishState = {
+      ...baseState,
+      continuousEffects: [...baseState.continuousEffects, banishRecord],
+    };
+    const action = {
+      type: 'DECLARE_ATTACK' as const,
+      actionId: 'banish-pressure',
+      playerId: 'p1',
+      attackerInstanceId: attackPlay.instanceId,
+      targetInstanceId: baseState.players.p2.leaderInstanceId!,
+    };
+
+    const baseScore = scoreActionStrategic(
+      baseState,
+      action,
+      'p1',
+      rig.defs,
+      {},
+      buildStrategicContext(baseState, 'p1', rig.defs, {}),
+    );
+    const banishScore = scoreActionStrategic(
+      banishState,
+      action,
+      'p1',
+      rig.defs,
+      {},
+      buildStrategicContext(banishState, 'p1', rig.defs, {}),
+    );
+
+    expect(banishScore).toBeGreaterThan(baseScore + 8);
   });
 });

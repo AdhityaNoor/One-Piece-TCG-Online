@@ -6,7 +6,6 @@
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import { getOpponentId } from '../../engine/rules/shared';
 import { computeCurrentPower } from '../../engine/rules/shared/power';
-import { getDefinition } from '../../engine/rules/shared/definitions';
 import type { GameState } from '../../engine/state/game';
 import type { StrategicResource, SurvivalProjection } from '../strategy/types';
 import {
@@ -14,6 +13,7 @@ import {
   ownHandIds,
   ownLifeCount,
 } from '../visibility/playerView';
+import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 import { printedCounterValue } from './counterEfficiency';
 
 export interface IncomingAttacker {
@@ -43,9 +43,8 @@ function canOpponentAttackSoon(
   if (!inst) return false;
   if (inst.currentZone !== 'characterArea' && inst.currentZone !== 'leaderArea') return false;
   if (inst.orientation !== 'active') return false;
-  const def = getDefinition(defs, inst);
   // Public knowledge: summoningSick is visible on field; Rush overrides it.
-  if (inst.summoningSick && !def.hasRush) return false;
+  if (inst.summoningSick && !hasEffectiveCombatKeyword(defs, state, instanceId, 'rush')) return false;
   return true;
 }
 
@@ -58,14 +57,13 @@ export function listIncomingAttackers(
   for (const id of opponentPublicCardIds(state, playerId)) {
     if (!canOpponentAttackSoon(state, defs, id)) continue;
     const inst = state.cardsById[id]!;
-    const def = getDefinition(defs, inst);
     const power = computeCurrentPower(defs, state, id);
     attackers.push({
       instanceId: id,
       power,
-      lifeDamageIfLeaderHit: def.hasDoubleAttack ? 2 : 1,
-      isUnblockable: def.isUnblockable,
-      hasRush: def.hasRush,
+      lifeDamageIfLeaderHit: hasEffectiveCombatKeyword(defs, state, id, 'doubleAttack') ? 2 : 1,
+      isUnblockable: hasEffectiveCombatKeyword(defs, state, id, 'unblockable'),
+      hasRush: hasEffectiveCombatKeyword(defs, state, id, 'rush'),
       isLeader: inst.currentZone === 'leaderArea',
     });
   }
@@ -83,7 +81,7 @@ export function countActiveBlockers(
   for (const id of player.characterArea.cardIds) {
     const inst = state.cardsById[id];
     if (!inst || inst.orientation !== 'active') continue;
-    if (getDefinition(defs, inst).hasBlocker) count += 1;
+    if (hasEffectiveCombatKeyword(defs, state, id, 'blocker')) count += 1;
   }
   return count;
 }

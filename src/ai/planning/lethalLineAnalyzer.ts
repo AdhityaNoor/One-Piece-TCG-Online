@@ -1,14 +1,13 @@
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import { computeCurrentPower } from '../../engine/rules/shared/power';
-import { getDefinition } from '../../engine/rules/shared/definitions';
 import {
   cannotAttack,
   getForcedAttackTargetId,
-  hasContinuousKeyword,
 } from '../../engine/rules/shared/power';
 import type { GameState } from '../../engine/state/game';
 import type { StrategicGamePlan } from '../strategy/types';
 import { opponentLifeCount, ownFieldCardIds } from '../visibility/playerView';
+import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 import { getOpponentId } from '../../engine/rules/shared';
 
 export interface RemainingAttacker {
@@ -41,7 +40,7 @@ function canAttackLeader(
   if (!attacker || attacker.ownerId !== playerId) return false;
   if (attacker.currentZone !== 'leaderArea' && attacker.currentZone !== 'characterArea') return false;
   if (attacker.orientation !== 'active') return false;
-  if (attacker.summoningSick && !hasContinuousKeyword(defs, state, attackerInstanceId, 'rush')) return false;
+  if (attacker.summoningSick && !hasEffectiveCombatKeyword(defs, state, attackerInstanceId, 'rush')) return false;
   if (cannotAttack(state, attackerInstanceId, defs)) return false;
 
   const opponentId = getOpponentId(state, playerId);
@@ -62,8 +61,7 @@ function canAttackLeader(
 function lifeDamageOnLeaderHit(defs: CardDefinitionLookup, state: GameState, attackerInstanceId: string): number {
   const inst = state.cardsById[attackerInstanceId];
   if (!inst) return 0;
-  const def = getDefinition(defs, inst);
-  return def.hasDoubleAttack ? 2 : 1;
+  return hasEffectiveCombatKeyword(defs, state, attackerInstanceId, 'doubleAttack') ? 2 : 1;
 }
 
 export function analyzeLethalLine(

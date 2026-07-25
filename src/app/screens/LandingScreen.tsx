@@ -72,12 +72,13 @@ export function LandingScreen() {
           </nav>
         </div>
       ) : (
-        <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-md flex-col justify-center gap-5">
+        <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-md flex-col justify-center">
+          <div className="flex flex-col gap-5 rounded-xl border border-gold/40 bg-[#0b1220]/90 p-7 shadow-[0_18px_50px_rgba(0,0,0,0.7)] ring-1 ring-black/40 backdrop-blur-md">
           <h1 className="text-center font-display text-3xl font-black uppercase tracking-[0.04em] text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.55)] sm:text-4xl">
             {isSignup ? 'Sign Up' : 'Sign In'}
           </h1>
           {configured ? (
-            <p className="text-center text-sm text-slate-200/70">
+            <p className="text-center text-sm text-slate-200/80">
               {isSignup
                 ? 'Create your crew. Your account name is your player handle.'
                 : 'Sign in to play online. Your account name is your player handle.'}
@@ -167,6 +168,7 @@ export function LandingScreen() {
               </Button>
             </div>
           )}
+          </div>
         </div>
       )}
     </GameCanvasScreen>
@@ -174,7 +176,7 @@ export function LandingScreen() {
 }
 
 const inputClass =
-  'w-full border border-white/25 bg-black/30 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-gold/70 disabled:opacity-40';
+  'w-full rounded-md border border-white/40 bg-[#050a14]/95 px-3 py-2.5 text-sm text-white placeholder:text-white/40 shadow-inner outline-none transition-colors focus:border-gold focus:ring-2 focus:ring-gold/40 disabled:opacity-40';
 
 function Field({
   label,

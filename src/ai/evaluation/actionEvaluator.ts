@@ -55,6 +55,7 @@ import {
   scoreOnBlockPayoff,
 } from '../planning/attackTriggerPlanner';
 import { scoreKoReactionForRemoval } from '../planning/koReactionPlanner';
+import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 
 function effectCtx(
   state: GameState,
@@ -112,6 +113,19 @@ export function scoreActionStrategic(
         lethalBonus += 25 + (6 - opponentLifeCount(state, playerId)) * 6 * weights.lethal;
         lethalBonus += attackLeaderLethalBonus(lethalLine, true);
         if (lethalPriority) lethalBonus += 40;
+
+        if (hasEffectiveCombatKeyword(defs, state, action.attackerInstanceId, 'banish')) {
+          lethalBonus += 14 + (lethalPriority ? 8 : 0);
+        }
+        if (hasEffectiveCombatKeyword(defs, state, action.attackerInstanceId, 'unblockable')) {
+          const opponentId = getOpponentId(state, playerId);
+          const activeBlockers =
+            state.players[opponentId]?.characterArea.cardIds.filter((id) => {
+              const blocker = state.cardsById[id];
+              return blocker?.orientation === 'active' && hasEffectiveCombatKeyword(defs, state, id, 'blocker');
+            }).length ?? 0;
+          lethalBonus += 18 + activeBlockers * 14 + (lethalPriority ? 8 : 0);
+        }
 
         const aware = analyzeCounterAwareLeaderAttack(
           state,
@@ -229,7 +243,10 @@ export function scoreActionStrategic(
       else score += 10;
 
       // Survival: develop blockers; keep Counter pieces in hand when crack-back is lethal.
-      if (def.hasBlocker && (preserveDefenses || strategic.mode === 'defend' || strategic.mode === 'recovery')) {
+      if (
+        hasEffectiveCombatKeyword(defs, state, action.handCardInstanceId, 'blocker') &&
+        (preserveDefenses || strategic.mode === 'defend' || strategic.mode === 'recovery')
+      ) {
         score += 18 + survivalUrgency * 0.25;
       }
       if (

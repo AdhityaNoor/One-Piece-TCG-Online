@@ -1,10 +1,10 @@
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import { computeCurrentPower } from '../../engine/rules/shared/power';
-import { getDefinition } from '../../engine/rules/shared/definitions';
 import type { EffectTemplateRegistry } from '../../engine/effects';
 import type { GameState } from '../../engine/state/game';
 import type { ThreatProfile } from '../strategy/types';
 import { opponentPublicCardIds } from '../visibility/playerView';
+import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 import { buildCardStrategicProfile } from './cardStrategicProfile';
 import { profileScalar } from './abilityAnalyzer';
 import type { EffectScoreContext } from '../heuristics/effectValue';
@@ -29,7 +29,6 @@ export function buildThreatProfile(
     };
   }
 
-  const def = getDefinition(defs, inst);
   const power = computeCurrentPower(defs, state, instanceId);
   const isLeader = inst.currentZone === 'leaderArea';
   const canAttack = inst.orientation === 'active' && !inst.summoningSick;
@@ -48,7 +47,11 @@ export function buildThreatProfile(
   const immediateThreat = (canAttack ? power / 800 : power / 2000) + (isLeader ? 6 : 0);
   const recurringValue = scalar * 0.12 + profile.engineValue * 0.08;
   const lethalContribution = canAttack ? power / 1000 + profile.finisherValue * 0.1 : profile.finisherValue * 0.05;
-  const removalUrgency = immediateThreat + recurringValue + (def.hasBlocker ? 4 : 0) + profile.removalValue * -0.1;
+  const removalUrgency =
+    immediateThreat +
+    recurringValue +
+    (hasEffectiveCombatKeyword(defs, state, instanceId, 'blocker') ? 4 : 0) +
+    profile.removalValue * -0.1;
 
   return {
     instanceId,

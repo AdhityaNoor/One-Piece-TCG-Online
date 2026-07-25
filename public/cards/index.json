@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-18T10:20:13.534Z",
-  "total": 2642,
+  "generatedAt": "2026-07-25T11:10:31.035Z",
+  "total": 2672,
   "sets": [
     {
       "code": "EB01",
@@ -267,6 +267,36 @@
       "code": "ST30",
       "name": "EX Luffy & Ace",
       "count": 17
+    },
+    {
+      "code": "ST31",
+      "name": "ST31",
+      "count": 5
+    },
+    {
+      "code": "ST32",
+      "name": "ST32",
+      "count": 5
+    },
+    {
+      "code": "ST33",
+      "name": "ST33",
+      "count": 5
+    },
+    {
+      "code": "ST34",
+      "name": "ST34",
+      "count": 5
+    },
+    {
+      "code": "ST35",
+      "name": "ST35",
+      "count": 5
+    },
+    {
+      "code": "ST36",
+      "name": "ST36",
+      "count": 5
     }
   ]
 }

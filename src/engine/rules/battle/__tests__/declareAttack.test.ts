@@ -180,6 +180,31 @@ describe('executeDeclareAttack', () => {
     expect(result.log.some((e) => e.type === 'PHASE_CHANGED')).toBe(true);
   });
 
+  it('skips the Block Step for an attacker with a continuous [Unblockable] grant', () => {
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const { rig: withAttacker, instanceId: charId } = putCharacterInPlay(base, 'p1', makeCharacterDef({ isUnblockable: false }));
+    const { rig } = putCharacterInPlay(withAttacker, 'p2', makeCharacterDef({ hasBlocker: true }));
+    const opponentLeaderId = rig.state.players.p2.leaderInstanceId;
+    const state = {
+      ...rig.state,
+      continuousEffects: [
+        {
+          id: 'ce-unblockable',
+          sourceInstanceId: charId,
+          ownerId: 'p1',
+          duration: 'duringThisTurn' as const,
+          description: 'gains unblockable',
+          keywordModifier: { appliesToInstanceId: charId, keyword: 'unblockable' as const },
+        },
+      ],
+    };
+
+    const result = executeDeclareAttack(state, declareAttack('p1', charId, opponentLeaderId), rig.defs);
+
+    expect(result.state.currentBattle?.step).toBe('counter');
+    expect(result.log.some((e) => e.type === 'PHASE_CHANGED' && String(e.message).includes('[Unblockable]'))).toBe(true);
+  });
+
   it('skips straight to the Counter Step when the defending player has no legal Blocker and no On Opp Attack (e.g. Leader-only field)', () => {
     const { state, defs } = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
     const leaderId = state.players.p1.leaderInstanceId;

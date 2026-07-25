@@ -3,6 +3,7 @@ import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import { computeCurrentPower } from '../../engine/rules/shared/power';
 import { getDefinition } from '../../engine/rules/shared/definitions';
 import { opponentLifeCount, opponentPublicCardIds, ownHandIds, ownLifeCount } from '../visibility/playerView';
+import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 import type { EffectTemplateRegistry } from '../../engine/effects';
 import { scoreHandCardPlay } from './effectValue';
 
@@ -22,8 +23,8 @@ export function boardStrength(state: GameState, playerId: string, defs: CardDefi
     if (inst.orientation === 'active') score += 1.5;
     score += inst.donAttached.length * 0.5;
     const def = getDefinition(defs, inst);
-    if (def.hasBlocker) score += 1;
-    if (def.hasRush) score += 0.5;
+    if (hasEffectiveCombatKeyword(defs, state, id, 'blocker')) score += 1;
+    if (hasEffectiveCombatKeyword(defs, state, id, 'rush')) score += 0.5;
     if (Object.keys(registry).length > 0) {
       score += scoreHandCardPlay({ state, playerId, defs, registry, sourceInstanceId: id, sourceCardDefinitionId: inst.cardDefinitionId }, id) * 0.08;
     }

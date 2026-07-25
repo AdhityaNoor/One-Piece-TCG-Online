@@ -100,6 +100,8 @@ export function executeDeclareAttack(
 ): ActionExecuteResult {
   const attacker = state.cardsById[action.attackerInstanceId];
   const attackerDef = getDefinition(defs, attacker);
+  const attackerIsUnblockable =
+    attackerDef.isUnblockable || hasContinuousKeyword(defs, state, action.attackerInstanceId, 'unblockable');
   const logger = createActionLogger(state, action.actionId);
 
   const cardsById = {
@@ -116,7 +118,7 @@ export function executeDeclareAttack(
     visibility: 'public',
   });
 
-  if (attackerDef.isUnblockable) {
+  if (attackerIsUnblockable) {
     logger.push({
       actorPlayerId: action.playerId,
       type: 'PHASE_CHANGED',
@@ -134,7 +136,7 @@ export function executeDeclareAttack(
       attackerInstanceId: action.attackerInstanceId,
       targetInstanceId: action.targetInstanceId,
       originalTargetInstanceId: action.targetInstanceId,
-      step: attackerDef.isUnblockable ? 'counter' : 'block',
+      step: attackerIsUnblockable ? 'counter' : 'block',
       blockerUsed: false,
       onOpponentsAttackUsedInstanceIds: [],
       battlePowerBonuses: {},

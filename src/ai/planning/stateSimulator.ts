@@ -56,9 +56,11 @@ function pickBestLegalAction(
   if (legal.length === 0) return null;
 
   const perspective = actingPlayerId === cpuPlayerId ? cpuPlayerId : actingPlayerId;
-  const strat = actingPlayerId === cpuPlayerId
-    ? strategic ?? buildStrategicContext(state, cpuPlayerId, defs, registry)
-    : buildStrategicContext(state, actingPlayerId, defs, registry);
+  const hasPendingChoice = state.pendingChoices.length > 0;
+  const strat =
+    actingPlayerId === cpuPlayerId && strategic && !hasPendingChoice
+      ? strategic
+      : buildStrategicContext(state, perspective, defs, registry);
 
   let best = legal[0];
   let bestScore = -Infinity;

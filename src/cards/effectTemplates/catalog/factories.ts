@@ -1250,6 +1250,12 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'rest', target: { sel: 'self' } }];
     case 'turnTopLifeFace': {
       const count = f.count ?? 1;
+      if (f.position === 'topOrBottom') {
+        return [
+          { op: 'chooseTargets', var: 't', from: { sel: 'controllerLifeTopBottom' }, min: 0, max: 1, prompt: `You may turn the top or bottom card of your Life face-${f.faceUp ? 'up' : 'down'}.` },
+          { op: 'turnLifeFace', target: { sel: 'var', name: 't' }, faceUp: f.faceUp },
+        ];
+      }
       if (f.fromFaceUp) {
         const faceWord = f.faceUp ? 'up' : 'down';
         return [

@@ -12,6 +12,7 @@ import { evaluateGates } from '../../engine/effects/gates';
 import type { Ability, EffectOp, EffectProgram, IrTiming, Selector } from '../../engine/effects/effectIr';
 import type { PendingChoice } from '../../engine/events/pendingChoice';
 import { opponentPublicCardIds, ownHandIds } from '../visibility/playerView';
+import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 
 export interface EffectScoreContext {
   state: GameState;
@@ -413,8 +414,8 @@ export function scoreHandCardValue(
   let score = 0;
   if (def.category === 'character') {
     score += (def.basePower ?? 0) / 1000 + 6;
-    if (def.hasBlocker) score += 4;
-    if (def.hasRush) score += 3;
+    if (hasEffectiveCombatKeyword(ctx.defs, ctx.state, handInstanceId, 'blocker')) score += 4;
+    if (hasEffectiveCombatKeyword(ctx.defs, ctx.state, handInstanceId, 'rush')) score += 3;
     if ((def.counter ?? 0) > 0) score += def.counter! / 1000 + 2;
   }
   if (def.category === 'event') score += 5;

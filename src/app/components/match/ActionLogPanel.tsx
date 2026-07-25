@@ -18,7 +18,7 @@
  * exist and being shown, not in hiding it from a board that shows
  * everything else anyway).
  */
-import { memo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import type { GameLogEntry } from '../../../engine/logs/logEntry';
 import { Modal } from '../Modal';
 import { Pill } from '../Pill';
@@ -197,6 +197,112 @@ function ActionLogEntry({
   );
 }
 
+interface TurnGroup {
+  turnNumber: number;
+  entries: GameLogEntry[];
+  /** First identifiable actor in the turn — used to label whose turn it is. */
+  actorPlayerId: string | null;
+}
+
+/**
+ * Groups an already newest-first-ordered log into per-turn buckets. Because
+ * the log is contiguous by turn, consecutive same-turn entries collapse into
+ * one group; groups come out newest-turn-first, entries within each group
+ * stay newest-first (matching the flat view's ordering).
+ */
+function groupByTurn(orderedNewestFirst: GameLogEntry[]): TurnGroup[] {
+  const groups: TurnGroup[] = [];
+  for (const entry of orderedNewestFirst) {
+    const turnNumber = entry.turnNumber || 0;
+    const last = groups[groups.length - 1];
+    if (last && last.turnNumber === turnNumber) {
+      last.entries.push(entry);
+      if (last.actorPlayerId === null && entry.actorPlayerId) last.actorPlayerId = entry.actorPlayerId;
+    } else {
+      groups.push({ turnNumber, entries: [entry], actorPlayerId: entry.actorPlayerId ?? null });
+    }
+  }
+  return groups;
+}
+
+/**
+ * Renders the log grouped into collapsible per-turn sections so the player
+ * can focus on a single turn. The most recent turn is expanded by default and
+ * that default auto-advances as new turns begin; manual toggles are remembered
+ * per turn and win over the default.
+ */
+function TurnGroupedLog({
+  ordered,
+  playerNames,
+  viewerPlayerId,
+  variant,
+}: {
+  ordered: GameLogEntry[];
+  playerNames?: PlayerNameMap;
+  viewerPlayerId: string | null;
+  variant: 'dock' | 'modal';
+}) {
+  const groups = useMemo(() => groupByTurn(ordered), [ordered]);
+  const latestTurn = groups.length ? groups[0].turnNumber : 0;
+  const [overrides, setOverrides] = useState<Record<number, boolean>>({});
+  const isExpanded = (turnNumber: number): boolean => overrides[turnNumber] ?? turnNumber === latestTurn;
+  const toggle = (turnNumber: number): void =>
+    setOverrides((prev) => ({ ...prev, [turnNumber]: !(prev[turnNumber] ?? turnNumber === latestTurn) }));
+
+  const dock = variant === 'dock';
+
+  return (
+    <div className="flex flex-col gap-2">
+      {groups.map((group) => {
+        const expanded = isExpanded(group.turnNumber);
+        return (
+          <section key={group.turnNumber} className="min-w-0">
+            <button
+              type="button"
+              onClick={() => toggle(group.turnNumber)}
+              aria-expanded={expanded}
+              className={[
+                'sticky top-0 z-10 flex w-full items-center gap-2 border border-gold/25 bg-[linear-gradient(180deg,_rgba(13,32,72,0.96),_rgba(6,16,40,0.96))] backdrop-blur transition-colors hover:border-gold/55',
+                dock ? 'px-2 py-1.5' : 'rounded-lg px-3 py-2',
+              ].join(' ')}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className={['h-3.5 w-3.5 flex-shrink-0 text-gold transition-transform duration-200', expanded ? 'rotate-90' : ''].join(' ')}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                aria-hidden="true"
+              >
+                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className={['font-display font-black uppercase tracking-[0.14em] text-white', dock ? 'text-[11px]' : 'text-xs'].join(' ')}>
+                {group.turnNumber ? `Turn ${group.turnNumber}` : 'Setup'}
+              </span>
+              <span className="ml-auto flex-shrink-0 text-[9px] font-black uppercase tracking-[0.12em] text-gold/70">
+                {group.entries.length}
+              </span>
+            </button>
+            {expanded && (
+              <ol className={['flex flex-col', dock ? 'gap-2 pt-2' : 'gap-1.5 pt-1.5'].join(' ')}>
+                {group.entries.map((entry) => (
+                  <ActionLogEntry
+                    key={entry.id}
+                    entry={entry}
+                    playerNames={playerNames}
+                    viewerPlayerId={viewerPlayerId}
+                    variant={variant}
+                  />
+                ))}
+              </ol>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 function ActionLogDockContent({
   log,
   playerNames,
@@ -233,17 +339,7 @@ function ActionLogDockContent({
         {ordered.length === 0 ? (
           <p className="border border-dashed border-white/10 px-3 py-6 text-center text-xs text-white/30">No log entries yet.</p>
         ) : (
-          <ol className="flex flex-col gap-2">
-            {ordered.map((entry) => (
-              <ActionLogEntry
-                key={entry.id}
-                entry={entry}
-                playerNames={playerNames}
-                viewerPlayerId={viewerPlayerId}
-                variant="dock"
-              />
-            ))}
-          </ol>
+          <TurnGroupedLog ordered={ordered} playerNames={playerNames} viewerPlayerId={viewerPlayerId} variant="dock" />
         )}
       </div>
     </>
@@ -275,17 +371,7 @@ function ActionLogContent({
         {ordered.length === 0 ? (
           <p className="rounded-lg border border-dashed border-white/10 px-3 py-6 text-center text-xs text-white/30">No log entries yet.</p>
         ) : (
-          <ul className="flex flex-col gap-1.5">
-            {ordered.map((entry) => (
-              <ActionLogEntry
-                key={entry.id}
-                entry={entry}
-                playerNames={playerNames}
-                viewerPlayerId={viewerPlayerId}
-                variant="modal"
-              />
-            ))}
-          </ul>
+          <TurnGroupedLog ordered={ordered} playerNames={playerNames} viewerPlayerId={viewerPlayerId} variant="modal" />
         )}
       </div>
   );

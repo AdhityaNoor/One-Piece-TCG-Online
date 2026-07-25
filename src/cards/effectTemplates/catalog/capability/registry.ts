@@ -1298,12 +1298,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   turnTopLifeFace: {
     id: 'turnTopLifeFace',
-    summary: '"You may turn N cards from the top of your Life cards face-up/down:" cost. With fromFaceUp, chooses among currently face-up Life cards instead of the top. Binds var t.',
-    params: [{ name: 'faceUp', type: 'boolean', required: true }, { name: 'count', type: 'number', required: false }, { name: 'fromFaceUp', type: 'true', required: false }],
-    covers: ['you may turn 1 card from the top of your Life cards face-up:', 'you may turn 2 cards from the top of your Life cards face-up:', 'you may turn 1 of your face-up Life cards face-down:'],
+    summary: '"You may turn N cards from the top of your Life cards face-up/down:" cost. With position topOrBottom, chooses the top or bottom Life card. With fromFaceUp, chooses among currently face-up Life cards instead of the top. Binds var t.',
+    params: [{ name: 'faceUp', type: 'boolean', required: true }, { name: 'count', type: 'number', required: false }, { name: 'fromFaceUp', type: 'true', required: false }, { name: 'position', type: "'top' | 'topOrBottom'", required: false }],
+    covers: ['you may turn 1 card from the top of your Life cards face-up:', 'you may turn 2 cards from the top of your Life cards face-up:', 'you may turn 1 card from the top or bottom of your Life cards face-up/down:', 'you may turn 1 of your face-up Life cards face-down:'],
     examples: [
       { cardNumber: 'OP08-096', snippet: "{ fn: 'turnTopLifeFace', faceUp: true }" },
       { cardNumber: 'OP08-058', snippet: "{ fn: 'turnTopLifeFace', faceUp: true, count: 2 }" },
+      { cardNumber: 'ST36-005', snippet: "{ fn: 'turnTopLifeFace', faceUp: true, position: 'topOrBottom' }" },
       { cardNumber: 'ST13-009', snippet: "{ fn: 'turnTopLifeFace', faceUp: false, fromFaceUp: true }" },
     ],
   },

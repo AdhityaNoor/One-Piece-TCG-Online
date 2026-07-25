@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { executePlayCharacter } from '../../engine/actions/handlers/playCharacter';
 import { buildRegistryFromAssignments } from '../../cards/effectTemplates/assembler';
 import { OP02_ASSIGNMENTS } from '../../cards/effectTemplates/assignments/OP02';
+import type { EffectProgram } from '../../engine/effects';
 import { buildBaseRig, makeCharacterDef, putCharacterInPlay, putDon, putInHand } from '../../engine/rules/shared/__tests__/testRig';
 import { evaluateState, buildStrategicContext } from '../evaluation/stateEvaluator';
 import { autoResolvePendingChoices, canContinueLookahead, cloneGameState, simulateAction } from '../planning/stateSimulator';
@@ -143,5 +144,110 @@ describe('CPU lookahead simulation', () => {
     );
     const after = evaluateState(resolved.state, 'p1', withHand.defs, registry);
     expect(after).toBeGreaterThan(before);
+  });
+
+  it('rebuilds strategic context while auto-resolving pending target choices', () => {
+    const sourceDef = makeCharacterDef({
+      cardDefinitionId: 'CPU-KO-SOURCE',
+      cardNumber: 'CPU-KO-SOURCE',
+      baseCost: 1,
+      basePower: 1000,
+    });
+    const weakDef = makeCharacterDef({
+      cardDefinitionId: 'CPU-WEAK-TARGET',
+      cardNumber: 'CPU-WEAK-TARGET',
+      baseCost: 1,
+      basePower: 1000,
+    });
+    const strongDef = makeCharacterDef({
+      cardDefinitionId: 'CPU-STRONG-TARGET',
+      cardNumber: 'CPU-STRONG-TARGET',
+      baseCost: 8,
+      basePower: 10000,
+    });
+    const program: EffectProgram = {
+      cardNumber: sourceDef.cardNumber,
+      abilities: [
+        {
+          timing: 'activateMain',
+          ops: [
+            {
+              op: 'chooseTargets',
+              var: 't',
+              from: { sel: 'opponentCharacters' },
+              min: 1,
+              max: 1,
+              prompt: 'Choose a Character to K.O.',
+            },
+            { op: 'ko', target: { sel: 'var', name: 't' } },
+          ],
+        },
+      ],
+    };
+
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 5 });
+    const source = putCharacterInPlay(rig, 'p1', sourceDef);
+    const weak = putCharacterInPlay(source.rig, 'p2', weakDef);
+    const strong = putCharacterInPlay(weak.rig, 'p2', strongDef);
+    rig = strong.rig;
+
+    const state = {
+      ...rig.state,
+      pendingChoices: [
+        {
+          id: 'pick-ko-target',
+          playerId: 'p1',
+          kind: 'SELECT_CARDS' as const,
+          prompt: 'Choose a Character to K.O.',
+          constraints: {
+            min: 1,
+            max: 1,
+            candidateInstanceIds: [weak.instanceId, strong.instanceId],
+          },
+          sourceInstanceId: source.instanceId,
+          sourceEffectId: 'ir',
+          resumeState: { abilityIndex: 0, opIndex: 0, bindings: {} },
+        },
+      ],
+    };
+    const freshStrategic = buildStrategicContext(state, 'p1', rig.defs, { [sourceDef.cardDefinitionId]: program });
+    const staleStrategic = {
+      ...freshStrategic,
+      opponentThreats: [
+        {
+          instanceId: weak.instanceId,
+          cardDefinitionId: weakDef.cardDefinitionId,
+          immediateThreat: 0,
+          recurringValue: 0,
+          synergyCentrality: 0,
+          lethalContribution: 0,
+          removalUrgency: 1000,
+        },
+        {
+          instanceId: strong.instanceId,
+          cardDefinitionId: strongDef.cardDefinitionId,
+          immediateThreat: 0,
+          recurringValue: 0,
+          synergyCentrality: 0,
+          lethalContribution: 0,
+          removalUrgency: 0,
+        },
+      ],
+    };
+    let actionId = 0;
+
+    const resolved = autoResolvePendingChoices(
+      state,
+      'p1',
+      rig.defs,
+      { [sourceDef.cardDefinitionId]: program },
+      () => `target-${actionId++}`,
+      staleStrategic,
+    );
+
+    expect(resolved.failed).toBe(false);
+    expect(resolved.state.pendingChoices).toHaveLength(0);
+    expect(resolved.state.cardsById[strong.instanceId].currentZone).toBe('trash');
+    expect(resolved.state.cardsById[weak.instanceId].currentZone).toBe('characterArea');
   });
 });

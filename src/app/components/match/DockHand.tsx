@@ -221,13 +221,14 @@ function DockHandCard({
       <div
         className={[
           'h-full w-full overflow-hidden rounded-[4px] border shadow-[0_6px_18px_rgba(0,0,0,0.6)]',
+          canSelect ? 'cursor-pointer' : 'cursor-default',
           isSelected
             ? 'border-gold ring-2 ring-gold/70 ring-offset-1 ring-offset-navy-950'
-            : canSelect && isHoveredCard
-              ? 'border-gold cursor-pointer'
-              : canSelect
-                ? 'border-gold/45 cursor-pointer'
-                : 'border-white/20 cursor-default',
+            : canPlay
+              ? isHoveredCard
+                ? 'border-emerald-400 ring-2 ring-emerald-400/60'
+                : 'border-emerald-500/90'
+              : 'border-transparent',
         ].join(' ')}
       >
         {showFaces ? (
@@ -238,12 +239,12 @@ function DockHandCard({
       </div>
 
       {isHoveredCard && showFaces && (
-        <div className="absolute inset-x-0 bottom-0 flex flex-col overflow-hidden rounded-b-[4px] border-t border-white/15 shadow-[0_-8px_16px_rgba(0,0,0,0.35)]">
+        <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-1.5 px-1">
           {canPlay && (
             <button
               type="button"
               aria-label={`Play ${card.name}`}
-              className="bg-gold/95 py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] text-navy-950 transition-colors hover:bg-gold"
+              className="pointer-events-auto w-[80%] rounded-full bg-gold/95 py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] text-navy-950 shadow-[0_2px_10px_rgba(0,0,0,0.55)] transition-colors hover:bg-gold"
               onClick={(e) => { e.stopPropagation(); onPlay(); }}
             >
               Play
@@ -252,7 +253,7 @@ function DockHandCard({
           <button
             type="button"
             aria-label="View card detail"
-            className="bg-black/86 py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] text-white transition-colors hover:bg-black"
+            className="pointer-events-auto w-[80%] rounded-full bg-black/86 py-1 text-center text-[10px] font-black uppercase tracking-[0.1em] text-white shadow-[0_2px_10px_rgba(0,0,0,0.55)] transition-colors hover:bg-black"
             onClick={(e) => { e.stopPropagation(); onZoom(); }}
           >
             View

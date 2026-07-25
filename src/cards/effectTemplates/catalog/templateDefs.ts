@@ -245,7 +245,7 @@ export type AbilityFunction =
   // Rest 1 chosen controller Leader/Stage matching a type (for 'You may rest 1 of your {X} Leader or Stage cards:' costs). Binds var 't'.
   | { fn: 'restControllerLeaderOrStage'; typeIncludes?: string }
   // 'You may turn N cards from the top of your Life cards face-up/down:' cost. Optional flip of the top Life card(s); binds var 't'.
-  | { fn: 'turnTopLifeFace'; faceUp: boolean; count?: number; fromFaceUp?: true }
+  | { fn: 'turnTopLifeFace'; faceUp: boolean; count?: number; fromFaceUp?: true; position?: 'top' | 'topOrBottom' }
   | { fn: 'turnAllLifeFace'; player?: 'controller' | 'opponent'; faceUp: boolean }
   | { fn: 'lookLifeAndReorder'; player?: 'controller' | 'opponent'; moveOneToDeckTop?: boolean }
   // Set-active family (inverse of rest). Composes the shared `setActive` primitive.

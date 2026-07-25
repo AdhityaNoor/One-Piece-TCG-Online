@@ -5,7 +5,6 @@
  */
 import type { GameAction } from '../../engine/actions';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
-import { getDefinition } from '../../engine/rules/shared/definitions';
 import type { EffectTemplateRegistry } from '../../engine/effects';
 import type { GameState } from '../../engine/state/game';
 import type { StrategicContext, StrategicGamePlan } from '../strategy/types';
@@ -17,6 +16,7 @@ import { canContinueLookahead, cloneGameState, simulateAction } from './stateSim
 import { projectOpponentTurn, resolveBattleToCompletion } from './opponentTurnSimulator';
 import { analyzeLethalLine } from './lethalLineAnalyzer';
 import { analyzeSequencedLethalInsight } from './lethalSequencePlanner';
+import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 import {
   analyzeLeaderActivation,
   isLeaderActivateAction,
@@ -239,7 +239,7 @@ function pickBestMatchingAction(
     // Prefer resting blockers when the step is character clear.
     if (step === 'attack_character' && action.type === 'DECLARE_ATTACK') {
       const target = state.cardsById[action.targetInstanceId];
-      if (target && getDefinition(defs, target).hasBlocker) score += 40;
+      if (target && hasEffectiveCombatKeyword(defs, state, action.targetInstanceId, 'blocker')) score += 40;
     }
     if (score > bestScore) {
       bestScore = score;

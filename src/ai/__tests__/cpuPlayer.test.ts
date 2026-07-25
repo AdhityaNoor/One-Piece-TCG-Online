@@ -3,13 +3,15 @@ import { chooseAction, generateLegalActions } from '../index';
 import { executeActivateOnOpponentsAttack } from '../../engine/rules/battle/activateOnOpponentsAttack';
 import { executePlayCharacter } from '../../engine/actions/handlers/playCharacter';
 import { validateAction } from '../../engine/actions/dispatch';
-import { buildBaseRig, makeCharacterDef, makeLeaderDef, putCharacterInPlay, putDeckCards, putInHand } from '../../engine/rules/shared/__tests__/testRig';
+import { buildBaseRig, makeCharacterDef, makeLeaderDef, putCharacterInPlay, putDeckCards, putInHand, putLifeCards } from '../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments } from '../../cards/effectTemplates/assembler';
 import { OP15_ASSIGNMENTS } from '../../cards/effectTemplates/assignments/OP15';
 import { createPreGameState } from '../../engine/setup';
 import { GENERIC_DON_CARD_DEFINITION } from '../../cards/decks/genericDonCard';
 import type { PlayerSetupInput } from '../../engine/setup';
 import type { GameState } from '../../engine/state/game';
+import type { ContinuousEffectRecord } from '../../engine/state/game';
+import type { EffectProgram } from '../../engine/effects';
 
 function makeDeckInput(playerId: 'p1' | 'p2', leader: ReturnType<typeof makeCharacterDef>, deck: ReturnType<typeof makeCharacterDef>[]): PlayerSetupInput {
   return {
@@ -349,6 +351,84 @@ describe('CPU player', () => {
     expect(validation.legal).toBe(true);
   });
 
+  it('enumerates high-value late search candidates before the combination cap', () => {
+    const sourceDef = makeCharacterDef({ cardDefinitionId: 'CPU-SEARCH-SOURCE', cardNumber: 'CPU-SEARCH-SOURCE' });
+    const lowDef = makeCharacterDef({ cardNumber: 'CPU-SEARCH-LOW', baseCost: 1, basePower: 1000 });
+    const highA = makeCharacterDef({ cardNumber: 'CPU-SEARCH-HIGH-A', baseCost: 8, basePower: 10000 });
+    const highB = makeCharacterDef({ cardNumber: 'CPU-SEARCH-HIGH-B', baseCost: 7, basePower: 9000, hasRush: true });
+    const program: EffectProgram = {
+      cardNumber: sourceDef.cardNumber,
+      abilities: [
+        {
+          timing: 'activateMain',
+          ops: [
+            {
+              op: 'searchTopDeck',
+              look: 12,
+              pick: 2,
+              reveal: false,
+              destination: 'hand',
+              prompt: 'Add up to 2 cards to your hand',
+            },
+          ],
+        },
+      ],
+    };
+
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 5 });
+    const source = putCharacterInPlay(rig, 'p1', sourceDef);
+    rig = source.rig;
+    const candidates: string[] = [];
+    for (let i = 0; i < 10; i += 1) {
+      const low = putInHand(rig, 'p1', { ...lowDef, cardDefinitionId: `CPU-SEARCH-LOW-${i}`, cardNumber: `CPU-SEARCH-LOW-${i}` });
+      rig = low.rig;
+      candidates.push(low.instanceId);
+    }
+    const lateA = putInHand(rig, 'p1', highA);
+    rig = lateA.rig;
+    candidates.push(lateA.instanceId);
+    const lateB = putInHand(rig, 'p1', highB);
+    rig = lateB.rig;
+    candidates.push(lateB.instanceId);
+
+    const state: GameState = {
+      ...rig.state,
+      pendingChoices: [
+        {
+          id: 'late-search',
+          playerId: 'p1',
+          kind: 'SELECT_CARDS',
+          prompt: 'Add up to 2 cards to your hand',
+          constraints: {
+            min: 0,
+            max: 2,
+            candidateInstanceIds: candidates,
+            visibleInstanceIds: candidates,
+          },
+          sourceInstanceId: source.instanceId,
+          sourceEffectId: 'ir',
+          resumeState: { abilityIndex: 0, opIndex: 0, bindings: { __looked: candidates } },
+        },
+      ],
+    };
+
+    const legal = generateLegalActions({
+      state,
+      playerId: 'p1',
+      defs: rig.defs,
+      registry: { [sourceDef.cardDefinitionId]: program },
+      createActionId: () => 'late-search',
+    });
+
+    expect(legal.some((action) => (
+      action.type === 'RESOLVE_PENDING_CHOICE' &&
+      Array.isArray(action.response) &&
+      action.response.length === 2 &&
+      action.response.includes(lateA.instanceId) &&
+      action.response.includes(lateB.instanceId)
+    ))).toBe(true);
+  });
+
   it('ends main phase when hand is empty and no other plays remain', () => {
     let rig = buildBaseRig({ activePlayerId: 'p2', phase: 'main', turnNumber: 5 });
     rig.state.cardsById[rig.state.players.p2.leaderInstanceId!].orientation = 'rested';
@@ -372,6 +452,65 @@ describe('CPU player', () => {
       createActionId: () => 'empty-main',
     });
     expect(decision?.action.type).toBe('END_MAIN_PHASE');
+  });
+
+  it('activates an effect-granted Blocker during the block step', () => {
+    const attacker = makeCharacterDef({ cardNumber: 'CPU-ATTACKER', basePower: 9000 });
+    const blocker = makeCharacterDef({ cardNumber: 'CPU-GRANTED-BLOCKER', basePower: 5000, hasBlocker: false });
+    const lifeCard = makeCharacterDef({ cardNumber: 'CPU-LIFE' });
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'main', turnNumber: 5 });
+    const attackerPlay = putCharacterInPlay(rig, 'p1', attacker);
+    const blockerPlay = putCharacterInPlay(attackerPlay.rig, 'p2', blocker);
+    rig = putLifeCards(blockerPlay.rig, 'p2', [lifeCard]).rig;
+
+    const blockerId = blockerPlay.instanceId;
+    const grantedBlocker: ContinuousEffectRecord = {
+      id: 'cpu-granted-blocker',
+      sourceInstanceId: blockerId,
+      ownerId: 'p2',
+      duration: 'permanent',
+      description: 'Test effect grants Blocker',
+      keywordModifier: {
+        appliesToInstanceId: blockerId,
+        keyword: 'blocker',
+      },
+    };
+
+    const state: GameState = {
+      ...rig.state,
+      continuousEffects: [...rig.state.continuousEffects, grantedBlocker],
+      currentBattle: {
+        attackerInstanceId: attackerPlay.instanceId,
+        targetInstanceId: rig.state.players.p2.leaderInstanceId!,
+        originalTargetInstanceId: rig.state.players.p2.leaderInstanceId!,
+        step: 'block',
+        blockerUsed: false,
+        onOpponentsAttackUsedInstanceIds: [],
+        battlePowerBonuses: {},
+      },
+    };
+
+    const legal = generateLegalActions({
+      state,
+      playerId: 'p2',
+      defs: rig.defs,
+      registry: {},
+      createActionId: () => 'granted-blocker',
+    });
+
+    expect(legal.some((action) => action.type === 'ACTIVATE_BLOCKER' && action.blockerInstanceId === blockerId)).toBe(true);
+
+    const decision = chooseAction({
+      state,
+      playerId: 'p2',
+      defs: rig.defs,
+      registry: {},
+      config: { difficulty: 'hard', seed: 'granted-blocker' },
+      createActionId: () => 'granted-blocker',
+    });
+
+    expect(decision?.action).toMatchObject({ type: 'ACTIVATE_BLOCKER', blockerInstanceId: blockerId });
+    expect(validateAction(state, decision!.action, rig.defs, {}).legal).toBe(true);
   });
 });
 

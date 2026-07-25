@@ -2,11 +2,11 @@ import type { GameAction } from '../../engine/actions';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import { getOpponentId } from '../../engine/rules/shared';
 import { computeCurrentPower } from '../../engine/rules/shared/power';
-import { getDefinition } from '../../engine/rules/shared/definitions';
 import type { EffectTemplateRegistry } from '../../engine/effects';
 import type { GameState } from '../../engine/state/game';
 import type { StrategicContext } from '../strategy/types';
 import { opponentPublicCardIds } from '../visibility/playerView';
+import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
 import { generateLegalActions } from '../utilities/legalActions';
 import { analyzeLethalLine, type LethalLineAnalysis } from './lethalLineAnalyzer';
 import { simulateAction } from './stateSimulator';
@@ -46,7 +46,7 @@ function opponentRestedBlockers(
   return opponentRestedCharacters(state, playerId).filter((id) => {
     const inst = state.cardsById[id];
     if (!inst) return false;
-    return getDefinition(defs, inst).hasBlocker;
+    return hasEffectiveCombatKeyword(defs, state, id, 'blocker');
   });
 }
 
@@ -183,9 +183,8 @@ export function evaluateSequencedLethalBonus(
   if (openedLethal) return 70;
 
   if (insight.shouldClearFirst && insight.clearTargetIds.includes(action.targetInstanceId)) {
-    const def = getDefinition(defs, target);
     let bonus = 55;
-    if (def.hasBlocker) bonus += 35;
+    if (hasEffectiveCombatKeyword(defs, state, action.targetInstanceId, 'blocker')) bonus += 35;
     if (insight.shouldBaitCountersFirst) bonus += 25;
     if (line.opponentLife <= 2) bonus += 15;
     return bonus;

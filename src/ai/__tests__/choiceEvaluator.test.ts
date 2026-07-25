@@ -342,6 +342,116 @@ describe('strategic selection decisions', () => {
     expect(onScore).toBeGreaterThan(offScore);
   });
 
+  it('does not add weak filler to optional search picks', () => {
+    const premium = makeCharacterDef({
+      cardNumber: 'PREMIUM-SEARCH',
+      baseCost: 2,
+      basePower: 5000,
+      types: ['Animal Kingdom Pirates'],
+      hasRush: true,
+    });
+    const secondPremium = makeCharacterDef({
+      cardNumber: 'PREMIUM-SEARCH-2',
+      baseCost: 3,
+      basePower: 6000,
+      types: ['Animal Kingdom Pirates'],
+    });
+    const filler = makeCharacterDef({
+      cardNumber: 'WEAK-SEARCH-FILLER',
+      baseCost: 8,
+      basePower: 1000,
+      types: ['Navy'],
+    });
+    const leader = makeLeaderDef({
+      cardNumber: 'L-AK-SEARCH',
+      types: ['Animal Kingdom Pirates'],
+      basePower: 5000,
+    });
+    let rig = buildBaseRig({
+      activePlayerId: 'p1',
+      phase: 'main',
+      turnNumber: 4,
+      leaderOverridesP1: leader,
+    });
+    const premiumCard = putInHand(rig, 'p1', premium);
+    rig = premiumCard.rig;
+    const secondPremiumCard = putInHand(rig, 'p1', secondPremium);
+    rig = secondPremiumCard.rig;
+    const fillerCard = putInHand(rig, 'p1', filler);
+    rig = fillerCard.rig;
+
+    const sourceDef = makeCharacterDef({ cardNumber: 'SEARCH-UP-TO-SRC', baseCost: 1, basePower: 1000 });
+    const src = putCharacterInPlay(rig, 'p1', sourceDef);
+    const program: EffectProgram = {
+      cardNumber: sourceDef.cardNumber,
+      abilities: [
+        {
+          timing: 'onPlay',
+          ops: [
+            {
+              op: 'searchTopDeck',
+              look: 3,
+              pick: 2,
+              reveal: false,
+              destination: 'hand',
+              prompt: 'Add up to 2 cards to your hand',
+            },
+          ],
+        },
+      ],
+    };
+    const registry = { [sourceDef.cardDefinitionId]: program };
+    const state = { ...src.rig.state, setupState: null, currentBattle: null, pendingChoices: [] };
+    const strategic = buildStrategicContext(state, 'p1', src.rig.defs, registry);
+    const candidates = [premiumCard.instanceId, secondPremiumCard.instanceId, fillerCard.instanceId];
+    const choice: PendingChoice = {
+      id: 'search-up-to',
+      playerId: 'p1',
+      kind: 'SELECT_CARDS',
+      prompt: 'Add up to 2 cards to your hand',
+      constraints: {
+        min: 0,
+        max: 2,
+        candidateInstanceIds: candidates,
+        visibleInstanceIds: candidates,
+      },
+      sourceInstanceId: src.instanceId,
+      sourceEffectId: 'ir',
+      resumeState: { abilityIndex: 0, opIndex: 0, bindings: { __looked: candidates } },
+    };
+
+    const onePremium = scoreStrategicChoice(
+      state,
+      'p1',
+      src.rig.defs,
+      registry,
+      strategic,
+      choice,
+      [premiumCard.instanceId],
+    );
+    const premiumPlusFiller = scoreStrategicChoice(
+      state,
+      'p1',
+      src.rig.defs,
+      registry,
+      strategic,
+      choice,
+      [premiumCard.instanceId, fillerCard.instanceId],
+    );
+    const twoPremium = scoreStrategicChoice(
+      state,
+      'p1',
+      src.rig.defs,
+      registry,
+      strategic,
+      choice,
+      [premiumCard.instanceId, secondPremiumCard.instanceId],
+    );
+
+    expect(onePremium).toBeGreaterThan(premiumPlusFiller);
+    expect(twoPremium).toBeGreaterThan(onePremium);
+  });
+
   it('chooseAction trashes the weakest character on overflow', () => {
     const weak = makeCharacterDef({ cardNumber: 'WEAK-OV', baseCost: 0, basePower: 1000 });
     const strong = makeCharacterDef({ cardNumber: 'STR-OV', baseCost: 0, basePower: 8000 });

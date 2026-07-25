@@ -228,7 +228,11 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     total: 0,
   });
 
-  const isMatchScreen = current.screen === 'match' || current.screen === 'online-match' || current.screen === 'play-test';
+  // 'tutorial' embeds this same board (see features/tutorial/TutorialManager.tsx)
+  // for its scripted scenarios, exactly like 'play-test' already does for its
+  // generated ones — deckIdA/deckIdB stay null for both, so the startMatch
+  // effect below never fires; TutorialManager/PlayTestScreen own the GameState instead.
+  const isMatchScreen = current.screen === 'match' || current.screen === 'online-match' || current.screen === 'play-test' || current.screen === 'tutorial';
   const deckIdA = current.screen === 'match' ? current.deckIdA : null;
   const deckIdB = current.screen === 'match' ? current.deckIdB : null;
   // Casual presentation config off the nav target (undefined == hotseat).
@@ -894,6 +898,12 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               navyBackgroundEnabled ? 'bg-[linear-gradient(180deg,_rgba(5,9,20,0.9),_rgba(3,7,16,0.96))]' : 'bg-transparent',
             ].join(' ')}
           >
+            {/* Layer 5 (visual polish): starfield warp AS the match board
+                background — rendered above the shell's own navy fill but below
+                the playmat/cards (which sit at z-[1]+). This is the visible
+                copy; the MatchGameShell-level GlitterWrap only shows in the
+                gutters and on loading/error sub-screens. */}
+            <GlitterWrap className="z-0" particleCount={320} brightness={90} starSize={16} glitterIntensity={4} />
             {/* ScaleToFit no longer scales anything itself — it just turns this
                 block into a CSS containment context (container-type: size) so
                 every card-sized leaf inside (PlayerBoardPanel/DonChip/
@@ -911,7 +921,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                 fixed reference ratio) — see ScaleToFit.tsx for the full
                 history. Height is the one dimension cqh ties card size to,
                 per the project's landscape-first requirement. */}
-            <ScaleToFit className="op-match-playmat-layer">
+            <ScaleToFit className="op-match-playmat-layer relative z-[1]">
               <div
                 className="flex h-full min-h-0 w-full flex-col justify-start gap-2 overflow-hidden"
                 onMouseEnter={() => setBoardHovered(true)}
@@ -981,32 +991,20 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
             {/* ── Dock hands ── rendered outside ScaleToFit so they aren't
                 affected by cqh sizing; positioned absolute relative to
                 op-match-table-shell (position:relative; overflow:hidden). */}
-            <button
-              type="button"
-              onClick={() => setHandsHidden((hidden) => !hidden)}
-              onMouseEnter={() => setHandToggleHovered(true)}
-              onMouseLeave={() => setHandToggleHovered(false)}
-              className="absolute bottom-0 left-1/2 z-[180] hidden h-11 w-[24rem] max-w-[72%] -translate-x-1/2 items-center justify-center gap-2 rounded-t-xl border border-b-0 border-white/15 bg-black/72 px-5 text-[10px] font-black uppercase tracking-[0.16em] text-white/78 shadow-[0_-10px_28px_rgba(0,0,0,0.48)] backdrop-blur transition hover:border-gold/60 hover:text-gold xl:flex"
-              aria-pressed={!handsHidden}
-              aria-label={handsHidden ? 'Show hands' : 'Hide hands'}
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                {handsHidden ? (
-                  <>
-                    <path d="M3 3l18 18" strokeLinecap="round" />
-                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" strokeLinecap="round" />
-                    <path d="M9.2 5.4A9.6 9.6 0 0 1 12 5c5 0 8.5 4.4 9.5 7a10.5 10.5 0 0 1-2.1 3.2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M6.4 6.8A10.8 10.8 0 0 0 2.5 12c1 2.6 4.5 7 9.5 7a9.9 9.9 0 0 0 4.1-.9" strokeLinecap="round" strokeLinejoin="round" />
-                  </>
-                ) : (
-                  <>
-                    <path d="M2.5 12c1-2.6 4.5-7 9.5-7s8.5 4.4 9.5 7c-1 2.6-4.5 7-9.5 7s-8.5-4.4-9.5-7Z" strokeLinecap="round" strokeLinejoin="round" />
-                    <circle cx="12" cy="12" r="3" />
-                  </>
-                )}
-              </svg>
-              <span>{handsHidden ? 'Show Hands' : 'Hide Hands'}</span>
-            </button>
+            <HandToggle
+              position="top"
+              handsHidden={handsHidden}
+              handCount={topPlayerBoard.hand.length}
+              onToggle={() => setHandsHidden((hidden) => !hidden)}
+              onHoverChange={setHandToggleHovered}
+            />
+            <HandToggle
+              position="bottom"
+              handsHidden={handsHidden}
+              handCount={bottomPlayerBoard.hand.length}
+              onToggle={() => setHandsHidden((hidden) => !hidden)}
+              onHoverChange={setHandToggleHovered}
+            />
             <DockHand
               playerId={topPlayerId}
               cards={topPlayerBoard.hand}
@@ -2296,6 +2294,78 @@ function OnlineOpponentTurnOverlay({ opponentName }: { opponentName: string }) {
         </span>
         <p className="text-xs font-black uppercase tracking-[0.2em] text-gold/90">{opponentName} is deciding…</p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Compact hand show/hide toggle docked at the top (opponent) or bottom
+ * (player) center edge of the board. Small square-ish control: an eye icon
+ * plus the live hand count ("Hand: N"); the Show/Hide label is surfaced only
+ * as a hover tooltip over the icon, not as a permanent inline label. Both
+ * instances drive the same shared `handsHidden` state, so toggling either
+ * hides/reveals both hands.
+ */
+function HandToggle({
+  position,
+  handsHidden,
+  handCount,
+  onToggle,
+  onHoverChange,
+}: {
+  position: 'top' | 'bottom';
+  handsHidden: boolean;
+  handCount: number;
+  onToggle: () => void;
+  onHoverChange: (hovered: boolean) => void;
+}) {
+  const isTop = position === 'top';
+  const tooltip = handsHidden ? 'Show hands' : 'Hide hands';
+  return (
+    <div
+      className={[
+        'absolute left-1/2 z-[180] hidden -translate-x-1/2 xl:block',
+        isTop ? 'top-0' : 'bottom-0',
+      ].join(' ')}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        onMouseEnter={() => onHoverChange(true)}
+        onMouseLeave={() => onHoverChange(false)}
+        className={[
+          'group relative flex items-center gap-1.5 border border-white/15 bg-black/72 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/80 shadow-[0_6px_20px_rgba(0,0,0,0.45)] backdrop-blur transition hover:border-gold/60 hover:text-gold',
+          isTop ? 'rounded-b-lg border-t-0' : 'rounded-t-lg border-b-0',
+        ].join(' ')}
+        aria-pressed={!handsHidden}
+        aria-label={tooltip}
+      >
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+          {handsHidden ? (
+            <>
+              <path d="M3 3l18 18" strokeLinecap="round" />
+              <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" strokeLinecap="round" />
+              <path d="M9.2 5.4A9.6 9.6 0 0 1 12 5c5 0 8.5 4.4 9.5 7a10.5 10.5 0 0 1-2.1 3.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M6.4 6.8A10.8 10.8 0 0 0 2.5 12c1 2.6 4.5 7 9.5 7a9.9 9.9 0 0 0 4.1-.9" strokeLinecap="round" strokeLinejoin="round" />
+            </>
+          ) : (
+            <>
+              <path d="M2.5 12c1-2.6 4.5-7 9.5-7s8.5 4.4 9.5 7c-1 2.6-4.5 7-9.5 7s-8.5-4.4-9.5-7Z" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="12" cy="12" r="3" />
+            </>
+          )}
+        </svg>
+        <span>Hand: {handCount}</span>
+        <span
+          role="tooltip"
+          className={[
+            'pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-black/90 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100',
+            isTop ? 'top-full mt-1.5' : 'bottom-full mb-1.5',
+          ].join(' ')}
+        >
+          {tooltip}
+        </span>
+      </button>
     </div>
   );
 }
