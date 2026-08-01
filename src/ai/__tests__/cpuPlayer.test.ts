@@ -1,19 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { chooseAction, generateLegalActions } from '../index';
 import { executeActivateOnOpponentsAttack } from '../../engine/rules/battle/activateOnOpponentsAttack';
+import { executeAction } from '../../engine/actions';
 import { executePlayCharacter } from '../../engine/actions/handlers/playCharacter';
 import { validateAction } from '../../engine/actions/dispatch';
 import { buildBaseRig, makeCharacterDef, makeLeaderDef, putCharacterInPlay, putDeckCards, putInHand, putLifeCards } from '../../engine/rules/shared/__tests__/testRig';
 import { buildRegistryFromAssignments } from '../../cards/effectTemplates/assembler';
 import { OP15_ASSIGNMENTS } from '../../cards/effectTemplates/assignments/OP15';
+import { OP13_ASSIGNMENTS } from '../../cards/effectTemplates/assignments/OP13';
 import { createPreGameState } from '../../engine/setup';
 import { GENERIC_DON_CARD_DEFINITION } from '../../cards/decks/genericDonCard';
 import type { PlayerSetupInput } from '../../engine/setup';
 import type { GameState } from '../../engine/state/game';
 import type { ContinuousEffectRecord } from '../../engine/state/game';
 import type { EffectProgram } from '../../engine/effects';
+import type { CardDefinition } from '../../engine/state/card';
 
-function makeDeckInput(playerId: 'p1' | 'p2', leader: ReturnType<typeof makeCharacterDef>, deck: ReturnType<typeof makeCharacterDef>[]): PlayerSetupInput {
+function makeDeckInput(playerId: 'p1' | 'p2', leader: CardDefinition, deck: CardDefinition[]): PlayerSetupInput {
   return {
     playerId,
     leader: { ...leader, category: 'leader', life: 5 },
@@ -84,6 +87,193 @@ describe('CPU player', () => {
       createActionId: () => 'id-1',
     });
     expect(legal.some((a) => a.type === 'END_MAIN_PHASE')).toBe(true);
+  });
+
+  it('resolves OP13-079 start-of-game Stage selection during setup', () => {
+    const registry = buildRegistryFromAssignments(OP13_ASSIGNMENTS);
+    const imu = makeLeaderDef({
+      cardDefinitionId: 'saved-leader-OP13-079',
+      cardNumber: 'OP13-079',
+      name: 'Imu',
+      colors: ['black'],
+      types: ['Five Elders'],
+    });
+    const maryGeoise = {
+      ...makeCharacterDef({
+        cardDefinitionId: 'saved-stage-MARY-GEOISE',
+        cardNumber: 'MARY-GEOISE',
+        name: 'Mary Geoise',
+        baseCost: 1,
+        basePower: undefined,
+        types: ['Mary Geoise'],
+      }),
+      category: 'stage' as const,
+    };
+    const filler = makeCharacterDef({ cardNumber: 'OP13-FILLER', baseCost: 1, basePower: 1000 });
+    const p1 = makeDeckInput('p1', imu, [maryGeoise, ...Array.from({ length: 49 }, (_, i) => ({ ...filler, cardDefinitionId: `OP13-FILLER-${i}`, cardNumber: `OP13-FILLER-${i}` }))]);
+    const p2Leader = makeLeaderDef({ cardNumber: 'P2-LEADER' });
+    const p2DeckCard = makeCharacterDef({ cardNumber: 'P2-DECK' });
+    const p2 = makeDeckInput('p2', p2Leader, Array.from({ length: 50 }, (_, i) => ({ ...p2DeckCard, cardDefinitionId: `P2-DECK-${i}`, cardNumber: `P2-DECK-${i}` })));
+    const defs = Object.fromEntries([
+      p1.leader,
+      ...p1.deck,
+      p1.donCard,
+      p2.leader,
+      ...p2.deck,
+      p2.donCard,
+    ].map((def) => [def.cardDefinitionId, def]));
+    const created = createPreGameState(p1, p2, { decidingPlayerId: 'p1', rngState: { seed: 'op13-079-stage', cursor: 0 } });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const choseFirst = executeAction(
+      created.state,
+      { type: 'CHOOSE_GOING_FIRST', actionId: 'op13-going-first', playerId: 'p1', goingFirst: true },
+      defs,
+      registry,
+    );
+
+    expect(choseFirst.state.setupState).toMatchObject({ stage: 'awaitingStartOfGameLeaderEffect' });
+    expect(choseFirst.state.pendingChoices[0]).toMatchObject({
+      playerId: 'p1',
+      kind: 'SELECT_CARDS',
+      sourceEffectId: 'ir',
+    });
+
+    const legal = generateLegalActions({
+      state: choseFirst.state,
+      playerId: 'p1',
+      defs,
+      registry,
+      createActionId: () => 'op13-stage-choice',
+    });
+    expect(legal.some((action) => action.type === 'RESOLVE_PENDING_CHOICE')).toBe(true);
+
+    const decision = chooseAction({
+      state: choseFirst.state,
+      playerId: 'p1',
+      defs,
+      registry,
+      config: { difficulty: 'hard', seed: 'op13-stage-choice' },
+      createActionId: () => 'op13-stage-choice',
+    });
+    expect(decision?.action.type).toBe('RESOLVE_PENDING_CHOICE');
+    expect(validateAction(choseFirst.state, decision!.action, defs, registry).legal).toBe(true);
+
+    const resolved = executeAction(choseFirst.state, decision!.action, defs, registry);
+    const stageId = resolved.state.players.p1.stageArea.cardIds[0];
+    expect(stageId).toBeDefined();
+    expect(resolved.state.cardsById[stageId].cardDefinitionId).toBe('saved-stage-MARY-GEOISE');
+    expect(resolved.state.setupState).toMatchObject({ stage: 'awaitingMulliganDecision' });
+  });
+
+  it('does not create a stuck OP13-079 setup choice when no Stage is eligible', () => {
+    const registry = buildRegistryFromAssignments(OP13_ASSIGNMENTS);
+    const imu = makeLeaderDef({
+      cardDefinitionId: 'saved-leader-OP13-079',
+      cardNumber: 'OP13-079',
+      name: 'Imu',
+      colors: ['black'],
+      types: ['Five Elders'],
+    });
+    const filler = makeCharacterDef({ cardNumber: 'NO-STAGE-FILLER', baseCost: 1, basePower: 1000 });
+    const p1 = makeDeckInput('p1', imu, Array.from({ length: 50 }, (_, i) => ({ ...filler, cardDefinitionId: `NO-STAGE-FILLER-${i}`, cardNumber: `NO-STAGE-FILLER-${i}` })));
+    const p2Leader = makeLeaderDef({ cardNumber: 'NO-STAGE-P2-LEADER' });
+    const p2DeckCard = makeCharacterDef({ cardNumber: 'NO-STAGE-P2-DECK' });
+    const p2 = makeDeckInput('p2', p2Leader, Array.from({ length: 50 }, (_, i) => ({ ...p2DeckCard, cardDefinitionId: `NO-STAGE-P2-DECK-${i}`, cardNumber: `NO-STAGE-P2-DECK-${i}` })));
+    const defs = Object.fromEntries([
+      p1.leader,
+      ...p1.deck,
+      p1.donCard,
+      p2.leader,
+      ...p2.deck,
+      p2.donCard,
+    ].map((def) => [def.cardDefinitionId, def]));
+    const created = createPreGameState(p1, p2, { decidingPlayerId: 'p1', rngState: { seed: 'op13-079-no-stage', cursor: 0 } });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const choseFirst = executeAction(
+      created.state,
+      { type: 'CHOOSE_GOING_FIRST', actionId: 'op13-no-stage-going-first', playerId: 'p1', goingFirst: true },
+      defs,
+      registry,
+    );
+
+    expect(choseFirst.state.pendingChoices).toHaveLength(1);
+    expect(choseFirst.state.pendingChoices[0]).toMatchObject({
+      playerId: 'p1',
+      sourceEffectId: null,
+      kind: 'YES_NO',
+    });
+    expect(choseFirst.state.setupState).toMatchObject({ stage: 'awaitingMulliganDecision' });
+    expect(choseFirst.state.players.p1.stageArea.cardIds).toHaveLength(0);
+  });
+
+  it('does not filter out V2 setup Stage choices before the CPU can dispatch them', () => {
+    const stage = {
+      ...makeCharacterDef({
+        cardDefinitionId: 'saved-stage-v2-mary',
+        cardNumber: 'OP13-099',
+        name: 'The Empty Throne',
+        baseCost: 7,
+        basePower: undefined,
+        types: ['Mary Geoise'],
+      }),
+      category: 'stage' as const,
+    };
+    let rig = buildBaseRig({ activePlayerId: 'p1', phase: 'setup' });
+    const decked = putDeckCards(rig, 'p1', stage, 2);
+    rig = decked.rig;
+    const [stageId, secondStageId] = decked.deckIds;
+    const state: GameState = {
+      ...rig.state,
+      currentPhase: 'setup',
+      pendingChoices: [
+        {
+          id: 'v2-stage-choice',
+          playerId: 'p1',
+          kind: 'SELECT_CARDS',
+          prompt: 'Play up to 1 {Mary Geoise} type Stage card from your deck.',
+          constraints: {
+            min: 0,
+            max: 1,
+            candidateInstanceIds: [stageId, secondStageId],
+            visibleInstanceIds: [stageId, secondStageId],
+            uiShowOnlyCandidates: true,
+          },
+          sourceInstanceId: rig.state.players.p1.leaderInstanceId,
+          sourceEffectId: 'v2:selectPlayCard',
+        },
+      ],
+    };
+
+    const legal = generateLegalActions({
+      state,
+      playerId: 'p1',
+      defs: rig.defs,
+      registry: {},
+      createActionId: () => 'v2-stage-action',
+    });
+    expect(legal.some((action) => action.type === 'RESOLVE_PENDING_CHOICE')).toBe(true);
+
+    const decision = chooseAction({
+      state,
+      playerId: 'p1',
+      defs: rig.defs,
+      registry: {},
+      config: { difficulty: 'hard', seed: 'v2-stage-choice' },
+      createActionId: () => 'v2-stage-action',
+    });
+
+    expect(decision?.action).toMatchObject({
+      type: 'RESOLVE_PENDING_CHOICE',
+      choiceId: 'v2-stage-choice',
+      response: [stageId],
+    });
+    expect(decision?.action.type === 'RESOLVE_PENDING_CHOICE' && Array.isArray(decision.action.response)
+      ? decision.action.response
+      : []).toHaveLength(1);
   });
 
   it('never proposes actions that fail engine validation', () => {

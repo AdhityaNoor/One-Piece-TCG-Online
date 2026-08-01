@@ -2608,7 +2608,7 @@ function VictoryCanvas({ winnerId }: { winnerId: string }) {
 
       const background = context.createLinearGradient(0, 0, width, height);
       background.addColorStop(0, '#202838');
-      background.addColorStop(0.48, '#071126');
+      background.addColorStop(0.48, '#0a1a4f');
       background.addColorStop(1, '#02040d');
       context.fillStyle = background;
       context.fillRect(0, 0, width, height);
@@ -2670,7 +2670,7 @@ function VictoryCanvas({ winnerId }: { winnerId: string }) {
 function MatchGameShell({ title, headerRight, children }: { title: string; headerRight?: ReactNode; children: ReactNode }) {
   void headerRight;
   return (
-    <main className="relative h-dvh w-full overflow-hidden bg-[#071126] font-body text-white">
+    <main className="relative h-dvh w-full overflow-hidden op-hex-bg bg-[#0a1a4f] font-body text-white">
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
       {/* Layer 5 (animation/visual polish) — decorative starfield warp, below
           the actual board content (z-10 section). Reads/writes nothing in

@@ -6,6 +6,7 @@ import type { LeaderStrategicProfile, StrategicGamePlan } from './types';
 import { analyzeAbility, mergeProfiles, profileScalar } from '../analysis/abilityAnalyzer';
 import { evaluateGates } from '../../engine/effects/gates';
 import type { EffectScoreContext } from '../heuristics/effectValue';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 export function analyzeLeaderStrategy(
   state: GameState,
@@ -28,7 +29,7 @@ export function analyzeLeaderStrategy(
     sourceCardDefinitionId: cardDefinitionId,
   };
 
-  const program = registry[cardDefinitionId];
+  const program = resolveAiEffectProgram(registry, defs, cardDefinitionId);
   let aggregate = analyzeAbility({ timing: 'activateMain', ops: [] }, true);
   const payoffGates: LeaderStrategicProfile['payoffGates'] = [];
   const requiredTypes: string[] = [];

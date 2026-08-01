@@ -16,7 +16,7 @@ import { AppHeader } from './AppHeader';
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="relative flex h-dvh w-full flex-col overflow-hidden bg-[#071126] font-body text-white">
+    <div className="relative flex h-dvh w-full flex-col overflow-hidden op-hex-bg bg-[#0a1a4f] font-body text-white">
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-30 grayscale" />
       <AppHeader />
       <div className="relative min-h-0 flex-1">{children}</div>

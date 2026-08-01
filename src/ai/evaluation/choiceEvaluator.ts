@@ -33,6 +33,7 @@ import {
   scoreOptionalYesNoResponse,
 } from './optionalCostEvaluator';
 import { scoreSearchTargetForPlan } from '../planning/openingHandPlanner';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 export type SelectionIntent =
   | 'ko'
@@ -54,7 +55,7 @@ function suspendedOpForChoice(ctx: EffectScoreContext, choice: PendingChoice): E
   if (choice.sourceEffectId !== 'ir' || !choice.resumeState || !choice.sourceInstanceId) return undefined;
   const inst = ctx.state.cardsById[choice.sourceInstanceId];
   if (!inst) return undefined;
-  const program = ctx.registry[inst.cardDefinitionId];
+  const program = resolveAiEffectProgram(ctx.registry, ctx.defs, inst.cardDefinitionId);
   if (!program) return undefined;
   const ability = program.abilities[choice.resumeState.abilityIndex];
   if (!ability) return undefined;
@@ -69,7 +70,7 @@ function abilityOpsAfterSuspend(ctx: EffectScoreContext, choice: PendingChoice):
   if (choice.sourceEffectId !== 'ir' || !choice.resumeState || !choice.sourceInstanceId) return [];
   const inst = ctx.state.cardsById[choice.sourceInstanceId];
   if (!inst) return [];
-  const program = ctx.registry[inst.cardDefinitionId];
+  const program = resolveAiEffectProgram(ctx.registry, ctx.defs, inst.cardDefinitionId);
   if (!program) return [];
   const ability = program.abilities[choice.resumeState.abilityIndex];
   if (!ability) return [];
@@ -137,6 +138,8 @@ function intentFromFromSelector(from: { sel?: string } | undefined): SelectionIn
 
 export function inferSelectionIntent(ctx: EffectScoreContext, choice: PendingChoice): SelectionIntent {
   if (choice.sourceEffectId === 'rule:characterAreaOverflow') return 'trashOwnField';
+  if (choice.sourceEffectId === 'v2:selectPlayCard') return 'playFromZone';
+  if (choice.sourceEffectId === 'v2:selectMoveToHand') return 'search';
 
   const prompt = choice.prompt.toLowerCase();
   if (prompt.includes('bottom') && prompt.includes('order')) return 'reorder';
@@ -350,15 +353,18 @@ function scoreOptionalSearchSelection(
   selected: string[],
   candidates: Set<string>,
 ): number {
+  const isPlayFromZoneChoice =
+    choice.sourceEffectId === 'v2:selectPlayCard' || choice.prompt.toLowerCase().includes('play');
   if (selected.length === 0) {
+    if (isPlayFromZoneChoice && candidates.size > 0) return 4;
     return Math.min(scoreOptionalSelectResponse(ctx, strategic, choice, []), 18);
   }
 
-  const threshold = strategic.gamePhase === 'early' ? 20 : 18;
+  const threshold = isPlayFromZoneChoice ? 0 : strategic.gamePhase === 'early' ? 20 : 18;
   let score = 30;
   for (const id of selected) {
     if (candidates.size > 0 && !candidates.has(id)) return -60;
-    const targetScore = scoreSearchOrPlayTarget(ctx, strategic, id);
+    const targetScore = scoreSearchOrPlayTarget(ctx, strategic, id) + (isPlayFromZoneChoice ? 32 : 0);
     score += targetScore - threshold;
     if (targetScore < threshold) {
       score -= (threshold - targetScore) * 1.4;
@@ -441,7 +447,7 @@ export function scoreStrategicChoice(
     const isOptionalCost =
       choice.constraints.min === 0 && (intent === 'discard' || intent === 'payDon');
     const isOptionalSearch =
-      choice.constraints.min === 0 && intent === 'search';
+      choice.constraints.min === 0 && (intent === 'search' || intent === 'playFromZone' || intent === 'revive');
 
     if (selected.length === 0) {
       if (choice.constraints.min === 0) {

@@ -334,10 +334,17 @@ export function BoardCardTile({
       onMouseLeave={() => setPreviewPoint(null)}
       className={[
         'group relative flex-shrink-0 transition-opacity duration-200',
-        isField ? 'aspect-square h-full max-h-full max-w-full' : '',
         hiddenDuringFlight ? 'invisible' : '',
       ].join(' ')}
-      style={{ ...(isField ? undefined : { width: dims.box, height: dims.box }), opacity: dimmed ? 0.35 : undefined }}
+      // Every field tile (Leader/Character/Stage) is a FIXED cqh(210) square —
+      // the exact same box math the Deck/Trash piles use — with no row-height
+      // dependency or max caps, so its inner art resolves to cqh(150) x
+      // cqh(210), pixel-identical to those piles regardless of row height. The
+      // square (vs the piles' 150x210 rect) is transparent padding that lets a
+      // rested (rotate-90) card turn without overflowing its neighbours; the
+      // visible art size is the same either way. flex-shrink-0 (above) matches
+      // the piles so neither is squeezed by the row.
+      style={{ width: dims.box, height: dims.box, opacity: dimmed ? 0.35 : undefined }}
     >
       <div
         role={selectable ? 'button' : undefined}

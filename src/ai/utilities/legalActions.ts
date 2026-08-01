@@ -402,7 +402,7 @@ function enumeratePendingChoiceActions(ctx: LegalActionContext): GameAction[] {
   const { state, playerId } = ctx;
   const choice = state.pendingChoices[0];
   if (!choice || choice.playerId !== playerId) return [];
-  if (state.currentPhase === 'setup') return enumerateSetupActions(ctx);
+  if (state.currentPhase === 'setup' && choice.sourceEffectId === null) return enumerateSetupActions(ctx);
   return enumerateChoiceResponses(ctx, choice);
 }
 
@@ -422,10 +422,10 @@ export function generateLegalActions(ctx: LegalActionContext): GameAction[] {
   let candidates: GameAction[] = [];
 
   // Setup going-first / mulligan must use dedicated actions (dispatch.ts), not RESOLVE_PENDING_CHOICE.
-  if (state.currentPhase === 'setup' && state.setupState) {
-    candidates = enumerateSetupActions(ctx);
-  } else if (state.pendingChoices.length > 0) {
+  if (state.pendingChoices.length > 0) {
     candidates = enumeratePendingChoiceActions(ctx);
+  } else if (state.currentPhase === 'setup' && state.setupState) {
+    candidates = enumerateSetupActions(ctx);
   } else if (state.currentBattle) {
     candidates = enumeratePassDuringBattle(ctx);
   } else if (state.currentPhase === 'main' && state.activePlayerId === playerId) {

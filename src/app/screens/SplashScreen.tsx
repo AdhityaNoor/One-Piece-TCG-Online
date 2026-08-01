@@ -16,7 +16,7 @@ export function SplashScreen({ progress }: SplashScreenProps) {
   const pct = Math.min(100, Math.max(0, Math.round(progress)));
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#071126]">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0a1a4f]">
       {/* Background atmosphere */}
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-20 grayscale" />
 

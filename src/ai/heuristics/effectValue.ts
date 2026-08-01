@@ -13,6 +13,7 @@ import type { Ability, EffectOp, EffectProgram, IrTiming, Selector } from '../..
 import type { PendingChoice } from '../../engine/events/pendingChoice';
 import { opponentPublicCardIds, ownHandIds } from '../visibility/playerView';
 import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 export interface EffectScoreContext {
   state: GameState;
@@ -247,7 +248,7 @@ export function scoreCardTimings(
   timings: IrTiming[],
   weight = 1,
 ): number {
-  const program: EffectProgram | undefined = ctx.registry[cardDefinitionId];
+  const program: EffectProgram | undefined = resolveAiEffectProgram(ctx.registry, ctx.defs, cardDefinitionId);
   if (!program) return 0;
   let total = 0;
   for (const timing of timings) {
@@ -319,7 +320,7 @@ function suspendedOpForChoice(ctx: EffectScoreContext, choice: PendingChoice): E
   if (choice.sourceEffectId !== 'ir' || !choice.resumeState || !choice.sourceInstanceId) return undefined;
   const inst = ctx.state.cardsById[choice.sourceInstanceId];
   if (!inst) return undefined;
-  const program = ctx.registry[inst.cardDefinitionId];
+  const program = resolveAiEffectProgram(ctx.registry, ctx.defs, inst.cardDefinitionId);
   if (!program) return undefined;
   const ability = program.abilities[choice.resumeState.abilityIndex];
   if (!ability) return undefined;
@@ -351,7 +352,7 @@ export function scoreChoiceResponse(
   }
   if (choice.kind === 'SELECT_OPTION' && typeof response === 'number') {
     const inst = choice.sourceInstanceId ? ctx.state.cardsById[choice.sourceInstanceId] : undefined;
-    const program = inst ? ctx.registry[inst.cardDefinitionId] : undefined;
+    const program = inst ? resolveAiEffectProgram(ctx.registry, ctx.defs, inst.cardDefinitionId) : undefined;
     const ability = program?.abilities[choice.resumeState?.abilityIndex ?? 0];
     const choose = ability?.ops[choice.resumeState?.opIndex ?? 0];
     if (choose?.op === 'chooseOption') {

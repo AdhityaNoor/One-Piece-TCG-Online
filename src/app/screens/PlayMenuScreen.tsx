@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useDeckEligibility } from '../hooks/useDeckEligibility';
 import { GameCanvasScreen } from '../components';
 import { useNavigationStore } from '../store/navigationStore';
@@ -28,21 +28,36 @@ type PlayModeItem = {
  */
 type AccentKey = 'gold' | 'cyan' | 'violet';
 
-const ACCENT_STYLES: Record<AccentKey, { title: string; dot: string; bar: string }> = {
+/** Space between neighbouring honeycomb cells, in px. Mirrored by the
+    --hex-gap CSS variable (see .op-hex-col / .op-hex-lane-overlap). */
+const HEX_GAP = 8;
+
+/** height / width of a REGULAR hexagon (sqrt(3)/2). Must match the ratio used
+    by .op-hex-tile in index.css, or the tiles won't fit the measured height. */
+const HEX_RATIO = 0.8660254;
+
+/** Vertical chrome around the tile column inside the play area: the row's
+    py-2 (16px) + the section's py-2 (16px) + the column's own top margin. */
+const LANE_CHROME = 40;
+
+const ACCENT_STYLES: Record<AccentKey, { title: string; dot: string; bar: string; ring: string }> = {
   gold: {
     title: 'text-gold',
     dot: 'bg-gold shadow-[0_0_10px_rgba(217,164,65,0.65)]',
     bar: 'bg-gradient-to-b from-gold/90 via-gold/35 to-transparent',
+    ring: 'text-[rgb(var(--op-gold-rgb))]',
   },
   cyan: {
     title: 'text-cyan-300',
     dot: 'bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.6)]',
     bar: 'bg-gradient-to-b from-cyan-300/90 via-cyan-300/35 to-transparent',
+    ring: 'text-cyan-300',
   },
   violet: {
     title: 'text-violet-300',
     dot: 'bg-violet-300 shadow-[0_0_10px_rgba(196,181,253,0.6)]',
     bar: 'bg-gradient-to-b from-violet-300/90 via-violet-300/35 to-transparent',
+    ring: 'text-violet-300',
   },
 };
 
@@ -79,6 +94,43 @@ export function PlayMenuScreen() {
   const hasExtraDecks = deckCounts.extra > 0;
   const hasRankedDecks = deckCounts.ranked > 0;
 
+  // Desktop honeycomb sizing: derive one hexagon edge length from the
+  // available height so the tallest lane's three tiles exactly fill the
+  // viewport (no stretching, no empty space). Published as the `--hex` CSS
+  // var; every dimension below (tile box, lane width, overlap, offset) is a
+  // multiple of it. Square tiles (1:1) — width and height both `--hex`. Below
+  // `lg` the var is cleared and tiles fall back to fixed rem sizes.
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [hexSize, setHexSize] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    const mql = window.matchMedia('(min-width: 1024px)');
+    const compute = () => {
+      if (!mql.matches) {
+        setHexSize(null);
+        return;
+      }
+      const header = el.querySelector('[data-lane-header]') as HTMLElement | null;
+      const headerH = header?.offsetHeight ?? 68;
+      // Tallest lane = 3 tile HEIGHTS + 2 gaps, plus the lane header and the
+      // row/section vertical padding. Solve for one tile's height, then
+      // convert to the width that --hex expects (height = width * 0.866).
+      const chrome = headerH + LANE_CHROME + HEX_GAP * 2;
+      const tileH = Math.floor((el.clientHeight - chrome) / 3);
+      const width = Math.floor(tileH / HEX_RATIO);
+      setHexSize(Number.isFinite(width) && width > 150 ? width : 150);
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(el);
+    mql.addEventListener('change', compute);
+    return () => {
+      ro.disconnect();
+      mql.removeEventListener('change', compute);
+    };
+  }, []);
+
   return (
     <GameCanvasScreen dense>
       {/* Below `lg` this is plain block flow — no flexbox, no grid, nothing
@@ -93,7 +145,16 @@ export function PlayMenuScreen() {
           possibly explain that and keeps only plain document flow. Grid
           only takes over at `lg`, matching the desktop-only fixed 3-column
           fit. */}
-      <div className="h-full min-h-0 space-y-5 overflow-y-auto px-2 py-2 sm:px-3 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0 lg:overflow-hidden">
+      {/* Desktop: a true honeycomb. Lanes overlap horizontally by 1/4 of a
+          hexagon (negative margins on the section) so the pointed sides nest
+          into each other, and the middle lane is pushed down by half a hex so
+          its tiles sit in the notches — a proper interlocking tessellation
+          rather than three separated columns. Mobile just stacks the lanes. */}
+      <div
+        ref={rowRef}
+        style={{ ['--hex-gap']: `${HEX_GAP}px`, ...(hexSize ? { ['--hex']: `${hexSize}px` } : {}) } as CSSProperties}
+        className="flex h-full min-h-0 flex-col space-y-3 overflow-y-auto px-2 py-2 sm:px-3 lg:flex-row lg:items-start lg:justify-center lg:gap-0 lg:space-y-0 lg:overflow-hidden"
+      >
         <PlaySection
           title="Local"
           accent="gold"
@@ -134,6 +195,8 @@ export function PlayMenuScreen() {
         <PlaySection
           title="Casual"
           accent="cyan"
+          offsetDown
+          overlapLeft
           deckHint={`${deckCounts.extra} eligible decks`}
           items={[
             {
@@ -158,6 +221,7 @@ export function PlayMenuScreen() {
         <PlaySection
           title="Ranked"
           accent="violet"
+          overlapLeft
           deckHint={`${deckCounts.ranked} legal decks`}
           items={[
             {
@@ -180,16 +244,29 @@ function PlaySection({
   accent,
   deckHint,
   items,
+  offsetDown = false,
+  overlapLeft = false,
 }: {
   title: string;
   accent: AccentKey;
   deckHint: string;
   items: PlayModeItem[];
+  /** Honeycomb: push this lane down half a hexagon so its tiles nest into the
+      notches of its neighbours (the middle lane). */
+  offsetDown?: boolean;
+  /** Honeycomb: pull this lane 1/4-hexagon left so its points interlock with
+      the lane before it (every lane except the first). */
+  overlapLeft?: boolean;
 }) {
   const styles = ACCENT_STYLES[accent];
   return (
-    <section className="relative flex min-h-[18rem] min-w-0 flex-col px-1 py-2 lg:min-h-0 lg:px-0 lg:[&:not(:first-child)]:before:absolute lg:[&:not(:first-child)]:before:-left-4 lg:[&:not(:first-child)]:before:top-14 lg:[&:not(:first-child)]:before:h-[calc(100%-4.5rem)] lg:[&:not(:first-child)]:before:w-px lg:[&:not(:first-child)]:before:bg-gradient-to-b lg:[&:not(:first-child)]:before:from-transparent lg:[&:not(:first-child)]:before:via-gold/28 lg:[&:not(:first-child)]:before:to-transparent">
-      <div className="pb-4 text-center">
+    <section
+      className={[
+        'op-hex-lane relative flex min-w-0 flex-col px-1 py-2 lg:flex-none lg:px-0',
+        overlapLeft ? 'op-hex-lane-overlap' : '',
+      ].join(' ')}
+    >
+      <div data-lane-header className="pb-4 text-center">
         <div className="inline-flex items-center gap-2">
           <span aria-hidden="true" className={['h-2 w-2 flex-shrink-0 rounded-full', styles.dot].join(' ')} />
           <p className={['font-display text-xl font-black uppercase tracking-[0.22em] sm:text-2xl', styles.title].join(' ')}>{title}</p>
@@ -197,7 +274,16 @@ function PlaySection({
         <p className="mt-1.5 text-xs font-bold uppercase tracking-[0.16em] text-white/42 sm:text-sm">{deckHint}</p>
       </div>
 
-      <div className="mt-2 flex flex-col gap-3.5 lg:min-h-0 lg:flex-1">
+      {/* gap-0: hexagons in a lane share flat edges (their 2px accent borders
+          become the honeycomb cell walls). The offset lane's TILES (not its
+          header) drop half a hexagon so headers stay aligned in a row while
+          the tiles interlock. */}
+      <div
+        className={[
+          'op-hex-col lg:min-h-0 lg:justify-start',
+          offsetDown ? 'op-hex-col-offset' : '',
+        ].join(' ')}
+      >
         {items.map((item) => (
           <ModeCard key={`${title}-${item.label}-${item.eyebrow}`} item={item} accent={accent} />
         ))}
@@ -209,7 +295,7 @@ function PlaySection({
 function ModeCard({ item, accent }: { item: PlayModeItem; accent: AccentKey }) {
   const styles = ACCENT_STYLES[accent];
   return (
-    <div className="relative">
+    <div className="relative mx-auto w-full max-w-[16rem] sm:max-w-[17rem] lg:max-w-none">
       {item.callout && (
         <div className="absolute -top-3 left-4 z-10 flex -translate-y-full items-center gap-2 rounded-lg border border-gold/60 bg-[#0b1c3e] px-3 py-2 text-xs font-semibold text-white shadow-lg">
           <span>{item.callout.text}</span>
@@ -227,32 +313,63 @@ function ModeCard({ item, accent }: { item: PlayModeItem; accent: AccentKey }) {
           <span aria-hidden="true" className="absolute left-6 top-full h-2 w-2 -translate-y-1 rotate-45 border-b border-r border-gold/60 bg-[#0b1c3e]" />
         </div>
       )}
+      {/* Accent-colored border wrapper: clipped to the same hexagon as the
+          button, its 2px padding shows through as the hex outline. Interlocks
+          with the neighbours above/below to read as a honeycomb column. */}
       <button
         type="button"
         disabled={item.disabled}
         onClick={item.onClick}
         className={[
-          'group relative flex min-h-[10rem] w-full items-stretch gap-3 overflow-hidden bg-black/60 p-3 text-left transition sm:gap-4 sm:p-5',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--op-gold-rgb))] focus-visible:ring-offset-2 focus-visible:ring-offset-[#061024]',
-          item.disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer hover:-translate-y-0.5 hover:bg-black/75',
-          item.highlighted ? 'ring-2 ring-gold/80 animate-pulse' : '',
+          // Square box (1:1) sized purely from --hex — see .op-hex-tile. Fixed
+          // width AND height mean long text can never stretch the shape.
+          // Translucent navy fill so the honeycomb background reads through;
+          // the accent outline is drawn as an SVG ring ON TOP (below) rather
+          // than as a backing layer, which would tint the whole translucent
+          // tile with the accent color.
+          'group/tile op-hex-tile op-hex-clip relative block text-left transition-transform duration-150',
+          item.disabled ? 'bg-[#0a1533]/45' : 'bg-[#0a1533]/45 hover:bg-[#0a1533]/65',
+          'backdrop-blur-[2px] focus:outline-none focus-visible:brightness-125',
+          item.disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer hover:-translate-y-0.5',
+          item.highlighted ? 'animate-pulse' : '',
         ].join(' ')}
       >
-        <span aria-hidden="true" className={['w-1 flex-shrink-0 rounded-full', styles.bar].join(' ')} />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center gap-2">
-            <p className={['text-[10px] font-black uppercase tracking-[0.22em] sm:text-[11px] sm:tracking-[0.26em]', styles.title].join(' ')}>{item.eyebrow}</p>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className={['pointer-events-none absolute inset-0 h-full w-full opacity-70 transition-opacity group-hover/tile:opacity-100', styles.ring].join(' ')}
+        >
+          <polygon
+            points="25,0 75,0 100,50 75,100 25,100 0,50"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        <span
+          className={[
+            // Wide left/right padding keeps text inside the hexagon's central
+            // band — the shape narrows to ~half width at the flat top/bottom
+            // edges, so text set full-width would be clipped by the slanted
+            // sides.
+            'relative flex h-full w-full flex-col items-center justify-center gap-1 px-11 py-6 text-center sm:px-12',
+          ].join(' ')}
+        >
+          <span className="flex items-center justify-center gap-1.5">
+            <span className={['text-[9px] font-black uppercase tracking-[0.18em] sm:text-[10px] sm:tracking-[0.22em]', styles.title].join(' ')}>{item.eyebrow}</span>
             {item.badge && (
-              <span className="rounded-sm border border-gold/70 bg-gold/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-gold">{item.badge}</span>
+              <span className="rounded-sm border border-gold/70 bg-gold/20 px-1 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-gold">{item.badge}</span>
             )}
-          </div>
-          <h2 className="mt-0.5 font-display text-lg font-black uppercase tracking-[0.1em] text-white sm:text-xl">{item.label}</h2>
-          <p className="mt-1.5 text-xs leading-5 text-slate-200/75 sm:text-sm sm:leading-6">{item.description}</p>
+          </span>
+          <span className="font-display text-base font-black uppercase tracking-[0.06em] text-white sm:text-lg">{item.label}</span>
+          <span className="text-[11px] leading-[1.25] text-slate-200/75">{item.description}</span>
 
           {item.disabled && item.disabledReason && (
-            <p className="mt-auto pt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">{item.disabledReason}</p>
+            <span className="pt-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/40">{item.disabledReason}</span>
           )}
-        </div>
+        </span>
       </button>
     </div>
   );

@@ -6,6 +6,15 @@ import { createActionId, useMatchStore } from '../store/matchStore';
 
 const CPU_THINK_MS = 320;
 
+export function isCpuControlledSeat(
+  actingPlayerId: string,
+  cpuPlayerIds: readonly string[],
+  localPlayerId: string | null,
+): boolean {
+  if (localPlayerId !== null && actingPlayerId === localPlayerId) return false;
+  return cpuPlayerIds.includes(actingPlayerId);
+}
+
 function fallbackProgressAction(state: NonNullable<ReturnType<typeof useMatchStore.getState>['state']>, playerId: string): GameAction | null {
   const legal = generateLegalActions({
     state,
@@ -34,6 +43,7 @@ export function useCpuTurnController(enabled: boolean): { thinking: boolean } {
   const cpuPlayerIds = useMatchStore((s) => s.cpuPlayerIds);
   const cpuDifficulty = useMatchStore((s) => s.cpuDifficulty);
   const cpuDebug = useMatchStore((s) => s.cpuDebug);
+  const localPlayerId = useMatchStore((s) => s.localPlayerId);
   const busyRef = useRef(false);
   const stuckTicksRef = useRef(0);
 
@@ -41,7 +51,7 @@ export function useCpuTurnController(enabled: boolean): { thinking: boolean } {
     if (!enabled || !state || state.gameOver || cpuPlayerIds.length === 0) return undefined;
 
     const actingPlayerId = getActingPlayerId(state);
-    if (!cpuPlayerIds.includes(actingPlayerId)) {
+    if (!isCpuControlledSeat(actingPlayerId, cpuPlayerIds, localPlayerId)) {
       stuckTicksRef.current = 0;
       return undefined;
     }
@@ -57,7 +67,7 @@ export function useCpuTurnController(enabled: boolean): { thinking: boolean } {
         if (!liveState || liveState.gameOver) return;
 
         const liveActing = getActingPlayerId(liveState);
-        if (!latest.cpuPlayerIds.includes(liveActing)) return;
+        if (!isCpuControlledSeat(liveActing, latest.cpuPlayerIds, latest.localPlayerId)) return;
 
         let decision = null as ReturnType<typeof chooseAction>;
         try {
@@ -123,9 +133,13 @@ export function useCpuTurnController(enabled: boolean): { thinking: boolean } {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [enabled, state, defs, registry, dispatch, cpuPlayerIds, cpuDifficulty, cpuDebug]);
+  }, [enabled, state, defs, registry, dispatch, cpuPlayerIds, cpuDifficulty, cpuDebug, localPlayerId]);
 
   const actingPlayerId = state ? getActingPlayerId(state) : null;
-  const thinking = !!actingPlayerId && cpuPlayerIds.includes(actingPlayerId) && enabled && !state?.gameOver;
+  const thinking =
+    !!actingPlayerId &&
+    isCpuControlledSeat(actingPlayerId, cpuPlayerIds, localPlayerId) &&
+    enabled &&
+    !state?.gameOver;
   return { thinking };
 }

@@ -13,6 +13,7 @@ import type { StrategicContext } from '../strategy/types';
 import { analyzeAbility, profileScalar } from '../analysis/abilityAnalyzer';
 import { scoreFieldActivation, type EffectScoreContext } from '../heuristics/effectValue';
 import { opponentPublicCardIds, ownFieldCardIds } from '../visibility/playerView';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 export interface AttackTriggerAnalysis {
   attackerInstanceId: string;
@@ -133,7 +134,7 @@ export function analyzeAttackTrigger(
 
   const inst = state.cardsById[attackerInstanceId];
   if (!inst) return empty;
-  const program = registry[inst.cardDefinitionId];
+  const program = resolveAiEffectProgram(registry, defs, inst.cardDefinitionId);
   const ability = program?.abilities.find((a) => a.timing === 'whenAttacking');
   if (!ability) return empty;
 
@@ -247,7 +248,7 @@ export function scoreOnBlockPayoff(
   };
   const effect = scoreFieldActivation(ctx, blockerInstanceId, 'onBlock');
   const inst = state.cardsById[blockerInstanceId];
-  const program = inst ? registry[inst.cardDefinitionId] : undefined;
+  const program = inst ? resolveAiEffectProgram(registry, defs, inst.cardDefinitionId) : undefined;
   const ability = program?.abilities.find((a) => a.timing === 'onBlock');
   if (!ability) return effect * 0.5;
   const enabled = abilityConditionMet(ability, state, blockerInstanceId, playerId);

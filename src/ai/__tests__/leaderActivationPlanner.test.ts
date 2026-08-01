@@ -30,7 +30,7 @@ describe('leader activation sequencing', () => {
 
   function crocLeader() {
     return makeLeaderDef({
-      cardDefinitionId: 'ST03-001',
+      cardDefinitionId: 'saved-leader-ST03-001',
       cardNumber: 'ST03-001',
       name: 'Crocodile',
       basePower: 5000,

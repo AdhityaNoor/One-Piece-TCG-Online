@@ -53,7 +53,7 @@ export function CardLibraryScreen() {
 
 function CardLibraryGameShell({ onBack, headerRight, children }: { onBack?: () => void; headerRight?: ReactNode; children: ReactNode }) {
   return (
-    <main className="op-theme-blue relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden bg-[#071126] font-body text-white xl:overflow-hidden">
+    <main className="op-theme-blue relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden op-hex-bg bg-[#0a1a4f] font-body text-white xl:overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
       <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 px-3 py-3">
         {onBack && <CanvasMenuButton label="Back" onClick={onBack} size="sm" className="max-w-[7rem]" />}

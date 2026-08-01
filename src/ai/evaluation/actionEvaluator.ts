@@ -56,6 +56,7 @@ import {
 } from '../planning/attackTriggerPlanner';
 import { scoreKoReactionForRemoval } from '../planning/koReactionPlanner';
 import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 function effectCtx(
   state: GameState,
@@ -282,7 +283,7 @@ export function scoreActionStrategic(
       const localCtx = effectCtx(state, playerId, defs, registry, action.sourceInstanceId);
       const effectScore = scoreFieldActivation(localCtx, action.sourceInstanceId, 'onOpponentsAttack');
       const inst = state.cardsById[action.sourceInstanceId];
-      const program = inst ? registry[inst.cardDefinitionId] : undefined;
+      const program = inst ? resolveAiEffectProgram(registry, defs, inst.cardDefinitionId) : undefined;
       const ability = program?.abilities.find((a) => a.timing === 'onOpponentsAttack');
       const trashables = optionalHandTrashCandidates(localCtx, ability);
       if (effectScore <= 0 && trashables.length === 0) return 8 + survivalUrgency * 0.1;

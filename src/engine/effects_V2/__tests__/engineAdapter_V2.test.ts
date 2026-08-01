@@ -173,7 +173,7 @@ describe('V2 engine adapter', () => {
     };
     const cardDefs: CardDefinitionLookup = {
       ...defs(),
-      MARY: def('MARY', { name: 'Mary Geoise', category: 'stage', types: ['Mary Geoise'], baseCost: 1, basePower: undefined, life: undefined }),
+      MARY: def('MARY', { name: 'Mary Geoise', category: 'stage', types: ['Mary Geoise'], baseCost: 7, basePower: undefined, life: undefined }),
       FILLER: def('FILLER', { name: 'Filler', category: 'character', baseCost: 1, basePower: 1000, life: undefined }),
     };
     const setupRuntime = runtime([effect('TEST-LEADER#setup', 'ON_ENTER_PLAY', {

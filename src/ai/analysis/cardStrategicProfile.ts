@@ -6,13 +6,16 @@ import type { CardStrategicProfile, ModeWeights } from '../strategy/types';
 import { analyzeAbility, emptyProfile, mergeProfiles } from './abilityAnalyzer';
 import type { EffectScoreContext } from '../heuristics/effectValue';
 import { hasEffectiveCombatKeyword } from '../visibility/combatKeywords';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 export function buildCardStrategicProfile(
   cardDefinitionId: string,
   registry: EffectTemplateRegistry,
   ctx?: EffectScoreContext,
 ): CardStrategicProfile {
-  const program = registry[cardDefinitionId];
+  const program = ctx
+    ? resolveAiEffectProgram(registry, ctx.defs, cardDefinitionId)
+    : registry[cardDefinitionId];
   if (!program) return emptyProfile();
 
   let profile = emptyProfile();

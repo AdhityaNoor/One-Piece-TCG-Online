@@ -12,6 +12,7 @@ import type { GameState } from '../../engine/state/game';
 import type { StrategicContext } from '../strategy/types';
 import { analyzeAbility, profileScalar } from '../analysis/abilityAnalyzer';
 import { ownFieldCardIds } from '../visibility/playerView';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 function scoreOpsRough(ops: EffectOp[]): number {
   let total = 0;
@@ -66,7 +67,7 @@ export function scoreDonConditionUnlock(
 ): { unlocks: boolean; value: number } {
   const inst = state.cardsById[targetInstanceId];
   if (!inst) return { unlocks: false, value: 0 };
-  const program = registry[inst.cardDefinitionId];
+  const program = resolveAiEffectProgram(registry, defs, inst.cardDefinitionId);
   if (!program) return { unlocks: false, value: 0 };
 
   const current = inst.donAttached.length;
@@ -136,7 +137,7 @@ export function scoreOnDonGivenTriggers(
   for (const sourceId of ownFieldCardIds(state, playerId)) {
     const inst = state.cardsById[sourceId];
     if (!inst) continue;
-    const program = registry[inst.cardDefinitionId];
+    const program = resolveAiEffectProgram(registry, defs, inst.cardDefinitionId);
     const ability = program?.abilities.find((a) => a.timing === 'onDonGiven');
     if (!ability) continue;
 

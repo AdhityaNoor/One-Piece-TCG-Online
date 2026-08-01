@@ -7,6 +7,7 @@ import type { GateProjection } from '../strategy/types';
 import { buildCardStrategicProfile } from './cardStrategicProfile';
 import { profileScalar } from './abilityAnalyzer';
 import type { EffectScoreContext } from '../heuristics/effectValue';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 function estimateActionsToSatisfy(gate: AbilityGate, state: GameState, playerId: string): number {
   const player = state.players[playerId];
@@ -67,7 +68,7 @@ export function projectCardGates(
   registry: EffectTemplateRegistry,
   ctx: EffectScoreContext,
 ): GateProjection[] {
-  const program = registry[cardDefinitionId];
+  const program = resolveAiEffectProgram(registry, ctx.defs, cardDefinitionId);
   if (!program) return [];
 
   const profile = buildCardStrategicProfile(cardDefinitionId, registry, ctx);

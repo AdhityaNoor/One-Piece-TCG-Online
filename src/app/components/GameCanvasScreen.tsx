@@ -70,7 +70,7 @@ export function GameCanvasScreen({ onBack, topRight, footer, dense = false, chil
   const hasControlRow = Boolean(onBack || topRight);
 
   return (
-    <main className="relative h-full w-full overflow-hidden bg-[#071126] font-body text-white">
+    <main className="relative h-full w-full overflow-hidden op-hex-bg bg-[#0a1a4f] font-body text-white">
       <div className="absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-30 grayscale" />
 
       <section className={['relative z-10 grid h-full w-full grid-rows-[auto_minmax(0,1fr)_auto]', dense ? 'pt-3 pb-0 sm:py-5' : 'py-5 sm:py-7'].join(' ')}>

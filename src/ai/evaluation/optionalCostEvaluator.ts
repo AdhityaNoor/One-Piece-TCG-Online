@@ -16,6 +16,7 @@ import {
 } from '../heuristics/effectValue';
 import { lifeSafetyUrgency } from './matchObjective';
 import { printedCounterValue } from './counterEfficiency';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 export interface OptionalDecisionAnalysis {
   costValue: number;
@@ -87,7 +88,7 @@ function resolveAbility(
   if (!choice.resumeState || !choice.sourceInstanceId) return undefined;
   const inst = ctx.state.cardsById[choice.sourceInstanceId];
   if (!inst) return undefined;
-  const program = ctx.registry[inst.cardDefinitionId];
+  const program = resolveAiEffectProgram(ctx.registry, ctx.defs, inst.cardDefinitionId);
   return program?.abilities[choice.resumeState.abilityIndex];
 }
 

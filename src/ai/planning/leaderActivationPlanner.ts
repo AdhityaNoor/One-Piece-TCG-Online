@@ -12,6 +12,7 @@ import { scoreFieldActivation, type EffectScoreContext } from '../heuristics/eff
 import { analyzeAbility, profileScalar } from '../analysis/abilityAnalyzer';
 import { projectCardGates } from '../analysis/gateProjection';
 import { ownActiveDonIds, ownHandIds } from '../visibility/playerView';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 export interface LeaderActivationAnalysis {
   leaderInstanceId: string | null;
@@ -32,12 +33,13 @@ export interface LeaderActivationAnalysis {
 
 function leaderActivateAbility(
   state: GameState,
+  defs: CardDefinitionLookup,
   registry: EffectTemplateRegistry,
   leaderInstanceId: string,
 ): Ability | undefined {
   const inst = state.cardsById[leaderInstanceId];
   if (!inst) return undefined;
-  return registry[inst.cardDefinitionId]?.abilities.find((a) => a.timing === 'activateMain');
+  return resolveAiEffectProgram(registry, defs, inst.cardDefinitionId)?.abilities.find((a) => a.timing === 'activateMain');
 }
 
 function abilityHasRemovalOps(ability: Ability | undefined): boolean {
@@ -144,7 +146,7 @@ export function analyzeLeaderActivation(
 
   const inst = state.cardsById[leaderInstanceId];
   if (!inst) return empty;
-  const ability = leaderActivateAbility(state, registry, leaderInstanceId);
+  const ability = leaderActivateAbility(state, defs, registry, leaderInstanceId);
   if (!ability) return empty;
 
   const oncePerTurn = !!ability.oncePerTurn;

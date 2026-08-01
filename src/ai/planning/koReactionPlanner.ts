@@ -10,6 +10,7 @@ import type { GameState } from '../../engine/state/game';
 import type { StrategicContext } from '../strategy/types';
 import { analyzeAbility, profileScalar } from '../analysis/abilityAnalyzer';
 import { ownFieldCardIds } from '../visibility/playerView';
+import { resolveAiEffectProgram } from '../utilities/effectPrograms';
 
 export interface KoReactionAnalysis {
   targetInstanceId: string;
@@ -84,7 +85,7 @@ function abilityPayoffMagnitude(ability: Ability, enabled: boolean): number {
  */
 export function scoreKoReactionMagnitude(
   state: GameState,
-  _defs: CardDefinitionLookup,
+  defs: CardDefinitionLookup,
   registry: EffectTemplateRegistry,
   targetInstanceId: string,
 ): number {
@@ -93,7 +94,7 @@ export function scoreKoReactionMagnitude(
   const controllerId = target.controllerId;
   let total = 0;
 
-  const program = registry[target.cardDefinitionId];
+  const program = resolveAiEffectProgram(registry, defs, target.cardDefinitionId);
   const onKo = program?.abilities.find((a) => a.timing === 'onKO');
   if (onKo) {
     total += abilityPayoffMagnitude(onKo, abilityConditionLikelyMet(onKo, state, targetInstanceId));
@@ -104,7 +105,7 @@ export function scoreKoReactionMagnitude(
     if (sourceId === targetInstanceId) continue;
     const inst = state.cardsById[sourceId];
     if (!inst) continue;
-    const watchProgram = registry[inst.cardDefinitionId];
+    const watchProgram = resolveAiEffectProgram(registry, defs, inst.cardDefinitionId);
     if (!watchProgram) continue;
     for (const ability of watchProgram.abilities) {
       if (ability.timing !== 'onCharacterKoed' && ability.timing !== 'onRemovedFromField') continue;
@@ -135,7 +136,7 @@ export function analyzeKoReaction(
   };
   if (!target || target.currentZone !== 'characterArea') return empty;
 
-  const program = registry[target.cardDefinitionId];
+  const program = resolveAiEffectProgram(registry, defs, target.cardDefinitionId);
   const hasOnKo = !!program?.abilities.some((a) => a.timing === 'onKO');
   const reactionMagnitude = scoreKoReactionMagnitude(state, defs, registry, targetInstanceId);
   const isOpponent = target.controllerId !== playerId;
