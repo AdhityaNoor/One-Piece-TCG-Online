@@ -327,25 +327,36 @@ function ModeCard({ item, accent }: { item: PlayModeItem; accent: AccentKey }) {
           // the accent outline is drawn as an SVG ring ON TOP (below) rather
           // than as a backing layer, which would tint the whole translucent
           // tile with the accent color.
-          'group/tile op-hex-tile op-hex-clip relative block text-left transition-transform duration-150',
+          // Hover grows the cell from its own center (transform-origin is
+          // center by default) rather than nudging it upwards; hover:z-10
+          // lifts it above the neighbouring cells it overlaps while enlarged.
+          'group/tile op-hex-tile op-hex-clip relative block text-left transition-transform duration-200 ease-out',
           item.disabled ? 'bg-[#0a1533]/45' : 'bg-[#0a1533]/45 hover:bg-[#0a1533]/65',
           'backdrop-blur-[2px] focus:outline-none focus-visible:brightness-125',
-          item.disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer hover:-translate-y-0.5',
+          item.disabled ? 'cursor-not-allowed opacity-45' : 'cursor-pointer hover:z-10 hover:scale-[1.05] focus-visible:z-10 focus-visible:scale-[1.05]',
           item.highlighted ? 'animate-pulse' : '',
         ].join(' ')}
       >
+        {/* The viewBox must match the tile's real 1 : 0.8660254 ratio. With a
+            square viewBox the coordinate system was scaled unevenly (x and y
+            by different factors), which rendered the flat edges and the
+            slanted edges at visibly different thicknesses. */}
         <svg
           aria-hidden="true"
-          viewBox="0 0 100 100"
+          viewBox="0 0 100 86.60254"
           preserveAspectRatio="none"
           className={['pointer-events-none absolute inset-0 h-full w-full opacity-70 transition-opacity group-hover/tile:opacity-100', styles.ring].join(' ')}
         >
           <polygon
-            points="25,0 75,0 100,50 75,100 25,100 0,50"
+            points="25,0 75,0 100,43.30127 75,86.60254 25,86.60254 0,43.30127"
             fill="none"
             stroke="currentColor"
-            strokeWidth="3"
+            // The stroke straddles the polygon edge and the tile's clip-path
+            // cuts the outer half away, so the visible thickness is half this
+            // value (6 -> ~3px on screen).
+            strokeWidth="6"
             vectorEffect="non-scaling-stroke"
+            strokeLinejoin="round"
           />
         </svg>
         <span

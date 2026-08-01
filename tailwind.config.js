@@ -46,10 +46,16 @@ export default {
           panel: '#e8edfb',
         },
       },
+      // Titles/headings use Oxanium (squared, techy display face); subtitles,
+      // body copy and general content use Metrophobic. Both are loaded by the
+      // Google Fonts @import at the top of src/app/styles/index.css.
+      // NOTE: Metrophobic ships a single 400 weight, so font-bold/font-black
+      // on body text renders as a synthesized (faux) bold — headings that
+      // need real weight should use font-display/font-heading.
       fontFamily: {
-        display: ['Poppins', 'system-ui', 'sans-serif'],
-        heading: ['Poppins', 'system-ui', 'sans-serif'],
-        body: ['Poppins', 'Segoe UI', 'sans-serif'],
+        display: ['Oxanium', 'system-ui', 'sans-serif'],
+        heading: ['Oxanium', 'system-ui', 'sans-serif'],
+        body: ['Metrophobic', 'Segoe UI', 'sans-serif'],
       },
     },
   },

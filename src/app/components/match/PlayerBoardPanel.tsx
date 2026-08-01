@@ -243,7 +243,13 @@ function HoverableFieldCard({
   return (
     <div
       ref={(el) => registerEl(instanceId, el)}
-      className="h-full flex-shrink-0"
+      // `flex items-center` matters: this wrapper is h-full (it stretches to
+      // the zone's row height) but BoardCardTile's root is a FIXED square box,
+      // so as a plain block the card sat at the top of the stretched wrapper
+      // and read as vertically off-centre in its field. The parent's
+      // items-center only centres this wrapper, which fills the row, not the
+      // fixed-size card inside it — so the centring has to happen here.
+      className="flex h-full flex-shrink-0 items-center justify-center"
       onMouseEnter={active ? onEnter : undefined}
       onMouseLeave={active ? onLeave : undefined}
     >

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Metrophobic&family=Oxanium:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -21,6 +21,11 @@
        lookup directly in its own compiled rule, so it always reflects the
        current value. 217 164 65 = #d9a441, the app's default gold. */
     --op-gold-rgb: 217 164 65;
+
+    /* Title/display typeface. Referenced by the Tailwind `font-display` and
+       `font-heading` tokens (tailwind.config.js) and by the few places in
+       this file that set it directly. Body copy uses Metrophobic. */
+    --font-display: 'Oxanium', system-ui, sans-serif;
   }
 
   html,
@@ -38,7 +43,7 @@
 
   body {
     margin: 0;
-    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-family: 'Metrophobic', 'Segoe UI', sans-serif;
     color: #1b2545;
     -webkit-font-smoothing: antialiased;
   }
@@ -65,14 +70,18 @@
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
-    filter: grayscale(1);
+    /* Neon-blue tint. grayscale() flattens the artwork's original colors,
+       sepia() re-tints it to a single hue, then hue-rotate() swings that hue
+       from sepia's brown (~35deg) round to neon blue and saturate() pushes it
+       to full neon; brightness() keeps it dark enough to sit behind UI. */
+    filter: grayscale(1) sepia(1) hue-rotate(165deg) brightness(0.7) saturate(4);
     pointer-events: none;
   }
 
   h1,
   h2,
   h3 {
-    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-family: var(--font-display);
     letter-spacing: 0.01em;
   }
 
@@ -243,7 +252,7 @@
       align-items: stretch;
       justify-content: stretch;
       padding: 0;
-      font-family: 'Poppins', 'Segoe UI', sans-serif;
+      font-family: 'Metrophobic', 'Segoe UI', sans-serif;
       color: #fff;
     }
 
@@ -584,7 +593,7 @@
     align-items: center;
     gap: 0.45rem;
     width: fit-content;
-    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-family: 'Metrophobic', 'Segoe UI', sans-serif;
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.22em;
@@ -1679,8 +1688,24 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #ffd34a, #b91d22);
-  border: 2px solid rgba(2, 7, 17, 0.9);
+  /* Flat neon blue, rounded. The border is transparent + background-clip so
+     it reads as padding around the thumb (an opaque border would square off
+     the rounded ends against the track). */
+  background: #18b7ff;
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4cc9ff;
+  background-clip: content-box;
+}
+
+/* Firefox (no ::-webkit pseudo-elements). */
+* {
+  scrollbar-color: #18b7ff rgba(2, 7, 17, 0.72);
+  scrollbar-width: thin;
 }
 
 /* Ability chips — mirrored from OPTCG Custom Card Shop (AbilityEditor / cardToBuilder). */

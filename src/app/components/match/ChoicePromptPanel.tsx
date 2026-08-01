@@ -72,7 +72,7 @@ export function ChoicePromptShell({ title, children, maxWidthClassName = 'max-w-
 
   return createPortal(
     <div
-      className="op-choice-prompt-root fixed inset-0 z-50 flex items-start justify-center p-4 pt-[7vh] font-body text-white xl:pt-[9vh]"
+      className="op-choice-prompt-root fixed inset-0 z-50 flex items-center justify-center p-4 font-body text-white"
       role="dialog"
       aria-modal="true"
       aria-label={title}
