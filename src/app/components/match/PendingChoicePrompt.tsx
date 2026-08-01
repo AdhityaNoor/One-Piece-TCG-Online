@@ -19,6 +19,8 @@ import { projectPlayerBoard, buildCardView, type CardView } from '../../../board
 import { CardImage } from '../CardImage';
 import { ZoneSection } from './ZoneSection';
 import { CardChoiceGallery } from './CardChoiceGallery';
+import { CardOrderStrip } from './CardOrderStrip';
+import { defaultOrder, isOrderingChoice } from './cardOrdering';
 import { StlCoinCanvas, COIN_FLIP_DURATION_MS } from './StlCoinCanvas';
 import { isDonReturnChoice } from './donChoiceUtils';
 import { isFieldCardChoice } from './fieldChoiceUtils';
@@ -713,6 +715,41 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
         return [...prev, instanceId];
       });
     };
+
+    // Ordering prompt ("...in any order"): the player must return every
+    // candidate, so the only decision left is the sequence. Rather than making
+    // them click all N cards to express an order, seed the engine's own
+    // candidate order (deck order, top-most first) and let them drag to change
+    // it — confirming untouched puts the cards back exactly as they were.
+    // Order is submitted as the same string[] response the click flow sent.
+    if (isOrderingChoice(choice)) {
+      const fallbackOrder = defaultOrder(choice);
+      const orderIds = selectedIrIds.length === fallbackOrder.length ? selectedIrIds : fallbackOrder;
+
+      return (
+        <ChoicePromptShell title="Arrange Order" maxWidthClassName="max-w-5xl">
+          <ChoicePromptMessage>{choice.prompt}</ChoicePromptMessage>
+          <div className="flex items-center justify-between gap-3">
+            <ChoicePromptMeta>Drag to reorder</ChoicePromptMeta>
+            <ChoicePromptMeta>{orderIds.length} card{orderIds.length === 1 ? '' : 's'}</ChoicePromptMeta>
+          </div>
+          {errorBanner}
+          <ChoicePromptInset>
+            <CardOrderStrip
+              cards={candidates}
+              order={orderIds}
+              onReorder={setSelectedIrIds}
+              hint="Position 1 is placed closest to the top of the deck"
+            />
+          </ChoicePromptInset>
+          <ChoicePromptOption
+            onClick={() => run({ type: 'RESOLVE_PENDING_CHOICE', actionId: createActionId(), playerId: choice.playerId, choiceId: choice.id, response: orderIds })}
+          >
+            Confirm Order
+          </ChoicePromptOption>
+        </ChoicePromptShell>
+      );
+    }
 
     return (
       <ChoicePromptShell title="Choose" maxWidthClassName="max-w-5xl">

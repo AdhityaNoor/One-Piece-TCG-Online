@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { CSSProperties, ReactNode } from 'react';
+import { useCrtPresence } from '../hooks/useCrtPresence';
 
 export interface ModalProps {
   open: boolean;
@@ -28,6 +29,10 @@ export function Modal({
   showCloseButton = true,
   rootClassName,
 }: ModalProps) {
+  // Stays mounted through the CRT power-off animation — see useCrtPresence.
+  const { mounted, phase } = useCrtPresence(open);
+  const closing = phase === 'exiting';
+
   useEffect(() => {
     if (!open) return;
     function handleKeyDown(event: KeyboardEvent) {
@@ -37,7 +42,7 @@ export function Modal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   return createPortal(
     <div
@@ -45,10 +50,18 @@ export function Modal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="op-modal-backdrop absolute inset-0 bg-slate-950/75 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div
+        className={[
+          'op-modal-backdrop absolute inset-0 bg-slate-950/75 backdrop-blur-sm',
+          closing ? 'op-crt-scrim-exit' : 'op-crt-scrim-enter',
+        ].join(' ')}
+        onClick={onClose}
+        aria-hidden="true"
+      />
       <div
         className={[
           'op-modal-panel relative z-10 w-full overflow-hidden rounded-[1.5rem] border border-white/10 bg-gradient-to-b from-navy-900 to-navy-950 text-slate-100 shadow-[0_30px_80px_rgba(0,0,0,0.55)]',
+          closing ? 'op-crt-exit' : 'op-crt-enter',
           maxWidthClassName,
         ].join(' ')}
         style={panelStyle}

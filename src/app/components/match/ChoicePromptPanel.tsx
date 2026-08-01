@@ -3,6 +3,7 @@
  */
 import { createPortal } from 'react-dom';
 import { useState, type ReactNode } from 'react';
+import { useCrtPresence } from '../../hooks/useCrtPresence';
 import {
   SETTINGS_PANEL_BODY,
   SETTINGS_PANEL_INSET,
@@ -45,7 +46,12 @@ export interface ChoicePromptShellProps {
 export function ChoicePromptShell({ title, children, maxWidthClassName = 'max-w-md' }: ChoicePromptShellProps) {
   const [minimized, setMinimized] = useState(false);
 
-  if (minimized) {
+  // Minimising is this panel's "dismiss", so it plays the CRT power-off and
+  // only swaps to the reopen bar once the animation has finished.
+  const { mounted: panelMounted, phase } = useCrtPresence(!minimized);
+  const closing = phase === 'exiting';
+
+  if (minimized && !panelMounted) {
     // Hung over the OPPONENT's end of the field (top-14, clear of the mobile
     // header row + TurnAndPhaseBanner above it), never the bottom — the
     // bottom-center strip is where the desktop "Hide Hands" toggle docks
@@ -81,11 +87,12 @@ export function ChoicePromptShell({ title, children, maxWidthClassName = 'max-w-
         type="button"
         onClick={() => setMinimized(true)}
         aria-label="Hide to view the board"
-        className={`op-choice-prompt-scrim absolute inset-0 cursor-zoom-out ${SETTINGS_PANEL_SCRIM}`}
+        className={`op-choice-prompt-scrim absolute inset-0 cursor-zoom-out ${closing ? 'op-crt-scrim-exit' : 'op-crt-scrim-enter'} ${SETTINGS_PANEL_SCRIM}`}
       />
       <div
         className={[
           'op-choice-prompt-panel relative z-10 flex w-full max-h-[min(80vh,920px)] flex-col overflow-y-auto p-3',
+          closing ? 'op-crt-exit' : 'op-crt-enter',
           maxWidthClassName,
           SETTINGS_PANEL_SHELL,
         ].join(' ')}

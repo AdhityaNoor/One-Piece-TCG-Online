@@ -76,7 +76,10 @@ export function ReportBugModal({ open, onClose, matchMode, matchId, turnNumber, 
   }
 
   return (
-    <Modal open={open} onClose={handleClose} title="Report a Bug" maxWidthClassName="max-w-lg">
+    // No X in the header — the body always ends with an explicit way out
+    // ("Cancel" while filling the form, "Close" on the success screen), and a
+    // corner X next to a half-typed report reads as "discard?" ambiguity.
+    <Modal open={open} onClose={handleClose} title="Report a Bug" maxWidthClassName="max-w-lg" showCloseButton={false}>
       {status === 'success' ? (
         <div className="flex flex-col gap-4 p-5">
           <p className="text-sm text-slate-200/85">

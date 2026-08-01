@@ -401,6 +401,10 @@ export const ActionBar = memo(function ActionBar({ phase, turnNumber, battle, ac
         onClose={() => setEndPhaseWarnings(null)}
         maxWidthClassName="max-w-2xl"
         bodyClassName="max-h-[82vh] overflow-y-auto"
+        // No X: this is a decision prompt, and its body already offers both
+        // ways out ("Keep Playing" / "End Anyway"). A third, ambiguous
+        // dismissal in the corner just invites a mis-click on a phase change.
+        showCloseButton={false}
         panelStyle={{ background: 'transparent', borderColor: 'transparent', borderRadius: 0, boxShadow: 'none', overflow: 'visible' }}
       >
         <div className="relative bg-[radial-gradient(circle_at_18%_0%,rgba(255,211,74,0.16),transparent_30%),linear-gradient(135deg,rgba(6,18,45,0.42),rgba(2,7,20,0.24)_48%,rgba(75,12,18,0.34))] shadow-[0_18px_70px_rgba(0,0,0,0.46),0_0_48px_rgba(217,164,65,0.12)] backdrop-blur-md">
