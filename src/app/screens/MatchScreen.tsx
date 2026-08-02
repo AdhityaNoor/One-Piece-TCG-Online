@@ -60,6 +60,7 @@ import { EFFECT_RUNTIME_LABEL, EFFECT_RUNTIME_MODE } from '../config/effectRunti
 import type { AssetCacheManager } from '../../cards/assets/assetCache';
 import { createCacheStorageAssetManager } from '../../cards/assets/cacheStorageAssetManager';
 import { preloadMatchAssets } from '../lib/matchAssetPreload';
+import { useHexDriftDelay } from '../hooks/useHexDriftDelay';
 
 function EffectRuntimeBadge() {
   const summary = useMatchStore((s) => s.v2EffectRuntime?.summary);
@@ -2668,10 +2669,15 @@ function VictoryCanvas({ winnerId }: { winnerId: string }) {
 }
 
 function MatchGameShell({ title, headerRight, children }: { title: string; headerRight?: ReactNode; children: ReactNode }) {
+  const hexDriftDelay = useHexDriftDelay();
   void headerRight;
   return (
-    <main className="relative h-dvh w-full overflow-hidden op-hex-bg bg-[#0a1a4f] font-body text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
+    <main className="relative h-dvh w-full overflow-hidden bg-[#0a1a4f] font-body text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-70" />
+      {/* Animated honeycomb as its own layer rather than `op-hex-bg` on <main>:
+          as an element background it painted UNDERNEATH the photo wash above,
+          which muddied it. Sits above the photo, below the z-10 board. */}
+      <div aria-hidden="true" style={hexDriftDelay} className="op-hex-bg pointer-events-none absolute inset-0" />
       {/* Layer 5 (animation/visual polish) — decorative starfield warp, below
           the actual board content (z-10 section). Reads/writes nothing in
           GameState. */}

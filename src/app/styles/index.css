@@ -66,15 +66,13 @@
     position: fixed;
     inset: 0;
     z-index: -1;
-    background-image: url("https://optcgcustom.app/theme/bg_welcome.webp");
+    background-image: url("/ui/bg.png");
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
-    /* Neon-blue tint. grayscale() flattens the artwork's original colors,
-       sepia() re-tints it to a single hue, then hue-rotate() swings that hue
-       from sepia's brown (~35deg) round to neon blue and saturate() pushes it
-       to full neon; brightness() keeps it dark enough to sit behind UI. */
-    filter: grayscale(1) sepia(1) hue-rotate(165deg) brightness(0.7) saturate(4);
+    /* Same treatment as .op-bg-tint — see the comment there. */
+    filter: grayscale(1);
+    mix-blend-mode: multiply;
     pointer-events: none;
   }
 
@@ -150,6 +148,45 @@
    is sqrt((0.25w)^2 + (0.5h)^2); setting those equal gives h = w * sqrt(3)/2
    ≈ 0.8660254. A square box therefore renders slanted sides ~12% longer than
    the flat ones — that was the "sides aren't even length" bug. */
+/* Neon-blue treatment for the /ui/bg.png wash. Must stay identical to the
+   filter on body::before. Unlayered so no filter utility can silently win.
+
+   The source art is an antique map drawn for a LIGHT page: cream paper around
+   240 with ink down to ~103. Rather than inverting it into a blueprint, the
+   layer is composited with mix-blend-mode: multiply — the paper (near 1.0)
+   multiplies the navy almost unchanged and effectively disappears, while the
+   ink darkens it into map lines. The artwork keeps its natural orientation
+   (dark ink on light paper) and the blue comes from the navy underneath, so
+   no hue-rotate is needed.
+
+   Multiply can only darken, which is what keeps the dark theme intact:
+   alpha-compositing a light image would instead wash the whole screen pale.
+   Note this means `opacity` now controls how DEEP the lines cut, not how
+   bright the image is. */
+.op-bg-tint {
+  filter: grayscale(1);
+  mix-blend-mode: multiply;
+}
+
+/* Compass-rose accent mark (public/ui/optcgcompass.webp).
+   The source art is solid black on transparency, so it is applied as a MASK
+   rather than an <img>: the mask keeps only the artwork's alpha and the colour
+   comes from background-color. That means the mark takes `currentColor` and
+   recolours with whatever text colour it sits in — white on the menu chrome
+   today, and gold/accent later without touching the asset.
+   Pair with a size (h-4 w-4 etc.) — mask-size: contain does the rest. */
+.op-compass {
+  background-color: currentColor;
+  -webkit-mask-image: url('/ui/optcgcompass.webp');
+  mask-image: url('/ui/optcgcompass.webp');
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
 .op-hex-tile {
   width: 100%;
   aspect-ratio: 2 / 1.7320508;

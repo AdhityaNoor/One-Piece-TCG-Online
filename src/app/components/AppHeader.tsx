@@ -97,7 +97,11 @@ export function AppHeader() {
   }, [activeTab]);
 
   return (
-    <header className="relative z-30 h-16 w-full flex-shrink-0 border-b border-white/10 bg-black/15 shadow-[0_8px_30px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:h-20">
+    // Same navy→near-black blue gradient the Settings panels use
+    // (SettingsScreen.tsx), so the header reads as part of the same surface
+    // family. Kept translucent + backdrop-blur so the background still shows
+    // through behind it.
+    <header className="relative z-30 h-16 w-full flex-shrink-0 border-b border-cyan-200/20 bg-[linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.9))] shadow-[0_8px_30px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:h-20">
     {/* Row content lives in its own overflow-hidden wrapper, separate from
         `header` itself, because the mobile dropdown below needs to render
         OUTSIDE this row's box (positioned off `header`, which stays
@@ -115,9 +119,18 @@ export function AppHeader() {
         aria-label="Home"
         className="relative z-10 flex flex-shrink-0 items-center justify-center py-1"
       >
+        {/* Compass backdrop pinned so its CENTRE lands exactly on the logo's
+            top-left corner: left-0/top-0 puts the box's corner there, then the
+            -50%/-50% translate shifts it back by half its own size. It hangs
+            off the corner and the header row's overflow-hidden crops the part
+            above the header. */}
         <span
           aria-hidden="true"
-          className="block h-9 w-auto aspect-[562/145] bg-[linear-gradient(180deg,_#ffe17a_0%,_#d9a441_50%,_#8e5b12_100%)] sm:h-12"
+          className="op-compass pointer-events-none absolute left-0 top-2.5 h-[5.25rem] w-[5.25rem] -translate-x-1/2 -translate-y-1/2 text-white opacity-20 sm:top-3.5 sm:h-[6.75rem] sm:w-[6.75rem]"
+        />
+        <span
+          aria-hidden="true"
+          className="relative block h-9 w-auto aspect-[562/145] bg-white sm:h-12"
           style={{
             WebkitMaskImage: 'url(/ui/logo_op.png)',
             maskImage: 'url(/ui/logo_op.png)',
@@ -140,14 +153,17 @@ export function AppHeader() {
         aria-label="Toggle navigation menu"
         className="relative z-10 ml-1 flex h-full min-w-0 flex-1 items-center justify-between gap-2 pl-3 sm:hidden"
       >
-        <span className="truncate font-heading text-base font-black uppercase tracking-[0.06em] text-white">
-          {activeTabLabel}
+        <span className="flex min-w-0 items-center gap-2 text-white">
+          <span aria-hidden="true" className="op-compass h-4 w-4 flex-shrink-0 opacity-70" />
+          <span className="truncate font-heading text-base font-black uppercase tracking-[0.06em]">
+            {activeTabLabel}
+          </span>
         </span>
         <svg
           viewBox="0 0 24 24"
           aria-hidden="true"
           className={[
-            'h-5 w-5 flex-shrink-0 text-white/70 transition-transform duration-200',
+            'h-5 w-5 flex-shrink-0 text-white transition-transform duration-200',
             mobileNavOpen ? 'rotate-180' : '',
           ].join(' ')}
           fill="none"
@@ -185,10 +201,20 @@ export function AppHeader() {
             >
               <span
                 className={[
-                  'relative z-10 font-heading text-base font-black uppercase tracking-[0.06em] transition-colors sm:text-lg sm:tracking-[0.08em]',
+                  'relative z-10 flex items-center gap-2 font-heading text-base font-black uppercase tracking-[0.06em] transition-colors sm:text-lg sm:tracking-[0.08em]',
                   isActive ? 'text-white' : 'text-white/60 group-hover:text-white',
                 ].join(' ')}
               >
+                {/* Compass accent marks the active tab; it inherits the
+                    button's colour via currentColor, so it fades in/out with
+                    the label instead of needing its own active styling. */}
+                <span
+                  aria-hidden="true"
+                  className={[
+                    'op-compass h-4 w-4 flex-shrink-0 transition-all duration-200',
+                    isActive ? 'opacity-90' : 'w-0 opacity-0 group-hover:w-4 group-hover:opacity-60',
+                  ].join(' ')}
+                />
                 {tab.label}
               </span>
             </button>

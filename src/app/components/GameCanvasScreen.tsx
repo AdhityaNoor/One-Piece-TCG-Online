@@ -3,6 +3,7 @@
  * screens; rules, navigation, and persistence stay in their existing stores.
  */
 import type { ReactNode } from 'react';
+import { useHexDriftDelay } from '../hooks/useHexDriftDelay';
 
 export interface GameCanvasScreenProps {
   onBack?: () => void;
@@ -55,6 +56,16 @@ export function CanvasMenuButton({ label, onClick, disabled, badge, prominence =
         className={['absolute inset-y-0 border transition-colors duration-200', contained ? 'inset-x-0' : 'inset-x-0 -skew-x-12', borderClass].join(' ')}
       />
       <span className={['relative z-10 flex h-full items-center justify-center gap-3 transition-transform duration-200', expandOnHover ? 'group-hover:scale-x-[0.6667]' : '', textClass].join(' ')}>
+        {/* Compass accent — masked art tinted by currentColor (white here).
+            Dimmed at rest and full-strength on hover so it reads as chrome
+            rather than competing with the label. */}
+        <span
+          aria-hidden="true"
+          className={[
+            'op-compass flex-shrink-0 opacity-60 transition-opacity duration-200 group-hover:opacity-100',
+            size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4',
+          ].join(' ')}
+        />
         {label}
         {badge !== undefined && (
           <span className="min-w-7 border border-[rgb(var(--op-gold-rgb)/0.7)] bg-black/35 px-2 py-0.5 text-xs text-[rgb(var(--op-gold-rgb))] shadow-inner shadow-black/40">
@@ -67,11 +78,12 @@ export function CanvasMenuButton({ label, onClick, disabled, badge, prominence =
 }
 
 export function GameCanvasScreen({ onBack, topRight, footer, dense = false, children }: GameCanvasScreenProps) {
+  const hexDriftDelay = useHexDriftDelay();
   const hasControlRow = Boolean(onBack || topRight);
 
   return (
-    <main className="relative h-full w-full overflow-hidden op-hex-bg bg-[#0a1a4f] font-body text-white">
-      <div className="absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-30 grayscale" />
+    <main style={hexDriftDelay} className="relative h-full w-full overflow-hidden op-hex-bg bg-[#0a1a4f] font-body text-white">
+      <div className="absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-80" />
 
       <section className={['relative z-10 grid h-full w-full grid-rows-[auto_minmax(0,1fr)_auto]', dense ? 'pt-3 pb-0 sm:py-5' : 'py-5 sm:py-7'].join(' ')}>
         {/* Always rendered (even empty) so it keeps its explicit grid row —

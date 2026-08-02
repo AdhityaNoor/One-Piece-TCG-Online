@@ -13,11 +13,13 @@
  */
 import type { ReactNode } from 'react';
 import { AppHeader } from './AppHeader';
+import { useHexDriftDelay } from '../hooks/useHexDriftDelay';
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const hexDriftDelay = useHexDriftDelay();
   return (
-    <div className="relative flex h-dvh w-full flex-col overflow-hidden op-hex-bg bg-[#0a1a4f] font-body text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-30 grayscale" />
+    <div style={hexDriftDelay} className="relative flex h-dvh w-full flex-col overflow-hidden op-hex-bg bg-[#0a1a4f] font-body text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-80" />
       <AppHeader />
       <div className="relative min-h-0 flex-1">{children}</div>
     </div>

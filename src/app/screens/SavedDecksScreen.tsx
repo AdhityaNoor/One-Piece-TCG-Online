@@ -304,14 +304,16 @@ interface CardRowSnapshot {
   definition: { name: string; category: CardCategory };
 }
 
-// Per-category rail color on the art — no text label (the type badge was
-// dropped on purpose), just a quiet color-code down the image's left edge.
+// Per-category color code. This used to be a gradient rail overlaid down the
+// left edge of the card art, which sat on top of the scan and read as damage
+// to the artwork; it now tints the title caption instead, where it labels the
+// card without touching the image.
 const CATEGORY_BAR: Record<CardCategory, string> = {
-  leader: 'bg-gradient-to-b from-gold/90 via-gold/35 to-transparent',
-  character: 'bg-gradient-to-b from-cyan-300/90 via-cyan-300/35 to-transparent',
-  event: 'bg-gradient-to-b from-violet-300/90 via-violet-300/35 to-transparent',
-  stage: 'bg-gradient-to-b from-emerald-300/90 via-emerald-300/35 to-transparent',
-  don: 'bg-gradient-to-b from-amber-300/90 via-amber-300/35 to-transparent',
+  leader: 'bg-gold',
+  character: 'bg-cyan-300',
+  event: 'bg-violet-300',
+  stage: 'bg-emerald-300',
+  don: 'bg-amber-300',
 };
 
 /**
@@ -339,14 +341,22 @@ function DeckCardRow({ snap }: { snap: CardRowSnapshot }) {
       onMouseMove={(event) => imageSrc && setPreviewPoint({ x: event.clientX, y: event.clientY })}
       onMouseLeave={() => setPreviewPoint(null)}
     >
-      {/* Name / code caption sits above the art, gallery-style. */}
-      <div className="px-2 py-1.5">
-        <p className="truncate text-[11px] font-bold uppercase tracking-[0.03em] text-white/90">{snap.definition.name}</p>
-        <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-[0.1em] text-white/40">{snap.cardNumber}</p>
+      {/* Name / code caption sits above the art, gallery-style. The category
+          color-code lives here as a short bar beside the title. */}
+      <div className="flex items-stretch gap-1.5 px-2 py-1.5">
+        {/* self-stretch spans both caption lines (name + card number) because
+            the row is items-stretch. */}
+        <span
+          aria-hidden="true"
+          className={['w-[3px] flex-shrink-0 self-stretch rounded-full', CATEGORY_BAR[snap.definition.category]].join(' ')}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[11px] font-bold uppercase tracking-[0.03em] text-white/90">{snap.definition.name}</p>
+          <p className="mt-0.5 truncate text-[9px] font-bold uppercase tracking-[0.1em] text-white/40">{snap.cardNumber}</p>
+        </div>
       </div>
 
       <div className="relative aspect-[63/88] w-full flex-shrink-0 overflow-hidden bg-black/40">
-        <span aria-hidden="true" className={['absolute inset-y-0 left-0 z-10 w-1', CATEGORY_BAR[snap.definition.category]].join(' ')} />
         {imageSrc && (
           <img src={imageSrc} alt={snap.definition.name} className="h-full w-full object-cover object-top" />
         )}

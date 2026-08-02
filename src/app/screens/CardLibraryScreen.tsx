@@ -7,6 +7,7 @@
  */
 import type { ReactNode } from 'react';
 import { CanvasMenuButton } from '../components';
+import { useHexDriftDelay } from '../hooks/useHexDriftDelay';
 import { useCardLibraryStore } from '../store/cardLibraryStore';
 import { useNavigationStore } from '../store/navigationStore';
 import { CardLibraryResultTile } from './CardLibraryResultTile';
@@ -52,9 +53,10 @@ export function CardLibraryScreen() {
 }
 
 function CardLibraryGameShell({ onBack, headerRight, children }: { onBack?: () => void; headerRight?: ReactNode; children: ReactNode }) {
+  const hexDriftDelay = useHexDriftDelay();
   return (
-    <main className="op-theme-blue relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden op-hex-bg bg-[#0a1a4f] font-body text-white xl:overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
+    <main style={hexDriftDelay} className="op-theme-blue relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden op-hex-bg bg-[#0a1a4f] font-body text-white xl:overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-80" />
       <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 px-3 py-3">
         {onBack && <CanvasMenuButton label="Back" onClick={onBack} size="sm" className="max-w-[7rem]" />}
         {headerRight && <div className="flex flex-shrink-0 items-center gap-2">{headerRight}</div>}

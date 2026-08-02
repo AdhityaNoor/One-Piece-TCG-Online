@@ -18,7 +18,7 @@ export function SplashScreen({ progress }: SplashScreenProps) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0a1a4f]">
       {/* Background atmosphere */}
-      <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-20 grayscale" />
+      <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-70" />
 
       {/* Content */}
       <div className="relative flex flex-col items-center gap-10">

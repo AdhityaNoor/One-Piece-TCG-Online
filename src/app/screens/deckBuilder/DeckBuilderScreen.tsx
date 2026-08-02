@@ -9,6 +9,7 @@ import { ClipboardImportTab } from './ClipboardImportTab';
 import { DECK_BUILDER_CARD_DRAG_MIME, DeckBuilderResultTile, type DeckBuilderCardDragPayload } from './DeckBuilderResultTile';
 import { PrintingVariantPicker } from './PrintingVariantPicker';
 import { copyLimitForCard } from '../../../cards/decks';
+import { useHexDriftDelay } from '../../hooks/useHexDriftDelay';
 
 type DeckBuilderTab = 'browse' | 'clipboard';
 
@@ -336,9 +337,14 @@ function DeckBuilderGameShell({
   headerRight?: ReactNode;
   children: ReactNode;
 }) {
+  const hexDriftDelay = useHexDriftDelay();
   return (
-    <main className="op-theme-blue relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden op-hex-bg bg-[#0a1a4f] font-body text-white xl:overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-[url('https://optcgcustom.app/theme/bg_welcome.webp')] bg-cover bg-center opacity-24 grayscale" />
+    <main className="op-theme-blue relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden bg-[#0a1a4f] font-body text-white xl:overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-80" />
+      {/* Animated honeycomb as its own layer rather than `op-hex-bg` on <main>:
+          as an element background it painted UNDERNEATH the photo wash above,
+          which muddied it. Sits above the photo, below the z-10 content. */}
+      <div aria-hidden="true" style={hexDriftDelay} className="op-hex-bg pointer-events-none absolute inset-0" />
       <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 px-3 py-3">
         {onBack && <CanvasMenuButton label="Back" onClick={onBack} size="sm" className="max-w-[7rem]" />}
         {headerRight && <div className="flex flex-shrink-0 items-center gap-2">{headerRight}</div>}

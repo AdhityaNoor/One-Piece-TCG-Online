@@ -14,7 +14,7 @@ export function LandingBackdrop() {
       <div aria-hidden="true" className="pointer-events-none fixed inset-y-0 left-0 -z-10 h-dvh w-screen overflow-hidden">
         <div className="op-home-speed-bg absolute bottom-0 left-0 h-full">
           {Array.from({ length: 5 }, (_, index) => (
-            <img key={index} src="/ui/footer_illust_bg.webp" alt="" className="op-home-speed-bg-panel" draggable={false} />
+            <img key={index} src="/ui/footer_illust_bg.png" alt="" className="op-home-speed-bg-panel" draggable={false} />
           ))}
         </div>
       </div>

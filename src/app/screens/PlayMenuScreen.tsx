@@ -153,7 +153,7 @@ export function PlayMenuScreen() {
       <div
         ref={rowRef}
         style={{ ['--hex-gap']: `${HEX_GAP}px`, ...(hexSize ? { ['--hex']: `${hexSize}px` } : {}) } as CSSProperties}
-        className="flex h-full min-h-0 flex-col space-y-3 overflow-y-auto px-2 py-2 sm:px-3 lg:flex-row lg:items-start lg:justify-center lg:gap-0 lg:space-y-0 lg:overflow-hidden"
+        className="relative z-10 flex h-full min-h-0 flex-col space-y-3 overflow-y-auto px-2 py-2 sm:px-3 lg:flex-row lg:items-start lg:justify-center lg:gap-0 lg:space-y-0 lg:overflow-hidden"
       >
         <PlaySection
           title="Local"
@@ -359,6 +359,14 @@ function ModeCard({ item, accent }: { item: PlayModeItem; accent: AccentKey }) {
             strokeLinejoin="round"
           />
         </svg>
+        {/* Per-tile compass backdrop, centred in the hexagon and sized as a
+            share of it so it scales with --hex. Brightens slightly on hover
+            alongside the outline. Sits under the label because the content
+            span below is `relative`. */}
+        <span
+          aria-hidden="true"
+          className="op-compass pointer-events-none absolute left-1/2 top-1/2 h-[58%] w-[58%] -translate-x-1/2 -translate-y-1/2 text-white opacity-[0.09] transition-opacity duration-200 group-hover/tile:opacity-[0.16]"
+        />
         <span
           className={[
             // Wide left/right padding keeps text inside the hexagon's central
