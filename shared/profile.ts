@@ -361,6 +361,13 @@ export interface PlayerProfile {
   createdAt: string; // "Sailing Since"
   lastActiveAt: string;
   profileVersion: number;
+  /**
+   * Lifetime XP. The player's LEVEL is never stored — it is derived from this
+   * via shared/progression.levelForXp, so the curve can be retuned without a
+   * data migration. Cosmetic/profile only: level must never affect game rules,
+   * deck legality or matchmaking.
+   */
+  experiencePoints: number;
 }
 
 /** GET /profile/me and GET /profile/:username response payload (header + light context). Heavier sections (stats/history/achievements/cosmetics) are separate endpoints per the "no oversized endpoint" rule. */

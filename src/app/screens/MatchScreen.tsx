@@ -960,6 +960,13 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                   <span className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
                 </div>
 
+                {/* data-play-drop marks the acting player's own half of the
+                    field as the drop target for dragging a card out of hand;
+                    DockHand hit-tests for it (see handOrder.isOverPlayDropZone)
+                    and routes the drop through the normal playHandCard path, so
+                    cost/legality checks are unchanged. `contents` adds no box
+                    of its own, leaving the existing layout untouched. */}
+                <div data-play-drop="true" className="contents">
                 <PlayerSideRow
                   board={bottomPlayerBoard}
                   isOwn={isPinnedPerspective ? true : actingPlayerId === bottomPlayerId}
@@ -981,6 +988,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
                   onReturnGivenDon={selection.returnGivenDonFromCard}
                   allowReturnGivenDon={!isCasual}
                 />
+                </div>
               </div>
             </ScaleToFit>
             {cpuThinking && (
@@ -1039,6 +1047,12 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               onCardZoom={openZoom}
               boardFocused={handsHidden}
               forceOpen={handToggleHovered && !handsHidden}
+              // Keeps the dropped card shown on the field while its play cost
+              // awaits confirmation; cancelling the DON!! prompt returns the
+              // mode to idle, which clears this and removes the ghost.
+              pendingPlayInstanceId={
+                selection.mode.kind === 'confirmPlayCost' ? selection.mode.handCardInstanceId : null
+              }
             />
             <AttackArrowOverlay
               attackerInstanceId={attackArrow?.attackerInstanceId ?? null}
@@ -2609,7 +2623,7 @@ function VictoryCanvas({ winnerId }: { winnerId: string }) {
 
       const background = context.createLinearGradient(0, 0, width, height);
       background.addColorStop(0, '#202838');
-      background.addColorStop(0.48, '#0a1a4f');
+      background.addColorStop(0.48, '#13329a');
       background.addColorStop(1, '#02040d');
       context.fillStyle = background;
       context.fillRect(0, 0, width, height);
@@ -2672,7 +2686,7 @@ function MatchGameShell({ title, headerRight, children }: { title: string; heade
   const hexDriftDelay = useHexDriftDelay();
   void headerRight;
   return (
-    <main className="relative h-dvh w-full overflow-hidden bg-[#0a1a4f] font-body text-white">
+    <main className="relative h-dvh w-full overflow-hidden bg-[#13329a] font-body text-white">
       <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-70" />
       {/* Animated honeycomb as its own layer rather than `op-hex-bg` on <main>:
           as an element background it painted UNDERNEATH the photo wash above,

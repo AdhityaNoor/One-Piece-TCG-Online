@@ -640,7 +640,15 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   );
 
   const leaderCell = <MatCell label="Leader Card" variant="invisible" labelClassName="sr-only">{leaderSlot}</MatCell>;
-  const stageCell = <MatCell label="Stage Card" variant="invisible" labelClassName="sr-only">{stageSlot}</MatCell>;
+  // data-board-zone marks this as the Stage drop target for hand drags (see
+  // DockHand's play-drop hit-test); the other zones already carry one.
+  const stageCell = (
+    <MatCell label="Stage Card" variant="invisible" labelClassName="sr-only">
+      <div className="flex h-full w-full items-center justify-center" data-board-zone="stageArea" data-board-player={board.playerId}>
+        {stageSlot}
+      </div>
+    </MatCell>
+  );
   const trashCell = (
     <MatCell label="Trash" labelClassName="sr-only">
       <TrashPile cards={board.trash} playerId={board.playerId} onClick={() => setTrashGalleryOpen(true)} />

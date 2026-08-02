@@ -39,6 +39,7 @@ import type { HubTab } from '../store/navigationStore';
 import { useCurrentScreen, useHeaderTab, useNavigationStore } from '../store/navigationStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { resolveAvatarUrl } from '../lib/avatars';
+import { HeaderPlayerStanding } from './HeaderPlayerStanding';
 
 const TABS: { id: HubTab; label: string }[] = [
   { id: 'home', label: 'Home' },
@@ -153,11 +154,8 @@ export function AppHeader() {
         aria-label="Toggle navigation menu"
         className="relative z-10 ml-1 flex h-full min-w-0 flex-1 items-center justify-between gap-2 pl-3 sm:hidden"
       >
-        <span className="flex min-w-0 items-center gap-2 text-white">
-          <span aria-hidden="true" className="op-compass h-4 w-4 flex-shrink-0 opacity-70" />
-          <span className="truncate font-heading text-base font-black uppercase tracking-[0.06em]">
-            {activeTabLabel}
-          </span>
+        <span className="truncate font-heading text-base font-black uppercase tracking-[0.06em] text-white">
+          {activeTabLabel}
         </span>
         <svg
           viewBox="0 0 24 24"
@@ -205,16 +203,6 @@ export function AppHeader() {
                   isActive ? 'text-white' : 'text-white/60 group-hover:text-white',
                 ].join(' ')}
               >
-                {/* Compass accent marks the active tab; it inherits the
-                    button's colour via currentColor, so it fades in/out with
-                    the label instead of needing its own active styling. */}
-                <span
-                  aria-hidden="true"
-                  className={[
-                    'op-compass h-4 w-4 flex-shrink-0 transition-all duration-200',
-                    isActive ? 'opacity-90' : 'w-0 opacity-0 group-hover:w-4 group-hover:opacity-60',
-                  ].join(' ')}
-                />
                 {tab.label}
               </span>
             </button>
@@ -222,12 +210,19 @@ export function AppHeader() {
         })}
       </nav>
 
+      {/* Rank + level, immediately left of the profile button. ml-auto moves
+          here so this block and the avatar travel together as one right-hand
+          cluster; it renders nothing when signed out. */}
+      <div className="relative z-10 ml-auto flex items-center">
+        <HeaderPlayerStanding />
+      </div>
+
       <button
         type="button"
         onClick={() => navigateTo({ screen: 'profile' })}
         aria-label="Your profile"
         aria-current={isProfileActive ? 'page' : undefined}
-        className="group relative z-10 ml-auto flex max-w-[3.25rem] flex-shrink-0 items-center gap-1.5 px-1 sm:max-w-none sm:min-w-0 sm:gap-2 sm:px-1.5"
+        className="group relative z-10 flex max-w-[3.25rem] flex-shrink-0 items-center gap-1.5 px-1 sm:max-w-none sm:min-w-0 sm:gap-2 sm:px-1.5"
       >
         {/* No fill/box behind the art — the button itself carries no
             background either, so only the character's own silhouette (the

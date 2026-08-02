@@ -243,6 +243,17 @@ function HomeActions() {
             {/* Bottom-up dark fade so the bottom-right text stays legible over both the art and the light map texture. */}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
 
+            {/* Compass crest hung off this card's top-right corner: right-0/
+                top-0 puts the box's corner there, then the 50%/-50% translate
+                shifts it back by half its own size so its CENTRE lands on the
+                corner. The card's overflow-hidden crops the outer half, so
+                only the inner quadrant shows. Sits above the art but below the
+                z-10 label block, which is bottom-right and so never collides. */}
+            <span
+              aria-hidden="true"
+              className="op-compass pointer-events-none absolute right-6 top-4 h-36 w-36 translate-x-1/2 -translate-y-1/2 text-white opacity-25 transition-opacity duration-200 group-hover:opacity-40 sm:h-44 sm:w-44"
+            />
+
             <div className="relative z-10 flex h-full flex-col items-end justify-end gap-1 px-3 py-2 text-right sm:px-4 sm:py-3">
               <span className={['inline-flex items-center border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] sm:text-[10px]', card.tagClassName].join(' ')}>
                 {card.tag}

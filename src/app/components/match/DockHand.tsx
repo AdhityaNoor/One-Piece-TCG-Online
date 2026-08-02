@@ -22,13 +22,19 @@
  */
 
 import { memo, useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { applyHandOrder, findPlayZoneHost, handDropIndex, isOverPlayDropZone, moveInOrder, playDropZoneFor } from './handOrder';
 import type { CardView } from '../../../board/projection';
 import { useCardAnimationStore } from '../../store/cardAnimationStore';
 import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
 import { CardImage } from '../CardImage';
 import { CardBackArt } from './CardBackArt';
+import { BoardCardTile } from './BoardCardTile';
 
 // ── Geometry ───────────────────────────────────────────────────────────────
+/** Pointer travel before a press on a hand card becomes a drag rather than a tap. */
+const DRAG_THRESHOLD_PX = 8;
+
 const BASE_W = 112;
 const BASE_H = Math.round(BASE_W * 88 / 63); // ≈ 156 px
 const OVERLAP = 0.30;
@@ -85,6 +91,13 @@ export interface DockHandProps {
   touchReveal?: boolean;
   forceOpen?: boolean;
   onRequestHide?: () => void;
+  /**
+   * Hand card currently awaiting play-cost confirmation (mode
+   * 'confirmPlayCost'). While set, its landing ghost stays on the field so the
+   * card reads as already played — it only leaves if the player cancels the
+   * DON!! prompt, which clears this id.
+   */
+  pendingPlayInstanceId?: string | null;
 }
 
 // ── Arrow keyframe styles (injected once) ──────────────────────────────────
@@ -173,6 +186,11 @@ function DockHandCard({
   onTap,
   onPlay,
   onZoom,
+  registerEl,
+  onDragStart,
+  isDragging,
+  dropIntent,
+  shouldSuppressClick,
 }: {
   card: CardView;
   index: number;
@@ -192,6 +210,11 @@ function DockHandCard({
   onTap: () => void;
   onPlay: () => void;
   onZoom: () => void;
+  registerEl: (instanceId: string, el: HTMLDivElement | null) => void;
+  onDragStart: (instanceId: string, event: PointerEvent<HTMLDivElement>) => void;
+  isDragging: boolean;
+  dropIntent: 'reorder' | 'play';
+  shouldSuppressClick: () => boolean;
 }) {
   const hiddenDuringFlight = useCardFlightHidden(card.instanceId);
   const scale = cardScale(index, hoveredIdx);
@@ -204,24 +227,44 @@ function DockHandCard({
         hiddenDuringFlight ? 'invisible' : '',
       ].join(' ')}
       data-card-instance-id={card.instanceId}
+      ref={(el) => registerEl(card.instanceId, el)}
+      onPointerDown={(event) => onDragStart(card.instanceId, event)}
       style={{
+        // touchAction none so a drag on touch isn't stolen by page scrolling.
+        touchAction: 'none',
         width: `${cardWidth}px`,
         height: `${cardHeight}px`,
         marginLeft: index === 0 ? 0 : `-${overlapPx}px`,
+        // While dragging, this element stays in flow as an invisible
+        // placeholder holding the card's slot (so the gap follows the reorder)
+        // and the visible card is a fixed-position ghost tracking the pointer.
+        // pointerEvents:none is load-bearing, not cosmetic — the drag
+        // hit-tests with elementFromPoint, which would otherwise just return
+        // this card and never see the field underneath it.
         transform: `scale(${scale})`,
         transformOrigin: isTop ? 'top center' : 'bottom center',
-        transition: 'transform 0.18s ease-out, opacity 0.15s ease-out',
+        transition: isDragging ? 'none' : 'transform 0.18s ease-out, opacity 0.15s ease-out',
         zIndex: isHoveredCard ? 50 : index + 1,
-        opacity: isDimmed ? 0.4 : 1,
+        opacity: isDragging ? 0 : isDimmed ? 0.4 : 1,
+        pointerEvents: isDragging ? 'none' : undefined,
       }}
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
-      onClick={() => { if (canSelect) onTap(); }}
+      onClick={() => {
+        // A completed drag must not also fire the card's tap action.
+        if (shouldSuppressClick()) return;
+        if (canSelect) onTap();
+      }}
     >
       <div
         className={[
           'h-full w-full overflow-hidden rounded-[4px] border shadow-[0_6px_18px_rgba(0,0,0,0.6)]',
           canSelect ? 'cursor-pointer' : 'cursor-default',
+          isDragging
+            ? dropIntent === 'play'
+              ? 'ring-2 ring-emerald-400 brightness-110'
+              : 'ring-2 ring-white/70'
+            : '',
           isSelected
             ? 'border-gold ring-2 ring-gold/70 ring-offset-1 ring-offset-navy-950'
             : canPlay
@@ -306,6 +349,7 @@ export const DockHand = memo(function DockHand({
   touchReveal = false,
   forceOpen = false,
   onRequestHide,
+  pendingPlayInstanceId = null,
 }: DockHandProps) {
   const [dockHovered, setDockHovered] = useState(false);
   const [touchOpen, setTouchOpen] = useState(false);
@@ -355,12 +399,145 @@ export const DockHand = memo(function DockHand({
       ? (isTop ? -cardHeight : cardHeight)
       : (isTop ? -peekPx : peekPx);
 
+  // Player-arranged hand order. UI-only and local to this component: hand
+  // order has no rules meaning, so it never enters GameState (see handOrder.ts).
+  // applyHandOrder reconciles the saved arrangement with the live hand every
+  // render, so draws/plays can't leave a stale id hiding or duplicating a card.
+  const [handOrderIds, setHandOrderIds] = useState<string[]>([]);
+  const orderedCards = isOwn ? applyHandOrder(cards, handOrderIds) : cards;
+
   const usesTouchScroll = touchReveal;
-  const needsScroll = cards.length > maxVisible;
+  const needsScroll = orderedCards.length > maxVisible;
   const needsWindowScroll = needsScroll && !usesTouchScroll;
   const visibleCards = needsWindowScroll
-    ? cards.slice(windowStart, windowStart + maxVisible)
-    : cards;
+    ? orderedCards.slice(windowStart, windowStart + maxVisible)
+    : orderedCards;
+
+  // ── Drag: reorder within the hand, or drop onto your field to play ────────
+  const cardElRefs = useRef(new Map<string, HTMLDivElement | null>());
+  const dragRef = useRef<{ instanceId: string; startX: number; startY: number; moved: boolean } | null>(null);
+  const suppressClickRef = useRef(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  // Pointer position drives a FIXED-position ghost rather than translating the
+  // card in place. Translating by (pointer - pressOrigin) desynced as soon as
+  // a reorder moved the card's layout slot: the base position jumped, so the
+  // same delta no longer put it under the cursor. A fixed ghost is immune to
+  // layout changes, and grabOffset keeps the card held at the exact point it
+  // was picked up.
+  const [dragPointer, setDragPointer] = useState<{ x: number; y: number } | null>(null);
+  const grabOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [dropIntent, setDropIntent] = useState<'reorder' | 'play'>('reorder');
+  // Host element for the "where this card will land" ghost — the acting
+  // player's Character Area. Looked up from the DOM rather than threaded down
+  // from MatchScreen so the preview stays entirely inside the drag layer.
+  const [previewHost, setPreviewHost] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!draggingId) return;
+
+    const handleMove = (event: globalThis.PointerEvent): void => {
+      const drag = dragRef.current;
+      if (!drag) return;
+
+      // Movement threshold — below it this is still a tap, so tap-to-play and
+      // tap-to-select keep working and no click gets swallowed.
+      if (!drag.moved) {
+        const dx = event.clientX - drag.startX;
+        const dy = event.clientY - drag.startY;
+        if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+        drag.moved = true;
+        setDragActive(true);
+        // Drop the hover magnification: it scales cards up to 2.35x, which
+        // would move every rect this drag measures.
+        setHoveredIdx(null);
+      }
+
+      // The ghost follows the pointer, so the drag reads as picking it up.
+      setDragPointer({ x: event.clientX, y: event.clientY });
+
+      // Dropping onto your own field means "play this card"; anywhere else in
+      // the hand strip means "rearrange". The dragged card is pointer-events:
+      // none while active (see DockHandCard), so this hit-test sees the board
+      // underneath it rather than the card itself.
+      const overPlayZone = isOverPlayDropZone(document.elementFromPoint(event.clientX, event.clientY));
+      setDropIntent(overPlayZone ? 'play' : 'reorder');
+      if (overPlayZone) {
+        const dragged = orderedCards.find((c) => c.instanceId === drag.instanceId);
+        const zone = playDropZoneFor(dragged?.category);
+        setPreviewHost(zone ? findPlayZoneHost(zone) : null);
+        return;
+      }
+      setPreviewHost(null);
+
+      // Centres are measured live because the fan reflows after every swap.
+      const currentOrder = orderedCards.map((c) => c.instanceId);
+      const from = currentOrder.indexOf(drag.instanceId);
+      if (from < 0) return;
+      const centers = currentOrder.map((id) => {
+        const el = cardElRefs.current.get(id);
+        if (!el) return Number.POSITIVE_INFINITY;
+        const rect = el.getBoundingClientRect();
+        return rect.left + rect.width / 2;
+      });
+      const to = handDropIndex(centers, from, event.clientX);
+      if (to !== from) setHandOrderIds(moveInOrder(currentOrder, from, to));
+    };
+
+    const handleUp = (event: globalThis.PointerEvent): void => {
+      const drag = dragRef.current;
+      dragRef.current = null;
+      setDraggingId(null);
+      setDragActive(false);
+      setDragPointer(null);
+      setDropIntent('reorder');
+      if (!drag) return;
+
+      // A drag must not also fire the card's click handler on release.
+      if (drag.moved) suppressClickRef.current = true;
+
+      if (drag.moved && isOverPlayDropZone(document.elementFromPoint(event.clientX, event.clientY))) {
+        const card = orderedCards.find((c) => c.instanceId === drag.instanceId);
+        if (card && (canPlay?.(card) ?? false)) onPlayCard?.(card);
+      }
+    };
+
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    window.addEventListener('pointercancel', handleUp);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+      window.removeEventListener('pointercancel', handleUp);
+    };
+  }, [draggingId, orderedCards, canPlay, onPlayCard]);
+
+  const beginCardDrag = (instanceId: string, event: PointerEvent<HTMLDivElement>): void => {
+    if (!isOwn) return;
+    if (event.button !== 0 && event.pointerType === 'mouse') return;
+    // Stops the browser starting its own image/text drag, which would fire
+    // pointercancel and abort this gesture (see CardImage's draggable={false}).
+    event.preventDefault();
+    // The pressed card is usually hover-magnified (up to 2.35x), so its rect is
+    // larger than the ghost. Scale the grab point proportionally, or the ghost
+    // hangs off the cursor by the magnification difference.
+    const rect = cardElRefs.current.get(instanceId)?.getBoundingClientRect();
+    grabOffsetRef.current =
+      rect && rect.width > 0 && rect.height > 0
+        ? {
+            x: (event.clientX - rect.left) * (cardWidth / rect.width),
+            y: (event.clientY - rect.top) * (cardHeight / rect.height),
+          }
+        : { x: cardWidth / 2, y: cardHeight / 2 };
+    dragRef.current = { instanceId, startX: event.clientX, startY: event.clientY, moved: false };
+    setDraggingId(instanceId);
+  };
+
+  const consumeDragClick = (): boolean => {
+    if (!suppressClickRef.current) return false;
+    suppressClickRef.current = false;
+    return true;
+  };
 
   function scrollLeft() { setWindowStart((s) => Math.max(0, s - 1)); setHoveredIdx(null); }
   function scrollRight() { setWindowStart((s) => Math.min(cards.length - maxVisible, s + 1)); setHoveredIdx(null); }
@@ -456,12 +633,90 @@ export const DockHand = memo(function DockHand({
     };
   }, []);
 
+  // MUST stay above the `cards.length === 0` early return below: a hook after
+  // a conditional return runs on some renders and not others, which is exactly
+  // the "Rendered more hooks than during the previous render" crash — it fired
+  // whenever a hand emptied and refilled mid-match.
+  //
+  // While a play awaits confirmation the drag is already over, so resolve the
+  // host zone here rather than from the pointer handler.
+  useEffect(() => {
+    if (!pendingPlayInstanceId) return;
+    const pending = cards.find((c) => c.instanceId === pendingPlayInstanceId);
+    const zone = playDropZoneFor(pending?.category);
+    setPreviewHost(zone ? findPlayZoneHost(zone) : null);
+  }, [pendingPlayInstanceId, cards]);
+
   if (cards.length === 0) return null;
+
+  const draggedCard = draggingId ? orderedCards.find((c) => c.instanceId === draggingId) ?? null : null;
+
+  // The card whose ghost belongs on the field: the one being dragged over the
+  // drop zone, or — after release — the one waiting on the DON!! cost prompt.
+  const pendingCard = pendingPlayInstanceId
+    ? orderedCards.find((c) => c.instanceId === pendingPlayInstanceId) ?? null
+    : null;
+  const fieldGhostCard = pendingCard ?? (dragActive && dropIntent === 'play' ? draggedCard : null);
 
   return (
     <>
       {/* Arrow keyframes — rendered once, harmless if duplicated */}
       <style>{ARROW_STYLE}</style>
+
+      {/* The dragged card itself: a fixed-position ghost pinned to the pointer
+          at the exact offset it was grabbed. Rendered to document.body so no
+          ancestor's overflow, transform or stacking context can clip or
+          displace it, which is what keeps it locked to the cursor. */}
+      {dragActive && dragPointer && draggedCard
+        ? createPortal(
+            <div
+              aria-hidden="true"
+              className="pointer-events-none fixed z-[999]"
+              style={{
+                left: `${dragPointer.x - grabOffsetRef.current.x}px`,
+                top: `${dragPointer.y - grabOffsetRef.current.y}px`,
+                width: `${cardWidth}px`,
+                height: `${cardHeight}px`,
+              }}
+            >
+              <div
+                className={[
+                  'h-full w-full overflow-hidden rounded-[4px] shadow-[0_12px_30px_rgba(0,0,0,0.7)]',
+                  dropIntent === 'play' ? 'ring-2 ring-emerald-400 brightness-110' : 'ring-2 ring-white/70',
+                ].join(' ')}
+                style={{ transform: 'scale(1.06)' }}
+              >
+                <CardImage src={draggedCard.imageUrl ?? null} alt="" />
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      {/* Landing preview: while the drag hovers your field, a heavily dimmed
+          ghost of the card appears in the Character Area so you can see where
+          it will go before you commit. Portalled into the real zone so it sits
+          in the actual card row and inherits its sizing; purely visual —
+          nothing is played until pointerup, and the DON!! cost is still paid
+          and validated by playHandCard. */}
+      {previewHost && fieldGhostCard
+        ? createPortal(
+            // The real BoardCardTile, not a hand-rolled copy: it is portalled
+            // into the actual Character Area, so its cqh-based sizing resolves
+            // against the same container as every played card and matches them
+            // by construction. The wrapper mirrors PlayerBoardPanel's
+            // HoverableFieldCard box (h-full, flex-shrink-0, centred) so the
+            // ghost occupies an identical slot in the row.
+            <div
+              aria-hidden="true"
+              data-play-ghost="true"
+              className="pointer-events-none flex h-full flex-shrink-0 items-center justify-center opacity-40"
+            >
+              <BoardCardTile card={fieldGhostCard} size="field" />
+            </div>,
+            previewHost,
+          )
+        : null}
 
       <div
         aria-label={`${isOwn ? 'Your' : "Opponent's"} hand — ${cards.length} card${cards.length !== 1 ? 's' : ''}`}
@@ -534,11 +789,16 @@ export const DockHand = memo(function DockHand({
                 overlapPx={cardWidth * OVERLAP}
                 cardWidth={cardWidth}
                 cardHeight={cardHeight}
-                onHoverStart={() => setHoveredIdx(i)}
+                onHoverStart={() => { if (!draggingId) setHoveredIdx(i); }}
                 onHoverEnd={() => setHoveredIdx(null)}
                 onTap={() => onCardTap(card)}
                 onPlay={() => onPlayCard?.(card)}
                 onZoom={() => onCardZoom(card)}
+                registerEl={(id, el) => { cardElRefs.current.set(id, el); }}
+                onDragStart={beginCardDrag}
+                isDragging={dragActive && draggingId === card.instanceId}
+                dropIntent={dropIntent}
+                shouldSuppressClick={consumeDragClick}
               />
             ))}
 

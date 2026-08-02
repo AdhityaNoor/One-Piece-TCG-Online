@@ -339,7 +339,7 @@ function DeckBuilderGameShell({
 }) {
   const hexDriftDelay = useHexDriftDelay();
   return (
-    <main className="op-theme-blue relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden bg-[#0a1a4f] font-body text-white xl:overflow-hidden">
+    <main className="op-theme-blue relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden bg-[#13329a] font-body text-white xl:overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-80" />
       {/* Animated honeycomb as its own layer rather than `op-hex-bg` on <main>:
           as an element background it painted UNDERNEATH the photo wash above,

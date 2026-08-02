@@ -115,7 +115,7 @@ export function CardDetailModal({ open, onClose, definition, imageUrl, setName, 
       panelStyle={{ width: 'min(92vw, 76rem)', maxWidth: '92vw', height: '82vh', maxHeight: '82vh', borderRadius: 0 }}
     >
       {definition && (
-        <div className={['relative grid h-full min-h-0 grid-cols-[auto_minmax(0,1fr)] gap-4 overflow-hidden border-2 border-[rgb(var(--op-gold-rgb)/0.35)] bg-[#0a1a4f] p-4 text-slate-100 shadow-[0_18px_0_rgba(1,5,16,0.72),_0_34px_70px_rgba(0,0,0,0.46)]', mobileImageOnlyActive ? 'op-card-detail-content-mobile-image' : ''].filter(Boolean).join(' ')}>
+        <div className={['relative grid h-full min-h-0 grid-cols-[auto_minmax(0,1fr)] gap-4 overflow-hidden border-2 border-[rgb(var(--op-gold-rgb)/0.35)] bg-[#13329a] p-4 text-slate-100 shadow-[0_18px_0_rgba(1,5,16,0.72),_0_34px_70px_rgba(0,0,0,0.46)]', mobileImageOnlyActive ? 'op-card-detail-content-mobile-image' : ''].filter(Boolean).join(' ')}>
           <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-60" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_10%,_rgb(var(--op-gold-rgb)/0.16),_transparent_28%),linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.96))]" />
 

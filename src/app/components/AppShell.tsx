@@ -18,7 +18,7 @@ import { useHexDriftDelay } from '../hooks/useHexDriftDelay';
 export function AppShell({ children }: { children: ReactNode }) {
   const hexDriftDelay = useHexDriftDelay();
   return (
-    <div style={hexDriftDelay} className="relative flex h-dvh w-full flex-col overflow-hidden op-hex-bg bg-[#0a1a4f] font-body text-white">
+    <div style={hexDriftDelay} className="relative flex h-dvh w-full flex-col overflow-hidden op-hex-bg bg-[#13329a] font-body text-white">
       <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-80" />
       <AppHeader />
       <div className="relative min-h-0 flex-1">{children}</div>

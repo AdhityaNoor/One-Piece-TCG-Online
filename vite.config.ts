@@ -31,6 +31,10 @@ export default defineConfig({
     // the first line of that specific test file (per-file override, no
     // config change needed) and add `jsdom` to devDependencies first.
     environment: 'node',
-    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.{ts,tsx}'],
+    // `shared/` holds code used by BOTH the client and the server (rules
+    // constants, the XP curve, wire types). It was outside the test include,
+    // so none of it could be covered — added so shared logic is testable from
+    // the one place both sides agree on.
+    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.{ts,tsx}', 'shared/**/*.test.{ts,tsx}'],
   },
 });

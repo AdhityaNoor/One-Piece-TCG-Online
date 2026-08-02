@@ -63,6 +63,7 @@ function docToPlayerProfile(doc: ProfileDocument, username: string): PlayerProfi
     createdAt: doc.createdAt,
     lastActiveAt: doc.lastActiveAt,
     profileVersion: doc.profileVersion,
+    experiencePoints: doc.experiencePoints ?? 0,
   };
 }
 
@@ -88,6 +89,7 @@ export class ProfileService {
       privacy: { ...DEFAULT_PRIVACY_SETTINGS },
       moderationStatus: 'active',
       profileVersion: 1,
+      experiencePoints: 0,
       createdAt: nowIso,
       updatedAt: nowIso,
       lastActiveAt: nowIso,

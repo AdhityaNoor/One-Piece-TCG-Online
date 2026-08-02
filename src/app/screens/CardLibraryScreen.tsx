@@ -55,7 +55,7 @@ export function CardLibraryScreen() {
 function CardLibraryGameShell({ onBack, headerRight, children }: { onBack?: () => void; headerRight?: ReactNode; children: ReactNode }) {
   const hexDriftDelay = useHexDriftDelay();
   return (
-    <main style={hexDriftDelay} className="op-theme-blue relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden op-hex-bg bg-[#0a1a4f] font-body text-white xl:overflow-hidden">
+    <main style={hexDriftDelay} className="op-theme-blue relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden op-hex-bg bg-[#13329a] font-body text-white xl:overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-80" />
       <div className="relative z-10 flex flex-shrink-0 items-center justify-between gap-3 px-3 py-3">
         {onBack && <CanvasMenuButton label="Back" onClick={onBack} size="sm" className="max-w-[7rem]" />}

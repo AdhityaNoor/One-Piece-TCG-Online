@@ -33,6 +33,7 @@ import type { SavedDeck } from '../../../src/cards/decks/savedDeck';
 import type { GameAction } from '../../../src/engine/actions';
 import type { GameLogEntry } from '../../../src/engine/logs/logEntry';
 import { RankedResultService } from '../ranked/resultService';
+import { ProgressionService, outcomesForMatch } from '../profile/progressionService';
 import { RankedSeasonService } from '../ranked/seasonService';
 import { RankedQueueService } from '../ranked/queueService';
 import type { RankedRoomOptions, RankedRoomParticipant } from '../ranked/roomOptions';
@@ -400,6 +401,19 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
         startedAt: this.startedAt,
         endedAt: new Date(),
       });
+      // Profile XP for everyone who played. Awarded for BOTH ranked and casual
+      // (level measures time played, not standing — see shared/progression.ts),
+      // and deliberately after the history insert: XP is cosmetic, so a failure
+      // here must never cost us the match record.
+      try {
+        await new ProgressionService().awardMatchXp(
+          outcomesForMatch(seats, winnerUserId),
+          this.rankedMatchId ? 'ranked' : 'casual',
+        );
+      } catch (err) {
+        console.error('[GameRoom] failed to award match XP:', err);
+      }
+
       if (this.rankedMatchId && this.rankedSeasonId) {
         const season = await new RankedSeasonService().getActiveSeason();
         await new RankedResultService().finalizeMatch({

@@ -41,6 +41,9 @@ export interface ProfileDocument {
   privacy: ProfilePrivacySettings;
   moderationStatus: ModerationStatus;
   profileVersion: number;
+  /** Lifetime XP; level is derived (see shared/progression.ts). Absent on
+      documents created before progression shipped — read with `?? 0`. */
+  experiencePoints?: number;
   createdAt: string;
   updatedAt: string;
   lastActiveAt: string;

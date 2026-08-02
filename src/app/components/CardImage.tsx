@@ -30,7 +30,11 @@ export function CardImage({ src, alt, className, eager }: CardImageProps) {
           <span className="px-2 text-center font-heading text-[10px] font-bold uppercase leading-tight tracking-[0.14em]">No image available</span>
         </div>
       ) : (
-        <img src={resolveAssetUrl(src) ?? undefined} alt={alt} loading={eager ? 'eager' : 'lazy'} onError={() => setFailed(true)} className="h-full w-full object-cover" />
+        // draggable={false}: without it, pressing a card image starts the
+        // browser's NATIVE image drag, which fires pointercancel and kills any
+        // custom pointer gesture on an ancestor — that's what stopped hand
+        // cards from being draggable except by their Play button.
+        <img src={resolveAssetUrl(src) ?? undefined} alt={alt} draggable={false} loading={eager ? 'eager' : 'lazy'} onError={() => setFailed(true)} className="h-full w-full object-cover" />
       )}
     </div>
   );
