@@ -14,10 +14,12 @@
     "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --packages=external --outfile=dist/index.cjs",
     "start": "node dist/index.cjs",
     "seed:admin": "tsx src/adminAuth/seedAdmin.ts",
-    "seed:banners": "tsx src/admin/seedHomeBanners.ts"
+    "seed:banners": "tsx src/admin/seedHomeBanners.ts",
+    "seed:accessories": "tsx src/accessories/seedAccessories.ts"
   },
   "dependencies": {
     "@colyseus/core": "^0.17.42",
+    "@vercel/blob": "^1.1.1",
     "@colyseus/schema": "^4.0.7",
     "@colyseus/ws-transport": "^0.17.13",
     "bcryptjs": "^2.4.3",

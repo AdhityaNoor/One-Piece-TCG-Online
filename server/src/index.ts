@@ -26,6 +26,7 @@ import { adminAuthRouter } from './adminAuth/routes';
 import { requireAdminAuth } from './adminAuth/middleware';
 import { adminRouter } from './admin/routes';
 import { bannersPublicRouter } from './banners/publicRoutes';
+import { accessoriesPublicRouter } from './accessories/publicRoutes';
 import { GameRoom } from './rooms/GameRoom';
 import { GAME_ROOM_NAME } from '../../shared/multiplayer';
 
@@ -80,6 +81,7 @@ async function main(): Promise<void> {
   app.use('/decks', decksRouter());
   app.use('/support', supportRouter());
   app.use('/banners', bannersPublicRouter());
+  app.use('/accessories', accessoriesPublicRouter());
 
   // Admin CMS. Login is mounted first and stays public; requireAdminAuth is
   // applied ONCE here at the mount point for everything else under /admin,

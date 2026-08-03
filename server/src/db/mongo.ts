@@ -15,6 +15,7 @@ import type { AdminDocument } from '../models/admin';
 import type { FeatureFlagDocument } from '../models/featureFlag';
 import type { HomeBannerDocument } from '../models/homeBanner';
 import type { CardLegalityOverrideDocument } from '../models/cardLegalityOverride';
+import type { AccessoryDocument } from '../models/accessory';
 import type {
   RankedAuditEventDocument,
   RankedLeaderboardSnapshotDocument,
@@ -144,6 +145,12 @@ export function cardLegalityOverrides(): Collection<CardLegalityOverrideDocument
   return getDb().collection<CardLegalityOverrideDocument>('cardLegalityOverrides');
 }
 
+// Cosmetic deck accessories master data (sleeves + DON!! arts) — see
+// server/src/models/accessory.ts + accessories/{publicRoutes,seedAccessories}.ts.
+export function accessories(): Collection<AccessoryDocument> {
+  return getDb().collection<AccessoryDocument>('accessories');
+}
+
 async function ensureIndexes(database: Db): Promise<void> {
   // Case-insensitive unique email so signup can't create duplicates by case.
   await database
@@ -220,6 +227,10 @@ async function ensureIndexes(database: Db): Promise<void> {
   await database.collection('homeBanners').createIndex({ active: 1, sortOrder: 1 });
 
   await database.collection('cardLegalityOverrides').createIndex({ cardNumber: 1 }, { unique: true });
+
+  // Cosmetic accessories master data — unique app-facing id; list by kind/active/order.
+  await database.collection('accessories').createIndex({ optionId: 1 }, { unique: true });
+  await database.collection('accessories').createIndex({ kind: 1, active: 1, sortOrder: 1 });
 }
 
 /** For graceful shutdown / tests. */
