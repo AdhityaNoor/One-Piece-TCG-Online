@@ -37,7 +37,7 @@ import { createPreGameState, type PlayerSetupInput } from '../../engine/setup';
 import type { CardDefinition, CardInstance } from '../../engine/state/card';
 import type { GameState } from '../../engine/state';
 import type { GameLogEntry } from '../../engine/logs/logEntry';
-import { buildCardDefinitionLookup, buildCardImageLookup, resolveLeaderDonDeckSize, savedDeckToPlayerSetupInput } from '../lib/savedDeckToSetupInput';
+import { buildAccessoriesByPlayer, buildCardDefinitionLookup, buildCardImageLookup, resolveLeaderDonDeckSize, savedDeckToPlayerSetupInput, type ResolvedDeckAccessories } from '../lib/savedDeckToSetupInput';
 import { parseMovementSpecs } from '../../animations/cardMovement/parseLogEntries';
 import { applyMovementPresentation } from '../../animations/cardMovement/presentationHints';
 import { buildTurnSequence } from '../../animations/phaseAnnounce/buildTurnSequence';
@@ -371,6 +371,8 @@ interface MatchStoreState {
   v2EffectSidecars: EffectRuntimeSidecars_V2 | null;
   /** cardDefinitionId -> cosmetic image URL, for board/zoom UI only — never read by the engine. See savedDeckToSetupInput.ts. */
   cardImagesByDefinitionId: Record<string, string | null>;
+  /** engine playerId -> resolved cosmetic accessory art (deck/DON sleeves, DON card art), for the board projection only — never read by the engine. See savedDeckToSetupInput.ts buildAccessoriesByPlayer. */
+  accessoriesByPlayerId: Record<string, ResolvedDeckAccessories>;
   /** Which two SavedDeck ids the live match was started with (+ presentation fingerprint), so the Match screen can tell "still the requested match" apart from "navigated here with different decks/mode" without restarting on every re-render. */
   startedWithDeckIds: { a: string; b: string; presentationKey: string } | null;
   /** Reasons the most recent startMatch() call failed, for the Match screen to display. Cleared on the next successful start. */
@@ -452,6 +454,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   v2EffectRuntime: null,
   v2EffectSidecars: null,
   cardImagesByDefinitionId: {},
+  accessoriesByPlayerId: {},
   startedWithDeckIds: null,
   startError: null,
   localPlayerId: null,
@@ -483,6 +486,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
           v2EffectRuntime: null,
           v2EffectSidecars: null,
           cardImagesByDefinitionId: {},
+          accessoriesByPlayerId: {},
           startedWithDeckIds: null,
           startError: v2DeckReasons,
           localPlayerId: null,
@@ -534,6 +538,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
         v2EffectRuntime: null,
         v2EffectSidecars: null,
         cardImagesByDefinitionId: {},
+        accessoriesByPlayerId: {},
         startedWithDeckIds: null,
         startError: result.reasons,
         localPlayerId: null,
@@ -555,6 +560,10 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       v2EffectRuntime,
       v2EffectSidecars: v2EffectRuntime ? createEmptyEffectRuntimeSidecars_V2() : null,
       cardImagesByDefinitionId: buildCardImageLookup([deckA, deckB]),
+      accessoriesByPlayerId: buildAccessoriesByPlayer([
+        { playerId: PLAYER_A_ID, deck: deckA },
+        { playerId: PLAYER_B_ID, deck: deckB },
+      ]),
       startedWithDeckIds: { a: deckA.deckId, b: deckB.deckId, presentationKey: presentation ? JSON.stringify(presentation) : '' },
       startError: null,
       localPlayerId,
@@ -579,6 +588,9 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       v2EffectRuntime,
       v2EffectSidecars: v2EffectRuntime ? createEmptyEffectRuntimeSidecars_V2() : null,
       cardImagesByDefinitionId: images,
+      // Online matches don't (yet) sync deck accessories; default chrome falls
+      // back automatically when a seat has no resolved accessories.
+      accessoriesByPlayerId: {},
       startedWithDeckIds: null,
       startError: null,
       localPlayerId,
@@ -629,6 +641,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
       v2EffectRuntime,
       v2EffectSidecars: v2EffectRuntime ? createEmptyEffectRuntimeSidecars_V2() : null,
       cardImagesByDefinitionId: lookups.images,
+      accessoriesByPlayerId: {},
       startedWithDeckIds: null,
       startError: null,
       localPlayerId: null,
@@ -943,6 +956,6 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   reset() {
     useCardAnimationStore.getState().clear();
     usePhaseAnnounceStore.getState().clear();
-    set({ state: null, defs: {}, registry: {}, v2EffectRuntime: null, v2EffectSidecars: null, cardImagesByDefinitionId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {}, cpuPlayerIds: [], cpuDifficulty: 'normal', cpuDebug: false, playTestMode: false, onlineMode: false, onlineSendIntent: null });
+    set({ state: null, defs: {}, registry: {}, v2EffectRuntime: null, v2EffectSidecars: null, cardImagesByDefinitionId: {}, accessoriesByPlayerId: {}, startedWithDeckIds: null, startError: null, localPlayerId: null, playerNames: {}, cpuPlayerIds: [], cpuDifficulty: 'normal', cpuDebug: false, playTestMode: false, onlineMode: false, onlineSendIntent: null });
   },
 }));

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SAVED_DECK_SCHEMA_VERSION, type SavedDeck, type SavedDeckCardSnapshot } from '../../../cards/decks/savedDeck';
 import type { DeckLoadResult, DeckStoreListEntry } from '../../../cards/decks/deckStorage';
+import { defaultDeckAccessories } from '../../../cards/accessories/deckAccessories';
 import { createMockRoomService } from '../mockRoomService';
 
 /** Minimal loadable snapshot — mirrors deckStorage.test.ts's fixture, trimmed to what the room service reads (leader.definition + imageUrl). */
@@ -40,6 +41,7 @@ function makeDeck(deckId: string): SavedDeck {
     leader: snapshot(`OP01-${deckId}`, 'leader', `https://img/${deckId}.png`),
     cards: [snapshot('C-1', 'character', null)],
     donDeckSize: 10,
+    accessories: defaultDeckAccessories(),
     createdAt: '2026-06-28T00:00:00.000Z',
     updatedAt: '2026-06-28T00:00:00.000Z',
     source: { provider: 'local-catalog', fetchedAt: '2026-06-28T00:00:00.000Z' },

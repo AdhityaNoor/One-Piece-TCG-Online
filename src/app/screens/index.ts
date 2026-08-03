@@ -7,6 +7,7 @@ export * from './DebugToolsScreen';
 export * from './PlayTestScreen';
 export * from './CardLibraryScreen';
 export * from './deckBuilder';
+export * from './AccessoriesScreen';
 export * from './SavedDecksScreen';
 export * from './PlayMenuScreen';
 export * from './ProfileScreen';

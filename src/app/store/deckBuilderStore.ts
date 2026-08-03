@@ -24,6 +24,15 @@ import {
 } from '../../cards/decks';
 import { browserFetch, generateDeckId, nowIso } from '../lib/runtime';
 import { useSavedDecksStore } from './savedDecksStore';
+import {
+  defaultDeckAccessories,
+  selectionFromOption,
+  type AccessoryOption,
+  type DeckAccessories,
+} from '../../cards/accessories';
+
+/** The three cosmetic slots a deck's accessories screen can set. */
+export type DeckAccessorySlot = keyof DeckAccessories;
 
 export interface ClipboardImportIssue {
   cardId: string;
@@ -74,6 +83,8 @@ interface DeckBuilderState {
   name: string;
   leaderSelection: DeckCardSelection | null;
   mainDeckSelections: DeckCardSelection[];
+  /** Cosmetic sleeve/DON-art choices for this deck; persisted on save. */
+  accessories: DeckAccessories;
 
   clipboardRawInput: string;
   clipboardImportStatus: 'idle' | 'importing' | 'done';
@@ -93,16 +104,20 @@ interface DeckBuilderState {
   setMainDeckQuantity(printingImageId: string, quantity: number): void;
   changeMainDeckPrinting(currentPrintingImageId: string, nextPrintingImageId: string): void;
 
+  /** Sets one cosmetic slot from a chosen catalog option, or null to reset that slot to the built-in default. Persists to the saved deck immediately when editing an existing deck. */
+  setAccessory(slot: DeckAccessorySlot, option: AccessoryOption | null): void;
+
   importFromClipboard(rawInput: string): Promise<void>;
 
   save(): { ok: true; deck: SavedDeck } | { ok: false; reasons: string[] };
 }
 
-const EMPTY: Pick<DeckBuilderState, 'editingDeckId' | 'name' | 'leaderSelection' | 'mainDeckSelections' | 'clipboardRawInput' | 'clipboardImportStatus' | 'clipboardImportSummary' | 'lastSaveResult'> = {
+const EMPTY: Pick<DeckBuilderState, 'editingDeckId' | 'name' | 'leaderSelection' | 'mainDeckSelections' | 'accessories' | 'clipboardRawInput' | 'clipboardImportStatus' | 'clipboardImportSummary' | 'lastSaveResult'> = {
   editingDeckId: null,
   name: '',
   leaderSelection: null,
   mainDeckSelections: [],
+  accessories: defaultDeckAccessories(),
   clipboardRawInput: '',
   clipboardImportStatus: 'idle',
   clipboardImportSummary: null,
@@ -121,6 +136,7 @@ export const useDeckBuilderStore = create<DeckBuilderState>((set, get) => ({
       name: deck.name,
       leaderSelection: snapshotToSelection(deck.leader),
       mainDeckSelections: deck.cards.map(snapshotToSelection),
+      accessories: deck.accessories ?? defaultDeckAccessories(),
     }),
 
   setName: (name) => set({ name }),
@@ -179,6 +195,17 @@ export const useDeckBuilderStore = create<DeckBuilderState>((set, get) => ({
         ),
       };
     }),
+
+  setAccessory: (slot, option) => {
+    set((state) => ({ accessories: { ...state.accessories, [slot]: selectionFromOption(option) } }));
+    // If editing a persisted deck, save the cosmetic change straight away so
+    // it survives leaving the screen without a full deck re-save (accessories
+    // are legality-independent, so this can't produce an illegal deck).
+    const state = get();
+    if (state.editingDeckId && state.leaderSelection) {
+      state.save();
+    }
+  },
 
   /**
    * Replaces the current main-deck selection list with whatever resolves
@@ -277,6 +304,7 @@ export const useDeckBuilderStore = create<DeckBuilderState>((set, get) => ({
       name: state.name.trim().length > 0 ? state.name.trim() : 'Untitled Deck',
       leader: state.leaderSelection,
       mainDeck: state.mainDeckSelections,
+      accessories: state.accessories,
       now: nowIso,
     });
 

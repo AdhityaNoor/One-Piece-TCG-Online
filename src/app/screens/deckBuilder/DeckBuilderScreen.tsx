@@ -30,6 +30,7 @@ export function DeckBuilderScreen() {
   const load = useSavedDecksStore((state) => state.load);
 
   const name = useDeckBuilderStore((state) => state.name);
+  const editingDeckId = useDeckBuilderStore((state) => state.editingDeckId);
   const leaderSelection = useDeckBuilderStore((state) => state.leaderSelection);
   const mainDeckSelections = useDeckBuilderStore((state) => state.mainDeckSelections);
   const lastSaveResult = useDeckBuilderStore((state) => state.lastSaveResult);
@@ -199,6 +200,15 @@ export function DeckBuilderScreen() {
                 fullWidth
               >
                 Save Deck
+              </Button>
+              <Button
+                variant="secondary"
+                title={editingDeckId ? 'Customize sleeves and DON!! art for this deck.' : 'Save the deck first to customize its accessories.'}
+                disabled={!editingDeckId}
+                onClick={() => editingDeckId && navigateTo({ screen: 'accessories', deckIdToEdit: editingDeckId })}
+                fullWidth
+              >
+                Accessories
               </Button>
             </div>
           </section>

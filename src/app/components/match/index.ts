@@ -7,6 +7,7 @@ export * from './DonChip';
 export * from './DonStack';
 export * from './AttachedDonHoverStack';
 export * from './CardBackArt';
+export * from './MatchAccessoriesContext';
 export * from './CountBadge';
 export * from './PileStack';
 export * from './PhaseIndicator';

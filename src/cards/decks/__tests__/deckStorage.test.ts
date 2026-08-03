@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SAVED_DECK_SCHEMA_VERSION, type SavedDeck, type SavedDeckCardSnapshot } from '../savedDeck';
+import { defaultDeckAccessories } from '../../accessories/deckAccessories';
 import { createLocalStorageDeckStore, type StorageLike } from '../deckStorage';
 
 /** In-memory StorageLike fake — same role as FetchLike/CacheStore fakes used elsewhere in /src/cards's tests. No jsdom/localStorage polyfill needed. */
@@ -50,6 +51,7 @@ function makeDeck(deckId: string, name: string, updatedAt: string): SavedDeck {
     leader: { ...minimalSnapshot('OP01-001'), definition: { ...minimalSnapshot('OP01-001').definition, category: 'leader' } },
     cards: [minimalSnapshot('C-1')],
     donDeckSize: 10,
+    accessories: defaultDeckAccessories(),
     createdAt: updatedAt,
     updatedAt,
     source: { provider: 'local-catalog', fetchedAt: updatedAt },
@@ -123,6 +125,8 @@ describe('createLocalStorageDeckStore', () => {
     expect(result.deck.schemaVersion).toBe(SAVED_DECK_SCHEMA_VERSION);
     expect(result.deck.leader.variant).toBeNull();
     expect(result.deck.cards[0].sourceImportLines).toBeNull();
+    // v3 backfill: a pre-accessories deck loads with all-default cosmetics.
+    expect(result.deck.accessories).toEqual(defaultDeckAccessories());
   });
 
   it('removes both the deck and its index entry', () => {

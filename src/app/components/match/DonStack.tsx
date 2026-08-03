@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import { cqh } from './boardScale';
 import { CountBadge } from './CountBadge';
 import { DonChip } from './DonChip';
+import { useSeatDonArtUrl } from './MatchAccessoriesContext';
 import type { CardView } from '../../../board/projection';
 
 export type DonStackDirection = 'vertical' | 'horizontal';
@@ -36,9 +37,9 @@ const POPUP_H = 101;
 
 /** Tight chip for the portal popup — fixed px sizing. */
 function PopupChip({
-  card, isSelectable, isSelected, onSelect,
+  card, isSelectable, isSelected, onSelect, donArtUrl,
 }: {
-  card: CardView; isSelectable: boolean; isSelected: boolean; onSelect: () => void;
+  card: CardView; isSelectable: boolean; isSelected: boolean; onSelect: () => void; donArtUrl?: string;
 }) {
   const rested = card.donRested;
   const outerW = rested ? POPUP_H : POPUP_W;
@@ -61,13 +62,14 @@ function PopupChip({
         ].join(' ')}
         style={{ width: POPUP_W, height: POPUP_H, top: '50%', left: '50%', transform: rotation }}
       >
-        <img src={DON_TOKEN_SRC} alt="" aria-hidden="true" className="block h-full w-full object-cover" draggable={false} />
+        <img src={donArtUrl ?? DON_TOKEN_SRC} alt="" aria-hidden="true" className="block h-full w-full object-cover" draggable={false} />
       </div>
     </div>
   );
 }
 
 export function DonStack({ label, playerId, cards, direction, selectable, selectedIds, onDonSelect, reverseRows = false }: DonStackProps) {
+  const donArtUrl = useSeatDonArtUrl(playerId);
   const isVertical = direction === 'vertical';
   const stackedSpan = CHIP_BOX + Math.max(cards.length - 1, 0) * STEP_PX;
   const [expanded, setExpanded] = useState(false);
@@ -163,6 +165,7 @@ export function DonStack({ label, playerId, cards, direction, selectable, select
                     selectable={selectable(don)}
                     selected={selectedIds.has(don.instanceId)}
                     onSelect={() => onDonSelect(don)}
+                    donArtUrl={donArtUrl}
                   />
                 </div>
               );
@@ -222,6 +225,7 @@ export function DonStack({ label, playerId, cards, direction, selectable, select
                   onSelect={() => {
                   onDonSelect(don);
                 }}
+                  donArtUrl={donArtUrl}
                 />
               ))}
             </div>

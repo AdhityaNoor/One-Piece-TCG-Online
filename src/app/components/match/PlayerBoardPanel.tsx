@@ -45,6 +45,7 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { AttachedDonHoverStack } from './AttachedDonHoverStack';
+import { useSeatDonArtUrl } from './MatchAccessoriesContext';
 import { BoardCardTile } from './BoardCardTile';
 import { CardBackArt } from './CardBackArt';
 import { CardImage } from '../CardImage';
@@ -315,7 +316,7 @@ function LifeStack({ playerId, life, count, donDeckCount, donDeckFirst = false }
           >
             <div className="rotate-90" style={{ width: FIELD_CARD_WIDTH }}>
               <div className="aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.38)]">
-                {faceUp ? <CardImage src={card.imageUrl} alt={card.name} className="h-full w-full" /> : <CardBackArt tone="navy" />}
+                {faceUp ? <CardImage src={card.imageUrl} alt={card.name} className="h-full w-full" /> : <CardBackArt tone="navy" playerId={playerId} />}
               </div>
             </div>
           </div>
@@ -343,7 +344,7 @@ function LifeStack({ playerId, life, count, donDeckCount, donDeckFirst = false }
         data-board-player={playerId}
         data-board-card-anchor
       >
-        <CardBackArt tone="teal" />
+        <CardBackArt tone="teal" playerId={playerId} />
         <CountBadge count={donDeckCount} />
       </div>
     </div>
@@ -417,6 +418,7 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
           onReturn: () => onReturnGivenDon?.(card),
         }
       : undefined;
+  const donArtUrl = useSeatDonArtUrl(board.playerId);
   const leaderCard: CardView | null = board.leader;
   const stageCard: CardView | null = board.stageArea[0] ?? null;
   const attachedDon = attachedDonIds(board);
@@ -575,7 +577,7 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   const deckCell = (
     <MatCell label="Deck" className="flex-shrink-0" labelClassName="sr-only" style={{ width: BOARD_ZONE_TRACK }} allowOverflow>
       <div data-board-zone="deck" data-board-player={board.playerId}>
-        <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" reverseRows={reverseRows} boardFocused={boardFocused} />
+        <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" reverseRows={reverseRows} boardFocused={boardFocused} playerId={board.playerId} />
       </div>
     </MatCell>
   );
@@ -820,6 +822,7 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
         onSelect={(don) => onCardTap(board.playerId, 'attachedDon', don)}
         onMouseEnter={clearDonStackCloseTimer}
         onMouseLeave={hideAttachedDonStack}
+        donArtUrl={donArtUrl}
       />
     </div>
   );

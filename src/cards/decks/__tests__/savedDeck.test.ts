@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { migrateSavedDeck, SAVED_DECK_SCHEMA_VERSION, type SavedDeck, type SavedDeckCardSnapshot } from '../savedDeck';
+import { defaultDeckAccessories } from '../../accessories/deckAccessories';
 
 /** A v1-shaped snapshot — predates variant/cachedImagePath/sourceImportLines. */
 function v1Snapshot(cardNumber: string): Omit<SavedDeckCardSnapshot, 'variant' | 'cachedImagePath' | 'sourceImportLines'> {
@@ -70,9 +71,35 @@ describe('migrateSavedDeck', () => {
       schemaVersion: SAVED_DECK_SCHEMA_VERSION,
       leader: { ...v1Snapshot('OP01-001'), variant: null, cachedImagePath: null, sourceImportLines: null },
       cards: [{ ...v1Snapshot('C-1'), variant: 'p1', cachedImagePath: null, sourceImportLines: ['4xC-1'] }],
+      accessories: defaultDeckAccessories(),
     };
     const migrated = migrateSavedDeck(current);
     expect(migrated).toEqual(current);
+  });
+
+  it('backfills all-default cosmetic accessories when migrating a v2 deck to v3', () => {
+    const v2 = {
+      ...v1Deck(),
+      schemaVersion: 2,
+      leader: { ...v1Snapshot('OP01-001'), variant: null, cachedImagePath: null, sourceImportLines: null },
+      cards: [{ ...v1Snapshot('C-1'), variant: null, cachedImagePath: null, sourceImportLines: null }],
+    };
+    const migrated = migrateSavedDeck(v2);
+    expect(migrated).not.toBeNull();
+    expect(migrated!.schemaVersion).toBe(SAVED_DECK_SCHEMA_VERSION);
+    expect(migrated!.accessories).toEqual(defaultDeckAccessories());
+  });
+
+  it('repairs a corrupted accessories slot on a current-version deck instead of trusting it blindly', () => {
+    const brokenAccessories = {
+      ...v1Deck(),
+      schemaVersion: SAVED_DECK_SCHEMA_VERSION,
+      leader: { ...v1Snapshot('OP01-001'), variant: null, cachedImagePath: null, sourceImportLines: null },
+      cards: [{ ...v1Snapshot('C-1'), variant: null, cachedImagePath: null, sourceImportLines: null }],
+      accessories: { mainSleeve: 'not-a-selection', donSleeve: 42 },
+    };
+    const migrated = migrateSavedDeck(brokenAccessories);
+    expect(migrated!.accessories).toEqual(defaultDeckAccessories());
   });
 
   it('returns null for input that does not look like a SavedDeck at all', () => {
@@ -138,7 +165,11 @@ describe('SavedDeckCardSnapshot stays free of effect-curation data', () => {
 
   // Same guard for the deck-level shape, so a curation pointer couldn't be
   // smuggled in at the SavedDeck level instead of per-card.
-  const ALLOWED_DECK_KEYS = ['schemaVersion', 'deckId', 'name', 'leader', 'cards', 'donDeckSize', 'createdAt', 'updatedAt', 'source'] as const;
+  // `accessories` is allowlisted here deliberately: it is COSMETIC-only
+  // (sleeve/DON art) and carries no effect-curation data — see savedDeck.ts's
+  // accessories doc + accessories/deckAccessories.ts. It is display identity,
+  // exactly the category this guard permits, not effect behavior.
+  const ALLOWED_DECK_KEYS = ['schemaVersion', 'deckId', 'name', 'leader', 'cards', 'donDeckSize', 'accessories', 'createdAt', 'updatedAt', 'source'] as const;
   type AllowedDeckKey = (typeof ALLOWED_DECK_KEYS)[number];
   type UnexpectedDeckField = Exclude<keyof SavedDeck, AllowedDeckKey>;
   const _noUnexpectedDeckFields: UnexpectedDeckField extends never ? true : never = true;

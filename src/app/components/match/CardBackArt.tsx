@@ -15,6 +15,8 @@
  * component only ever renders one of two fixed, bundled images, so it skips
  * CardImage's null/loading/error handling entirely.
  */
+import { useSeatAccessories } from './MatchAccessoriesContext';
+
 export type CardBackTone = 'navy' | 'teal';
 
 const TONE_SRC: Record<CardBackTone, string> = {
@@ -25,12 +27,22 @@ const TONE_SRC: Record<CardBackTone, string> = {
 export interface CardBackArtProps {
   tone: CardBackTone;
   className?: string;
+  /**
+   * Engine seat this back belongs to. When provided AND that seat's deck has
+   * chosen a sleeve accessory, the chosen sleeve art replaces the bundled
+   * default — navy uses the main-deck sleeve, teal uses the DON!! sleeve.
+   * Omit for surfaces that aren't seat-specific (e.g. the shared card-
+   * movement overlay) to keep the classic bundled back.
+   */
+  playerId?: string;
 }
 
-export function CardBackArt({ tone, className = '' }: CardBackArtProps) {
+export function CardBackArt({ tone, className = '', playerId }: CardBackArtProps) {
+  const seat = useSeatAccessories(playerId);
+  const sleeveUrl = seat ? (tone === 'teal' ? seat.donSleeveUrl : seat.mainSleeveUrl) : undefined;
   return (
     <img
-      src={TONE_SRC[tone]}
+      src={sleeveUrl ?? TONE_SRC[tone]}
       alt=""
       aria-hidden="true"
       className={['block h-full w-full object-cover', className].join(' ')}

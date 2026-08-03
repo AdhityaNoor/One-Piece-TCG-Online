@@ -13,11 +13,18 @@
  * renders nothing at all when signed out or before that response arrives,
  * rather than inventing a placeholder rank.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useProfileStore } from '../store/profileStore';
+import { isBackendConfigured } from '../../multiplayer/net/backendConfig';
 import { levelForXp } from '../../../shared/progression';
 import { RankBadge } from './RankBadge';
+
+/** The slice of the profile header this block renders. */
+interface Standing {
+  ranked: NonNullable<ReturnType<typeof useProfileStore.getState>['header']>['ranked'];
+  experiencePoints: number;
+}
 
 export function HeaderPlayerStanding() {
   const token = useAuthStore((state) => state.token);
@@ -25,14 +32,31 @@ export function HeaderPlayerStanding() {
   const status = useProfileStore((state) => state.status);
   const loadOwn = useProfileStore((state) => state.loadOwn);
 
+  // The store is shared with ProfileScreen, which calls profile.clear() when it
+  // unmounts — so `header` is wiped every time you leave that screen, and a
+  // block reading the store directly would blink out and only reappear on
+  // Profile/Social. This keeps its own copy of the two values it needs, so the
+  // standing survives someone else clearing the store.
+  const [standing, setStanding] = useState<Standing | null>(null);
+  useEffect(() => {
+    if (!header) return;
+    setStanding({ ranked: header.ranked, experiencePoints: header.profile.experiencePoints ?? 0 });
+  }, [header]);
+
+  // Drop the cached standing on sign-out so the next account never briefly
+  // shows the previous player's rank.
+  useEffect(() => {
+    if (!token) setStanding(null);
+  }, [token]);
+
   // Fetch once per token. Keyed on a ref rather than `status === 'idle'`: any
   // other screen that had already loaded (or failed) a profile leaves status
   // at 'ready'/'error', so an idle-only guard meant this never fetched and the
-  // block silently stayed empty forever. The ref also stops a persistent
-  // backend error from retrying in a loop.
+  // block silently stayed empty. The ref also stops a persistent backend error
+  // from retrying in a loop.
   const attemptedForToken = useRef<string | null>(null);
   useEffect(() => {
-    if (!token) {
+    if (!token || !isBackendConfigured()) {
       attemptedForToken.current = null;
       return;
     }
@@ -42,10 +66,10 @@ export function HeaderPlayerStanding() {
     void loadOwn();
   }, [token, header, status, loadOwn]);
 
-  if (!token || !header) return null;
+  if (!token || !standing) return null;
 
-  const ranked = header.ranked;
-  const { level } = levelForXp(header.profile.experiencePoints ?? 0);
+  const ranked = standing.ranked;
+  const { level } = levelForXp(standing.experiencePoints);
 
   return (
     <div className="hidden items-center gap-2 md:flex">

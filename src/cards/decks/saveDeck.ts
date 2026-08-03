@@ -7,6 +7,7 @@
  * IndexedDB / a future backend) is deliberately left to the app layer, same
  * separation the engine keeps between pure logic and storage.
  */
+import { defaultDeckAccessories, type DeckAccessories } from '../accessories/deckAccessories';
 import type { CardLibraryEntry } from '../library/cardPrintingSummary';
 import { validateDeckConstruction, type DeckConstructionEntry } from './deckValidation';
 import { SAVED_DECK_SCHEMA_VERSION, type SavedDeck, type SavedDeckCardSnapshot } from './savedDeck';
@@ -30,6 +31,8 @@ export interface CreateSavedDeckInput {
   name: string;
   leader: DeckCardSelection;
   mainDeck: DeckCardSelection[];
+  /** Cosmetic sleeve/DON-art choices. Omit for a brand-new deck (defaults to built-in chrome); pass the editing deck's existing block to preserve it across a re-save. */
+  accessories?: DeckAccessories;
   /** Injected clock, for deterministic tests — defaults to `new Date().toISOString`. */
   now?: () => string;
 }
@@ -113,6 +116,7 @@ export function createSavedDeck(input: CreateSavedDeckInput): CreateSavedDeckRes
     leader: leaderSnapshotResult.snapshot,
     cards: mainDeckSnapshots,
     donDeckSize: 10,
+    accessories: input.accessories ?? defaultDeckAccessories(),
     createdAt: timestamp,
     updatedAt: timestamp,
     source: { provider: 'local-catalog', fetchedAt: timestamp },

@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { SAVED_DECK_SCHEMA_VERSION, type SavedDeck, type SavedDeckCardSnapshot } from '../../../cards/decks/savedDeck';
+import { defaultDeckAccessories, selectionFromOption } from '../../../cards/accessories/deckAccessories';
+import { SLEEVE_CATALOG } from '../../../cards/accessories/sleeveCatalog';
 import type { CardDefinition } from '../../../engine/state/card';
-import { savedDeckToPlayerSetupInput } from '../savedDeckToSetupInput';
+import {
+  buildAccessoriesByPlayer,
+  DEFAULT_DON_ART_URL,
+  DEFAULT_DON_SLEEVE_URL,
+  DEFAULT_MAIN_SLEEVE_URL,
+  savedDeckToPlayerSetupInput,
+} from '../savedDeckToSetupInput';
 
 function definition(overrides: Partial<CardDefinition>): CardDefinition {
   return {
@@ -45,6 +53,7 @@ function deckWithLeader(leader: CardDefinition): SavedDeck {
     leader: snapshot(leader, 1),
     cards: [snapshot(filler, 50)],
     donDeckSize: 10,
+    accessories: defaultDeckAccessories(),
     createdAt: '2026-07-11T00:00:00.000Z',
     updatedAt: '2026-07-11T00:00:00.000Z',
     source: { provider: 'local-catalog', fetchedAt: '2026-07-11T00:00:00.000Z' },
@@ -62,5 +71,29 @@ describe('savedDeckToPlayerSetupInput', () => {
     const leader = definition({ cardDefinitionId: 'ST01-001', cardNumber: 'ST01-001', name: 'Monkey.D.Luffy', category: 'leader', life: 5, basePower: 5000 });
 
     expect(savedDeckToPlayerSetupInput(deckWithLeader(leader), 'p1').donDeckSize).toBe(10);
+  });
+});
+
+describe('buildAccessoriesByPlayer', () => {
+  const leader = definition({ cardDefinitionId: 'ST01-001', cardNumber: 'ST01-001', category: 'leader', life: 5, basePower: 5000 });
+
+  it('falls back to bundled default chrome for a deck with no accessory choices', () => {
+    const resolved = buildAccessoriesByPlayer([{ playerId: 'p1', deck: deckWithLeader(leader) }]);
+    expect(resolved.p1).toEqual({
+      mainSleeveUrl: DEFAULT_MAIN_SLEEVE_URL,
+      donSleeveUrl: DEFAULT_DON_SLEEVE_URL,
+      donArtUrl: DEFAULT_DON_ART_URL,
+    });
+  });
+
+  it('resolves a chosen main-deck sleeve to its snapshotted art, per seat', () => {
+    const deck = deckWithLeader(leader);
+    const sleeve = SLEEVE_CATALOG[0];
+    deck.accessories = { ...defaultDeckAccessories(), mainSleeve: selectionFromOption(sleeve) };
+
+    const resolved = buildAccessoriesByPlayer([{ playerId: 'p2', deck }]);
+    expect(resolved.p2.mainSleeveUrl).toBe(sleeve.imageUrl);
+    // Unset slots still default.
+    expect(resolved.p2.donSleeveUrl).toBe(DEFAULT_DON_SLEEVE_URL);
   });
 });

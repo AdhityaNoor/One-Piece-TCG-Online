@@ -47,6 +47,8 @@ export interface PileStackProps {
   reverseRows?: boolean;
   /** When true ghost layers are hidden (board is being interacted with). */
   boardFocused?: boolean;
+  /** Seat this pile belongs to — lets a face-down deck pile show that deck's chosen main-deck sleeve. Omit to use the bundled default back. */
+  playerId?: string;
   onClick?: () => void;
 }
 
@@ -57,6 +59,7 @@ export function PileStack({
   size = 'compact',
   reverseRows = false,
   boardFocused = false,
+  playerId,
   onClick,
 }: PileStackProps) {
   const isFieldDeck = variant === 'deck' && size === 'field';
@@ -120,7 +123,7 @@ export function PileStack({
                   ...posStyle,
                 }}
               >
-                <CardBackArt tone="navy" />
+                <CardBackArt tone="navy" playerId={playerId} />
               </div>
             );
           })}
@@ -139,7 +142,7 @@ export function PileStack({
               transition: 'top 0.2s ease, left 0.2s ease',
             }}
           >
-            <CardBackArt tone="navy" />
+            <CardBackArt tone="navy" playerId={playerId} />
             <CountBadge count={count} />
           </div>
         </button>

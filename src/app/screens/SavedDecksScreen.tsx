@@ -2,9 +2,11 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState }
 import { useIsWideDeckLayout } from '../hooks/useIsWideDeckLayout';
 import { evaluateSavedDeckFormatStatus } from '../../cards/format';
 import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
+import { resolveAccessoryImageUrl, type DeckAccessories, type DeckAccessorySelection } from '../../cards/accessories';
 import type { CardCategory, Color } from '../../engine/state/card';
 import { Button, CanvasMenuButton, DeckFormatBadge, GameCanvasScreen, Modal } from '../components';
 import { resolveAssetUrl } from '../lib/assetUrl';
+import { DEFAULT_DON_ART_URL, DEFAULT_DON_SLEEVE_URL, DEFAULT_MAIN_SLEEVE_URL } from '../lib/savedDeckToSetupInput';
 import { CARD_COLOR_TOKENS } from '../lib/cardColors';
 import { useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
@@ -393,6 +395,50 @@ function DeckInfoStat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function DeckAccessoryThumb({ label, selection, kind, defaultUrl }: { label: string; selection: DeckAccessorySelection; kind: 'sleeve' | 'donArt'; defaultUrl: string }) {
+  const imageUrl = resolveAccessoryImageUrl(selection, kind, defaultUrl);
+  const name = selection.label ?? 'Default';
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="aspect-[63/88] w-full overflow-hidden rounded border border-white/10 bg-black/30 shadow-[0_4px_10px_rgba(0,0,0,0.35)]">
+        <img src={imageUrl} alt={name} className="h-full w-full object-cover" draggable={false} />
+      </div>
+      <span className="text-[8px] font-black uppercase tracking-[0.12em] text-gold/70">{label}</span>
+      <span className="line-clamp-1 text-center text-[10px] font-semibold text-white/80" title={name}>{name}</span>
+    </div>
+  );
+}
+
+/**
+ * Read-only summary of a deck's chosen cosmetic accessories, shown under the
+ * card list on the deck-detail panel. Resolves each slot's art the same way
+ * gameplay does (snapshot URL -> catalog -> bundled default), so what's shown
+ * here matches what appears in a match. `onEdit` deep-links to the full
+ * Accessories gallery for this deck.
+ */
+function DeckAccessoriesSummary({ accessories, onEdit }: { accessories: DeckAccessories; onEdit?: () => void }) {
+  return (
+    <div className="mt-4 flex-shrink-0 border-t border-white/10 pt-4">
+      <div className="flex items-center justify-between gap-2 pb-3">
+        <div className="inline-flex items-center gap-2">
+          <span aria-hidden="true" className="h-2 w-2 flex-shrink-0 rounded-full bg-gold shadow-[0_0_10px_rgba(217,164,65,0.65)]" />
+          <p className="font-display text-sm font-black uppercase tracking-[0.18em] text-gold">Accessories</p>
+        </div>
+        {onEdit && (
+          <Button variant="secondary" size="sm" onClick={onEdit}>
+            Edit
+          </Button>
+        )}
+      </div>
+      <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,9.5rem)]">
+        <DeckAccessoryThumb label="Main Sleeve" selection={accessories.mainSleeve} kind="sleeve" defaultUrl={DEFAULT_MAIN_SLEEVE_URL} />
+        <DeckAccessoryThumb label="DON!! Sleeve" selection={accessories.donSleeve} kind="sleeve" defaultUrl={DEFAULT_DON_SLEEVE_URL} />
+        <DeckAccessoryThumb label="DON!! Art" selection={accessories.donCardArt} kind="donArt" defaultUrl={DEFAULT_DON_ART_URL} />
+      </div>
+    </div>
+  );
+}
+
 /**
  * Two-pane layout: a deck picker (the one, obvious way to switch decks) —
  * now a large vertical gallery of leader art, poster-style, rather than a
@@ -417,6 +463,7 @@ function DecksRevampLayout({
   onNext,
   onSelectDeck,
   onEditDeck,
+  onEditAccessories,
   onDeleteDeck,
 }: {
   rows: SavedDeckRow[];
@@ -431,6 +478,7 @@ function DecksRevampLayout({
   onNext: () => void;
   onSelectDeck: (index: number) => void;
   onEditDeck: (deckId: string) => void;
+  onEditAccessories: (deckId: string) => void;
   onDeleteDeck: (deckId: string) => void;
 }) {
   // Below `xl` the picker stacks above the detail panel instead of sitting
@@ -613,6 +661,13 @@ function DecksRevampLayout({
                 </div>
               )}
             </div>
+
+            {currentDeck?.accessories && (
+              <DeckAccessoriesSummary
+                accessories={currentDeck.accessories}
+                onEdit={current?.deck.ok ? () => onEditAccessories(current.entry.deckId) : undefined}
+              />
+            )}
           </div>
         </div>
       </section>
@@ -741,6 +796,7 @@ export function SavedDecksScreen() {
           onNext={goRight}
           onSelectDeck={setCurrentIndex}
           onEditDeck={(deckId) => navigateTo({ screen: 'deck-builder', deckIdToEdit: deckId })}
+          onEditAccessories={(deckId) => navigateTo({ screen: 'accessories', deckIdToEdit: deckId })}
           onDeleteDeck={setPendingDeleteId}
         />
       )}

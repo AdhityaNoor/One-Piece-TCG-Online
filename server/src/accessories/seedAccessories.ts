@@ -120,7 +120,12 @@ async function uploadToBlob(pathname: string, body: Buffer, contentType: string,
   return url;
 }
 
-async function seedSleeves(service: AccessoryService, token: string): Promise<void> {
+interface SeedTally {
+  ok: number;
+  skipped: number;
+}
+
+async function seedSleeves(service: AccessoryService, token: string, tally: SeedTally): Promise<void> {
   const parsed = JSON.parse(await readFile(SLEEVE_PRODUCTS_JSON, 'utf8')) as { products: RawSleeveProduct[] };
   const products = parsed.products ?? [];
   console.log(`[seed:accessories] ${products.length} sleeve products from sleeveProducts.json`);
@@ -158,13 +163,15 @@ async function seedSleeves(service: AccessoryService, token: string): Promise<vo
         console.log(`  [sleeve] dry-run ${optionId} (${name}) <- ${fullSrc}`);
       }
       order += 1;
+      tally.ok += 1;
     } catch (err) {
+      tally.skipped += 1;
       console.warn(`  [sleeve] SKIPPED ${optionId} (${name}): ${(err as Error).message}`);
     }
   }
 }
 
-async function seedDonArts(service: AccessoryService, token: string): Promise<void> {
+async function seedDonArts(service: AccessoryService, token: string, tally: SeedTally): Promise<void> {
   const dir = argValue('don-dir') ?? DEFAULT_DON_DIR;
   let files: string[];
   try {
@@ -174,7 +181,8 @@ async function seedDonArts(service: AccessoryService, token: string): Promise<vo
     return;
   }
   const images = files.filter((f) => IMAGE_EXTS.has(extname(f).toLowerCase())).sort();
-  console.log(`[seed:accessories] ${images.length} DON art files in ${dir}`);
+  const skippedNonImage = files.length - images.length;
+  console.log(`[seed:accessories] ${images.length} DON art image files in ${dir} (${skippedNonImage} non-image entries ignored)`);
 
   let order = 0;
   const usedIds = new Set<string>();
@@ -206,7 +214,9 @@ async function seedDonArts(service: AccessoryService, token: string): Promise<vo
         console.log(`  [donArt] dry-run ${optionId} (${name}) <- ${file}`);
       }
       order += 1;
+      tally.ok += 1;
     } catch (err) {
+      tally.skipped += 1;
       console.warn(`  [donArt] SKIPPED ${optionId} (${name}): ${(err as Error).message}`);
     }
   }
@@ -218,11 +228,16 @@ async function main(): Promise<void> {
   const service = new AccessoryService();
   if (!DRY_RUN) await connectMongo();
 
-  if (!DONS_ONLY) await seedSleeves(service, token);
-  if (!SLEEVES_ONLY) await seedDonArts(service, token);
+  const sleeveTally: SeedTally = { ok: 0, skipped: 0 };
+  const donTally: SeedTally = { ok: 0, skipped: 0 };
+  if (!DONS_ONLY) await seedSleeves(service, token, sleeveTally);
+  if (!SLEEVES_ONLY) await seedDonArts(service, token, donTally);
 
   if (!DRY_RUN) await closeMongo();
-  console.log('[seed:accessories] done.');
+  console.log(
+    `[seed:accessories] done. Sleeves: ${sleeveTally.ok} ok / ${sleeveTally.skipped} skipped. ` +
+      `DON arts: ${donTally.ok} ok / ${donTally.skipped} skipped.${DRY_RUN ? ' (dry-run: nothing written)' : ''}`,
+  );
 }
 
 main().catch((err) => {

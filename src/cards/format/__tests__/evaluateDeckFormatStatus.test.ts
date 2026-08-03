@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CardDefinition } from '../../../engine/state/card';
 import { evaluateDeckFormatStatusFromCards, evaluateSavedDeckFormatStatus } from '../evaluateDeckFormatStatus';
 import type { SavedDeck, SavedDeckCardSnapshot } from '../../decks/savedDeck';
+import { defaultDeckAccessories } from '../../accessories/deckAccessories';
 
 function makeDef(cardNumber: string, name = cardNumber): CardDefinition {
   return {
@@ -43,6 +44,7 @@ function makeDeck(leaderNumber: string, mainNumbers: string[]): SavedDeck {
     leader: { ...makeSnapshot(leaderNumber), definition: { ...makeDef(leaderNumber), category: 'leader' } },
     cards: mainNumbers.map((n) => makeSnapshot(n)),
     donDeckSize: 10,
+    accessories: defaultDeckAccessories(),
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     source: { provider: 'local-catalog', fetchedAt: '2026-01-01T00:00:00.000Z' },

@@ -18,6 +18,8 @@ export interface DonChipProps {
   selectable?: boolean;
   selected?: boolean;
   onSelect?: () => void;
+  /** The deck's chosen DON!! card art for this seat; falls back to the bundled token when absent. */
+  donArtUrl?: string;
 }
 
 // Same footprint as every other field card (BoardCardTile's 'field' size,
@@ -29,7 +31,7 @@ const CARD_WIDTH = cqh(150);
 const CARD_HEIGHT = cqh(210);
 const BOX = cqh(210);
 
-export function DonChip({ card, selectable, selected, onSelect }: DonChipProps) {
+export function DonChip({ card, selectable, selected, onSelect, donArtUrl }: DonChipProps) {
   const rested = card.donRested;
   const hiddenDuringFlight = useCardFlightHidden(card.instanceId);
 
@@ -58,7 +60,7 @@ export function DonChip({ card, selectable, selected, onSelect }: DonChipProps) 
           ].join(' ')}
           style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}
         >
-          <img src={DON_TOKEN_SRC} alt="" aria-hidden="true" className="block h-full w-full object-cover" draggable={false} />
+          <img src={donArtUrl ?? DON_TOKEN_SRC} alt="" aria-hidden="true" className="block h-full w-full object-cover" draggable={false} />
         </div>
       </div>
     </div>

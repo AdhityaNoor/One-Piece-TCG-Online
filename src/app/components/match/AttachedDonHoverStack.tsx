@@ -39,12 +39,14 @@ export interface AttachedDonHoverStackProps {
   /** Bridges the pointer-hover gap between the owning card and this portal-rendered stack — see PlayerBoardPanel's closeTimerRef doc comment. */
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  /** The owning seat's chosen DON!! card art; falls back to the bundled token when absent. */
+  donArtUrl?: string;
 }
 
 function Chip({
-  card, isSelectable, isSelected, onSelect,
+  card, isSelectable, isSelected, onSelect, donArtUrl,
 }: {
-  card: CardView; isSelectable: boolean; isSelected: boolean; onSelect: () => void;
+  card: CardView; isSelectable: boolean; isSelected: boolean; onSelect: () => void; donArtUrl?: string;
 }) {
   const rested = card.donRested;
   const outerW = rested ? CHIP_H : CHIP_W;
@@ -68,13 +70,13 @@ function Chip({
         ].join(' ')}
         style={{ width: CHIP_W, height: CHIP_H, transform: rotation }}
       >
-        <img src={DON_TOKEN_SRC} alt="" aria-hidden="true" className="block h-full w-full object-cover" draggable={false} />
+        <img src={donArtUrl ?? DON_TOKEN_SRC} alt="" aria-hidden="true" className="block h-full w-full object-cover" draggable={false} />
       </div>
     </div>
   );
 }
 
-export function AttachedDonHoverStack({ anchor, cards, selectable, selectedIds, onSelect, onMouseEnter, onMouseLeave }: AttachedDonHoverStackProps) {
+export function AttachedDonHoverStack({ anchor, cards, selectable, selectedIds, onSelect, onMouseEnter, onMouseLeave, donArtUrl }: AttachedDonHoverStackProps) {
   if (!anchor || cards.length === 0) return null;
   const portalEl = document.getElementById('board-overlay-root');
   if (!portalEl) return null;
@@ -109,6 +111,7 @@ export function AttachedDonHoverStack({ anchor, cards, selectable, selectedIds, 
           isSelectable={selectable(don)}
           isSelected={selectedIds.has(don.instanceId)}
           onSelect={() => onSelect(don)}
+          donArtUrl={donArtUrl}
         />
       ))}
     </div>,

@@ -22,6 +22,7 @@ import {
   CasualLobbyScreen,
   DebugToolsScreen,
   DeckBuilderScreen,
+  AccessoriesScreen,
   DeckSelectScreen,
   HubScreen,
   LandingScreen,
@@ -78,6 +79,8 @@ export function App() {
         return <CardLibraryScreen />;
       case 'deck-builder':
         return <DeckBuilderScreen />;
+      case 'accessories':
+        return <AccessoriesScreen />;
       case 'profile':
         return <ProfileScreen />;
       case 'ranked':

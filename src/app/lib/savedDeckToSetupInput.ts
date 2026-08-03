@@ -8,6 +8,7 @@
  * place allowed to depend on both.
  */
 import { GENERIC_DON_CARD_DEFINITION } from '../../cards/decks/genericDonCard';
+import { resolveAccessoryImageUrl } from '../../cards/accessories/deckAccessories';
 import type { SavedDeck } from '../../cards/decks/savedDeck';
 import type { CardDefinition } from '../../engine/state/card';
 import type { PlayerSetupInput } from '../../engine/setup';
@@ -100,4 +101,41 @@ export function buildCardImageLookup(decks: SavedDeck[]): Record<string, string 
   }
   images[GENERIC_DON_CARD_DEFINITION.cardDefinitionId] = null;
   return images;
+}
+
+/**
+ * Built-in default chrome URLs each cosmetic slot falls back to when a deck
+ * hasn't chosen an accessory — these are the bundled assets the board has
+ * always used (see components/match/CardBackArt.tsx + DonChip.tsx).
+ */
+export const DEFAULT_MAIN_SLEEVE_URL = '/ui/card-back.png';
+export const DEFAULT_DON_SLEEVE_URL = '/ui/don-deck-back.png';
+export const DEFAULT_DON_ART_URL = '/ui/don-token.png';
+
+/** Fully-resolved, ready-to-render accessory art for one seat. Display-only, never reaches the engine. */
+export interface ResolvedDeckAccessories {
+  mainSleeveUrl: string;
+  donSleeveUrl: string;
+  donArtUrl: string;
+}
+
+/**
+ * Resolves each deck's cosmetic choices into concrete, seat-keyed art URLs
+ * for the board projection — the accessory sibling of buildCardImageLookup.
+ * Kept in the app layer (not the engine) because it deals purely in display
+ * chrome. Falls back to the bundled default whenever a slot is unset or its
+ * snapshotted/looked-up art can't be found, so gameplay always has a usable
+ * image (never a broken pile).
+ */
+export function buildAccessoriesByPlayer(entries: { playerId: string; deck: SavedDeck }[]): Record<string, ResolvedDeckAccessories> {
+  const byPlayer: Record<string, ResolvedDeckAccessories> = {};
+  for (const { playerId, deck } of entries) {
+    const acc = deck.accessories;
+    byPlayer[playerId] = {
+      mainSleeveUrl: resolveAccessoryImageUrl(acc?.mainSleeve, 'sleeve', DEFAULT_MAIN_SLEEVE_URL),
+      donSleeveUrl: resolveAccessoryImageUrl(acc?.donSleeve, 'sleeve', DEFAULT_DON_SLEEVE_URL),
+      donArtUrl: resolveAccessoryImageUrl(acc?.donCardArt, 'donArt', DEFAULT_DON_ART_URL),
+    };
+  }
+  return byPlayer;
 }

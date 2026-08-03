@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SAVED_DECK_SCHEMA_VERSION, type SavedDeck, type SavedDeckCardSnapshot } from '../savedDeck';
+import { defaultDeckAccessories } from '../../accessories/deckAccessories';
 import { planDeckSync } from '../deckSyncPlan';
 
 function minimalSnapshot(cardNumber: string): SavedDeckCardSnapshot {
@@ -38,6 +39,7 @@ function makeDeck(deckId: string, name: string, updatedAt: string): SavedDeck {
     leader: { ...minimalSnapshot('OP01-001'), definition: { ...minimalSnapshot('OP01-001').definition, category: 'leader' } },
     cards: [minimalSnapshot('C-1')],
     donDeckSize: 10,
+    accessories: defaultDeckAccessories(),
     createdAt: updatedAt,
     updatedAt,
     source: { provider: 'local-catalog', fetchedAt: updatedAt },

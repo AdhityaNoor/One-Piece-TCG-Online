@@ -4,6 +4,7 @@ import { sampleCharacterPrintings, sampleLeaderPrintings } from '../../api/__fix
 import { buildCardLibraryEntry, type CardLibraryEntry } from '../../library/cardPrintingSummary';
 import { createSavedDeck, type DeckCardSelection } from '../saveDeck';
 import { SAVED_DECK_SCHEMA_VERSION } from '../savedDeck';
+import { defaultDeckAccessories, selectionFromOption, SLEEVE_CATALOG } from '../../accessories';
 
 /** A synthetic single-printing card number, derived from a real fixture row so it still flows through real normalization — used to cheaply generate 13 distinct legal main-deck entries without 13 real API fixtures. */
 function makeSyntheticCharacterEntry(cardNumber: string): CardLibraryEntry {
@@ -52,6 +53,25 @@ describe('createSavedDeck', () => {
     expect(result.deck.cards).toHaveLength(13);
     expect(result.deck.cards.reduce((sum, c) => sum + c.quantity, 0)).toBe(50);
     expect(result.deck.donDeckSize).toBe(10);
+    // Accessories default to all-built-in when not supplied.
+    expect(result.deck.accessories).toEqual(defaultDeckAccessories());
+  });
+
+  it('embeds supplied cosmetic accessories on the saved deck (cosmetic-only, never blocks legality)', () => {
+    const mainSleeve = selectionFromOption(SLEEVE_CATALOG[0]);
+    const result = createSavedDeck({
+      deckId: 'deck-1',
+      name: 'Test Deck',
+      leader: leaderSelection(),
+      mainDeck: legalMainDeckSelections(),
+      accessories: { ...defaultDeckAccessories(), mainSleeve },
+      now: () => '2026-06-28T00:00:00.000Z',
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.deck.accessories.mainSleeve).toEqual(mainSleeve);
+    expect(result.deck.accessories.donSleeve.optionId).toBeNull();
   });
 
   it('produces a deck that survives a JSON round-trip with no loss (project ground rule: JSON-serializable)', () => {

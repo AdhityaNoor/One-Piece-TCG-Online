@@ -191,6 +191,7 @@ function DockHandCard({
   isDragging,
   dropIntent,
   shouldSuppressClick,
+  playerId,
 }: {
   card: CardView;
   index: number;
@@ -215,6 +216,7 @@ function DockHandCard({
   isDragging: boolean;
   dropIntent: 'reorder' | 'play';
   shouldSuppressClick: () => boolean;
+  playerId?: string;
 }) {
   const hiddenDuringFlight = useCardFlightHidden(card.instanceId);
   const scale = cardScale(index, hoveredIdx);
@@ -277,7 +279,7 @@ function DockHandCard({
         {showFaces ? (
           <CardImage src={card.imageUrl ?? null} alt={card.cardNumber ?? card.instanceId} />
         ) : (
-          <CardBackArt tone="navy" />
+          <CardBackArt tone="navy" playerId={playerId} />
         )}
       </div>
 
@@ -799,6 +801,7 @@ export const DockHand = memo(function DockHand({
                 isDragging={dragActive && draggingId === card.instanceId}
                 dropIntent={dropIntent}
                 shouldSuppressClick={consumeDragClick}
+                playerId={playerId}
               />
             ))}
 

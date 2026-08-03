@@ -34,12 +34,13 @@
  * __tests__/savedDeck.test.ts's "stays free of effect-curation data" suite
  * for the compile-time guard that enforces this.
  */
+import { coerceDeckAccessories, defaultDeckAccessories, type DeckAccessories } from '../accessories/deckAccessories';
 import type { CardDefinition } from '../../engine/state/card';
 import type { CardPrintingDto } from '../api/types';
 import type { NormalizationWarning } from '../normalization/warnings';
 
-/** Bump on any breaking change to this file's shape. Saved decks carry their own version so a future loader can migrate old saves instead of failing on them. See `migrateSavedDeck` below for the v1 -> v2 upgrade path. */
-export const SAVED_DECK_SCHEMA_VERSION = 2;
+/** Bump on any breaking change to this file's shape. Saved decks carry their own version so a future loader can migrate old saves instead of failing on them. See `migrateSavedDeck` below for the v1 -> v2 -> v3 upgrade path. */
+export const SAVED_DECK_SCHEMA_VERSION = 3;
 
 export interface SavedDeckCardSnapshot {
   /** = CardDefinition.cardNumber. Deck-construction copy-count tracking (5-1-2-3) keys off THIS, not printingImageId. */
@@ -87,6 +88,16 @@ export interface SavedDeck {
   cards: SavedDeckCardSnapshot[];
   /** DON!! deck is always 10 generic DON!! cards per 5-1-2 — no per-deck DON!! selection exists in the rules, so nothing to snapshot here beyond the constant. */
   donDeckSize: 10;
+  /**
+   * PURELY COSMETIC deck customization (added in schema v3): chosen main-deck
+   * sleeve, DON!! sleeve, and DON!! card art. Like `definition`/`rawPrinting`,
+   * this is IDENTITY/DISPLAY only and carries ZERO effect-curation data — it
+   * never reaches the engine, only the Layer-3 board projection (see
+   * matchStore / MatchScreen). Snapshots its chosen art by value so a saved
+   * deck's look is stable even if the sleeve catalog changes later
+   * (requirement #4). See ../accessories/deckAccessories.ts.
+   */
+  accessories: DeckAccessories;
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
   /** Provenance, for debugging/staleness display only — never read by the engine. */
@@ -96,14 +107,17 @@ export interface SavedDeck {
 /**
  * v1 (schemaVersion === 1 or absent) predates `variant`, `cachedImagePath`,
  * and `sourceImportLines` on SavedDeckCardSnapshot. Shape on disk otherwise
- * identical to v2.
+ * identical to v2. Neither v1 nor v2 has the `accessories` slot (added in v3).
  */
 type SavedDeckCardSnapshotV1 = Omit<SavedDeckCardSnapshot, 'variant' | 'cachedImagePath' | 'sourceImportLines'>;
-interface SavedDeckV1 extends Omit<SavedDeck, 'leader' | 'cards' | 'schemaVersion'> {
+interface SavedDeckV1 extends Omit<SavedDeck, 'leader' | 'cards' | 'schemaVersion' | 'accessories'> {
   schemaVersion?: number;
   leader: SavedDeckCardSnapshotV1;
   cards: SavedDeckCardSnapshotV1[];
 }
+
+/** v2: identical to v3 except it has no `accessories` slot. */
+type SavedDeckV2 = Omit<SavedDeck, 'schemaVersion' | 'accessories'> & { schemaVersion?: number };
 
 function looksLikeSavedDeckShape(input: unknown): input is { schemaVersion?: unknown; deckId?: unknown; leader?: unknown; cards?: unknown } {
   return typeof input === 'object' && input !== null && 'deckId' in input && 'leader' in input && 'cards' in input;
@@ -115,6 +129,15 @@ function migrateCardSnapshotV1ToV2(snapshot: SavedDeckCardSnapshotV1): SavedDeck
     variant: null,
     cachedImagePath: null,
     sourceImportLines: null,
+  };
+}
+
+/** v2 -> v3: backfill the cosmetic `accessories` slot with all-default (== today's built-in chrome). No card data touched. */
+function migrateV2ToV3(v2: SavedDeckV2): SavedDeck {
+  return {
+    ...v2,
+    schemaVersion: SAVED_DECK_SCHEMA_VERSION,
+    accessories: defaultDeckAccessories(),
   };
 }
 
@@ -138,17 +161,26 @@ export function migrateSavedDeck(input: unknown): SavedDeck | null {
   const version = typeof input.schemaVersion === 'number' ? input.schemaVersion : 1;
 
   if (version === SAVED_DECK_SCHEMA_VERSION) {
-    return input as SavedDeck;
+    // Already current shape — but a hand-edited/corrupted `accessories` slot
+    // shouldn't crash rendering, so coerce it back to a valid block.
+    const deck = input as SavedDeck;
+    return { ...deck, accessories: coerceDeckAccessories((input as { accessories?: unknown }).accessories) };
   }
 
+  // Upgrade step by step so every intermediate migration runs (v1 -> v2 -> v3).
   if (version === 1) {
     const v1 = input as unknown as SavedDeckV1;
-    return {
+    const v2: SavedDeckV2 = {
       ...v1,
-      schemaVersion: SAVED_DECK_SCHEMA_VERSION,
+      schemaVersion: 2,
       leader: migrateCardSnapshotV1ToV2(v1.leader),
       cards: v1.cards.map(migrateCardSnapshotV1ToV2),
     };
+    return migrateV2ToV3(v2);
+  }
+
+  if (version === 2) {
+    return migrateV2ToV3(input as unknown as SavedDeckV2);
   }
 
   // Unrecognized version newer than this code knows about — refuse to guess at its shape.

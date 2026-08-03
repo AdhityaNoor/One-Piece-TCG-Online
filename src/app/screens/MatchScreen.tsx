@@ -36,6 +36,7 @@ import {
   CardBackArt,
   CardMovementOverlay,
   DockHand,
+  MatchAccessoriesProvider,
   MatchChatPanel,
   PendingChoicePrompt,
   PhaseIndicator,
@@ -93,6 +94,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const matchState = useMatchStore((s) => s.state);
   const defs = useMatchStore((s) => s.defs);
   const images = useMatchStore((s) => s.cardImagesByDefinitionId);
+  const accessoriesByPlayerId = useMatchStore((s) => s.accessoriesByPlayerId);
   const startedWithDeckIds = useMatchStore((s) => s.startedWithDeckIds);
   const startError = useMatchStore((s) => s.startError);
   const startMatch = useMatchStore((s) => s.startMatch);
@@ -723,6 +725,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const chatDisconnected = onlineMode && onlineStatus !== 'connected';
 
   return (
+    <MatchAccessoriesProvider value={accessoriesByPlayerId}>
     <MatchGameShell title="Match">
       {/*
         <div className="flex items-center gap-3">
@@ -1265,6 +1268,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
         />
       )}
     </MatchGameShell>
+    </MatchAccessoriesProvider>
   );
 }
 
