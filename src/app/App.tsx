@@ -23,6 +23,7 @@ import {
   DebugToolsScreen,
   DeckBuilderScreen,
   AccessoriesScreen,
+  DeckStatsScreen,
   DeckSelectScreen,
   HubScreen,
   LandingScreen,
@@ -81,6 +82,8 @@ export function App() {
         return <DeckBuilderScreen />;
       case 'accessories':
         return <AccessoriesScreen />;
+      case 'deck-stats':
+        return <DeckStatsScreen />;
       case 'profile':
         return <ProfileScreen />;
       case 'ranked':

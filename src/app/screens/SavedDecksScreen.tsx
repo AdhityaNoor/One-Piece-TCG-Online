@@ -464,6 +464,7 @@ function DecksRevampLayout({
   onSelectDeck,
   onEditDeck,
   onEditAccessories,
+  onOpenStats,
   onDeleteDeck,
 }: {
   rows: SavedDeckRow[];
@@ -479,6 +480,7 @@ function DecksRevampLayout({
   onSelectDeck: (index: number) => void;
   onEditDeck: (deckId: string) => void;
   onEditAccessories: (deckId: string) => void;
+  onOpenStats: (deckId: string) => void;
   onDeleteDeck: (deckId: string) => void;
 }) {
   // Below `xl` the picker stacks above the detail panel instead of sitting
@@ -557,6 +559,14 @@ function DecksRevampLayout({
           </div>
 
           <div className="flex flex-shrink-0 gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={!current?.deck.ok}
+              onClick={() => current?.deck.ok && onOpenStats(current.entry.deckId)}
+            >
+              Deck Stats
+            </Button>
             <Button
               variant="secondary"
               size="sm"
@@ -797,6 +807,7 @@ export function SavedDecksScreen() {
           onSelectDeck={setCurrentIndex}
           onEditDeck={(deckId) => navigateTo({ screen: 'deck-builder', deckIdToEdit: deckId })}
           onEditAccessories={(deckId) => navigateTo({ screen: 'accessories', deckIdToEdit: deckId })}
+          onOpenStats={(deckId) => navigateTo({ screen: 'deck-stats', deckId })}
           onDeleteDeck={setPendingDeleteId}
         />
       )}

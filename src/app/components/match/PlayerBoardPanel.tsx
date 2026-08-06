@@ -722,7 +722,7 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   // leaderGroup gets z-10 so Leader stays on top if that happens; this is an
   // accepted trade-off for keeping Leader's position stable.
   const donGroup = (
-    <div className={['absolute inset-y-0 flex items-stretch gap-2', reverseRows ? 'right-0' : 'left-0'].join(' ')}>
+    <div className={['absolute inset-y-0 flex items-stretch gap-0.5', reverseRows ? 'right-0' : 'left-0'].join(' ')}>
       {reverseRows ? (
         <>
           {restedDonCell}
@@ -756,10 +756,24 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
     </div>
   );
 
+  // leaderGroup must sit in the horizontal middle of the WHOLE mat, not just
+  // of boardRow. boardRow only spans the mat grid's non-Life column, so a
+  // plain left-1/2 centers Leader within that column — which lands it off to
+  // one side of the true play-field center by exactly half the Life column
+  // (plus the grid gap). Worse, since the Life column is mirrored to the
+  // opposite edge for the top/reversed panel, that same left-1/2 pushed the
+  // two players' Leaders to OPPOSITE sides of center, so they didn't line up
+  // across the Battle Line. Anchoring at 50% ± half-the-Life-column (toward
+  // the Life edge) puts Leader at the real mat center and makes both panels'
+  // Leaders share one X. gap-2 = 0.5rem is the mat grid's column gap.
+  const leaderCenterOffset = `calc((${LIFE_COLUMN_TRACK} + 0.5rem) / 2)`;
   const leaderGroup = (
     <div
-      className="absolute inset-y-0 left-1/2 z-10 grid -translate-x-1/2"
-      style={{ gridTemplateColumns: BOARD_ZONE_TRACK }}
+      className="absolute inset-y-0 z-10 grid -translate-x-1/2"
+      style={{
+        gridTemplateColumns: BOARD_ZONE_TRACK,
+        left: reverseRows ? `calc(50% + ${leaderCenterOffset})` : `calc(50% - ${leaderCenterOffset})`,
+      }}
       data-board-zone="leaderArea"
       data-board-player={board.playerId}
     >

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="One Piece TCG Online">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a3fb8"/>
+      <stop offset="1" stop-color="#0d226e"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe17a"/>
+      <stop offset="0.5" stop-color="#d9a441"/>
+      <stop offset="1" stop-color="#8e5b12"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- drop shadow -->
+  <g fill="#07123f" opacity="0.5" transform="translate(0,11)">
+    <g transform="translate(96.00,336.35) scale(0.23290,-0.23290)"><path d="M68 176V514Q68 690 244 690H468Q644 690 644 514V176Q644 0 468 0H244Q68 0 68 176ZM242 168Q242 157 253 157H459Q470 157 470 168V522Q470 533 459 533H253Q242 533 242 522Z"/></g>
+    <g transform="translate(266.48,336.35) scale(0.23290,-0.23290)"><path d="M78 0V690H418Q594 690 594 514V378Q594 203 418 203H252V0ZM252 360H409Q420 360 420 371V522Q420 533 409 533H252Z"/></g>
+  </g>
+  <!-- gold OP (real Oxanium outlines) -->
+  <g fill="url(#gold)">
+    <g transform="translate(96.00,336.35) scale(0.23290,-0.23290)"><path d="M68 176V514Q68 690 244 690H468Q644 690 644 514V176Q644 0 468 0H244Q68 0 68 176ZM242 168Q242 157 253 157H459Q470 157 470 168V522Q470 533 459 533H253Q242 533 242 522Z"/></g>
+    <g transform="translate(266.48,336.35) scale(0.23290,-0.23290)"><path d="M78 0V690H418Q594 690 594 514V378Q594 203 418 203H252V0ZM252 360H409Q420 360 420 371V522Q420 533 409 533H252Z"/></g>
+  </g>
+</svg>

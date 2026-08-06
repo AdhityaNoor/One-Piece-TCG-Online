@@ -71,6 +71,7 @@ export type NavigationTarget =
   | { screen: 'card-library' }
   | { screen: 'deck-builder'; deckIdToEdit?: string }
   | { screen: 'accessories'; deckIdToEdit?: string }
+  | { screen: 'deck-stats'; deckId: string }
   | { screen: 'profile'; username?: string }
   | { screen: 'ranked' }
   | { screen: 'deck-select' }
@@ -134,6 +135,7 @@ export function resolveHeaderTab(target: NavigationTarget): HubTab | null {
     case 'deck-builder':
     case 'accessories':
     case 'card-library':
+    case 'deck-stats':
       return 'decks';
     case 'profile':
       return 'social';

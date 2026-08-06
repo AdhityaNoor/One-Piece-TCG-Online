@@ -99,8 +99,9 @@
      offsets so the seam is invisible.
 
      The whole layer drifts diagonally by exactly one repeat unit per cycle
-     (see op-hex-drift), which loops seamlessly. Tune scale with --op-hex-size
-     and speed with --op-hex-speed; motion is disabled under
+     (see op-hex-drift), which loops seamlessly. Tune scale with --op-hex-w /
+     --op-hex-h (keep their 432:374.12 ratio, or the hexagons distort) and
+     speed with --op-hex-speed; motion is disabled under
      prefers-reduced-motion. */
   .op-hex-bg {
     /* ?v= is a cache buster: the file is regenerated in place, so without a
@@ -109,7 +110,11 @@
        whenever generate-hex-poneglyph.py is rerun with visual changes. */
     background-image: url("/ui/hex-poneglyph.svg?v=3");
     background-repeat: repeat;
-    background-size: var(--op-hex-size, 432px 374.12px);
+    /* Tile footprint. Width and height are separate variables (not one
+       --op-hex-size shorthand) because op-hex-drift below has to scroll by
+       exactly one tile in each axis — sharing the variables is what keeps the
+       loop seamless when the scale changes. The 3x base is 432 x 374.12. */
+    background-size: var(--op-hex-w, 1296px) var(--op-hex-h, 1122.36px);
     background-position: 0 0;
     animation: op-hex-drift var(--op-hex-speed, 60s) linear infinite;
   }
@@ -119,8 +124,10 @@
       background-position: 0 0;
     }
     to {
-      /* exactly one repeat unit, so the loop is invisible */
-      background-position: -432px -374.12px;
+      /* Exactly one repeat unit, so the loop is invisible. Derived from the
+         same variables as background-size — hardcoding pixels here silently
+         breaks the seamless loop the moment the tile is rescaled. */
+      background-position: calc(-1 * var(--op-hex-w, 1296px)) calc(-1 * var(--op-hex-h, 1122.36px));
     }
   }
 
