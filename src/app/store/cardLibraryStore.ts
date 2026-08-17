@@ -121,30 +121,76 @@ export const useCardLibraryStore = create<CardLibraryState>((set, get) => ({
   },
 }));
 
+/**
+ * Memoization for the derived-card selectors below.
+ *
+ * These hooks used to call filterCardLibraryEntries(all, filter) directly
+ * inside the Zustand selector. Zustand runs every selector on every store
+ * change, and these returned a fresh array/derived value each time — so any
+ * unrelated state update (audio, navigation, another store slice) re-ran a
+ * full O(n) scan of the entire card database (thousands of entries for the
+ * "All Sets" view) AND returned a new reference, forcing the whole card grid
+ * to re-render. On the deck-builder / card-library screens that lands
+ * squarely in the interaction→next-paint window and inflates INP.
+ *
+ * Both `all` (entriesBySetId[selectedSetId]) and `filter` are stable object
+ * references between the actions that actually change them, so a single-entry
+ * cache keyed on their identities lets the selector return the SAME reference
+ * across unrelated updates. React then bails out of the re-render and the
+ * filter runs at most once per real (entries, filter) change instead of once
+ * per store update — and only once, not twice (visible + count now share it).
+ */
+const EMPTY_ENTRIES: CardLibraryEntry[] = [];
+
+let filteredCache: { all: CardLibraryEntry[]; filter: CardLibraryFilter; result: CardLibraryEntry[] } | null = null;
+function getFilteredEntries(all: CardLibraryEntry[], filter: CardLibraryFilter): CardLibraryEntry[] {
+  if (filteredCache && filteredCache.all === all && filteredCache.filter === filter) return filteredCache.result;
+  const result = filterCardLibraryEntries(all, filter);
+  filteredCache = { all, filter, result };
+  return result;
+}
+
+let visibleCache: { filtered: CardLibraryEntry[]; visibleCount: number; result: CardLibraryEntry[] } | null = null;
+function getVisibleEntries(filtered: CardLibraryEntry[], visibleCount: number): CardLibraryEntry[] {
+  if (visibleCache && visibleCache.filtered === filtered && visibleCache.visibleCount === visibleCount) return visibleCache.result;
+  // Avoid re-slicing (and allocating) when the page already shows everything.
+  const result = visibleCount >= filtered.length ? filtered : filtered.slice(0, visibleCount);
+  visibleCache = { filtered, visibleCount, result };
+  return result;
+}
+
+let typesCache: { all: CardLibraryEntry[]; result: string[] } | null = null;
+function getKnownTypes(all: CardLibraryEntry[]): string[] {
+  if (typesCache && typesCache.all === all) return typesCache.result;
+  const byLower = new Map<string, string>();
+  for (const entry of all) {
+    for (const type of normalizeTypeTags(entry.definition.types)) {
+      const key = type.toLowerCase();
+      if (!byLower.has(key)) byLower.set(key, type);
+    }
+  }
+  const result = [...byLower.values()].sort((a, b) => a.localeCompare(b));
+  typesCache = { all, result };
+  return result;
+}
+
 export function useVisibleCardLibraryEntries(): CardLibraryEntry[] {
   return useCardLibraryStore((state) => {
-    const all = state.entriesBySetId[state.selectedSetId] ?? [];
-    return filterCardLibraryEntries(all, state.filter).slice(0, state.visibleCount);
+    const all = state.entriesBySetId[state.selectedSetId] ?? EMPTY_ENTRIES;
+    return getVisibleEntries(getFilteredEntries(all, state.filter), state.visibleCount);
   });
 }
 
 export function useFilteredCardLibraryCount(): number {
   return useCardLibraryStore((state) => {
-    const all = state.entriesBySetId[state.selectedSetId] ?? [];
-    return filterCardLibraryEntries(all, state.filter).length;
+    const all = state.entriesBySetId[state.selectedSetId] ?? EMPTY_ENTRIES;
+    return getFilteredEntries(all, state.filter).length;
   });
 }
 
 export function useKnownCardLibraryTypes(): string[] {
   return useCardLibraryStore((state) => {
-    const all = state.entriesBySetId[state.selectedSetId] ?? [];
-    const byLower = new Map<string, string>();
-    for (const entry of all) {
-      for (const type of normalizeTypeTags(entry.definition.types)) {
-        const key = type.toLowerCase();
-        if (!byLower.has(key)) byLower.set(key, type);
-      }
-    }
-    return [...byLower.values()].sort((a, b) => a.localeCompare(b));
+    const all = state.entriesBySetId[state.selectedSetId] ?? EMPTY_ENTRIES;
+    return getKnownTypes(all);
   });
 }

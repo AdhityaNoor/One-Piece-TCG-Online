@@ -34,7 +34,7 @@
  * menu closes it on outside-tap. This is purely a `sm:hidden` / `sm:flex`
  * split — no desktop layout, sizing, or spacing changed.
  */
-import { useLayoutEffect, useRef, useState } from 'react';
+import { startTransition, useLayoutEffect, useRef, useState } from 'react';
 import type { HubTab } from '../store/navigationStore';
 import { useCurrentScreen, useHeaderTab, useNavigationStore } from '../store/navigationStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -116,7 +116,7 @@ export function AppHeader() {
     <div className="flex h-full w-full items-stretch gap-2 overflow-hidden px-3 sm:gap-2 sm:px-6">
       <button
         type="button"
-        onClick={() => setHubTab('home')}
+        onClick={() => startTransition(() => setHubTab('home'))}
         aria-label="Home"
         className="relative z-10 flex flex-shrink-0 items-center justify-center py-1"
       >
@@ -193,7 +193,7 @@ export function AppHeader() {
                 tabRefs.current[tab.id] = el;
               }}
               type="button"
-              onClick={() => setHubTab(tab.id)}
+              onClick={() => startTransition(() => setHubTab(tab.id))}
               aria-current={isActive ? 'page' : undefined}
               className="group relative z-10 flex flex-shrink-0 items-center px-4 transition-colors sm:px-7"
             >
@@ -219,7 +219,7 @@ export function AppHeader() {
 
       <button
         type="button"
-        onClick={() => navigateTo({ screen: 'profile' })}
+        onClick={() => startTransition(() => navigateTo({ screen: 'profile' }))}
         aria-label="Your profile"
         aria-current={isProfileActive ? 'page' : undefined}
         className="group relative z-10 flex max-w-[3.25rem] flex-shrink-0 items-center gap-1.5 px-1 sm:max-w-none sm:min-w-0 sm:gap-2 sm:px-1.5"
@@ -279,8 +279,12 @@ export function AppHeader() {
                   type="button"
                   role="menuitem"
                   onClick={() => {
-                    setHubTab(tab.id);
+                    // Close the menu urgently (immediate paint), swap the
+                    // heavy tab content as a non-blocking transition so the
+                    // click's next paint isn't stuck behind the new screen's
+                    // mount — that mount was the measured INP cost.
                     setMobileNavOpen(false);
+                    startTransition(() => setHubTab(tab.id));
                   }}
                   aria-current={isActive ? 'page' : undefined}
                   className={[

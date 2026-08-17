@@ -943,6 +943,12 @@
     flex-direction: column;
     justify-content: center;
     overflow: hidden;
+    /* Size-containment container so the mat's card metric (see
+       .op-mobile-player-board) can be expressed in cqw/cqh — i.e. against the
+       space the BOARD actually has, with the action header and hand tabs
+       already excluded — instead of raw vw/vh, which over-estimated the
+       available height and forced every zone to invent its own max-height. */
+    container-type: size;
     border-top: 0;
     border-bottom: 1px solid rgba(255, 225, 122, 0.12);
     padding: clamp(3rem, 13vh, 4.5rem) 0.5rem;
@@ -952,7 +958,52 @@
     opacity: 1;
   }
 
+  /* ── Single source of truth for mobile field card size ───────────────────
+     Every card-shaped box on the mobile mat (Life backs, Leader, Stage,
+     Character cards, Deck, Trash, DON!! count boxes) derives from this one
+     pair of values, so they all render at the identical size instead of each
+     zone picking its own percentage of its own grid cell (which is why they
+     used to disagree: 80% of a 1-column cell, 80% of a 2-column cell, 110% of
+     a cell, and BoardCardTile's own cqh() px-reference all differ).
+
+     --op-mobile-card-box is the smaller of:
+       * WIDTH-driven — one track of the 5-column support grid, so five cards
+         plus four gaps exactly fill the board width: nothing can overlap a
+         neighbour and nothing can overflow the row;
+       * HEIGHT-driven — the mat stacks six card rows (character row + two
+         support rows, per player) plus fixed chrome, so no row may exceed a
+         sixth of what's left.
+     Both terms resolve against .op-mobile-board-shell's content box via its
+     container-type: size, so this is the same min(height, width) idea as the
+     desktop mat's boardScale.ts cqh(), just measured on the real board box.
+
+     The card BOX is a SQUARE of that side; the art inside is 63/88 of it and
+     centred. The leftover transparent padding is what lets a rested
+     (rotate-90) card turn inside its own cell without touching its
+     neighbours — the same trick BoardCardTile uses on desktop. */
   .op-mobile-player-board {
+    --op-mobile-grid-gap: clamp(0.32rem, 1.5vw, 0.58rem);
+    --op-mobile-zone-pad: clamp(0.28rem, 1vw, 0.45rem);
+    /* Non-card vertical chrome inside the board shell: both character-zone
+       paddings, both support-grid top margins, both support row gaps and the
+       battle-line strip. Subtracted before dividing the height by six rows.
+       Measured worst case is ~84px (landscape phone, where the gaps are at
+       their widest relative to the height); 5.5rem = 88px keeps a small margin
+       and holds for portrait phones and tablets too. */
+    --op-mobile-board-chrome: 5.5rem;
+    --op-mobile-board-width: 100cqw;
+    /* The outer max() is a floor, not a design size: it sits below every value
+       either term produces on a real device (the smallest measured is ~38px on
+       a landscape phone), and only takes effect if the board shell ever fails
+       to report a height — so a degenerate 0cqh can't collapse every card to
+       nothing. */
+    --op-mobile-card-box: max(2.25rem, min(
+      calc((var(--op-mobile-board-width) - (var(--op-mobile-grid-gap) * 4)) / 5),
+      calc((100cqh - var(--op-mobile-board-chrome)) / 6)
+    ));
+    /* Card art: same 63/88 face as every other card in the app. */
+    --op-mobile-card-w: calc(var(--op-mobile-card-box) * 63 / 88);
+    --op-mobile-card-h: var(--op-mobile-card-box);
     width: 100%;
     max-width: 100%;
     transform-origin: center;
@@ -967,13 +1018,13 @@
     width: 100%;
     max-width: 100%;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: clamp(0.32rem, 1.5vw, 0.58rem);
+    gap: var(--op-mobile-grid-gap);
     align-items: center;
   }
 
   .op-mobile-deck-zone {
     position: relative;
-    width: 80%;
+    width: var(--op-mobile-card-w);
     justify-self: center;
     aspect-ratio: 63 / 88;
     min-width: 0;
@@ -1011,7 +1062,7 @@
 
   .op-mobile-trash-pile {
     position: relative;
-    width: 80%;
+    width: var(--op-mobile-card-w);
     justify-self: center;
     aspect-ratio: 63 / 88;
     min-width: 0;
@@ -1064,15 +1115,18 @@
     margin-top: clamp(0.55rem, 2vw, 0.8rem);
   }
 
+  /* Exactly one card row tall (plus its own padding), so the six-row height
+     budget in --op-mobile-card-box is accurate and the zone can never be
+     shorter than the cards standing in it. */
   .op-mobile-character-zone {
     position: relative;
-    min-height: clamp(4.9rem, 21.6vw, 7.05rem);
+    min-height: calc(var(--op-mobile-card-h) + (var(--op-mobile-zone-pad) * 2));
     overflow: visible;
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 0.75rem;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.003));
     box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.055);
-    padding: clamp(0.28rem, 1vw, 0.45rem);
+    padding: var(--op-mobile-zone-pad);
   }
 
   .op-mobile-zone-label {
@@ -1093,33 +1147,29 @@
   }
 
   .op-mobile-character-cards {
-    --op-mobile-character-gap: 0rem;
-    --op-mobile-leader-column-gap: clamp(0.32rem, 1.5vw, 0.58rem);
-    --op-mobile-leader-card-width: min(calc(((100% - (var(--op-mobile-leader-column-gap) * 4)) / 5) * 1.1), 6.4rem);
     position: relative;
     z-index: 1;
     display: flex;
     height: 100%;
-    min-height: inherit;
+    min-height: var(--op-mobile-card-h);
     width: 100%;
     min-width: 0;
     align-items: center;
     justify-content: center;
-    gap: var(--op-mobile-character-gap);
+    /* Zero gap is intentional: each slot is a square card BOX whose 63/88 art
+       is centred inside it, so the square's own transparent side padding
+       already separates neighbouring art. Five boxes = five grid tracks, which
+       always fits this zone's content width. */
+    gap: 0;
     overflow: visible;
   }
 
+  /* Same square box as Leader/Stage — previously these were 110% of a track
+     (and pulled together with a negative margin), which is what made them
+     overlap each other and overflow the row on narrow screens. */
   .op-mobile-character-cards > .op-mobile-zone {
-    width: var(--op-mobile-leader-card-width);
-    flex: 0 0 var(--op-mobile-leader-card-width);
-  }
-
-  .op-mobile-character-cards > .op-mobile-card-zone {
-    width: var(--op-mobile-leader-card-width);
-  }
-
-  .op-mobile-character-cards > .op-mobile-character-card-zone.is-rested {
-    margin-inline: -0.06rem;
+    width: var(--op-mobile-card-box);
+    flex: 0 0 var(--op-mobile-card-box);
   }
 
   .op-mobile-character-cards > strong {
@@ -1154,9 +1204,11 @@
     line-height: 1.1;
   }
 
+  /* Square rotation-safe box, one grid track wide — never wider, so a card can
+     never reach into the cell beside it. */
   .op-mobile-card-zone {
     position: relative;
-    width: min(110%, 6.4rem);
+    width: var(--op-mobile-card-box);
     aspect-ratio: 1 / 1;
     overflow: visible;
     padding: 0;
@@ -1165,16 +1217,36 @@
     background: transparent;
   }
 
+  /* An empty slot shows a card-shaped outline centred in the square box, so a
+     vacant Leader/Stage/Character cell reads at the same size as a filled one
+     rather than as a full square. */
   .op-mobile-card-zone.op-mobile-empty-zone {
-    border: 1px solid rgba(255, 255, 255, 0.075);
-    background: rgba(3, 8, 20, 0.045);
+    border-color: transparent;
+    background: transparent;
     color: transparent;
   }
 
-  .op-mobile-card-zone > [data-card-instance-id] {
-    aspect-ratio: 1 / 1;
+  .op-mobile-card-zone.op-mobile-empty-zone::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
     height: 100%;
-    width: 100%;
+    aspect-ratio: 63 / 88;
+    transform: translateX(-50%);
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    border-radius: 0.35rem;
+    background: rgba(3, 8, 20, 0.045);
+  }
+
+  /* BoardCardTile sets its own inline cqh() box, which is sized for the desktop
+     mat's ScaleToFit container and resolves against the viewport here (making
+     mobile cards render far smaller than the piles beside them). On mobile the
+     surrounding square IS the metric, so the tile is forced to fill it — its
+     inner art stays 63/88 and centred, exactly matching Deck/Trash/Life. */
+  .op-mobile-card-zone > [data-card-instance-id] {
+    height: 100% !important;
+    width: 100% !important;
   }
 
   .op-mobile-card-action-bubble {
@@ -1247,7 +1319,7 @@
 
   .op-mobile-count-zone {
     position: relative;
-    width: 80%;
+    width: var(--op-mobile-card-w);
     justify-self: center;
     flex-direction: column;
     gap: 0.15rem;
@@ -1275,6 +1347,10 @@
     object-fit: cover;
   }
 
+  /* Rotating swaps the box: a card-w x card-h portrait box becomes card-h wide,
+     which is exactly one support-grid track — so the rested pile now turns
+     inside its own column instead of spilling over the active pile next to
+     it (it used to be 80% of a track wide, i.e. ~112% of a track once turned). */
   .op-mobile-rested-don-zone {
     transform: rotate(90deg);
     transform-origin: center;
@@ -1306,12 +1382,15 @@
     color: #ffd34a;
   }
 
+  /* Life keeps its 2-column span and left alignment; only its HEIGHT is now
+     pinned to the shared card height (instead of an 88/63 ratio of a 2-column
+     cell, which made its backs read larger than every other card). */
   .op-mobile-life-stack {
     position: relative;
     grid-column: span 2;
-    width: 80%;
+    width: 100%;
+    height: var(--op-mobile-card-h);
     justify-self: start;
-    aspect-ratio: 88 / 63;
     min-width: 0;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.075);
@@ -1319,10 +1398,11 @@
     background: rgba(3, 8, 20, 0.045);
   }
 
+  /* Each fanned back is a full-height 63/88 card — identical to Deck/Trash. */
   .op-mobile-life-stack span {
     position: absolute;
-    top: 8%;
-    height: 84%;
+    top: 0;
+    height: 100%;
     aspect-ratio: 63 / 88;
   }
 
@@ -1577,26 +1657,26 @@
       padding: 0.5rem 1rem;
     }
 
+    /* Landscape keeps the same card metric, with two inputs retuned: the
+       support grid is capped at 80rem (so the width term must be capped the
+       same way, or cards would be sized for a wider row than they get), and
+       the vertical chrome is tighter than in portrait. The old per-zone
+       max-height caps (31vh for characters, 18vh for the piles) are gone —
+       capping each zone separately by a different fraction of the viewport was
+       itself a source of the mismatched sizes; the height term of
+       --op-mobile-card-box now caps every zone by the same amount. */
+    .op-mobile-player-board {
+      --op-mobile-grid-gap: clamp(0.35rem, 1.1vw, 0.7rem);
+      --op-mobile-board-width: min(100cqw, 80rem);
+    }
+
     .op-mobile-support-grid {
       width: min(100%, 80rem);
       margin-inline: auto;
-      gap: clamp(0.35rem, 1.1vw, 0.7rem);
     }
 
     .op-mobile-support-grid {
       margin-top: clamp(0.35rem, 1.2vw, 0.65rem);
-    }
-
-    .op-mobile-character-zone {
-      min-height: clamp(4.9rem, 21.6vw, 7.05rem);
-    }
-
-    .op-mobile-character-cards {
-      --op-mobile-leader-column-gap: clamp(0.35rem, 1.1vw, 0.7rem);
-    }
-
-    .op-mobile-character-cards > .op-mobile-zone {
-      max-height: 31vh;
     }
 
     .op-mobile-battle-line {
@@ -1607,7 +1687,6 @@
     .op-mobile-deck-zone,
     .op-mobile-life-stack,
     .op-mobile-count-zone {
-      max-height: 18vh;
       justify-self: center;
     }
   }
@@ -2102,4 +2181,78 @@
   .op-crt-scrim-exit {
     animation-duration: 1ms;
   }
+}
+
+/* Saved-decks card list — a deck is up to ~51 tiles and the whole list
+   re-renders when you cycle decks. content-visibility lets the browser skip
+   layout + paint for tiles scrolled out of the list's viewport, cutting the
+   paint cost that lands in the interaction→next-paint (INP) window. The
+   intrinsic-size keeps the scrollbar stable for not-yet-rendered tiles. */
+.op-deck-card-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 13rem;
+}
+
+/* ============================================================
+   Readability bump — enlarge type ~12% on every screen EXCEPT
+   live gameplay. Scoped to .op-app-shell (AppShell wraps all
+   non-battle screens; the match/online-match/play-test/tutorial
+   screens render bare and are deliberately untouched).
+   Unlayered so these outrank Tailwind's @tailwind utilities layer.
+   Values use calc(orig * 1.12) so the source size stays legible.
+   ============================================================ */
+.op-app-shell .text-2xl{font-size:calc(1.5rem * 1.12);}
+.op-app-shell .text-3xl{font-size:calc(1.875rem * 1.12);}
+.op-app-shell .text-\[0\.48rem\]{font-size:calc(0.48rem * 1.12);}
+.op-app-shell .text-\[0\.4rem\]{font-size:calc(0.4rem * 1.12);}
+.op-app-shell .text-\[0\.52rem\]{font-size:calc(0.52rem * 1.12);}
+.op-app-shell .text-\[0\.55rem\]{font-size:calc(0.55rem * 1.12);}
+.op-app-shell .text-\[0\.58rem\]{font-size:calc(0.58rem * 1.12);}
+.op-app-shell .text-\[0\.5rem\]{font-size:calc(0.5rem * 1.12);}
+.op-app-shell .text-\[0\.62rem\]{font-size:calc(0.62rem * 1.12);}
+.op-app-shell .text-\[0\.66rem\]{font-size:calc(0.66rem * 1.12);}
+.op-app-shell .text-\[0\.6rem\]{font-size:calc(0.6rem * 1.12);}
+.op-app-shell .text-\[0\.72rem\]{font-size:calc(0.72rem * 1.12);}
+.op-app-shell .text-\[0\.7rem\]{font-size:calc(0.7rem * 1.12);}
+.op-app-shell .text-\[1\.2rem\]{font-size:calc(1.2rem * 1.12);}
+.op-app-shell .text-\[10px\]{font-size:calc(10px * 1.12);}
+.op-app-shell .text-\[11px\]{font-size:calc(11px * 1.12);}
+.op-app-shell .text-\[12px\]{font-size:calc(12px * 1.12);}
+.op-app-shell .text-\[13px\]{font-size:calc(13px * 1.12);}
+.op-app-shell .text-\[2rem\]{font-size:calc(2rem * 1.12);}
+.op-app-shell .text-\[7\.5px\]{font-size:calc(7.5px * 1.12);}
+.op-app-shell .text-\[7px\]{font-size:calc(7px * 1.12);}
+.op-app-shell .text-\[8px\]{font-size:calc(8px * 1.12);}
+.op-app-shell .text-\[9px\]{font-size:calc(9px * 1.12);}
+.op-app-shell .text-base{font-size:calc(1rem * 1.12);}
+.op-app-shell .text-lg{font-size:calc(1.125rem * 1.12);}
+.op-app-shell .text-sm{font-size:calc(0.875rem * 1.12);}
+.op-app-shell .text-xl{font-size:calc(1.25rem * 1.12);}
+.op-app-shell .text-xs{font-size:calc(0.75rem * 1.12);}
+@media (min-width: 640px) {
+  .op-app-shell .sm\:text-2xl{font-size:calc(1.5rem * 1.12);}
+  .op-app-shell .sm\:text-3xl{font-size:calc(1.875rem * 1.12);}
+  .op-app-shell .sm\:text-4xl{font-size:calc(2.25rem * 1.12);}
+  .op-app-shell .sm\:text-\[10px\]{font-size:calc(10px * 1.12);}
+  .op-app-shell .sm\:text-\[11px\]{font-size:calc(11px * 1.12);}
+  .op-app-shell .sm\:text-\[12px\]{font-size:calc(12px * 1.12);}
+  .op-app-shell .sm\:text-\[2\.6rem\]{font-size:calc(2.6rem * 1.12);}
+  .op-app-shell .sm\:text-base{font-size:calc(1rem * 1.12);}
+  .op-app-shell .sm\:text-lg{font-size:calc(1.125rem * 1.12);}
+  .op-app-shell .sm\:text-sm{font-size:calc(0.875rem * 1.12);}
+  .op-app-shell .sm\:text-xl{font-size:calc(1.25rem * 1.12);}
+  .op-app-shell .sm\:text-xs{font-size:calc(0.75rem * 1.12);}
+}
+@media (min-width: 768px) {
+  .op-app-shell .md\:text-\[3rem\]{font-size:calc(3rem * 1.12);}
+}
+@media (min-width: 1024px) {
+  .op-app-shell .lg\:text-3xl{font-size:calc(1.875rem * 1.12);}
+  .op-app-shell .lg\:text-4xl{font-size:calc(2.25rem * 1.12);}
+  .op-app-shell .lg\:text-5xl{font-size:calc(3rem * 1.12);}
+  .op-app-shell .lg\:text-sm{font-size:calc(0.875rem * 1.12);}
+}
+@media (min-width: 1280px) {
+  .op-app-shell .xl\:text-\[10px\]{font-size:calc(10px * 1.12);}
+  .op-app-shell .xl\:text-sm{font-size:calc(0.875rem * 1.12);}
 }

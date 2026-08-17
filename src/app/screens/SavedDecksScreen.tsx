@@ -1,4 +1,4 @@
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIsWideDeckLayout } from '../hooks/useIsWideDeckLayout';
 import { evaluateSavedDeckFormatStatus } from '../../cards/format';
 import type { DeckLoadResult, DeckStoreListEntry } from '../../cards/decks';
@@ -338,7 +338,7 @@ function DeckCardRow({ snap }: { snap: CardRowSnapshot }) {
 
   return (
     <div
-      className="group relative flex flex-col overflow-hidden bg-black/60 shadow-[0_8px_18px_rgba(0,0,0,0.28)]"
+      className="op-deck-card-row group relative flex flex-col overflow-hidden bg-black/60 shadow-[0_8px_18px_rgba(0,0,0,0.28)]"
       onMouseEnter={(event) => imageSrc && setPreviewPoint({ x: event.clientX, y: event.clientY })}
       onMouseMove={(event) => imageSrc && setPreviewPoint({ x: event.clientX, y: event.clientY })}
       onMouseLeave={() => setPreviewPoint(null)}
@@ -706,14 +706,20 @@ export function SavedDecksScreen() {
   const clampedIndex = rows.length === 0 ? 0 : Math.max(0, Math.min(currentIndex, rows.length - 1));
   const current = rows[clampedIndex] ?? null;
 
+  // Cycling decks swaps the whole detail panel — the 3D deck box plus up to
+  // ~51 card tiles. Marking the index change as a transition lets the chevron
+  // click paint immediately (its own hover/active feedback) instead of the
+  // "next paint" being blocked behind that heavy re-render, which is what the
+  // DevTools trace flagged as the worst INP (~2s under 20x CPU throttle).
   const goLeft = useCallback(
-    () => setCurrentIndex((i) => (i > 0 ? i - 1 : rows.length - 1)),
+    () => startTransition(() => setCurrentIndex((i) => (i > 0 ? i - 1 : rows.length - 1))),
     [rows.length],
   );
   const goRight = useCallback(
-    () => setCurrentIndex((i) => (i < rows.length - 1 ? i + 1 : 0)),
+    () => startTransition(() => setCurrentIndex((i) => (i < rows.length - 1 ? i + 1 : 0))),
     [rows.length],
   );
+  const selectDeck = useCallback((index: number) => startTransition(() => setCurrentIndex(index)), []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -804,7 +810,7 @@ export function SavedDecksScreen() {
           cardListItems={cardListItems}
           onPrevious={goLeft}
           onNext={goRight}
-          onSelectDeck={setCurrentIndex}
+          onSelectDeck={selectDeck}
           onEditDeck={(deckId) => navigateTo({ screen: 'deck-builder', deckIdToEdit: deckId })}
           onEditAccessories={(deckId) => navigateTo({ screen: 'accessories', deckIdToEdit: deckId })}
           onOpenStats={(deckId) => navigateTo({ screen: 'deck-stats', deckId })}
