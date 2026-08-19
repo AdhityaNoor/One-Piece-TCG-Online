@@ -99,7 +99,17 @@ export interface PlayerBoardPanelProps {
   allowReturnGivenDon?: boolean;
 }
 
-function leaderCharacterSelectable(
+/**
+ * Exported because the mobile mat (MatchScreen's MobileCardZone) must ask the
+ * exact same question about the exact same modes. It used to keep a private
+ * `mobileLeaderCharacterSelectable` copy of this switch, and the copy silently
+ * fell behind: it had no 'resolvingFieldChoice' case, so on mobile an effect
+ * that asks you to pick a Character on the field ("K.O. up to 1 of your
+ * opponent's Characters") rendered the banner and dimmed nothing, and no card
+ * was tappable — the choice was unresolvable. One shared function instead, so a
+ * new selection mode can't be wired into one breakpoint only.
+ */
+export function leaderCharacterSelectable(
   mode: BoardSelectionMode,
   isOwn: boolean,
   isOpponent: boolean,
@@ -144,7 +154,7 @@ function leaderCharacterSelectable(
  * BoardSelectionMode's 'resolvingFieldChoice' doc comment), it just can't
  * click through it.
  */
-function fieldChoiceDimmed(mode: BoardSelectionMode, card: CardView): boolean {
+export function fieldChoiceDimmed(mode: BoardSelectionMode, card: CardView): boolean {
   return mode.kind === 'resolvingFieldChoice' && !mode.candidateInstanceIds.includes(card.instanceId);
 }
 

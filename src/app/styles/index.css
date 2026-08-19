@@ -830,6 +830,19 @@
     opacity: 0.45;
   }
 
+  /* A decision is waiting inside the Actions panel. On desktop that panel is a
+     standing aside you can see; on mobile it's behind this button, so the
+     button has to carry the signal itself. */
+  .op-mobile-header-icon-button.is-pending {
+    border-color: rgba(255, 211, 74, 0.9);
+    color: #ffd34a;
+    animation: op-mobile-attention-pulse 1.4s ease-in-out infinite;
+  }
+
+  .op-mobile-header-icon-button.is-pending span {
+    color: #ffd34a;
+  }
+
   /* Online matches only (Casual/Ranked) — an extra icon-only column reserved
      for the chat bubble, next to the Actions/Log pair and the always-present
      Menu column. See MatchChatPanel. */
@@ -1013,6 +1026,19 @@
     transform: rotate(180deg);
   }
 
+  /* Whose move it is. A steady outline rather than a pulse: this is always on
+     for exactly one of the two mats, and something that never turns off should
+     never animate — the two pulses below mean "you need to do something", and
+     they'd lose all urgency competing with a third moving thing. The offset
+     fits inside .op-mobile-board-shell's 0.5rem side padding, so the ring is
+     never clipped by its overflow: hidden. */
+  .op-mobile-player-board.is-acting {
+    border-radius: 0.9rem;
+    outline: 1px solid rgba(255, 211, 74, 0.42);
+    outline-offset: 0.28rem;
+    box-shadow: 0 0 22px rgba(255, 211, 74, 0.1);
+  }
+
   .op-mobile-support-grid {
     display: grid;
     width: 100%;
@@ -1049,8 +1075,6 @@
   }
 
   .op-mobile-deck-zone span {
-    right: 0.3rem;
-    top: 0.24rem;
     color: #ffd34a;
     font-size: clamp(0.72rem, 3vw, 1rem);
   }
@@ -1087,10 +1111,7 @@
 
   .op-mobile-trash-count {
     position: absolute;
-    left: 50%;
-    top: 50%;
     z-index: 2;
-    transform: translate(-50%, -50%);
     border-radius: 0.3rem;
     background: rgba(0, 0, 0, 0.58);
     padding: 0.12rem 0.38rem;
@@ -1331,6 +1352,41 @@
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
   }
 
+  /* A collapsed DON!! pile has no per-chip highlight to give, so the whole box
+     lights up once any of its DON!! are selected for a cost. */
+  .op-mobile-count-zone.is-don-selected {
+    border-color: rgba(255, 211, 74, 0.85);
+    box-shadow: 0 0 0 1px rgba(255, 211, 74, 0.45), 0 6px 18px rgba(0, 0, 0, 0.24);
+  }
+
+  /* How many of this pile are selected — the count that makes a second and
+     third tap visible. Anchored INSIDE the corner rather than overhanging it,
+     because .op-mobile-count-zone clips (overflow: hidden) to keep the DON!!
+     art inside its rounded border. Counter-rotated inside the rested pile,
+     which is itself turned 90deg, so the number still reads upright. */
+  .op-mobile-count-selected {
+    position: absolute;
+    right: 0.1rem;
+    top: 0.1rem;
+    z-index: 3;
+    display: flex;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #ffd34a;
+    padding: 0 0.2rem;
+    color: #150c02;
+    font-size: 0.62rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .op-mobile-rested-don-zone .op-mobile-count-selected {
+    transform: rotate(-90deg);
+  }
+
   .op-mobile-don-count-art {
     position: absolute;
     inset: 0;
@@ -1382,16 +1438,22 @@
     color: #ffd34a;
   }
 
-  /* Life keeps its 2-column span and left alignment; only its HEIGHT is now
-     pinned to the shared card height (instead of an 88/63 ratio of a 2-column
-     cell, which made its backs read larger than every other card). */
+  /* Life keeps its 2-column span and left alignment, but shrink-wraps its fan
+     rather than claiming the whole span: the backs are in normal flow with a
+     negative overlap margin (below), so `width: max-content` makes the zone's
+     border hug however many life cards are actually showing. max-width caps it
+     at the span it was given; min-width keeps an emptied life area readable as
+     one card slot. Its HEIGHT is the shared card height, so its backs are the
+     same size as every other card on the mat. */
   .op-mobile-life-stack {
     position: relative;
+    display: flex;
     grid-column: span 2;
-    width: 100%;
+    width: max-content;
+    max-width: 100%;
     height: var(--op-mobile-card-h);
     justify-self: start;
-    min-width: 0;
+    min-width: var(--op-mobile-card-w);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.075);
     border-radius: 0.35rem;
@@ -1400,27 +1462,43 @@
 
   /* Each fanned back is a full-height 63/88 card — identical to Deck/Trash. */
   .op-mobile-life-stack span {
-    position: absolute;
-    top: 0;
+    position: relative;
+    flex: 0 0 auto;
     height: 100%;
     aspect-ratio: 63 / 88;
+  }
+
+  /* The fan step, previously an inline `left: index * 10%` in MobileLifeStack:
+     each back after the first slides 72% of a card face back over the one
+     before it, leaving a 28% sliver visible. Kept in CSS (rather than as an
+     absolute offset per index) so the row stays in normal flow and the zone can
+     size itself to its contents. */
+  .op-mobile-life-stack span + span {
+    margin-left: calc(var(--op-mobile-card-w) * -0.72);
   }
 
   .op-mobile-life-stack em {
     position: absolute;
     z-index: 2;
-    color: rgba(255, 255, 255, 0.6);
     font-style: normal;
     font-weight: 900;
     text-transform: uppercase;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
-  }
-
-  .op-mobile-life-stack em {
-    right: 0.35rem;
-    top: 0.25rem;
     color: rgba(255, 211, 74, 0.86);
     font-size: clamp(0.72rem, 3vw, 1rem);
+  }
+
+  /* Every field counter (Deck, Life, Trash) sits dead centre of its own zone,
+     so the numbers read as one consistent row instead of each zone parking its
+     count in a different corner. */
+  .op-mobile-deck-zone span,
+  .op-mobile-life-stack em,
+  .op-mobile-trash-count {
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
   }
 
   .op-mobile-battle-line {
@@ -1446,6 +1524,28 @@
     font-weight: 900;
     letter-spacing: 0.16em;
     text-transform: uppercase;
+  }
+
+  /* Nothing eligible left this phase — this line ends the phase / passes the
+     step, so it's the only move remaining. Boxed (rather than just brightened)
+     so it reads as a control and not as the decorative divider it looks like
+     the rest of the time. */
+  .op-mobile-battle-line.is-alert {
+    /* outline, not border: this line sits between the two mats in the board
+       shell's flex column, so a border's 2px would shove both mats every time
+       the alert toggles. */
+    outline: 1px solid rgba(255, 211, 74, 0.85);
+    border-radius: 999px;
+    padding-inline: 0.6rem;
+    animation: op-mobile-attention-pulse 1.4s ease-in-out infinite;
+  }
+
+  .op-mobile-battle-line.is-alert strong {
+    color: #ffd34a;
+  }
+
+  .op-mobile-battle-line.is-alert span {
+    background: linear-gradient(90deg, transparent, rgba(255, 211, 74, 0.7), transparent);
   }
 
   .op-mobile-battle-actions-content {
@@ -1695,6 +1795,14 @@
     .op-match-playmat-layer {
       transition: none;
     }
+
+    /* Both attention cues drop the motion but keep the glow at its brightest
+       stop, so the signal survives without the animation. */
+    .op-mobile-header-icon-button.is-pending,
+    .op-mobile-battle-line.is-alert {
+      animation: none;
+      box-shadow: 0 0 0 1px rgba(255, 211, 74, 0.55), 0 0 16px rgba(255, 211, 74, 0.4);
+    }
   }
 
 }
@@ -1708,6 +1816,21 @@
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+}
+
+/* Shared by the two mobile "you need to act" cues (header Actions button,
+   battle line). One keyframe for both so they breathe in step rather than
+   drifting against each other when both are lit. Animates box-shadow only —
+   no transform — because the battle line sits in the board shell's flex column
+   and a scaling pulse there would nudge the mats on every beat. */
+@keyframes op-mobile-attention-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 211, 74, 0.42), 0 0 10px rgba(255, 211, 74, 0.18);
+  }
+
+  50% {
+    box-shadow: 0 0 0 3px rgba(255, 211, 74, 0), 0 0 18px rgba(255, 211, 74, 0.5);
   }
 }
 

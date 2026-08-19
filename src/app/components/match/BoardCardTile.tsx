@@ -415,6 +415,13 @@ export function BoardCardTile({
           title={attachedDonSelectable ? 'Select attached DON!!' : `${card.donAttachedCount} attached DON!!`}
         >
           DON <span className="align-[0.08em] text-[0.4rem]">x</span> {card.donAttachedCount}
+          {/* How many of this pile are selected, not just that some are. The
+              compact badge is the only control mobile has for an attached
+              pile — one tap takes one more DON!! — so without the running
+              count a second tap gives no feedback that anything happened. */}
+          {attachedDonSelected && (
+            <span className="ml-1 rounded-sm bg-white px-1 py-[1px] text-[0.5rem] text-black">{attachedDonSelectedCount}</span>
+          )}
         </button>
       )}
 

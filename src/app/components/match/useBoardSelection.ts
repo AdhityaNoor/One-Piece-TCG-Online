@@ -1315,6 +1315,137 @@ export function useBoardSelection(actingPlayerId: string | null) {
     });
   }
 
+  // --- Touch-friendly DON!! group selection -----------------------------
+
+  /**
+   * The five modes that are collecting DON!! — the only ones `tapDonGroup`
+   * below can act in. Every one of them carries `selectedDonIds`, and nothing
+   * else does, so the shape check and the kind list can't drift apart.
+   */
+  function donSelectionBudget(m: BoardSelectionMode): number | null {
+    switch (m.kind) {
+      case 'resolvingDonChoice':
+        return m.max;
+      case 'payingEventMainCost':
+      case 'payingCounterEventCost':
+        return m.abilityCost;
+      case 'payingActivateEffectCost':
+      case 'payingOnOppAttackCost':
+        return m.cost;
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Which of `donIds` this mode will accept. The three choice-driven modes
+   * restrict payment to `candidateInstanceIds`; the two activate-cost modes
+   * take any of the acting player's own DON!!, exactly as their handleCardTap
+   * branches do.
+   */
+  function eligibleDonIds(m: BoardSelectionMode, donIds: string[]): string[] {
+    switch (m.kind) {
+      case 'resolvingDonChoice':
+      case 'payingEventMainCost':
+      case 'payingCounterEventCost':
+        return donIds.filter((id) => m.candidateInstanceIds.includes(id));
+      case 'payingActivateEffectCost':
+      case 'payingOnOppAttackCost':
+        return donIds;
+      default:
+        return [];
+    }
+  }
+
+  /** Writes a DON!! selection back into whichever DON!!-collecting mode is active, auto-submitting a DON!! choice that just hit its max (mirrors toggleDonChoiceCard). */
+  function setDonSelection(selectedDonIds: string[]): void {
+    switch (mode.kind) {
+      case 'resolvingDonChoice':
+        if (selectedDonIds.length === mode.max) submitDonChoice(selectedDonIds);
+        else setMode({ ...mode, selectedDonIds });
+        return;
+      case 'payingEventMainCost':
+        setMode({ ...mode, selectedDonIds });
+        return;
+      case 'payingCounterEventCost':
+        setMode({ ...mode, selectedDonIds });
+        return;
+      case 'payingActivateEffectCost':
+        setMode({ ...mode, selectedDonIds });
+        return;
+      case 'payingOnOppAttackCost':
+        setMode({ ...mode, selectedDonIds });
+        return;
+      default:
+        return;
+    }
+  }
+
+  /**
+   * Incremental DON!! selection for a GROUP of DON!! that shares a single tap
+   * target: a Cost Area's Active/Rested box, or one card's attached-DON!!
+   * badge. Each tap selects the next eligible-but-unselected DON!! in `donIds`.
+   * Once the mode's budget is full — or this group has nothing left to add — a
+   * tap instead clears the group's own selection, so taps cycle
+   * 0 → 1 → … → budget → 0 and an over-tap is always recoverable without
+   * leaving the mode and restarting the effect.
+   *
+   * The desktop mat never needs this: it draws one DonChip per DON!! in a
+   * DonStack, plus AttachedDonHoverStack for attached DON!!, so handleCardTap
+   * always receives a specific instance. Mobile has no room for either and
+   * collapses each pile into one control, which previously could only hand over
+   * a single fixed instance (the first candidate) or bulk-grab a whole card's
+   * attached DON!! (handleAttachedDonLabelTap) — so a 2+ DON!! cost simply
+   * could not be paid from the Cost Area on a phone, and an attached-DON!! pile
+   * could not be split.
+   */
+  function tapDonGroup(ownerPlayerId: string, donIds: string[]): void {
+    if (!actingPlayerId || ownerPlayerId !== actingPlayerId) return;
+    const budget = donSelectionBudget(mode);
+    if (budget === null || donIds.length === 0) return;
+    const eligible = eligibleDonIds(mode, donIds);
+    if (eligible.length === 0) return;
+
+    // Narrowed by donSelectionBudget returning non-null: only the five
+    // selectedDonIds-carrying modes get past the guard above.
+    const selected = 'selectedDonIds' in mode ? mode.selectedDonIds : [];
+    const nextId = eligible.find((id) => !selected.includes(id));
+
+    if (nextId === undefined || selected.length >= budget) {
+      const cleared = selected.filter((id) => !eligible.includes(id));
+      if (cleared.length !== selected.length) setDonSelection(cleared);
+      return;
+    }
+    setDonSelection([...selected, nextId]);
+  }
+
+  /**
+   * How many DON!! this mode is still collecting, or null when it isn't
+   * collecting any. Exposed so the mobile mat can enable/highlight its Cost
+   * Area boxes and attached-DON!! badges without keeping its own copy of the
+   * five-mode list (the drift that broke on-field effect targeting).
+   */
+  const donSelectionBudgetNow = donSelectionBudget(mode);
+
+  /** How many of `donIds` are currently selected — drives the mobile Cost Area / attached-DON!! badges, which have no per-DON!! chip to highlight. */
+  function selectedDonCountIn(donIds: string[]): number {
+    if (!('selectedDonIds' in mode)) return 0;
+    const selected = mode.selectedDonIds;
+    return donIds.filter((id) => selected.includes(id)).length;
+  }
+
+  /**
+   * How many of `donIds` this mode would actually accept. The desktop mat asks
+   * this per chip (isDonChoiceCandidate) and renders the rest unselectable;
+   * mobile needs it per pile, so a Cost Area box whose DON!! are all outside
+   * the current choice's candidates renders as a plain box rather than a button
+   * that swallows taps. Shares eligibleDonIds with tapDonGroup so the enabled
+   * state and the tap can't disagree.
+   */
+  function eligibleDonCountIn(donIds: string[]): number {
+    return eligibleDonIds(mode, donIds).length;
+  }
+
   // --- Stable function identities --------------------------------------
   // Everything above is a plain closure recreated every render — this hook
   // has exactly one call site (MatchScreen), so there was never a
@@ -1361,6 +1492,9 @@ export function useBoardSelection(actingPlayerId: string | null) {
     concede,
     handleCardTap,
     handleAttachedDonLabelTap,
+    tapDonGroup,
+    selectedDonCountIn,
+    eligibleDonCountIn,
   });
 
   // The whole returned object is memoized too: `stableFns` never changes
@@ -1378,8 +1512,9 @@ export function useBoardSelection(actingPlayerId: string | null) {
       counterProgress,
       donChoiceProgress,
       fieldChoiceInfo,
+      donSelectionBudgetNow,
       ...stableFns,
     }),
-    [mode, lastError, counterProgress, donChoiceProgress, fieldChoiceInfo, stableFns],
+    [mode, lastError, counterProgress, donChoiceProgress, fieldChoiceInfo, donSelectionBudgetNow, stableFns],
   );
 }

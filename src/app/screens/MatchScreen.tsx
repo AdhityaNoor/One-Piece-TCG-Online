@@ -36,6 +36,8 @@ import {
   CardBackArt,
   CardMovementOverlay,
   DockHand,
+  fieldChoiceDimmed,
+  leaderCharacterSelectable,
   MatchAccessoriesProvider,
   MatchChatPanel,
   PendingChoicePrompt,
@@ -667,8 +669,14 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // `actionContent` above resolves to the plain <ActionBar/> branch (the
   // canUseLocalActions/isCpuTurn/gameOver guard is identical on purpose), so
   // this never fires for CpuThinking/WaitingForOpponent/"Match complete."
-  const desktopActionPromptVisible =
+  // Despite the desktop-flavoured name below, this condition is purely "the
+  // Actions panel is currently a must-respond prompt, and this client is the
+  // one who has to respond" — which is exactly what the mobile header's
+  // Actions button highlights too (the panel is behind a tap there, so without
+  // the highlight a waiting prompt is completely invisible).
+  const actionPromptPending =
     canUseLocalActions && !isCpuTurn && !matchState.gameOver && actionBarHasBlockingPrompt(selection, matchState.currentBattle, actingBoard);
+  const desktopActionPromptVisible = actionPromptPending;
   // Same "may this client see it" gate PendingChoicePrompt's own render site
   // already used (Casual: only the seat whose choice it actually is) —
   // reused for both the floating-popup visibility signal below AND the real
@@ -690,6 +698,13 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     hasUnusedActivateMain: selection.hasUnusedActivateMain,
     hasCounter: selection.hasCounter,
   });
+  // Nothing left for the acting player to do this phase — every summary line
+  // buildMobileBattleLineActions can produce (unused DON!!, eligible attackers,
+  // activatable effects, blockers, counters) is absent. Gated on this client
+  // actually being the one to move, so it can't pulse while the opponent is
+  // thinking. The battle line is the control that ends the phase / passes the
+  // step, so it becomes the one thing worth pointing at.
+  const battleLineAlert = canUseLocalActions && !isCpuTurn && !matchState.gameOver && battleLineActions.length === 0;
   const handleBattleLineEndPhase = (): void => {
     if (!canUseLocalActions || matchState.currentPhase !== 'main' || matchState.currentBattle) return;
     selection.endMainPhase();
@@ -759,6 +774,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           <MobileActionHeader
             onOpenActions={() => setMobilePanel((panel) => (panel === 'actions' ? null : 'actions'))}
             onOpenLog={() => setMobilePanel((panel) => (panel === 'log' ? null : 'log'))}
+            actionsPending={actionPromptPending && mobilePanel !== 'actions'}
             showChat={onlineMode}
             unreadChatCount={unreadChatCount}
             onOpenChat={() => setMobilePanel((panel) => (panel === 'chat' ? null : 'chat'))}
@@ -779,7 +795,10 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           onMatCardTap={selection.handleCardTap}
           onMatCardAttack={selection.beginAttackWithCard}
           onCardZoom={openZoom}
-          onAttachedDonLabelTap={selection.handleAttachedDonLabelTap}
+          onDonGroupTap={selection.tapDonGroup}
+          donSelectionBudget={selection.donSelectionBudgetNow}
+          selectedDonCountIn={selection.selectedDonCountIn}
+          eligibleDonCountIn={selection.eligibleDonCountIn}
           canAttackCard={selection.canDeclareAttackWith}
           canActivateCard={selection.hasActivateMain}
           canOnOppAttackCard={selection.hasOnOpponentsAttack}
@@ -792,6 +811,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           handSelectable={(playerId, card) => handSelectable(selection.mode, actingPlayerId === playerId, card, selection.isCounterCardApplicable)}
           counterEventDonInfo={selection.counterEventDonInfo}
           battleLineLabel={mobileBattleLineLabel}
+          battleLineAlert={battleLineAlert}
           mobilePanel={mobilePanel}
           handTabsVisible={matchState.pendingChoices.length === 0}
           attackArrow={attackArrow}
@@ -1274,6 +1294,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
 
 type PlayerBoardViewForMatch = ReturnType<typeof projectPlayerBoard>;
 type MatchBoardZone = 'hand' | 'leaderArea' | 'characterArea' | 'stageArea' | 'costArea';
+/** The three zones MobileCardZone renders, matching leaderCharacterSelectable's own zone parameter. */
+type MatchFieldZone = Extract<MatchBoardZone, 'leaderArea' | 'characterArea' | 'stageArea'>;
 
 interface MobileBattleLineActionSummary {
   id: string;
@@ -1391,7 +1413,25 @@ interface MobileMatchLayoutProps {
   onMatCardTap: (playerId: string, zone: MatchBoardZone, card: CardView) => void;
   onMatCardAttack: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
-  onAttachedDonLabelTap: (playerId: string, card: CardView) => void;
+  /**
+   * One tap = one more DON!! from this group (a Cost Area box, or one card's
+   * attached-DON!! pile), cycling back to none once the cost is covered. The
+   * desktop mat draws a chip per DON!! and taps a specific instance instead;
+   * mobile collapses each pile into a single control, which is why it needs
+   * the group form — see useBoardSelection's tapDonGroup.
+   */
+  onDonGroupTap: (playerId: string, donIds: string[]) => void;
+  /** Non-null while an effect is collecting DON!!, and equal to how many it wants. */
+  donSelectionBudget: number | null;
+  /**
+   * How many of a group's DON!! are currently selected. The desktop mat shows
+   * this by highlighting individual chips; a collapsed mobile pile has no chip
+   * to highlight, so the count is the only feedback that a tap landed — without
+   * it, tapping a Cost Area box three times looks identical to tapping it once.
+   */
+  selectedDonCountIn: (donIds: string[]) => number;
+  /** How many of a group's DON!! this mode would accept — 0 means the pile is not a legal source right now, so its box stays a plain box. */
+  eligibleDonCountIn: (donIds: string[]) => number;
   canAttackCard: (card: CardView) => boolean;
   canActivateCard: (card: CardView) => boolean;
   canOnOppAttackCard: (card: CardView) => boolean;
@@ -1404,6 +1444,8 @@ interface MobileMatchLayoutProps {
   handSelectable: (playerId: string, card: CardView) => boolean;
   counterEventDonInfo: (card: CardView) => { cost: number; donMinus: number; available: number } | null;
   battleLineLabel: string;
+  /** The acting player has no eligible action left this phase, so the battle line (which ends the phase / passes the step) is the only thing left to do. */
+  battleLineAlert: boolean;
   mobilePanel: 'actions' | 'log' | 'chat' | null;
   handTabsVisible: boolean;
   attackArrow: MobileAttackArrowState | null;
@@ -1437,7 +1479,10 @@ function MobileMatchLayout({
   onMatCardTap,
   onMatCardAttack,
   onCardZoom,
-  onAttachedDonLabelTap,
+  onDonGroupTap,
+  donSelectionBudget,
+  selectedDonCountIn,
+  eligibleDonCountIn,
   canAttackCard,
   canActivateCard,
   canOnOppAttackCard,
@@ -1450,6 +1495,7 @@ function MobileMatchLayout({
   handSelectable,
   counterEventDonInfo,
   battleLineLabel,
+  battleLineAlert,
   mobilePanel,
   handTabsVisible,
   attackArrow,
@@ -1488,13 +1534,20 @@ function MobileMatchLayout({
             playerId={topPlayerId}
             isOwn={topIsOwn}
             isOpponent={isPinnedPerspective ? true : actingPlayerId !== topPlayerId}
+            // Whose move it is, NOT whose seat this is: isOwn is perspective-
+            // pinned (always false for the top board in an online match), so it
+            // can't answer "which mat is the game waiting on right now".
+            isActingSide={actingPlayerId === topPlayerId}
             inverted
             mode={mode}
             battlePowerInstanceIds={battlePowerInstanceIds}
             onMatCardTap={onMatCardTap}
             onMatCardAttack={onMatCardAttack}
             onCardZoom={onCardZoom}
-            onAttachedDonLabelTap={onAttachedDonLabelTap}
+            onDonGroupTap={onDonGroupTap}
+            donSelectionBudget={donSelectionBudget}
+            selectedDonCountIn={selectedDonCountIn}
+            eligibleDonCountIn={eligibleDonCountIn}
             canAttackCard={canAttackCard}
             canActivateCard={canActivateCard}
             canOnOppAttackCard={canOnOppAttackCard}
@@ -1504,7 +1557,12 @@ function MobileMatchLayout({
             allowReturnGivenDon={allowReturnGivenDon}
           />
 
-          <button type="button" className="op-mobile-battle-line" onClick={onOpenBattleActions} aria-label={`Open actions for ${battleLineLabel}`}>
+          <button
+            type="button"
+            className={['op-mobile-battle-line', battleLineAlert ? 'is-alert' : ''].filter(Boolean).join(' ')}
+            onClick={onOpenBattleActions}
+            aria-label={battleLineAlert ? `Open actions for ${battleLineLabel}, no actions remaining` : `Open actions for ${battleLineLabel}`}
+          >
             <span />
             <strong>{battleLineLabel}</strong>
             <span />
@@ -1515,13 +1573,17 @@ function MobileMatchLayout({
             playerId={bottomPlayerId}
             isOwn={bottomIsOwn}
             isOpponent={isPinnedPerspective ? false : actingPlayerId !== bottomPlayerId}
+            isActingSide={actingPlayerId === bottomPlayerId}
             inverted={false}
             mode={mode}
             battlePowerInstanceIds={battlePowerInstanceIds}
             onMatCardTap={onMatCardTap}
             onMatCardAttack={onMatCardAttack}
             onCardZoom={onCardZoom}
-            onAttachedDonLabelTap={onAttachedDonLabelTap}
+            onDonGroupTap={onDonGroupTap}
+            donSelectionBudget={donSelectionBudget}
+            selectedDonCountIn={selectedDonCountIn}
+            eligibleDonCountIn={eligibleDonCountIn}
             canAttackCard={canAttackCard}
             canActivateCard={canActivateCard}
             canOnOppAttackCard={canOnOppAttackCard}
@@ -1641,11 +1703,14 @@ function MobileActionHeader({
   onOpenLog,
   onOpenChat,
   onOpenPause,
+  actionsPending = false,
   showChat = false,
   unreadChatCount = 0,
 }: {
   onOpenActions: () => void;
   onOpenLog: () => void;
+  /** The Actions panel is holding a decision this client has to make. Mobile keeps that panel behind a tap, so the button itself has to say so. */
+  actionsPending?: boolean;
   onOpenChat?: () => void;
   /** Opens the Paused modal (Concede / Quit / Report a Bug) — on desktop this lives as a standing button in the left aside, but that aside is `hidden` below `xl` (see the wrapping `<div className="xl:hidden">`), so mobile had NO way to reach it at all until this button was added. */
   onOpenPause: () => void;
@@ -1654,7 +1719,12 @@ function MobileActionHeader({
 }) {
   return (
     <div className={['op-mobile-action-header', showChat ? 'has-chat' : ''].join(' ')}>
-      <button type="button" className="op-mobile-header-icon-button" onClick={onOpenActions} aria-label="Open actions">
+      <button
+        type="button"
+        className={['op-mobile-header-icon-button', actionsPending ? 'is-pending' : ''].filter(Boolean).join(' ')}
+        onClick={onOpenActions}
+        aria-label={actionsPending ? 'Open actions, action required' : 'Open actions'}
+      >
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path d="M10 3L5 8l5 5" />
         </svg>
@@ -1734,13 +1804,17 @@ function MobilePlayerBoard({
   playerId,
   isOwn,
   isOpponent,
+  isActingSide,
   inverted,
   mode,
   battlePowerInstanceIds,
   onMatCardTap,
   onMatCardAttack,
   onCardZoom,
-  onAttachedDonLabelTap,
+  onDonGroupTap,
+  donSelectionBudget,
+  selectedDonCountIn,
+  eligibleDonCountIn,
   canAttackCard,
   canActivateCard,
   canOnOppAttackCard,
@@ -1753,13 +1827,19 @@ function MobilePlayerBoard({
   playerId: string;
   isOwn: boolean;
   isOpponent: boolean;
+  /** This mat belongs to the player the game is currently waiting on — outlined so you can tell at a glance whose move it is. */
+  isActingSide: boolean;
   inverted: boolean;
   mode: MatchSelectionMode;
   battlePowerInstanceIds: Set<string>;
   onMatCardTap: (playerId: string, zone: MatchBoardZone, card: CardView) => void;
   onMatCardAttack: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
-  onAttachedDonLabelTap: (playerId: string, card: CardView) => void;
+  onDonGroupTap: (playerId: string, donIds: string[]) => void;
+  donSelectionBudget: number | null;
+  selectedDonCountIn: (donIds: string[]) => number;
+  /** How many of a group's DON!! this mode would accept — 0 means the pile is not a legal source right now, so its box stays a plain box. */
+  eligibleDonCountIn: (donIds: string[]) => number;
   canAttackCard: (card: CardView) => boolean;
   canActivateCard: (card: CardView) => boolean;
   canOnOppAttackCard: (card: CardView) => boolean;
@@ -1772,16 +1852,18 @@ function MobilePlayerBoard({
   const stage = board.stageArea[0] ?? null;
   const activeDon = mobileCostAreaCards(board, false);
   const restedDon = mobileCostAreaCards(board, true);
-  const firstActiveDon = mode.kind === 'payingEventMainCost' || mode.kind === 'payingCounterEventCost' || mode.kind === 'resolvingDonChoice'
-    ? activeDon.find((don) => mode.candidateInstanceIds.includes(don.instanceId)) ?? null
-    : activeDon[0] ?? null;
-  const firstRestedDon = mode.kind === 'payingEventMainCost' || mode.kind === 'payingCounterEventCost' || mode.kind === 'resolvingDonChoice'
-    ? restedDon.find((don) => mode.candidateInstanceIds.includes(don.instanceId)) ?? null
-    : restedDon[0] ?? null;
+  // The whole pile is handed to tapDonGroup, which takes ONE more DON!! from it
+  // per tap. Previously each box resolved a single fixed instance (the first
+  // candidate) and tapped that same instance forever, so a second tap just
+  // deselected the first — a 2+ DON!! cost could not be paid from the Cost Area
+  // on a phone at all.
+  const activeDonIds = activeDon.map((don) => don.instanceId);
+  const restedDonIds = restedDon.map((don) => don.instanceId);
+  const donSelectable = isOwn && donSelectionBudget !== null;
 
   return (
     <>
-      <section className={['op-mobile-player-board', inverted ? 'is-inverted' : ''].join(' ')}>
+      <section className={['op-mobile-player-board', inverted ? 'is-inverted' : '', isActingSide ? 'is-acting' : ''].filter(Boolean).join(' ')}>
         <MobileCharacterZone
           cards={board.characterArea}
           board={board}
@@ -1793,7 +1875,10 @@ function MobilePlayerBoard({
           onMatCardTap={onMatCardTap}
           onMatCardAttack={onMatCardAttack}
           onCardZoom={onCardZoom}
-          onAttachedDonLabelTap={onAttachedDonLabelTap}
+          onDonGroupTap={onDonGroupTap}
+          donSelectionBudget={donSelectionBudget}
+          selectedDonCountIn={selectedDonCountIn}
+          eligibleDonCountIn={eligibleDonCountIn}
           canAttackCard={canAttackCard}
           canActivateCard={canActivateCard}
           canOnOppAttackCard={canOnOppAttackCard}
@@ -1818,7 +1903,10 @@ function MobilePlayerBoard({
             onMatCardTap={onMatCardTap}
             onMatCardAttack={onMatCardAttack}
             onCardZoom={onCardZoom}
-            onAttachedDonLabelTap={onAttachedDonLabelTap}
+            onDonGroupTap={onDonGroupTap}
+            donSelectionBudget={donSelectionBudget}
+            selectedDonCountIn={selectedDonCountIn}
+            eligibleDonCountIn={eligibleDonCountIn}
             canAttackCard={canAttackCard}
             canActivateCard={canActivateCard}
             canOnOppAttackCard={canOnOppAttackCard}
@@ -1840,7 +1928,10 @@ function MobilePlayerBoard({
             onMatCardTap={onMatCardTap}
             onMatCardAttack={onMatCardAttack}
             onCardZoom={onCardZoom}
-            onAttachedDonLabelTap={onAttachedDonLabelTap}
+            onDonGroupTap={onDonGroupTap}
+            donSelectionBudget={donSelectionBudget}
+            selectedDonCountIn={selectedDonCountIn}
+            eligibleDonCountIn={eligibleDonCountIn}
             canAttackCard={canAttackCard}
             canActivateCard={canActivateCard}
             canOnOppAttackCard={canOnOppAttackCard}
@@ -1850,8 +1941,20 @@ function MobilePlayerBoard({
             allowReturnGivenDon={allowReturnGivenDon}
           />
           <MobileDeckBox count={board.deckCount} />
-          <MobileCountBox label="Active DON!!" count={activeDon.length} className="op-mobile-active-don-zone" onClick={firstActiveDon ? () => onMatCardTap(playerId, 'costArea', firstActiveDon) : undefined} />
-          <MobileCountBox label="Rested DON!!" count={restedDon.length} className="op-mobile-rested-don-zone" onClick={firstRestedDon ? () => onMatCardTap(playerId, 'costArea', firstRestedDon) : undefined} />
+          <MobileCountBox
+            label="Active DON!!"
+            count={activeDon.length}
+            className="op-mobile-active-don-zone"
+            selectedCount={selectedDonCountIn(activeDonIds)}
+            onClick={donSelectable && eligibleDonCountIn(activeDonIds) > 0 ? () => onDonGroupTap(playerId, activeDonIds) : undefined}
+          />
+          <MobileCountBox
+            label="Rested DON!!"
+            count={restedDon.length}
+            className="op-mobile-rested-don-zone"
+            selectedCount={selectedDonCountIn(restedDonIds)}
+            onClick={donSelectable && eligibleDonCountIn(restedDonIds) > 0 ? () => onDonGroupTap(playerId, restedDonIds) : undefined}
+          />
           <MobileTrashPile cards={board.trash} playerId={playerId} onClick={() => setTrashGalleryOpen(true)} />
         </div>
       </section>
@@ -1877,7 +1980,10 @@ function MobileCharacterZone({
   onMatCardTap,
   onMatCardAttack,
   onCardZoom,
-  onAttachedDonLabelTap,
+  onDonGroupTap,
+  donSelectionBudget,
+  selectedDonCountIn,
+  eligibleDonCountIn,
   canAttackCard,
   canActivateCard,
   canOnOppAttackCard,
@@ -1896,7 +2002,11 @@ function MobileCharacterZone({
   onMatCardTap: (playerId: string, zone: MatchBoardZone, card: CardView) => void;
   onMatCardAttack: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
-  onAttachedDonLabelTap: (playerId: string, card: CardView) => void;
+  onDonGroupTap: (playerId: string, donIds: string[]) => void;
+  donSelectionBudget: number | null;
+  selectedDonCountIn: (donIds: string[]) => number;
+  /** How many of a group's DON!! this mode would accept — 0 means the pile is not a legal source right now, so its box stays a plain box. */
+  eligibleDonCountIn: (donIds: string[]) => number;
   canAttackCard: (card: CardView) => boolean;
   canActivateCard: (card: CardView) => boolean;
   canOnOppAttackCard: (card: CardView) => boolean;
@@ -1924,7 +2034,10 @@ function MobileCharacterZone({
             onMatCardTap={onMatCardTap}
             onMatCardAttack={onMatCardAttack}
             onCardZoom={onCardZoom}
-            onAttachedDonLabelTap={onAttachedDonLabelTap}
+            onDonGroupTap={onDonGroupTap}
+            donSelectionBudget={donSelectionBudget}
+            selectedDonCountIn={selectedDonCountIn}
+            eligibleDonCountIn={eligibleDonCountIn}
             canAttackCard={canAttackCard}
             canActivateCard={canActivateCard}
             canOnOppAttackCard={canOnOppAttackCard}
@@ -1952,7 +2065,10 @@ function MobileCardZone({
   onMatCardTap,
   onMatCardAttack,
   onCardZoom,
-  onAttachedDonLabelTap,
+  onDonGroupTap,
+  donSelectionBudget,
+  selectedDonCountIn,
+  eligibleDonCountIn,
   canAttackCard,
   canActivateCard,
   canOnOppAttackCard,
@@ -1963,7 +2079,7 @@ function MobileCardZone({
 }: {
   label: string;
   card: CardView | null;
-  zone: MatchBoardZone;
+  zone: MatchFieldZone;
   board: PlayerBoardViewForMatch;
   playerId: string;
   isOwn: boolean;
@@ -1973,7 +2089,11 @@ function MobileCardZone({
   onMatCardTap: (playerId: string, zone: MatchBoardZone, card: CardView) => void;
   onMatCardAttack: (card: CardView) => void;
   onCardZoom: (card: CardView) => void;
-  onAttachedDonLabelTap: (playerId: string, card: CardView) => void;
+  onDonGroupTap: (playerId: string, donIds: string[]) => void;
+  donSelectionBudget: number | null;
+  selectedDonCountIn: (donIds: string[]) => number;
+  /** How many of a group's DON!! this mode would accept — 0 means the pile is not a legal source right now, so its box stays a plain box. */
+  eligibleDonCountIn: (donIds: string[]) => number;
   canAttackCard: (card: CardView) => boolean;
   canActivateCard: (card: CardView) => boolean;
   canOnOppAttackCard: (card: CardView) => boolean;
@@ -1995,10 +2115,17 @@ function MobileCardZone({
   const canActivate = isOwn && canActivateCard(card);
   const canOnOppAttack = isOwn && canOnOppAttackCard(card);
   const canAttack = isOwn && canAttackCard(card);
-  const selectedDon = mobileSelectedDonInstanceIds(mode);
-  const attachedDonSelectable = isOwn && (mode.kind === 'payingActivateEffectCost' || mode.kind === 'payingOnOppAttackCost' || mode.kind === 'payingEventMainCost' || mode.kind === 'payingCounterEventCost' || mode.kind === 'resolvingDonChoice') && card.donAttachedCount > 0;
-  const selectedAttachedDonCount = card.donAttachedIds.filter((id) => selectedDon.has(id)).length;
-  const selectable = mobileLeaderCharacterSelectable(mode, isOwn, isOpponent, zone, card, canActivate, canOnOppAttack);
+  // eligibleDonCountIn, not just donAttachedCount: during a DON!! choice only
+  // the choice's own candidates can be paid with, so a card whose attached
+  // DON!! are all outside them shows an inert badge instead of a live one.
+  const attachedDonSelectable = isOwn && donSelectionBudget !== null && eligibleDonCountIn(card.donAttachedIds) > 0;
+  // From the hook rather than a local re-listing of the DON!!-collecting modes:
+  // that kind of local copy is exactly what left on-field effect targeting
+  // broken on mobile (see leaderCharacterSelectable).
+  const selectedAttachedDonCount = selectedDonCountIn(card.donAttachedIds);
+  // Shared with the desktop mat (PlayerBoardPanel) rather than reimplemented —
+  // see leaderCharacterSelectable's doc comment for the mode this copy missed.
+  const selectable = leaderCharacterSelectable(mode, isOwn, isOpponent, zone, card, canActivate, canOnOppAttack);
   const attackerSelected = mode.kind === 'selectAttackTarget' && mode.attackerInstanceId === card.instanceId;
   const canGiveDon = isOwn && canGiveDonOnCard(board, card);
   const canReturnGivenDon = isOwn && allowReturnGivenDon && card.donAttachedCount > 0;
@@ -2028,6 +2155,9 @@ function MobileCardZone({
         size="field"
         selectable={mode.kind !== 'idle' && selectable}
         selected={attackerSelected}
+        // "Dim, don't hide" the cards a field choice can't target, so the
+        // eligible one stands out on the mat — same call the desktop mat makes.
+        dimmed={fieldChoiceDimmed(mode, card)}
         activatable={mode.kind === 'idle' && canActivate}
         attackable={mode.kind === 'idle' && canAttack}
         showBattlePower={battlePowerInstanceIds.has(card.instanceId)}
@@ -2035,7 +2165,7 @@ function MobileCardZone({
         attachedDonSelectedCount={selectedAttachedDonCount}
         compactBadges
         onSelect={() => onMatCardTap(playerId, zone, card)}
-        onAttachedDonSelect={attachedDonSelectable ? () => onAttachedDonLabelTap(playerId, card) : undefined}
+        onAttachedDonSelect={attachedDonSelectable ? () => onDonGroupTap(playerId, card.donAttachedIds) : undefined}
       />
       {actionBubbleOpen && (
         <div className="op-mobile-card-action-bubble" onClick={(event) => event.stopPropagation()}>
@@ -2060,7 +2190,7 @@ function MobileCardZone({
             </button>
           )}
           {attachedDonSelectable && (
-            <button type="button" onClick={() => closeAfter(() => onAttachedDonLabelTap(playerId, card))}>
+            <button type="button" onClick={() => closeAfter(() => onDonGroupTap(playerId, card.donAttachedIds))}>
               Select DON!!
             </button>
           )}
@@ -2073,50 +2203,18 @@ function MobileCardZone({
   );
 }
 
-function mobileLeaderCharacterSelectable(
-  mode: MatchSelectionMode,
-  isOwn: boolean,
-  isOpponent: boolean,
-  zone: MatchBoardZone,
-  card: CardView,
-  canActivate: boolean,
-  canOnOppAttack: boolean,
-): boolean {
-  switch (mode.kind) {
-    case 'selectAttacker':
-      return zone !== 'stageArea' && isOwn && card.orientation === 'active' && !card.summoningSick;
-    case 'selectAttackTarget':
-      if (!isOpponent) return false;
-      if (zone === 'leaderArea') return true;
-      return zone === 'characterArea' && card.orientation === 'rested';
-    case 'selectBlocker':
-      return isOwn && zone === 'characterArea' && card.orientation === 'active' && card.hasBlocker;
-    case 'selectActivateSource':
-      return isOwn && canActivate;
-    case 'selectOnOppAttackSource':
-      return isOwn && canOnOppAttack;
-    case 'idle':
-      return isOwn && canActivate;
-    default:
-      return false;
-  }
-}
 
-function mobileSelectedDonInstanceIds(mode: MatchSelectionMode): Set<string> {
-  if (mode.kind === 'payingActivateEffectCost') return new Set(mode.selectedDonIds);
-  if (mode.kind === 'payingOnOppAttackCost') return new Set(mode.selectedDonIds);
-  if (mode.kind === 'payingEventMainCost') return new Set(mode.selectedDonIds);
-  if (mode.kind === 'payingCounterEventCost') return new Set(mode.selectedDonIds);
-  if (mode.kind === 'resolvingDonChoice') return new Set(mode.selectedDonIds);
-  return new Set();
-}
-
+// The fan offset used to be an inline `left: index * 10%`, which only worked
+// while the zone was a fixed 2-column-wide box: a percentage offset needs a
+// width to resolve against, so the zone could never size itself to its own
+// contents. The backs are now in normal flow and the overlap lives in CSS
+// (.op-mobile-life-stack span + span), letting the zone shrink-wrap the fan.
 function MobileLifeStack({ count }: { count: number }) {
   const visible = Math.min(count, 5);
   return (
     <div className="op-mobile-life-stack" aria-label={`Life stack ${count}`}>
       {Array.from({ length: visible }).map((_, index) => (
-        <span key={index} style={{ left: `${index * 10}%` }}>
+        <span key={index}>
           <CardBackArt tone="navy" className="h-full w-full rounded-[0.2rem]" />
         </span>
       ))}
@@ -2156,7 +2254,20 @@ function MobileTrashPile({ cards, playerId, onClick }: { cards: CardView[]; play
   );
 }
 
-function MobileCountBox({ label, count, className, onClick }: { label: string; count: number; className?: string; onClick?: () => void }) {
+function MobileCountBox({
+  label,
+  count,
+  className,
+  selectedCount = 0,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  className?: string;
+  /** How many DON!! in this pile are currently selected — the pile's only tap feedback, since it draws no per-DON!! chip. */
+  selectedCount?: number;
+  onClick?: () => void;
+}) {
   const showLabel = label.includes('DON');
   const isDon = label.includes('DON');
   const contents = (
@@ -2170,18 +2281,31 @@ function MobileCountBox({ label, count, className, onClick }: { label: string; c
         {showLabel && <strong>{label}</strong>}
         <span>{count}</span>
       </span>
+      {selectedCount > 0 && <span className="op-mobile-count-selected">{selectedCount}</span>}
     </>
   );
 
+  const classes = [
+    'op-mobile-count-zone',
+    isDon ? 'op-mobile-don-count-zone' : '',
+    selectedCount > 0 ? 'is-don-selected' : '',
+    className ?? '',
+  ].filter(Boolean).join(' ');
+
   if (onClick) {
     return (
-      <button type="button" className={['op-mobile-count-zone', isDon ? 'op-mobile-don-count-zone' : '', className ?? ''].join(' ')} onClick={onClick}>
+      <button
+        type="button"
+        className={classes}
+        onClick={onClick}
+        aria-label={selectedCount > 0 ? `${label} ${count}, ${selectedCount} selected` : `${label} ${count}`}
+      >
         {contents}
       </button>
     );
   }
 
-  return <div className={['op-mobile-count-zone', isDon ? 'op-mobile-don-count-zone' : '', className ?? ''].join(' ')}>{contents}</div>;
+  return <div className={classes}>{contents}</div>;
 }
 
 function mobileAttachedDonIds(board: PlayerBoardViewForMatch): Set<string> {
