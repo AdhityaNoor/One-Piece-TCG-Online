@@ -206,9 +206,20 @@
 /* Stage is a single-card zone, so a drag preview there must REPLACE what's
    showing rather than sit beside it — otherwise the ghost renders next to the
    "Stage" empty-slot placeholder (or the current Stage card) and the row shows
-   two cards. The Character Area needs no equivalent rule: it holds several
-   cards, so appending the ghost is exactly right. */
+   two cards. */
 [data-board-zone='stageArea']:has([data-play-ghost]) > :not([data-play-ghost]) {
+  display: none;
+}
+
+/* The Character Area holds several cards, so APPENDING the ghost is correct —
+   what is not correct is leaving the empty-state watermark ("CHARACTER AREA")
+   in flow beside it. That watermark is a real flex item and the row centres
+   its children as a group, so with both present the ghost sat off to one side
+   of the slot the card will actually occupy, with the label showing through
+   the dimmed card. Hiding it for the duration of the preview makes the ghost
+   land exactly where the played card will. Scoped to the ghost's presence, so
+   the watermark still shows for a genuinely empty field. */
+[data-board-zone='characterArea']:has([data-play-ghost]) [data-zone-empty-hint] {
   display: none;
 }
 

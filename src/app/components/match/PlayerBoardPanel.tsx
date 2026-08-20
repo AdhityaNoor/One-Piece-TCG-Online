@@ -630,7 +630,18 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
             />
           </HoverableFieldCard>
         ))}
-        {board.characterArea.length === 0 && <span className="font-display text-xl font-black uppercase tracking-[0.08em] text-white/20">Character Area</span>}
+        {board.characterArea.length === 0 && (
+          // Empty-state watermark. data-zone-empty-hint lets styles/index.css
+          // pull it out of flow while a hand-drag landing ghost is portalled
+          // into this zone, so the ghost occupies the real card slot instead
+          // of sharing the row with the label.
+          <span
+            data-zone-empty-hint="characterArea"
+            className="font-display text-xl font-black uppercase tracking-[0.08em] text-white/20"
+          >
+            Character Area
+          </span>
+        )}
       </div>
     </MatCell>
   );
