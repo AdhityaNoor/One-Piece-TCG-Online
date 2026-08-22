@@ -1626,6 +1626,7 @@ function runOpList(
           max: clampedMax,
           candidateInstanceIds: candidates,
           ...(op.maxCombinedPower !== undefined ? { maxCombinedPower: op.maxCombinedPower } : {}),
+          ...(op.maxCombinedCost !== undefined ? { maxCombinedCost: op.maxCombinedCost } : {}),
           ...(op.distinctNames ? { distinctNames: true } : {}),
         },
         sourceInstanceId: ctx.sourceInstanceId,

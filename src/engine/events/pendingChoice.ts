@@ -55,6 +55,8 @@ export interface ChoiceConstraints {
   numberMax?: number;
   /** For multi-target SELECT_CARDS: selected cards' combined current power must be at most this. */
   maxCombinedPower?: number;
+  /** Cap on the SUM of the selected cards' CURRENT cost ("a total cost of N or less"). */
+  maxCombinedCost?: number;
   /** For multi-target SELECT_CARDS: selected cards must have different printed names. */
   distinctNames?: boolean;
 }

@@ -507,6 +507,16 @@ function evaluateGate(
       return computeCurrentPower(defs, state, leaderId) >= gate.power;
     }
 
+    // Mirror of selfLeaderPowerAtLeast against the OPPONENT's Leader, read as
+    // CURRENT power so attached DON!! and continuous buffs count (OP17-034).
+    case 'opponentLeaderPowerAtLeast': {
+      const opponentId = getOpponentId(state, ownerId);
+      const opponent = state.players[opponentId];
+      const leaderId = opponent?.leaderInstanceId;
+      if (!leaderId) return false;
+      return computeCurrentPower(defs, state, leaderId) >= gate.power;
+    }
+
     case 'selfTurnCount': {
       const currentTurnCount = player.hasGoneFirst ? Math.ceil(state.turnNumber / 2) : Math.floor(state.turnNumber / 2);
       if (gate.atLeast !== undefined && currentTurnCount < gate.atLeast) return false;

@@ -20,6 +20,7 @@ import { OP13_ASSIGNMENTS } from './OP13';
 import { OP14_ASSIGNMENTS } from './OP14';
 import { OP15_ASSIGNMENTS } from './OP15';
 import { OP16_ASSIGNMENTS } from './OP16';
+import { OP17_ASSIGNMENTS } from './OP17';
 
 export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   ...OP01_ASSIGNMENTS,
@@ -38,4 +39,5 @@ export const OP_ASSIGNMENTS: CardEffectAssignment[] = [
   ...OP14_ASSIGNMENTS,
   ...OP15_ASSIGNMENTS,
   ...OP16_ASSIGNMENTS,
+  ...OP17_ASSIGNMENTS,
 ];

@@ -872,7 +872,9 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
     { fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Straw Hat Crew', maxCost: 7 } },
     // playFromTrash remints the field instance; rebind `t` from __lastMovedIds so Rush lands on the live card.
     { fn: 'captureCount', from: '__lastMovedIds', into: 't' },
-    { fn: 'addKeyword', target: { ref: 'previous' }, keyword: 'rush', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+    // copyVar reports no moved cards, so ifPrevious here was always false and the played
+    // Character never gained [Rush]. Gate on the rebound var actually holding a card.
+    { fn: 'addKeyword', target: { ref: 'previous' }, keyword: 'rush', duration: 'duringThisTurn', ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['t'], atLeast: 1 }] },
   ] } },
 
   // OP15-087 — If you have 10+ trash, this gains [Blocker]. [On Play] Draw 2, trash 2.

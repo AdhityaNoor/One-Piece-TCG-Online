@@ -71,9 +71,13 @@ export const ST06_ASSIGNMENTS: CardEffectAssignment[] = [
     params: {
       timing: 'activateMain',
       functions: [
+        // Both the self-rest and the K.O. hang off the ONE hand-trash payment. `restSelf`
+        // reports no moved cards, so chaining ifPrevious through it made the K.O. — the
+        // card's entire payoff — unreachable. Gate both on the captured payment instead.
         { fn: 'optionalTrashFromHand', count: 1 },
-        { fn: 'restSelf', ifPrevious: 'previousMovedAny' },
-        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, ifPrevious: 'previousMovedAny' },
+        { fn: 'captureCount', from: '__lastMovedIds', into: 'st06HandPaid' },
+        { fn: 'restSelf', ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['st06HandPaid'], atLeast: 1 }] },
+        { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 4 } }, optional: true, ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['st06HandPaid'], atLeast: 1 }] },
       ],
     },
   },

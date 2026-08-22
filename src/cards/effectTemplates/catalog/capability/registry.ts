@@ -172,12 +172,13 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
   },
   ko: {
     id: 'ko',
-    summary: 'K.O. targets (fires [On K.O.]). Use filters on the target for cost/power/type limits; maxCombinedPower caps total current power across a multi-select. TargetFilter.costEqualsDonAttached matches current cost === DON!! given. TargetSpec group `stages` K.O.s Stages only (koApply already handles stageArea).',
+    summary: 'K.O. targets (fires [On K.O.]). Use filters on the target for cost/power/type limits; maxCombinedPower caps total current power and maxCombinedCost caps total current cost across a multi-select. TargetFilter.costEqualsDonAttached matches current cost === DON!! given. TargetSpec group `stages` K.O.s Stages only (koApply already handles stageArea).',
     params: [
       { name: 'target', type: 'TargetSpec', required: true },
       { name: 'optional', type: 'boolean', required: false, note: '"up to"' },
       { name: 'maxTargets', type: 'number', required: false },
       { name: 'maxCombinedPower', type: 'number', required: false },
+      { name: 'maxCombinedCost', type: 'number', required: false },
     ],
     covers: [
       'K.O. up to {N} of your opponent\'s Characters with a cost of {C} or less',
@@ -191,6 +192,7 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
     ],
     examples: [
       { cardNumber: 'OP05-007', snippet: "{ fn: 'ko', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 2, maxCombinedPower: 4000 }" },
+      { cardNumber: 'OP17-119', snippet: "{ fn: 'ko', target: { group: 'characters', player: 'opponent' }, maxTargets: -1, maxCombinedCost: 4 }" },
       { cardNumber: 'OP15-031', snippet: "{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { rested: true, costEqualsDonAttached: true } }, optional: true }" },
       { cardNumber: 'OP07-017', snippet: "{ fn: 'ko', target: { group: 'stages', player: 'opponent', filter: { maxCost: 1 } }, optional: true, maxTargets: 1 }" },
     ],
@@ -1884,6 +1886,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   selfAllCharactersTyped: { id: 'selfAllCharactersTyped', summary: 'The only Characters on your field are {type} type (vacuously true if you have none).', params: [{ name: 'typeIncludes', type: 'string', required: true }], covers: ['if the only Characters on your field are {type} type Characters'], examples: [{ cardNumber: 'OP15-001', snippet: "{ kind: 'selfAllCharactersTyped', typeIncludes: 'East Blue' }" }] },
   selfLeaderPowerAtMost: { id: 'selfLeaderPowerAtMost', summary: 'Your Leader has N power or less (current power, incl. modifiers).', params: [{ name: 'power', type: 'number', required: true }], covers: ['if your Leader has {N} power or less'], examples: [{ cardNumber: 'OP15-004', snippet: "{ kind: 'selfLeaderPowerAtMost', power: 0 }" }] },
   selfLeaderPowerAtLeast: { id: 'selfLeaderPowerAtLeast', summary: 'Your Leader has N power or more (current power, incl. modifiers).', params: [{ name: 'power', type: 'number', required: true }], covers: ['if your Leader has {N} power or more'], examples: [{ cardNumber: 'OP09-017', snippet: "{ kind: 'selfLeaderPowerAtLeast', power: 7000 }" }] },
+  opponentLeaderPowerAtLeast: { id: 'opponentLeaderPowerAtLeast', summary: "Your opponent's Leader has N power or more (current power, incl. attached DON!! and continuous buffs).", params: [{ name: 'power', type: 'number', required: true }], covers: ["if your opponent's Leader has {N} power or more"], examples: [{ cardNumber: 'OP17-034', snippet: "{ kind: 'opponentLeaderPowerAtLeast', power: 6000 }" }] },
   selfTurnCount: { id: 'selfTurnCount', summary: "Controller's own turn count in the game.", params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If it is your second turn or later'], examples: [{ cardNumber: 'OP15-058', snippet: "{ kind: 'selfTurnCount', atLeast: 2 }" }] },
   selfInstancePowerAtLeast: { id: 'selfInstancePowerAtLeast', summary: 'This card (source instance) has N or more current power.', params: [{ name: 'power', type: 'number', required: true }], covers: ['If this Character has {N} power or more'], examples: [{ cardNumber: 'OP06-002', snippet: "{ kind: 'selfInstancePowerAtLeast', power: 7000 }" }] },
   selfControlsNamedWithPowerAtLeast: { id: 'selfControlsNamedWithPowerAtLeast', summary: 'You control [X] with N power or more (Leader or Character).', params: [{ name: 'name', type: 'string', required: true }, { name: 'power', type: 'number', required: true }], covers: ['If you have [{name}] with {N} power or more'], examples: [{ cardNumber: 'OP15-080', snippet: "{ kind: 'selfControlsNamedWithPowerAtLeast', name: 'Gecko Moria', power: 10000 }" }] },

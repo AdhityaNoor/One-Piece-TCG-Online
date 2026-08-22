@@ -185,6 +185,47 @@ describe('evaluateGates', () => {
     expect(evaluateGates([{ kind: 'selfLeaderPowerAtLeast', power: 7001 }], rig.state, rig.defs, 'p1')).toBe(false);
   });
 
+  it('checks opponentLeaderPowerAtLeast against the OPPONENT Leader, not the controller Leader', () => {
+    // The whole point of this gate (OP17-034) is that it reads across the table, so the
+    // test pins both halves: the opponent's buffed Leader passes, and the controller's own
+    // Leader being weak must not change the answer.
+    let rig = buildBaseRig();
+    const p1LeaderId = rig.state.players.p1.leaderInstanceId!;
+    const p2LeaderId = rig.state.players.p2.leaderInstanceId!;
+    rig = {
+      ...rig,
+      defs: {
+        ...rig.defs,
+        [rig.state.cardsById[p1LeaderId].cardDefinitionId]: makeCharacterDef({
+          cardDefinitionId: rig.state.cardsById[p1LeaderId].cardDefinitionId,
+          basePower: 5000,
+        }),
+        [rig.state.cardsById[p2LeaderId].cardDefinitionId]: makeCharacterDef({
+          cardDefinitionId: rig.state.cardsById[p2LeaderId].cardDefinitionId,
+          basePower: 5000,
+        }),
+      },
+      state: {
+        ...rig.state,
+        continuousEffects: [{
+          id: 'opp-leader-boost',
+          sourceInstanceId: p2LeaderId,
+          ownerId: 'p2',
+          duration: 'permanent',
+          description: '+1000',
+          powerModifier: { appliesToInstanceId: p2LeaderId, amount: 1000 },
+        }],
+      },
+    };
+
+    // Evaluated as p1: the opponent (p2) Leader reads 6000.
+    expect(evaluateGates([{ kind: 'opponentLeaderPowerAtLeast', power: 6000 }], rig.state, rig.defs, 'p1')).toBe(true);
+    expect(evaluateGates([{ kind: 'opponentLeaderPowerAtLeast', power: 6001 }], rig.state, rig.defs, 'p1')).toBe(false);
+    // Evaluated as p2: the opponent is now p1, whose unbuffed Leader reads 5000.
+    expect(evaluateGates([{ kind: 'opponentLeaderPowerAtLeast', power: 6000 }], rig.state, rig.defs, 'p2')).toBe(false);
+    expect(evaluateGates([{ kind: 'opponentLeaderPowerAtLeast', power: 5000 }], rig.state, rig.defs, 'p2')).toBe(true);
+  });
+
   it('checks leaderColor against the Leader definition colors', () => {
     let rig = buildBaseRig();
     const leaderId = rig.state.players.p1.leaderInstanceId!;

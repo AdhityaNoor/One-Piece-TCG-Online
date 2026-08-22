@@ -173,7 +173,7 @@ function chooseFromTarget(target: TargetSpec): Extract<EffectOp, { op: 'chooseTa
 function targetOps(
   target: TargetSpec,
   effect: (target: Selector) => EffectOp,
-  options: { optional?: boolean; minTargets?: number; maxTargets?: number; maxCombinedPower?: number; prompt?: string } = {},
+  options: { optional?: boolean; minTargets?: number; maxTargets?: number; maxCombinedPower?: number; maxCombinedCost?: number; prompt?: string } = {},
 ): EffectOp[] {
   // Mandatory Leader effects apply directly (no click). Optional Leader effects use chooseTargets
   // so "up to 1" can be declined without still hitting the Leader.
@@ -197,6 +197,7 @@ function targetOps(
       max,
       prompt: options.prompt ?? `Choose ${options.optional ?? true ? 'up to ' : ''}${max} target${max === 1 ? '' : 's'}.`,
       ...(options.maxCombinedPower !== undefined ? { maxCombinedPower: options.maxCombinedPower } : {}),
+      ...(options.maxCombinedCost !== undefined ? { maxCombinedCost: options.maxCombinedCost } : {}),
     },
     effect(selectorFromTarget(target)),
   ];
@@ -448,6 +449,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
         optional: f.optional,
         maxTargets: f.maxTargets,
         maxCombinedPower: f.maxCombinedPower,
+        maxCombinedCost: f.maxCombinedCost,
         prompt: f.prompt,
       });
     case 'rest':
@@ -1072,6 +1074,7 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
           chooser,
           prompt: f.prompt ?? `Play up to ${maxTargets} matching ${noun} card${maxTargets === 1 ? '' : 's'} from ${whoseHand}.`,
           ...(f.distinctNames ? { distinctNames: true } : {}),
+          ...(f.maxCombinedCost !== undefined ? { maxCombinedCost: f.maxCombinedCost } : {}),
         },
         { op: 'playFromHand', target: { sel: 'var', name: 't' }, ...(f.rested ? { rested: true } : {}) },
       ];

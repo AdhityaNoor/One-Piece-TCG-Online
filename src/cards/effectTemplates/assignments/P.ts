@@ -60,7 +60,9 @@ export const P_ASSIGNMENTS: CardEffectAssignment[] = [
   { cardNumber: 'P-059', templateId: 'ability', params: { timing: 'counter', gate: [{ kind: 'leaderName', name: 'Uta' }], functions: [
     { fn: 'moveCards', from: { zone: 'characters', player: 'controller' }, to: { zone: 'hand', player: 'owner' }, optional: true, maxTargets: -1 },
     { fn: 'captureCount', into: 'returned' },
-    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 0, countVar: 'returned', amountPer: 2000, duration: 'duringThisBattle', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' },
+    // copyVar reports no moved cards — ifPrevious here was always false, so the +2000-per-
+    // returned-Character buff never applied. Gate on the captured count instead.
+    { fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 0, countVar: 'returned', amountPer: 2000, duration: 'duringThisBattle', optional: true, maxTargets: 1, ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['returned'], atLeast: 1 }] },
   ] } },
 
   // P-060 — [Main] rest 1 [Uta]: rest up to 2 opp DON!!.

@@ -1385,7 +1385,9 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
           functions: [
             { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'topOrBottom', hiddenChoice: true }, to: { zone: 'hand', player: 'owner' }, optional: true },
             { fn: 'captureCount', from: '__lastMovedIds', into: 'lifePaid' },
-            { fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { category: 'character', typeIncludes: 'Egghead' } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, ifPrevious: 'previousMovedAny' },
+            // Was ifPrevious right after the copyVar (which reports no moved cards), so this
+            // clause never ran. The -1000 rider below already used the correct captured gate.
+            { fn: 'moveCards', from: { zone: 'hand', player: 'controller', filter: { category: 'character', typeIncludes: 'Egghead' } }, to: { zone: 'life', player: 'controller', position: 'top', faceUp: true }, optional: true, ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['lifePaid'], atLeast: 1 }] },
             { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true, ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['lifePaid'], atLeast: 1 }] },
           ],
         },

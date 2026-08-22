@@ -89,6 +89,12 @@ describe('partial curation batch: OP05 target unions', () => {
     const program = programFor(entry);
     const ops = program.abilities[0].ops;
 
+    // NOTE: this test previously asserted `ifPrevious: 'previousMovedAny'` on the
+    // shuffle and both buffs. That shape was BROKEN — shuffleDeck and addKeyword
+    // report no moved cards, so the chained gates were always false and neither
+    // [Double Attack] nor the +10000 ever applied. The payment is now captured once
+    // and each step gates on it. See deadIfPreviousGate.test.ts for the family guard.
+    const paidGate = [{ kind: 'boundVarsTotalCount', varNames: ['op05080Paid'], atLeast: 1 }];
     expect(ops).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -98,9 +104,10 @@ describe('partial curation batch: OP05 target unions', () => {
           max: 20,
         }),
         expect.objectContaining({ op: 'moveToBottomDeck', target: { sel: 'var', name: 't' } }),
-        expect.objectContaining({ op: 'shuffleDeck', ifPrevious: 'previousMovedAny' }),
-        expect.objectContaining({ op: 'addKeyword', keyword: 'doubleAttack', ifPrevious: 'previousMovedAny' }),
-        expect.objectContaining({ op: 'addPower', amount: 10000, ifPrevious: 'previousMovedAny' }),
+        expect.objectContaining({ op: 'copyVar', from: '__lastMovedIds', into: 'op05080Paid' }),
+        expect.objectContaining({ op: 'shuffleDeck', ifGate: paidGate }),
+        expect.objectContaining({ op: 'addKeyword', keyword: 'doubleAttack', ifGate: paidGate }),
+        expect.objectContaining({ op: 'addPower', amount: 10000, ifGate: paidGate }),
       ]),
     );
   });

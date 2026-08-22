@@ -300,7 +300,7 @@ export type EffectOp =
   | ({ op: 'playStageFromDeck'; pick: number; filter: SearchFilter; prompt: string } & EffectOpSequenceGate) // search deck, play up to N matching Stages (replacing any existing Stage), then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
   | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
-  | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string; chooser?: 'controller' | 'opponent'; maxCombinedPower?: number; distinctNames?: boolean; mustIncludeControllerLeader?: boolean } & EffectOpSequenceGate)
+  | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string; chooser?: 'controller' | 'opponent'; maxCombinedPower?: number; maxCombinedCost?: number; distinctNames?: boolean; mustIncludeControllerLeader?: boolean } & EffectOpSequenceGate)
   | ({ op: 'chooseCost'; min: number; max: number; prompt?: string } & EffectOpSequenceGate)
   | ({ op: 'chooseOption'; prompt: string; chooser?: 'controller' | 'opponent'; options: { label: string; ops: EffectOp[] }[] } & EffectOpSequenceGate)
   // Look at top `look` cards; player adds up to `pick` filter-matching cards to
@@ -497,6 +497,7 @@ export type AbilityGate =
   | { kind: 'selfOtherCharacterPowerAtLeast'; power: number } // "If you have another Character with N power or more" (excludes source)
   | { kind: 'selfLeaderPowerAtMost'; power: number } // "If your Leader has N power or less"
   | { kind: 'selfLeaderPowerAtLeast'; power: number } // "If your Leader has N power or more"
+  | { kind: 'opponentLeaderPowerAtLeast'; power: number } // "If your opponent's Leader has N power or more"
   | { kind: 'selfTurnCount'; atLeast?: number; atMost?: number } // "If it is your Nth turn or later" for the controller
   | { kind: 'selfInstancePowerAtLeast'; power: number } // "If this Character/Leader has N power or more" (needs sourceInstanceId)
   | { kind: 'selfOtherNamedCharacterCount'; name: string; atMost?: number; atLeast?: number } // "no other [X] Characters" (excludes source)

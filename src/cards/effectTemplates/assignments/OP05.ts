@@ -469,10 +469,13 @@ export const OP05_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // OP05-080 - [When Attacking] [OPT] return up to 20 trash to deck, shuffle, then gain Double Attack and +10000.
   { cardNumber: 'OP05-080', templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, functions: [
+    // Every step hangs off the trash-to-deck payment. shuffleDeck and addKeyword report no
+    // moved cards, so the chained ifPrevious killed both [Double Attack] and the +10000.
     { fn: 'moveCards', from: { zone: 'trash', player: 'controller' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, optional: true, maxTargets: 20 },
-    { fn: 'shuffleDeck', ifPrevious: 'previousMovedAny' },
-    { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
-    { fn: 'addPowerSelf', amount: 10000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },
+    { fn: 'captureCount', from: '__lastMovedIds', into: 'op05080Paid' },
+    { fn: 'shuffleDeck', ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['op05080Paid'], atLeast: 1 }] },
+    { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'doubleAttack', duration: 'duringThisBattle', ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['op05080Paid'], atLeast: 1 }] },
+    { fn: 'addPowerSelf', amount: 10000, duration: 'duringThisBattle', ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['op05080Paid'], atLeast: 1 }] },
   ] } },
 
   // OP05-082 — rest this + 2 trash→deck bottom: if opp hand ≥6, opp trashes 1 from hand.

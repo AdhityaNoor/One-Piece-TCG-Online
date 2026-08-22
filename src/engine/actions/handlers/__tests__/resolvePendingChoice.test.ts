@@ -96,6 +96,68 @@ describe('validateResolvePendingChoice', () => {
     expect(result.reasons.join(' ')).toContain('different card names');
   });
 
+  it('enforces maxCombinedCost across a multi-select ("a total cost of N or less")', () => {
+    // OP17-119: "K.O. your opponent's Characters with a total cost of 4 or less."
+    // The cap is on the SUM of the selection, so any single legal card must stay
+    // selectable while an over-budget combination is refused.
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const three = putCharacterInPlay(base, 'p2', makeCharacterDef({ cardDefinitionId: 'cost-3', name: 'Cheap', baseCost: 3 }));
+    const two = putCharacterInPlay(three.rig, 'p2', makeCharacterDef({ cardDefinitionId: 'cost-2', name: 'Cheaper', baseCost: 2 }));
+    const choice: PendingChoice = {
+      id: nextTestId('choice'),
+      playerId: 'p1',
+      kind: 'SELECT_CARDS',
+      prompt: "K.O. your opponent's Characters with a total cost of 4 or less.",
+      constraints: { min: 0, max: 4, candidateInstanceIds: [three.instanceId, two.instanceId], maxCombinedCost: 4 },
+      sourceInstanceId: null,
+      sourceEffectId: 'ir',
+    };
+    const state = { ...two.rig.state, pendingChoices: [choice] };
+
+    // 3 + 2 = 5 > 4 → refused, and the message names the overage.
+    const both = validateResolvePendingChoice(state, resolveAction('p1', choice.id, [three.instanceId, two.instanceId]), two.rig.defs);
+    expect(both.legal).toBe(false);
+    expect(both.reasons.join(' ')).toContain('combined cost is 5');
+
+    // Either card alone is under the cap.
+    expect(validateResolvePendingChoice(state, resolveAction('p1', choice.id, [three.instanceId]), two.rig.defs).legal).toBe(true);
+    expect(validateResolvePendingChoice(state, resolveAction('p1', choice.id, [two.instanceId]), two.rig.defs).legal).toBe(true);
+    // Declining is legal — candidate lists are not pre-filtered by the cap, so
+    // min stays 0 to avoid a softlock when nothing affordable is on the board.
+    expect(validateResolvePendingChoice(state, resolveAction('p1', choice.id, []), two.rig.defs).legal).toBe(true);
+  });
+
+  it('reads maxCombinedCost as CURRENT cost, so cost modifiers move the budget', () => {
+    // Loki's own package pushes costs around (+12 cost on Elbaph bodies, −1 cost
+    // debuffs), so the cap has to read through continuous modifiers, not baseCost.
+    const base = buildBaseRig({ phase: 'main', activePlayerId: 'p1' });
+    const a = putCharacterInPlay(base, 'p2', makeCharacterDef({ cardDefinitionId: 'c-3a', name: 'A', baseCost: 3 }));
+    const b = putCharacterInPlay(a.rig, 'p2', makeCharacterDef({ cardDefinitionId: 'c-3b', name: 'B', baseCost: 3 }));
+    const choice: PendingChoice = {
+      id: nextTestId('choice'),
+      playerId: 'p1',
+      kind: 'SELECT_CARDS',
+      prompt: 'Total cost 4 or less.',
+      constraints: { min: 0, max: 4, candidateInstanceIds: [a.instanceId, b.instanceId], maxCombinedCost: 4 },
+      sourceInstanceId: null,
+      sourceEffectId: 'ir',
+    };
+
+    // Printed 3 + 3 = 6 → over budget.
+    const plain = { ...b.rig.state, pendingChoices: [choice] };
+    expect(validateResolvePendingChoice(plain, resolveAction('p1', choice.id, [a.instanceId, b.instanceId]), b.rig.defs).legal).toBe(false);
+
+    // Give each −1 cost: 2 + 2 = 4 → now exactly at the cap.
+    const discounted = {
+      ...plain,
+      continuousEffects: [
+        { id: 'd-a', sourceInstanceId: a.instanceId, ownerId: 'p1' as const, duration: 'duringThisTurn' as const, description: '-1 cost', costModifier: { appliesToInstanceId: a.instanceId, amount: -1 } },
+        { id: 'd-b', sourceInstanceId: b.instanceId, ownerId: 'p1' as const, duration: 'duringThisTurn' as const, description: '-1 cost', costModifier: { appliesToInstanceId: b.instanceId, amount: -1 } },
+      ],
+    };
+    expect(validateResolvePendingChoice(discounted, resolveAction('p1', choice.id, [a.instanceId, b.instanceId]), b.rig.defs).legal).toBe(true);
+  });
+
   it('enforces distinct names through the dispatcher — regression: defs must be forwarded (OP13-082 dup-name bug)', () => {
     // The dispatcher previously called validateResolvePendingChoice(state, action)
     // without `defs`, so printedNameOf() returned undefined for every card and

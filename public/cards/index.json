@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-25T11:10:31.035Z",
-  "total": 2672,
+  "generatedAt": "2026-08-20T17:29:57.359Z",
+  "total": 2791,
   "sets": [
     {
       "code": "EB01",
@@ -101,6 +101,11 @@
     {
       "code": "OP16",
       "name": "The Time of Battle",
+      "count": 119
+    },
+    {
+      "code": "OP17",
+      "name": "The World's Strongest Warriors",
       "count": 119
     },
     {

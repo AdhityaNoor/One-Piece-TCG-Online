@@ -127,7 +127,7 @@ export type AbilityFunction =
   | { fn: 'preventBlockersOnPreviousTarget'; duration: IrDuration }
   | { fn: 'preventAttackLeaderWhileSummoningSick'; duration: IrDuration }
   | { fn: 'giveGivenDon'; count?: number; optional?: boolean; targetTypeIncludes?: string }
-  | { fn: 'ko'; target: TargetSpec; optional?: boolean; maxTargets?: number; maxCombinedPower?: number; prompt?: string }
+  | { fn: 'ko'; target: TargetSpec; optional?: boolean; maxTargets?: number; maxCombinedPower?: number; maxCombinedCost?: number; prompt?: string }
   | { fn: 'rest'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
   | { fn: 'restAllCharacters'; player?: 'any' | 'controller' | 'opponent'; filter?: CharacterMoveFilter }
   | { fn: 'preventRefresh'; target: TargetSpec; duration?: IrDuration; optional?: boolean; maxTargets?: number; prompt?: string; maxCost?: number }
@@ -201,7 +201,7 @@ export type AbilityFunction =
   | { fn: 'chooseOne'; chooser: 'controller' | 'opponent'; prompt: string; options: { label: string; functions: SequencedAbilityFunction[] }[] }
   /** Bind var `t` via chooseTargets with no follow-up effect (for riders like koImmunityChosen). */
   | { fn: 'selectTargets'; target: TargetSpec; optional?: boolean; maxTargets?: number; prompt?: string }
-  | { fn: 'playFromHand'; filter?: SearchFilter; fromVar?: string; maxTargets?: number; minTargets?: number; optional?: boolean; rested?: boolean; player?: 'controller' | 'opponent'; chooser?: 'controller' | 'opponent'; distinctNames?: boolean; prompt?: string }
+  | { fn: 'playFromHand'; filter?: SearchFilter; fromVar?: string; maxTargets?: number; minTargets?: number; optional?: boolean; rested?: boolean; player?: 'controller' | 'opponent'; chooser?: 'controller' | 'opponent'; distinctNames?: boolean; maxCombinedCost?: number; prompt?: string }
   | { fn: 'activateEventFromHand'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'activateEventFromTrash'; filter: SearchFilter; maxTargets?: number }
   | { fn: 'playFromDeck'; filter: SearchFilter; maxTargets?: number; rested?: boolean }

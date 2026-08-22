@@ -519,8 +519,12 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
           { label: 'skip', functions: [] },
           { label: 'pay', functions: [
             { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, minTargets: 4, maxTargets: 4 },
-            { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
-            { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn', ifPrevious: 'previousMovedAny' },
+            // addKeyword reports no moved cards, so the +1000 chained behind it never landed.
+            // (The move is min-4, but the softlock escape can still let it resolve with fewer
+            // than 4 cards in trash, so the payment gate is kept rather than dropped.)
+            { fn: 'captureCount', from: '__lastMovedIds', into: 'op07083Paid' },
+            { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'duringThisTurn', ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['op07083Paid'], atLeast: 1 }] },
+            { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn', ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['op07083Paid'], atLeast: 1 }] },
           ] },
         ],
       }],

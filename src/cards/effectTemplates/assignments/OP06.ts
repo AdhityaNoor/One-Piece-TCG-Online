@@ -869,10 +869,18 @@ export const OP06_ASSIGNMENTS: CardEffectAssignment[] = [
                 functions: [
                   { fn: 'dealDamage', player: 'opponent', amount: 1, ifGate: [{ kind: 'opponentLife', atLeast: 1, atMost: 1 }] },
                   {
+                    // "Then, add 1 card from the top of your Life cards to your hand" is part of
+                    // the SAME conditional bullet, so it must run exactly when the damage was
+                    // dealt. It cannot chain on ifPrevious (dealDamage reports no moved cards),
+                    // and it cannot re-use the gate above (the damage just took the opponent's
+                    // last Life card, so opponentLife is no longer 1). PROXY: the opponent is at
+                    // 0 Life iff this branch's damage actually resolved.
+                    // REVIEW: exact, but indirect — revisit if a "previous op resolved" signal
+                    // that survives non-moving ops is ever added.
                     fn: 'moveCards',
                     from: { zone: 'life', player: 'controller', position: 'top' },
                     to: { zone: 'hand', player: 'owner' },
-                    ifPrevious: 'previousMovedAny',
+                    ifGate: [{ kind: 'opponentLife', atMost: 0 }],
                   },
                 ],
               },

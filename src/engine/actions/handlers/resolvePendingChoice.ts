@@ -22,7 +22,7 @@ import { resumeChoice, fireLifeTrigger, fireOnKO, fireTriggerActivatedReactions,
 import { finishBattleAfterKoDecision } from '../../rules/battle/damageStep';
 import { resolveKoReplacementStep, validateKoReplacementResponse } from '../../rules/shared/koAttempt';
 import type { CardDefinitionLookup } from '../../rules/shared/definitions';
-import { computeCurrentPower } from '../../rules/shared/power';
+import { computeCurrentCost, computeCurrentPower } from '../../rules/shared/power';
 import { continueAfterDeclareAttackSetup } from '../../rules/battle/declareAttack';
 
 function findChoice(state: GameState, action: ResolvePendingChoiceAction) {
@@ -97,7 +97,7 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
     } else if (!Array.isArray(sel)) {
       reasons.push('A card-effect choice expects an array of selected instance ids.');
     } else {
-      const { min, max, candidateInstanceIds, maxCombinedPower, distinctNames } = choice.constraints;
+      const { min, max, candidateInstanceIds, maxCombinedPower, maxCombinedCost, distinctNames } = choice.constraints;
       const candidates = candidateInstanceIds ?? [];
       const candidateSet = new Set(candidates);
       // Softlock escape: fewer eligible targets than min → allow selecting all remaining (or none).
@@ -122,6 +122,12 @@ export function validateResolvePendingChoice(state: GameState, action: ResolvePe
           const combined = sel.reduce((sum, id) => sum + computeCurrentPower(defs, state, id), 0);
           if (combined > maxCombinedPower) {
             reasons.push(`Selected cards' combined power is ${combined}, which exceeds ${maxCombinedPower}.`);
+          }
+        }
+        if (maxCombinedCost !== undefined && sel.length > 0) {
+          const combined = sel.reduce((sum, id) => sum + computeCurrentCost(defs, state, id), 0);
+          if (combined > maxCombinedCost) {
+            reasons.push(`Selected cards' combined cost is ${combined}, which exceeds ${maxCombinedCost}.`);
           }
         }
         if (distinctNames && sel.length > 1) {
