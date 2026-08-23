@@ -489,6 +489,7 @@ export type AbilityGate =
   | { kind: 'selfTypedCharacterDistinctNameCount'; typeIncludes: string; atLeast: number } // "if you have N {type} Characters with different card names"
   | { kind: 'selfAnyTypedCharacterCount'; anyOfTypes: string[]; atLeast?: number; atMost?: number; rested?: boolean } // "if you have N or more {A} or {B} type Characters"
   | { kind: 'selfAllCharactersTyped'; typeIncludes: string } // "if the only Characters on your field are {type} type Characters"
+  | { kind: 'selfAllCharactersWithoutCounter' } // "if you only have Characters without a Counter" (vacuously true with no Characters)
   | { kind: 'selfControlsNamedWithPowerAtLeast'; name: string; power: number } // "If you have [X] with N power or more"
   | { kind: 'selfControlsNamedCharacterBasePower'; name: string; power: number; mode?: 'exact' | 'atLeast' } // "If you have [X] Character with N base power"
   | { kind: 'selfTypedCharacterPowerAtLeast'; typeIncludes: string; power: number } // "If you have a {type} Character with N power or more"

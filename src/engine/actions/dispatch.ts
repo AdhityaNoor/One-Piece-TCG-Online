@@ -142,7 +142,7 @@ export function validateAction(
     case 'ACTIVATE_BLOCKER':
       return validateActivateBlocker(state, action, defs);
     case 'ACTIVATE_COUNTER_CHARACTER':
-      return validateActivateCounterCharacter(state, action, defs);
+      return validateActivateCounterCharacter(state, action, defs, registry);
     case 'ACTIVATE_COUNTER_EVENT':
       return validateActivateCounterEvent(state, action, defs, registry);
     case 'ACTIVATE_ON_OPPONENTS_ATTACK':
@@ -206,7 +206,7 @@ export function executeAction(
       result = executeActivateBlocker(state, action, defs, registry);
       break;
     case 'ACTIVATE_COUNTER_CHARACTER':
-      result = executeActivateCounterCharacter(state, action, defs);
+      result = executeActivateCounterCharacter(state, action, defs, registry);
       break;
     case 'ACTIVATE_COUNTER_EVENT':
       result = executeActivateCounterEvent(state, action, defs, registry);

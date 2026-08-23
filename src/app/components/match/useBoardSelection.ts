@@ -20,13 +20,13 @@ import { validateAction, type GameAction } from '../../../engine/actions';
 import { createActionId, useMatchStore } from '../../store/matchStore';
 import type { CardView, PlayerBoardView } from '../../../board/projection';
 import { findFirstAvailableDonId } from '../../../board/projection';
-import { computeCurrentCost, computeCurrentPower } from '../../../engine/rules/shared/power';
+import { computeCurrentCost, computeCurrentPower, getForcedAttackTargetId } from '../../../engine/rules/shared/power';
 import { getOpponentId } from '../../../engine/rules/shared';
 import { canAffordAbilityCost, canPayAbilityCost, donMinusCandidateIds, evaluateGates, fieldDonIds, requiredDonMinusCount, resolveEffectProgram } from '../../../engine/effects';
 import type { Ability } from '../../../engine/effects/effectIr';
 import type { CardInstance } from '../../../engine/state/card';
 import { isDonReturnChoice } from './donChoiceUtils';
-import { isFieldCardChoice } from './fieldChoiceUtils';
+import { fieldChoiceAdditionExceedsBudget, fieldChoiceHasBudget, isFieldCardChoice } from './fieldChoiceUtils';
 import type { PendingChoice } from '../../../engine/events/pendingChoice';
 import { EFFECT_RUNTIME_MODE } from '../../config/effectRuntimeMode';
 import { evaluateCondition_V2 } from '../../../engine/effects_V2/conditions_V2';
@@ -39,7 +39,7 @@ export type BoardSelectionMode =
   | { kind: 'idle' }
   | { kind: 'confirmPlayCost'; handCardInstanceId: string; cardCategory: 'character' | 'stage' | 'event'; cardName: string; cost: number; donInstanceIds: string[]; abilityCostDonInstanceIds?: string[] }
   | { kind: 'selectAttacker' }
-  | { kind: 'selectAttackTarget'; attackerInstanceId: string }
+  | { kind: 'selectAttackTarget'; attackerInstanceId: string; forcedTargetInstanceId?: string }
   | { kind: 'selectBlocker' }
   /**
    * Counter Step, defending player. Entered automatically the moment
@@ -83,7 +83,7 @@ export type BoardSelectionMode =
    * read-only "they're choosing" indicator — only the dispatch in
    * toggleFieldChoiceCard is scoped to the choice's own playerId.
    */
-  | { kind: 'resolvingFieldChoice'; choiceId: string; playerId: string; prompt: string; attribution: string | null; min: number; max: number; candidateInstanceIds: string[]; selectedIds: string[] }
+  | { kind: 'resolvingFieldChoice'; choiceId: string; playerId: string; prompt: string; attribution: string | null; min: number; max: number; candidateInstanceIds: string[]; selectedIds: string[]; maxCombinedCost?: number; maxCombinedPower?: number; distinctNames?: boolean; blockedInstanceIds: string[] }
   | { kind: 'selectActivateSource' }
   | { kind: 'payingActivateEffectCost'; sourceInstanceId: string; cost: number; selectedDonIds: string[] }
   | { kind: 'payingEventMainCost'; handCardInstanceId: string; cardName: string; cost: number; donInstanceIds: string[]; abilityCost: number; candidateInstanceIds: string[]; selectedDonIds: string[] }
@@ -259,6 +259,15 @@ export function useBoardSelection(actingPlayerId: string | null) {
           max: choice.constraints.max,
           candidateInstanceIds: choice.constraints.candidateInstanceIds ?? [],
           selectedIds: [],
+          // Combined budgets and the distinct-name rule are validated server-side in
+          // resolvePendingChoice. Mirror them here so the board can refuse an illegal
+          // pick up front instead of letting the player build a selection that the
+          // engine will bounce (e.g. OP17-119 "a total cost of 4 or less").
+          maxCombinedCost: choice.constraints.maxCombinedCost,
+          maxCombinedPower: choice.constraints.maxCombinedPower,
+          distinctNames: choice.constraints.distinctNames,
+          // Nothing is selected yet, so nothing can be over budget.
+          blockedInstanceIds: [],
         });
       }
     } else if (!isFieldChoice && mode.kind === 'resolvingFieldChoice') {
@@ -383,23 +392,60 @@ export function useBoardSelection(actingPlayerId: string | null) {
       .reduce((sum, cost) => sum + cost.count, 0) ?? 0;
   };
 
+  /**
+   * True when this card could legally attack SOMETHING right now — the gate on
+   * entering attack mode at all (beginAttackWithCard) and on the ⚔ affordance.
+   *
+   * Probes every legal target shape (the opponent's Leader plus their rested
+   * Characters) and passes if ANY of them validates. It previously probed the
+   * opponent's Leader alone as a stand-in for "can this card attack?", which
+   * silently assumed the Leader is always a legal target. A target-narrowing
+   * effect breaks that assumption outright: OP17-044 Captain John makes the
+   * Leader illegal while legalising exactly one Character, so the single-target
+   * probe reported "cannot attack" for EVERY attacker and the player could not
+   * even select one — the card read as a total attack lock instead of a
+   * redirect. Same trap for any future "cannot attack X" restriction.
+   */
   const canDeclareAttackWith = (card: CardView): boolean => {
     if (!state || state.currentPhase !== 'main' || state.turnNumber <= 2) return false;
     if (card.category !== 'leader' && card.category !== 'character') return false;
     if (!actingPlayerId) return false;
     const opponentId = getOpponentId(state, actingPlayerId);
-    return validateAction(
-      state,
-      {
-        type: 'DECLARE_ATTACK',
-        actionId: 'ui-preview',
-        playerId: actingPlayerId,
-        attackerInstanceId: card.instanceId,
-        targetInstanceId: state.players[opponentId]?.leaderInstanceId ?? '',
-      },
-      defs,
-      registry,
-    ).legal;
+    const opponent = state.players[opponentId];
+    if (!opponent) return false;
+    const candidateTargetIds = [
+      opponent.leaderInstanceId,
+      ...opponent.characterArea.cardIds.filter((id) => state.cardsById[id]?.orientation === 'rested'),
+    ].filter((id): id is string => !!id);
+    return candidateTargetIds.some((targetInstanceId) =>
+      validateAction(
+        state,
+        {
+          type: 'DECLARE_ATTACK',
+          actionId: 'ui-preview',
+          playerId: actingPlayerId,
+          attackerInstanceId: card.instanceId,
+          targetInstanceId,
+        },
+        defs,
+        registry,
+      ).legal,
+    );
+  };
+
+  /**
+   * The one Character this attacker is FORCED to attack, or null when
+   * unrestricted (OP17-044 Captain John: "your opponent cannot attack any card
+   * other than [Captain John]" while he is rested).
+   *
+   * The engine already refuses any other target in declareAttack, but the board
+   * previously offered the Leader and every rested Character regardless — so the
+   * player tapped a target, got a validation error, and read it as "I can't
+   * attack at all". Resolving it here lets the board offer only the legal target.
+   */
+  const forcedAttackTargetFor = (attackerInstanceId: string): string | null => {
+    if (!state) return null;
+    return getForcedAttackTargetId(state, attackerInstanceId, defs);
   };
 
   const currentCostOf = (card: CardView): number => {
@@ -708,12 +754,25 @@ export function useBoardSelection(actingPlayerId: string | null) {
    * null outside this mode. useMemo'd for the same reference-stability
    * reason as donChoiceProgress above.
    */
-  const fieldChoiceInfo: { choiceId: string; playerId: string; prompt: string; attribution: string | null; selected: number; min: number; max: number } | null = useMemo(
-    () =>
-      mode.kind === 'resolvingFieldChoice'
-        ? { choiceId: mode.choiceId, playerId: mode.playerId, prompt: mode.prompt, attribution: mode.attribution, selected: mode.selectedIds.length, min: mode.min, max: mode.max }
-        : null,
-    [mode],
+  const fieldChoiceInfo: { choiceId: string; playerId: string; prompt: string; attribution: string | null; selected: number; min: number; max: number; budgetLabel: string | null; budgetSpent: number; budgetTotal: number | null } | null = useMemo(
+    () => {
+      if (mode.kind !== 'resolvingFieldChoice') return null;
+      const costBudget = mode.maxCombinedCost;
+      const powerBudget = mode.maxCombinedPower;
+      // Surface the budget the card actually cares about. Showing only "2/0-4"
+      // (a CARD count) next to a "total cost of 4 or less" effect is what made
+      // this look like it was forcing a 4-cost selection.
+      const budgetLabel = costBudget !== undefined ? 'Cost' : powerBudget !== undefined ? 'Power' : null;
+      const budgetTotal = costBudget ?? powerBudget ?? null;
+      const budgetSpent = costBudget !== undefined
+        ? combinedCostOf(mode.selectedIds)
+        : powerBudget !== undefined
+          ? combinedPowerOf(mode.selectedIds)
+          : 0;
+      return { choiceId: mode.choiceId, playerId: mode.playerId, prompt: mode.prompt, attribution: mode.attribution, selected: mode.selectedIds.length, min: mode.min, max: mode.max, budgetLabel, budgetSpent, budgetTotal };
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mode, state, defs],
   );
 
   /**
@@ -738,19 +797,82 @@ export function useBoardSelection(actingPlayerId: string | null) {
     reset(); // the pendingChoice effect above re-enters if another field choice is queued next
   }
 
-  /** Tap a field card while resolving a field choice. Auto-submits the instant `max` is reached. */
+  /** Sum of CURRENT cost across `ids` — mirrors resolvePendingChoice's maxCombinedCost check. */
+  function combinedCostOf(ids: string[]): number {
+    if (!state) return 0;
+    return ids.reduce((sum, id) => sum + computeCurrentCost(defs, state, id, registry), 0);
+  }
+
+  /** Sum of CURRENT power across `ids` — mirrors resolvePendingChoice's maxCombinedPower check. */
+  function combinedPowerOf(ids: string[]): number {
+    if (!state) return 0;
+    return ids.reduce((sum, id) => sum + computeCurrentPower(defs, state, id), 0);
+  }
+
+  /**
+   * True when adding `instanceId` would break a constraint the engine enforces
+   * (combined cost/power budget, or the distinct-name rule). Drives both the tap
+   * guard and PlayerBoardPanel's per-card selectable state, so an unaffordable
+   * card simply cannot be picked rather than failing on submit.
+   */
+  /**
+   * Candidates that could NOT be added to `selectedIds` without breaking a
+   * budget or the distinct-name rule. Precomputed into the mode so the board's
+   * pure dim/selectable helpers can grey them out without needing defs/state.
+   */
+  function blockedIdsFor(
+    current: Extract<BoardSelectionMode, { kind: 'resolvingFieldChoice' }>,
+    selectedIds: string[],
+  ): string[] {
+    if (!state) return [];
+    const budget = { maxCombinedCost: current.maxCombinedCost, maxCombinedPower: current.maxCombinedPower, distinctNames: current.distinctNames };
+    if (budget.maxCombinedCost === undefined && budget.maxCombinedPower === undefined && !budget.distinctNames) return [];
+    const helpers = {
+      costOf: (id: string) => computeCurrentCost(defs, state, id, registry),
+      powerOf: (id: string) => computeCurrentPower(defs, state, id),
+      nameOf: (id: string) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name,
+    };
+    return current.candidateInstanceIds.filter((id) => fieldChoiceAdditionExceedsBudget(budget, selectedIds, id, helpers));
+  }
+
+  function fieldChoiceAdditionBlocked(instanceId: string): boolean {
+    if (mode.kind !== 'resolvingFieldChoice' || !state) return false;
+    return fieldChoiceAdditionExceedsBudget(
+      { maxCombinedCost: mode.maxCombinedCost, maxCombinedPower: mode.maxCombinedPower, distinctNames: mode.distinctNames },
+      mode.selectedIds,
+      instanceId,
+      {
+        costOf: (id) => computeCurrentCost(defs, state, id, registry),
+        powerOf: (id) => computeCurrentPower(defs, state, id),
+        nameOf: (id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.name,
+      },
+    );
+  }
+
+  /**
+   * Tap a field card while resolving a field choice.
+   *
+   * Auto-submits the instant `max` is reached — but ONLY for a plain "choose N
+   * cards" choice. When a combined budget is in play the card count is not the
+   * real limit (OP17-119 caps total COST at 4 while allowing up to 4 cards), so
+   * auto-submitting on the 4th tap would rob the player of a legal smaller
+   * selection. Those choices always end on an explicit Confirm.
+   */
   function toggleFieldChoiceCard(instanceId: string): void {
     if (mode.kind !== 'resolvingFieldChoice' || !mode.candidateInstanceIds.includes(instanceId)) return;
     if (mode.selectedIds.includes(instanceId)) {
-      setMode({ ...mode, selectedIds: mode.selectedIds.filter((id) => id !== instanceId) });
+      const remaining = mode.selectedIds.filter((id) => id !== instanceId);
+      setMode({ ...mode, selectedIds: remaining, blockedInstanceIds: blockedIdsFor(mode, remaining) });
       return;
     }
     if (mode.selectedIds.length >= mode.max) return;
+    if (fieldChoiceAdditionBlocked(instanceId)) return;
     const next = [...mode.selectedIds, instanceId];
-    if (next.length === mode.max) {
+    const hasBudget = fieldChoiceHasBudget({ maxCombinedCost: mode.maxCombinedCost, maxCombinedPower: mode.maxCombinedPower });
+    if (next.length === mode.max && !hasBudget) {
       submitFieldChoice(next);
     } else {
-      setMode({ ...mode, selectedIds: next });
+      setMode({ ...mode, selectedIds: next, blockedInstanceIds: blockedIdsFor(mode, next) });
     }
   }
 
@@ -948,7 +1070,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
   function beginAttackWithCard(card: CardView): void {
     if (!canDeclareAttackWith(card)) return;
-    setMode({ kind: 'selectAttackTarget', attackerInstanceId: card.instanceId });
+    setMode({ kind: 'selectAttackTarget', attackerInstanceId: card.instanceId, ...(forcedAttackTargetFor(card.instanceId) ? { forcedTargetInstanceId: forcedAttackTargetFor(card.instanceId)! } : {}) });
     setLastError(null);
   }
 
@@ -1068,7 +1190,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
       case 'selectAttacker': {
         if (!isOwnCard || (zone !== 'leaderArea' && zone !== 'characterArea')) return;
         if (card.orientation !== 'active' || card.summoningSick) return;
-        setMode({ kind: 'selectAttackTarget', attackerInstanceId: card.instanceId });
+        setMode({ kind: 'selectAttackTarget', attackerInstanceId: card.instanceId, ...(forcedAttackTargetFor(card.instanceId) ? { forcedTargetInstanceId: forcedAttackTargetFor(card.instanceId)! } : {}) });
         return;
       }
 

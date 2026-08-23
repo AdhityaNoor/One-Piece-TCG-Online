@@ -15,8 +15,9 @@ import { addToZoneTop, removeFromZone } from '../shared/zoneOps';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
 import { computeEffectiveCounter } from '../shared/power';
+import type { EffectTemplateRegistry } from '../../effects/effectTemplate';
 
-export function validateActivateCounterCharacter(state: GameState, action: ActivateCounterCharacterAction, defs: CardDefinitionLookup): ValidationResult {
+export function validateActivateCounterCharacter(state: GameState, action: ActivateCounterCharacterAction, defs: CardDefinitionLookup, registry: EffectTemplateRegistry = {}): ValidationResult {
   const reasons: string[] = [];
   const battle = state.currentBattle;
   if (!battle) {
@@ -39,7 +40,7 @@ export function validateActivateCounterCharacter(state: GameState, action: Activ
     const def = defs[handInstance.cardDefinitionId];
     if (!def || def.category !== 'character') {
       reasons.push(`'${action.handCardInstanceId}' is not a Character card.`);
-    } else if (computeEffectiveCounter(defs, state, action.handCardInstanceId) <= 0) {
+    } else if (computeEffectiveCounter(defs, state, action.handCardInstanceId, registry) <= 0) {
       reasons.push(`'${def.name}' has no usable Counter value (2-10) and cannot be used at Counter timing.`);
     }
   }
@@ -52,12 +53,12 @@ export function validateActivateCounterCharacter(state: GameState, action: Activ
   return { legal: reasons.length === 0, reasons };
 }
 
-export function executeActivateCounterCharacter(state: GameState, action: ActivateCounterCharacterAction, defs: CardDefinitionLookup): ActionExecuteResult {
+export function executeActivateCounterCharacter(state: GameState, action: ActivateCounterCharacterAction, defs: CardDefinitionLookup, registry: EffectTemplateRegistry = {}): ActionExecuteResult {
   const battle = state.currentBattle!;
   const player = state.players[action.playerId];
   const handInstance = state.cardsById[action.handCardInstanceId];
   const def = getDefinition(defs, handInstance);
-  const counterValue = computeEffectiveCounter(defs, state, action.handCardInstanceId);
+  const counterValue = computeEffectiveCounter(defs, state, action.handCardInstanceId, registry);
   const logger = createActionLogger(state, action.actionId);
 
   const cardsById = {

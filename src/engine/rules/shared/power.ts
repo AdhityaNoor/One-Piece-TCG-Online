@@ -25,6 +25,27 @@ import { cardTypeIncludes } from './typeMatching';
  * aura). That shape never fires for the first copy in hand, so cost reads also
  * evaluate the same permanent hand-aura ops from the card's curated program.
  */
+/**
+ * True when a live continuous record already grants this in-hand card the
+ * same-definition hand aura (i.e. a copy of it is on the field and its
+ * onEnterPlay registered the modifier). The program-derived handSelf*Delta
+ * readers defer to that record so the grant is never counted twice.
+ */
+function sameDefinitionHandAuraActive(
+  state: GameState,
+  instanceId: string,
+  defs: CardDefinitionLookup,
+  modifierKey: 'costModifier' | 'counterModifier',
+): boolean {
+  return state.continuousEffects.some((record) => {
+    const mod = record[modifierKey];
+    if (!mod?.appliesToGroup?.controllerSameDefinitionInHand) return false;
+    return modifierKey === 'costModifier'
+      ? costModifierApplies(record, state, instanceId, defs)
+      : counterModifierApplies(record, state, instanceId, defs);
+  });
+}
+
 function handSelfCostDelta(
   defs: CardDefinitionLookup,
   state: GameState,
@@ -33,6 +54,10 @@ function handSelfCostDelta(
 ): number {
   const instance = state.cardsById[instanceId];
   if (!instance || instance.currentZone !== 'hand') return 0;
+  // A copy already on the field registers the SAME grant as a continuous aura
+  // record. Honouring both applied the discount twice (OP17-013 read 3 instead
+  // of 5 with a copy on board), so defer to the record whenever one is live.
+  if (sameDefinitionHandAuraActive(state, instanceId, defs, 'costModifier')) return 0;
   // Inline cardNumber fallback (same as resolveEffectProgram; avoid importing fireTiming).
   const program = registry[instance.cardDefinitionId] ?? registry[defs[instance.cardDefinitionId]?.cardNumber ?? ''];
   if (!program) return 0;
@@ -349,7 +374,12 @@ export function computeCurrentCost(
  * ("+1000 Counter", "Counter becomes +2000"). Returns 0 when the card has no
  * usable Counter after modifiers.
  */
-export function computeEffectiveCounter(defs: CardDefinitionLookup, state: GameState, instanceId: string): number {
+export function computeEffectiveCounter(
+  defs: CardDefinitionLookup,
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry = {},
+): number {
   const instance = state.cardsById[instanceId];
   if (!instance) return 0;
   const def = getDefinition(defs, instance);
@@ -361,7 +391,40 @@ export function computeEffectiveCounter(defs: CardDefinitionLookup, state: GameS
     if (mod.setValue !== undefined) value = mod.setValue;
     else value += mod.amount ?? 0;
   }
+  value += handSelfCounterDelta(defs, state, instanceId, registry);
   return Math.max(0, value);
+}
+
+/**
+ * Counter twin of handSelfCostDelta: "this card in your hand has a +N Counter"
+ * (OP17-118). Assignments register it as onEnterPlay + addCounterAuraSameCardInHand,
+ * a shape that can only ever reach DUPLICATE copies once one is on the field — so
+ * Counter reads evaluate the same permanent hand-aura ops straight from the card's
+ * own curated program while it sits in hand.
+ */
+function handSelfCounterDelta(
+  defs: CardDefinitionLookup,
+  state: GameState,
+  instanceId: string,
+  registry: EffectTemplateRegistry,
+): number {
+  const instance = state.cardsById[instanceId];
+  if (!instance || instance.currentZone !== 'hand') return 0;
+  if (sameDefinitionHandAuraActive(state, instanceId, defs, 'counterModifier')) return 0;
+  const program = registry[instance.cardDefinitionId] ?? registry[defs[instance.cardDefinitionId]?.cardNumber ?? ''];
+  if (!program) return 0;
+  let delta = 0;
+  for (const ability of program.abilities) {
+    if (ability.timing !== 'onEnterPlay') continue;
+    for (const op of ability.ops) {
+      if (op.op !== 'addCounterAura') continue;
+      if (!op.group?.controllerSameDefinitionInHand) continue;
+      if (op.duration !== 'permanent') continue;
+      if (op.condition?.gate?.length && !evaluateGates(op.condition.gate, state, defs, instance.controllerId, instanceId)) continue;
+      delta += op.amount ?? 0;
+    }
+  }
+  return delta;
 }
 
 export function hasContinuousKeyword(defs: CardDefinitionLookup, state: GameState, instanceId: string, keyword: ContinuousKeyword): boolean {

@@ -10,6 +10,7 @@
 import type { CardCategory, Color, FaceState, Orientation } from '../../engine/state/card';
 import type { GameState } from '../../engine/state/game';
 import { computeCurrentCost, computeCurrentPower, computeEffectiveCounter, hasContinuousKeyword, type CardDefinitionLookup } from '../../engine/rules/shared';
+import type { EffectTemplateRegistry } from '../../engine/effects/effectTemplate';
 import {
   computeProjectedCostWithV2,
   computeProjectedPowerWithV2,
@@ -76,6 +77,14 @@ export function buildCardView(
   images: Record<string, string | null>,
   instanceId: string,
   v2Projection?: V2ProjectionContext,
+  /**
+   * Curated programs. Needed ONLY for the in-hand self statics ("give this card
+   * in your hand −N cost", "this card in your hand has a +N Counter"), which are
+   * read off the card's own program rather than from a continuous record. Without
+   * it the engine applies the modifier but the board displays the printed value,
+   * so the player sees the wrong number on the card they are about to use.
+   */
+  registry: EffectTemplateRegistry = {},
 ): CardView {
   const instance = state.cardsById[instanceId];
   const def = instance ? defs[instance.cardDefinitionId] : undefined;
@@ -124,7 +133,7 @@ export function buildCardView(
     : null;
   const basePower = isPowerCard ? def.basePower ?? 0 : null;
   const cost = isCostCard
-    ? v2Projection?.sidecars ? computeProjectedCostWithV2(defs, state, instanceId, v2Projection) : computeCurrentCost(defs, state, instanceId)
+    ? v2Projection?.sidecars ? computeProjectedCostWithV2(defs, state, instanceId, v2Projection) : computeCurrentCost(defs, state, instanceId, registry)
     : null;
   const baseCost = isCostCard ? def.baseCost ?? 0 : null;
   const hasV2Projection = Boolean(v2Projection?.sidecars);
@@ -152,7 +161,7 @@ export function buildCardView(
     costDelta: cost !== null && baseCost !== null ? cost - baseCost : null,
     counter: def.category === 'character'
       ? (() => {
-          const effective = computeEffectiveCounter(defs, state, instanceId);
+          const effective = computeEffectiveCounter(defs, state, instanceId, registry);
           return effective > 0 ? effective : (def.counter ?? null);
         })()
       : null,

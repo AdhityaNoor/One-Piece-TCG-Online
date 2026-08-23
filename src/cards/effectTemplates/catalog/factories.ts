@@ -1602,6 +1602,8 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [{ op: 'addCostAura', group: { opponentCharacters: true }, amount: f.amount, duration: f.duration, ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}), ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addCostAuraSameCardInHand':
       return [{ op: 'addCostAura', group: { controllerSameDefinitionInHand: true }, amount: f.amount, duration: f.duration, ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
+    case 'addCounterAuraSameCardInHand':
+      return [{ op: 'addCounterAura', group: { controllerSameDefinitionInHand: true }, amount: f.amount, duration: f.duration, ...(f.gate ? { condition: { gate: f.gate } } : {}) }];
     case 'addNextPlayFromHandCostDiscount': {
       const condition = {
         ...(f.filter?.minBaseCost !== undefined ? { minBaseCost: f.filter.minBaseCost } : {}),

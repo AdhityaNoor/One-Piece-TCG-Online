@@ -241,7 +241,12 @@ function useElementWidth<T extends HTMLElement>() {
 /** On-field combat keywords to surface as icon labels, in a stable display order. */
 function activeKeywords(card: CardView): KeywordKey[] {
   const labels: KeywordKey[] = [];
-  if (card.hasRush) labels.push('rush');
+  // [Rush] only ever matters on the turn the card is played — it is what lets a
+  // summoning-sick card attack. The engine leaves summoningSick TRUE on a Rush
+  // card and checks the keyword separately (see staticConditionalSelfBuff.test.ts),
+  // so summoningSick is exactly "this is still the turn it arrived". Past that the
+  // badge is noise on every board, so it is dropped.
+  if (card.hasRush && card.summoningSick) labels.push('rush');
   if (card.hasBlocker) labels.push('blocker');
   if (card.hasDoubleAttack) labels.push('doubleAttack');
   if (card.hasBanish) labels.push('banish');

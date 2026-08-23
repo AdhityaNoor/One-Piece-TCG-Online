@@ -108,18 +108,37 @@ export function PlayMenuScreen() {
     const mql = window.matchMedia('(min-width: 1024px)');
     const compute = () => {
       if (!mql.matches) {
+        el.style.removeProperty('--hex');
         setHexSize(null);
         return;
       }
       const header = el.querySelector('[data-lane-header]') as HTMLElement | null;
-      const headerH = header?.offsetHeight ?? 68;
-      // Tallest lane = 3 tile HEIGHTS + 2 gaps, plus the lane header and the
-      // row/section vertical padding. Solve for one tile's height, then
-      // convert to the width that --hex expects (height = width * 0.866).
-      const chrome = headerH + LANE_CHROME + HEX_GAP * 2;
-      const tileH = Math.floor((el.clientHeight - chrome) / 3);
-      const width = Math.floor(tileH / HEX_RATIO);
-      setHexSize(Number.isFinite(width) && width > 150 ? width : 150);
+      // Fixed point, not a single pass: the lane header's own type is sized
+      // from --hex (see .op-hex-lane-title), so its height depends on the
+      // answer we're solving for. Writing --hex straight onto the element and
+      // re-reading offsetHeight forces a synchronous relayout, so two or
+      // three rounds converge within the same frame. Without this the header
+      // would be measured at its PREVIOUS size and the tiles would be sized
+      // from stale chrome.
+      let width = 150;
+      for (let pass = 0; pass < 3; pass += 1) {
+        const headerH = header?.offsetHeight ?? 68;
+        // Tallest lane = 3 tile HEIGHTS + 2 gaps, plus the lane header and the
+        // row/section vertical padding. Solve for one tile's height, then
+        // convert to the width that --hex expects (height = width * 0.866).
+        const chrome = headerH + LANE_CHROME + HEX_GAP * 2;
+        const tileH = Math.floor((el.clientHeight - chrome) / 3);
+        const next = Math.floor(tileH / HEX_RATIO);
+        const clamped = Number.isFinite(next) && next > 150 ? next : 150;
+        // Converged (or oscillating by a hair) — stop, don't thrash layout.
+        if (Math.abs(clamped - width) <= 2) {
+          width = clamped;
+          break;
+        }
+        width = clamped;
+        el.style.setProperty('--hex', `${width}px`);
+      }
+      setHexSize(width);
     };
     compute();
     const ro = new ResizeObserver(compute);
@@ -266,12 +285,17 @@ function PlaySection({
         overlapLeft ? 'op-hex-lane-overlap' : '',
       ].join(' ')}
     >
-      <div data-lane-header className="pb-4 text-center">
-        <div className="inline-flex items-center gap-2">
-          <span aria-hidden="true" className={['h-2 w-2 flex-shrink-0 rounded-full', styles.dot].join(' ')} />
-          <p className={['font-display text-xl font-black uppercase tracking-[0.22em] sm:text-2xl', styles.title].join(' ')}>{title}</p>
+      {/* Font sizes come from .op-hex-lane-header / -title / -hint, which are
+          expressed in container-query units against the lane, so the header
+          shrinks in step with the hexagons instead of colliding with the
+          neighbouring lane's header on short viewports. The dot and the gap
+          are in `em` so they follow the title. */}
+      <div data-lane-header className="op-hex-lane-header pb-4 text-center">
+        <div className={['op-hex-lane-title inline-flex max-w-full items-center justify-center gap-[0.4em]', styles.title].join(' ')}>
+          <span aria-hidden="true" className={['h-[0.4em] w-[0.4em] flex-shrink-0 rounded-full', styles.dot].join(' ')} />
+          <p className="font-display font-black uppercase leading-tight tracking-[0.22em]">{title}</p>
         </div>
-        <p className="mt-1.5 text-xs font-bold uppercase tracking-[0.16em] text-white/42 sm:text-sm">{deckHint}</p>
+        <p className="op-hex-lane-hint mt-[0.4em] font-bold uppercase leading-tight tracking-[0.16em] text-white/42">{deckHint}</p>
       </div>
 
       {/* gap-0: hexagons in a lane share flat edges (their 2px accent borders
@@ -369,24 +393,31 @@ function ModeCard({ item, accent }: { item: PlayModeItem; accent: AccentKey }) {
         />
         <span
           className={[
-            // Wide left/right padding keeps text inside the hexagon's central
+            // Sizing (font, padding, gap) lives in .op-hex-content and is
+            // expressed in container-query units, so the whole text block is
+            // a fixed fraction of the hexagon at every tile size. Everything
+            // below is therefore in `em` — one knob scales the lot. Wide
+            // left/right padding keeps text inside the hexagon's central
             // band — the shape narrows to ~half width at the flat top/bottom
             // edges, so text set full-width would be clipped by the slanted
             // sides.
-            'relative flex h-full w-full flex-col items-center justify-center gap-1 px-11 py-6 text-center sm:px-12',
+            'op-hex-content relative flex h-full w-full flex-col items-center justify-center overflow-hidden text-center',
           ].join(' ')}
         >
-          <span className="flex items-center justify-center gap-1.5">
-            <span className={['text-[9px] font-black uppercase tracking-[0.18em] sm:text-[10px] sm:tracking-[0.22em]', styles.title].join(' ')}>{item.eyebrow}</span>
+          <span className="flex max-w-full items-center justify-center gap-[0.5em]">
+            <span className={['text-[0.8em] font-black uppercase tracking-[0.2em]', styles.title].join(' ')}>{item.eyebrow}</span>
             {item.badge && (
-              <span className="rounded-sm border border-gold/70 bg-gold/20 px-1 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-gold">{item.badge}</span>
+              <span className="rounded-sm border border-gold/70 bg-gold/20 px-[0.35em] py-[0.15em] text-[0.7em] font-black uppercase tracking-[0.12em] text-gold">{item.badge}</span>
             )}
           </span>
-          <span className="font-display text-base font-black uppercase tracking-[0.06em] text-white sm:text-lg">{item.label}</span>
-          <span className="text-[11px] leading-[1.25] text-slate-200/75">{item.description}</span>
+          <span className="font-display text-[1.55em] font-black uppercase leading-[1.1] tracking-[0.06em] text-white">{item.label}</span>
+          {/* line-clamp is the last line of defence: on the shortest viewports
+              a long description would otherwise run past the hexagon's bottom
+              edge and get sliced by the clip-path mid-word. */}
+          <span className="line-clamp-4 text-[1em] leading-[1.25] text-slate-200/75">{item.description}</span>
 
           {item.disabled && item.disabledReason && (
-            <span className="pt-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white/40">{item.disabledReason}</span>
+            <span className="pt-[0.2em] text-[0.8em] font-bold uppercase tracking-[0.1em] text-white/40">{item.disabledReason}</span>
           )}
         </span>
       </button>

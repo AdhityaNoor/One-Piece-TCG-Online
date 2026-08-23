@@ -123,6 +123,11 @@ export function leaderCharacterSelectable(
       return zone !== 'stageArea' && isOwn && card.orientation === 'active' && !card.summoningSick;
     case 'selectAttackTarget':
       if (!isOpponent) return false;
+      // A forced-target effect (OP17-044 Captain John) narrows the legal set to
+      // exactly one Character. declareAttack already refuses everything else, so
+      // offering the Leader and every rested Character here just produced a
+      // validation error on tap that reads as "I can't attack at all".
+      if (mode.forcedTargetInstanceId) return card.instanceId === mode.forcedTargetInstanceId;
       if (zone === 'leaderArea') return true;
       return zone === 'characterArea' && card.orientation === 'rested';
     case 'selectBlocker':
@@ -136,6 +141,10 @@ export function leaderCharacterSelectable(
       // Unlike every other case here, NOT gated on isOwn — a field choice's
       // candidates can belong to either player (e.g. "K.O. up to 1 opponent
       // Character"); candidateInstanceIds is the sole authority.
+      // Already-selected cards stay selectable so they can be tapped off again;
+      // a candidate that would break the combined budget is not pickable.
+      if (mode.selectedIds.includes(card.instanceId)) return true;
+      if (mode.blockedInstanceIds.includes(card.instanceId)) return false;
       return mode.candidateInstanceIds.includes(card.instanceId);
     case 'idle':
       // Idle: an own card with a ready [Activate: Main] effect is tappable directly (the ⚡ badge).
@@ -155,7 +164,19 @@ export function leaderCharacterSelectable(
  * click through it.
  */
 export function fieldChoiceDimmed(mode: BoardSelectionMode, card: CardView): boolean {
-  return mode.kind === 'resolvingFieldChoice' && !mode.candidateInstanceIds.includes(card.instanceId);
+  if (mode.kind !== 'resolvingFieldChoice') return false;
+  // Already picked: never dim — it carries the selected ring instead.
+  if (mode.selectedIds.includes(card.instanceId)) return false;
+  // Not a candidate at all, OR a candidate the current selection has priced out
+  // of the combined budget ("a total cost of 4 or less"). Both read the same to
+  // the player: this card cannot be chosen right now.
+  return !mode.candidateInstanceIds.includes(card.instanceId)
+    || mode.blockedInstanceIds.includes(card.instanceId);
+}
+
+/** True while `card` is one of the current field choice's picked cards (drives the selected ring). */
+export function fieldChoiceSelected(mode: BoardSelectionMode, card: CardView): boolean {
+  return mode.kind === 'resolvingFieldChoice' && mode.selectedIds.includes(card.instanceId);
 }
 
 function selectedAttackerIds(mode: BoardSelectionMode): Set<string> {
@@ -534,7 +555,7 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
         card={leaderCard}
         size="field"
         selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'leaderArea', leaderCard, canActivate(leaderCard), canOnOppAttack(leaderCard))}
-        selected={attackerSelected.has(leaderCard.instanceId)}
+        selected={attackerSelected.has(leaderCard.instanceId) || fieldChoiceSelected(mode, leaderCard)}
         dimmed={fieldChoiceDimmed(mode, leaderCard)}
         activatable={mode.kind === 'idle' && canActivate(leaderCard)}
         attackable={mode.kind === 'idle' && canAttack(leaderCard)}
@@ -612,7 +633,7 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
               card={card}
               size="field"
               selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'characterArea', card, canActivate(card), canOnOppAttack(card))}
-              selected={attackerSelected.has(card.instanceId)}
+              selected={attackerSelected.has(card.instanceId) || fieldChoiceSelected(mode, card)}
               dimmed={fieldChoiceDimmed(mode, card)}
               activatable={mode.kind === 'idle' && canActivate(card)}
               attackable={mode.kind === 'idle' && canAttack(card)}

@@ -37,6 +37,7 @@ import {
   CardMovementOverlay,
   DockHand,
   fieldChoiceDimmed,
+  fieldChoiceSelected,
   leaderCharacterSelectable,
   MatchAccessoriesProvider,
   MatchChatPanel,
@@ -96,6 +97,9 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const matchState = useMatchStore((s) => s.state);
   const defs = useMatchStore((s) => s.defs);
   const images = useMatchStore((s) => s.cardImagesByDefinitionId);
+  // Needed by the projection so in-hand self statics (cost/Counter) display the
+  // modified value rather than the printed one — see buildCardView's `registry`.
+  const effectRegistry = useMatchStore((s) => s.registry);
   const accessoriesByPlayerId = useMatchStore((s) => s.accessoriesByPlayerId);
   const startedWithDeckIds = useMatchStore((s) => s.startedWithDeckIds);
   const startError = useMatchStore((s) => s.startError);
@@ -414,14 +418,14 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const bottomPlayerBoard = useMemo(() => {
     if (!matchState || !bottomPlayerIdSafe) return null;
     const v2Projection = EFFECT_RUNTIME_MODE === 'v2' ? { sidecars: v2EffectSidecars } : undefined;
-    return projectPlayerBoard(matchState, defs, images, bottomPlayerIdSafe, v2Projection);
-  }, [matchState, defs, images, bottomPlayerIdSafe, v2EffectSidecars]);
+    return projectPlayerBoard(matchState, defs, images, bottomPlayerIdSafe, v2Projection, effectRegistry);
+  }, [matchState, defs, images, bottomPlayerIdSafe, v2EffectSidecars, effectRegistry]);
 
   const topPlayerBoard = useMemo(() => {
     if (!matchState || !topPlayerIdSafe) return null;
     const v2Projection = EFFECT_RUNTIME_MODE === 'v2' ? { sidecars: v2EffectSidecars } : undefined;
-    return projectPlayerBoard(matchState, defs, images, topPlayerIdSafe, v2Projection);
-  }, [matchState, defs, images, topPlayerIdSafe, v2EffectSidecars]);
+    return projectPlayerBoard(matchState, defs, images, topPlayerIdSafe, v2Projection, effectRegistry);
+  }, [matchState, defs, images, topPlayerIdSafe, v2EffectSidecars, effectRegistry]);
 
   const battlePowerInstanceIds = useMemo(() => {
     if (!matchState?.currentBattle) return new Set<string>();
@@ -2154,7 +2158,9 @@ function MobileCardZone({
         card={card}
         size="field"
         selectable={mode.kind !== 'idle' && selectable}
-        selected={attackerSelected}
+        // Field-choice picks get the same selected ring the desktop mat draws,
+        // so a multi-card selection is readable on mobile too.
+        selected={attackerSelected || fieldChoiceSelected(mode, card)}
         // "Dim, don't hide" the cards a field choice can't target, so the
         // eligible one stands out on the mat — same call the desktop mat makes.
         dimmed={fieldChoiceDimmed(mode, card)}

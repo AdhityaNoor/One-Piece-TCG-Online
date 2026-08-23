@@ -306,6 +306,10 @@ export type AbilityFunction =
   | { fn: 'addCostAuraOpponentCharacters'; amount: number; duration: IrDuration; sourceCondition?: SourceStateCondition; gate?: AbilityGate[] }
   // "Give this card in your hand −N cost" while the source is on the field (same cardDefinitionId copies in hand).
   | { fn: 'addCostAuraSameCardInHand'; amount: number; duration: IrDuration; gate?: AbilityGate[] }
+  // "This card in your hand has a +N Counter" — the Counter twin of addCostAuraSameCardInHand.
+  // Read from the card's OWN program while it sits in hand (handSelfCounterDelta), so it works
+  // for the first copy in hand rather than only once a duplicate is on the field.
+  | { fn: 'addCounterAuraSameCardInHand'; amount: number; duration: IrDuration; gate?: AbilityGate[] }
   // One-shot "next time you play a matching Character from your hand this turn, cost −N".
   | { fn: 'addNextPlayFromHandCostDiscount'; amount: number; filter?: { typeIncludes?: string; name?: string; anyOfNames?: string[]; minBaseCost?: number; maxBaseCost?: number } }
   // "This card cannot be K.O.'d" — scope 'battle' (battle K.O. only) or 'any'.

@@ -18,10 +18,14 @@
  * it must never reveal faces, only ever show backs like the docked/at-rest
  * state. See `allowHoverReveal` below.
  *
- * Touch: TODO — mouse-driven only for now.
+ * Touch (mobile, `tapActions`): none of the hover behaviour applies. The strip
+ * stays docked in view — the caller sets how much of the card tucks behind the
+ * screen edge via `restPeekRatio`, there is no reveal/auto-hide — and a tap
+ * raises the card clear of the strip and opens the same action bubble the
+ * mobile field uses, instead of magnifying it and floating buttons over it.
  */
 
-import { memo, useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { applyHandOrder, findPlayZoneHost, handDropIndex, isOverPlayDropZone, moveInOrder, playDropZoneFor } from './handOrder';
 import type { CardView } from '../../../board/projection';
@@ -34,6 +38,9 @@ import { BoardCardTile } from './BoardCardTile';
 // ── Geometry ───────────────────────────────────────────────────────────────
 /** Pointer travel before a press on a hand card becomes a drag rather than a tap. */
 const DRAG_THRESHOLD_PX = 8;
+
+/** How far a tapped card rises out of the strip, as a share of its height. */
+const TAP_LIFT_RATIO = 0.22;
 
 const BASE_W = 112;
 const BASE_H = Math.round(BASE_W * 88 / 63); // ≈ 156 px
@@ -88,9 +95,34 @@ export interface DockHandProps {
   cardWidthPx?: number;
   maxVisibleCards?: number;
   restPeekRatio?: number;
+  /**
+   * How much of each card the next one covers. The desktop default (0.30) is
+   * affordable there because hovering magnifies the card under the cursor, so
+   * a covered card is one mouse-move away from being readable. Touch has no
+   * hover and (in tapActions mode) no magnification, so a mobile caller passes
+   * a smaller value and lets the strip scroll instead — a hand you cannot read
+   * is a hand you cannot play from.
+   */
+  overlapRatio?: number;
   touchReveal?: boolean;
   forceOpen?: boolean;
   onRequestHide?: () => void;
+  /**
+   * Touch dock behaviour (mobile). The desktop dock magnifies the hovered
+   * card to 2.35x and floats Play/View over it — a mouse affordance that made
+   * no sense under a finger, where the "hover" is the tap itself and the blown
+   * -up card covered the board. With this on the card is never scaled: a tap
+   * RAISES it slightly and opens the same action bubble the mobile field uses
+   * (see .op-mobile-card-action-bubble), so hand cards and field cards are
+   * operated the exact same way.
+   */
+  tapActions?: boolean;
+  /**
+   * A selection mode is running (mode.kind !== 'idle'). Mirrors the mobile
+   * field, where a tap is the selection itself while a mode is collecting
+   * targets and only opens the action bubble when idle.
+   */
+  selectionActive?: boolean;
   /**
    * Hand card currently awaiting play-cost confirmation (mode
    * 'confirmPlayCost'). While set, its landing ghost stays on the field so the
@@ -192,6 +224,11 @@ function DockHandCard({
   dropIntent,
   shouldSuppressClick,
   playerId,
+  tapActions,
+  selectionActive,
+  isTapped,
+  onToggleActions,
+  onCloseActions,
 }: {
   card: CardView;
   index: number;
@@ -217,10 +254,67 @@ function DockHandCard({
   dropIntent: 'reorder' | 'play';
   shouldSuppressClick: () => boolean;
   playerId?: string;
+  tapActions: boolean;
+  selectionActive: boolean;
+  isTapped: boolean;
+  onToggleActions: () => void;
+  onCloseActions: () => void;
 }) {
   const hiddenDuringFlight = useCardFlightHidden(card.instanceId);
-  const scale = cardScale(index, hoveredIdx);
+  const boxRef = useRef<HTMLDivElement | null>(null);
+  const bubbleRef = useRef<HTMLDivElement | null>(null);
+  // Where the tap bubble is pinned, in viewport coordinates. The bubble is
+  // portalled to <body> and positioned FIXED because every box between the
+  // card and the screen clips it: the hand strip is a horizontal scroller
+  // (overflow-x: auto forces overflow-y to auto, so anything drawn above a
+  // card is cut off) and .op-mobile-match-center is overflow: hidden. Padding
+  // the scroller to make room — the first attempt — wrecked the strip's own
+  // vertical placement, since its height is stretched from that box.
+  const [bubbleAt, setBubbleAt] = useState<{ x: number; edge: number } | null>(null);
+  // Touch dock: no magnification at all. The lift is the whole feedback — the
+  // card rises out of the strip far enough to clear the cards beside it and to
+  // sit under its own action bubble.
+  const scale = tapActions ? 1 : cardScale(index, hoveredIdx);
+  const liftPx = tapActions && isTapped ? Math.round(cardHeight * TAP_LIFT_RATIO) : 0;
+  // The strip hangs off the nearest screen edge, so "up" is away from that
+  // edge: down for the top hand, up for the bottom one.
+  const liftY = isTop ? liftPx : -liftPx;
   const isHoveredCard = hoveredIdx === index;
+
+  const open = tapActions && isTapped && showFaces;
+  useLayoutEffect(() => {
+    if (!open) {
+      setBubbleAt(null);
+      return;
+    }
+    const measure = (): void => {
+      const el = boxRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      // `edge` is the card side the bubble hangs off: its bottom for the top
+      // dock (bubble opens downward), its top for the bottom dock.
+      setBubbleAt({ x: rect.left + rect.width / 2, edge: isTop ? rect.bottom : rect.top });
+    };
+    measure();
+    // Again once the 0.18s lift has landed, so the bubble sits against the
+    // RAISED card rather than where it started.
+    const settle = window.setTimeout(measure, 220);
+    window.addEventListener('resize', measure);
+    // Tapping anything else — another card, the board, the battle line —
+    // dismisses it, the way a real popover behaves.
+    const onDocPointerDown = (event: globalThis.PointerEvent): void => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (boxRef.current?.contains(target) || bubbleRef.current?.contains(target)) return;
+      onCloseActions();
+    };
+    document.addEventListener('pointerdown', onDocPointerDown, true);
+    return () => {
+      window.clearTimeout(settle);
+      window.removeEventListener('resize', measure);
+      document.removeEventListener('pointerdown', onDocPointerDown, true);
+    };
+  }, [open, isTop, onCloseActions]);
 
   return (
     <div
@@ -229,7 +323,7 @@ function DockHandCard({
         hiddenDuringFlight ? 'invisible' : '',
       ].join(' ')}
       data-card-instance-id={card.instanceId}
-      ref={(el) => registerEl(card.instanceId, el)}
+      ref={(el) => { boxRef.current = el; registerEl(card.instanceId, el); }}
       onPointerDown={(event) => onDragStart(card.instanceId, event)}
       style={{
         // touchAction none so a drag on touch isn't stolen by page scrolling.
@@ -243,18 +337,30 @@ function DockHandCard({
         // pointerEvents:none is load-bearing, not cosmetic — the drag
         // hit-tests with elementFromPoint, which would otherwise just return
         // this card and never see the field underneath it.
-        transform: `scale(${scale})`,
+        transform: `translateY(${liftY}px) scale(${scale})`,
         transformOrigin: isTop ? 'top center' : 'bottom center',
         transition: isDragging ? 'none' : 'transform 0.18s ease-out, opacity 0.15s ease-out',
-        zIndex: isHoveredCard ? 50 : index + 1,
+        zIndex: isTapped ? 60 : isHoveredCard ? 50 : index + 1,
         opacity: isDragging ? 0 : isDimmed ? 0.4 : 1,
-        pointerEvents: isDragging ? 'none' : undefined,
+        // The touch strip sets pointer-events: none on itself so its headroom
+        // does not swallow taps meant for the board; the cards opt back in.
+        pointerEvents: isDragging ? 'none' : tapActions ? 'auto' : undefined,
       }}
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
       onClick={() => {
         // A completed drag must not also fire the card's tap action.
         if (shouldSuppressClick()) return;
+        if (tapActions) {
+          // While a mode is collecting targets the tap IS the selection (same
+          // rule as MobileCardZone, which only opens its bubble when idle).
+          if (selectionActive) {
+            if (canSelect) onTap();
+            return;
+          }
+          onToggleActions();
+          return;
+        }
         if (canSelect) onTap();
       }}
     >
@@ -283,7 +389,7 @@ function DockHandCard({
         )}
       </div>
 
-      {isHoveredCard && showFaces && (
+      {isHoveredCard && showFaces && !tapActions && (
         <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-1.5 px-1">
           {canPlay && (
             <button
@@ -305,6 +411,38 @@ function DockHandCard({
           </button>
         </div>
       )}
+
+      {/* Same bubble the mobile field uses — one interaction language for every
+          card on screen. Portalled to <body> and fixed-positioned so no
+          scroller or overflow: hidden ancestor can clip it; it opens on the
+          side away from the screen edge the strip is docked to. */}
+      {open && bubbleAt
+        ? createPortal(
+            <div
+              ref={bubbleRef}
+              className={['op-mobile-card-action-bubble', isTop ? 'is-below' : ''].filter(Boolean).join(' ')}
+              style={{
+                position: 'fixed',
+                zIndex: 130,
+                left: `${bubbleAt.x}px`,
+                top: isTop ? `${bubbleAt.edge + 6}px` : undefined,
+                bottom: isTop ? undefined : `${Math.round(window.innerHeight - bubbleAt.edge + 6)}px`,
+                transform: 'translateX(-50%)',
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              {canPlay && (
+                <button type="button" onClick={() => { onCloseActions(); onPlay(); }}>
+                  Play
+                </button>
+              )}
+              <button type="button" onClick={() => { onCloseActions(); onZoom(); }}>
+                View
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {isSelected && (
         <span
@@ -348,12 +486,20 @@ export const DockHand = memo(function DockHand({
   cardWidthPx,
   maxVisibleCards,
   restPeekRatio,
+  overlapRatio,
   touchReveal = false,
   forceOpen = false,
   onRequestHide,
+  tapActions = false,
+  selectionActive = false,
   pendingPlayInstanceId = null,
 }: DockHandProps) {
   const [dockHovered, setDockHovered] = useState(false);
+  // Which card has its action bubble open. One at a time, and never carried
+  // across a mode change or a card leaving the hand (see the effects below).
+  const [tappedId, setTappedId] = useState<string | null>(null);
+  // Stable identity: DockHandCard registers a document listener keyed on it.
+  const closeActions = useCallback(() => setTappedId(null), []);
   const [touchOpen, setTouchOpen] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [windowStart, setWindowStart] = useState(0);
@@ -386,6 +532,8 @@ export const DockHand = memo(function DockHand({
   }, [cards, hiddenDuringFlight, maxVisible]);
 
   const isTop = position === 'top';
+  /** Vertical headroom the touch strip needs so a lifted card is not clipped. */
+  const liftRoomPx = tapActions ? Math.round(cardHeight * TAP_LIFT_RATIO) + 6 : 0;
   const isOpen = (dockHovered || touchOpen || forceOpen) && !boardFocused;
   const showFaces = isOwn || (isOpen && allowHoverReveal);
   const restPeek = restPeekRatio ?? PEEK;
@@ -545,7 +693,9 @@ export const DockHand = memo(function DockHand({
   function scrollRight() { setWindowStart((s) => Math.min(cards.length - maxVisible, s + 1)); setHoveredIdx(null); }
 
   const revealForTouch = (): void => {
-    if (!touchReveal) return;
+    // Tap mode keeps the strip permanently docked in view, so there is nothing
+    // to reveal and nothing to auto-hide.
+    if (!touchReveal || tapActions) return;
     setTouchOpen(true);
     if (touchCloseTimer.current !== null) window.clearTimeout(touchCloseTimer.current);
     touchCloseTimer.current = window.setTimeout(() => {
@@ -615,7 +765,7 @@ export const DockHand = memo(function DockHand({
       return;
     }
 
-    if (absY < 24) return;
+    if (absY < 24 || tapActions) return;
 
     const hidesInNaturalDirection = isTop ? deltaY < 0 : deltaY > 0;
     if (deltaY > 0 || hidesInNaturalDirection) {
@@ -634,6 +784,17 @@ export const DockHand = memo(function DockHand({
       if (touchCloseTimer.current !== null) window.clearTimeout(touchCloseTimer.current);
     };
   }, []);
+
+  // A bubble left open across a mode change would offer actions the new mode
+  // no longer allows; one left open on a card that has since been played would
+  // never close at all. Mirrors MobileCardZone's own reset effect.
+  useEffect(() => {
+    setTappedId(null);
+  }, [selectionActive]);
+
+  useEffect(() => {
+    setTappedId((current) => (current && !cards.some((c) => c.instanceId === current) ? null : current));
+  }, [cards]);
 
   // MUST stay above the `cards.length === 0` early return below: a hook after
   // a conditional return runs on some renders and not others, which is exactly
@@ -723,7 +884,20 @@ export const DockHand = memo(function DockHand({
       <div
         aria-label={`${isOwn ? 'Your' : "Opponent's"} hand — ${cards.length} card${cards.length !== 1 ? 's' : ''}`}
         className={['pointer-events-none absolute left-0 right-0 flex justify-center', hoveredIdx !== null ? 'z-[220]' : 'z-[100]'].join(' ')}
-        style={{ [isTop ? 'top' : 'bottom']: 0, height: `${cardHeight}px`, overflow: 'visible' }}
+        style={{
+          // Absolute inside .op-mobile-match-center (NOT fixed to the
+          // viewport): the centre already starts below the mobile action
+          // header, and a viewport-anchored dock drew the opponent's hand
+          // straight over that header. The small inset keeps the cards clear
+          // of the screen edge — and of a phone's home indicator — instead of
+          // sitting flush against it where a pixel of container/viewport
+          // disagreement shaves off their bottom row.
+          [isTop ? 'top' : 'bottom']: tapActions
+            ? `calc(env(safe-area-inset-${isTop ? 'top' : 'bottom'}, 0px) + ${isTop ? 4 : 10}px)`
+            : 0,
+          height: `${cardHeight}px`,
+          overflow: 'visible',
+        }}
         data-board-zone="hand"
         data-board-player={playerId}
         onPointerDown={handlePointerDown}
@@ -744,6 +918,20 @@ export const DockHand = memo(function DockHand({
             maxWidth: usesTouchScroll ? '100%' : undefined,
             overflowX: usesTouchScroll ? 'auto' : 'visible',
             scrollbarWidth: usesTouchScroll ? 'none' : undefined,
+            // Headroom for the tap lift. It has to live on the SCROLLER, not
+            // on the row inside it: overflow-x: auto forces overflow-y to
+            // auto, so this element is what clips, and a scroll container
+            // clips at its PADDING box — content inside the padding survives,
+            // content above the box does not. (Padding on the row did nothing
+            // for this; the lifted card was still cut off at the strip's top
+            // edge.) The negative margin cancels the padding again so the
+            // strip's layout box, and every card in it, stays put.
+            paddingBlock: liftRoomPx ? `${liftRoomPx}px` : undefined,
+            marginBlock: liftRoomPx ? `-${liftRoomPx}px` : undefined,
+            // ...and with headroom comes reach: an auto-pointer-events box now
+            // covers a band of the board. Turn it off here and back on per
+            // card (see DockHandCard) so only the cards themselves are hit.
+            pointerEvents: tapActions ? 'none' : undefined,
             transform: `translateY(${translateY}px)`,
             touchAction: touchReveal ? 'none' : undefined,
             transition: isOpen
@@ -760,8 +948,8 @@ export const DockHand = memo(function DockHand({
             style={{
               minWidth: usesTouchScroll ? 'max-content' : undefined,
               paddingInline: usesTouchScroll ? `${Math.round(cardWidth * 0.35)}px` : undefined,
-              paddingBlock: usesTouchScroll ? `${Math.round(cardHeight * 0.32)}px` : undefined,
-              marginBlock: usesTouchScroll ? `-${Math.round(cardHeight * 0.32)}px` : undefined,
+              paddingBlock: usesTouchScroll && !tapActions ? `${Math.round(cardHeight * 0.32)}px` : undefined,
+              marginBlock: usesTouchScroll && !tapActions ? `-${Math.round(cardHeight * 0.32)}px` : undefined,
               overflow: 'visible',
             }}
           >
@@ -788,7 +976,7 @@ export const DockHand = memo(function DockHand({
                 isDimmed={dimmed?.(card) ?? false}
                 badge={cardBadge?.(card) ?? null}
                 showFaces={showFaces}
-                overlapPx={cardWidth * OVERLAP}
+                overlapPx={cardWidth * (overlapRatio ?? OVERLAP)}
                 cardWidth={cardWidth}
                 cardHeight={cardHeight}
                 onHoverStart={() => { if (!draggingId) setHoveredIdx(i); }}
@@ -802,6 +990,11 @@ export const DockHand = memo(function DockHand({
                 dropIntent={dropIntent}
                 shouldSuppressClick={consumeDragClick}
                 playerId={playerId}
+                tapActions={tapActions}
+                selectionActive={selectionActive}
+                isTapped={tappedId === card.instanceId}
+                onToggleActions={() => setTappedId((current) => (current === card.instanceId ? null : card.instanceId))}
+                onCloseActions={closeActions}
               />
             ))}
 

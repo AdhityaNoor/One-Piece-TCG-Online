@@ -226,6 +226,50 @@
 .op-hex-tile {
   width: 100%;
   aspect-ratio: 2 / 1.7320508;
+  /* Typography inside a tile is sized from the TILE's own width (cqw), not
+     from the viewport. The tile box shrinks with the viewport height on
+     desktop (--hex is solved from it in PlayMenuScreen) while fixed px font
+     sizes did not, so on short/small screens the label + description grew
+     past the hexagon and were sliced off by the clip-path. Container query
+     units keep the text a constant fraction of the shape at every size. */
+  container-type: inline-size;
+}
+
+/* Content box of a mode tile. Every metric is a share of the tile width:
+   1cqw = 1% of the hexagon's width. The clamp keeps the text readable on a
+   very small tile and stops it ballooning on a very large one — inside that
+   range the whole block scales with the hexagon.
+   Horizontal padding is wide because the shape narrows to half its width at
+   the flat top/bottom edges; text set full-width would be cut by the slants. */
+.op-hex-content {
+  font-size: clamp(8px, 4.3cqw, 12px);
+  padding-inline: 16cqw;
+  padding-block: 9cqw;
+  gap: 0.35em;
+}
+
+/* The lane header scales off the LANE's width, same principle as the tile
+   text: neighbouring lanes overlap by a quarter hexagon, so the clear space
+   between two lane centres is only ~0.75 * --hex. Fixed px headers stayed
+   large while --hex shrank with the viewport, which is how "LOCAL CASUAL
+   RANKED" ended up touching and the deck hints wrapped into each other. */
+.op-hex-lane {
+  container-type: inline-size;
+}
+
+.op-hex-lane-header {
+  /* Never let a header spill into the neighbouring lane's airspace. */
+  max-width: min(100%, 82cqw);
+  margin-inline: auto;
+}
+
+/* Set on the title ROW so the accent dot (sized in em) tracks it too. */
+.op-hex-lane-title {
+  font-size: clamp(13px, 8.6cqw, 24px);
+}
+
+.op-hex-lane-hint {
+  font-size: clamp(8px, 5.1cqw, 13px);
 }
 
 .op-hex-col {
@@ -725,6 +769,11 @@
     transform: none;
   }
 
+  /* height: 100% stays. It is what lets .op-mobile-board-shell's own
+     height: 100% resolve (a percentage height needs a definite height on the
+     ancestor chain); dropping it collapsed the shell to its content height,
+     which in turn broke the mat's card metric — that metric is measured in
+     cqh against this box. */
   .op-mobile-match {
     position: relative;
     display: flex;
@@ -905,49 +954,6 @@
     overflow: hidden;
   }
 
-  .op-mobile-hand-tab {
-    position: absolute;
-    left: 50%;
-    z-index: 75;
-    display: flex;
-    height: 1.8rem;
-    width: 3.6rem;
-    transform: translateX(-50%);
-    align-items: center;
-    justify-content: center;
-    border: 1px solid transparent;
-    background: transparent;
-    color: #d9a441;
-    box-shadow: none;
-  }
-
-  .op-mobile-hand-tab svg {
-    height: 1.2rem;
-    width: 1.2rem;
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 2.5;
-    filter: drop-shadow(0 0 8px rgba(217, 164, 65, 0.95)) drop-shadow(0 0 16px rgba(217, 164, 65, 0.5));
-  }
-
-  .op-mobile-hand-tab-top {
-    top: 0.25rem;
-  }
-
-  .op-mobile-hand-tab-top svg {
-    animation: op-mobile-chevron-down 1.05s ease-in-out infinite;
-  }
-
-  .op-mobile-hand-tab-bottom {
-    bottom: 0.25rem;
-  }
-
-  .op-mobile-hand-tab-bottom svg {
-    animation: op-mobile-chevron-up 1.05s ease-in-out infinite;
-  }
-
   .op-mobile-zone.is-selected {
     border-color: rgba(255, 211, 74, 0.95);
     box-shadow: 0 0 0 2px rgba(255, 211, 74, 0.24), 0 0 18px rgba(255, 211, 74, 0.32);
@@ -975,7 +981,12 @@
     container-type: size;
     border-top: 0;
     border-bottom: 1px solid rgba(255, 225, 122, 0.12);
-    padding: clamp(3rem, 13vh, 4.5rem) 0.5rem;
+    /* Reserve the band each hand dock occupies (--op-mobile-hand-band, set in
+       MatchScreen from the dock's own card width + edge inset) so the mat is
+       never drawn underneath a hand. Capped at 18vh per side: on a short
+       landscape screen reserving the full band twice would leave almost no
+       board, and there a little overlap is the lesser evil. */
+    padding: clamp(2.5rem, var(--op-mobile-hand-band, 7.25rem), 18vh) 0.5rem;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.004) 42%, rgba(0, 0, 0, 0.032)),
       radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.014), transparent 58%);
@@ -1006,6 +1017,16 @@
      (rotate-90) card turn inside its own cell without touching its
      neighbours — the same trick BoardCardTile uses on desktop. */
   .op-mobile-player-board {
+    /* Fill the half of the board box this mat owns and spread its rows through
+       it, instead of stacking them tight and centred. The shell reserves the
+       hand bands as padding, so with a centred stack every pixel the mat did
+       not need pooled into one dead gap between the last row and the hand.
+       Spreading puts that space between the rows, where it reads as breathing
+       room rather than as a hole. */
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
     --op-mobile-grid-gap: clamp(0.32rem, 1.5vw, 0.58rem);
     --op-mobile-zone-pad: clamp(0.28rem, 1vw, 0.45rem);
     /* Non-card vertical chrome inside the board shell: both character-zone
@@ -1037,17 +1058,58 @@
     transform: rotate(180deg);
   }
 
-  /* Whose move it is. A steady outline rather than a pulse: this is always on
-     for exactly one of the two mats, and something that never turns off should
-     never animate — the two pulses below mean "you need to do something", and
-     they'd lose all urgency competing with a third moving thing. The offset
-     fits inside .op-mobile-board-shell's 0.5rem side padding, so the ring is
-     never clipped by its overflow: hidden. */
-  .op-mobile-player-board.is-acting {
-    border-radius: 0.9rem;
-    outline: 1px solid rgba(255, 211, 74, 0.42);
-    outline-offset: 0.28rem;
-    box-shadow: 0 0 22px rgba(255, 211, 74, 0.1);
+  /* Whose move it is. A steady square frame rather than a pulse: this is
+     always on for exactly one of the two mats, and something that never turns
+     off should never animate — the two pulses below mean "you need to do
+     something", and they'd lose all urgency competing with a third moving
+     thing.
+
+     The frame is drawn as a THREE-SIDED pseudo-element on the acting mat plus
+     a matching three-sided one on the battle line (see
+     .op-mobile-battle-line.is-acting-above / -below). The two halves share the
+     mat/line boundary, so together they read as ONE square rectangle that
+     encloses the acting player's field AND the battle line in the middle —
+     the line belongs to whoever's turn it is, so it has to sit inside the
+     frame, not outside it. Drawn with a pseudo-element rather than an
+     outline/border because an outline can't be open on one side and a border
+     would take real layout space away from the card grid (the card metric is
+     measured against the board SHELL, so 2px stolen here overflows the
+     5-card row). The 0.28rem overhang fits inside
+     .op-mobile-board-shell's 0.5rem side padding, so nothing is clipped by
+     its overflow: hidden. */
+  .op-mobile-player-board,
+  .op-mobile-battle-line {
+    /* Unconditional, not toggled with .is-acting: this makes the mat the
+       containing block for its absolutely positioned descendants on EVERY
+       turn instead of only on the acting one, so nothing shifts when the
+       frame moves. (The inverted mat already established one via its
+       rotate(180deg) transform.) */
+    position: relative;
+  }
+
+  .op-mobile-player-board.is-acting::after,
+  .op-mobile-battle-line.is-acting-above::after,
+  .op-mobile-battle-line.is-acting-below::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+    border: 1px solid rgba(255, 211, 74, 0.42);
+    border-radius: 0;
+  }
+
+  /* Open on the edge that faces the battle line. That edge is the LOCAL top
+     for both mats: the top mat is rotated 180deg, so its local top is its
+     visual bottom — the side pointing at the line either way. */
+  .op-mobile-player-board.is-acting::after,
+  .op-mobile-battle-line.is-acting-above::after {
+    inset: 0 -0.28rem -0.28rem;
+    border-top: 0;
+  }
+
+  /* Bottom mat is acting: the line is the TOP half of the frame. */
+  .op-mobile-battle-line.is-acting-below::after {
+    inset: -0.28rem -0.28rem 0;
+    border-bottom: 0;
   }
 
   .op-mobile-support-grid {
@@ -1297,6 +1359,22 @@
     box-shadow: 0 14px 28px rgba(0, 0, 0, 0.44), 0 0 18px rgba(217, 164, 65, 0.16);
   }
 
+  /* Hand strip docked to the TOP edge (the opponent's side): the bubble has
+     to open downward, into the board, or it would be pushed off screen. */
+  .op-mobile-card-action-bubble.is-below {
+    bottom: auto;
+    top: calc(100% + 0.35rem);
+  }
+
+  .op-mobile-card-action-bubble.is-below::after {
+    bottom: auto;
+    top: -0.36rem;
+    border-bottom: 0;
+    border-right: 0;
+    border-top: 1px solid rgba(255, 211, 74, 0.48);
+    border-left: 1px solid rgba(255, 211, 74, 0.48);
+  }
+
   .op-mobile-card-action-bubble::after {
     content: "";
     position: absolute;
@@ -1541,6 +1619,13 @@
      step, so it's the only move remaining. Boxed (rather than just brightened)
      so it reads as a control and not as the decorative divider it looks like
      the rest of the time. */
+  /* While the line is inside the acting frame, its alert box squares off too —
+     a pill nested inside a square frame reads as a mistake. */
+  .op-mobile-battle-line.is-alert.is-acting-above,
+  .op-mobile-battle-line.is-alert.is-acting-below {
+    border-radius: 0;
+  }
+
   .op-mobile-battle-line.is-alert {
     /* outline, not border: this line sits between the two mats in the board
        shell's flex column, so a border's 2px would shove both mats every time
@@ -1860,24 +1945,6 @@
   }
   50% {
     transform: translateX(0.28rem);
-  }
-}
-
-@keyframes op-mobile-chevron-up {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-0.28rem);
-  }
-}
-
-@keyframes op-mobile-chevron-down {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(0.28rem);
   }
 }
 

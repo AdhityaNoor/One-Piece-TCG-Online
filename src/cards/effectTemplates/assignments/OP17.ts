@@ -859,13 +859,23 @@ export const OP17_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // OP17-118 Rocks.D.Xebec — PARTIAL: the [On Play] is curated (draw 1, then play up to 2
-  //   "Rocks Pirates" cards with DIFFERENT names and a combined cost of 9 or less).
-  //   The Counter clause ("If you only have Characters without a Counter, this card in your hand
-  //   has a +2000 Counter") stays deferred — it needs BOTH an "all your Characters lack a printed
-  //   Counter" gate and a self-in-hand Counter aura, neither of which exists
-  //   (addCounterAuraControllerCharactersInHand covers matching Characters, not the source card).
-  { cardNumber: 'OP17-118', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { typeIncludes: 'Rocks Pirates' }, maxTargets: 2, distinctNames: true, maxCombinedCost: 9 }] } },
+  // OP17-118 Rocks.D.Xebec — "If you only have Characters without a Counter, this card in your
+  //   hand has a +2000 Counter." plus [On Play] draw 1, then play up to 2 "Rocks Pirates" cards
+  //   with DIFFERENT names and a combined cost of 9 or less.
+  //
+  //   The Counter clause is a HAND static: it must raise this card's own Counter while it sits in
+  //   hand, before any copy has been played. `addCounterAuraSameCardInHand` is read directly off
+  //   the card's program by handSelfCounterDelta for exactly that reason — the onEnterPlay aura
+  //   shape alone would only ever reach a duplicate copy once one was on the field.
+  //   The gate is vacuously true with no Characters out, which is correct: with an empty board
+  //   there is no Character WITH a Counter.
+  {
+    cardNumber: 'OP17-118',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addCounterAuraSameCardInHand', amount: 2000, duration: 'permanent', gate: [{ kind: 'selfAllCharactersWithoutCounter' }] }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }, { fn: 'playFromHand', filter: { typeIncludes: 'Rocks Pirates' }, maxTargets: 2, distinctNames: true, maxCombinedCost: 9 }] } },
+    ],
+  },
 
 ];
 

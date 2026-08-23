@@ -20,6 +20,7 @@ import { describe, expect, it } from 'vitest';
 import { runTimings } from '../../../engine/effects/interpreter';
 import { computeCurrentPower, hasContinuousKeyword } from '../../../engine/rules/shared';
 import { buildBaseRig, makeCharacterDef, makeLeaderDef, putCharacterInPlay } from '../../../engine/rules/shared/__tests__/testRig';
+import { validateAction } from '../../../engine/actions/dispatch';
 import { buildRegistryFromAssignments } from '../assembler';
 import { ALL_ASSIGNMENTS } from '../assignments';
 import { OP_ASSIGNMENTS } from '../assignments/OP';
@@ -321,5 +322,77 @@ describe('OP17 idiom guards', () => {
       expect(JSON.stringify(koOp)).toContain('maxBasePower');
       expect(JSON.stringify(koOp)).not.toContain('"maxPower"');
     }
+  });
+});
+
+/**
+ * OP17-044 Captain John: "If your Leader's type includes 'Rocks Pirates' and
+ * this Character is rested, your opponent cannot attack any card other than the
+ * Character [Captain John]."
+ *
+ * This is a target NARROWING, not an attack lock. The distinction is the whole
+ * card: the opponent must still be able to attack John himself. Reported as
+ * "the opponent cannot attack at all" — which was the board offering the Leader
+ * and every rested Character, then failing validation on tap.
+ */
+describe('OP17-044 forces attacks onto Captain John without blocking them', () => {
+  function rigWithJohn(johnOrientation: 'rested' | 'active') {
+    const registry = buildRegistryFromAssignments(OP17_ASSIGNMENTS.filter((a) => a.cardNumber === 'OP17-044'));
+    const john = makeCharacterDef({ cardDefinitionId: 'OP17-044', cardNumber: 'OP17-044', name: 'Captain John', baseCost: 3, basePower: 5000, types: ['Rocks Pirates'] });
+    const other = makeCharacterDef({ cardDefinitionId: 'OTHER', cardNumber: 'OTHER', name: 'Other', baseCost: 2, basePower: 3000 });
+    const attacker = makeCharacterDef({ cardDefinitionId: 'ATK', cardNumber: 'ATK', name: 'Attacker', basePower: 6000 });
+
+    let rig = buildBaseRig({ activePlayerId: 'p2', phase: 'main', turnNumber: 4, leaderOverridesP1: { types: ['Rocks Pirates'] } });
+    let johnId: string;
+    let otherId: string;
+    let attackerId: string;
+    ({ rig, instanceId: johnId } = putCharacterInPlay(rig, 'p1', john, { orientation: johnOrientation }));
+    ({ rig, instanceId: otherId } = putCharacterInPlay(rig, 'p1', other, { orientation: 'rested' }));
+    ({ rig, instanceId: attackerId } = putCharacterInPlay(rig, 'p2', attacker, { summoningSick: false }));
+
+    const state = runTimings(registry['OP17-044'], ['onEnterPlay'], rig.state, johnId, rig.defs, null, registry).state;
+    return { state, defs: rig.defs, registry, johnId, otherId, attackerId, leaderId: rig.state.players.p1.leaderInstanceId! };
+  }
+
+  const attack = (attackerId: string, targetId: string) =>
+    ({ type: 'DECLARE_ATTACK', actionId: 'test-attack', playerId: 'p2', attackerInstanceId: attackerId, targetInstanceId: targetId }) as const;
+
+  it('still allows the opponent to attack Captain John himself', () => {
+    const { state, defs, registry, johnId, attackerId } = rigWithJohn('rested');
+    const result = validateAction(state, attack(attackerId, johnId), defs, registry);
+    expect(result.legal, `attacking Captain John must stay legal: ${result.reasons.join(' ')}`).toBe(true);
+  });
+
+  it('refuses the Leader and other Characters while he is rested', () => {
+    const { state, defs, registry, otherId, attackerId, leaderId } = rigWithJohn('rested');
+    expect(validateAction(state, attack(attackerId, leaderId), defs, registry).legal).toBe(false);
+    expect(validateAction(state, attack(attackerId, otherId), defs, registry).legal).toBe(false);
+  });
+
+  it('leaves at least one legal attack available — the "cannot select an attacker" regression', () => {
+    // The board gates attack mode on a legality PROBE. That probe used to test a
+    // single stand-in target (the opponent's Leader), which Captain John makes
+    // illegal — so every attacker reported "cannot attack" and the player could
+    // not even begin an attack. The probe must consider the whole legal target
+    // set: Leader PLUS rested Characters.
+    const { state, defs, registry, johnId, attackerId } = rigWithJohn('rested');
+    const leaderId = state.players.p1.leaderInstanceId!;
+    const restedOpponentCharacters = state.players.p1.characterArea.cardIds
+      .filter((id) => state.cardsById[id]?.orientation === 'rested');
+
+    const leaderOnlyProbe = [leaderId]
+      .some((t) => validateAction(state, attack(attackerId, t), defs, registry).legal);
+    const fullProbe = [leaderId, ...restedOpponentCharacters]
+      .some((t) => validateAction(state, attack(attackerId, t), defs, registry).legal);
+
+    // Documents WHY the narrow probe was wrong, so nobody reinstates it.
+    expect(leaderOnlyProbe).toBe(false);
+    expect(fullProbe).toBe(true);
+    expect(restedOpponentCharacters).toContain(johnId);
+  });
+
+  it('lifts entirely once he is ACTIVE — the restriction is re-read, not latched at enter-play', () => {
+    const { state, defs, registry, attackerId, leaderId } = rigWithJohn('active');
+    expect(validateAction(state, attack(attackerId, leaderId), defs, registry).legal).toBe(true);
   });
 });

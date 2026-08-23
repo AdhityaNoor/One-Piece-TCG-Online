@@ -489,6 +489,16 @@ function evaluateGate(
       return true;
     }
 
+    // "If you only have Characters without a Counter" (OP17-118). Vacuously true
+    // when you control no Characters at all -- there is no Character WITH a
+    // Counter, which is what the clause actually asks.
+    case 'selfAllCharactersWithoutCounter': {
+      return player.characterArea.cardIds.every((id) => {
+        const def = defs[state.cardsById[id]?.cardDefinitionId ?? ''];
+        return !def?.counter;
+      });
+    }
+
     case 'selfAllCharactersTyped': {
       const chars = player.characterArea.cardIds;
       if (chars.length === 0) return true;

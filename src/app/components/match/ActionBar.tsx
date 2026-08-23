@@ -222,19 +222,46 @@ export const ActionBar = memo(function ActionBar({ phase, turnNumber, battle, ac
   // shown board-wide via MatchScreen's FieldChoiceBanner; this panel only
   // needs the progress readout and, for "up to N" ranges, a manual Confirm.
   if (fieldChoiceInfo) {
-    const { selected, min, max } = fieldChoiceInfo;
+    const { selected, min, max, budgetLabel, budgetSpent, budgetTotal } = fieldChoiceInfo;
     const met = selected >= min;
+    // A combined budget ("a total cost of 4 or less") is the real limit for these
+    // choices — the card count is incidental. Show the budget as the headline
+    // number, and always offer Confirm, because such choices never auto-submit
+    // on the Nth tap (see toggleFieldChoiceCard).
+    const hasBudget = budgetLabel !== null && budgetTotal !== null;
     return (
       <div className="flex flex-col gap-2">
         {errorBanner}
-        <div className="flex items-center gap-2">
-          <span className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/50">Selected</span>
-          <span className={`text-base font-black tabular-nums tracking-[0.04em] ${met ? 'text-emerald-300' : 'text-white'}`}>
-            {selected}/{min === max ? max : `${min}-${max}`}
-          </span>
+        <div className="flex items-center gap-3">
+          {/* With a combined budget the LIMIT is the total cost/power, not the card
+              count — so that is the headline number. Showing only "2/0-4" next to a
+              "total cost of 4 or less" effect was what made the limit look like a
+              card count. The card tally stays as a secondary readout. */}
+          {hasBudget ? (
+            <>
+              <span className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/50">Total {budgetLabel}</span>
+              <span className={`text-base font-black tabular-nums tracking-[0.04em] ${budgetSpent > 0 ? 'text-amber-300' : 'text-white'}`}>
+                {budgetSpent}/{budgetTotal}
+              </span>
+              <span className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/40">
+                {selected} card{selected === 1 ? '' : 's'}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-white/50">Selected</span>
+              <span className={`text-base font-black tabular-nums tracking-[0.04em] ${met ? 'text-emerald-300' : 'text-white'}`}>
+                {selected}/{min === max ? max : `${min}-${max}`}
+              </span>
+            </>
+          )}
         </div>
-        <p className="text-xs text-white/60">Tap the eligible card(s) on the field (dimmed cards aren't eligible).</p>
-        {min < max && (
+        <p className="text-xs text-white/60">
+          {hasBudget
+            ? `Tap the eligible card(s) on the field. You may select any number up to a total ${budgetLabel?.toLowerCase()} of ${budgetTotal} — cards that would exceed it can't be added.`
+            : 'Tap the eligible card(s) on the field (dimmed cards aren\'t eligible).'}
+        </p>
+        {(min < max || hasBudget) && (
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" size="sm" disabled={!met} onClick={confirmFieldChoice}>
               {min === 0 && selected === 0 ? 'Decline' : `Confirm (${selected}/${max})`}

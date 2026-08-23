@@ -8,6 +8,7 @@ import type { GameState } from '../../engine/state/game';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import type { V2ProjectionContext } from '../../engine/effects_V2/projectionAdapter_V2';
 import { buildCardView, type CardView } from './cardView';
+import type { EffectTemplateRegistry } from '../../engine/effects/effectTemplate';
 
 export interface PlayerBoardView {
   playerId: string;
@@ -42,9 +43,11 @@ export function projectPlayerBoard(
   images: Record<string, string | null>,
   playerId: string,
   v2Projection?: V2ProjectionContext,
+  /** Curated programs — only needed so in-hand self statics display correctly (see buildCardView). */
+  registry: EffectTemplateRegistry = {},
 ): PlayerBoardView {
   const player = state.players[playerId];
-  const view = (id: string): CardView => buildCardView(defs, state, images, id, v2Projection);
+  const view = (id: string): CardView => buildCardView(defs, state, images, id, v2Projection, registry);
 
   return {
     playerId,
