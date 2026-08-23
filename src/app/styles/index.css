@@ -7,6 +7,12 @@
 @layer base {
   :root {
     color-scheme: dark;
+    /* Breathing room between a full-screen mobile popup (modal, choice
+       prompt, Actions/Log panel, card viewer) and the screen edge. The panels
+       used to run edge to edge, which read as "the app broke" rather than as
+       a sheet. Safe-area insets are added on top of this at each root, so the
+       panels themselves no longer carry their own env() padding. */
+    --op-mobile-popup-gutter: 0.75rem;
     /* Base RGB triplet (space-separated, no unit) for the app's "gold"
        accent. Referenced directly via Tailwind arbitrary values everywhere
        the accent is used (e.g. text-[rgb(var(--op-gold-rgb))],
@@ -328,14 +334,14 @@
 @layer components {
   @media (max-width: 767px) {
     .op-card-detail-modal-mobile-image {
-      padding: 0;
+      padding: calc(env(safe-area-inset-top, 0px) + var(--op-mobile-popup-gutter)) 0 calc(env(safe-area-inset-bottom, 0px) + var(--op-mobile-popup-gutter));
     }
 
     .op-card-detail-panel-mobile-image {
       width: 100vw !important;
       max-width: 100vw !important;
-      height: 100dvh !important;
-      max-height: 100dvh !important;
+      height: 100% !important;
+      max-height: 100% !important;
       border: 0 !important;
       background: #030713 !important;
     }
@@ -368,7 +374,7 @@
     .op-modal-root {
       align-items: stretch;
       justify-content: stretch;
-      padding: 0;
+      padding: calc(env(safe-area-inset-top, 0px) + var(--op-mobile-popup-gutter)) 0 calc(env(safe-area-inset-bottom, 0px) + var(--op-mobile-popup-gutter));
       font-family: 'Metrophobic', 'Segoe UI', sans-serif;
       color: #fff;
     }
@@ -382,8 +388,8 @@
       display: flex;
       width: 100vw !important;
       max-width: 100vw !important;
-      height: 100dvh !important;
-      max-height: 100dvh !important;
+      height: 100% !important;
+      max-height: 100% !important;
       min-height: 0;
       flex-direction: column;
       overflow: hidden;
@@ -398,7 +404,7 @@
       flex: 0 0 auto;
       gap: 0.75rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-      padding: calc(env(safe-area-inset-top, 0px) + 0.85rem) 0.85rem 0.85rem;
+      padding: 0.85rem;
       background: rgba(255, 255, 255, 0.035);
     }
 
@@ -439,7 +445,6 @@
     .op-trash-gallery-content {
       min-height: 100%;
       padding: 0.75rem;
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
     }
 
     .op-trash-gallery-grid {
@@ -458,7 +463,7 @@
     .op-choice-prompt-root {
       align-items: stretch;
       justify-content: stretch;
-      padding: 0;
+      padding: calc(env(safe-area-inset-top, 0px) + var(--op-mobile-popup-gutter)) 0 calc(env(safe-area-inset-bottom, 0px) + var(--op-mobile-popup-gutter));
       z-index: 120;
     }
 
@@ -470,10 +475,10 @@
     .op-choice-prompt-panel {
       width: 100vw;
       max-width: 100vw !important;
-      max-height: 100dvh !important;
-      min-height: 100dvh;
+      max-height: 100% !important;
+      min-height: 100%;
       border-color: rgba(255, 255, 255, 0.15);
-      padding: calc(env(safe-area-inset-top, 0px) + 0.85rem) 0.85rem calc(env(safe-area-inset-bottom, 0px) + 0.85rem);
+      padding: 0.85rem;
     }
 
     .op-mobile-panel {
@@ -1746,15 +1751,15 @@
     align-items: stretch;
     justify-content: stretch;
     background: rgba(1, 5, 16, 0.64);
-    padding: 0;
+    padding: calc(env(safe-area-inset-top, 0px) + var(--op-mobile-popup-gutter)) 0 calc(env(safe-area-inset-bottom, 0px) + var(--op-mobile-popup-gutter));
     backdrop-filter: blur(8px);
   }
 
   .op-mobile-panel {
     display: flex;
     width: 100%;
-    height: 100dvh;
-    max-height: none;
+    height: 100%;
+    max-height: 100%;
     min-height: 0;
     flex-direction: column;
     border: 0;
@@ -1772,7 +1777,7 @@
     align-items: center;
     justify-content: space-between;
     border-bottom: 1px solid rgba(255, 225, 122, 0.2);
-    padding: calc(env(safe-area-inset-top, 0px) + 0.7rem) 0.8rem 0.7rem;
+    padding: 0.7rem 0.8rem;
     background: rgba(0, 0, 0, 0.26);
     color: #ffd34a;
     text-transform: uppercase;
@@ -1822,7 +1827,6 @@
     flex: 1 1 auto;
     overflow: hidden;
     padding: 0.75rem;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
   }
 
   .op-mobile-panel-body > aside {

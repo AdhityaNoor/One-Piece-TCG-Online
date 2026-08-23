@@ -20,7 +20,7 @@
  * scannable text list is more useful than card art. Card zoom/preview
  * (small-screen requirement) reuses the existing CardDetailModal as-is.
  */
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { CardDefinition } from '../../engine/state/card';
 import type { GameState } from '../../engine/state/game';
 import type { GameLogEntry } from '../../engine/logs/logEntry';
@@ -816,8 +816,9 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
           counterEventDonInfo={selection.counterEventDonInfo}
           battleLineLabel={mobileBattleLineLabel}
           battleLineAlert={battleLineAlert}
+          handsHidden={handsHidden}
+          onToggleHands={() => setHandsHidden((hidden) => !hidden)}
           mobilePanel={mobilePanel}
-          handTabsVisible={matchState.pendingChoices.length === 0}
           attackArrow={attackArrow}
           actionsPanel={mobileActionsPanel}
           logPanel={<ActionLogDock log={matchState.log} playerNames={playerNames} viewerPlayerId={bottomPlayerId} className="op-mobile-fullscreen-dock h-full max-h-none" />}
@@ -1450,8 +1451,10 @@ interface MobileMatchLayoutProps {
   battleLineLabel: string;
   /** The acting player has no eligible action left this phase, so the battle line (which ends the phase / passes the step) is the only thing left to do. */
   battleLineAlert: boolean;
+  /** Shared with the desktop mat's HandToggle — one flag hides/reveals both hands on either layout. */
+  handsHidden: boolean;
+  onToggleHands: () => void;
   mobilePanel: 'actions' | 'log' | 'chat' | null;
-  handTabsVisible: boolean;
   attackArrow: MobileAttackArrowState | null;
   actionsPanel: ReactNode;
   logPanel: ReactNode;
@@ -1469,6 +1472,36 @@ interface MobileAttackArrowState {
   targetInstanceId: string;
   committed: boolean;
 }
+
+/** Mobile hand card width (px). The dock's height follows from the 63/88 face. */
+const MOBILE_HAND_CARD_W = 76;
+
+/** Gap between the hand dock and the screen edge — mirrors DockHand's inset. */
+const MOBILE_HAND_EDGE_INSET = 10;
+
+/**
+ * Card-on-card overlap in the mobile hand. Much shallower than the desktop
+ * dock's 0.30: there is no hover magnification under a finger, so anything a
+ * neighbour covers is simply unreadable. The strip scrolls horizontally, so
+ * the cost of the shallower fan is a swipe, not lost cards.
+ */
+const MOBILE_HAND_OVERLAP = 0.14;
+
+/**
+ * Vertical band each hand dock occupies, published to CSS as
+ * --op-mobile-hand-band so .op-mobile-board-shell can reserve it as padding
+ * and the mat is never drawn underneath a hand. Derived from the same numbers
+ * the dock itself uses, so the two can't drift apart.
+ */
+const MOBILE_HAND_BAND_PX = Math.round((MOBILE_HAND_CARD_W * 88) / 63) + MOBILE_HAND_EDGE_INSET;
+
+/**
+ * How much of a mobile hand card stays tucked behind the screen edge at rest.
+ * Zero: the hands are permanently docked and fully readable — nothing is cut
+ * off at the edge, which was the point of dropping the reveal tabs. (The prop
+ * still exists because the desktop dock peeks at 50%.)
+ */
+const HAND_DOCK_PEEK = 0;
 
 function MobileMatchLayout({
   topBoard,
@@ -1500,8 +1533,9 @@ function MobileMatchLayout({
   counterEventDonInfo,
   battleLineLabel,
   battleLineAlert,
+  handsHidden,
+  onToggleHands,
   mobilePanel,
-  handTabsVisible,
   attackArrow,
   actionsPanel,
   logPanel,
@@ -1513,24 +1547,13 @@ function MobileMatchLayout({
   opponentDeciding = false,
   opponentDecidingLabel = 'Opponent',
 }: MobileMatchLayoutProps) {
-  const [openHand, setOpenHand] = useState<'top' | 'bottom' | null>(null);
   const topHandIsOwn = isPinnedPerspective ? false : actingPlayerId === topPlayerId;
   const bottomHandIsOwn = isPinnedPerspective ? true : actingPlayerId === bottomPlayerId;
   const topIsOwn = isPinnedPerspective ? false : actingPlayerId === topPlayerId;
   const bottomIsOwn = isPinnedPerspective ? true : actingPlayerId === bottomPlayerId;
 
-  useEffect(() => {
-    if (!openHand) return;
-    const timer = window.setTimeout(() => setOpenHand(null), 2600);
-    return () => window.clearTimeout(timer);
-  }, [openHand]);
-
-  useEffect(() => {
-    if (mobilePanel) setOpenHand(null);
-  }, [mobilePanel]);
-
   return (
-    <div className="op-mobile-match xl:hidden">
+    <div className="op-mobile-match xl:hidden" style={{ ['--op-mobile-hand-band']: `${MOBILE_HAND_BAND_PX}px` } as CSSProperties}>
       <div className="op-mobile-match-center">
         <div className="op-mobile-board-shell">
           <MobilePlayerBoard
@@ -1561,9 +1584,17 @@ function MobileMatchLayout({
             allowReturnGivenDon={allowReturnGivenDon}
           />
 
+          {/* The battle line belongs to whoever's turn it is, so it carries the
+              half of the acting frame that closes around it — is-acting-above
+              when the mat above is acting, is-acting-below when it's the mat
+              below (see .op-mobile-battle-line.is-acting-* in index.css). */}
           <button
             type="button"
-            className={['op-mobile-battle-line', battleLineAlert ? 'is-alert' : ''].filter(Boolean).join(' ')}
+            className={[
+              'op-mobile-battle-line',
+              actingPlayerId === topPlayerId ? 'is-acting-above' : actingPlayerId === bottomPlayerId ? 'is-acting-below' : '',
+              battleLineAlert ? 'is-alert' : '',
+            ].filter(Boolean).join(' ')}
             onClick={onOpenBattleActions}
             aria-label={battleLineAlert ? `Open actions for ${battleLineLabel}, no actions remaining` : `Open actions for ${battleLineLabel}`}
           >
@@ -1601,31 +1632,30 @@ function MobileMatchLayout({
         {cpuThinking && <CpuThinkingOverlay opponentName={cpuThinkingLabel} />}
         {!cpuThinking && opponentDeciding && <OnlineOpponentTurnOverlay opponentName={opponentDecidingLabel} />}
 
-        {handTabsVisible && (
-          <>
-            <button
-              type="button"
-              className="op-mobile-hand-tab op-mobile-hand-tab-top"
-              onClick={() => setOpenHand((value) => (value === 'top' ? null : 'top'))}
-              aria-label="Show opponent hand"
-            >
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path d="M4 6l4 4 4-4" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="op-mobile-hand-tab op-mobile-hand-tab-bottom"
-              onClick={() => setOpenHand((value) => (value === 'bottom' ? null : 'bottom'))}
-              aria-label="Show hand"
-            >
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path d="M4 10l4-4 4 4" />
-              </svg>
-            </button>
-          </>
-        )}
+        {/* The desktop mat's control, dropped in as-is: docked flush to the
+            board edge, eye icon + live "Hand: N", and both instances driving
+            the one shared handsHidden flag. Sits above the hand dock so it
+            stays visible and tappable whether the hands are out or away. */}
+        <HandToggle
+          position="top"
+          mobile
+          handsHidden={handsHidden}
+          handCount={topBoard.hand.length}
+          onToggle={onToggleHands}
+          onHoverChange={() => {}}
+        />
+        <HandToggle
+          position="bottom"
+          mobile
+          handsHidden={handsHidden}
+          handCount={bottomBoard.hand.length}
+          onToggle={onToggleHands}
+          onHoverChange={() => {}}
+        />
 
+        {/* Both hands stay docked in view at all times — no reveal tab, no
+            auto-hide timer. Tapping a card raises it and opens its action
+            bubble rather than magnifying it (see DockHand's tapActions). */}
         <DockHand
           playerId={topPlayerId}
           cards={topBoard.hand}
@@ -1640,13 +1670,14 @@ function MobileMatchLayout({
           onCardTap={(card) => onMatCardTap(topPlayerId, 'hand', card)}
           onPlayCard={onPlayHandCard}
           onCardZoom={onCardZoom}
-          boardFocused={false}
-          cardWidthPx={76}
+          boardFocused={handsHidden}
+          cardWidthPx={MOBILE_HAND_CARD_W}
+          overlapRatio={MOBILE_HAND_OVERLAP}
           maxVisibleCards={8}
-          restPeekRatio={1}
+          restPeekRatio={HAND_DOCK_PEEK}
           touchReveal
-          forceOpen={openHand === 'top'}
-          onRequestHide={() => setOpenHand(null)}
+          tapActions
+          selectionActive={mode.kind !== 'idle'}
         />
         <DockHand
           playerId={bottomPlayerId}
@@ -1662,13 +1693,14 @@ function MobileMatchLayout({
           onCardTap={(card) => onMatCardTap(bottomPlayerId, 'hand', card)}
           onPlayCard={onPlayHandCard}
           onCardZoom={onCardZoom}
-          boardFocused={false}
-          cardWidthPx={76}
+          boardFocused={handsHidden}
+          cardWidthPx={MOBILE_HAND_CARD_W}
+          overlapRatio={MOBILE_HAND_OVERLAP}
           maxVisibleCards={8}
-          restPeekRatio={1}
+          restPeekRatio={HAND_DOCK_PEEK}
           touchReveal
-          forceOpen={openHand === 'bottom'}
-          onRequestHide={() => setOpenHand(null)}
+          tapActions
+          selectionActive={mode.kind !== 'idle'}
         />
 
         <AttackArrowOverlay
@@ -2461,19 +2493,28 @@ function HandToggle({
   handCount,
   onToggle,
   onHoverChange,
+  mobile = false,
 }: {
   position: 'top' | 'bottom';
   handsHidden: boolean;
   handCount: number;
   onToggle: () => void;
   onHoverChange: (hovered: boolean) => void;
+  /**
+   * Mobile variant: the identical control, docked to the same board edge with
+   * the same chrome — the only differences are the breakpoint it shows at
+   * (the desktop instance is `hidden xl:block`) and a z-index that clears the
+   * mobile hand dock (z-100) while staying under the mobile panels (z-140).
+   */
+  mobile?: boolean;
 }) {
   const isTop = position === 'top';
   const tooltip = handsHidden ? 'Show hands' : 'Hide hands';
   return (
     <div
       className={[
-        'absolute left-1/2 z-[180] hidden -translate-x-1/2 xl:block',
+        'absolute left-1/2 -translate-x-1/2',
+        mobile ? 'z-[110] xl:hidden' : 'z-[180] hidden xl:block',
         isTop ? 'top-0' : 'bottom-0',
       ].join(' ')}
     >
@@ -2484,6 +2525,7 @@ function HandToggle({
         onMouseLeave={() => onHoverChange(false)}
         className={[
           'group relative flex items-center gap-1.5 border border-white/15 bg-black/72 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/80 shadow-[0_6px_20px_rgba(0,0,0,0.45)] backdrop-blur transition hover:border-gold/60 hover:text-gold',
+          // Flush with the board edge, so the edge-facing side is squared off.
           isTop ? 'rounded-b-lg border-t-0' : 'rounded-t-lg border-b-0',
         ].join(' ')}
         aria-pressed={!handsHidden}
