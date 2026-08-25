@@ -14,12 +14,12 @@
  * reveal that disappears when the card stops being hovered, same spirit as
  * DockHand's hover-to-open dock.
  *
- * Portals into #board-overlay-root (the same anchor DonStack.tsx's popup
+ * Portals into #board-overlay-root (the same anchor the board's other
  * uses) so it escapes PlayerBoardPanel's overflow-hidden ancestors
  * regardless of where the hovered card sits in the mat. cqh() sizing doesn't
  * resolve outside the ScaleToFit container the portal root lives next to
- * (see DonStack.tsx's own comment on this), so chip dimensions are fixed px
- * like DonStack's own popup chips.
+ * (cqh resolves against the mat's own containment box, which this portal
+ * escapes), so chip dimensions here are fixed px.
  */
 import { createPortal } from 'react-dom';
 import type { CardView } from '../../../board/projection';

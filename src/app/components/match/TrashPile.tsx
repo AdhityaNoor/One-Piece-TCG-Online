@@ -9,9 +9,8 @@
  * A single face-up card can't show what's underneath it, so clicking opens
  * the full TrashGalleryModal (see that file) for the complete pile.
  *
- * Lives in PlayerBoardPanel's boardRow, in the slot the Deck pile used to
- * occupy before Deck moved next to the Character Area — see
- * PlayerBoardPanel.tsx's stageTrashGroup/characterZone for why.
+ * Lives on the mat's DON!! row (row 3), pinned to the edge opposite Life so
+ * it lines up under Stage and Deck — see PlayerBoardPanel.tsx's donRow.
  */
 import { CardImage } from '../CardImage';
 import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';

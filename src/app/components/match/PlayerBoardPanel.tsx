@@ -1,38 +1,43 @@
 /**
- * One player's half of the playmat, matching the official play sheet:
- * Character Area across the top (Deck now sits beside it as its own sibling
- * box, pinned to one edge — see characterRow below), Life down the left
- * side, and the
- * leader's row in the middle-right holding Leader/Stage/Trash plus the
- * Active/Rested DON!! piles as further columns (moved in from a standalone
- * column outside the mat — see MatchScreen.tsx history — so the whole "my
- * own resources" row reads left-to-right in one place). Cost Area taps
- * still route through onCardTap('costArea', card) exactly like
- * Leader/Character taps; only the visual position moved. The hand is not
- * printed on the sheet, so it stays outside the mat edge for playability.
- * There's no separate "P1 / Life" label row anymore — Life is the count
- * badge on the Life pile itself, and player identity is shown by
- * MatchScreen.tsx's HandSection header instead.
+ * One player's half of the playmat, matching the official play sheet. It is a
+ * three-row grid (see `mat` at the bottom of this file):
+ *   row 1  Character Area, alone, across the whole non-Life column
+ *   row 2  Leader in the middle, Stage + Deck pinned to the far edge
+ *   row 3  Trash on that same far edge, with the Cost Area splitting the rest
+ *          50:50 — Active nearer Life, Rested nearer Trash (see donRow)
+ * with Life running down one side, spanning all three rows. All three rows
+ * are the same height and every card on the mat is the same size, DON!!
+ * chips included. The DON!! piles used to share row 2 with the Leader;
+ * giving them their own row is what pushed every card size down by
+ * DESKTOP_BOARD_CARD_SCALE (boardScale.ts) — a variable this component sets
+ * on its own root, so the shrink applies to the desktop mat and NOT to the
+ * mobile board, which renders the same card leaves at their original size
+ * under its own container. Cost Area taps still
+ * route through onCardTap('costArea', card) exactly like Leader/Character
+ * taps; only the visual position moved. The hand is not printed on the sheet,
+ * so it stays outside the mat edge for playability. There's no separate
+ * "P1 / Life" label row anymore — Life is the count badge on the Life pile
+ * itself, and player identity is shown by MatchScreen.tsx's HandSection
+ * header instead.
  *
- * The DON!! Deck pile no longer lives in this row — it's rendered inside the
- * Life cell instead (see LifeStack), pinned to that cell's bottom edge,
- * since both are sealed/unbrowsable piles a player rarely touches directly.
- * The Active/Rested DON!! piles both stack sideways now and render at full
- * card size (DonChip.tsx), with their MatCell wrappers made visually
- * invisible (variant="invisible") so only the chips themselves show on the
- * mat — see donGroup below. Leader's MatCell is invisible for a different
- * reason: BoardCardTile's stat badges (cost/power/counter) sit on negative
- * offsets just outside the card's own box, and MatCell's default chrome
- * clips anything past its edge via overflow-hidden — variant="invisible"
- * drops that clipping the same way it already does for the DON!! cells.
+ * The mat is width-capped at MAT_MAX_WIDTH — exactly enough for a full
+ * Character Area of five RESTED (rotated, so square-footprint) Characters
+ * plus Deck and Life — and centred in whatever space it gets. Past that width
+ * it was only inflating gaps and dragging Deck/Life toward the screen edges.
  *
- * Within boardRow, the DON!! group and the Stage+Trash group are each
- * independently anchored to the screen edge they thematically belong next to
- * (DON!! near Life, Stage+Trash on the opposite edge) rather than living
- * inside one centered block — see the boardRow assembly below for exactly
- * how. Trash now sits in the slot Deck used to occupy here (Deck moved up to
- * the Character Area row instead); see TrashPile.tsx for why it shows real
- * face-up card art rather than a sealed back like Deck/DON!! Deck.
+ * The DON!! Deck pile is rendered inside the Life cell (see LifeStack),
+ * pinned to that cell's outer edge, since both are sealed/unbrowsable piles a
+ * player rarely touches directly. The Active/Rested DON!! piles stack
+ * sideways, with their MatCell wrappers made visually invisible
+ * (variant="invisible") so only the chips themselves show on the mat.
+ * Leader's MatCell is invisible for a different reason: MatCell's default
+ * chrome clips anything past its edge via overflow-hidden, and a field tile
+ * fills its whole row track now (rows are one card tall exactly), so every
+ * card cell in rows 1-2 also runs padding="p-0" — with p-2 the Trash pile,
+ * whose cell is the one that still clips, would lose 8px top and bottom.
+ *
+ * See TrashPile.tsx for why Trash shows real face-up card art rather than a
+ * sealed back like Deck/DON!! Deck.
  *
  * This component is presentational. It keeps the same tap/zoom callbacks and
  * selection predicates as before; rules still live in the engine. The
@@ -49,7 +54,7 @@ import { useSeatDonArtUrl } from './MatchAccessoriesContext';
 import { BoardCardTile } from './BoardCardTile';
 import { CardBackArt } from './CardBackArt';
 import { CardImage } from '../CardImage';
-import { cqh } from './boardScale';
+import { BOARD_CARD_SCALE_VAR, cqh, DESKTOP_BOARD_CARD_SCALE } from './boardScale';
 import { CountBadge } from './CountBadge';
 import { DonStack } from './DonStack';
 import { PileStack } from './PileStack';
@@ -241,10 +246,36 @@ const BOARD_ZONE_TRACK = cqh(BOARD_ZONE_TRACK_PX);
 // shrinking the card down to the old upright-card column width.
 const LIFE_COLUMN_TRACK_PX = FIELD_CARD_HEIGHT_PX + 20;
 const LIFE_COLUMN_TRACK = cqh(LIFE_COLUMN_TRACK_PX);
-// DON!! Deck visual (inside LifeStack) reads 20% smaller than a Life/field
-// card — it's a sealed pile a player barely touches, so it doesn't need to
-// read at full card size the way Active/Rested DON!! chips now do.
-const DON_DECK_CARD_WIDTH = cqh(FIELD_CARD_WIDTH_PX * 0.8);
+// (3) How far apart the Life fan's cards sit. Each Life card lies sideways
+// and is FIELD_CARD_WIDTH_PX tall on screen, so a step well below that keeps
+// the pile reading as one fanned stack while still showing a wide band of
+// every card under the top one. The whole fan is 4 * this + FIELD_CARD_WIDTH_PX
+// tall; the Life cell spans all three mat rows and also has to hold the DON!!
+// Deck at the far end, so this cannot grow without checking that budget:
+//   fan (4*48 + 150 = 342) + DON!! Deck (~210) = 552, of ~622 available.
+const LIFE_FAN_STEP_PX = 48;
+// All three mat rows (Character Area / Leader+Stage+Trash / DON!!) are the
+// same height: exactly one field-card box, which is also exactly one DON!!
+// chip box — every card on the mat is one size. The cells in those rows
+// therefore run p-0: at this track height MatCell's old p-2 would clip the
+// Trash pile (its cell is the one with overflow-hidden) and push every other
+// card 8px past its cell. DonStack likewise paints no caption at all for the
+// same reason — the pile has exactly one card box of height to work with.
+const CARD_ROW_TRACK = BOARD_ZONE_TRACK;
+// Widest the mat ever needs to be: the Character Area's own worst case is 5
+// RESTED Characters, and a rested card's footprint is BoardCardTile's square
+// cqh(210) box (the square exists so a rotate-90 card doesn't overflow its
+// neighbours — see BoardCardTile), i.e. the same BOARD_ZONE_TRACK the Deck,
+// Stage and Trash cells use. Row 1 holds nothing else, which is why Deck
+// moved down to the Leader's row. Past this width the mat was only stretching
+// the gaps between cards, which pushed Life out toward the screen edge and
+// away from the play field it belongs to. The `+ 64px` is every fixed
+// (rem/px) gutter in that widest row, none of which scale with cqh:
+//   mat p-1 left+right                 8
+//   mat grid column gap (gap-x-2)      8
+//   Character Area cell px-2          16
+//   4 gaps between 5 character cards  32
+const MAT_MAX_WIDTH = `calc(${LIFE_COLUMN_TRACK} + ${cqh(5 * BOARD_ZONE_TRACK_PX)} + 64px)`;
 
 /**
  * Thin pass-through wrapper around a Leader/Character BoardCardTile that
@@ -327,9 +358,8 @@ function LifeStack({ playerId, life, count, donDeckCount, donDeckFirst = false }
         // tall, since rotating swaps the two) rather than shrinking the card
         // to fit the old upright-card width. The Life column's own grid
         // track (LIFE_COLUMN_TRACK) was widened to match, so this footprint
-        // fits without being clipped. The fan offset itself keeps stepping
-        // in the same direction as before (top/bottom, by index) — only the
-        // card's own orientation/size changed. Index 0 is the top of the
+        // fits without being clipped. The fan steps along the column
+        // (top/bottom, by index) by LIFE_FAN_STEP_PX. Index 0 is the top of the
         // Life stack (zone.ts "cardIds[0] = top of stack" convention) and
         // gets the HIGHEST z-index so it renders as the frontmost card,
         // matching a real fanned pile.
@@ -338,7 +368,7 @@ function LifeStack({ playerId, life, count, donDeckCount, donDeckFirst = false }
             key={card?.instanceId ?? index}
             className="absolute left-0 right-0 mx-auto flex items-center justify-center"
             style={{
-              [donDeckFirst ? 'bottom' : 'top']: cqh(index * 18),
+              [donDeckFirst ? 'bottom' : 'top']: cqh(index * LIFE_FAN_STEP_PX),
               width: FIELD_CARD_HEIGHT,
               height: FIELD_CARD_WIDTH,
               zIndex: visibleCards - index,
@@ -359,17 +389,16 @@ function LifeStack({ playerId, life, count, donDeckCount, donDeckFirst = false }
       <CountBadge count={count} />
 
       {/* DON!! Deck, relocated here by design: it rides inside the Life cell
-          (which doesn't move) pinned to the cell's own bottom edge, sized
-          20% smaller than a Life/field card. Uses the teal colorway of
-          CardBackArt (distinct from the navy Life/Deck card back) so this
-          pile reads as its own zone.
-          Known limitation: with a full 5-card Life fan, the bottom-pinned
-          DON!! card can visually overlap the lowest Life card on very short
-          viewports — z-index keeps the DON!! card on top, but this hasn't
-          been measured/avoided dynamically. */}
+          (which doesn't move) pinned to the cell's own far edge, at FULL card
+          width — the same size as every other card on the mat, Life fan
+          included. It used to render 20% smaller on the grounds that it is a
+          sealed pile a player barely touches, but a lone undersized card read
+          as a rendering bug rather than as a deliberate de-emphasis. Uses the
+          teal colorway of CardBackArt (distinct from the navy Life/Deck card
+          back) so this pile still reads as its own zone. */}
       <div
         className={['absolute inset-x-0 mx-auto aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.45)]', donDeckFirst ? 'top-0' : 'bottom-0'].join(' ')}
-        style={{ width: DON_DECK_CARD_WIDTH, zIndex: 10 }}
+        style={{ width: FIELD_CARD_WIDTH, zIndex: 10 }}
         aria-label={`${donDeckCount} DON!! Deck`}
         data-board-zone="donDeck"
         data-board-player={playerId}
@@ -592,21 +621,17 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
     <EmptySlot size="board" label="Stage" />
   );
 
-  // Deck used to sit in boardRow next to Stage; it now lives in the
-  // Character Area's own row instead, as a separate MatCell sitting BESIDE
-  // characterZone (own border/box, own panel) rather than layered inside
-  // it — characterZone keeps its own complete bordered box for just the
-  // character cards, and deckCell is a plain flex sibling next to it (see
-  // the characterRow assembly in `mat` below). flex-shrink-0 keeps Deck at
-  // its natural card-pile size while characterZone (flex-1) takes the rest
-  // of the row; items-stretch on their shared row makes both boxes match
-  // the row's full height, with Deck's own MatCell centering the pile
-  // vertically inside that height exactly like every other MatCell does.
-  // Anchored to the same edge stageTrashGroup sits on in boardRow below, so
-  // Deck stays visually stacked above Stage/Trash rather than landing on a
-  // disconnected side.
+  // Deck rides in the Leader's row (row 2), pinned to the far edge next to
+  // Stage — see stageDeckGroup below. It briefly lived beside the Character
+  // Area instead, but that cost row 1 a whole card track: the Character Area
+  // is the one zone that genuinely needs the mat's full width (five RESTED
+  // Characters are five SQUARE card boxes, not five upright ones), and a Deck
+  // sitting next to them ate the room the fifth one needs. In row 2 it costs
+  // nothing — Leader is centred and Stage was already at that edge with a
+  // spare track beside it. allowOverflow stays because the pile's ghost
+  // layers deliberately draw outside their cell.
   const deckCell = (
-    <MatCell label="Deck" className="flex-shrink-0" labelClassName="sr-only" style={{ width: BOARD_ZONE_TRACK }} allowOverflow>
+    <MatCell label="Deck" className="flex-shrink-0" labelClassName="sr-only" allowOverflow padding="p-0">
       <div data-board-zone="deck" data-board-player={board.playerId}>
         <PileStack label="Deck" count={board.deckCount} variant="deck" size="field" reverseRows={reverseRows} boardFocused={boardFocused} playerId={board.playerId} />
       </div>
@@ -614,7 +639,7 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   );
 
   const characterZone = (
-    <MatCell label="Character Area" className="h-full flex-1" labelClassName="sr-only" allowOverflow>
+    <MatCell label="Character Area" className="h-full w-full" labelClassName="sr-only" allowOverflow padding="px-2 py-0">
       <div
         className="flex h-full w-full min-w-0 items-center justify-center gap-2 overflow-visible"
         data-board-zone="characterArea"
@@ -667,139 +692,121 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
     </MatCell>
   );
 
+  // Row 1 is the Character Area and nothing else — see deckCell's comment for
+  // why Deck moved out of it. Five rested Characters are the widest thing the
+  // mat ever has to hold (MAT_MAX_WIDTH is sized off exactly that), so the row
+  // hands them every pixel of the non-Life column.
   const characterRow = (
-    <div className="flex h-full min-h-0 items-stretch gap-2 overflow-visible">
-      {reverseRows ? (
-        <>
-          {deckCell}
-          {characterZone}
-        </>
-      ) : (
-        <>
-          {characterZone}
-          {deckCell}
-        </>
-      )}
-    </div>
+    <div className="flex h-full min-h-0 items-stretch overflow-visible">{characterZone}</div>
   );
 
-  const leaderCell = <MatCell label="Leader Card" variant="invisible" labelClassName="sr-only">{leaderSlot}</MatCell>;
+  const leaderCell = <MatCell label="Leader Card" variant="invisible" labelClassName="sr-only" padding="p-0">{leaderSlot}</MatCell>;
   // data-board-zone marks this as the Stage drop target for hand drags (see
   // DockHand's play-drop hit-test); the other zones already carry one.
   const stageCell = (
-    <MatCell label="Stage Card" variant="invisible" labelClassName="sr-only">
+    <MatCell label="Stage Card" variant="invisible" labelClassName="sr-only" padding="p-0">
       <div className="flex h-full w-full items-center justify-center" data-board-zone="stageArea" data-board-player={board.playerId}>
         {stageSlot}
       </div>
     </MatCell>
   );
+  // h-full + the same BOARD_ZONE_TRACK width its wrapper gives it makes this
+  // box identical to deckCell's, one row down: same track, same edge, same
+  // centred card inside. Trash and Deck are the mat's two face-up/face-down
+  // pile slots and they read as one column when they line up exactly.
   const trashCell = (
-    <MatCell label="Trash" labelClassName="sr-only">
+    <MatCell label="Trash" className="h-full" labelClassName="sr-only" padding="p-0">
       <TrashPile cards={board.trash} playerId={board.playerId} onClick={() => setTrashGalleryOpen(true)} />
     </MatCell>
   );
-  // Active and Rested DON!! both stack sideways now (see DonStack.tsx) and
-  // render at full card size, so their wrapper cells go variant="invisible"
-  // — no border/background panel, just the chips floating directly on the
-  // mat. sr-only label keeps them announced for screen readers regardless.
+  // Active and Rested DON!! each fan sideways inside their own half of the
+  // row (see DonStack.tsx), so their wrapper cells go variant="invisible" —
+  // no border/background panel, just the chips floating directly on the mat.
+  // The sr-only label keeps them announced for screen readers regardless. They own row 3 of the mat now
+  // instead of riding along in the Leader's row, and that row is exactly one
+  // card tall like the other two — hence padding="p-0", which is what keeps a
+  // full-size chip inside its track.
   const activeDonCell = (
-    <MatCell label="Active DON!!" variant="invisible" labelClassName="sr-only">
+    <MatCell label="Active DON!!" variant="invisible" labelClassName="sr-only" padding="p-0">
       <DonStack
         label="Active"
         playerId={board.playerId}
         cards={activeDon}
-        direction="horizontal"
+        orientation="active"
         selectable={(card) => donSelectable(mode, isOwn, card)}
         selectedIds={selectedDon}
         onDonSelect={(card) => onCardTap(board.playerId, 'costArea', card)}
-        reverseRows={reverseRows}
       />
     </MatCell>
   );
   const restedDonCell = (
-    <MatCell label="Rested DON!!" variant="invisible" labelClassName="sr-only">
+    <MatCell label="Rested DON!!" variant="invisible" labelClassName="sr-only" padding="p-0">
       <DonStack
         label="Rested"
         playerId={board.playerId}
         cards={restedDon}
-        direction="horizontal"
+        orientation="rested"
         selectable={(card) => donSelectable(mode, isOwn, card)}
         selectedIds={selectedDon}
         onDonSelect={(card) => onCardTap(board.playerId, 'costArea', card)}
-        reverseRows={reverseRows}
       />
     </MatCell>
   );
 
-  // boardRow used to be a flex row where leaderGroup claimed flex-1 and
-  // centered itself in whatever space donGroup/stageTrashGroup left behind.
-  // That broke once DON!! stacking went uncapped (DonStack.tsx): a growing
-  // donGroup ate into the "leftover space" leaderGroup centers in, so Leader
-  // visually slid sideways every time a DON!! was added/removed. Leader's
-  // screen position must stay put regardless of pile size, and both
+  // Row 2 of the mat (leaderRow, below) used to be a single flex row that ALSO
+  // held the DON!! piles, with leaderGroup claiming flex-1 and centering
+  // itself in whatever space the DON!! and Stage/Trash groups left behind.
+  // That broke back when DON!! stacking was uncapped (DonStack.tsx): a growing
+  // DON!! group ate into the "leftover space" leaderGroup centers in, so
+  // Leader visually slid sideways every time a DON!! was added/removed.
+  // Leader's screen position must stay put regardless of pile size, and both
   // players' Leaders must land on the same X so they face off across the
   // Battle Line (MatchScreen.tsx) — neither is possible with sibling-width-
   // dependent flex centering.
   //
-  // Fix: boardRow is now a `relative` box with a fixed track size (it's
-  // still a CSS grid item in `mat` below, so it still stretches to fill its
-  // row/column exactly like before). Each group is `absolute` inside it:
-  // - donGroup pins to the edge next to Life (right for reversed/top, left
-  //   for bottom — same mirroring as before) via left-0/right-0. Being
-  //   absolute, it can grow with the pile (DonStack.tsx's now-uncapped span)
-  //   without pushing on anything else in the row. Active/Rested swap their
-  //   left-right order specifically for the reversed/top row, so the visual
-  //   scan order mirrors rather than repeats between the two players.
-  // - stageTrashGroup pins to the opposite edge the same way.
-  // - leaderGroup pins to left-1/2 + -translate-x-1/2 — dead center of
-  //   boardRow's own box, which is sized purely by the mat's grid track, not
-  //   by sibling content. That's what makes Leader's position independent of
-  //   donGroup's width, and identical between the top and bottom panel
-  //   (assuming both panels' boardRow boxes are the same width, which
-  //   MatchScreen.tsx's PlayerSideRow now guarantees by giving both rows'
-  //   Hand the same fixed column width and pinning it to the same edge).
-  // Known limitation: because donGroup/stageTrashGroup no longer participate
-  // in flex flow, a very large DON!! pile can grow inward far enough to
-  // visually overlap Leader or Stage/Trash instead of pushing them aside.
-  // leaderGroup gets z-10 so Leader stays on top if that happens; this is an
-  // accepted trade-off for keeping Leader's position stable.
-  const donGroup = (
-    <div className={['absolute inset-y-0 flex items-stretch gap-0.5', reverseRows ? 'right-0' : 'left-0'].join(' ')}>
-      {reverseRows ? (
-        <>
-          {restedDonCell}
-          {activeDonCell}
-        </>
-      ) : (
-        <>
-          {activeDonCell}
-          {restedDonCell}
-        </>
-      )}
-    </div>
-  );
+  // Fix: each row is a `relative` box with a fixed track size (it's still a
+  // CSS grid item in `mat` below, so it still stretches to fill its
+  // row/column exactly like before). Each group inside is `absolute`:
+  // - stageDeckGroup pins to the edge opposite Life via left-0/right-0.
+  //   Being absolute, it can sit at a fixed edge without pushing on anything.
+  // - leaderGroup pins to left-1/2 + -translate-x-1/2 — dead center of the
+  //   row's own box, which is sized purely by the mat's grid track, not by
+  //   sibling content. That's what makes Leader's position independent of
+  //   everything else in the row, and identical between the top and bottom
+  //   panel (assuming both panels' rows are the same width, which
+  //   MatchScreen.tsx's PlayerSideRow plus MAT_MAX_WIDTH now guarantee).
+  // - The DON!! piles moved out of this row entirely — they are row 3 now
+  //   (donRow), which is what removed the last way a growing pile could
+  //   reach Leader at all. The old "a very large DON!! pile can overlap
+  //   Leader" limitation is therefore gone; leaderGroup keeps its z-10
+  //   anyway so Leader stays on top of anything that ever does reach it.
 
-  const stageTrashGroup = (
+  // Stage + Deck, pinned to the edge opposite Life. Deck takes the outermost
+  // track (it is the pile a player reaches for, and it keeps the ghost layers
+  // away from Stage's art); Stage sits inboard of it, where it has always
+  // been. Mirrored for the top panel so both players' Stage/Deck read as
+  // mirror images across the Battle Line rather than repeats.
+  const stageDeckGroup = (
     <div
       className={['absolute inset-y-0 grid gap-8', reverseRows ? 'left-0' : 'right-0'].join(' ')}
       style={{ gridTemplateColumns: `${BOARD_ZONE_TRACK} ${BOARD_ZONE_TRACK}` }}
     >
       {reverseRows ? (
         <>
-          {trashCell}
+          {deckCell}
           {stageCell}
         </>
       ) : (
         <>
           {stageCell}
-          {trashCell}
+          {deckCell}
         </>
       )}
     </div>
   );
 
   // leaderGroup must sit in the horizontal middle of the WHOLE mat, not just
-  // of boardRow. boardRow only spans the mat grid's non-Life column, so a
+  // of leaderRow. leaderRow only spans the mat grid's non-Life column, so a
   // plain left-1/2 centers Leader within that column — which lands it off to
   // one side of the true play-field center by exactly half the Life column
   // (plus the grid gap). Worse, since the Life column is mirrored to the
@@ -823,37 +830,127 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
     </div>
   );
 
-  const boardRow = (
+  const leaderRow = (
     <div className="relative min-h-0 h-full w-full">
-      {donGroup}
       {leaderGroup}
-      {stageTrashGroup}
+      {stageDeckGroup}
     </div>
+  );
+
+  // Row 3: Trash on the far edge (opposite Life — the same edge Stage/Deck
+  // occupy in row 2, so the whole "piles" side of the mat lines up), and the
+  // Cost Area splitting everything left over 50:50 — Active in the half
+  // nearer Life, Rested in the half nearer Trash, mirrored for the top panel.
+  //
+  // The two DON!! halves are plain grid tracks rather than the absolutely
+  // positioned, content-sized boxes they used to be. That is the whole point:
+  // a DON!! pile's width is now decided by its container instead of by its
+  // card count (DonStack tightens its own fan to fit), so a growing pile can
+  // no longer creep across the row toward Leader or Trash. The containers
+  // themselves draw nothing.
+  const donArea = (
+    <div className="grid h-full min-h-0" style={{ gridTemplateColumns: 'repeat(2, minmax(0,1fr))' }}>
+      {reverseRows ? (
+        <>
+          {restedDonCell}
+          {activeDonCell}
+        </>
+      ) : (
+        <>
+          {activeDonCell}
+          {restedDonCell}
+        </>
+      )}
+    </div>
+  );
+
+  const donRow = (
+    <div className="relative min-h-0 h-full w-full">
+      <div
+        className={['absolute inset-y-0', reverseRows ? 'left-0' : 'right-0'].join(' ')}
+        style={{ width: BOARD_ZONE_TRACK }}
+      >
+        {trashCell}
+      </div>
+      {/* Everything the Trash slot (plus one gap) doesn't take. */}
+      <div
+        className="absolute inset-y-0"
+        style={reverseRows
+          ? { left: `calc(${BOARD_ZONE_TRACK} + 0.5rem)`, right: 0 }
+          : { left: 0, right: `calc(${BOARD_ZONE_TRACK} + 0.5rem)` }}
+      >
+        {donArea}
+      </div>
+    </div>
+  );
+
+  // The mat is a 3-row grid per player (it was 2 until the DON!! piles were
+  // given a row of their own):
+  //   row 1  Character Area (the full width of the non-Life column)
+  //   row 2  Leader, with Stage + Deck pinned to the far edge
+  //   row 3  Trash on that same far edge, Active/Rested DON!! splitting the rest
+  // Life spans all three in its own column, since it is one tall fanned pile
+  // rather than a per-row zone. The reversed/top panel emits the rows in the
+  // opposite order so the Character Areas of both players end up adjacent to
+  // the Battle Line and the two mats read as mirror images.
+  //
+  // Row heights: all three rows are `minmax(CARD_ROW_TRACK,1fr)`, so they are
+  // equal to each other, split any slack evenly (a card is centred in whatever
+  // the row ends up being, exactly as before), and can never be squeezed below
+  // one card. Fitting three of them is what DESKTOP_BOARD_CARD_SCALE was
+  // introduced to pay for — see boardScale.ts for the arithmetic that picks
+  // its value, and note that it is set on THIS component's root (below) so it
+  // reaches the desktop mat's cards and nothing else, mobile included.
+  //
+  // The mat's own padding dropped to p-1 and the row gap to gap-y-0.5 as part
+  // of that budget. Those are fixed px, so they do NOT shrink with the board:
+  // at 720p they are a much larger share of a player's half than at 1080p,
+  // which is exactly what made an earlier, larger card scale fit on a big
+  // monitor and overflow on a small one. Shrinking them buys back card size at
+  // every height. The column gap stays gap-x-2 — leaderCenterOffset below
+  // assumes 0.5rem there.
+  //
+  // Width: capped at MAT_MAX_WIDTH rather than 100%. Past that width the grid
+  // was only inflating the gaps around a Character Area that already had room
+  // for its worst case (5 rested Characters), which dragged Deck and Life out
+  // to the screen edges. `justify-center` on the wrapper keeps the capped mat
+  // centred, and because BOTH panels use the same cap they stay the same
+  // width — which is what leaderGroup's centring relies on to put the two
+  // Leaders on one X across the Battle Line.
+  const lifeCell = (
+    <MatCell label="Life" variant="dark" className="row-span-3" labelClassName="sr-only" allowOverflow>
+      <LifeStack playerId={board.playerId} life={board.life} count={board.lifeAreaCount} donDeckCount={board.donDeckCount} donDeckFirst={reverseRows} />
+    </MatCell>
   );
 
   const mat = (
     <div className="flex min-h-0 flex-1 items-stretch justify-center overflow-hidden">
       <div
-        className="grid h-full w-full max-w-full flex-1 grid-rows-2 gap-2 overflow-hidden rounded-xl border border-white/10 bg-[linear-gradient(135deg,_rgba(255,255,255,0.08),_rgba(255,255,255,0.02))] p-2 shadow-inner shadow-black/30"
-        style={{ gridTemplateColumns: reverseRows ? `minmax(0,1fr) ${LIFE_COLUMN_TRACK}` : `${LIFE_COLUMN_TRACK} minmax(0,1fr)` }}
+        className="grid h-full w-full flex-1 gap-x-2 gap-y-0.5 overflow-hidden rounded-xl border border-white/10 bg-[linear-gradient(135deg,_rgba(255,255,255,0.08),_rgba(255,255,255,0.02))] p-1 shadow-inner shadow-black/30"
+        style={{
+          maxWidth: MAT_MAX_WIDTH,
+          gridTemplateColumns: reverseRows ? `minmax(0,1fr) ${LIFE_COLUMN_TRACK}` : `${LIFE_COLUMN_TRACK} minmax(0,1fr)`,
+          gridTemplateRows: `repeat(3, minmax(${CARD_ROW_TRACK},1fr))`,
+        }}
       >
         {reverseRows ? (
           <>
-            {boardRow}
-            <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only" allowOverflow>
-              <LifeStack playerId={board.playerId} life={board.life} count={board.lifeAreaCount} donDeckCount={board.donDeckCount} donDeckFirst />
-            </MatCell>
-            <div className="min-h-0">{characterRow}</div>
+            {donRow}
+            {lifeCell}
+            {leaderRow}
+            {/* relative z-10: see the non-reversed branch — same reason, and
+                here characterRow is also the row nearest the Battle Line. */}
+            <div className="relative z-10 min-h-0">{characterRow}</div>
           </>
         ) : (
           <>
-            <MatCell label="Life" variant="dark" className="row-span-2" labelClassName="sr-only" allowOverflow>
-              <LifeStack playerId={board.playerId} life={board.life} count={board.lifeAreaCount} donDeckCount={board.donDeckCount} />
-            </MatCell>
-            {/* relative z-10: characterRow must paint above boardRow (which comes later in DOM
-                and would otherwise cover the deck ghost layers that extend downward into row 1) */}
+            {lifeCell}
+            {/* relative z-10: characterRow must paint above the rows that come
+                later in DOM order, which would otherwise cover the deck ghost
+                layers that extend out of row 1 */}
             <div className="relative z-10 min-h-0">{characterRow}</div>
-            {boardRow}
+            {leaderRow}
+            {donRow}
           </>
         )}
       </div>
@@ -861,7 +958,18 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   );
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col" data-board-player={board.playerId}>
+    <div
+      className="flex h-full min-h-0 min-w-0 flex-1 flex-col"
+      data-board-player={board.playerId}
+      // Desktop-only card scale. cqh() multiplies every length it emits by
+      // this inherited variable (default 1), and every cqh consumer on this
+      // mat — BoardCardTile, DonChip/DonStack, PileStack, TrashPile,
+      // CountBadge, and this file's own track constants — is a descendant of
+      // this element. The mobile mat renders the same leaves under its own
+      // container and never sees the variable, so it keeps its original card
+      // size and its own two-row layout. See boardScale.ts.
+      style={{ [BOARD_CARD_SCALE_VAR]: DESKTOP_BOARD_CARD_SCALE } as CSSProperties}
+    >
       {mat}
       <TrashGalleryModal
         open={trashGalleryOpen}

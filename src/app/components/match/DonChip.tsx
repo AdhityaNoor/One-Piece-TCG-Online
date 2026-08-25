@@ -23,10 +23,10 @@ export interface DonChipProps {
 }
 
 // Same footprint as every other field card (BoardCardTile's 'field' size,
-// PlayerBoardPanel's FIELD_CARD_WIDTH/HEIGHT) — DON!! chips used to be a
-// smaller token, but the design now wants them reading as full-size cards.
-// cqh-based (see boardScale.ts) so chips shrink/grow with the board's
-// height instead of staying a fixed pixel size.
+// PlayerBoardPanel's FIELD_CARD_WIDTH/HEIGHT) — a DON!! in the Cost Area
+// reads as a full card, exactly like the Characters above it. cqh-based (see
+// boardScale.ts) so chips shrink/grow with the board instead of staying a
+// fixed pixel size.
 const CARD_WIDTH = cqh(150);
 const CARD_HEIGHT = cqh(210);
 const BOX = cqh(210);

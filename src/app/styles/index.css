@@ -503,18 +503,6 @@
       text-transform: uppercase;
     }
 
-    .op-don-popup-root > div[aria-hidden="true"],
-    .op-don-popup-root > div:first-child {
-      background: rgba(0, 0, 0, 0.35) !important;
-      backdrop-filter: blur(12px) !important;
-    }
-
-    .op-don-popup-panel {
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      background: rgba(0, 0, 0, 0.55) !important;
-      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(12px);
-    }
   }
 
   /* Trash gallery uses the generic Modal shell, whose own default styling

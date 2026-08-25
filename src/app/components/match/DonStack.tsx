@@ -1,238 +1,130 @@
 /**
  * Layer 3 board leaf: one player's Active or Rested DON!! pile.
  *
- * Hover: a full-screen backdrop (portal, covers everything) appears with the
- * cards laid out tight and flat at the stack's own screen position. Uses
- * createPortal so the popup escapes the board's overflow-hidden chain and
- * sits above all board content via z-index.
+ * The pile is a fanned stack that always fits the box it is given. Its
+ * container on the mat is one half of the DON!! row's spare width (see
+ * PlayerBoardPanel's donRow), which is a percentage, not a card multiple —
+ * so the per-card step is `min(natural step, room / (n - 1))`: the fan opens
+ * to its comfortable spacing when the pile is small and tightens as it grows,
+ * but the last card's box never leaves the container. That replaces the old
+ * uncapped `CHIP_BOX + (n-1) * STEP_PX` span, which grew without limit and
+ * had to be kept out of flow so it wouldn't shove the rest of the row aside.
+ *
+ * The natural step is taken from the pile's ON-SCREEN card width, which
+ * differs by orientation: an active DON!! is upright (150 wide inside its
+ * square box) while a rested one is rotated flat (210 wide). Stepping by a
+ * constant fraction of that width leaves the same visible sliver of every
+ * card either way.
+ *
+ * Every card in the stack is individually clickable — that sliver is the
+ * whole point. There is deliberately no hover behaviour: this pile used to
+ * open a full-screen portal popup on mouseenter so a specific DON!! could be
+ * picked, which meant an idle cursor resting near the pile could black out
+ * the board, and a pile whose length changed under a stationary cursor fired
+ * a synthetic mouseenter and opened it with no hover intent at all. Selection
+ * now happens in place, on the mat.
  */
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { cqh } from './boardScale';
 import { CountBadge } from './CountBadge';
 import { DonChip } from './DonChip';
 import { useSeatDonArtUrl } from './MatchAccessoriesContext';
 import type { CardView } from '../../../board/projection';
 
-export type DonStackDirection = 'vertical' | 'horizontal';
+export type DonStackOrientation = 'active' | 'rested';
 
 export interface DonStackProps {
+  /** Screen-reader name for the pile ("Active" / "Rested"). Not painted — the mat's DON!! row has no room for a caption, and the chips' own rotation already reads as active vs rested. */
   label: string;
   playerId: string;
   cards: CardView[];
-  direction: DonStackDirection;
+  /**
+   * Which pile this is. Only affects the fan's natural step, which is a
+   * fraction of the card's on-screen width — and a rested DON!! is rotated,
+   * so it is CARD_HEIGHT_PX wide on screen rather than CARD_WIDTH_PX.
+   */
+  orientation: DonStackOrientation;
   selectable: (card: CardView) => boolean;
   selectedIds: Set<string>;
   onDonSelect: (card: CardView) => void;
-  reverseRows?: boolean;
 }
 
-const CHIP_BOX = 210;
-const STEP_PX  = 14;
-const DON_TOKEN_SRC = '/ui/don-token.png';
+/** DonChip's square box: the footprint a chip occupies whichever way it is turned. */
+const CHIP_BOX_PX = 210;
+/** On-screen width of the card art itself, by orientation (rested = rotated 90°). */
+const VISIBLE_WIDTH_PX: Record<DonStackOrientation, number> = { active: 150, rested: 210 };
+/** Comfortable fan spacing as a fraction of that visible width — the exposed sliver of each buried card. */
+const STEP_RATIO = 0.34;
 
-// Fixed px dimensions for popup cards (cqh doesn't resolve outside ScaleToFit container).
-const POPUP_W = 72;
-const POPUP_H = 101;
-
-/** Tight chip for the portal popup — fixed px sizing. */
-function PopupChip({
-  card, isSelectable, isSelected, onSelect, donArtUrl,
-}: {
-  card: CardView; isSelectable: boolean; isSelected: boolean; onSelect: () => void; donArtUrl?: string;
-}) {
-  const rested = card.donRested;
-  const outerW = rested ? POPUP_H : POPUP_W;
-  const outerH = rested ? POPUP_W : POPUP_H;
-  const rotation = rested ? 'translate(-50%,-50%) rotate(90deg)' : 'translate(-50%,-50%)';
+export function DonStack({ label, playerId, cards, orientation, selectable, selectedIds, onDonSelect }: DonStackProps) {
+  const donArtUrl = useSeatDonArtUrl(playerId);
+  // Room the fan may travel across = the container minus one whole chip box,
+  // shared between the gaps. `min()` keeps the natural spacing until the pile
+  // is long enough to need less. Guard n-1 so a 0/1-card pile never divides
+  // by zero; with no gaps to place, the natural step is simply unused.
+  const gaps = Math.max(cards.length - 1, 1);
+  const naturalStep = cqh(VISIBLE_WIDTH_PX[orientation] * STEP_RATIO);
+  const step = `min(${naturalStep}, calc((100% - ${cqh(CHIP_BOX_PX)}) / ${gaps}))`;
 
   return (
     <div
-      role={isSelectable ? 'button' : undefined}
-      tabIndex={isSelectable ? 0 : undefined}
-      onClick={isSelectable ? onSelect : undefined}
-      onKeyDown={isSelectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(); } : undefined}
-      className={isSelectable ? 'cursor-pointer' : ''}
-      style={{ position: 'relative', flexShrink: 0, width: outerW, height: outerH }}
+      className="relative h-full w-full"
+      data-board-zone="costArea"
+      data-board-player={playerId}
+      aria-label={`${label} DON!!, ${cards.length}`}
     >
-      <div
-        className={[
-          'absolute overflow-hidden rounded-md shadow-[0_5px_12px_rgba(0,0,0,0.5)]',
-          isSelected ? 'ring-2 ring-white/80' : '',
-        ].join(' ')}
-        style={{ width: POPUP_W, height: POPUP_H, top: '50%', left: '50%', transform: rotation }}
-      >
-        <img src={donArtUrl ?? DON_TOKEN_SRC} alt="" aria-hidden="true" className="block h-full w-full object-cover" draggable={false} />
-      </div>
-    </div>
-  );
-}
-
-export function DonStack({ label, playerId, cards, direction, selectable, selectedIds, onDonSelect, reverseRows = false }: DonStackProps) {
-  const donArtUrl = useSeatDonArtUrl(playerId);
-  const isVertical = direction === 'vertical';
-  const stackedSpan = CHIP_BOX + Math.max(cards.length - 1, 0) * STEP_PX;
-  const [expanded, setExpanded] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cooldownRef = useRef(false); // blocks re-open immediately after a card selection
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
-
-  // Resting/activating DON!! changes this pile's length, which grows or shrinks
-  // the stacked span. When that boundary shifts under a stationary cursor the
-  // browser fires a synthetic `mouseenter` — with no real hover intent — and
-  // the popup's full-screen backdrop would pop open and lock the board. Ignore
-  // auto-open for a short settle window after the pile's contents change so
-  // only a genuine (post-settle) hover opens the popup.
-  const suppressUntilRef = useRef(0);
-  const prevLenRef = useRef(cards.length);
-  useEffect(() => {
-    if (cards.length !== prevLenRef.current) {
-      prevLenRef.current = cards.length;
-      suppressUntilRef.current = Date.now() + 300;
-      setExpanded(false);
-    }
-  }, [cards.length]);
-
-  function handleEnter() {
-    if (cooldownRef.current) return;
-    if (Date.now() < suppressUntilRef.current) return;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    const portalEl = document.getElementById('board-overlay-root');
-    if (wrapperRef.current && portalEl) {
-      const pr = portalEl.getBoundingClientRect();
-      const sr = wrapperRef.current.getBoundingClientRect();
-      setAnchor({
-        x: sr.left + sr.width / 2 - pr.left,
-        y: sr.top + sr.height / 2 - pr.top,
-      });
-    }
-    setExpanded(true);
-  }
-  function handleLeave(e?: React.MouseEvent) {
-    // Don't close if a mouse button is still held (mid-click movement)
-    if (e && e.buttons !== 0) return;
-    setExpanded(false);
-  }
-
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-[9px] font-black uppercase tracking-[0.14em] text-white/40">{label}</span>
-
-      {/* Stacked chips — anchor for portal positioning. Only opens; the overlay
-          owns closing so the wrapper's mouseleave doesn't fire when the popup
-          appears on top (overlay intercepts pointer events). */}
-      <div
-        ref={wrapperRef}
-        className="relative"
-        data-board-zone="costArea"
-        data-board-player={playerId}
-        style={isVertical
-          ? { width: cqh(CHIP_BOX), height: cqh(stackedSpan), overflow: 'visible' }
-          : { width: cqh(stackedSpan), height: cqh(CHIP_BOX), overflow: 'visible' }}
-        onMouseEnter={handleEnter}
-      >
-        {cards.length === 0 ? (
-          <>
-            <div
-              aria-hidden="true"
-              data-board-card-anchor
-              className="pointer-events-none absolute left-0 top-0"
-              style={{ width: cqh(150), height: cqh(210) }}
-            />
-            <div className="absolute inset-0 flex items-center justify-center rounded-md border border-dashed border-white/15 text-[8px] font-bold uppercase text-white/20">
-              None
-            </div>
-          </>
-        ) : (
-          <>
-            {cards.map((don, index) => {
-              const offset = index * STEP_PX;
-              return (
-                <div
-                  key={don.instanceId}
-                  className="absolute"
-                  style={{
-                    ...(isVertical ? { left: 0, top: cqh(offset) } : { top: 0, left: cqh(offset) }),
-                    zIndex: index,
-                    opacity: expanded ? 0 : 1,
-                    pointerEvents: expanded ? 'none' : 'auto',
-                    transition: 'opacity 0.12s ease',
-                  }}
-                >
-                  <DonChip
-                    card={don}
-                    selectable={selectable(don)}
-                    selected={selectedIds.has(don.instanceId)}
-                    onSelect={() => onDonSelect(don)}
-                    donArtUrl={donArtUrl}
-                  />
-                </div>
-              );
-            })}
-            {!expanded && <CountBadge count={cards.length} />}
-          </>
-        )}
-      </div>
-
-      {/* Portal into #board-overlay-root — inside the board DOM so the popup
-          follows board animations and is clipped by board bounds. Coordinates
-          are relative to the portal root (which has inset:0 on op-match-table-shell). */}
-      {expanded && anchor && cards.length > 0 && (() => {
-        const portalEl = document.getElementById('board-overlay-root');
-        if (!portalEl) return null;
-        return createPortal(
+      {cards.length === 0 ? (
+        <>
+          {/* Anchor for card-flight animations targeting an empty pile, kept
+              at a real chip's size and position so a DON!! flying in lands
+              where the first chip will actually appear. */}
           <div
-            className="op-don-popup-root"
-            style={{ position: 'absolute', inset: 0, pointerEvents: 'auto' }}
-            onClick={() => setExpanded(false)}
+            aria-hidden="true"
+            data-board-card-anchor
+            className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2"
+            style={{ width: cqh(150), height: cqh(210) }}
+          />
+          <div
+            className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-md border border-dashed border-white/15 text-[8px] font-bold uppercase text-white/20"
+            style={{ width: cqh(150), height: cqh(210) }}
           >
-            {/* Backdrop — click anywhere outside popup to close. */}
+            None
+          </div>
+        </>
+      ) : (
+        <>
+          {cards.map((don, index) => (
             <div
-              className="op-don-popup-panel"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'rgba(0,0,0,0.55)',
-                backdropFilter: 'blur(2px)',
-              }}
-            />
-            {/* Popup — positioned at the stack's coordinates relative to the board */}
-            <div
-              style={{
-                position: 'absolute',
-                top: anchor.y,
-                left: anchor.x,
-                transform: 'translate(-50%, -50%)',
-                zIndex: 1,
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '10px',
-                background: 'transparent',
-                borderRadius: '16px',
-              }}
-              onClick={(e) => e.stopPropagation()}
-              onMouseLeave={handleLeave}
+              key={don.instanceId}
+              className="absolute top-1/2 -translate-y-1/2"
+              // Later cards sit on top, so the exposed sliver of each buried
+              // card is its LEFT edge and the fan reads left-to-right.
+              style={{ left: `calc(${index} * ${step})`, zIndex: index }}
             >
-              {cards.map((don) => (
-                <PopupChip
-                  key={don.instanceId}
-                  card={don}
-                  isSelectable={selectable(don)}
-                  isSelected={selectedIds.has(don.instanceId)}
-                  onSelect={() => {
-                  onDonSelect(don);
-                }}
-                  donArtUrl={donArtUrl}
-                />
-              ))}
+              <DonChip
+                card={don}
+                selectable={selectable(don)}
+                selected={selectedIds.has(don.instanceId)}
+                onSelect={() => onDonSelect(don)}
+                donArtUrl={donArtUrl}
+              />
             </div>
-          </div>,
-          portalEl,
-        );
-      })()}
+          ))}
+          {/* Centred on the pile's own span rather than the half-row container,
+              so the number sits on cards instead of floating in the gap left
+              over when the pile is short. */}
+          <div
+            className="pointer-events-none absolute top-1/2 -translate-y-1/2"
+            style={{
+              left: `calc(${Math.max(cards.length - 1, 0)} / 2 * ${step})`,
+              width: cqh(CHIP_BOX_PX),
+              height: cqh(CHIP_BOX_PX),
+              zIndex: cards.length + 1,
+            }}
+          >
+            <CountBadge count={cards.length} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

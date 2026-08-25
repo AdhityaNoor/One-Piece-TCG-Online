@@ -14,8 +14,8 @@
  * DonChip/PileStack) instead of text rows. The DON!! Deck pile and the
  * Active/Rested DON!! piles used to live in their own standalone column here
  * (DonManagementColumn/DonCardStack, now removed) — they're now columns
- * inside PlayerBoardPanel's own leader's row (boardRow), so see that file for
- * DON!! layout/selection logic. CardRow/ZoneSection still exist for compact
+ * inside PlayerBoardPanel's own mat, in a DON!! row of their own below the
+ * Leader's row (donRow), so see that file for DON!! layout/selection logic. CardRow/ZoneSection still exist for compact
  * list contexts (Trash inspector, Character Area overflow choice) where a
  * scannable text list is more useful than card art. Card zoom/preview
  * (small-screen requirement) reuses the existing CardDetailModal as-is.
@@ -1088,7 +1088,7 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               committed={attackArrow?.committed ?? false}
             />
             <CardMovementOverlay shellRef={tableShellRef} />
-            {/* Portal root for board-scoped overlays (DonStack popup, etc.).
+            {/* Portal root for board-scoped overlays (AttachedDonHoverStack, etc.).
                 Sits inside op-match-table-shell so overlays follow the board
                 when it animates, are clipped to board bounds by overflow:hidden,
                 and are above all board content via z-index. pointer-events:none
