@@ -26,21 +26,35 @@ export const ST31_ASSIGNMENTS: CardEffectAssignment[] = [
     },
   },
 
-  // PARTIAL: ST31-004 maps ONE −1000 target; "For every {Straw Hat Crew} type card on your
-  // field, give up to 1 of your opponent's Characters −1000 power" is not expressible either way,
-  // and the two readings need DIFFERENT primitives — so this needs a ruling before it is curated:
-  //   (a) up to N different targets at −1000 each. addPower's maxTargets is a fixed number; there
-  //       is no count-driven target cap. NEEDS: maxTargets sourced from a board count.
-  //   (b) one target at −1000 × N. Expressible via addPower `scale`, EXCEPT that PowerScaleSource
-  //       has no type-filtered field count — `controllerCharacters` counts every Character and
-  //       omits the Leader/Stage, while the card says "{Straw Hat Crew} type CARD on your field".
-  //       NEEDS: a `controllerTypedCards` PowerScaleSource.
-  // Reading (a) is the more natural parse of the clause order, but do not curate on that guess.
+  // ST31-004 Monkey.D.Luffy — "[On Play] For every {Straw Hat Crew} type card on your field,
+  //   give up to 1 of your opponent's Characters −1000 power during this turn."
+  //
+  //   RULING RESOLVED (was: needs a ruling; two readings). Reading (b) — ONE target at −1000 × N —
+  //   is correct, on the precedent of OP13-001, which is the same clause grammar:
+  //     "For every DON!! card rested this way, this Leader or UP TO 1 of your {Straw Hat Crew} type
+  //      Characters gains +2000 power during this battle."
+  //   and is curated as a single target with `amountPer`. "up to 1" is the TARGET quantifier; "for
+  //   every" scales the AMOUNT. Reading (a) would have needed "up to N of your opponent's Characters".
+  //
+  //   The count is snapshotted at RESOLUTION via captureFieldTypeCount, not expressed as a
+  //   continuous `scale`: scale is re-read on every power lookup, so K.O.ing a Straw Hat later in
+  //   the turn would retroactively shrink a debuff the card already applied.
+  //   "card on your field" is Leader + Characters + Stages — hence controllerFieldCards, not
+  //   controllerCharacters.
   {
     cardNumber: 'ST31-004',
     templates: [
       { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'rush', duration: 'permanent', condition: { gate: [{ kind: 'selfGivenDonCount', atLeast: 3 }] } }] } },
-      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -1000, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onPlay',
+          functions: [
+            { fn: 'captureFieldTypeCount', typeIncludes: 'Straw Hat Crew', into: 'st31ShcField' },
+            { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: 0, amountPer: -1000, countVar: 'st31ShcField', duration: 'duringThisTurn', optional: true, maxTargets: 1 },
+          ],
+        },
+      },
     ],
   },
 

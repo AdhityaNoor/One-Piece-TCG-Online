@@ -58,8 +58,16 @@ describe('semantic family: one optional payment gating several clauses', () => {
     const payIdx = paymentIndex(ops);
     const capturedVar = (ops[payIdx + 1] as { into: string }).into;
 
-    const lifeMove = ops.find((op) => op.op === 'moveToLifeTop');
-    const basePower = ops.find((op) => op.op === 'setBasePower');
+    // The "add up to 1 card from the top of your deck" clause compiles to a
+    // two-option prompt (the deck's top card must not be shown before the player
+    // decides), so its move op lives inside a branch rather than at the top level.
+    const flat = ops.flatMap((op) => (
+      op.op === 'chooseOption'
+        ? [op, ...((op as unknown as { options: { ops: Op[] }[] }).options.flatMap((o) => o.ops))]
+        : [op]
+    ));
+    const lifeMove = flat.find((op) => op.op === 'moveToLifeTop');
+    const basePower = flat.find((op) => op.op === 'setBasePower');
     expect(lifeMove).toBeDefined();
     expect(basePower).toBeDefined();
 

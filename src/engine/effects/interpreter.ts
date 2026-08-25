@@ -397,12 +397,15 @@ function lifePositionOptions(
   position: 'top' | 'topOrBottom',
   optional: boolean,
   player: 'controller' | 'opponent' = 'controller',
+  /** Which verb the decline option should read as — 'add' (to hand) or 'trash'. */
+  action: 'add' | 'trash' = 'add',
 ): { label: string; position: 'decline' | 'top' | 'bottom' }[] {
+  const declineLabel = action === 'trash' ? 'Do not trash a Life card.' : 'Do not add a Life card.';
   const playerId = player === 'opponent' ? ctx.opponentId : ctx.controllerId;
   const life = ctx.state().players[playerId]?.lifeArea.cardIds ?? [];
-  if (life.length === 0) return optional ? [{ label: 'Do not add a Life card.', position: 'decline' }] : [];
+  if (life.length === 0) return optional ? [{ label: declineLabel, position: 'decline' }] : [];
   const options: { label: string; position: 'decline' | 'top' | 'bottom' }[] = [];
-  if (optional) options.push({ label: 'Do not add a Life card.', position: 'decline' });
+  if (optional) options.push({ label: declineLabel, position: 'decline' });
   options.push({ label: 'Top Life card', position: 'top' });
   if (position === 'topOrBottom' && life.length > 1) options.push({ label: 'Bottom Life card', position: 'bottom' });
   return options;
@@ -433,7 +436,7 @@ function resolveLifePositionToTrash(
   selectedIndex: number,
   player: 'controller' | 'opponent' = 'controller',
 ): OpResult {
-  const options = lifePositionOptions(ctx, position, optional, player);
+  const options = lifePositionOptions(ctx, position, optional, player, 'trash');
   const selected = options[selectedIndex];
   if (!selected || selected.position === 'decline') return EMPTY_RESULT;
   const playerId = player === 'opponent' ? ctx.opponentId : ctx.controllerId;
@@ -603,6 +606,15 @@ function resolveSelector(sel: Selector, ctx: EffectContextImpl, bindings: Record
       let ids = [p.leaderInstanceId, ...p.stageArea.cardIds];
       if (sel.typeIncludes !== undefined) ids = ids.filter((id) => cardTypeIncludes(ctx.definitionOf(id)?.types, sel.typeIncludes!));
       if (sel.name !== undefined) { const name = sel.name; ids = ids.filter((id) => nameMatches(ctx.definitionOf(id), name)); }
+      return ids;
+    }
+    case 'controllerFieldCards': {
+      // "card on your field" = Leader + Character Area + Stage Area (2-3): wider than
+      // controllerLeaderOrCharacters (which omits Stages).
+      const p = ctx.state().players[ctx.controllerId];
+      let ids = [p.leaderInstanceId, ...p.characterArea.cardIds, ...(p.stageArea?.cardIds ?? [])]
+        .filter((id): id is string => !!id);
+      if (sel.typeIncludes !== undefined) ids = ids.filter((id) => cardTypeIncludes(ctx.definitionOf(id)?.types, sel.typeIncludes!));
       return ids;
     }
     case 'controllerRestedDon': {
@@ -1477,6 +1489,10 @@ function applyOp(op: NonSuspendingEffectOp, ctx: EffectContextImpl, bindings: Re
       for (const id of ids) ctx.trashCard(id);
       return { selectedIds: ids, movedIds: ids };
     }
+    case 'clearResult':
+      // Pure bookkeeping: no state change, just an empty result so a following
+      // ifPrevious sees "nothing happened" (see the op's doc in effectIr.ts).
+      return EMPTY_RESULT;
     case 'trashTopDeck': {
       const count = op.countVar !== undefined
         ? (bindings[op.countVar]?.length ?? 0)
@@ -1783,7 +1799,13 @@ function runOpList(
       return { suspended: true, bindings: workingBindings };
     }
     if (op.op === 'chooseLifeToHand' || op.op === 'chooseLifeToTrash') {
-      const options = lifePositionOptions(ctx, op.position, op.optional, op.op === 'chooseLifeToHand' ? (op.player ?? 'controller') : 'controller');
+      const options = lifePositionOptions(
+        ctx,
+        op.position,
+        op.optional,
+        op.op === 'chooseLifeToHand' ? (op.player ?? 'controller') : 'controller',
+        op.op === 'chooseLifeToTrash' ? 'trash' : 'add',
+      );
       if (options.length === 0) {
         workingBindings = withResultBindings(workingBindings, EMPTY_RESULT);
         continue;
@@ -1828,6 +1850,12 @@ function runOpList(
       // Snapshot `from` into `into` without disturbing __lastMoved/__lastSelected
       // (a following ifPrevious must still see the prior action's result).
       workingBindings = { ...workingBindings, [op.into]: workingBindings[op.from] ?? [] };
+      continue;
+    }
+    if (op.op === 'bindMatchingCards') {
+      // Count snapshot for a "for every X" clause, taken NOW. Like copyVar it must not
+      // disturb __lastMoved/__lastSelected — it is bookkeeping, not an action.
+      workingBindings = { ...workingBindings, [op.var]: resolveSelector(op.from, ctx, workingBindings) };
       continue;
     }
     if (op.op === 'revealTopLife') {
@@ -2301,6 +2329,20 @@ export function resumeProgram(
     }
     let working = step.state;
     let log = step.log;
+    if (step.koedSourceInstanceId) {
+      // A `koSource` replacement K.O.'d the aura source (OP17-015 Marco). koAttempt moved
+      // it to the trash but cannot fire [On K.O.] itself without an import cycle, so the
+      // cascade happens here — which is what lets Marco's own [On K.O.] replay him.
+      const firedSource = fireOnKO(working, step.koedSourceInstanceId, registry, defs, actionId, {
+        cause: 'effect',
+        sourceInstanceId: step.resumeKr?.ir?.sourceInstanceId,
+      });
+      working = firedSource.state;
+      log = [...log, ...firedSource.log];
+      if (firedSource.pendingChoices.length > 0) {
+        return { state: working, log, pendingChoices: firedSource.pendingChoices };
+      }
+    }
     if (step.declinedEffectKoTargetId) {
       const fired = fireOnKO(working, step.declinedEffectKoTargetId, registry, defs, actionId, {
         cause: 'effect',

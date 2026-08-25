@@ -81,6 +81,16 @@ export interface BattleState {
    */
   onOpponentsAttackUsedInstanceIds?: string[];
   /**
+   * Leader/Character/Stage instance ids whose "[When] your Leader attacks / is
+   * attacked" trigger (timings onControllerLeaderAttacks /
+   * onControllerLeaderAttacked) has already been offered during THIS battle.
+   * The sweep claims a source's slot before resolving it, so when a source
+   * suspends on a prompt the sweep can safely be re-entered after the choice
+   * resolves and will continue with the NEXT un-fired copy on the field
+   * rather than re-prompting the same card.
+   */
+  leaderBattleTriggersFiredInstanceIds?: string[];
+  /**
    * Power granted "during this battle" by ACTIVATE_COUNTER_CHARACTER
    * (7-1-3-2-1), keyed by the boosted CardInstance id. A Counter Character's
    * boost target ("1 of your Leader or Character cards") is not necessarily
@@ -150,6 +160,15 @@ export interface PowerAuraGroup {
   anyOfNames?: string[];
   /** Restrict to cards carrying any of these attributes (OR). Leader/Character only. */
   anyOfAttributes?: string[];
+  /** Restrict to cards that carry a printed [Trigger] (OP17-112's "Characters with a [Trigger]"). */
+  hasTrigger?: true;
+  /**
+   * Restrict to cards whose PRINTED base power is exactly this. Deliberately printed,
+   * not current: "Characters with ... 4000 base power" selects on the printed value, so a
+   * Character already buffed to 8000 by this very aura must stay in the target set rather
+   * than filtering itself out and oscillating on every power read.
+   */
+  exactBasePower?: number;
   /** Restrict to cards whose printed colors include any of these (OR). */
   anyOfColors?: Color[];
   /** Exclude the modifier source card from the aura target set. */
@@ -490,6 +509,14 @@ export type KoReplacementAction =
   | { kind: 'trashSelf' }
   /** Trash the aura source character (ally replacement — "trash this Character instead"). */
   | { kind: 'trashSource' }
+  /**
+   * K.O. the aura source character ("you may K.O. THIS Character instead"). Distinct from
+   * trashSource: this one FIRES the source's [On K.O.], which for OP17-015 Marco is the
+   * whole point (his [On K.O.] replays him from the trash). The source's own K.O. is the
+   * replacement's cost and is applied directly, so it does NOT re-enter the replacement /
+   * immunity machinery — otherwise Marco's own aura could try to replace his own K.O.
+   */
+  | { kind: 'koSource' }
   /** Return the aura source character to its owner's hand instead of removing the ally. */
   | { kind: 'returnSourceToHand' }
   /** Rest the aura source character instead of the K.O. */

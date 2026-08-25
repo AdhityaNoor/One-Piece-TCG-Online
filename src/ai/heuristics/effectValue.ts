@@ -270,7 +270,7 @@ export function scoreHandCardPlay(ctx: EffectScoreContext, handInstanceId: strin
     return (
       scoreCardTimings(localCtx, cardDefinitionId, ['onPlay', 'onEnterPlay'], 1) +
       scoreCardTimings(localCtx, cardDefinitionId, ['activateMain'], 0.55) +
-      scoreCardTimings(localCtx, cardDefinitionId, ['whenAttacking', 'onOpponentsAttack'], 0.45)
+      scoreCardTimings(localCtx, cardDefinitionId, ['whenAttacking', 'onOpponentsAttack', 'onControllerLeaderAttacks', 'onControllerLeaderAttacked'], 0.45)
     );
   }
   if (def.category === 'stage') {

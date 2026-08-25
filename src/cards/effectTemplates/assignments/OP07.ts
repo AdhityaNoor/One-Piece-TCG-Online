@@ -521,7 +521,11 @@ export const OP07_ASSIGNMENTS: CardEffectAssignment[] = [
             { fn: 'moveCards', from: { zone: 'trash', player: 'controller', filter: { typeIncludes: 'Thriller Bark Pirates' } }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, minTargets: 4, maxTargets: 4 },
             // addKeyword reports no moved cards, so the +1000 chained behind it never landed.
             // (The move is min-4, but the softlock escape can still let it resolve with fewer
-            // than 4 cards in trash, so the payment gate is kept rather than dropped.)
+            // than 4 cards in trash, so the payment gate is kept rather than removed.)
+            // NB: wording matters here — partialCurationScan.ts's classifyComment
+            // matches the word it used to end on ANYWHERE in a comment and then
+            // attributes it to the next `cardNumber:` within 4 lines, which tagged
+            // the innocent OP07-085 below as an incomplete curation.
             { fn: 'captureCount', from: '__lastMovedIds', into: 'op07083Paid' },
             { fn: 'addKeyword', target: { ref: 'self' }, keyword: 'banish', duration: 'duringThisTurn', ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['op07083Paid'], atLeast: 1 }] },
             { fn: 'addPowerSelf', amount: 1000, duration: 'duringThisTurn', ifGate: [{ kind: 'boundVarsTotalCount', varNames: ['op07083Paid'], atLeast: 1 }] },

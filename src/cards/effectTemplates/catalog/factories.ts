@@ -16,6 +16,7 @@ function koReplacementAction(f: {
   lifeToHand?: { position?: 'top' | 'topOrBottom' };
   trashLife?: { position?: 'top' | 'bottom' | 'topOrBottom' };
   trashSource?: true;
+  koSource?: true;
   returnSourceToHand?: true;
   restSource?: true;
   restCharacter?: true;
@@ -38,6 +39,7 @@ function koReplacementAction(f: {
   if (f.restDon) return { kind: 'payAbilityCosts', costs: [{ kind: 'restDon', count: f.restDon.count ?? 1 }] };
   if (f.lifeToHand) return { kind: 'chooseLifeToHand', position: f.lifeToHand.position ?? 'top' };
   if (f.trashLife) return { kind: 'trashLife', position: f.trashLife.position ?? 'topOrBottom' };
+  if (f.koSource) return { kind: 'koSource' };
   if (f.restSource) return { kind: 'restSource' };
   if (f.restCharacter) {
     return {
@@ -324,6 +326,20 @@ function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>)
     if ('untilLife' in f.from && f.from.untilLife !== undefined) {
       return [{ op: 'trashLife', player: 'controller', untilLife: f.from.untilLife }];
     }
+    // "You may trash 1 card from the top of your Life cards" is a genuine player
+    // decision (8-4-4-1) — it must PROMPT, not silently spend a Life card. The
+    // decline branch leaves __lastMoved empty, so a following
+    // `ifPrevious: 'previousMovedAny'` correctly skips the paid-for effect.
+    if (optional && count === 1) {
+      return [
+        {
+          op: 'chooseLifeToTrash',
+          position: 'top',
+          optional: true,
+          prompt: f.prompt ?? 'You may trash 1 card from the top of your Life cards.',
+        },
+      ];
+    }
     return [{ op: 'trashLife', player: 'controller', count }];
   }
   if (f.from.zone === 'life' && f.from.position === 'top' && f.from.player === 'controller' && f.to.zone === 'hand' && f.to.player === 'owner') {
@@ -342,6 +358,37 @@ function moveCardsOps(f: Extract<SequencedAbilityFunction, { fn: 'moveCards' }>)
   const moveOp = moveOpForDestination(f.to, target);
   if (!optional && f.from.zone === 'deck' && f.from.position === 'top') {
     return [moveOpForDestination(f.to, { sel: 'controllerDeckTop' })];
+  }
+  // "You may add 1 card from the top of your deck to ..." — a YES/NO decision,
+  // not a card pick. Routing it through chooseTargets would render the deck's
+  // top card in the picker (PendingChoicePrompt projects real name/art for every
+  // candidate, ignoring `revealedTo`), handing the player hidden information
+  // they are not entitled to — and `controllerDeckTop` yields exactly one
+  // candidate anyway, so the "choice" was never a choice. A two-option prompt
+  // asks the same question without the leak. The decline branch must
+  // `clearResult`, or the PREVIOUS function's __lastMoved would leak through
+  // and wrongly satisfy a following ifPrevious.
+  const deckTopMoveOp = optional && f.from.zone === 'deck' && f.from.position === 'top' && count === 1
+    ? moveOpForDestination(f.to, { sel: 'controllerDeckTop' })
+    : undefined;
+  // A destination that is itself a chooseOption (top-or-bottom placement) would
+  // nest a suspending choice inside a branch — left on the picker path.
+  if (deckTopMoveOp && deckTopMoveOp.op !== 'chooseOption') {
+    const noun = f.to.zone === 'life' ? 'to the top of your Life cards'
+      : f.to.zone === 'hand' ? 'to your hand'
+      : f.to.zone === 'trash' ? 'to the trash'
+      : 'from the top of your deck';
+    return [
+      {
+        op: 'chooseOption',
+        prompt: f.prompt ?? `You may add 1 card from the top of your deck ${noun}.`,
+        ...(f.chooser ? { chooser: f.chooser } : {}),
+        options: [
+          { label: 'Do not add a card', ops: [{ op: 'clearResult' }] },
+          { label: 'Add the top card of your deck', ops: [deckTopMoveOp] },
+        ],
+      },
+    ];
   }
   return [
     {
@@ -1517,7 +1564,14 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
       return [
         {
           op: 'setBasePowerAura',
-          group: { ownLeaderAndCharacters: true, ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}), ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}) },
+          group: {
+            ownLeaderAndCharacters: true,
+            ...(f.charactersOnly ? { charactersOnly: true } : {}),
+            ...(f.anyOfTypes ? { anyOfTypes: f.anyOfTypes } : {}),
+            ...(f.anyOfNames ? { anyOfNames: f.anyOfNames } : {}),
+            ...(f.hasTrigger ? { hasTrigger: true } : {}),
+            ...(f.exactBasePower !== undefined ? { exactBasePower: f.exactBasePower } : {}),
+          },
           value: f.value,
           duration: f.duration,
           ...(f.sourceCondition ? { sourceCondition: f.sourceCondition } : {}),
@@ -1833,6 +1887,12 @@ function functionOps(f: SequencedAbilityFunction): EffectOp[] {
     }
     case 'captureCount':
       return [{ op: 'copyVar', from: f.from ?? 't', into: f.into }];
+    case 'captureFieldTypeCount':
+      return [{
+        op: 'bindMatchingCards',
+        var: f.into,
+        from: { sel: 'controllerFieldCards', ...(f.typeIncludes ? { typeIncludes: f.typeIncludes } : {}) },
+      }];
     case 'revealTopLifePlay': {
       // Reveal the top Life card; the `revealTopLife` op records the filter match in
       // __lastRevealMatched. Offer the optional play only when it matched (the

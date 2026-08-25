@@ -360,6 +360,17 @@ function evaluateGate(
       return gate.atLeast !== undefined || gate.atMost !== undefined;
     }
 
+    case 'selfCharacterTriggerCount': {
+      // Printed [Trigger] only, and only cards in the Character Area — the Leader and
+      // Stage never carry one, and "you have N Characters with a [Trigger]" is a
+      // board-state read, so it is re-evaluated every time the gate is checked.
+      const count = player.characterArea.cardIds
+        .filter((id) => defs[state.cardsById[id]?.cardDefinitionId ?? '']?.hasTrigger === true).length;
+      if (gate.atMost !== undefined && count > gate.atMost) return false;
+      if (gate.atLeast !== undefined && count < gate.atLeast) return false;
+      return gate.atLeast !== undefined || gate.atMost !== undefined;
+    }
+
     case 'selfCharacterBaseCostCount': {
       const count = player.characterArea.cardIds.filter((id) => (defs[state.cardsById[id]?.cardDefinitionId ?? '']?.baseCost ?? -1) >= gate.minBaseCost).length;
       return count >= gate.atLeast;

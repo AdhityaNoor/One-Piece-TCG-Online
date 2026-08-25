@@ -1825,8 +1825,18 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // EB03-055 — [On Play] trash top Life → if Leader SHC, +2 Life from deck.
+  // EB03-055 — [On Play] You may trash 1 card from the top of your Life cards:
+  //   if your Leader has {Straw Hat Crew}, add UP TO 2 cards from the top of your
+  //   deck to the top of your Life cards.
   //   [Opponent's Turn] [On K.O.] You may deal 1 damage to your opponent.
+  //
+  //   Two distinct prompts, in order:
+  //     1. chooseLifeToTrash — pay (or decline) the optional Life-trash cost.
+  //     2. chooseOne 0/1/2 — "up to 2" is a COUNT the player picks, so it cannot be
+  //        a `moveCards ... count: 2`: the `controllerDeckTop` selector only ever
+  //        yields ONE card, which silently capped this at 1 AND leaked the deck's
+  //        top card into a card picker. Each branch moves that many deck-top cards
+  //        blind, which is what "add from the top of your deck" actually means.
   {
     cardNumber: 'EB03-055',
     templates: [
@@ -1836,7 +1846,29 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
           timing: 'onPlay',
           functions: [
             { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top' }, to: { zone: 'trash', player: 'owner' }, optional: true },
-            { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 2 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifGate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }], ifPrevious: 'previousMovedAny' },
+            {
+              fn: 'chooseOne',
+              chooser: 'controller',
+              prompt: 'Add up to 2 cards from the top of your deck to the top of your Life cards.',
+              ifGate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }],
+              ifPrevious: 'previousMovedAny',
+              options: [
+                { label: 'Add 0 cards', functions: [] },
+                {
+                  label: 'Add 1 card',
+                  functions: [
+                    { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' } },
+                  ],
+                },
+                {
+                  label: 'Add 2 cards',
+                  functions: [
+                    { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' } },
+                    { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' } },
+                  ],
+                },
+              ],
+            },
           ],
         },
       },

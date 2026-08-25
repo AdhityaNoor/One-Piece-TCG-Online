@@ -145,7 +145,10 @@ describe('partial curation batch: OP03-001 / OP11-088 / OP12-081', () => {
     const entry = OP03_ASSIGNMENTS.find((a) => a.cardNumber === 'OP03-001')!;
     expect('templates' in entry && entry.templates).toHaveLength(2);
     const program = programFor(entry);
-    expect(program.abilities.map((a) => a.timing)).toEqual(['whenAttacking', 'onOpponentsAttack']);
+    // "is attacked" is NOT the generic onOpponentsAttack Block-Step window: that one
+    // is offered on any attack the opponent declares, including at a Character, while
+    // this Leader's pump is `duringThisBattle` on ITSELF.
+    expect(program.abilities.map((a) => a.timing)).toEqual(['whenAttacking', 'onControllerLeaderAttacked']);
     const trashOp = program.abilities[0].ops[0];
     expect(trashOp).toMatchObject({ op: 'chooseTargets', max: -1, min: 0 });
     expect(program.abilities[0].ops[1]).toMatchObject({ op: 'trashCards', target: { sel: 'var', name: 't' } });
@@ -329,14 +332,23 @@ describe('partial curation batch: OP03-001 / OP11-088 / OP12-081', () => {
     const onPlay = program.abilities.find((a) => a.timing === 'onPlay')!;
 
     expect(onPlay.gate).toEqual([{ kind: 'leaderType', type: 'Big Mom Pirates' }]);
+    // "add up to 1 card from the top of your deck" is a yes/no, and the card in
+    // question is one the player must not see — so it compiles to a two-option
+    // prompt, not a chooseTargets picker over `controllerDeckTop` (which would
+    // project that card's real name and art into the prompt).
+    const deckChoice = onPlay.ops.find((o) => o.op === 'chooseOption') as
+      | { options: { label: string; ops: { op: string }[] }[] }
+      | undefined;
+    expect(deckChoice).toBeDefined();
+    expect(deckChoice!.options.map((o) => o.ops.map((x) => x.op))).toEqual([['clearResult'], ['moveToLifeTop']]);
     expect(onPlay.ops).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerDeckTop' }, min: 0, max: 1 }),
-        expect.objectContaining({ op: 'moveToLifeTop', target: { sel: 'var', name: 't' } }),
         expect.objectContaining({ op: 'chooseTargets', from: { sel: 'opponentLifeTop' }, min: 0, max: 1 }),
         expect.objectContaining({ op: 'trashCards', target: { sel: 'var', name: 't' } }),
       ]),
     );
+    // The deck's top card never appears as a selectable candidate.
+    expect(onPlay.ops.some((o) => o.op === 'chooseTargets' && JSON.stringify(o).includes('controllerDeckTop'))).toBe(false);
   });
 
   it('OP11-088 requires Slash attacker attribute', () => {
@@ -1345,15 +1357,27 @@ describe('partial curation batch: rest-cost and rest-immunity', () => {
       ]),
     );
     expect(programs['OP15-116'].abilities.map((a) => a.timing)).toEqual(['activateMain', 'counter']);
-    expect(programs['OP15-116'].abilities.find((a) => a.timing === 'activateMain')?.ops).toEqual(
+    // OP15-116 reads "trash 1 card from the top of your Life cards. Then, add up to
+    // 1 card from the top of your deck ... and trash 1 card from your hand." Only the
+    // ADD is optional: the two trashes are mandatory and neither is an "if you do"
+    // rider on the other, so no ifPrevious chain and no decline prompt on the cost.
+    const op15116Main = programs['OP15-116'].abilities.find((a) => a.timing === 'activateMain')!;
+    expect(programs['OP15-116'].abilities.map((a) => a.timing)).toEqual(['activateMain', 'counter']);
+    expect(op15116Main.ops[0]).toMatchObject({ op: 'trashLife', player: 'controller' });
+    expect(op15116Main.ops.some((o) => o.op === 'chooseLifeToTrash')).toBe(false);
+    const op15116Add = op15116Main.ops.find((o) => o.op === 'chooseOption') as
+      | { options: { ops: { op: string }[] }[] }
+      | undefined;
+    expect(op15116Add).toBeDefined();
+    expect(op15116Add!.options.map((o) => o.ops.map((x) => x.op))).toEqual([['clearResult'], ['moveToLifeTop']]);
+    expect(op15116Main.ops).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ op: 'trashLife', player: 'controller' }),
-        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerDeckTop' }, ifPrevious: 'previousMovedAny' }),
-        expect.objectContaining({ op: 'moveToLifeTop' }),
-        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerHand' }, ifPrevious: 'previousMovedAny' }),
+        expect.objectContaining({ op: 'chooseTargets', from: { sel: 'controllerHand' } }),
         expect.objectContaining({ op: 'trashCards' }),
       ]),
     );
+    // Declining the "up to 1" add must not cancel the mandatory hand trash.
+    for (const op of op15116Main.ops) expect(op.ifPrevious).toBeUndefined();
   });
 
   it('OP14 batch compiles existing-capability partial closures', () => {

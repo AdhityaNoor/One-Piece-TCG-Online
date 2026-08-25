@@ -180,11 +180,23 @@ export function executeResolvePendingChoice(
     if (step.pendingChoices.length > 0) {
       return { state: { ...step.state, pendingChoices: [...step.state.pendingChoices, ...step.pendingChoices] }, log: step.log, pendingChoices: step.pendingChoices };
     }
-    if (step.resumeKr?.battle) {
-      const battle = finishBattleAfterKoDecision(step.state, defs, step.resumeKr, registry, action.actionId);
-      return { state: battle.state, log: [...step.log, ...battle.log], pendingChoices: battle.pendingChoices };
+    let krState = step.state;
+    let krLog = step.log;
+    if (step.koedSourceInstanceId) {
+      // `koSource` replacement (OP17-015 Marco): koAttempt trashed the aura source but
+      // leaves firing its [On K.O.] to us — see KoReplacementStepResult's doc comment.
+      const firedSource = fireOnKO(krState, step.koedSourceInstanceId, registry, defs, action.actionId, { cause: 'effect' });
+      krState = firedSource.state;
+      krLog = [...krLog, ...firedSource.log];
+      if (firedSource.pendingChoices.length > 0) {
+        return { state: krState, log: krLog, pendingChoices: firedSource.pendingChoices };
+      }
     }
-    return { state: step.state, log: step.log, pendingChoices: [] };
+    if (step.resumeKr?.battle) {
+      const battle = finishBattleAfterKoDecision(krState, defs, step.resumeKr, registry, action.actionId);
+      return { state: battle.state, log: [...krLog, ...battle.log], pendingChoices: battle.pendingChoices };
+    }
+    return { state: krState, log: krLog, pendingChoices: [] };
   }
 
   // Life [Trigger] (10-1-5-2): activate → fire the trigger, then trash the card

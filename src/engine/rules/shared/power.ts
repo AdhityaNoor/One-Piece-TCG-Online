@@ -75,8 +75,11 @@ function handSelfCostDelta(
   return delta;
 }
 
-function definitionMatchesAuraFilters(def: CardDefinition, group: Pick<PowerAuraGroup, 'anyOfTypes' | 'anyOfNames' | 'anyOfAttributes' | 'anyOfColors' | 'category' | 'minBaseCost' | 'maxBaseCost'>): boolean {
+function definitionMatchesAuraFilters(def: CardDefinition, group: Pick<PowerAuraGroup, 'anyOfTypes' | 'anyOfNames' | 'anyOfAttributes' | 'anyOfColors' | 'category' | 'minBaseCost' | 'maxBaseCost' | 'hasTrigger' | 'exactBasePower'>): boolean {
   if (group.category !== undefined && def.category !== group.category) return false;
+  if (group.hasTrigger === true && def.hasTrigger !== true) return false;
+  // Printed base power, never the current value — see the field's doc comment in game.ts.
+  if (group.exactBasePower !== undefined && def.basePower !== group.exactBasePower) return false;
   if (group.anyOfTypes !== undefined && !group.anyOfTypes.some((t) => cardTypeIncludes(def.types, t))) return false;
   if (group.anyOfNames !== undefined && !group.anyOfNames.includes(def.name)) return false;
   if (group.anyOfAttributes !== undefined) {

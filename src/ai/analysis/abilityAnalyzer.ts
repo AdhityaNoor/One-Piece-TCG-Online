@@ -157,7 +157,12 @@ export function analyzeAbility(ability: Ability, gatesMet = true): CardStrategic
     profile.engineValue += 4 * gateFactor;
     addTag(profile.setupTags, 'engine');
   }
-  if (ability.timing === 'whenAttacking' || ability.timing === 'onOpponentsAttack') {
+  if (
+    ability.timing === 'whenAttacking' ||
+    ability.timing === 'onOpponentsAttack' ||
+    ability.timing === 'onControllerLeaderAttacks' ||
+    ability.timing === 'onControllerLeaderAttacked'
+  ) {
     profile.offensiveValue += 5 * gateFactor;
     addTag(profile.payoffTags, 'finisher');
   }

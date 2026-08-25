@@ -24,7 +24,15 @@ export const OP03_ASSIGNMENTS: CardEffectAssignment[] = [
       {
         templateId: 'ability',
         params: {
-          timing: 'onOpponentsAttack',
+          // The "is attacked" half was `onOpponentsAttack` — the generic Block-Step
+          // window, offered on ANY attack the opponent declares, including one aimed
+          // at a Character. The pump is `duringThisBattle` on this LEADER, so in that
+          // case the player trashed real cards for nothing. `onControllerLeaderAttacked`
+          // fires only when the battle TARGET is this player's Leader, which is what the
+          // card says, and prompts automatically at declaration rather than hiding
+          // behind an activation button. The "attacks" half above stays `whenAttacking`:
+          // there the Leader IS the attacker, the one card that timing fires for.
+          timing: 'onControllerLeaderAttacked',
           functions: [
             { fn: 'optionalTrashFromHand', anyNumber: true, filter: { anyOf: [{ category: 'event' }, { category: 'stage' }] } },
             { fn: 'addPowerSelfPerPreviousTrashed', amountPer: 1000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' },

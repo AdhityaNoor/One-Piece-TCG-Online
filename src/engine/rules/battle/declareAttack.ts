@@ -22,7 +22,7 @@ import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
 import { hasContinuousKeyword, cannotAttack, isAttackTargetForbidden, getForcedAttackTargetId, getAttackTrashTax } from '../shared/power';
-import { fireWhenAttacking, fireRestTransitions, type EffectTemplateRegistry } from '../../effects';
+import { fireWhenAttacking, fireRestTransitions, fireControllerLeaderBattleTriggers, type EffectTemplateRegistry } from '../../effects';
 import { hasAnyLegalBlocker } from './activateBlocker';
 import { hasAnyUsableOnOpponentsAttack } from './activateOnOpponentsAttack';
 import type { PendingChoice } from '../../events/pendingChoice';
@@ -214,9 +214,22 @@ export function continueAfterDeclareAttackSetup(
     return { state: fired.state, log: [...priorLog, ...fired.log], pendingChoices: fired.pendingChoices };
   }
   const rested = fireRestTransitions(fired.state, [attackerInstanceId], registry, defs, actionId);
+  if (rested.pendingChoices.length > 0) {
+    return {
+      state: rested.state,
+      log: [...priorLog, ...fired.log, ...rested.log],
+      pendingChoices: rested.pendingChoices,
+    };
+  }
+  // "[When] your Leader attacks / is attacked" watchers (10-2) — board-wide on
+  // each side's own field, so a Character can react to ITS Leader entering a
+  // battle. Fires for both players off this one declaration; each source that
+  // needs a decision surfaces its own PendingChoice and the sweep is resumed
+  // from resumeChoice.
+  const leaderBattle = fireControllerLeaderBattleTriggers(rested.state, registry, defs, actionId);
   return {
-    state: rested.state,
-    log: [...priorLog, ...fired.log, ...rested.log],
-    pendingChoices: rested.pendingChoices,
+    state: leaderBattle.state,
+    log: [...priorLog, ...fired.log, ...rested.log, ...leaderBattle.log],
+    pendingChoices: leaderBattle.pendingChoices,
   };
 }

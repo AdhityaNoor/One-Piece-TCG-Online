@@ -1096,10 +1096,20 @@ export const OP15_ASSIGNMENTS: CardEffectAssignment[] = [
         params: {
           timing: 'activateMain',
           gate: [{ kind: 'leaderType', type: 'Straw Hat Crew' }],
+          // "trash 1 card from the top of your Life cards. Then, add up to 1 card from
+          // the top of your deck to the top of your Life cards AND trash 1 card from
+          // your hand." Only the ADD is optional ("up to 1"): the Life trash and the
+          // hand trash are both mandatory, and neither of the two consequences is an
+          // "if you do" clause hanging off the other. `optional: true` on the Life
+          // trash used to be inert (the factory ignored it and emitted a bare
+          // trashLife); now that the optional path really prompts, leaving it would
+          // let the player decline a cost the card does not let them decline. The two
+          // `ifPrevious` chains went with it — declining the "up to 1" add must not
+          // also cancel the mandatory hand trash.
           functions: [
-            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', count: 1 }, to: { zone: 'trash', player: 'owner' }, optional: true },
-            { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true, ifPrevious: 'previousMovedAny' },
-            { fn: 'trashFromHand', count: 1, ifPrevious: 'previousMovedAny' },
+            { fn: 'moveCards', from: { zone: 'life', player: 'controller', position: 'top', count: 1 }, to: { zone: 'trash', player: 'owner' } },
+            { fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top', count: 1 }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true },
+            { fn: 'trashFromHand', count: 1 },
           ],
         },
       },

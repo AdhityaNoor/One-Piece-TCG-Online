@@ -518,12 +518,42 @@ export const OP17_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP17-008 Jozu — [On Play] your [Edward.Newgate] Leader's base power becomes 8000 until end of opponent's next End Phase.
   { cardNumber: 'OP17-008', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderName', name: 'Edward.Newgate' }], functions: [{ fn: 'setBasePower', target: { group: 'leader', player: 'controller' }, value: 8000, duration: 'endOfOpponentsTurn' }] } },
 
-  // OP17-015 Marco — PARTIAL: only the [On K.O.] half is curated.
-  //   The replacement half ("you may K.O. THIS Character instead") has no matching
-  //   KoReplacementAction: `trashSource` trashes without firing [On K.O.], and this
-  //   card's whole identity is that its own [On K.O.] replays it from the trash.
-  //   Needs a `koSource` replacement action. Do not substitute trashSource.
-  { cardNumber: 'OP17-015', templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Whitebeard Pirates' }, optional: true }, { fn: 'playSelfFromTrash', ifPrevious: 'previousMovedAny' }] } },
+  // OP17-015 Marco — "If one of your Characters would be removed from the field by your
+  //   opponent's effect, you may K.O. this Character instead. [On K.O.] You may trash 1 card
+  //   with a type including "Whitebeard Pirates" from your hand: Play this Character card
+  //   from your trash."
+  //
+  //   The replacement uses the `koSource` action, NOT `trashSource`: trashSource moves the
+  //   source to the trash WITHOUT firing [On K.O.], which would silently disable the half of
+  //   the card that makes it work — Marco's own [On K.O.] is what replays him from the trash.
+  //   koSource reports the K.O.'d source back to the caller, which fires [On K.O.] (koAttempt
+  //   cannot fire it directly without an import cycle). The source's K.O. is the replacement's
+  //   COST, so it is applied directly and is not itself replaceable — otherwise this very aura
+  //   would try to replace it.
+  //
+  //   scope 'effect' + effectSourceController 'opponent' = "by your opponent's effect" (battle
+  //   K.O.s are excluded). excludeSource keeps Marco from being his own protected ally.
+  {
+    cardNumber: 'OP17-015',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'registerKoReplacementAura',
+            scope: 'effect',
+            replacementTriggers: ['ko', 'returnToHand', 'bottomDeck'],
+            effectSourceController: 'opponent',
+            excludeSource: true,
+            koSource: true,
+            duration: 'permanent',
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'onKO', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Whitebeard Pirates' }, optional: true }, { fn: 'playSelfFromTrash', ifPrevious: 'previousMovedAny' }] } },
+    ],
+  },
 
   // OP17-019 I Don't Have Time to Chat with Snot-Nosed Brats — [Main] dig 5, reveal 1
   //   "Whitebeard Pirates" to hand, rest to the bottom. [Trigger] your Leader +1000 this turn.
@@ -598,14 +628,24 @@ export const OP17_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // OP17-040 Edward.Newgate — [On Play] draw 1. Then a single [Once Per Turn] budget shared across
-  //   "when your Leader attacks OR is attacked" — modeled as two timings on one oncePerTurnKey.
+  // OP17-040 Edward.Newgate — [On Play] Draw 1 card. [Once Per Turn] When your Leader
+  //   with a type including "Rocks Pirates" attacks or is attacked, you may trash 1 card
+  //   from your hand to activate this effect: your Leader gains +3000 power during this battle.
+  //
+  //   The trigger watches THE LEADER's battle, not this Character's. `whenAttacking` fires
+  //   only for the card that is itself attacking, so it was wrong on both counts here (it
+  //   fired when Newgate attacked, and never when the Leader did). Both halves now use the
+  //   board-wide leader-battle watchers, which DECLARE_ATTACK sweeps across the whole field
+  //   — so with N copies out you are prompted N times, once per copy.
+  //
+  //   One shared oncePerTurnKey across the two timings = one [Once Per Turn] budget per copy
+  //   per turn, whichever half fires first.
   {
     cardNumber: 'OP17-040',
     templates: [
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }] } },
-      { templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, oncePerTurnKey: 'op17-040-rocks-leader', gate: [{ kind: 'leaderType', type: 'Rocks Pirates' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' }] } },
-      { templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, oncePerTurnKey: 'op17-040-rocks-leader', gate: [{ kind: 'leaderType', type: 'Rocks Pirates' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'onControllerLeaderAttacks', oncePerTurn: true, oncePerTurnKey: 'op17-040-rocks-leader', gate: [{ kind: 'leaderType', type: 'Rocks Pirates' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' }] } },
+      { templateId: 'ability', params: { timing: 'onControllerLeaderAttacked', oncePerTurn: true, oncePerTurnKey: 'op17-040-rocks-leader', gate: [{ kind: 'leaderType', type: 'Rocks Pirates' }], functions: [{ fn: 'optionalTrashFromHand', count: 1 }, { fn: 'addPower', target: { group: 'leader', player: 'controller' }, amount: 3000, duration: 'duringThisBattle', ifPrevious: 'previousMovedAny' }] } },
     ],
   },
 
@@ -769,20 +809,63 @@ export const OP17_ASSIGNMENTS: CardEffectAssignment[] = [
   //   K.O. up to 2 opponent Characters cost<=1.
   { cardNumber: 'OP17-111', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'optionalRevealTypeFromHand', count: 2, filter: { hasTrigger: true }, prompt: 'You may reveal 2 cards with a [Trigger] from your hand.' }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true, maxTargets: 2, ifPrevious: 'previousSelectedAny' }] } },
 
-  // OP17-112 Charlotte Linlin — PARTIAL: only the [On Play] half is curated. Both modes move
-  //   between FIXED zones, so they are legal inside a chooseOne branch (no target selection).
-  //   The [Your Turn] aura ("base power of all your Characters with a [Trigger] AND 4000 base power
-  //   becomes 8000") is deferred: setBasePowerAuraControllerTypes filters only by type/name — it has
-  //   no hasTrigger or exactBasePower field.
-  { cardNumber: 'OP17-112', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }, { fn: 'chooseOne', chooser: 'controller', prompt: 'Choose one.', options: [{ label: 'deckTopToLife', functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] }, { label: 'opponentLifeToHand', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }] }] }] } },
+  // OP17-112 Charlotte Linlin — "[Your Turn] The base power of all of your Characters with a
+  //   [Trigger] and 4000 base power becomes 8000. [On Play] Draw 1 card, then choose one: ..."
+  //
+  //   The aura's two filters are `hasTrigger` + `exactBasePower` on the aura group. exactBasePower
+  //   reads the PRINTED base power on purpose: the aura sets the target to 8000, so a filter on the
+  //   CURRENT value would drop each Character out of its own target set the moment it applied and
+  //   flip-flop on every power read. [Your Turn] is a continuous condition, not a firing gate, so it
+  //   rides the modifier (`sourceCondition`) and is re-checked on read — the same trap documented in
+  //   staticConditionalSelfBuff.test.ts. charactersOnly keeps the Leader out ("all of your Characters").
+  //
+  //   Both [On Play] modes move between FIXED zones, so they are legal inside a chooseOne branch.
+  {
+    cardNumber: 'OP17-112',
+    templates: [
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'onEnterPlay',
+          functions: [{
+            fn: 'setBasePowerAuraControllerTypes',
+            value: 8000,
+            charactersOnly: true,
+            hasTrigger: true,
+            exactBasePower: 4000,
+            duration: 'permanent',
+            sourceCondition: { turn: 'your' },
+          }],
+        },
+      },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'draw', amount: 1 }, { fn: 'chooseOne', chooser: 'controller', prompt: 'Choose one.', options: [{ label: 'deckTopToLife', functions: [{ fn: 'moveCards', from: { zone: 'deck', player: 'controller', position: 'top' }, to: { zone: 'life', player: 'controller', position: 'top' }, optional: true }] }, { label: 'opponentLifeToHand', functions: [{ fn: 'moveCards', from: { zone: 'life', player: 'opponent', position: 'top' }, to: { zone: 'hand', player: 'owner' }, optional: true }] }] }] } },
+    ],
+  },
 
   // OP17-113 Streusen — [On Play] dig 3, reveal 1 {Big Mom Pirates} to hand, rest to the bottom.
   { cardNumber: 'OP17-113', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'searchTopDeck', look: 3, pick: 1, reveal: true, destination: 'hand', filter: { typeIncludes: 'Big Mom Pirates' }, remainder: 'bottom' }] } },
 
-  // OP17-116 Fulgora — PARTIAL: only the [Main] half is curated. The [Counter] half needs a gate
-  //   counting the controller's Characters that carry a printed [Trigger]; no such AbilityGate exists
-  //   (selfHandMatching counts the HAND, and the field-count gates key off cost/power/type/name).
-  { cardNumber: 'OP17-116', templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'ko', target: { group: 'stages', player: 'opponent' }, optional: true, maxTargets: 1 }] } },
+  // OP17-116 Fulgora — "[Main] You may rest 2 of your DON!! cards: K.O. up to 1 of your opponent's
+  //   Stages. [Counter] If you have 2 or more Characters with a [Trigger], up to 1 of your Leader or
+  //   Characters gains +4000 power during this battle."
+  //
+  //   The [Counter] half needed `selfCharacterTriggerCount` — a board-state read of the printed
+  //   [Trigger] across the Character Area. It is an ability GATE (checked when the Counter is
+  //   activated), not a continuous condition, because the +4000 lands as a one-shot battle pump.
+  {
+    cardNumber: 'OP17-116',
+    templates: [
+      { templateId: 'ability', params: { timing: 'activateMain', cost: [{ kind: 'restDon', count: 2 }], functions: [{ fn: 'ko', target: { group: 'stages', player: 'opponent' }, optional: true, maxTargets: 1 }] } },
+      {
+        templateId: 'ability',
+        params: {
+          timing: 'counter',
+          gate: [{ kind: 'selfCharacterTriggerCount', atLeast: 2 }],
+          functions: [{ fn: 'addPower', target: { group: 'leaderOrCharacters', player: 'controller' }, amount: 4000, duration: 'duringThisBattle', optional: true, maxTargets: 1 }],
+        },
+      },
+    ],
+  },
 
   // OP17-020 (leader) Shanks — [Activate: Main] [Once Per Turn] "trash 1 from hand OR rest 1 DON!!:"
   //   is a CHOICE OF COSTS, which the cost[] union cannot express (costs there are ANDed). Modeled as
@@ -880,48 +963,46 @@ export const OP17_ASSIGNMENTS: CardEffectAssignment[] = [
 ];
 
 /**
- * WHAT REMAINS IN OP17 — every one of these is blocked on a NAMED missing primitive,
- * not on curation effort. Do not work around them by approximating.
+ * WHAT REMAINS IN OP17 — one card, and it is a DATA blocker, not a curation or primitive gap.
  *
  * Fully uncurated (1):
- *   OP17-105 Charlotte Chiffon  NOT a primitive gap — Limitless's own card page truncates the text
- *                            mid-sentence ("…Return up to 1 of your opponent's Characters with a").
- *                            Needs the printed card before it can be curated.
+ *   OP17-105 Charlotte Chiffon  Limitless's card page truncates the printed text mid-sentence
+ *                            ("…Return up to 1 of your opponent's Characters with a"), and the
+ *                            scraped JSON carries that truncation verbatim; the jp text is empty
+ *                            and scrape/limitless/images/OP17 holds no image to read it off.
+ *                            The missing clause is almost certainly a cost or power bound, and
+ *                            guessing which would be inventing a rule. UNBLOCK BY: re-running
+ *                            `npm run scrape:limitless` from a machine that can reach
+ *                            limitlesstcg (it is egress-blocked in the cloud sandbox and from
+ *                            the device VM), or transcribing the printed card by hand.
  *
- * Partially curated (3) — the missing half and what would unblock it. Each was re-checked
- * against the catalog rather than trusted from an earlier note:
- *   OP17-015 Marco           Replacement "you may K.O. THIS Character instead" has no matching
- *                            KoReplacementAction. `trashSource` is NOT a substitute — VERIFIED in
- *                            koAttempt.ts, which moves the card straight to trash and logs
- *                            "trashed as a K.O. replacement (not K.O.'d)". Marco's whole identity
- *                            is that his own [On K.O.] replays him from the trash, so the
- *                            substitution would delete the card's function.
- *                            NEEDS: a `koSource` action that routes through fireOnKO.
- *   OP17-112 Charlotte Linlin  Aura over "Characters with a [Trigger] AND 4000 base power".
- *                            setBasePowerAuraControllerTypes filters only by type/name, and
- *                            PowerAuraFilterGroup has no hasTrigger or base-power field. Could be
- *                            faked by enumerating matching card names into `anyOfNames`, but that
- *                            bakes catalog data into an assignment and silently rots on every new
- *                            set — not worth it. NEEDS: hasTrigger + exactBasePower on the aura.
- *   OP17-116 Fulgora         [Counter] gated on "2 or more Characters with a [Trigger]" on the
- *                            FIELD. TargetFilter has hasTrigger for SELECTION, but no AbilityGate
- *                            counts field cards by [Trigger] (selfHandMatching is hand-only).
- *                            NEEDS: a trigger-count field gate.
+ * CLOSED 2026-08-24 — the four partials below were completed; the primitives each one named
+ * were added rather than approximated:
+ *   OP17-015 Marco           `koSource` KoReplacementAction (state/game.ts + koAttempt.ts).
+ *                            Reports the K.O.'d source up via KoReplacementStepResult so the
+ *                            CALLER fires [On K.O.] — koAttempt cannot call fireOnKO itself
+ *                            without closing an import cycle. Marco now replays himself.
+ *   OP17-112 Charlotte Linlin  `hasTrigger` + `exactBasePower` on PowerAuraGroup. exactBasePower
+ *                            reads the PRINTED value, so a Character the aura has already set to
+ *                            8000 does not filter itself out of its own target set.
+ *   OP17-116 Fulgora         `selfCharacterTriggerCount` AbilityGate (counts printed [Trigger]
+ *                            across the Character Area).
+ *   ST31-004 (not OP17, same sweep)  `captureFieldTypeCount` + `bindMatchingCards` +
+ *                            `controllerFieldCards`, snapshotting a "for every {Type} card on
+ *                            your field" count at RESOLUTION instead of as a drifting `scale`.
+ *
+ * STILL OPEN (deliberately, and NOT counted as partial by the scanner):
  *   OP17-118 Rocks.D.Xebec   [On Play] IS curated. The Counter clause needs BOTH an "all your
  *                            Characters lack a printed Counter" gate and a self-in-hand Counter
  *                            aura (addCounterAuraControllerCharactersInHand targets matching
  *                            Characters, not the source card).
  *
- * CLOSED since the first pass:
+ * CLOSED in earlier passes:
  *   - `opponentLeaderPowerAtLeast` (gate) and `maxCombinedCost` (chooseTargets, wired through ko
- *     and playFromHand) were added to the engine, completing OP17-034 and OP17-119 and unblocking
- *     OP17-118's [On Play].
+ *     and playFromHand) completed OP17-034 and OP17-119 and unblocked OP17-118's [On Play].
  *   - OP17-020, OP17-085, OP17-092 and OP17-117 needed NO new engine code — they were deferred on
  *     an over-broad reading of the chooseOne constraint. Branches reject only BOARD-GROUP
- *     targeting; hand / trash / DON!! / deck-top / Life selection all compile fine. The pattern
- *     that unlocks all four: put the choice (of cost, of zone, of payment) inside the chooseOne,
- *     keep any board-group targeting AFTER it, and bridge the two with `captureCount` +
- *     `ifGate: boundVarsTotalCount`.
+ *     targeting; hand / trash / DON!! / deck-top / Life selection all compile fine.
  *
  * KNOWN DATA ISSUE (not fixable from this file): "[Rush: Character]" is parsed as full
  * `hasRush` in both scripts/scrape-limitless/scrapeOutput.ts and

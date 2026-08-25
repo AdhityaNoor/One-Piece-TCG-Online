@@ -49,6 +49,8 @@ const REACTIVE_ONCE_PER_TURN_KEYS: Partial<Record<IrTiming, string>> = {
   onRemovedFromField: 'onRemovedFromField',
   onCharacterPlayedFromTrash: 'onCharacterPlayedFromTrash',
   onHandTrashed: 'onHandTrashed',
+  onControllerLeaderAttacks: 'onControllerLeaderAttacks',
+  onControllerLeaderAttacked: 'onControllerLeaderAttacked',
 };
 
 function mergeResults(a: ActionExecuteResult, b: ActionExecuteResult): ActionExecuteResult {
@@ -513,6 +515,110 @@ export function fireOnOpponentsAttack(
     return noop(state);
   }
   return runTimings(program, ['onOpponentsAttack'], state, instanceId, defs, actionId, registry, false);
+}
+
+/**
+ * The two board-wide "your Leader is in a battle" watchers, paired with which
+ * side of the declared battle supplies the Leader they watch.
+ */
+const LEADER_BATTLE_TIMINGS: { timing: IrTiming; side: 'attacker' | 'defender' }[] = [
+  { timing: 'onControllerLeaderAttacks', side: 'attacker' },
+  { timing: 'onControllerLeaderAttacked', side: 'defender' },
+];
+
+/**
+ * Sweeps one player's field for a leader-battle watcher timing.
+ *
+ * Unlike fireReactiveAbilitiesForPlayer this claims each source's slot in the
+ * BATTLE-scoped `leaderBattleTriggersFiredInstanceIds` before resolving it. A
+ * source that suspends on a PendingChoice therefore cannot be re-offered when
+ * the sweep is re-entered from resumeChoice — which is exactly what lets N
+ * copies of the same card each get their own prompt off a single attack
+ * declaration (the plain reactive sweep silently drops copies 2..N).
+ */
+function fireLeaderBattleTimingForPlayer(
+  state: GameState,
+  observerPlayerId: string,
+  timing: IrTiming,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  const timingOptKey = REACTIVE_ONCE_PER_TURN_KEYS[timing];
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const id of fieldInstanceIds(working, observerPlayerId)) {
+    const battle = working.currentBattle;
+    if (!battle) break;
+    if ((battle.leaderBattleTriggersFiredInstanceIds ?? []).includes(id)) continue;
+    const inst = working.cardsById[id];
+    if (!inst) continue;
+    const program = resolveEffectProgram(registry, defs, inst.cardDefinitionId);
+    const ability = program?.abilities.find((a) => a.timing === timing);
+    if (!program || !ability) continue;
+
+    // Claim the per-battle slot up front (see doc comment above).
+    working = {
+      ...working,
+      currentBattle: {
+        ...battle,
+        leaderBattleTriggersFiredInstanceIds: [...(battle.leaderBattleTriggersFiredInstanceIds ?? []), id],
+      },
+    };
+
+    const optKey = ability.oncePerTurnKey ?? timingOptKey;
+    if (optKey && ability.oncePerTurn && inst.oncePerTurnUsed.includes(optKey)) continue;
+    if (!triggeredAbilityWouldFire(ability, inst, working, defs)) continue;
+    // Consume OPT before resolution so an early pending-choice return still
+    // spends the window, mirroring fireReactiveAbilitiesForPlayer. KNOWN
+    // LIMITATION: declining an optional in-effect cost still burns the
+    // [Once Per Turn] for the turn.
+    if (optKey && ability.oncePerTurn) {
+      const cur = working.cardsById[id];
+      working = {
+        ...working,
+        cardsById: { ...working.cardsById, [id]: { ...cur, oncePerTurnUsed: [...cur.oncePerTurnUsed, optKey] } },
+      };
+    }
+    const fired = runTimings(program, [timing], working, id, defs, actionId, registry, false);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+  return { state: working, log, pendingChoices: [] };
+}
+
+/**
+ * Fires "[When] your Leader attacks / is attacked" watchers for the battle that
+ * is currently set up. Call from DECLARE_ATTACK (after [When Attacking] and the
+ * attacker's rest transitions) and again from resumeChoice, to continue the
+ * sweep once a watcher's prompt has been answered.
+ *
+ * The attacking side fires only when the ATTACKER is a Leader; the defending
+ * side only when the battle TARGET is a Leader. Each side sweeps that Leader's
+ * own controller's field, so "your Leader" is true by construction and a
+ * curated ability only needs its own gates (e.g. a Leader-type check).
+ */
+export function fireControllerLeaderBattleTriggers(
+  state: GameState,
+  registry: EffectTemplateRegistry,
+  defs: CardDefinitionLookup,
+  actionId: string | null,
+): ActionExecuteResult {
+  let working = state;
+  let log: ActionExecuteResult['log'] = [];
+  for (const { timing, side } of LEADER_BATTLE_TIMINGS) {
+    const battle = working.currentBattle;
+    if (!battle) break;
+    const pivotId = side === 'attacker' ? battle.attackerInstanceId : battle.targetInstanceId;
+    const pivot = working.cardsById[pivotId];
+    if (!pivot || pivot.currentZone !== 'leaderArea') continue;
+    const fired = fireLeaderBattleTimingForPlayer(working, pivot.controllerId, timing, registry, defs, actionId);
+    working = fired.state;
+    log = [...log, ...fired.log];
+    if (fired.pendingChoices.length > 0) return { state: working, log, pendingChoices: fired.pendingChoices };
+  }
+  return { state: working, log, pendingChoices: [] };
 }
 
 /**
@@ -1080,7 +1186,18 @@ export function resumeChoice(
     battle &&
     choice.sourceInstanceId === battle.attackerInstanceId
   ) {
-    return mergeResults(result, fireRestTransitions(result.state, [choice.sourceInstanceId], registry, defs, actionId));
+    const rested = mergeResults(result, fireRestTransitions(result.state, [choice.sourceInstanceId], registry, defs, actionId));
+    if (rested.pendingChoices.length > 0) return rested;
+    return mergeResults(rested, fireControllerLeaderBattleTriggers(rested.state, registry, defs, actionId));
+  }
+  // A leader-battle watcher just finished its prompt. Re-enter the sweep so the
+  // NEXT un-fired copy on the field is offered its own trigger — the per-battle
+  // fired-set already excludes every source resolved so far, so this terminates.
+  if (
+    battle &&
+    (ability?.timing === 'onControllerLeaderAttacks' || ability?.timing === 'onControllerLeaderAttacked')
+  ) {
+    return mergeResults(result, fireControllerLeaderBattleTriggers(result.state, registry, defs, actionId));
   }
   return result;
 }

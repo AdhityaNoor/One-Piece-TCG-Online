@@ -213,6 +213,7 @@ function replacementCostIsImmediate(action: KoReplacementAction): boolean {
   return (
     action.kind === 'trashSelf' ||
     action.kind === 'trashSource' ||
+    action.kind === 'koSource' ||
     action.kind === 'returnSourceToHand' ||
     action.kind === 'restSource' ||
     action.kind === 'giveSelfPowerPenalty' ||
@@ -265,7 +266,7 @@ function replacementCostAvailable(
     const eligible = eligibleHandCards(defs, state, target.ownerId, mod.action.filter);
     return eligible.length >= mod.action.count;
   }
-  if (mod.action.kind === 'trashSource') {
+  if (mod.action.kind === 'trashSource' || mod.action.kind === 'koSource') {
     const source = state.cardsById[record.sourceInstanceId];
     return source?.currentZone === 'characterArea';
   }
@@ -415,6 +416,7 @@ export function buildKoReplacementPayChoice(
   const routing = koChoiceRouting(record, resumeState);
   if (mod.action.kind === 'trashSelf') return null;
   if (mod.action.kind === 'trashSource') return null;
+  if (mod.action.kind === 'koSource') return null;
   if (mod.action.kind === 'returnSourceToHand') return null;
   if (mod.action.kind === 'restSource') return null;
   if (mod.action.kind === 'giveSelfPowerPenalty') return null;
@@ -634,13 +636,15 @@ export function applyKoReplacementCost(
   selection: string[] | number,
   defs: CardDefinitionLookup,
   actionId: string | null,
-): { state: GameState; log: GameLogEntry[] } {
+): { state: GameState; log: GameLogEntry[]; koedSourceInstanceId?: string } {
   const mod = record.koReplacementModifier!;
   const target = state.cardsById[targetInstanceId];
   if (!target) return { state, log: [] };
   const logger = createActionLogger(state, actionId);
   let working = state;
   let cardsById = { ...working.cardsById };
+  /** Set by the koSource branch; the caller must fire this card's [On K.O.]. */
+  let koedSourceInstanceId: string | undefined;
 
   if (mod.action.kind === 'trashSelf') {
     const owner = working.players[target.ownerId];
@@ -691,6 +695,40 @@ export function applyKoReplacementCost(
         type: 'CARD_MOVED',
         message: `${sourceId} was trashed as a K.O. replacement (not K.O.'d).`,
         data: { sourceInstanceId: sourceId, targetInstanceId, koReplacement: true },
+        relatedCardInstanceIds: [sourceId, targetInstanceId],
+        visibility: 'public',
+      });
+    }
+  } else if (mod.action.kind === 'koSource') {
+    // "you may K.O. THIS Character instead". Same field->trash move as trashSource, but
+    // reported back to the caller as a genuine K.O. so the source's [On K.O.] fires —
+    // see KoReplacementStepResult.koedSourceInstanceId. Applied directly rather than via
+    // the K.O. pipeline: this is the replacement's COST, so it is not itself replaceable
+    // (otherwise the source's own aura could try to replace it, recursively).
+    const sourceId = record.sourceInstanceId;
+    const source = cardsById[sourceId];
+    if (source && source.currentZone === 'characterArea') {
+      const owner = working.players[source.ownerId];
+      cardsById = { ...cardsById, [sourceId]: { ...source, currentZone: 'trash', donAttached: [] } };
+      working = {
+        ...working,
+        cardsById,
+        players: {
+          ...working.players,
+          [source.ownerId]: {
+            ...owner,
+            characterArea: removeFromZone(owner.characterArea, sourceId),
+            trash: addToZoneTop(owner.trash, sourceId),
+          },
+        },
+        continuousEffects: working.continuousEffects.filter((ce) => ce.sourceInstanceId !== sourceId),
+      };
+      koedSourceInstanceId = sourceId;
+      logger.push({
+        actorPlayerId: source.ownerId,
+        type: 'CARD_MOVED',
+        message: `${sourceId} was K.O.'d as a replacement for ${targetInstanceId}'s removal.`,
+        data: { sourceInstanceId: sourceId, targetInstanceId, koReplacement: true, koed: true },
         relatedCardInstanceIds: [sourceId, targetInstanceId],
         visibility: 'public',
       });
@@ -952,7 +990,11 @@ export function applyKoReplacementCost(
     visibility: 'public',
   });
 
-  return { state: { ...working, log: [...working.log, ...logger.log] }, log: logger.log };
+  return {
+    state: { ...working, log: [...working.log, ...logger.log] },
+    log: logger.log,
+    ...(koedSourceInstanceId ? { koedSourceInstanceId } : {}),
+  };
 }
 
 export function koReplacementDescription(mod: ContinuousKoReplacementModifier): string {
@@ -961,6 +1003,8 @@ export function koReplacementDescription(mod: ContinuousKoReplacementModifier): 
       return 'If this Character would be K.O.\'d, trash it instead?';
     case 'trashSource':
       return 'Use this Character\'s replacement to avoid the K.O. (trash this Character instead)?';
+    case 'koSource':
+      return 'Use this Character\'s replacement to avoid the removal (K.O. this Character instead)?';
     case 'restSource':
       return 'Use this Character\'s replacement to avoid the K.O. (rest this Character instead)?';
     case 'restCharacter':
@@ -1032,6 +1076,13 @@ export type KoReplacementStepResult = {
   declinedEffectKoTargetId?: string;
   /** Effect-path decline on non-K.O. removal: apply the original removal before resuming IR. */
   declinedRemoval?: { targetInstanceId: string; kind: 'returnToHand' | 'bottomDeck' };
+  /**
+   * A `koSource` replacement K.O.'d the aura source: the caller must fire that card's
+   * [On K.O.] before resuming. koAttempt cannot fire it itself — fireOnKO lives in
+   * effects/fireTiming, which imports this module, so calling it here would close an
+   * import cycle. Same contract as declinedEffectKoTargetId above.
+   */
+  koedSourceInstanceId?: string;
 };
 
 /** Resolve one K.O. replacement PendingChoice step (confirm or pay-cost). */
@@ -1097,7 +1148,13 @@ export function resolveKoReplacementStep(
     const mod = record.koReplacementModifier!;
     if (replacementCostIsImmediate(mod.action)) {
       const replaced = applyKoReplacementCost(working, kr.targetInstanceId, record, [], defs, actionId);
-      return { state: replaced.state, log: replaced.log, pendingChoices: [], resumeKr: kr };
+      return {
+        state: replaced.state,
+        log: replaced.log,
+        pendingChoices: [],
+        resumeKr: kr,
+        ...(replaced.koedSourceInstanceId ? { koedSourceInstanceId: replaced.koedSourceInstanceId } : {}),
+      };
     }
     const payChoice = buildKoReplacementPayChoice(
       working,
@@ -1122,7 +1179,13 @@ export function resolveKoReplacementStep(
       ? (typeof response === 'number' ? response : 0)
       : (Array.isArray(response) ? response : []);
     const replaced = applyKoReplacementCost(working, kr.targetInstanceId, record, selection, defs, actionId);
-    return { state: replaced.state, log: replaced.log, pendingChoices: [], resumeKr: kr };
+    return {
+      state: replaced.state,
+      log: replaced.log,
+      pendingChoices: [],
+      resumeKr: kr,
+      ...(replaced.koedSourceInstanceId ? { koedSourceInstanceId: replaced.koedSourceInstanceId } : {}),
+    };
   }
 
   return { state: working, log: [], pendingChoices: [] };

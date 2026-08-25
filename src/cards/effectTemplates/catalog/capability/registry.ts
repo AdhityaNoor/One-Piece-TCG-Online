@@ -1269,6 +1269,24 @@ export const EFFECT_PRIMITIVES: Record<AbilityFunction['fn'], CapabilitySpec> = 
       { cardNumber: 'OP08-118', snippet: "{ fn: 'captureCount', into: 'firstDebuff' }, { fn: 'addPower', target: { group: 'characters', player: 'opponent', filter: { excludeIdsFromVar: 'firstDebuff' } }, amount: -2000, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 1 }" },
     ],
   },
+  captureFieldTypeCount: {
+    id: 'captureFieldTypeCount',
+    summary: 'Snapshot how many cards you have ON THE FIELD (Leader + Characters + Stages) matching `typeIncludes`, into var `into`. Fixes the count at RESOLUTION for "For every {Type} card on your field, ..." clauses.',
+    params: [
+      { name: 'typeIncludes', type: 'string', required: false, note: 'tribal type to match; omit to count every field card' },
+      { name: 'into', type: 'string', required: true, note: "var read by a later addPower countVar; set countVar explicitly, since amountPer defaults to 't' which a targeted addPower has already rebound to the chosen targets" },
+    ],
+    covers: [
+      'For every {Type} card on your field, give up to 1 of your opponent\'s Characters −N power',
+    ],
+    excludes: [
+      'continuous "gains +N for every X" statics — those want addPowerSelfScaling / PowerScale, which is re-read on every power lookup',
+      'counts sourced from the opponent\'s field or from a zone other than the field',
+    ],
+    examples: [
+      { cardNumber: 'ST31-004', snippet: "{ fn: 'captureFieldTypeCount', typeIncludes: 'Straw Hat Crew', into: 'st31ShcField' }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: 0, amountPer: -1000, countVar: 'st31ShcField', duration: 'duringThisTurn', optional: true, maxTargets: 1 }" },
+    ],
+  },
   revealTopLifePlay: {
     id: 'revealTopLifePlay',
     summary: 'Reveal top Life card; if it matches `filter`, optionally play it from Life for no cost, then run `then` when played.',
@@ -1865,6 +1883,7 @@ export const GATES: Record<AbilityGate['kind'], CapabilitySpec> = {
   selfHasCharacterCostAtLeast: { id: 'selfHasCharacterCostAtLeast', summary: 'You have a Character with a cost of N or more.', params: [{ name: 'atLeast', type: 'number', required: true }], covers: ['If you have a Character with a cost of {N} or more'], examples: [{ cardNumber: 'OP08-085', snippet: "{ kind: 'selfHasCharacterCostAtLeast', atLeast: 8 }" }] },
   selfCharacterCostCount: { id: 'selfCharacterCostCount', summary: 'You have N or more Characters with a cost of M or more.', params: [{ name: 'minCost', type: 'number', required: true }, { name: 'atLeast', type: 'number', required: true }], covers: ['If you have {N} or more Characters with a cost of {M} or more'], examples: [{ cardNumber: 'OP12-081', snippet: "{ kind: 'selfCharacterCostCount', minCost: 8, atLeast: 2 }" }] },
   selfCharacterBaseCostCount: { id: 'selfCharacterBaseCostCount', summary: 'You have N or more Characters with a base cost of M or more.', params: [{ name: 'minBaseCost', type: 'number', required: true }, { name: 'atLeast', type: 'number', required: true }], covers: ['If you have {N} or more Characters with a base cost of {M} or more'], examples: [{ cardNumber: 'ST25-002', snippet: "{ kind: 'selfCharacterBaseCostCount', minBaseCost: 5, atLeast: 2 }" }] },
+  selfCharacterTriggerCount: { id: 'selfCharacterTriggerCount', summary: 'You have N or more/fewer Characters carrying a printed [Trigger] (Character Area only).', params: [{ name: 'atLeast', type: 'number', required: false }, { name: 'atMost', type: 'number', required: false }], covers: ['If you have {N} or more Characters with a [Trigger]'], excludes: ['[Trigger] cards in HAND (see selfHandMatching)', 'the Leader or a Stage, which never carry a printed [Trigger]'], examples: [{ cardNumber: 'OP17-116', snippet: "{ kind: 'selfCharacterTriggerCount', atLeast: 2 }" }] },
   anyCharacterCostCount: { id: 'anyCharacterCostCount', summary: 'There are N or more Characters with a cost of M or more across both fields.', params: [{ name: 'minCost', type: 'number', required: true }, { name: 'atLeast', type: 'number', required: true }], covers: ['If there are {N} or more Characters with a cost of {M} or more'], examples: [{ cardNumber: 'EB04-045', snippet: "{ kind: 'anyCharacterCostCount', minCost: 8, atLeast: 2 }" }] },
   selfHasCharacterBasePowerAtLeast: { id: 'selfHasCharacterBasePowerAtLeast', summary: 'You have a Character with a base power of N or more.', params: [{ name: 'power', type: 'number', required: true }], covers: ['If you have a Character with a base power of {N} or more'], examples: [{ cardNumber: 'ST30-001', snippet: "{ kind: 'selfHasCharacterBasePowerAtLeast', power: 7000 }" }] },
   opponentDonMoreThanSelf: { id: 'opponentDonMoreThanSelf', summary: 'Opponent has more DON!! on their field than you.', params: [], covers: ['If your opponent has more DON!! cards on their field than you'], examples: [{ cardNumber: 'EB04-034', snippet: "{ kind: 'opponentDonMoreThanSelf' }" }] },
@@ -2026,6 +2045,8 @@ export const TIMINGS: Record<IrTiming, string> = {
   whenAttacking: '[When Attacking] — when this card declares an attack.',
   onBlock: '[On Block] — when this card blocks.',
   onOpponentsAttack: '[On Your Opponent\'s Attack] — when the opponent declares an attack.',
+  onControllerLeaderAttacks: '"When your Leader attacks" — BOARD-WIDE watcher on the attacking player\'s own field, fired from DECLARE_ATTACK when that player\'s LEADER is the attacker. Use this (not whenAttacking) whenever the ability sits on a card OTHER than the attacker; whenAttacking only ever fires for the attacking card itself.',
+  onControllerLeaderAttacked: '"When your Leader is attacked" — the mirror watcher on the DEFENDING player\'s field, fired from DECLARE_ATTACK when the battle target is that player\'s Leader. Automatic (resolves at declaration), unlike the player-initiated onOpponentsAttack Block-Step window. Pair the two on one oncePerTurnKey for "attacks or is attacked".',
   onBattle: '[On Battle] — fires at battle start (before power comparison) unless `requiresOpponentKoed` defers to post-K.O. (OP02-094 Isuka).',
   activateMain: '[Activate: Main] — controller may activate during their Main phase.',
   onKO: '[On K.O.] — when this card is K.O.\'d.',

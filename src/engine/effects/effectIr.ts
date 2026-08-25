@@ -25,6 +25,10 @@ export type Selector =
   | { sel: 'controllerLeaderOrCharacters'; minCost?: number; maxCost?: number; exactCost?: number; typeIncludes?: string; anyOfTypes?: string[]; name?: string; excludeSelf?: boolean; excludeCardNames?: string[]; minPower?: number; maxPower?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; color?: Color; typeFilterCharactersOnly?: boolean }
   | { sel: 'opponentLeader'; rested?: boolean }
   | { sel: 'controllerLeaderOrStage'; typeIncludes?: string; name?: string } // controller's Leader + Stage cards (for 'rest 1 of your {X} Leader or Stage' costs)
+  // Every card the controller has ON THE FIELD: Leader + Character Area + Stage Area.
+  // "card on your field" in card text is exactly this set — wider than
+  // controllerLeaderOrCharacters (no Stage) and than controllerCharacters (no Leader).
+  | { sel: 'controllerFieldCards'; typeIncludes?: string }
   | { sel: 'opponentLeaderOrCharacters'; minCost?: number; maxCost?: number; exactCost?: number; minPower?: number; maxPower?: number; maxBaseCost?: number; minBaseCost?: number; exactBaseCost?: number; maxBasePower?: number; minBasePower?: number; exactBasePower?: number; maxCostFromOpponentLife?: boolean; maxCostFromCombinedLife?: boolean; maxCostFromSelfLife?: boolean; maxCostFromOpponentDon?: boolean; maxCostFromSelfDon?: boolean; typeIncludes?: string; anyOfTypes?: string[]; attribute?: Attribute; excludeName?: string; excludeCardNames?: string[]; restedLeader?: boolean }
   | { sel: 'controllerRestedDon' } // the controller's own rested, un-attached DON!! in the cost area
   | { sel: 'controllerActiveDon' } // the controller's active, un-attached DON!! in the cost area (rest targets)
@@ -299,7 +303,16 @@ export type EffectOp =
   | ({ op: 'playFromDeck'; pick: number; filter: SearchFilter; prompt: string; rested?: boolean } & EffectOpSequenceGate) // search deck, play up to N matching Characters, then shuffle
   | ({ op: 'playStageFromDeck'; pick: number; filter: SearchFilter; prompt: string } & EffectOpSequenceGate) // search deck, play up to N matching Stages (replacing any existing Stage), then shuffle
   | ({ op: 'moveToHand'; target: Selector } & EffectOpSequenceGate) // move a chosen card (e.g. from the trash) to its owner's hand
-  | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
+  | ({ op: 'trashCards'; target: Selector } & EffectOpSequenceGate)
+  /**
+   * Resets __lastMoved / __lastSelected to empty without touching game state.
+   * Used as the body of a "decline" branch inside a chooseOption that stands in
+   * for an optional move: a branch with NO ops leaves the PREVIOUS function's
+   * result bindings in place, so a following `ifPrevious: 'previousMovedAny'`
+   * would fire even though the player declined. See moveCardsOps' deck-top
+   * branch in cards/effectTemplates/catalog/factories.ts.
+   */
+  | ({ op: 'clearResult' } & EffectOpSequenceGate) // move chosen cards (e.g. from the hand) to their owner's trash
   | ({ op: 'chooseTargets'; var: string; from: Selector; min: number; max: number; prompt: string; chooser?: 'controller' | 'opponent'; maxCombinedPower?: number; maxCombinedCost?: number; distinctNames?: boolean; mustIncludeControllerLeader?: boolean } & EffectOpSequenceGate)
   | ({ op: 'chooseCost'; min: number; max: number; prompt?: string } & EffectOpSequenceGate)
   | ({ op: 'chooseOption'; prompt: string; chooser?: 'controller' | 'opponent'; options: { label: string; ops: EffectOp[] }[] } & EffectOpSequenceGate)
@@ -330,6 +343,13 @@ export type EffectOp =
   // binding copy — non-suspending, moves no cards, leaves __lastMoved/__lastSelected
   // from the prior op intact.
   | ({ op: 'copyVar'; from: string; into: string } & EffectOpSequenceGate)
+  /**
+   * Bind everything a selector currently matches into `var`, with no prompt and no state
+   * change — a COUNT snapshot for "for every X" clauses, taken at resolution time.
+   * Deliberately leaves __lastMoved / __lastSelected alone (like copyVar) so a following
+   * ifPrevious still reads the real prior action. Pair with addPower's amountPerVar.
+   */
+  | ({ op: 'bindMatchingCards'; var: string; from: Selector } & EffectOpSequenceGate)
   // Reveal the top card of the opponent's deck and record cost-match against __chosenCost.
   | ({ op: 'revealOpponentDeckTop' } & EffectOpSequenceGate)
   | ({ op: 'revealCards'; target: Selector } & EffectOpSequenceGate)
@@ -382,6 +402,21 @@ export type IrTiming =
   | 'whenAttacking'
   | 'onBlock'
   | 'onOpponentsAttack'
+  /**
+   * "[When] your Leader ... attacks" — a BOARD-WIDE watcher on the attacking
+   * player's field, NOT the attacker's own [When Attacking]. Fired from
+   * DECLARE_ATTACK for every in-play card the attacking Leader's controller
+   * owns, so a Character can react to its own Leader declaring an attack
+   * (e.g. OP17-040). Use `whenAttacking` when the SOURCE is the attacker.
+   */
+  | 'onControllerLeaderAttacks'
+  /**
+   * "[When] your Leader ... is attacked" — the mirror watcher on the DEFENDING
+   * player's field, fired from DECLARE_ATTACK when the battle target is that
+   * player's Leader. Unlike `onOpponentsAttack` (a player-initiated Block-Step
+   * window) this is an automatic trigger that resolves at declaration.
+   */
+  | 'onControllerLeaderAttacked'
   | 'onBattle'
   | 'activateMain'
   | 'onKO'
@@ -464,6 +499,7 @@ export type AbilityGate =
   | { kind: 'selfHasCharacterCostAtLeast'; atLeast: number } // "If you have a Character with a cost of N or more"
   | { kind: 'selfCharacterCostCount'; minCost: number; atLeast?: number; atMost?: number } // "If you have N or more/fewer Characters with a cost of M or more"
   | { kind: 'selfCharacterBaseCostCount'; minBaseCost: number; atLeast: number } // "If you have N or more Characters with a base cost of M or more"
+  | { kind: 'selfCharacterTriggerCount'; atLeast?: number; atMost?: number } // "If you have N or more Characters with a [Trigger]" (counts the printed [Trigger], Character Area only)
   | { kind: 'anyCharacterCostCount'; minCost: number; atLeast: number } // "If there are N or more Characters with a cost of M or more"
   | { kind: 'selfHasCharacterBasePowerAtLeast'; power: number } // "If you have a Character with a base power of N or more"
   | { kind: 'opponentDonMoreThanSelf' } // "If your opponent has more DON!! cards on their field than you"
