@@ -95,10 +95,52 @@ export const BOARD_CARD_SCALE_VAR = '--op-card-scale';
 export const DESKTOP_BOARD_CARD_SCALE = 0.78;
 
 /**
+ * Name of the CSS custom property the `cqw` half of every cqh() length is
+ * multiplied by. Raising it makes the width-driven size LARGER, which makes
+ * the `min()` pick it less often — i.e. it moves the aspect ratio at which the
+ * board stops being height-driven and starts shrinking to fit its width.
+ */
+export const BOARD_WIDTH_GAIN_VAR = '--op-card-width-gain';
+
+/**
+ * The container width, at REFERENCE_HEIGHT, at which the DESKTOP mat genuinely
+ * runs out of room — as opposed to REFERENCE_WIDTH, which describes a board
+ * layout the desktop mat no longer has.
+ *
+ * REFERENCE_WIDTH (1800) was the natural content width of the old two-row
+ * board: Life + up to five field-size Characters + Deck across one row. The
+ * three-row mat is far narrower — Deck moved into the Leader's row, and
+ * MAT_MAX_WIDTH (PlayerBoardPanel) caps the whole thing at
+ *   LIFE_COLUMN_TRACK_PX (230) + 5 * BOARD_ZONE_TRACK_PX (1050) = 1280 reference px
+ * of cqh-driven width, times DESKTOP_BOARD_CARD_SCALE, plus 64px of fixed
+ * gutters: 1280 * 0.78 + 64 = 1062 at REFERENCE_HEIGHT.
+ *
+ * Leaving the crossover at 1800 meant the board started shrinking on width at
+ * an aspect of 1800/1100 = 1.64 — so a 1440x900 laptop was already squeezing
+ * the cards with ~570px of empty mat gutter either side, and a 1200x1000
+ * window rendered them 26% smaller than its height allowed. Rounded up from
+ * 1062 to 1100 (the fixed 64px gutter is a proportionally bigger share of a
+ * small container), which puts the crossover at a SQUARE container: the mat is
+ * height-driven whenever it is wider than it is tall, and only shrinks to fit
+ * width below that. It still fits with room to spare at every container wider
+ * than ~700px, which is well below the desktop board's breakpoint.
+ */
+const DESKTOP_REFERENCE_WIDTH = 1100;
+
+/** Value PlayerBoardPanel sets BOARD_WIDTH_GAIN_VAR to. */
+export const DESKTOP_BOARD_WIDTH_GAIN = round(REFERENCE_WIDTH / DESKTOP_REFERENCE_WIDTH);
+
+/**
  * Converts a legacy fixed-px length into a container-query length that is the
  * smaller of its height-driven (`cqh`) and width-driven (`cqw`) size, so the
  * board scales down on narrow viewports as well as short ones, then multiplies
  * that by the inherited BOARD_CARD_SCALE_VAR (default 1 — see above).
+ *
+ * The `cqw` half additionally carries BOARD_WIDTH_GAIN_VAR (default 1), which
+ * is what moves the height-driven/width-driven crossover per board — the
+ * desktop mat's content is much narrower than REFERENCE_WIDTH describes, so it
+ * raises the gain rather than shrinking on width it does not need. Mobile
+ * leaves both variables alone and is byte-for-byte unchanged.
  *
  * Emitted with no space after the comma inside min() so it stays valid if ever
  * used inside a Tailwind arbitrary value, not just an inline style / calc().
@@ -108,7 +150,7 @@ export const DESKTOP_BOARD_CARD_SCALE = 0.78;
 export function cqh(px: number): string {
   const h = (px / REFERENCE_HEIGHT) * 100;
   const w = (px / REFERENCE_WIDTH) * 100;
-  return `calc(var(${BOARD_CARD_SCALE_VAR},1) * min(${round(h)}cqh,${round(w)}cqw))`;
+  return `calc(var(${BOARD_CARD_SCALE_VAR},1) * min(${round(h)}cqh,${round(w)}cqw * var(${BOARD_WIDTH_GAIN_VAR},1)))`;
 }
 
 /** Keeps emitted style strings readable; 4dp is far below one device pixel at any real board size. */

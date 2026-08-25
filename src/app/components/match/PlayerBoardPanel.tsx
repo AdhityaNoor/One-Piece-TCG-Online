@@ -54,7 +54,7 @@ import { useSeatDonArtUrl } from './MatchAccessoriesContext';
 import { BoardCardTile } from './BoardCardTile';
 import { CardBackArt } from './CardBackArt';
 import { CardImage } from '../CardImage';
-import { BOARD_CARD_SCALE_VAR, cqh, DESKTOP_BOARD_CARD_SCALE } from './boardScale';
+import { BOARD_CARD_SCALE_VAR, BOARD_WIDTH_GAIN_VAR, cqh, DESKTOP_BOARD_CARD_SCALE, DESKTOP_BOARD_WIDTH_GAIN } from './boardScale';
 import { CountBadge } from './CountBadge';
 import { DonStack } from './DonStack';
 import { PileStack } from './PileStack';
@@ -254,6 +254,11 @@ const LIFE_COLUMN_TRACK = cqh(LIFE_COLUMN_TRACK_PX);
 // Deck at the far end, so this cannot grow without checking that budget:
 //   fan (4*48 + 150 = 342) + DON!! Deck (~210) = 552, of ~622 available.
 const LIFE_FAN_STEP_PX = 48;
+// Smallest per-card step the Cost Area will squeeze a DON!! pile down to — the
+// clickable sliver every buried card has to keep. Each half of the row is
+// floored at one chip box plus this much per gap, so a pile can be given the
+// minority share of the row and still be pickable card by card. ~16% of a card.
+const DON_MIN_STEP_PX = 34;
 // All three mat rows (Character Area / Leader+Stage+Trash / DON!!) are the
 // same height: exactly one field-card box, which is also exactly one DON!!
 // chip box — every card on the mat is one size. The cells in those rows
@@ -842,26 +847,84 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   // Cost Area splitting everything left over 50:50 — Active in the half
   // nearer Life, Rested in the half nearer Trash, mirrored for the top panel.
   //
+  // How the Cost Area's width is divided between the two piles. The row starts
+  // 50:50 and then shifts toward whichever pile has more DON!! to spread, so a
+  // big pile gets the room its fan needs instead of being crushed against a
+  // half-empty neighbour.
+  //
+  // Each half is `minmax(floor, weight fr)`:
+  //
+  // - The WEIGHT is the pile's GAP count (cards - 1), not its card count, because
+  //   gaps are what the space is actually spent on: DonStack's fan step is
+  //   `free / (n - 1)`, so sharing free space in proportion to (n - 1) lands both
+  //   piles on the same step and every DON!! on the mat keeps the same clickable
+  //   sliver. A 0- or 1-card pile has no gap and no claim on the extra room —
+  //   which is what gives a 9/1 board almost the whole row for the nine. When
+  //   NEITHER pile has a gap (both empty, both single, one of each) there is
+  //   nothing to weigh and it falls back to an even 1:1.
+  //
+  // - The FLOOR is one chip box plus DON_MIN_STEP_PX per gap: the width at which
+  //   this pile's own cards are still individually clickable. Flooring at a bare
+  //   chip box instead was a real bug — a 2-vs-8 board handed the pair exactly
+  //   one card's width, DonStack's `(100% - chipBox) / gaps` came out as 0, and
+  //   the second DON!! sat perfectly hidden under the first with no way to pick
+  //   it. The floor is then capped at 50% so two long piles can't demand more
+  //   than the row has; the two halves sum to exactly 100% (this grid has no gap).
+  //
+  // Because the floor uses one step constant for both orientations, equal card
+  // counts always produce identical tracks — the default really is 50:50.
+  const activeDonGaps = Math.max(activeDon.length - 1, 0);
+  const restedDonGaps = Math.max(restedDon.length - 1, 0);
+  const [activeDonWeight, restedDonWeight] = activeDonGaps + restedDonGaps === 0
+    ? [1, 1]
+    : [activeDonGaps, restedDonGaps];
+  const donHalfFloor = (gaps: number): string =>
+    `min(${cqh(BOARD_ZONE_TRACK_PX + gaps * DON_MIN_STEP_PX)},50%)`;
+  // Track order follows the piles, so both mirror together (see donArea's children).
+  const donTracks = [
+    `minmax(${donHalfFloor(reverseRows ? restedDonGaps : activeDonGaps)},${reverseRows ? restedDonWeight : activeDonWeight}fr)`,
+    `minmax(${donHalfFloor(reverseRows ? activeDonGaps : restedDonGaps)},${reverseRows ? activeDonWeight : restedDonWeight}fr)`,
+  ].join(' ');
+
   // The two DON!! halves are plain grid tracks rather than the absolutely
   // positioned, content-sized boxes they used to be. That is the whole point:
   // a DON!! pile's width is now decided by its container instead of by its
   // card count (DonStack tightens its own fan to fit), so a growing pile can
-  // no longer creep across the row toward Leader or Trash. The containers
-  // themselves draw nothing.
+  // no longer creep across the row toward Leader or Trash. What the card count
+  // does influence is how the row is DIVIDED between the two piles — see
+  // donTracks below.
+  //
+  // The halves themselves stay invisible; the printed box goes around BOTH of
+  // them, because the Cost Area is one zone on the play sheet, not two. Same
+  // MatCell treatment as characterZone — default 'light' chrome, sr-only
+  // label, px-2 py-0 so the box hugs the row's one-card height, allowOverflow
+  // so nothing inside is clipped — so rows 1 and 3 read as the same kind of
+  // bordered play area.
   const donArea = (
-    <div className="grid h-full min-h-0" style={{ gridTemplateColumns: 'repeat(2, minmax(0,1fr))' }}>
-      {reverseRows ? (
-        <>
-          {restedDonCell}
-          {activeDonCell}
-        </>
-      ) : (
-        <>
-          {activeDonCell}
-          {restedDonCell}
-        </>
-      )}
-    </div>
+    <MatCell label="Cost Area" className="h-full w-full" labelClassName="sr-only" allowOverflow padding="px-2 py-0">
+      <div
+        className="grid h-full min-h-0 w-full"
+        style={{
+          gridTemplateColumns: donTracks,
+          // The split changes whenever a DON!! is played, rested or returned.
+          // Animating it reads as the two piles making room for each other;
+          // without it the whole Cost Area jumps on every DON!! spent.
+          transition: 'grid-template-columns 0.25s ease',
+        }}
+      >
+        {reverseRows ? (
+          <>
+            {restedDonCell}
+            {activeDonCell}
+          </>
+        ) : (
+          <>
+            {activeDonCell}
+            {restedDonCell}
+          </>
+        )}
+      </div>
+    </MatCell>
   );
 
   const donRow = (
@@ -961,14 +1024,19 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
     <div
       className="flex h-full min-h-0 min-w-0 flex-1 flex-col"
       data-board-player={board.playerId}
-      // Desktop-only card scale. cqh() multiplies every length it emits by
-      // this inherited variable (default 1), and every cqh consumer on this
-      // mat — BoardCardTile, DonChip/DonStack, PileStack, TrashPile,
-      // CountBadge, and this file's own track constants — is a descendant of
-      // this element. The mobile mat renders the same leaves under its own
-      // container and never sees the variable, so it keeps its original card
-      // size and its own two-row layout. See boardScale.ts.
-      style={{ [BOARD_CARD_SCALE_VAR]: DESKTOP_BOARD_CARD_SCALE } as CSSProperties}
+      // Desktop-only card metrics, both read by cqh(): the scale every length
+      // is multiplied by, and the gain on its width-driven half, which is what
+      // decides the aspect ratio below which the board starts shrinking to fit
+      // its width instead of its height. Every cqh consumer on this mat —
+      // BoardCardTile, DonChip/DonStack, PileStack, TrashPile, CountBadge, and
+      // this file's own track constants — is a descendant of this element. The
+      // mobile mat renders the same leaves under its own container, never sees
+      // either variable, falls back to 1 for both, and is unchanged. See
+      // boardScale.ts for how the two values are derived.
+      style={{
+        [BOARD_CARD_SCALE_VAR]: DESKTOP_BOARD_CARD_SCALE,
+        [BOARD_WIDTH_GAIN_VAR]: DESKTOP_BOARD_WIDTH_GAIN,
+      } as CSSProperties}
     >
       {mat}
       <TrashGalleryModal
