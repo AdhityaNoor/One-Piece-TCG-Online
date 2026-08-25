@@ -55,6 +55,7 @@ import { BoardCardTile } from './BoardCardTile';
 import { CardBackArt } from './CardBackArt';
 import { CardImage } from '../CardImage';
 import { BOARD_CARD_SCALE_VAR, BOARD_WIDTH_GAIN_VAR, cqh, DESKTOP_BOARD_CARD_SCALE, DESKTOP_BOARD_WIDTH_GAIN } from './boardScale';
+import { matShadeGradient } from '../../lib/cardColors';
 import { CountBadge } from './CountBadge';
 import { DonStack } from './DonStack';
 import { PileStack } from './PileStack';
@@ -973,6 +974,15 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   // every height. The column gap stays gap-x-2 — leaderCenterOffset below
   // assumes 0.5rem there.
   //
+  // Colour: the mat is washed in its own Leader's colour(s) — see
+  // matShadeGradient (cardColors.ts) for the gradient, including the 50:50
+  // horizontal split a two-colour Leader gets. It replaces a neutral white
+  // wash and reuses that wash's exact alpha envelope, so the mat is tinted,
+  // not made more opaque. Set as backgroundImage rather than the `background`
+  // shorthand so it can't clear a background-color someone adds later, and
+  // read from `board.leader` so each half of the board carries its own
+  // player's colours.
+  //
   // Width: capped at MAT_MAX_WIDTH rather than 100%. Past that width the grid
   // was only inflating the gaps around a Character Area that already had room
   // for its worst case (5 rested Characters), which dragged Deck and Life out
@@ -989,8 +999,9 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   const mat = (
     <div className="flex min-h-0 flex-1 items-stretch justify-center overflow-hidden">
       <div
-        className="grid h-full w-full flex-1 gap-x-2 gap-y-0.5 overflow-hidden rounded-xl border border-white/10 bg-[linear-gradient(135deg,_rgba(255,255,255,0.08),_rgba(255,255,255,0.02))] p-1 shadow-inner shadow-black/30"
+        className="grid h-full w-full flex-1 gap-x-2 gap-y-0.5 overflow-hidden rounded-xl border border-white/10 p-1 shadow-inner shadow-black/30"
         style={{
+          backgroundImage: matShadeGradient(leaderCard?.colors ?? []),
           maxWidth: MAT_MAX_WIDTH,
           gridTemplateColumns: reverseRows ? `minmax(0,1fr) ${LIFE_COLUMN_TRACK}` : `${LIFE_COLUMN_TRACK} minmax(0,1fr)`,
           gridTemplateRows: `repeat(3, minmax(${CARD_ROW_TRACK},1fr))`,
