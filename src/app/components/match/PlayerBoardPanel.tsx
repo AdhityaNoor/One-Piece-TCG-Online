@@ -277,11 +277,11 @@ const CARD_ROW_TRACK = BOARD_ZONE_TRACK;
 // the gaps between cards, which pushed Life out toward the screen edge and
 // away from the play field it belongs to. The `+ 64px` is every fixed
 // (rem/px) gutter in that widest row, none of which scale with cqh:
-//   mat p-1 left+right                 8
-//   mat grid column gap (gap-x-2)      8
-//   Character Area cell px-2          16
+//   mat padding, left + right         16
+//   mat grid column gap                8
+//   Character Area cell padding-x     16
 //   4 gaps between 5 character cards  32
-const MAT_MAX_WIDTH = `calc(${LIFE_COLUMN_TRACK} + ${cqh(5 * BOARD_ZONE_TRACK_PX)} + 64px)`;
+const MAT_MAX_WIDTH = `calc(${LIFE_COLUMN_TRACK} + ${cqh(5 * BOARD_ZONE_TRACK_PX)} + 72px)`;
 
 /**
  * Thin pass-through wrapper around a Leader/Character BoardCardTile that
@@ -338,81 +338,104 @@ function EmptySlot({ label }: { size: 'leader' | 'board'; label: string }) {
   );
 }
 
-function LifeStack({ playerId, life, count, donDeckCount, donDeckFirst = false }: { playerId: string; life: CardView[]; count: number; donDeckCount: number; donDeckFirst?: boolean }) {
+function LifeStack({ playerId, life, count, reverseRows }: { playerId: string; life: CardView[]; count: number; reverseRows: boolean }) {
   const visibleCards = Math.max(0, Math.min(count, 5));
   const slots = Array.from({ length: visibleCards });
+  // Exact height of the fan: one rotated card plus one step per card under the
+  // top one. Knowing it lets the whole fan be centred in the Life cell as a
+  // unit, which is what puts the count badge (centred in the same box) on the
+  // fan rather than floating in the empty space beside it.
+  const fanHeight = cqh(Math.max(visibleCards - 1, 0) * LIFE_FAN_STEP_PX + FIELD_CARD_WIDTH_PX);
 
   return (
     <div
-      className="relative h-full flex-shrink-0"
-      style={{ width: FIELD_CARD_HEIGHT }}
+      className="relative h-full w-full flex-shrink-0"
       aria-label={`${count} Life cards`}
       data-board-zone="life"
       data-board-player={playerId}
     >
-      {slots.map((_, index) => {
-        // life[index] lines up with this slot 1:1 (both walk top-of-stack
-        // first). A card turned face-up by an effect (e.g. "turn the top
-        // Life card face-up") shows its real art here instead of a sealed
-        // back — Life is otherwise secret (3-1-5), so every other slot stays
-        // CardBackArt regardless of debug "both hands visible" posture.
-        const card = life[index];
-        const faceUp = card?.faceState === 'faceUp';
-        // Life cards lie sideways now (same 90deg rotation as a rested field
-        // card), rendered at FULL size — the anchor is sized to the rotated
-        // card's actual footprint (FIELD_CARD_HEIGHT wide x FIELD_CARD_WIDTH
-        // tall, since rotating swaps the two) rather than shrinking the card
-        // to fit the old upright-card width. The Life column's own grid
-        // track (LIFE_COLUMN_TRACK) was widened to match, so this footprint
-        // fits without being clipped. The fan steps along the column
-        // (top/bottom, by index) by LIFE_FAN_STEP_PX. Index 0 is the top of the
-        // Life stack (zone.ts "cardIds[0] = top of stack" convention) and
-        // gets the HIGHEST z-index so it renders as the frontmost card,
-        // matching a real fanned pile.
-        return (
-          <div
-            key={card?.instanceId ?? index}
-            className="absolute left-0 right-0 mx-auto flex items-center justify-center"
-            style={{
-              [donDeckFirst ? 'bottom' : 'top']: cqh(index * LIFE_FAN_STEP_PX),
-              width: FIELD_CARD_HEIGHT,
-              height: FIELD_CARD_WIDTH,
-              zIndex: visibleCards - index,
-            }}
-            aria-label={faceUp ? card.name : undefined}
-          >
-            <div className="rotate-90" style={{ width: FIELD_CARD_WIDTH }}>
-              <div className="aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.38)]">
-                {faceUp ? <CardImage src={card.imageUrl} alt={card.name} className="h-full w-full" /> : <CardBackArt tone="navy" playerId={playerId} />}
+      <div
+        className="absolute left-0 right-0 top-1/2 mx-auto -translate-y-1/2"
+        style={{ width: FIELD_CARD_HEIGHT, height: fanHeight }}
+      >
+        {slots.map((_, index) => {
+          // life[index] lines up with this slot 1:1 (both walk top-of-stack
+          // first). A card turned face-up by an effect (e.g. "turn the top
+          // Life card face-up") shows its real art here instead of a sealed
+          // back — Life is otherwise secret (3-1-5), so every other slot stays
+          // CardBackArt regardless of debug "both hands visible" posture.
+          const card = life[index];
+          const faceUp = card?.faceState === 'faceUp';
+          // Life cards lie sideways (same 90deg rotation as a rested field
+          // card), rendered at FULL size — the slot is sized to the rotated
+          // card's actual footprint (FIELD_CARD_HEIGHT wide x FIELD_CARD_WIDTH
+          // tall, since rotating swaps the two) rather than shrinking the card
+          // to fit an upright-card width. The fan steps by LIFE_FAN_STEP_PX
+          // from whichever end is the player's own outer edge, so both halves
+          // of the board fan away from the Battle Line. Index 0 is the top of
+          // the Life stack (zone.ts "cardIds[0] = top of stack") and gets the
+          // HIGHEST z-index so it renders frontmost, matching a real pile.
+          return (
+            <div
+              key={card?.instanceId ?? index}
+              className="absolute left-0 right-0 mx-auto flex items-center justify-center"
+              style={{
+                [reverseRows ? 'bottom' : 'top']: cqh(index * LIFE_FAN_STEP_PX),
+                width: FIELD_CARD_HEIGHT,
+                height: FIELD_CARD_WIDTH,
+                zIndex: visibleCards - index,
+              }}
+              aria-label={faceUp ? card.name : undefined}
+            >
+              <div className="rotate-90" style={{ width: FIELD_CARD_WIDTH }}>
+                <div className="aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.38)]">
+                  {faceUp ? <CardImage src={card.imageUrl} alt={card.name} className="h-full w-full" /> : <CardBackArt tone="navy" playerId={playerId} />}
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
-      {/* Single count overlay for the whole fan (same CountBadge used by
-          PileStack/DonStack) — replaces the old "0"-only fallback, shown
-          regardless of count so Life always reads a number. */}
-      <CountBadge count={count} />
-
-      {/* DON!! Deck, relocated here by design: it rides inside the Life cell
-          (which doesn't move) pinned to the cell's own far edge, at FULL card
-          width — the same size as every other card on the mat, Life fan
-          included. It used to render 20% smaller on the grounds that it is a
-          sealed pile a player barely touches, but a lone undersized card read
-          as a rendering bug rather than as a deliberate de-emphasis. Uses the
-          teal colorway of CardBackArt (distinct from the navy Life/Deck card
-          back) so this pile still reads as its own zone. */}
-      <div
-        className={['absolute inset-x-0 mx-auto aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.45)]', donDeckFirst ? 'top-0' : 'bottom-0'].join(' ')}
-        style={{ width: FIELD_CARD_WIDTH, zIndex: 10 }}
-        aria-label={`${donDeckCount} DON!! Deck`}
-        data-board-zone="donDeck"
-        data-board-player={playerId}
-        data-board-card-anchor
-      >
-        <CardBackArt tone="teal" playerId={playerId} />
-        <CountBadge count={donDeckCount} />
+          );
+        })}
       </div>
+
+      {/* Count overlay for the whole fan (same CountBadge used by
+          PileStack/DonStack), shown regardless of count so Life always reads a
+          number. It centres on THIS box — the Life cell — which is why the fan
+          above is centred too: both share one middle, so the badge always lands
+          on cards. */}
+      <CountBadge count={count} />
+    </div>
+  );
+}
+
+/**
+ * The DON!! Deck, in its own cell at the outer end of the Life column.
+ *
+ * It used to be absolutely positioned inside the Life cell, pinned to that
+ * cell's far edge. That made the Life cell span all three mat rows and hold two
+ * unrelated zones, so Life's own count badge — centred in the cell — sat in the
+ * dead space between the fan and this pile instead of on the fan. Splitting
+ * them gives each zone a real cell (Life two rows, this one), an ordinary grid
+ * gap between them like every other pair of boxes on the mat, and a container
+ * whose middle means something.
+ *
+ * Full card width, the same as every other card on the mat: it rendered 20%
+ * smaller once, on the grounds that it is a sealed pile a player barely
+ * touches, and a lone undersized card just read as a rendering bug. The teal
+ * CardBackArt colorway (vs the navy Life/Deck back) is what marks it as its own
+ * zone instead.
+ */
+function DonDeckPile({ playerId, count }: { playerId: string; count: number }) {
+  return (
+    <div
+      className="relative aspect-[63/88] overflow-hidden rounded shadow-[0_4px_10px_rgba(0,0,0,0.45)]"
+      style={{ width: FIELD_CARD_WIDTH }}
+      aria-label={`${count} DON!! Deck`}
+      data-board-zone="donDeck"
+      data-board-player={playerId}
+      data-board-card-anchor
+    >
+      <CardBackArt tone="teal" playerId={playerId} />
+      <CountBadge count={count} />
     </div>
   );
 }
@@ -794,7 +817,7 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   // mirror images across the Battle Line rather than repeats.
   const stageDeckGroup = (
     <div
-      className={['absolute inset-y-0 grid gap-8', reverseRows ? 'left-0' : 'right-0'].join(' ')}
+      className={['absolute inset-y-0 grid gap-2', reverseRows ? 'left-0' : 'right-0'].join(' ')}
       style={{ gridTemplateColumns: `${BOARD_ZONE_TRACK} ${BOARD_ZONE_TRACK}` }}
     >
       {reverseRows ? (
@@ -966,13 +989,19 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   // its value, and note that it is set on THIS component's root (below) so it
   // reaches the desktop mat's cards and nothing else, mobile included.
   //
-  // The mat's own padding dropped to p-1 and the row gap to gap-y-0.5 as part
-  // of that budget. Those are fixed px, so they do NOT shrink with the board:
-  // at 720p they are a much larger share of a player's half than at 1080p,
-  // which is exactly what made an earlier, larger card scale fit on a big
-  // monitor and overflow on a small one. Shrinking them buys back card size at
-  // every height. The column gap stays gap-x-2 — leaderCenterOffset below
-  // assumes 0.5rem there.
+  // Spacing on this mat is ONE unit — 0.5rem — used for the mat's own padding,
+  // both grid gaps, the gap between Stage and Deck, the gap between the Cost
+  // Area and Trash, and the horizontal padding inside the Character Area and
+  // Cost Area cells. It got there by measurement: the mat had accumulated 2px
+  // row gaps, 4px padding, 8px column gaps and a 32px Stage/Deck gap, which
+  // read as four unrelated rhythms in one box.
+  //
+  // The unit is fixed px, so it does NOT shrink with the board: at 720p it is a
+  // much larger share of a player's half than at 1080p, which is exactly what
+  // makes a card scale that fits a big monitor overflow a small one. Widening
+  // it from the old 2px/4px is therefore paid for out of
+  // DESKTOP_BOARD_CARD_SCALE — see boardScale.ts. leaderCenterOffset below
+  // assumes the column gap is 0.5rem.
   //
   // Colour: the mat is washed in its own Leader's colour(s) — see
   // matShadeGradient (cardColors.ts) for the gradient, including the 50:50
@@ -990,43 +1019,77 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   // centred, and because BOTH panels use the same cap they stay the same
   // width — which is what leaderGroup's centring relies on to put the two
   // Leaders on one X across the Battle Line.
+  // The Life column is two cells, not one: Life over two rows and the DON!!
+  // Deck over the third, separated by the mat's ordinary row gap like every
+  // other pair of boxes. The DON!! Deck takes the row at the player's OWN outer
+  // edge — row 3 for the bottom panel, row 1 for the mirrored top one — which
+  // is the corner it already occupied when it was pinned inside the Life cell.
+  //
+  // Placement is explicit rather than left to grid auto-flow. With a two-row
+  // item in column 1, auto-flow's cursor walks into the free column-1 cell in
+  // row 3 and drops the DON!! row there instead of leaving it for this pile.
+  const lifeColumn = reverseRows ? 2 : 1;
+  const contentColumn = reverseRows ? 1 : 2;
   const lifeCell = (
-    <MatCell label="Life" variant="dark" className="row-span-3" labelClassName="sr-only" allowOverflow>
-      <LifeStack playerId={board.playerId} life={board.life} count={board.lifeAreaCount} donDeckCount={board.donDeckCount} donDeckFirst={reverseRows} />
+    <MatCell
+      label="Life"
+      variant="dark"
+      labelClassName="sr-only"
+      allowOverflow
+      style={{ gridColumn: lifeColumn, gridRow: reverseRows ? '2 / span 2' : '1 / span 2' }}
+    >
+      <LifeStack playerId={board.playerId} life={board.life} count={board.lifeAreaCount} reverseRows={reverseRows} />
+    </MatCell>
+  );
+  // p-0, like every other single-card slot on the mat (Deck/Stage/Trash): the
+  // card is centred in a cell exactly one card row tall, so padding would only
+  // squeeze it.
+  const donDeckCell = (
+    <MatCell
+      label="DON!! Deck"
+      variant="dark"
+      labelClassName="sr-only"
+      padding="p-0"
+      style={{ gridColumn: lifeColumn, gridRow: reverseRows ? 1 : 3 }}
+    >
+      <DonDeckPile playerId={board.playerId} count={board.donDeckCount} />
     </MatCell>
   );
 
   const mat = (
     <div className="flex min-h-0 flex-1 items-stretch justify-center overflow-hidden">
       <div
-        className="grid h-full w-full flex-1 gap-x-2 gap-y-0.5 overflow-hidden rounded-xl border border-white/10 p-1 shadow-inner shadow-black/30"
+        className="grid h-full w-full flex-1 gap-2 overflow-hidden rounded-xl border border-white/10 p-2 shadow-inner shadow-black/30"
         style={{
           backgroundImage: matShadeGradient(leaderCard?.colors ?? []),
+          // Both of these exist to stop the mat's own border bleeding the
+          // WRONG colour. A background-image's default box is the PADDING box
+          // (background-origin) while it paints out to the BORDER box
+          // (background-clip), and the default background-repeat then TILES the
+          // gradient into that leftover 1px border strip — so the left border
+          // showed the gradient's right-hand end and vice versa. On a
+          // two-colour Leader that put a hairline of blue down the red edge and
+          // a hairline of red down the blue one. Growing the gradient box to
+          // the border box makes the colour continuous to the mat's outer edge,
+          // and no-repeat means there is nothing left to tile even if the
+          // border or padding changes later.
+          backgroundOrigin: 'border-box',
+          backgroundRepeat: 'no-repeat',
           maxWidth: MAT_MAX_WIDTH,
           gridTemplateColumns: reverseRows ? `minmax(0,1fr) ${LIFE_COLUMN_TRACK}` : `${LIFE_COLUMN_TRACK} minmax(0,1fr)`,
           gridTemplateRows: `repeat(3, minmax(${CARD_ROW_TRACK},1fr))`,
         }}
       >
-        {reverseRows ? (
-          <>
-            {donRow}
-            {lifeCell}
-            {leaderRow}
-            {/* relative z-10: see the non-reversed branch — same reason, and
-                here characterRow is also the row nearest the Battle Line. */}
-            <div className="relative z-10 min-h-0">{characterRow}</div>
-          </>
-        ) : (
-          <>
-            {lifeCell}
-            {/* relative z-10: characterRow must paint above the rows that come
-                later in DOM order, which would otherwise cover the deck ghost
-                layers that extend out of row 1 */}
-            <div className="relative z-10 min-h-0">{characterRow}</div>
-            {leaderRow}
-            {donRow}
-          </>
-        )}
+        {lifeCell}
+        {donDeckCell}
+        {/* relative z-10: characterRow must paint above the other rows whatever
+            the DOM order, so the deck pile's ghost layers can spill out of the
+            Leader's row without being covered. */}
+        <div className="relative z-10 min-h-0" style={{ gridColumn: contentColumn, gridRow: reverseRows ? 3 : 1 }}>
+          {characterRow}
+        </div>
+        <div className="min-h-0" style={{ gridColumn: contentColumn, gridRow: 2 }}>{leaderRow}</div>
+        <div className="min-h-0" style={{ gridColumn: contentColumn, gridRow: reverseRows ? 1 : 3 }}>{donRow}</div>
       </div>
     </div>
   );

@@ -75,12 +75,66 @@ function SettingSwitch({ checked, label, onToggle }: { checked: boolean; label: 
   );
 }
 
+/**
+ * Where this control renders. 'floating' is the default — a gear pinned over
+ * the bottom-right corner of whatever screen is up. The other two are slots a
+ * screen opts into by rendering an element with the matching id, so the
+ * settings gear sits with that screen's own controls instead of hovering over
+ * its board.
+ */
+type SettingsVariant = 'floating' | 'mobileActions' | 'matchDock';
+
+interface SettingsHost {
+  el: HTMLElement;
+  variant: SettingsVariant;
+}
+
+/**
+ * Checked in order — the first slot that exists AND is visible wins. Mobile
+ * comes first because on a narrow viewport the desktop match grid is still in
+ * the DOM (`hidden xl:grid`), so both slots can be present at once and only the
+ * mobile one is actually on screen.
+ */
+const SETTINGS_HOST_SLOTS: { id: string; variant: SettingsVariant }[] = [
+  { id: 'mobile-action-settings-slot', variant: 'mobileActions' },
+  { id: 'match-settings-slot', variant: 'matchDock' },
+];
+
+const ROOT_CLASS: Record<SettingsVariant, string> = {
+  floating: 'op-backsound-floating fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2',
+  mobileActions: 'op-backsound-inline relative flex flex-col items-end gap-2',
+  // No flex-col/gap: this one is a single cell in the match aside's button
+  // row, sized by the slot around it.
+  matchDock: 'op-backsound-match-dock relative flex',
+};
+
+const PANEL_CLASS: Record<SettingsVariant, string> = {
+  floating: '',
+  mobileActions: '',
+  // Lifted out of flow and anchored to the button's top-right corner. In flow
+  // it would stretch the aside's footer row to the panel's own height and
+  // shove the Pause button off the bottom of the screen.
+  matchDock: 'absolute bottom-full right-0 z-50 mb-2',
+};
+
+const BUTTON_CLASS: Record<SettingsVariant, string> = {
+  floating:
+    'flex h-12 w-12 items-center justify-center border border-transparent bg-transparent text-white/70 shadow-none transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 hover:text-white active:translate-y-0',
+  mobileActions:
+    'flex h-12 w-12 items-center justify-center border border-transparent bg-transparent text-white/70 shadow-none transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 hover:text-white active:translate-y-0',
+  // Deliberately the same chrome as the Pause button it now sits beside
+  // (MatchScreen's Actions aside footer), so the pair reads as one control row
+  // rather than as a stray global widget that wandered in.
+  matchDock:
+    'flex h-10 w-10 flex-shrink-0 items-center justify-center border border-white/15 bg-black/28 text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold',
+};
+
 export function BacksoundControl({ className }: { className?: string } = {}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const sfxRef = useRef<HTMLAudioElement>(null);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [mobileActionHost, setMobileActionHost] = useState<HTMLElement | null>(null);
+  const [host, setHost] = useState<SettingsHost | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackBlocked, setPlaybackBlocked] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -99,13 +153,38 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
   const setMatchNavyBackgroundEnabled = useSettingsStore((state) => state.setMatchNavyBackgroundEnabled);
   const setAnimationsEnabled = useSettingsStore((state) => state.setAnimationsEnabled);
 
+  // Screens that own a better home for this control expose a slot element and
+  // we portal into it; with no slot the gear floats over the bottom-right
+  // corner. See SETTINGS_HOST_SLOTS for the list and the order.
   useEffect(() => {
-    const syncHost = () => setMobileActionHost(document.getElementById('mobile-action-settings-slot'));
+    const syncHost = () => {
+      for (const slot of SETTINGS_HOST_SLOTS) {
+        const el = document.getElementById(slot.id);
+        // offsetParent is null for anything inside a `display: none` ancestor.
+        // Both slots live inside layouts the other breakpoint hides outright
+        // (the desktop match grid is `hidden xl:grid`), so a slot existing is
+        // NOT the same as a slot being usable — portalling into a hidden one
+        // would make the settings gear silently unreachable mid-match.
+        if (el && el.offsetParent !== null) {
+          setHost((current) => (current?.el === el && current.variant === slot.variant ? current : { el, variant: slot.variant }));
+          return;
+        }
+      }
+      setHost((current) => (current === null ? current : null));
+    };
     syncHost();
 
+    // childList catches a slot being mounted/unmounted (opening the mobile
+    // actions panel, entering/leaving a match). resize catches the desktop
+    // grid's `xl:` breakpoint flipping, which changes a slot's visibility
+    // without touching the DOM at all.
     const observer = new MutationObserver(syncHost);
     observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    window.addEventListener('resize', syncHost);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', syncHost);
+    };
   }, []);
 
   useEffect(() => {
@@ -261,16 +340,11 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
     return () => document.removeEventListener('click', playClickSfx);
   }, [sfxEnabled, sfxVolume]);
 
-  const inlineInMobileActions = mobileActionHost !== null;
+  const variant: SettingsVariant = host?.variant ?? 'floating';
   const control = (
     <div
       ref={rootRef}
-      className={[
-        inlineInMobileActions
-          ? 'op-backsound-inline relative flex flex-col items-end gap-2 font-body text-white'
-          : 'op-backsound-floating fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 font-body text-white',
-        className ?? '',
-      ].join(' ')}
+      className={[ROOT_CLASS[variant], 'font-body text-white', className ?? ''].join(' ')}
     >
       <audio
         ref={audioRef}
@@ -286,7 +360,7 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
       <audio ref={sfxRef} src={UI_CLICK_SRC} preload="auto" />
 
       {panelOpen && (
-        <div className={`w-64 p-3 ${SETTINGS_PANEL_SHELL}`}>
+        <div className={`w-64 p-3 ${SETTINGS_PANEL_SHELL} ${PANEL_CLASS[variant]}`}>
           <div className="flex items-center justify-between gap-3">
             <p className={SETTINGS_PANEL_TITLE}>Backsound</p>
             <button
@@ -371,7 +445,7 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
       <button
         type="button"
         onClick={() => setPanelOpen((open) => !open)}
-        className="flex h-12 w-12 items-center justify-center border border-transparent bg-transparent text-white/70 shadow-none transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 hover:text-white active:translate-y-0"
+        className={BUTTON_CLASS[variant]}
         aria-label="Settings"
         title="Settings"
       >
@@ -380,5 +454,5 @@ export function BacksoundControl({ className }: { className?: string } = {}) {
     </div>
   );
 
-  return inlineInMobileActions ? createPortal(control, mobileActionHost) : control;
+  return host ? createPortal(control, host.el) : control;
 }

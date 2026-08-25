@@ -183,25 +183,11 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   // suppressed; the player can still toggle it away to see the board
   // underneath.
   const [promptPopupHidden, setPromptPopupHidden] = useState(false);
-  // Browser Fullscreen API toggle for the Actions aside's Fullscreen button.
-  // Presentation-only — never touches GameState/the engine. `isFullscreen`
-  // tracks the real DOM state (not just "did we last click the button") so
-  // it stays correct if the browser exits fullscreen on its own (Esc key,
-  // OS gesture, etc — the fullscreenchange listener below is what catches
-  // that).
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  useEffect(() => {
-    const handleFullscreenChange = (): void => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-  const toggleFullscreen = (): void => {
-    if (document.fullscreenElement) {
-      void document.exitFullscreen();
-    } else {
-      void document.documentElement.requestFullscreen?.().catch(() => {});
-    }
-  };
+  // No fullscreen state here any more. The Actions aside's fullscreen button
+  // was replaced by the settings gear (see #match-settings-slot below), and
+  // that panel already carries its own Fullscreen toggle — one with a
+  // pseudo-fullscreen fallback for browsers that refuse the real API, which
+  // this screen's version never had.
   const [handToggleHovered, setHandToggleHovered] = useState(false);
   const tableShellRef = useRef<HTMLDivElement | null>(null);
   const mobileLogNotificationCursorRef = useRef<number | null>(null);
@@ -899,24 +885,18 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
               >
                 Pause
               </button>
-              <button
-                type="button"
-                onClick={toggleFullscreen}
-                aria-pressed={isFullscreen}
-                aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-                title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-                className="flex h-10 w-10 flex-shrink-0 items-center justify-center border border-white/15 bg-black/28 text-white/65 shadow-[0_8px_20px_rgba(0,0,0,0.2)] transition-all hover:border-gold/55 hover:text-gold"
-              >
-                {isFullscreen ? (
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 4v3a2 2 0 0 1-2 2H4M20 9h-3a2 2 0 0 1-2-2V4M4 15h3a2 2 0 0 1 2 2v3M15 20v-3a2 2 0 0 1 2-2h3" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 9V6a2 2 0 0 1 2-2h3M20 9V6a2 2 0 0 1-2-2h-3M4 15v3a2 2 0 0 0 2 2h3M20 15v3a2 2 0 0 1-2 2h-3" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </button>
+              {/* Settings, in the slot the fullscreen button used to occupy.
+                  BacksoundControl (mounted once at the app root) portals its
+                  gear in here instead of floating it over the board — see that
+                  file's SETTINGS_HOST_SLOTS. Nothing is lost by dropping the
+                  dedicated fullscreen button: the panel this gear opens has a
+                  Fullscreen toggle of its own.
+
+                  Rendered only when the aside is actually on screen. The slot
+                  being absent is what tells BacksoundControl to fall back to
+                  its floating gear, so a hidden-but-present slot would leave
+                  the player with no way to reach settings at all. */}
+              {!leftPanelOverride && <div id="match-settings-slot" className="flex h-10 w-10 flex-shrink-0" />}
             </div>
           </aside>
 

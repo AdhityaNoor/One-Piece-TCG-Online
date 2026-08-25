@@ -72,27 +72,36 @@ export const BOARD_CARD_SCALE_VAR = '--op-card-scale';
  *
  * The arithmetic, at a container height H (the .op-match-playmat-layer box,
  * which is what cqh resolves against):
- *   one player's half        = (H - battle line ~16 - two 8px gaps) / 2
- *   mat padding (p-1)        = 8
- *   two row gaps (gap-y-0.5) = 4
- *   three equal card rows    = 3 * 210s * H / 1100
- * which solves to s <= 0.873 - 41.9/H. Note the fixed-px terms: they do not
+ *   one player's half     = (H - battle line ~16 - two 8px gaps) / 2
+ *   mat padding           = 16
+ *   two row gaps          = 16
+ *   three equal card rows = 3 * 210s * H / 1100
+ * which solves to s <= 0.873 - 83.8/H. Note the fixed-px terms: they do not
  * shrink with the board, so the bound is TIGHTER on a small window than on a
- * large one — 0.807 at 1080p but only 0.774 at 720p. A value chosen against a
- * big monitor alone therefore ships a board that overflows its own mat on a
- * laptop, which is exactly what an earlier 0.8 did here.
+ * large one. A value chosen against a big monitor alone therefore ships a board
+ * that overflows its own mat on a laptop, which is exactly what an earlier 0.8
+ * did here.
  *
- * 0.78 clears the bound down to a ~650px-tall window. It was picked by
- * measuring a real render (Playwright, 1100x650 through 2560x1440, five rested
+ * Those fixed terms are also why this value moves when the mat's SPACING moves:
+ * it dropped from 0.78 to 0.74 when the mat's four different gutters (2px row
+ * gaps, 4px padding, 8px column gaps, a 32px Stage/Deck gap) were unified on a
+ * single 8px unit, which cost 20px of vertical budget. Retuning here is the
+ * correct way to pay for a spacing change — do not claw it back by shrinking
+ * the gutters again.
+ *
+ * 0.74 was picked by measuring a real render (Playwright, five rested
  * Characters and a full Cost Area) and taking the largest value with zero
- * clipping at every size, not by trusting this comment's algebra.
+ * clipping at every viewport the desktop mat actually renders at. That
+ * qualifier matters: the desktop grid is `hidden xl:grid`, so anything under
+ * 1280px WIDE is the mobile board and must not constrain this number. The
+ * binding case is 1280x720.
  *
  * Because cqh() is a pure linear rescale, multiplying every constant by the
  * same s preserves every ratio the board depends on exactly (fan offsets,
  * stack steps, grid track widths, the Leader centring offset) — the same
  * property that made the px -> cqh conversion safe in the first place.
  */
-export const DESKTOP_BOARD_CARD_SCALE = 0.78;
+export const DESKTOP_BOARD_CARD_SCALE = 0.74;
 
 /**
  * Name of the CSS custom property the `cqw` half of every cqh() length is
@@ -112,8 +121,8 @@ export const BOARD_WIDTH_GAIN_VAR = '--op-card-width-gain';
  * three-row mat is far narrower — Deck moved into the Leader's row, and
  * MAT_MAX_WIDTH (PlayerBoardPanel) caps the whole thing at
  *   LIFE_COLUMN_TRACK_PX (230) + 5 * BOARD_ZONE_TRACK_PX (1050) = 1280 reference px
- * of cqh-driven width, times DESKTOP_BOARD_CARD_SCALE, plus 64px of fixed
- * gutters: 1280 * 0.78 + 64 = 1062 at REFERENCE_HEIGHT.
+ * of cqh-driven width, times DESKTOP_BOARD_CARD_SCALE, plus 72px of fixed
+ * gutters: 1280 * 0.74 + 72 = 1019 at REFERENCE_HEIGHT.
  *
  * Leaving the crossover at 1800 meant the board started shrinking on width at
  * an aspect of 1800/1100 = 1.64 — so a 1440x900 laptop was already squeezing

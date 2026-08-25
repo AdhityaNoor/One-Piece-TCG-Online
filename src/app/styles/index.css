@@ -1803,6 +1803,18 @@
     }
   }
 
+  /* Settings gear docked in the match Actions aside, beside Pause (see
+     BacksoundControl's SETTINGS_HOST_SLOTS). The panel is already lifted out
+     of flow there so it can't stretch that footer row; this only caps it so a
+     short desktop window can still scroll it instead of losing its top edge
+     off the screen — the same treatment .op-backsound-inline gets. The
+     selector picks the panel because it is the control's only div child, with
+     the gear button always last. */
+  .op-backsound-match-dock > div:not(:last-child) {
+    max-height: calc(100dvh - 6rem);
+    overflow: auto;
+  }
+
   .op-mobile-panel-title > button {
     border: 1px solid rgba(255, 255, 255, 0.18);
     background: rgba(0, 0, 0, 0.24);
