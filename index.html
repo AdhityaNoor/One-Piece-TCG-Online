@@ -99,11 +99,15 @@
       }
 
       #splash-logo {
-        width: min(82vw, 36rem);
-        height: 4.7rem;
+        /* Height + the art's own ratio, matching BrandLogo.tsx — this is the
+           pre-boot copy of the same mark and the two must not differ, or the
+           logo visibly resizes the moment React mounts. */
+        max-width: 86vw;
+        aspect-ratio: 218.92 / 77.48;
+        height: 5.6rem;
         background: linear-gradient(180deg, #ffe17a 0%, #d9a441 50%, #8e5b12 100%);
-        -webkit-mask-image: url(/ui/logo_op.png);
-        mask-image: url(/ui/logo_op.png);
+        -webkit-mask-image: url(/ui/new-icon.svg);
+        mask-image: url(/ui/new-icon.svg);
         -webkit-mask-position: center;
         mask-position: center;
         -webkit-mask-repeat: no-repeat;
@@ -111,16 +115,6 @@
         -webkit-mask-size: contain;
         mask-size: contain;
         filter: drop-shadow(0 7px 0 rgba(0,0,0,0.65));
-      }
-
-      #splash-sub {
-        margin: 0;
-        font-family: 'Segoe UI', sans-serif;
-        font-size: 0.55rem;
-        letter-spacing: 0.28em;
-        color: rgba(217,164,65,0.8);
-        text-transform: uppercase;
-        filter: drop-shadow(0 2px 0 rgba(0,0,0,0.65));
       }
 
       /* Progress bar */
@@ -171,8 +165,7 @@
     <div id="splash">
       <div id="splash-inner">
         <div id="splash-logo-wrap">
-          <div id="splash-logo" aria-label="One Piece TCG"></div>
-          <p id="splash-sub">Online</p>
+          <div id="splash-logo" aria-label="OPTCG YoHoHo!"></div>
         </div>
 
         <div id="splash-progress-wrap">

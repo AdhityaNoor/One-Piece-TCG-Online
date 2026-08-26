@@ -25,11 +25,11 @@ export function SplashScreen({ progress }: SplashScreenProps) {
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
           <div
-            aria-label="One Piece TCG"
-            className="h-[4.7rem] w-[min(82vw,36rem)] bg-[linear-gradient(180deg,_#ffe17a_0%,_#d9a441_50%,_#8e5b12_100%)] drop-shadow-[0_7px_0_rgba(0,0,0,0.65)] sm:h-[6.6rem] sm:w-[min(76vw,48rem)]"
+            aria-label="OPTCG YoHoHo!"
+            className="aspect-[218.92/77.48] h-[5.6rem] max-w-[86vw] bg-[linear-gradient(180deg,_#ffe17a_0%,_#d9a441_50%,_#8e5b12_100%)] drop-shadow-[0_7px_0_rgba(0,0,0,0.65)] sm:h-[7.8rem]"
             style={{
-              WebkitMaskImage: 'url(/ui/logo_op.png)',
-              maskImage: 'url(/ui/logo_op.png)',
+              WebkitMaskImage: 'url(/ui/new-icon.svg)',
+              maskImage: 'url(/ui/new-icon.svg)',
               WebkitMaskPosition: 'center',
               maskPosition: 'center',
               WebkitMaskRepeat: 'no-repeat',
@@ -38,9 +38,6 @@ export function SplashScreen({ progress }: SplashScreenProps) {
               maskSize: 'contain',
             }}
           />
-          <p className="text-[0.55rem] tracking-[0.28em] text-gold/80 drop-shadow-[0_2px_0_rgba(0,0,0,0.65)]">
-            Online
-          </p>
         </div>
 
         {/* Progress bar */}

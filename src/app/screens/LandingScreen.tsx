@@ -65,7 +65,7 @@ export function LandingScreen() {
       <LandingBackdrop />
 
       {stage === 'start' ? (
-        <div className="relative flex h-full flex-col items-center justify-center gap-10 overflow-hidden">
+        <div className="relative flex h-full flex-col items-center justify-center gap-16 overflow-hidden">
           <BrandLogo />
           <nav className="relative z-10 flex w-full flex-col items-center gap-3" aria-label="Landing">
             <CanvasMenuButton label="Start" prominence="primary" onClick={() => goTo('login')} />

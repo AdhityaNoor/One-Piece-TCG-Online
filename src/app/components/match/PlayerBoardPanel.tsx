@@ -327,6 +327,56 @@ function maskStyle(src: string, size: string): CSSProperties {
 const COMPASS_OVERHANG = '24%';
 
 /**
+ * The printed stock every mat is laid on. Texture only: it is here for the
+ * grain of the paper, not to be read as a map.
+ *
+ * Blended rather than stacked underneath. The colour wash is translucent by
+ * design (0.88 -> 0.70, see cardColors.ts), so laying bright cream parchment
+ * behind it shows through as brightness and warmth and shifts every Leader
+ * colour off the value it was tuned to — purple went pink, green went yellow.
+ * Greyscaling the art first and blending it in soft-light instead applies only
+ * its LIGHT and DARK, so the grain embosses into whatever colour the mat
+ * already is and the palette is left alone.
+ */
+const MAT_TEXTURE = '/ui/bg_mv.webp';
+const MAT_TEXTURE_STRENGTH = 0.55;
+/**
+ * The art averages 81% luminance, and soft-light lightens wherever its source
+ * sits above mid-grey — used raw it washes the mat out, the same problem as
+ * stacking it behind the wash, reached by a different route. So the source is
+ * pulled down until the blend breaks even, and contrast() puts back the spread
+ * that pulling down costs. What survives is the art's variation around its own
+ * average: the grain, and nothing else.
+ *
+ * 0.46, not the 0.619 that would centre the mean arithmetically. Soft-light's
+ * curve is not symmetric about mid-grey and these mats are mostly dark, so the
+ * break-even point sits below it. Measured across the four extremes of the
+ * palette (purple/green/black/red), 0.46 leaves the mat's mean colour within
+ * ~3/255 of untextured; arithmetic centring drifts it four times as far.
+ */
+const MAT_TEXTURE_FILTER = 'grayscale(1) brightness(0.46) contrast(1.615)';
+
+/** The mat stock, behind every mark and every card. */
+function MatTexture() {
+  return (
+    <div
+      aria-hidden
+      data-mat-texture
+      className="pointer-events-none absolute inset-0 z-0"
+      style={{
+        backgroundImage: `url(${MAT_TEXTURE})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        filter: MAT_TEXTURE_FILTER,
+        mixBlendMode: 'soft-light',
+        opacity: MAT_TEXTURE_STRENGTH,
+      }}
+    />
+  );
+}
+
+/**
  * The compass, hung off the mat's own top-right corner at the mat's full
  * height. Square art, so the width follows from the height.
  *
@@ -1183,6 +1233,11 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
         className="relative grid h-full w-full flex-1 gap-2 overflow-hidden rounded-xl border border-white/10 p-2 shadow-inner shadow-black/30"
         style={{
           backgroundImage: matShadeGradient(leaderCard?.colors ?? []),
+          // The texture layer below blends with this background and must not
+          // reach past it to the page. Without isolation the mat's own
+          // translucency would let the blend mix with whatever is behind the
+          // board as well.
+          isolation: 'isolate',
           // Both of these exist to stop the mat's own border bleeding the
           // WRONG colour. A background-image's default box is the PADDING box
           // (background-origin) while it paints out to the BORDER box
@@ -1201,8 +1256,9 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
           gridTemplateRows: `repeat(3, minmax(${CARD_ROW_TRACK},1fr))`,
         }}
       >
-        {/* Print first, so every cell below paints over it whatever its own
-            stacking context does. */}
+        {/* Stock, then print, then the cells — in that order, so each paints
+            over the last whatever its own stacking context does. */}
+        <MatTexture />
         <MatCompass reverseRows={reverseRows} />
         {lifeCell}
         {donDeckCell}

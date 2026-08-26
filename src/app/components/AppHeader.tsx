@@ -131,10 +131,10 @@ export function AppHeader() {
         />
         <span
           aria-hidden="true"
-          className="relative block h-9 w-auto aspect-[562/145] bg-white sm:h-12"
+          className="relative block aspect-[218.92/77.48] h-[2rem] w-auto bg-white sm:h-[2.8rem]"
           style={{
-            WebkitMaskImage: 'url(/ui/logo_op.png)',
-            maskImage: 'url(/ui/logo_op.png)',
+            WebkitMaskImage: 'url(/ui/new-icon.svg)',
+            maskImage: 'url(/ui/new-icon.svg)',
             WebkitMaskPosition: 'center',
             maskPosition: 'center',
             WebkitMaskRepeat: 'no-repeat',

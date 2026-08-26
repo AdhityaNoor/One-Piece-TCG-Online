@@ -1,5 +1,5 @@
 /**
- * The masked gold "One Piece" logo + "Online" wordmark. Extracted out of
+ * The masked gold OPTCG YoHoHo! lockup. Extracted out of
  * MainMenuScreen so the pre-auth landing flow (LandingScreen's Start stage)
  * can show the exact same mark pixel-for-pixel — the point of merging
  * Start/Login/Signup into "the landing page" is that this logo never
@@ -11,27 +11,43 @@
  * callers (MainMenuScreen, LandingScreen) already wrap this in a
  * `relative flex ... items-center justify-center` container.
  */
+/**
+ * The shadow under the mark, on a WRAPPER rather than on the masked element.
+ *
+ * `mask` is applied after `filter` in the rendering pipeline, so a filter set
+ * on the masked element has its own output clipped away by that same mask —
+ * which is why the identical drop-shadow this component used to carry inline
+ * rendered nothing at all. On a wrapper the filter sees an already-masked
+ * glyph and follows its alpha.
+ */
+const MARK_SHADOW = 'drop-shadow(0 7px 0 rgba(0,0,0,0.65))';
+
 export function BrandLogo() {
   return (
-    <div className="flex flex-col items-center gap-4" aria-label="One Piece Online">
+    <div className="flex flex-col items-center" aria-label="OPTCG YoHoHo!">
       {/* Gold glow behind logo */}
       <div className="absolute h-16 w-[min(72vw,44rem)] bg-brand/40 blur-3xl" aria-hidden="true" />
-      <span
-        aria-hidden="true"
-        className="relative block h-[4.7rem] w-[min(82vw,36rem)] bg-[linear-gradient(180deg,_#ffe17a_0%,_#d9a441_50%,_#8e5b12_100%)] drop-shadow-[0_7px_0_rgba(0,0,0,0.65)] sm:h-[6.6rem] sm:w-[min(76vw,48rem)] md:h-[8rem] md:w-[min(72vw,58rem)]"
-        style={{
-          WebkitMaskImage: 'url(/ui/logo_op.png)',
-          maskImage: 'url(/ui/logo_op.png)',
-          WebkitMaskPosition: 'center',
-          maskPosition: 'center',
-          WebkitMaskRepeat: 'no-repeat',
-          maskRepeat: 'no-repeat',
-          WebkitMaskSize: 'contain',
-          maskSize: 'contain',
-        }}
-      />
-      <span className="relative block font-heading text-[2rem] font-black uppercase tracking-[0.45em] text-gold drop-shadow-[0_5px_0_rgba(0,0,0,0.7)] sm:text-[2.6rem] md:text-[3rem]">
-        Online
+      {/*
+        Sized by HEIGHT against the art's own aspect ratio, rather than by a
+        width the mask then fits inside. The old lockup was one wide line and
+        this one is two stacked, so a shared width box would have rendered it
+        at an unrelated size; pinning the box to the artwork's ratio makes one
+        number decide how big the mark is.
+      */}
+      <span aria-hidden="true" className="relative block leading-none" style={{ filter: MARK_SHADOW }}>
+        <span
+          className="block aspect-[218.92/77.48] h-[7.28rem] max-w-[86vw] bg-[linear-gradient(180deg,_#ffe17a_0%,_#d9a441_50%,_#8e5b12_100%)] sm:h-[10.14rem] md:h-[12.35rem]"
+          style={{
+            WebkitMaskImage: 'url(/ui/new-icon.svg)',
+            maskImage: 'url(/ui/new-icon.svg)',
+            WebkitMaskPosition: 'center',
+            maskPosition: 'center',
+            WebkitMaskRepeat: 'no-repeat',
+            maskRepeat: 'no-repeat',
+            WebkitMaskSize: 'contain',
+            maskSize: 'contain',
+          }}
+        />
       </span>
     </div>
   );
