@@ -76,19 +76,20 @@ export function DonStack({ label, playerId, cards, orientation, selectable, sele
         <>
           {/* Anchor for card-flight animations targeting an empty pile, kept
               at a real chip's size and position so a DON!! flying in lands
-              where the first chip will actually appear. */}
+              where the first chip will actually appear.
+
+              This is ALL an empty half draws. The Cost Area is one zone on the
+              play sheet, so its empty state is one watermark across the whole
+              row (PlayerBoardPanel's donArea) rather than a dashed "None" box
+              per half — two of which said the same thing twice and drew a
+              boundary between halves that the printed box deliberately does
+              not have. */}
           <div
             aria-hidden="true"
             data-board-card-anchor
             className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2"
             style={{ width: cqh(150), height: cqh(210) }}
           />
-          <div
-            className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-md border border-dashed border-white/15 text-[8px] font-bold uppercase text-white/20"
-            style={{ width: cqh(150), height: cqh(210) }}
-          >
-            None
-          </div>
         </>
       ) : (
         <>

@@ -21,7 +21,6 @@ import { ZoneSection } from './ZoneSection';
 import { CardChoiceGallery } from './CardChoiceGallery';
 import { CardOrderStrip } from './CardOrderStrip';
 import { defaultOrder, isOrderingChoice } from './cardOrdering';
-import { StlCoinCanvas, COIN_FLIP_DURATION_MS } from './StlCoinCanvas';
 import { isDonReturnChoice } from './donChoiceUtils';
 import { isFieldCardChoice } from './fieldChoiceUtils';
 import {
@@ -49,212 +48,6 @@ export interface PendingChoicePromptProps {
   images: Record<string, string | null>;
 }
 
-type CoinSide = 'jollyRoger' | 'sunnyGo';
-
-function oppositeSide(side: CoinSide): CoinSide {
-  return side === 'jollyRoger' ? 'sunnyGo' : 'jollyRoger';
-}
-
-function coinSideLabel(side: CoinSide | null): string {
-  if (side === 'jollyRoger') return 'Jolly Roger';
-  if (side === 'sunnyGo') return 'Sunny Go';
-  return '';
-}
-
-function TossCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const context = canvas.getContext('2d');
-    if (!context) return;
-
-    let width = 0;
-    let height = 0;
-    let frame = 0;
-    let animationFrame = 0;
-
-    const streaks = Array.from({ length: 34 }, (_, index) => ({
-      x: (index * 157) % 1800,
-      y: (index * 91) % 900,
-      length: 90 + ((index * 43) % 280),
-      speed: 0.28 + ((index * 13) % 18) / 28,
-      alpha: 0.1 + ((index * 7) % 12) / 52,
-    }));
-
-    const sparks = Array.from({ length: 120 }, (_, index) => ({
-      x: (index * 83) % 1800,
-      y: (index * 127) % 900,
-      size: 1 + ((index * 5) % 4),
-      speed: 0.18 + ((index * 19) % 18) / 40,
-      color: index % 3 === 0 ? 'rgba(255,255,255,0.55)' : index % 3 === 1 ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.25)',
-    }));
-
-    const resize = (): void => {
-      const ratio = window.devicePixelRatio || 1;
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas.width = Math.floor(width * ratio);
-      canvas.height = Math.floor(height * ratio);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    };
-
-    const draw = (): void => {
-      context.clearRect(0, 0, width, height);
-
-      const vignette = context.createRadialGradient(width * 0.5, height * 0.46, 0, width * 0.5, height * 0.46, Math.max(width, height) * 0.72);
-      vignette.addColorStop(0, 'rgba(255,255,255,0.06)');
-      vignette.addColorStop(0.42, 'rgba(7,17,38,0.18)');
-      vignette.addColorStop(1, 'rgba(3,7,19,0.72)');
-      context.fillStyle = vignette;
-      context.fillRect(0, 0, width, height);
-
-      context.save();
-      context.globalAlpha = 0.16;
-      context.strokeStyle = '#ffffff';
-      context.lineWidth = 1;
-      for (let x = -height; x < width + height; x += 108) {
-        context.beginPath();
-        context.moveTo(x, 0);
-        context.lineTo(x + height, height);
-        context.stroke();
-      }
-      context.restore();
-
-      for (const streak of streaks) {
-        const x = ((streak.x + frame * streak.speed) % (width + streak.length + 160)) - streak.length;
-        const y = streak.y % Math.max(height, 1);
-        const gradient = context.createLinearGradient(x, y, x + streak.length, y - 38);
-        gradient.addColorStop(0, 'rgba(255,255,255,0)');
-        gradient.addColorStop(0.48, `rgba(255,255,255,${streak.alpha * 0.45})`);
-        gradient.addColorStop(1, 'rgba(255,255,255,0)');
-        context.strokeStyle = gradient;
-        context.lineWidth = 3;
-        context.beginPath();
-        context.moveTo(x, y);
-        context.lineTo(x + streak.length, y - 38);
-        context.stroke();
-      }
-
-      for (const spark of sparks) {
-        const x = ((spark.x + frame * spark.speed) % (width + 30)) - 15;
-        const y = (spark.y + Math.sin((frame + spark.x) / 34) * 14) % Math.max(height, 1);
-        context.globalAlpha = 0.34;
-        context.fillStyle = spark.color;
-        context.fillRect(x, y, spark.size, spark.size);
-      }
-
-      context.globalAlpha = 1;
-      frame += 1;
-      animationFrame = window.requestAnimationFrame(draw);
-    };
-
-    resize();
-    draw();
-    window.addEventListener('resize', resize);
-
-    return () => {
-      window.cancelAnimationFrame(animationFrame);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-
-  return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true" />;
-}
-
-function MatchSetupCoin({ pick, result, resolved }: { pick: CoinSide | null; result: CoinSide | null; resolved: boolean }) {
-  return (
-    <StlCoinCanvas
-      result={result}
-      flipping={!!pick && !resolved}
-    />
-  );
-}
-
-function SetupTossOverlay({
-  decidingPlayerId,
-  pick,
-  resolved,
-  onPick,
-  onChoose,
-  errorBanner,
-}: {
-  decidingPlayerId: string;
-  pick: CoinSide | null;
-  resolved: boolean;
-  onPick: (side: CoinSide) => void;
-  onChoose: (goingFirst: boolean) => void;
-  errorBanner: ReactNode;
-}) {
-  const p1Won = decidingPlayerId === 'p1';
-  const result = pick ? (p1Won ? pick : oppositeSide(pick)) : null;
-  const canChoose = !!pick && resolved;
-
-  return (
-    <div className={`fixed inset-0 z-50 overflow-hidden text-white ${SETTINGS_PANEL_SCRIM}`}>
-      <TossCanvas />
-      <div className="pointer-events-none absolute inset-0 bg-black/20" />
-      <section className="pointer-events-auto relative z-10 flex h-full flex-col items-center justify-center px-5 text-center">
-        <p className={`mb-3 ${SETTINGS_PANEL_TITLE}`}>Starting Toss</p>
-        <h2 className="font-display text-[clamp(2rem,6vw,4.5rem)] font-black uppercase leading-[0.92] tracking-[0.04em] text-white/72">
-          Call It
-        </h2>
-        <p className={`mt-4 max-w-2xl ${SETTINGS_PANEL_BODY} sm:text-[12px]`}>
-          P1 calls Jolly Roger or Sunny Go. If correct, P1 chooses first or second. If wrong, P2 chooses.
-        </p>
-
-        <div className="my-8 flex min-h-[min(17vh,9rem)] items-center justify-center">
-          <MatchSetupCoin pick={pick} result={result} resolved={resolved} />
-        </div>
-
-        {!pick ? (
-          <ChoicePromptActionRow>
-            <ChoicePromptOption className="min-w-[13rem] flex-1" onClick={() => onPick('jollyRoger')}>
-              Jolly Roger
-            </ChoicePromptOption>
-            <ChoicePromptOption className="min-w-[13rem] flex-1" onClick={() => onPick('sunnyGo')}>
-              Sunny Go
-            </ChoicePromptOption>
-          </ChoicePromptActionRow>
-        ) : (
-          <div className={`w-full max-w-2xl p-3 ${SETTINGS_PANEL_SHELL}`}>
-            <p className={SETTINGS_PANEL_TITLE}>Toss Result</p>
-            <p className={`mt-2 ${SETTINGS_PANEL_LABEL}`}>P1 called {coinSideLabel(pick)}</p>
-            <p className={`mt-2 ${SETTINGS_PANEL_LABEL}`}>
-              {resolved ? (
-                <>Result: {coinSideLabel(result)}</>
-              ) : (
-                'Flipping...'
-              )}
-            </p>
-            {resolved && (
-              <p className={`mt-2 ${SETTINGS_PANEL_BODY}`}>
-                <span className={SETTINGS_PANEL_LABEL}>{decidingPlayerId}</span> won the toss and chooses who goes first.
-              </p>
-            )}
-            {errorBanner}
-            <div className="mt-3">
-              <ChoicePromptActionList>
-              <ChoicePromptOption disabled={!canChoose} onClick={() => onChoose(true)}>
-                Go First
-              </ChoicePromptOption>
-              <ChoicePromptOption disabled={!canChoose} onClick={() => onChoose(false)}>
-                Go Second
-              </ChoicePromptOption>
-              </ChoicePromptActionList>
-            </div>
-          </div>
-        )}
-
-        <div className="mt-8 h-px w-[min(34rem,72vw)] bg-white/10" />
-      </section>
-    </div>
-  );
-}
-
 function OpeningHandPreview({ cards }: { cards: CardView[] }) {
   return (
     <ChoicePromptInset title="Opening Hand">
@@ -275,19 +68,15 @@ function OpeningHandPreview({ cards }: { cards: CardView[] }) {
 
 export function PendingChoicePrompt({ state, defs, images }: PendingChoicePromptProps) {
   const dispatch = useMatchStore((s) => s.dispatch);
+  const playerNames = useMatchStore((s) => s.playerNames);
+  const decidingPlayerLabel = (playerId: string): string => playerNames[playerId] ?? playerId;
   const [error, setError] = useState<string[] | null>(null);
   const [selectedTrashId, setSelectedTrashId] = useState<string | null>(null);
   const [selectedIrIds, setSelectedIrIds] = useState<string[]>([]);
-  const [tossPick, setTossPick] = useState<CoinSide | null>(null);
-  const [tossResolved, setTossResolved] = useState(false);
 
   const setupStage = state.currentPhase === 'setup' ? state.setupState?.stage ?? null : null;
   const setupDecidingPlayerId = state.currentPhase === 'setup' ? state.setupState?.decidingPlayerId ?? null : null;
 
-  useEffect(() => {
-    setTossPick(null);
-    setTossResolved(false);
-  }, [setupStage, setupDecidingPlayerId]);
 
   function run(action: GameAction): void {
     const result = dispatch(action);
@@ -300,11 +89,6 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     }
   }
 
-  function callToss(side: CoinSide): void {
-    setTossPick(side);
-    setTossResolved(false);
-    window.setTimeout(() => setTossResolved(true), COIN_FLIP_DURATION_MS);
-  }
 
   const errorBanner = error && error.length > 0 ? <ChoicePromptError messages={error} /> : null;
 
@@ -312,34 +96,31 @@ export function PendingChoicePrompt({ state, defs, images }: PendingChoicePrompt
     const { setupState } = state;
 
     if (setupState.stage === 'awaitingGoingFirstChoice') {
+      // Who is standing here was already settled out of band — Rock-Paper-
+      // Scissors in VS AI and Casual/Ranked, a direct pick in Hot Seat (which
+      // answers this prompt automatically, so it is never seen there). All
+      // that remains is the 5-2-1-4 choice itself.
       return (
-        <SetupTossOverlay
-          decidingPlayerId={setupState.decidingPlayerId}
-          pick={tossPick}
-          resolved={tossResolved}
-          onPick={callToss}
-          onChoose={(goingFirst) => run({ type: 'CHOOSE_GOING_FIRST', actionId: createActionId(), playerId: setupState.decidingPlayerId, goingFirst })}
-          errorBanner={errorBanner}
-        />
+        <ChoicePromptShell title="Going First">
+          <ChoicePromptMessage>
+            <span className={SETTINGS_PANEL_LABEL}>{decidingPlayerLabel(setupState.decidingPlayerId)}</span> won the
+            throw and chooses whether to go first or second (5-2-1-4).
+          </ChoicePromptMessage>
+          {errorBanner}
+          <ChoicePromptActionList>
+            <ChoicePromptOption
+              onClick={() => run({ type: 'CHOOSE_GOING_FIRST', actionId: createActionId(), playerId: setupState.decidingPlayerId, goingFirst: true })}
+            >
+              Go First
+            </ChoicePromptOption>
+            <ChoicePromptOption
+              onClick={() => run({ type: 'CHOOSE_GOING_FIRST', actionId: createActionId(), playerId: setupState.decidingPlayerId, goingFirst: false })}
+            >
+              Go Second
+            </ChoicePromptOption>
+          </ChoicePromptActionList>
+        </ChoicePromptShell>
       );
-
-      /*
-            <p className="text-sm text-white/70">
-              <span className="font-bold text-white">{setupState.decidingPlayerId}</span> won the toss — going first or second? (5-2-1-4)
-            </p>
-            {errorBanner}
-            <div className="flex gap-2">
-              <Button variant="primary" onClick={() => run({ type: 'CHOOSE_GOING_FIRST', actionId: createActionId(), playerId: setupState.decidingPlayerId, goingFirst: true })}>
-                Go First
-              </Button>
-              <Button variant="secondary" onClick={() => run({ type: 'CHOOSE_GOING_FIRST', actionId: createActionId(), playerId: setupState.decidingPlayerId, goingFirst: false })}>
-                Go Second
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      );
-      */
     }
 
     if (setupState.stage === 'awaitingMulliganDecision' && setupState.goingFirstPlayerId && setupState.goingSecondPlayerId) {

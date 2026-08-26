@@ -20,7 +20,8 @@ import type { GameAction } from '../../engine/actions';
 import type { GameLogEntry } from '../../engine/logs/logEntry';
 import type { CardDefinitionLookup } from '../../engine/rules/shared';
 import type { SavedDeck } from '../../cards/decks/savedDeck';
-import type { ChatBroadcastPayload, RoomPhase, SeatView, StatePayload } from '../../../shared/multiplayer';
+import type { ChatBroadcastPayload, RoomPhase, RpsUpdatePayload, SeatView, StatePayload } from '../../../shared/multiplayer';
+import type { RpsChoice } from '../../../shared/rps';
 import { ClientMessage, ServerMessage } from '../../../shared/multiplayer';
 import {
   createRoom,
@@ -68,6 +69,16 @@ interface OnlineState {
   error: string | null;
   /** Table talk for the current room, oldest first. Never touches GameState/the engine. */
   chatMessages: ChatMessageView[];
+  /**
+   * Pre-game Rock-Paper-Scissors, mirrored from the server's broadcasts.
+   * Non-null from the moment both seats are ready until the match starts.
+   * Purely a view of the server's authoritative toss — the client never
+   * resolves a round itself, it only renders what the room reports and sends
+   * this seat's pick.
+   */
+  rps: RpsUpdatePayload | null;
+  /** This seat's pick for the round in `rps`, echoed locally so the UI can show it as locked before the server replies. */
+  rpsLocalChoice: RpsChoice | null;
 
   /** Real open rooms from the backend (replaces the old mock generator). */
   rooms: OpenRoomInfo[];
@@ -80,6 +91,8 @@ interface OnlineState {
   ready(deck: SavedDeck): void;
   unready(): void;
   sendIntent(action: GameAction): void;
+  /** Send this seat's Rock-Paper-Scissors pick for the current round. Ignored if no round is open or this seat already picked. */
+  sendRpsPick(choice: RpsChoice): void;
   sendChat(message: string): void;
   leave(): void;
 }
@@ -98,6 +111,8 @@ export const useOnlineStore = create<OnlineState>((set, get) => ({
   endResult: null,
   error: null,
   chatMessages: [],
+  rps: null,
+  rpsLocalChoice: null,
   rooms: [],
   loadingRooms: false,
 
@@ -141,6 +156,15 @@ export const useOnlineStore = create<OnlineState>((set, get) => ({
     activeRoom.send(ClientMessage.Intent, { action });
   },
 
+  sendRpsPick(choice) {
+    const { rps, rpsLocalChoice } = get();
+    if (!activeRoom || !rps || rps.resolved || rpsLocalChoice) return;
+    // Optimistic only in the sense of showing OUR OWN pick as locked; the
+    // server remains the only thing that decides the round.
+    set({ rpsLocalChoice: choice });
+    activeRoom.send(ClientMessage.RpsPick, { round: rps.round, choice });
+  },
+
   sendChat(message) {
     if (!activeRoom) return;
     const trimmed = message.trim();
@@ -168,6 +192,8 @@ export const useOnlineStore = create<OnlineState>((set, get) => ({
       endResult: null,
       error: null,
       chatMessages: [],
+      rps: null,
+      rpsLocalChoice: null,
     });
   },
 }));
@@ -185,7 +211,7 @@ async function connect(
   role: 'host' | 'guest',
   open: () => Promise<Room>,
 ): Promise<boolean> {
-  set({ status: 'connecting', role, error: null, logs: [], endResult: null, gameState: null, defs: {}, chatMessages: [] });
+  set({ status: 'connecting', role, error: null, logs: [], endResult: null, gameState: null, defs: {}, chatMessages: [], rps: null, rpsLocalChoice: null });
   try {
     const room = await open();
     activeRoom = room;
@@ -264,6 +290,14 @@ function wireRoom(room: Room, set: SetFn): void {
     set({ chatMessages: [...existing, entry].slice(-CHAT_HISTORY_LIMIT) });
   });
 
+  room.onMessage(ServerMessage.Rps, (payload: RpsUpdatePayload) => {
+    const previous = useOnlineStore.getState().rps;
+    // A new round (after a draw) clears this seat's remembered pick so the
+    // choices become selectable again.
+    const roundChanged = previous?.round !== payload.round;
+    set({ rps: payload, ...(roundChanged ? { rpsLocalChoice: null } : {}) });
+  });
+
   room.onMessage(ServerMessage.Rejected, (payload: { of: string; reasons: string[] }) => {
     set({ error: `${payload.of === 'ready' ? 'Deck' : 'Move'} rejected: ${payload.reasons.join('; ')}` });
   });
@@ -273,6 +307,8 @@ function wireRoom(room: Room, set: SetFn): void {
   });
 
   room.onMessage(ServerMessage.MatchStarted, () => {
+    // The toss is over; drop it so a later rematch in the same room starts clean.
+    set({ rps: null, rpsLocalChoice: null });
     useNavigationStore.getState().navigateTo({ screen: 'online-match' });
   });
 

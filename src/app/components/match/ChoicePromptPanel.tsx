@@ -10,6 +10,7 @@ import {
   SETTINGS_PANEL_LABEL,
   SETTINGS_PANEL_META,
   SETTINGS_PANEL_OPTION,
+  SETTINGS_PANEL_OPTION_LG,
   SETTINGS_PANEL_OPTION_DISABLED,
   SETTINGS_PANEL_SCRIM,
   SETTINGS_PANEL_SHELL,
@@ -39,9 +40,10 @@ export interface ChoicePromptShellProps {
  * brand new choice always starts visible; it only stays minimized across
  * re-renders of the SAME choice (progressive selection).
  *
- * NOT applied to SetupTossOverlay (the 5-2-1-4 coin-toss cinematic) — that
- * one doesn't use ChoicePromptShell at all and deliberately stays a
- * permanent full-screen sequence, see PendingChoicePrompt.tsx's doc comment.
+ * NOT applied to the pre-game Rock-Paper-Scissors (RpsToss.tsx) or the Hot
+ * Seat first-player pick — those replaced the old coin-toss cinematic, and
+ * like it they render their own permanent full-screen sequence rather than
+ * using ChoicePromptShell, so there is nothing there to minimize.
  */
 export function ChoicePromptShell({ title, children, maxWidthClassName = 'max-w-md' }: ChoicePromptShellProps) {
   const [minimized, setMinimized] = useState(false);
@@ -144,19 +146,28 @@ export function ChoicePromptOption({
   children,
   onClick,
   disabled,
+  size = 'sm',
   className,
 }: {
   children: ReactNode;
   onClick: () => void;
   disabled?: boolean;
+  /** 'lg' for full-screen choices (the pre-game toss); 'sm' everywhere else. */
+  size?: 'sm' | 'lg';
   className?: string;
 }) {
+  const large = size === 'lg';
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={[SETTINGS_PANEL_OPTION, SETTINGS_PANEL_OPTION_DISABLED, 'min-h-[2.5rem]', className ?? ''].join(' ')}
+      className={[
+        large ? SETTINGS_PANEL_OPTION_LG : SETTINGS_PANEL_OPTION,
+        SETTINGS_PANEL_OPTION_DISABLED,
+        large ? 'min-h-[3.6rem]' : 'min-h-[2.5rem]',
+        className ?? '',
+      ].join(' ')}
     >
       {children}
     </button>

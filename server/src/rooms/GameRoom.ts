@@ -49,7 +49,20 @@ import {
   type MatchEndedPayload,
   type ChatPayload,
   type ChatBroadcastPayload,
+  type RpsPickPayload,
+  type RpsUpdatePayload,
 } from '../../../shared/multiplayer';
+import {
+  applyRpsPick,
+  createRpsToss,
+  nextRpsRound,
+  rpsPublicView,
+  RPS_REVEAL_MS,
+  type RpsTossState,
+} from '../../../shared/rps';
+
+/** The two seats a toss is played between, in the order applyRpsPick expects. */
+const RPS_SIDES: readonly [string, string] = [SEAT_P1, SEAT_P2];
 
 const RECONNECT_WINDOW_SECONDS = 30;
 /** Ranked-only per-seat chess clock: 20 minutes, ticking only on that seat's own turn. */
@@ -80,6 +93,18 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
   private rankedSeasonId: string | null = null;
   private rankedParticipants: RankedRoomParticipant[] = [];
   private lastChatAt = new Map<string, number>();
+  /**
+   * Pre-game Rock-Paper-Scissors, live between "both seats ready" and "match
+   * started". Null at every other time. Its presence is what stops a seat
+   * un-readying out from under a round in progress (see handleUnready).
+   */
+  private rps: RpsTossState | null = null;
+  /**
+   * The pause between broadcasting a decided round and acting on it. Held so
+   * it can be cancelled: if a seat leaves during the reveal, the match must
+   * not start (or a new round open) for a room that no longer has two players.
+   */
+  private rpsRevealTimer: Delayed | null = null;
   /** Ranked-only chess-clock driver (see startRankedClock/tickRankedClock). Null in Casual/VS-CPU rooms. */
   private clockTimer: Delayed | null = null;
   private clockLastTickAt = 0;
@@ -102,6 +127,7 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
     this.onMessage(ClientMessage.Unready, (client) => this.handleUnready(client));
     this.onMessage(ClientMessage.Intent, (client, payload: IntentPayload) => this.handleIntent(client, payload));
     this.onMessage(ClientMessage.Chat, (client, payload: ChatPayload) => this.handleChat(client, payload));
+    this.onMessage(ClientMessage.RpsPick, (client, payload: RpsPickPayload) => this.handleRpsPick(client, payload));
 
     this.syncMetadata();
   }
@@ -185,28 +211,125 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
   private handleUnready(client: Client): void {
     if (this.state.phase !== 'lobby') return;
+    // Both decks are already committed and the toss is under way; letting one
+    // seat withdraw here would either strand the other mid-round or hand them a
+    // free re-roll after seeing that their opponent had locked in.
+    if (this.rps) return;
     const binding = this.bindings.get(client.sessionId);
     const seat = this.state.seats.get(client.sessionId);
     if (binding) binding.deck = null;
     if (seat) seat.ready = false;
   }
 
+  /**
+   * Both decks are in. The match does NOT start here any more — first the two
+   * seats play Rock-Paper-Scissors to decide which of them gets the 5-2-1-4
+   * going-first choice. startMatchWith() below is the half that actually
+   * builds the session, once that toss has a winner.
+   */
   private maybeStartMatch(): void {
     const bindings = Array.from(this.bindings.values());
     if (bindings.length < 2 || !bindings.every((b) => b.deck !== null)) return;
+    if (this.rps) return; // a toss is already running
 
     const p1 = bindings.find((b) => b.seatId === SEAT_P1);
     const p2 = bindings.find((b) => b.seatId === SEAT_P2);
     if (!p1?.deck || !p2?.deck) return;
 
-    const started = GameSession.start(p1.deck, p2.deck);
+    this.beginRpsRound(createRpsToss());
+  }
+
+  /** Open a fresh round and tell both seats. Round 1 opens the toss; later rounds follow a draw. */
+  private beginRpsRound(state: RpsTossState): void {
+    this.rps = state;
+    this.broadcastRps();
+  }
+
+  /**
+   * Publish the current round. Everything except `resolved` comes from
+   * rpsPublicView, which is the redacted projection — it carries who has
+   * locked in and never what they chose. Choices reach a client only via
+   * `resolved`, i.e. only once neither seat can still act on them.
+   */
+  private broadcastRps(resolved?: RpsUpdatePayload['resolved']): void {
+    if (!this.rps) return;
+    const view = rpsPublicView(this.rps, RPS_SIDES);
+    const payload: RpsUpdatePayload = {
+      round: view.round,
+      lockedSeatIds: view.lockedIds,
+      ...(resolved ? { resolved } : {}),
+    };
+    this.broadcast(ServerMessage.Rps, payload);
+  }
+
+  private handleRpsPick(client: Client, payload: RpsPickPayload): void {
+    const binding = this.bindings.get(client.sessionId);
+    if (!binding || !this.rps) return;
+
+    // applyRpsPick owns every way a pick can fail to count: wrong round (a
+    // click that raced a draw), unknown seat, malformed choice, or a seat
+    // trying to change an answer it already locked in.
+    const outcome = applyRpsPick(this.rps, RPS_SIDES, binding.seatId, payload?.round, payload?.choice);
+    if (outcome.kind === 'ignored') return;
+
+    this.rps = outcome.state;
+    if (outcome.kind === 'locked') {
+      this.broadcastRps();
+      return;
+    }
+
+    this.broadcastRps({ picks: outcome.picks, winnerSeatId: outcome.winnerId });
+
+    // Both clients need the resolved payload to actually be the current one
+    // for as long as the reveal takes to play. Advancing in this same tick
+    // would overwrite it before either player saw who threw what — the round
+    // would be decided by a panel that flickered.
+    const winnerId = outcome.winnerId;
+    const resolvedState = outcome.state;
+    this.scheduleAfterReveal(() => {
+      if (winnerId === null) {
+        this.beginRpsRound(nextRpsRound(resolvedState));
+        return;
+      }
+      this.startMatchWith(winnerId);
+    });
+  }
+
+  /** Run `next` once the reveal has had its time, replacing any pending one. */
+  private scheduleAfterReveal(next: () => void): void {
+    this.clearRpsRevealTimer();
+    this.rpsRevealTimer = this.clock.setTimeout(() => {
+      this.rpsRevealTimer = null;
+      // A departure during the reveal clears the toss; there is nothing left
+      // to advance, and the room has already dropped back to the lobby.
+      if (!this.rps) return;
+      next();
+    }, RPS_REVEAL_MS);
+  }
+
+  private clearRpsRevealTimer(): void {
+    this.rpsRevealTimer?.clear();
+    this.rpsRevealTimer = null;
+  }
+
+  private startMatchWith(decidingSeatId: string): void {
+    const bindings = Array.from(this.bindings.values());
+    const p1 = bindings.find((b) => b.seatId === SEAT_P1);
+    const p2 = bindings.find((b) => b.seatId === SEAT_P2);
+    if (!p1?.deck || !p2?.deck) return;
+
+    const started = GameSession.start(p1.deck, p2.deck, decidingSeatId);
     if (!started.ok) {
       this.broadcast(ServerMessage.Rejected, { of: 'ready', reasons: started.reasons } satisfies RejectedPayload);
       this.state.seats.forEach((s: SeatState) => (s.ready = false));
       bindings.forEach((b) => (b.deck = null));
+      this.rps = null;
+      this.clearRpsRevealTimer();
       return;
     }
 
+    this.rps = null;
+    this.clearRpsRevealTimer();
     this.session = started.session;
     this.startedAt = new Date();
     this.state.phase = 'in-game';
@@ -454,6 +577,15 @@ export class GameRoom extends Room<{ state: GameRoomState }> {
 
   async onLeave(client: Client, _code?: number): Promise<void> {
     await this.endMatchByDeparture(client);
+    // A departure before the match starts abandons any toss in progress. The
+    // remaining seat drops back to the lobby rather than waiting forever on a
+    // pick that can no longer arrive; a new opponent starts a fresh round 1.
+    if (this.state.phase === 'lobby' && this.rps) {
+      this.rps = null;
+      this.clearRpsRevealTimer();
+      this.state.seats.forEach((s: SeatState) => (s.ready = false));
+      this.bindings.forEach((b) => (b.deck = null));
+    }
     this.removeClient(client);
   }
 

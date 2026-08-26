@@ -284,6 +284,113 @@ const CARD_ROW_TRACK = BOARD_ZONE_TRACK;
 const MAT_MAX_WIDTH = `calc(${LIFE_COLUMN_TRACK} + ${cqh(5 * BOARD_ZONE_TRACK_PX)} + 72px)`;
 
 /**
+ * Printed-on-the-mat artwork. Both marks are monochrome silhouettes with an
+ * alpha channel, so they are drawn the way BrandLogo and RankBadge already
+ * draw this project's art: as a CSS mask over a painted box, not as an <img>.
+ * Drawn directly they would be solid black on an already-dark mat, i.e.
+ * invisible; as a mask, the colour is ours to choose and the ink can sit at a
+ * watermark's weight against any Leader colour underneath.
+ *
+ * Both are inert — `pointer-events-none` and aria-hidden — and both sit under
+ * every card. They are print on the mat, not board state.
+ *
+ * Orientation: a mat belongs to the player sitting at it. The top panel is
+ * the same mat rotated to face the other seat (that is what `reverseRows`
+ * models — Character toward the opponent, Life on the outer edge), so its
+ * print is rotated with it and reads upside-down from here, exactly as the
+ * opponent's real mat would across a table. Rotating by 180° also moves each
+ * mark to the point-reflected corner on its own, which is why the top panel
+ * anchors to the opposite corner rather than the mirrored one.
+ */
+const MAT_INK = 'rgba(255,255,255,0.1)';
+
+function maskStyle(src: string, size: string): CSSProperties {
+  return {
+    backgroundColor: MAT_INK,
+    WebkitMaskImage: `url(${src})`,
+    maskImage: `url(${src})`,
+    WebkitMaskRepeat: 'no-repeat',
+    maskRepeat: 'no-repeat',
+    WebkitMaskPosition: 'center',
+    maskPosition: 'center',
+    WebkitMaskSize: size,
+    maskSize: size,
+  };
+}
+
+/**
+ * How far the compass is pushed past the mat's corner, as a share of its own
+ * size. The mat clips it (overflow-hidden), so this is the fraction of the
+ * disc that runs off the edge — it reads as a big mark HUNG on the corner
+ * rather than a small one parked inside it.
+ */
+const COMPASS_OVERHANG = '24%';
+
+/**
+ * The compass, hung off the mat's own top-right corner at the mat's full
+ * height. Square art, so the width follows from the height.
+ *
+ * The overhang is a translate rather than negative offsets because percentage
+ * offsets resolve against the CONTAINER while a percentage translate resolves
+ * against the ELEMENT — only the second still means "a third of the compass"
+ * if the compass is ever resized. It also composes: applied after the 180°
+ * turn, the same translate pushes the opponent's copy off ITS top-right, which
+ * is this screen's bottom-left, with no second set of numbers to keep in sync.
+ */
+function MatCompass({ reverseRows }: { reverseRows: boolean }) {
+  const hang = `translate(${COMPASS_OVERHANG}, calc(-1 * ${COMPASS_OVERHANG}))`;
+  return (
+    <div
+      aria-hidden
+      data-mat-compass
+      className="pointer-events-none absolute z-0 aspect-square h-full"
+      style={{
+        ...maskStyle('/ui/optcgcompass.webp', 'contain'),
+        ...(reverseRows
+          ? { bottom: 0, left: 0, transform: `rotate(180deg) ${hang}` }
+          : { top: 0, right: 0, transform: hang }),
+      }}
+    />
+  );
+}
+
+/**
+ * The One Piece wordmark, in the Leader row's one genuinely empty pocket: the
+ * span between the Life column and the Leader card. Nothing is ever laid there
+ * — Stage and Deck pin to the far edge, the Leader is centred on the mat — so
+ * it is the only place on the mat where print is never covered by a card.
+ *
+ * The pocket's inner edge is the Leader card's near edge, which is why the
+ * bound is written off leaderCenterOffset rather than a guessed percentage: if
+ * the Leader ever moves, the wordmark's box follows it instead of sliding
+ * underneath it.
+ */
+const WORDMARK_SCALE = 0.7;
+
+function MatWordmark({ reverseRows, leaderCenterOffset }: { reverseRows: boolean; leaderCenterOffset: string }) {
+  const leaderNearEdge = `calc(50% + ${leaderCenterOffset} + ${BOARD_ZONE_TRACK} / 2)`;
+  // Scaled by transform rather than by shrinking the box. `contain` fits the
+  // art to whichever of the box's two axes runs out first — here that is the
+  // width — so trimming the height alone would barely move it, and trimming
+  // the width would mean re-deriving a pocket that is already correct.
+  // Scaling the rendered box is the one operation that means exactly what it
+  // says whichever axis is binding, and it keeps the art centred in the pocket.
+  const scale = `scale(${WORDMARK_SCALE})`;
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-y-0 z-0 my-auto h-1/2"
+      style={{
+        ...maskStyle('/ui/logo_op.png', 'contain'),
+        ...(reverseRows
+          ? { left: leaderNearEdge, right: '0.75rem', transform: `rotate(180deg) ${scale}` }
+          : { right: leaderNearEdge, left: '0.75rem', transform: scale }),
+      }}
+    />
+  );
+}
+
+/**
  * Thin pass-through wrapper around a Leader/Character BoardCardTile that
  * registers its own real DOM node (via registerEl) so PlayerBoardPanel can
  * get an accurate getBoundingClientRect() for anchoring AttachedDonHoverStack
@@ -861,6 +968,7 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
 
   const leaderRow = (
     <div className="relative min-h-0 h-full w-full">
+      <MatWordmark reverseRows={reverseRows} leaderCenterOffset={leaderCenterOffset} />
       {leaderGroup}
       {stageDeckGroup}
     </div>
@@ -927,7 +1035,7 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   const donArea = (
     <MatCell label="Cost Area" className="h-full w-full" labelClassName="sr-only" allowOverflow padding="px-2 py-0">
       <div
-        className="grid h-full min-h-0 w-full"
+        className="relative grid h-full min-h-0 w-full"
         style={{
           gridTemplateColumns: donTracks,
           // The split changes whenever a DON!! is played, rested or returned.
@@ -936,6 +1044,19 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
           transition: 'grid-template-columns 0.25s ease',
         }}
       >
+        {activeDon.length === 0 && restedDon.length === 0 && (
+          // Empty-state watermark, matching the Character Area's. It spans the
+          // whole row rather than either half because the Cost Area is one
+          // zone: which half a DON!! will land in is a fact about that DON!!,
+          // not two separate places to put one. Centred on the row, so it
+          // does not drift as the Active/Rested split changes.
+          <span
+            data-zone-empty-hint="costArea"
+            className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center font-display text-xl font-black uppercase tracking-[0.08em] text-white/20"
+          >
+            Cost Area
+          </span>
+        )}
         {reverseRows ? (
           <>
             {restedDonCell}
@@ -1059,7 +1180,7 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
   const mat = (
     <div className="flex min-h-0 flex-1 items-stretch justify-center overflow-hidden">
       <div
-        className="grid h-full w-full flex-1 gap-2 overflow-hidden rounded-xl border border-white/10 p-2 shadow-inner shadow-black/30"
+        className="relative grid h-full w-full flex-1 gap-2 overflow-hidden rounded-xl border border-white/10 p-2 shadow-inner shadow-black/30"
         style={{
           backgroundImage: matShadeGradient(leaderCard?.colors ?? []),
           // Both of these exist to stop the mat's own border bleeding the
@@ -1080,6 +1201,9 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
           gridTemplateRows: `repeat(3, minmax(${CARD_ROW_TRACK},1fr))`,
         }}
       >
+        {/* Print first, so every cell below paints over it whatever its own
+            stacking context does. */}
+        <MatCompass reverseRows={reverseRows} />
         {lifeCell}
         {donDeckCell}
         {/* relative z-10: characterRow must paint above the other rows whatever

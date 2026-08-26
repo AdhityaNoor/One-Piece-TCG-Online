@@ -14,7 +14,6 @@
  */
 import { validateAction, executeAction, type GameAction } from '../../../src/engine/actions';
 import { createPreGameState } from '../../../src/engine/setup';
-import { hashSeed } from '../../../src/engine/rng';
 import type { GameState } from '../../../src/engine/state';
 import type { CardDefinition } from '../../../src/engine/state/card';
 import type { CardDefinitionLookup } from '../../../src/engine/rules/shared';
@@ -66,16 +65,23 @@ export class GameSession {
 
   /**
    * Build a fresh pre-game state from the two seats' decks. `p1Deck` occupies
-   * SEAT_P1, `p2Deck` occupies SEAT_P2. The deciding player (who chooses to go
-   * first/second, an out-of-band step per rule 5-2-1-4-1) is derived from the
-   * seed, mirroring hotseat.
+   * SEAT_P1, `p2Deck` occupies SEAT_P2.
+   *
+   * `decidingPlayerId` — who chooses to go first or second, an out-of-band step
+   * per rule 5-2-1-4-1 — is supplied by the caller, which is GameRoom after the
+   * two seats have actually played Rock-Paper-Scissors. It used to be derived
+   * from the match seed here, which meant the client's pre-game animation was
+   * decoration over a result the server had already decided by itself.
    */
-  static start(p1Deck: SavedDeck, p2Deck: SavedDeck): MatchStartResult {
+  static start(p1Deck: SavedDeck, p2Deck: SavedDeck, decidingPlayerId: string): MatchStartResult {
     const p1Input = savedDeckToPlayerSetupInput(p1Deck, SEAT_P1);
     const p2Input = savedDeckToPlayerSetupInput(p2Deck, SEAT_P2);
 
+    if (decidingPlayerId !== SEAT_P1 && decidingPlayerId !== SEAT_P2) {
+      return { ok: false, reasons: [`decidingPlayerId must be a seat id, got '${decidingPlayerId}'.`] };
+    }
+
     const seed = `srv-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const decidingPlayerId = hashSeed(seed) % 2 === 0 ? SEAT_P1 : SEAT_P2;
 
     const result = createPreGameState(p1Input, p2Input, {
       decidingPlayerId,

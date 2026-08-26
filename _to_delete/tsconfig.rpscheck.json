@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": { "noEmit": true, "skipLibCheck": true },
+  "include": [
+    "shared/rps.ts",
+    "shared/multiplayer.ts",
+    "src/app/components/match/RpsToss.tsx",
+    "src/app/components/match/OnlineRpsToss.tsx",
+    "src/app/components/match/PreGameDecider.tsx",
+    "src/app/components/match/PendingChoicePrompt.tsx",
+    "src/app/store/onlineStore.ts"
+  ]
+}

@@ -25,6 +25,15 @@ export const SETTINGS_PANEL_INSET = 'border border-white/10 bg-white/[0.04] p-3'
 export const SETTINGS_PANEL_OPTION =
   'flex w-full items-center justify-center border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/68 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white';
 
+/**
+ * The same option as above at the scale a full-screen choice needs (the
+ * pre-game toss, the Hot Seat first-player pick). A separate string rather
+ * than extra utilities appended to the small one: two competing `text-[…]`
+ * classes on one element resolve by stylesheet order, not by source order.
+ */
+export const SETTINGS_PANEL_OPTION_LG =
+  'flex w-full items-center justify-center border border-white/10 bg-white/[0.04] px-5 py-3.5 text-[13px] font-black uppercase tracking-[0.16em] text-white/68 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white';
+
 export const SETTINGS_PANEL_OPTION_DISABLED =
   'disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-white/10 disabled:hover:bg-white/[0.04] disabled:hover:text-white/68';
 

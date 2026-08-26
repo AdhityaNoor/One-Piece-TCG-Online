@@ -397,7 +397,15 @@ interface MatchStoreState {
   onlineMode: boolean;
   onlineSendIntent: ((action: GameAction) => void) | null;
 
-  startMatch(deckA: SavedDeck, deckB: SavedDeck, presentation?: MatchPresentation): MatchStartResult;
+  /**
+   * `decidingPlayerId` is the winner of the out-of-band pre-game toss (rule
+   * 5-2-1-4-1) — Rock-Paper-Scissors for VS AI, a direct pick in Hot Seat.
+   * Resolved by the UI BEFORE this is called, because it is an INPUT to
+   * createPreGameState rather than something the engine can be asked for
+   * afterwards. Omitted only by callers with no toss of their own (Play Test,
+   * the tutorial), which fall back to the seat/seed derivation.
+   */
+  startMatch(deckA: SavedDeck, deckB: SavedDeck, presentation?: MatchPresentation, decidingPlayerId?: string): MatchStartResult;
   hydrateOnlineMatch(params: {
     state: GameState;
     defs: CardDefinitionLookup;
@@ -467,7 +475,7 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
   onlineMode: false,
   onlineSendIntent: null,
 
-  startMatch(deckA, deckB, presentation) {
+  startMatch(deckA, deckB, presentation, requestedDecidingPlayerId) {
     const p1Input = savedDeckToPlayerSetupInput(deckA, PLAYER_A_ID);
     const p2Input = savedDeckToPlayerSetupInput(deckB, PLAYER_B_ID);
     const defs = buildCardDefinitionLookup([deckA, deckB]);
@@ -515,15 +523,17 @@ export const useMatchStore = create<MatchStoreState>((set, get) => ({
     const seed = generateRandomId('seed');
 
     // 5-2-1-4-1: the going-first-or-second DECISION is explicitly out of the
-    // engine's scope ("no intervention of any kind is allowed"); resolving
-    // WHO gets to make that decision (the real-life coin-flip/RPS-or-similar
-    // step) is the same kind of out-of-band input. In hotseat it is derived
-    // from the match seed (reproducible pre-game flow). In a Casual match the
-    // local seat is made the deciding player, so this single-client build can
-    // always take the first pre-game decision itself rather than stalling on
-    // a not-yet-connected opponent — still a purely out-of-band choice.
+    // engine's scope ("no intervention of any kind is allowed"); resolving WHO
+    // gets to make that decision is the same kind of out-of-band input, and it
+    // now comes from a real Rock-Paper-Scissors round (VS AI) or a direct pick
+    // (Hot Seat), resolved by the UI before this call — see PreGameDecider.
+    //
+    // The fallback behind it serves callers that have no toss at all: Play
+    // Test and the tutorial build a board directly. It keeps the previous
+    // behaviour (local seat if there is one, else seed-derived) so those flows
+    // are untouched.
     const decidingPlayerId =
-      localPlayerId ?? (hashSeed(seed) % 2 === 0 ? PLAYER_A_ID : PLAYER_B_ID);
+      requestedDecidingPlayerId ?? localPlayerId ?? (hashSeed(seed) % 2 === 0 ? PLAYER_A_ID : PLAYER_B_ID);
 
     const result = createPreGameState(p1Input, p2Input, {
       decidingPlayerId,

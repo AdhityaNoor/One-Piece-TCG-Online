@@ -43,7 +43,10 @@ import {
   MatchChatPanel,
   PendingChoicePrompt,
   PhaseIndicator,
+  OnlineRpsToss,
   PlayerBoardPanel,
+  PreGameDecider,
+  type PreGameDecision,
   ReportBugModal,
   TrashGalleryModal,
   useBoardSelection,
@@ -52,7 +55,7 @@ import { SETTINGS_PANEL_SHELL, SETTINGS_PANEL_TITLE } from '../components/settin
 import { useCpuTurnController } from '../hooks/useCpuTurnController';
 import { useCurrentScreen, useNavigationStore } from '../store/navigationStore';
 import { useSavedDecksStore } from '../store/savedDecksStore';
-import { useMatchStore } from '../store/matchStore';
+import { createActionId, PLAYER_A_ID, PLAYER_B_ID, useMatchStore } from '../store/matchStore';
 import { useMatchSetupStore } from '../store/matchSetupStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useOnlineStore } from '../store/onlineStore';
@@ -240,11 +243,22 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     return () => document.documentElement.classList.remove('op-match-screen-active');
   }, [isMatchScreen]);
 
+  // The out-of-band pre-game toss (5-2-1-4-1) has to be settled BEFORE the
+  // match starts, because its winner is an input to createPreGameState. Null
+  // until the player has thrown (VS AI) or picked a first player (Hot Seat);
+  // the decider overlay below fills it in and the start effect then runs.
+  // Keyed by deck pairing so navigating into a different match asks again
+  // rather than silently reusing the last match's winner.
+  const [preGameDecision, setPreGameDecision] = useState<{ key: string; decision: PreGameDecision } | null>(null);
+  const preGameKey = `${deckIdA ?? ''}|${deckIdB ?? ''}|${presentationKey}`;
+  const decisionForThisMatch = preGameDecision?.key === preGameKey ? preGameDecision.decision : null;
+
   // Start (or restart, if navigated here with a different deck pairing) the
   // engine match exactly once per distinct {deckIdA, deckIdB} pair — never
   // on every render (startMatch mints a fresh GameState + RNG seed).
   useEffect(() => {
     if (!deckIdA || !deckIdB) return;
+    if (!decisionForThisMatch) return; // waiting on the toss
     const alreadyStarted =
       startedWithDeckIds?.a === deckIdA &&
       startedWithDeckIds?.b === deckIdB &&
@@ -257,11 +271,28 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
         deckAResult.deck,
         deckBResult.deck,
         presentation,
+        decisionForThisMatch.decidingPlayerId,
       );
     }
     // presentationKey stands in for the presentation object (stable string).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deckIdA, deckIdB, presentationKey, startedWithDeckIds, load, startMatch]);
+  }, [deckIdA, deckIdB, presentationKey, startedWithDeckIds, load, startMatch, decisionForThisMatch]);
+
+  // Hot Seat already answered "who goes first", so the 5-2-1-4 prompt is
+  // answered for them instead of asking the same question twice. Every other
+  // mode leaves it to the player who won the toss, exactly as before.
+  const dispatchMatchAction = useMatchStore((s) => s.dispatch);
+  const autoGoingFirstFor = decisionForThisMatch?.autoGoingFirst ? decisionForThisMatch.decidingPlayerId : null;
+  const setupStageForAuto = matchState?.currentPhase === 'setup' ? matchState.setupState?.stage ?? null : null;
+  useEffect(() => {
+    if (!autoGoingFirstFor || setupStageForAuto !== 'awaitingGoingFirstChoice') return;
+    dispatchMatchAction({
+      type: 'CHOOSE_GOING_FIRST',
+      actionId: createActionId(),
+      playerId: autoGoingFirstFor,
+      goingFirst: true,
+    });
+  }, [autoGoingFirstFor, setupStageForAuto, dispatchMatchAction]);
 
   // Fires once per distinct startMatch() call (startedWithDeckIds is a fresh
   // object identity each time matchStore.startMatch() succeeds — see
@@ -491,10 +522,45 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
     return <DeckLoadErrorScreen reason={startError.join(' ')} onBack={handleQuit} />;
   }
 
+  // The pre-game toss (5-2-1-4-1) runs before there is a GameState to render,
+  // because its winner is an input to createPreGameState. Local modes only:
+  // Casual/Ranked toss on the server and render from the room's broadcasts
+  // (see OnlineRpsToss), and Play Test / the tutorial build a board directly
+  // with no toss at all.
+  if (!matchState && current.screen === 'match' && deckIdA && deckIdB && !decisionForThisMatch) {
+    const seatIds: readonly [string, string] = [PLAYER_A_ID, PLAYER_B_ID];
+    const localSeat = presentation?.mode === 'cpu' ? (presentation.localPlayerId ?? PLAYER_A_ID) : PLAYER_A_ID;
+    return (
+      <MatchGameShell title="Match">
+        <PreGameDecider
+          mode={presentation?.mode === 'cpu' ? 'cpu' : 'hotseat'}
+          playerIds={seatIds}
+          playerNames={{
+            [PLAYER_A_ID]: presentation?.playerNames?.[PLAYER_A_ID] ?? 'Player 1',
+            [PLAYER_B_ID]: presentation?.playerNames?.[PLAYER_B_ID] ?? 'Player 2',
+          }}
+          localPlayerId={localSeat}
+          onDecided={(decision) => setPreGameDecision({ key: preGameKey, decision })}
+        />
+      </MatchGameShell>
+    );
+  }
+
   if (!matchState) {
     return (
       <MatchGameShell title="Match">
-        {current.screen === 'online-match' ? <OnlineSyncLoading onCancel={handleQuit} /> : <p className="p-6 text-sm text-white/50">Starting match...</p>}
+        {current.screen === 'online-match' ? (
+          <>
+            {/* The room runs its toss between "both seats ready" and
+                "match started", so this is the window it renders in. It
+                returns null when no round is open, leaving the plain
+                connecting screen underneath. */}
+            <OnlineSyncLoading onCancel={handleQuit} />
+            <OnlineRpsToss />
+          </>
+        ) : (
+          <p className="p-6 text-sm text-white/50">Starting match...</p>
+        )}
       </MatchGameShell>
     );
   }
@@ -603,8 +669,8 @@ export function MatchScreen({ leftPanelOverride }: { leftPanelOverride?: ReactNo
   const canUseLocalActions = !isCpuTurn && (!isPinnedPerspective || actingPlayerId === localPlayerId);
   // Online-only (casual queue and ranked alike — both hydrate through the
   // same onlineMode/hydrateOnlineMatch path, see onlineStore.ts) loader
-  // popup. Scoped tightly to the pre-game "going first" coin-flip decision
-  // (Comprehensive Rules 5-2-1-4/5-2-1-5, engine: setupState.stage ===
+  // popup. Scoped tightly to the pre-game "going first" decision the RPS
+  // winner makes (Comprehensive Rules 5-2-1-4/5-2-1-5, engine: setupState.stage ===
   // 'awaitingGoingFirstChoice') — NOT the rest of the opponent's turn.
   // Originally this fired for the opponent's entire turn/Block/Counter
   // window (any time !canUseLocalActions), which meant it sat over the
@@ -2424,7 +2490,8 @@ function CpuThinkingOverlay({ opponentName }: { opponentName: string }) {
 /**
  * Online (casual queue + ranked) loader popup: a full-board overlay telling
  * the local player the opponent is currently deciding who goes first (the
- * pre-game coin-flip choice, setupState.stage === 'awaitingGoingFirstChoice'
+ * choice the pre-game Rock-Paper-Scissors winner makes, setupState.stage ===
+ * 'awaitingGoingFirstChoice'
  * — see the `opponentDeciding` computation in MatchScreen for the exact
  * gate). Deliberately narrow: this used to fire for the opponent's entire
  * turn/Block/Counter window too, which meant it sat over the board the
@@ -2432,7 +2499,7 @@ function CpuThinkingOverlay({ opponentName }: { opponentName: string }) {
  * live per-seat state stream and mostly just blocked the view. Ordinary
  * "not my turn" states are covered by WaitingForOpponent in the side Actions
  * panel instead; this overlay is reserved for the one genuinely blocking,
- * un-observable moment (their coin-flip decision has no board state to
+ * un-observable moment (their going-first decision has no board state to
  * watch happen). Gold spinner (vs. CPU's cyan) keeps this and
  * CpuThinkingOverlay visually distinct at a glance.
  */

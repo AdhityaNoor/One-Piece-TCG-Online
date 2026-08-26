@@ -18,6 +18,8 @@
  */
 import type { GameAction } from '../src/engine/actions/action';
 
+import type { RpsChoice } from './rps';
+
 /** Colyseus room registered under this name; both sides must agree. */
 export const GAME_ROOM_NAME = 'game';
 
@@ -62,6 +64,13 @@ export const ClientMessage = {
    * message to a real seat and rate-limit it.
    */
   Chat: 'chat',
+  /**
+   * This seat's Rock-Paper-Scissors pick for the pre-game round that decides
+   * WHICH player chooses to go first or second (5-2-1-4). Like Chat, and
+   * unlike Intent, it is not a GameAction: it happens before a GameState
+   * exists at all.
+   */
+  RpsPick: 'rps-pick',
 } as const;
 
 export interface ReadyPayload {
@@ -78,6 +87,16 @@ export interface IntentPayload {
 export interface ChatPayload {
   /** Raw text from the sender. Server trims/clamps before broadcasting. */
   message: string;
+}
+
+export interface RpsPickPayload {
+  /**
+   * Which round this pick is for. The server ignores a pick whose round does
+   * not match the one in progress, so a click that raced a draw resolution
+   * cannot be silently counted as an answer to the NEXT round.
+   */
+  round: number;
+  choice: RpsChoice;
 }
 
 // ---- server -> client messages ---------------------------------------------
@@ -101,6 +120,8 @@ export const ServerMessage = {
   MatchEnded: 'match-ended',
   /** A chat line, echoed to every seat in the room (including the sender). */
   Chat: 'chat',
+  /** Pre-game Rock-Paper-Scissors progress; see RpsUpdatePayload. */
+  Rps: 'rps',
 } as const;
 
 export interface StatePayload {
@@ -135,6 +156,33 @@ export interface LogPayload {
 export interface MatchEndedPayload {
   winnerId: string | null;
   reason: string;
+}
+
+/**
+ * State of the pre-game RPS, broadcast to both seats on every change.
+ *
+ * The split between `lockedSeatIds` and `resolved` is a rule, not a
+ * convenience: while a round is in progress the server sends only WHO has
+ * locked in, never WHAT they picked. Sending the first pick early would let
+ * the slower player read it off the wire and win every toss they wanted to.
+ * Choices appear only in `resolved`, once neither seat can still act on them.
+ */
+export interface RpsUpdatePayload {
+  /** 1-based. Increments on every draw. */
+  round: number;
+  /** Seats that have locked a pick for THIS round. Choices withheld — see above. */
+  lockedSeatIds: string[];
+  /** Present only once both seats have picked and the round is decided. */
+  resolved?: {
+    /** Both seats' picks, keyed by seat id, revealed together. */
+    picks: Record<string, RpsChoice>;
+    /**
+     * The seat that won the right to choose going first or second. `null` is a
+     * DRAW, not an error: another round follows and a fresh update with the
+     * next `round` arrives immediately after this one.
+     */
+    winnerSeatId: string | null;
+  };
 }
 
 export interface ChatBroadcastPayload {
