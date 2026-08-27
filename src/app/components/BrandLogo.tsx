@@ -22,7 +22,19 @@
  */
 const MARK_SHADOW = 'drop-shadow(0 7px 0 rgba(0,0,0,0.65))';
 
-export function BrandLogo() {
+export interface BrandLogoProps {
+  /**
+   * Tailwind height classes for the mark. Defaults to the hero size the Start screen and
+   * main menu use. Pass a smaller height rather than wrapping this in a `scale-*` — a CSS
+   * transform shrinks the mark VISUALLY but the element still occupies its full layout
+   * height, which is what pushed the sign-up form's submit button below the fold.
+   */
+  heightClassName?: string;
+}
+
+// NOTE: any prop added above must ALSO be destructured below — a prop that exists only on
+// the type is silently `undefined` at runtime with no type error.
+export function BrandLogo({ heightClassName = 'h-[7.28rem] sm:h-[10.14rem] md:h-[12.35rem]' }: BrandLogoProps = {}) {
   return (
     <div className="flex flex-col items-center" aria-label="OPTCG YoHoHo!">
       {/* Gold glow behind logo */}
@@ -36,7 +48,7 @@ export function BrandLogo() {
       */}
       <span aria-hidden="true" className="relative block leading-none" style={{ filter: MARK_SHADOW }}>
         <span
-          className="block aspect-[218.92/77.48] h-[7.28rem] max-w-[86vw] bg-[linear-gradient(180deg,_#ffe17a_0%,_#d9a441_50%,_#8e5b12_100%)] sm:h-[10.14rem] md:h-[12.35rem]"
+          className={['block aspect-[218.92/77.48] max-w-[86vw] bg-[linear-gradient(180deg,_#ffe17a_0%,_#d9a441_50%,_#8e5b12_100%)]', heightClassName].join(' ')}
           style={{
             WebkitMaskImage: 'url(/ui/new-icon.svg)',
             maskImage: 'url(/ui/new-icon.svg)',

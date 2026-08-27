@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import type { CardLibraryEntry } from '../../cards/library';
 import { CardDetailModal, CardImage } from '../components';
-import { PrintingVariantPicker } from './deckBuilder/PrintingVariantPicker';
+import { PrintingPickerButton, PrintingPickerModal } from './deckBuilder/PrintingPickerModal';
 
 export interface CardLibraryResultTileProps {
   entry: CardLibraryEntry;
@@ -16,6 +16,7 @@ export interface CardLibraryResultTileProps {
 
 export function CardLibraryResultTile({ entry, setName }: CardLibraryResultTileProps) {
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [artPickerOpen, setArtPickerOpen] = useState(false);
   const [selectedPrintingImageId, setSelectedPrintingImageId] = useState(entry.printings[0]?.printingImageId ?? entry.cardNumber);
 
   const selectedPrinting = entry.printings.find((printing) => printing.printingImageId === selectedPrintingImageId) ?? entry.printings[0] ?? null;
@@ -56,13 +57,10 @@ export function CardLibraryResultTile({ entry, setName }: CardLibraryResultTileP
             </span>
           </div>
 
-          <div className="opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100" onClick={(event) => event.stopPropagation()}>
-            <PrintingVariantPicker
-              cardNumber={entry.cardNumber}
-              printings={entry.printings}
-              selectedPrintingImageId={selectedPrintingImageId}
-              onSelect={setSelectedPrintingImageId}
-            />
+          <div className="pointer-events-none absolute inset-x-1 bottom-1 z-20 flex justify-center">
+            <div className="pointer-events-auto">
+              <PrintingPickerButton count={entry.printings.length} onClick={() => setArtPickerOpen(true)} />
+            </div>
           </div>
 
           <span className="pointer-events-none absolute inset-0 ring-0 ring-[rgb(var(--op-gold-rgb))] transition group-hover:ring-2" />
@@ -83,6 +81,15 @@ export function CardLibraryResultTile({ entry, setName }: CardLibraryResultTileP
         imageUrl={imageUrl}
         setName={selectedPrinting?.setName ?? setName}
         accentClassName="op-theme-blue"
+      />
+      <PrintingPickerModal
+        open={artPickerOpen}
+        onClose={() => setArtPickerOpen(false)}
+        cardName={entry.definition.name}
+        cardNumber={entry.cardNumber}
+        printings={entry.printings}
+        selectedPrintingImageId={selectedPrintingImageId}
+        onSelect={setSelectedPrintingImageId}
       />
     </>
   );

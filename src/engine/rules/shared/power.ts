@@ -618,8 +618,74 @@ function attackRestrictionBlocks(
   return true;
 }
 
+/**
+ * The first continuous record currently stopping `instanceId` from declaring an attack, or null.
+ *
+ * Exported so the board can NAME the cause ("from <source card>, until the end of your
+ * opponent's next turn") in a status tooltip without reimplementing 7-1-1-1 in the UI layer
+ * (project rule: only Layers 1-2 decide legality — Layer 3 may only read the verdict).
+ */
+export function findAttackRestrictionRecord(
+  state: GameState,
+  instanceId: string,
+  defs: CardDefinitionLookup = {},
+): ContinuousEffectRecord | null {
+  return state.continuousEffects.find((record) => attackRestrictionBlocks(record, state, instanceId, defs)) ?? null;
+}
+
 export function cannotAttack(state: GameState, instanceId: string, defs: CardDefinitionLookup = {}): boolean {
-  return state.continuousEffects.some((record) => attackRestrictionBlocks(record, state, instanceId, defs));
+  return findAttackRestrictionRecord(state, instanceId, defs) !== null;
+}
+
+/**
+ * The first continuous record currently stopping `blockerInstanceId` from activating [Blocker]
+ * (7-1-2-1), or null. Two shapes are checked, exactly as ACTIVATE_BLOCKER validates them:
+ *
+ *  - card-scoped (`appliesToBlockerInstanceId`): this Character cannot activate [Blocker] at all
+ *    for the record's duration, in any battle;
+ *  - attacker-scoped (`appliesToAttackerInstanceId`): only while THAT card is the attacker in the
+ *    current battle, optionally narrowed to blockers within a power/cost band.
+ *
+ * Attacker-scoped records therefore return null outside a battle, which is correct: the
+ * restriction does not exist until that attacker declares.
+ *
+ * Lives here (not in rules/battle/activateBlocker.ts) so the board projection can read it without
+ * importing the battle module's effect-firing dependency graph. activateBlocker.ts calls this.
+ */
+export function findBlockerRestrictionRecord(
+  state: GameState,
+  blockerInstanceId: string,
+  defs: CardDefinitionLookup = {},
+): ContinuousEffectRecord | null {
+  const battle = state.currentBattle;
+  for (const record of state.continuousEffects) {
+    const restriction = record.blockerRestriction;
+    if (!restriction) continue;
+    if (restriction.appliesToBlockerInstanceId !== undefined) {
+      if (restriction.appliesToBlockerInstanceId === blockerInstanceId) return record;
+      continue;
+    }
+    if (!battle || restriction.appliesToAttackerInstanceId !== battle.attackerInstanceId) continue;
+    if (
+      restriction.blockerPowerAtLeast === undefined &&
+      restriction.blockerPowerAtMost === undefined &&
+      restriction.blockerMaxCost === undefined
+    ) {
+      return record;
+    }
+    const power = computeCurrentPower(defs, state, blockerInstanceId);
+    const cost = computeCurrentCost(defs, state, blockerInstanceId);
+    if (restriction.blockerPowerAtLeast !== undefined && power < restriction.blockerPowerAtLeast) continue;
+    if (restriction.blockerPowerAtMost !== undefined && power > restriction.blockerPowerAtMost) continue;
+    if (restriction.blockerMaxCost !== undefined && cost > restriction.blockerMaxCost) continue;
+    return record;
+  }
+  return null;
+}
+
+/** Whether `blockerInstanceId` currently cannot activate [Blocker]. See findBlockerRestrictionRecord. */
+export function cannotActivateBlocker(state: GameState, blockerInstanceId: string, defs: CardDefinitionLookup = {}): boolean {
+  return findBlockerRestrictionRecord(state, blockerInstanceId, defs) !== null;
 }
 
 /** Trash-from-hand tax required to declare an attack with this attacker, or null. */

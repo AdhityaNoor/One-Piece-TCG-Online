@@ -46,15 +46,19 @@ function PreviewCardImage({ src, alt }: { src: string | null; alt: string }) {
   const [failed, setFailed] = useState(false);
   const showPlaceholder = src === null || failed;
 
+  // max-h + max-w + object-contain: the art shrinks to fit whichever axis runs out
+  // first, and never exceeds either. The previous shape put `aspect-[63/88] w-auto` on
+  // this wrapper, which DERIVED the width from the height — at 82vh on a 390px phone
+  // that computed to ~458px and the card was simply cut off by the panel edge.
   return (
-    <div className="flex h-full min-h-0 aspect-[63/88] w-auto max-w-full items-center justify-center">
+    <div className="flex h-full min-h-0 w-full items-center justify-center">
       {showPlaceholder ? (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-3 border border-[rgb(var(--op-gold-rgb)/0.15)] bg-black/30 text-slate-100/35">
+        <div className="flex aspect-[63/88] h-full max-h-full w-auto max-w-full flex-col items-center justify-center gap-3 border border-[rgb(var(--op-gold-rgb)/0.15)] bg-black/30 text-slate-100/35">
           <span className="h-16 w-10 border-2 border-current shadow-[4px_4px_0_rgba(255,255,255,0.08)]" aria-hidden="true" />
           <span className="px-4 text-center font-heading text-xs font-bold uppercase leading-tight tracking-[0.14em]">No image available</span>
         </div>
       ) : (
-        <img src={resolveAssetUrl(src) ?? undefined} alt={alt} loading="eager" onError={() => setFailed(true)} className="h-full max-h-full w-full max-w-full object-contain drop-shadow-[0_18px_34px_rgba(0,0,0,0.5)]" />
+        <img src={resolveAssetUrl(src) ?? undefined} alt={alt} loading="eager" onError={() => setFailed(true)} className="max-h-full max-w-full object-contain drop-shadow-[0_18px_34px_rgba(0,0,0,0.5)]" />
       )}
     </div>
   );
@@ -112,18 +116,18 @@ export function CardDetailModal({ open, onClose, definition, imageUrl, setName, 
       rootClassName={[mobileImageOnlyActive ? 'op-card-detail-modal-mobile-image' : '', accentClassName ?? ''].filter(Boolean).join(' ') || undefined}
       maxWidthClassName={['max-w-none rounded-none', mobileImageOnlyActive ? 'op-card-detail-panel-mobile-image' : ''].filter(Boolean).join(' ')}
       bodyClassName="h-full max-h-full overflow-hidden"
-      panelStyle={{ width: 'min(92vw, 76rem)', maxWidth: '92vw', height: '82vh', maxHeight: '82vh', borderRadius: 0 }}
+      panelStyle={{ width: 'min(94vw, 76rem)', maxWidth: '94vw', height: 'min(88dvh, 88vh)', maxHeight: 'min(88dvh, 88vh)', borderRadius: 0 }}
     >
       {definition && (
-        <div className={['relative grid h-full min-h-0 grid-cols-[auto_minmax(0,1fr)] gap-4 overflow-hidden border-2 border-[rgb(var(--op-gold-rgb)/0.35)] bg-[#13329a] p-4 text-slate-100 shadow-[0_18px_0_rgba(1,5,16,0.72),_0_34px_70px_rgba(0,0,0,0.46)]', mobileImageOnlyActive ? 'op-card-detail-content-mobile-image' : ''].filter(Boolean).join(' ')}>
+        <div className={['relative grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-y-auto overscroll-contain p-3 md:grid-cols-[auto_minmax(0,1fr)] md:grid-rows-1 md:gap-4 md:overflow-hidden md:p-4 border-2 border-[rgb(var(--op-gold-rgb)/0.35)] bg-[#13329a] text-slate-100 shadow-[0_18px_0_rgba(1,5,16,0.72),_0_34px_70px_rgba(0,0,0,0.46)]', mobileImageOnlyActive ? 'op-card-detail-content-mobile-image' : ''].filter(Boolean).join(' ')}>
           <div className="pointer-events-none absolute inset-0 bg-[url('/ui/bg.png')] bg-cover bg-center op-bg-tint opacity-60" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_10%,_rgb(var(--op-gold-rgb)/0.16),_transparent_28%),linear-gradient(180deg,_rgba(10,28,66,0.82),_rgba(3,9,24,0.96))]" />
 
-          <div className={['relative z-10 flex h-full min-h-0 w-fit items-center justify-center', mobileImageOnlyActive ? 'op-card-detail-image-mobile-image' : ''].filter(Boolean).join(' ')}>
+          <div className={['relative z-10 flex h-[38dvh] min-h-0 w-full items-center justify-center md:h-full md:w-fit', mobileImageOnlyActive ? 'op-card-detail-image-mobile-image' : ''].filter(Boolean).join(' ')}>
             <PreviewCardImage src={imageUrl} alt={definition.name} />
           </div>
 
-          <div className={['relative z-10 flex min-h-0 flex-col gap-4 overflow-hidden', mobileImageOnlyActive ? 'op-card-detail-info-mobile-image' : ''].filter(Boolean).join(' ')}>
+          <div className={['relative z-10 flex min-h-0 flex-col gap-3 md:gap-4 md:overflow-hidden', mobileImageOnlyActive ? 'op-card-detail-info-mobile-image' : ''].filter(Boolean).join(' ')}>
             <div className="border-l-4 border-[rgb(var(--op-gold-rgb))] bg-black/24 py-2 pl-3 pr-10 shadow-[0_10px_28px_rgba(0,0,0,0.22)]">
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[rgb(var(--op-gold-rgb))]">Card Preview</p>
               <h2 className="mt-1 text-2xl font-black uppercase tracking-[0.08em] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.65)]">{definition.name}</h2>
@@ -160,7 +164,7 @@ export function CardDetailModal({ open, onClose, definition, imageUrl, setName, 
               </div>
             )}
 
-            <div className="min-h-0 flex-1 overflow-y-auto border-2 border-cyan-200/15 bg-black/45 p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
+            <div className="min-h-0 flex-1 border-2 border-cyan-200/15 bg-black/45 p-4 md:overflow-y-auto shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
               <p className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-[rgb(var(--op-gold-rgb))]">Effect Text</p>
               <StyledCardEffectText text={abilityText} />
             </div>

@@ -11,7 +11,7 @@ import { CardImage } from '../CardImage';
 import { useCardFlightHidden } from '../../hooks/useCardFlightHidden';
 import { resolveAssetUrl } from '../../lib/assetUrl';
 import { cqh } from './boardScale';
-import type { CardView } from '../../../board/projection';
+import type { CardStatus, CardStatusKey, CardView } from '../../../board/projection';
 
 export type BoardCardTileSize = 'leader' | 'board' | 'field';
 
@@ -30,6 +30,13 @@ export interface BoardCardTileProps {
   dimmed?: boolean;
   /** Marks a card that has a usable [Activate: Main] effect right now. */
   activatable?: boolean;
+  /**
+   * This card is one of the cards the CURRENT prompt is asking the player to choose between
+   * (today: the [On Your Opponent's Attack] window). Distinct from `activatable`, which means
+   * "this card happens to have an effect you could use"; `highlighted` means "the game is waiting
+   * on you to pick one of these". Gets its own ring so the two never read as the same state.
+   */
+  highlighted?: boolean;
   attackable?: boolean;
   showBattlePower?: boolean;
   attachedDonSelectable?: boolean;
@@ -189,6 +196,57 @@ function KeywordLabel({ keyword, compact = false }: { keyword: KeywordKey; compa
 }
 
 /**
+ * Colour per status family. Red = "the engine will refuse this action" (attack / block); violet =
+ * "the card's own abilities are switched off" — two different kinds of bad news, so they are not
+ * both red. Red reuses the same #ff1f1f the negative power delta already uses on this tile, so the
+ * board keeps one vocabulary for "worse than printed".
+ */
+const STATUS_TONE: Record<CardStatusKey, string> = {
+  cannotAttack: 'border-[#ff1f1f] bg-[#3b0000]/92 text-[#ff6b6b] shadow-[0_10px_24px_rgba(0,0,0,0.55),0_0_18px_rgba(255,31,31,0.34)]',
+  cannotBlock: 'border-[#ff1f1f] bg-[#3b0000]/92 text-[#ff6b6b] shadow-[0_10px_24px_rgba(0,0,0,0.55),0_0_18px_rgba(255,31,31,0.34)]',
+  nullified: 'border-[#c084fc] bg-[#25073f]/92 text-[#e9d5ff] shadow-[0_10px_24px_rgba(0,0,0,0.55),0_0_18px_rgba(192,132,252,0.34)]',
+};
+
+/**
+ * One restriction label. The short `label` is what fits on a card; the full `detail` (which card
+ * imposed it and for how long) is the tooltip and the accessible name, because a bare "Can't
+ * attack" answers only half the player's question.
+ */
+function StatusLabel({ status, compact = false }: { status: CardStatus; compact?: boolean }) {
+  return (
+    <span
+      data-card-status={status.key}
+      title={status.detail}
+      aria-label={status.detail}
+      className={[
+        'pointer-events-none max-w-full truncate rounded-md border text-center font-black uppercase leading-none tracking-[0.04em]',
+        compact ? 'px-1.5 py-[2px] text-[0.5rem]' : 'px-2 py-1 text-[0.7rem]',
+        STATUS_TONE[status.key],
+      ].join(' ')}
+    >
+      {status.label}
+    </span>
+  );
+}
+
+/**
+ * Statuses stack vertically rather than sharing the keyword row: they are words, not icons, so
+ * two side by side would each be scaled to illegibility on a board-size tile.
+ */
+function StatusStack({ statuses, maxWidth, compact = false }: { statuses: readonly CardStatus[]; maxWidth: number; compact?: boolean }) {
+  return (
+    <div
+      className={['flex flex-col items-center', compact ? 'gap-[2px]' : 'gap-1'].join(' ')}
+      style={{ maxWidth: maxWidth > 0 ? maxWidth : undefined }}
+    >
+      {statuses.map((status) => (
+        <StatusLabel key={status.key} status={status} compact={compact} />
+      ))}
+    </div>
+  );
+}
+
+/**
  * Keyword labels stacked into one row at the full "other label" font size,
  * then uniformly scaled DOWN (never up) so the whole row fits the card width.
  * scrollWidth reports the un-transformed layout width, so re-measuring after a
@@ -261,6 +319,7 @@ export function BoardCardTile({
   selected,
   dimmed = false,
   activatable,
+  highlighted,
   attackable,
   showBattlePower,
   attachedDonSelectable,
@@ -285,6 +344,9 @@ export function BoardCardTile({
   // Keyword labels are hidden while the battle-power overlay is up so they
   // don't fight the big centered number during a battle.
   const keywordLabels = showBattlePower ? [] : activeKeywords(card);
+  // Same reasoning as keywordLabels: the battle-power overlay owns the centre of the tile while a
+  // battle is resolving, so statuses stand down for it rather than stacking on top of the number.
+  const statusLabels: readonly CardStatus[] = showBattlePower ? [] : card.statuses;
   // Card's rendered width, so the keyword row can scale down to fit it.
   const [rootRef, tileWidth] = useElementWidth<HTMLDivElement>();
   const attachedDonSelected = attachedDonSelectedCount > 0;
@@ -368,7 +430,17 @@ export function BoardCardTile({
             alt={card.name}
             className={[
               isField ? 'h-full w-full' : '',
-              selected ? 'ring-2 ring-amber-300' : activatable ? 'ring-2 ring-emerald-400' : attackable ? 'ring-2 ring-rose-400' : '',
+              // Priority: what you picked > what you are being asked to pick > what you could
+              // use > what could attack. A prompt outranks a passive affordance.
+              selected
+                ? 'ring-2 ring-amber-300'
+                : highlighted
+                  ? 'ring-4 ring-cyan-300 shadow-[0_0_28px_rgba(103,232,249,0.6)] animate-pulse'
+                  : activatable
+                    ? 'ring-2 ring-emerald-400'
+                    : attackable
+                      ? 'ring-2 ring-rose-400'
+                      : '',
             ].filter(Boolean).join(' ')}
           />
           {onZoom && (
@@ -430,13 +502,18 @@ export function BoardCardTile({
         </button>
       )}
 
-      {compactBadges && keywordLabels.length > 0 && (
-        <div className="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2">
-          <KeywordRow labels={keywordLabels} maxWidth={Math.max(0, compactCardWidth - 6)} compact />
+      {compactBadges && (keywordLabels.length > 0 || statusLabels.length > 0) && (
+        <div className="absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1">
+          {keywordLabels.length > 0 && (
+            <KeywordRow labels={keywordLabels} maxWidth={Math.max(0, compactCardWidth - 6)} compact />
+          )}
+          {statusLabels.length > 0 && (
+            <StatusStack statuses={statusLabels} maxWidth={Math.max(0, compactCardWidth - 6)} compact />
+          )}
         </div>
       )}
 
-      {!compactBadges && (visiblePowerDelta !== null || visibleCostDelta !== null || hasAttachedDon || keywordLabels.length > 0) && (
+      {!compactBadges && (visiblePowerDelta !== null || visibleCostDelta !== null || hasAttachedDon || keywordLabels.length > 0 || statusLabels.length > 0) && (
         <div className={['absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center', compactBadges ? 'gap-1' : 'gap-1.5'].join(' ')}>
           {visiblePowerDelta !== null && (
             <div
@@ -487,6 +564,10 @@ export function BoardCardTile({
           )}
 
           {keywordLabels.length > 0 && <KeywordRow labels={keywordLabels} maxWidth={Math.max(0, tileWidth * CARD_ASPECT - 6)} compact={compactBadges} />}
+
+          {statusLabels.length > 0 && (
+            <StatusStack statuses={statusLabels} maxWidth={Math.max(0, tileWidth * CARD_ASPECT - 6)} compact={compactBadges} />
+          )}
         </div>
       )}
 

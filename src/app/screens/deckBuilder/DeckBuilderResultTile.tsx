@@ -3,7 +3,7 @@ import { copyLimitForCard } from '../../../cards/decks';
 import { CardDetailModal, CardImage } from '../../components';
 import { useDeckBuilderStore } from '../../store/deckBuilderStore';
 import { useState } from 'react';
-import { PrintingVariantPicker } from './PrintingVariantPicker';
+import { PrintingPickerButton, PrintingPickerModal } from './PrintingPickerModal';
 
 export interface DeckBuilderResultTileProps {
   entry: CardLibraryEntry;
@@ -18,6 +18,7 @@ export interface DeckBuilderCardDragPayload {
 
 export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [artPickerOpen, setArtPickerOpen] = useState(false);
   const [selectedPrintingImageId, setSelectedPrintingImageId] = useState(entry.printings[0]?.printingImageId ?? entry.cardNumber);
   const leaderSelection = useDeckBuilderStore((state) => state.leaderSelection);
   const mainDeckSelections = useDeckBuilderStore((state) => state.mainDeckSelections);
@@ -101,34 +102,37 @@ export function DeckBuilderResultTile({ entry }: DeckBuilderResultTileProps) {
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
-                if (isLeaderCard) {
-                  handleSelect();
-                  return;
-                }
                 handleSelect();
               }}
               disabled={isLeaderCard ? isCurrentLeader && leaderSelection?.chosenPrintingImageId === selectedPrintingImageId : !hasLeader || atCopyLimit}
-              className="flex h-7 min-w-7 items-center justify-center border border-[rgb(var(--op-gold-rgb)/0.7)] bg-[rgb(var(--op-gold-rgb))] px-2 font-heading text-sm font-black text-black shadow-[0_5px_0_rgba(68,39,0,0.75)] transition hover:brightness-125 active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-45"
+              className="flex h-8 min-w-8 items-center justify-center border border-[rgb(var(--op-gold-rgb)/0.7)] bg-[rgb(var(--op-gold-rgb))] px-2 font-heading text-sm font-black text-black shadow-[0_5px_0_rgba(68,39,0,0.75)] transition hover:brightness-125 active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-45"
               title={isLeaderCard ? (isCurrentLeader ? 'Current leader' : 'Set leader') : 'Add one copy'}
             >
               {isLeaderCard ? 'Set' : '+'}
             </button>
           </div>
-          <div className="opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100" onClick={(event) => event.stopPropagation()}>
-            <PrintingVariantPicker
-              cardNumber={entry.cardNumber}
-              printings={entry.printings}
-              selectedPrintingImageId={activePrintingImageId}
-              onSelect={(printingImageId) => {
-                setSelectedPrintingImageId(printingImageId);
-                if (isCurrentLeader) setLeader(entry, printingImageId);
-              }}
-            />
+          {/* Alternate arts open a real picker instead of the old 28px-wide overlay strip. */}
+          <div className="pointer-events-none absolute inset-x-1 bottom-1 z-20 flex justify-center">
+            <div className="pointer-events-auto">
+              <PrintingPickerButton count={entry.printings.length} onClick={() => setArtPickerOpen(true)} />
+            </div>
           </div>
           <span className="pointer-events-none absolute inset-0 ring-0 ring-[rgb(var(--op-gold-rgb))] transition group-hover:ring-2" />
         </div>
       </div>
       <CardDetailModal open={zoomOpen} onClose={() => setZoomOpen(false)} definition={entry.definition} imageUrl={imageUrl} setName={selectedPrinting?.setName} accentClassName="op-theme-blue" />
+      <PrintingPickerModal
+        open={artPickerOpen}
+        onClose={() => setArtPickerOpen(false)}
+        cardName={entry.definition.name}
+        cardNumber={entry.cardNumber}
+        printings={entry.printings}
+        selectedPrintingImageId={activePrintingImageId}
+        onSelect={(printingImageId) => {
+          setSelectedPrintingImageId(printingImageId);
+          if (isCurrentLeader) setLeader(entry, printingImageId);
+        }}
+      />
     </>
   );
 }

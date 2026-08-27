@@ -34,10 +34,18 @@ export const OP17_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP17-002 Atmos — [Opponent's Turn] this Character gains +3000 power.
   { cardNumber: 'OP17-002', templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addPowerSelf', amount: 3000, duration: 'permanent', condition: { turn: 'opponent' } }] } },
 
-  // OP17-003 Izo — [On Play] if Leader is [Edward.Newgate] or {Land of Wano}:
+  // OP17-003 Izo — [Rush: Character]. [On Play] if Leader is [Edward.Newgate] or {Land of Wano}:
   //   give up to 1 opponent RESTED Character −6000 this turn.
-  //   ([Rush: Character] comes from the definition — see hasRush note at the bottom.)
-  { cardNumber: 'OP17-003', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderName', name: 'Edward.Newgate' }, { kind: 'leaderType', type: 'Land of Wano' }] }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, amount: -6000, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+  //   [Rush: Character] is granted here as a continuous keyword, NOT via the definition's
+  //   hasRush flag — that flag means full [Rush] (may also attack the Leader), which this
+  //   card does not have. See scripts/renormalize-scrape-keywords.mjs.
+  {
+    cardNumber: 'OP17-003',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'anyOf', gates: [{ kind: 'leaderName', name: 'Edward.Newgate' }, { kind: 'leaderType', type: 'Land of Wano' }] }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent', filter: { rested: true } }, amount: -6000, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   // OP17-004 Inuarashi & Nekomamushi — [On Play] up to 1 of your {Land of Wano}
   //   or "Whitebeard Pirates" Characters gains [Rush] this turn.
@@ -579,8 +587,18 @@ export const OP17_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP17-024 Howling Gab — [Banish] is a static definition flag; [On Play] rest up to 1 opponent Character.
   { cardNumber: 'OP17-024', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 1 }] } },
 
-  // OP17-027 Benn.Beckman — [On Play] if Leader is {Red-Haired Pirates}: draw 1, rest up to 2 opponent Characters.
-  { cardNumber: 'OP17-027', templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 2 }] } },
+  // OP17-027 Benn.Beckman — [Rush: Character]. [On Play] if Leader is {Red-Haired Pirates}:
+  //   draw 1, rest up to 2 opponent Characters.
+  //   [Rush: Character] is granted here as a continuous keyword, NOT via the definition's
+  //   hasRush flag — that flag means full [Rush] (may also attack the Leader), which this
+  //   card does not have. See scripts/renormalize-scrape-keywords.mjs.
+  {
+    cardNumber: 'OP17-027',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', gate: [{ kind: 'leaderType', type: 'Red-Haired Pirates' }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'rest', target: { group: 'characters', player: 'opponent' }, optional: true, maxTargets: 2 }] } },
+    ],
+  },
 
   // OP17-029 Hongo — [On Play] set up to 1 DON!! active, then rest up to 2 opponent Characters cost<=2.
   { cardNumber: 'OP17-029', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'setActiveControllerDon', maxTargets: 1 }, { fn: 'rest', target: { group: 'characters', player: 'opponent', filter: { maxCost: 2 } }, optional: true, maxTargets: 2 }] } },
@@ -687,10 +705,15 @@ export const OP17_ASSIGNMENTS: CardEffectAssignment[] = [
   //   your opponent places 1 card from their hand at the bottom of their deck (they choose).
   { cardNumber: 'OP17-047', templateId: 'ability', params: { timing: 'endOfTurn', gate: [{ kind: 'selfHand', atMost: 2 }], functions: [{ fn: 'moveCards', from: { zone: 'hand', player: 'opponent' }, to: { zone: 'deck', player: 'owner', position: 'bottom' }, minTargets: 1, maxTargets: 1, chooser: 'opponent' }] } },
 
-  // OP17-048 Shiki — one [Once Per Turn] budget shared across attacking and being attacked.
+  // OP17-048 Shiki — [Rush: Character], then one [Once Per Turn] budget shared across
+  //   attacking and being attacked.
+  //   [Rush: Character] is granted here as a continuous keyword, NOT via the definition's
+  //   hasRush flag — that flag means full [Rush] (may also attack the Leader), which this
+  //   card does not have. See scripts/renormalize-scrape-keywords.mjs.
   {
     cardNumber: 'OP17-048',
     templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent' }] } },
       { templateId: 'ability', params: { timing: 'whenAttacking', oncePerTurn: true, oncePerTurnKey: 'op17-048-rocks-debuff', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Rocks Pirates' }, optional: true }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' }] } },
       { templateId: 'ability', params: { timing: 'onOpponentsAttack', oncePerTurn: true, oncePerTurnKey: 'op17-048-rocks-debuff', functions: [{ fn: 'trashTypeFromHand', count: 1, filter: { typeIncludes: 'Rocks Pirates' }, optional: true }, { fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -3000, duration: 'duringThisTurn', optional: true, maxTargets: 1, ifPrevious: 'previousMovedAny' }] } },
     ],
@@ -749,8 +772,18 @@ export const OP17_ASSIGNMENTS: CardEffectAssignment[] = [
   //   Characters cost<=5 cannot attack until end of opponent's next End Phase.
   { cardNumber: 'OP17-065', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], functions: [{ fn: 'draw', amount: 1 }, { fn: 'preventAttack', target: { group: 'characters', player: 'opponent', filter: { maxCost: 5 } }, duration: 'endOfOpponentsTurn', optional: true, maxTargets: 2 }] } },
 
-  // OP17-069 Jack — [On Play] DON!! −1: if Leader is {Animal Kingdom Pirates}, opponent Character −2000 this turn.
-  { cardNumber: 'OP17-069', templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+  // OP17-069 Jack — [Rush: Character]. [On Play] DON!! −1: if Leader is {Animal Kingdom Pirates},
+  //   opponent Character −2000 this turn.
+  //   [Rush: Character] is granted here as a continuous keyword, NOT via the definition's
+  //   hasRush flag — that flag means full [Rush] (may also attack the Leader), which this
+  //   card does not have. See scripts/renormalize-scrape-keywords.mjs.
+  {
+    cardNumber: 'OP17-069',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', cost: [{ kind: 'donMinus', count: 1 }], gate: [{ kind: 'leaderType', type: 'Animal Kingdom Pirates' }], functions: [{ fn: 'addPower', target: { group: 'characters', player: 'opponent' }, amount: -2000, duration: 'duringThisTurn', optional: true, maxTargets: 1 }] } },
+    ],
+  },
 
   // OP17-074 Yamato — [On Play] add up to 1 RESTED DON!! from your DON!! deck.
   { cardNumber: 'OP17-074', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'addDonFromDeck', count: 1, rested: true }] } },

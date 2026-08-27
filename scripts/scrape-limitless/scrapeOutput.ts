@@ -85,7 +85,15 @@ function buildDefinition(cardNumber: string, en: ParsedCardPage, enName: string 
     life: en.life,
     counter: en.counter,
     hasTrigger: text.includes('[Trigger]'),
-    hasRush: text.includes('[Rush]') || text.includes('[Rush: Character]'),
+    // [Rush: Character] is a DIFFERENT keyword from [Rush]: it only lets the card
+    // attack CHARACTERS on the turn it is played, never the Leader. Folding it into
+    // hasRush granted unrestricted Rush — strictly more permissive than the card.
+    // The engine models it as the continuous keyword
+    // `canAttackCharactersWhileSummoningSick`, granted by a curated onEnterPlay
+    // ability, so it must NOT be a printed-keyword flag here. Note '[Rush: Character]'
+    // does not contain the substring '[Rush]', so the plain check below is already
+    // correct on its own.
+    hasRush: text.includes('[Rush]'),
     hasBlocker: text.includes('[Blocker]'),
     hasDoubleAttack: text.includes('[Double Attack]'),
     hasBanish: text.includes('[Banish]'),

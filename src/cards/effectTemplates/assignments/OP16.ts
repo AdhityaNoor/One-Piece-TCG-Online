@@ -724,7 +724,17 @@ export const OP16_ASSIGNMENTS: CardEffectAssignment[] = [
   // OP16-085 — [Blocker][On Play] Play {Land of Wano} cost ≤6 from trash other than [Kouzuki Momonosuke].
   { cardNumber: 'OP16-085', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'playFromTrash', filter: { category: 'character', typeIncludes: 'Land of Wano', maxCost: 6, excludeCardNames: ['Kouzuki Momonosuke'] } }] } },
 
-  { cardNumber: 'OP16-089', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, duration: 'duringThisTurn', optional: true }] } },
+  // OP16-089 — [Rush: Character][On Play] draw 2, trash 2, then up to 1 opponent Character −4 cost this turn.
+  //   [Rush: Character] is a continuous keyword grant, NOT the definition's hasRush flag —
+  //   that flag means full [Rush] (may also attack the Leader). See
+  //   scripts/renormalize-scrape-keywords.mjs.
+  {
+    cardNumber: 'OP16-089',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }, { fn: 'addCost', target: { group: 'characters', player: 'opponent' }, amount: -4, duration: 'duringThisTurn', optional: true }] } },
+    ],
+  },
 
   { cardNumber: 'OP16-090', templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrash', drawCount: 2, trashCount: 2 }, { fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCost: 1 } }, optional: true }] } },
 

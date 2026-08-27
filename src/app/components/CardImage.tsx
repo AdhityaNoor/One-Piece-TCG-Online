@@ -9,9 +9,19 @@ export interface CardImageProps {
   alt: string;
   className?: string;
   eager?: boolean;
+  /**
+   * Copy for the empty state. Defaults to "No image available", which is right when a
+   * card EXISTS but its art is missing — and wrong when the slot is empty on purpose
+   * (the deck builder's leader well, where it reads as a broken image rather than an
+   * invitation). Pass what the empty slot actually means there.
+   */
+  placeholderLabel?: string;
 }
 
-export function CardImage({ src, alt, className, eager }: CardImageProps) {
+// NOTE: every prop above must ALSO appear in the destructure below. A prop added to the
+// type but not destructured is `undefined` at runtime with no type error — that class of
+// omission blanked the screen once already (see DockHandCard).
+export function CardImage({ src, alt, className, eager, placeholderLabel }: CardImageProps) {
   const [failed, setFailed] = useState(false);
   const showPlaceholder = src === null || failed;
 
@@ -27,7 +37,7 @@ export function CardImage({ src, alt, className, eager }: CardImageProps) {
       {showPlaceholder ? (
         <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-100/35">
           <span className="h-8 w-5 border-2 border-current shadow-[3px_3px_0_rgba(255,255,255,0.08)]" aria-hidden="true" />
-          <span className="px-2 text-center font-heading text-[10px] font-bold uppercase leading-tight tracking-[0.14em]">No image available</span>
+          <span className="px-2 text-center font-heading text-[10px] font-bold uppercase leading-tight tracking-[0.14em]">{placeholderLabel ?? 'No image available'}</span>
         </div>
       ) : (
         // draggable={false}: without it, pressing a card image starts the

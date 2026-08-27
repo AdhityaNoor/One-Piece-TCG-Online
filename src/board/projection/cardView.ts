@@ -11,6 +11,7 @@ import type { CardCategory, Color, FaceState, Orientation } from '../../engine/s
 import type { GameState } from '../../engine/state/game';
 import { computeCurrentCost, computeCurrentPower, computeEffectiveCounter, hasContinuousKeyword, type CardDefinitionLookup } from '../../engine/rules/shared';
 import type { EffectTemplateRegistry } from '../../engine/effects/effectTemplate';
+import { computeCardStatuses, type CardStatus } from './cardStatus';
 import {
   computeProjectedCostWithV2,
   computeProjectedPowerWithV2,
@@ -67,6 +68,12 @@ export interface CardView {
   hasBanish: boolean;
   isUnblockable: boolean;
   hasTrigger: boolean;
+  /**
+   * Restrictions the engine is currently enforcing on this card that the board would otherwise
+   * show no trace of ("can't attack", "can't block", "nullified"). Always empty off the field.
+   * Display data only — see cardStatus.ts.
+   */
+  statuses: readonly CardStatus[];
   /** True if defs lookup was missing this card's definition — display fallback, never thrown (UI must stay resilient; see definitions.ts which DOES throw for the engine). */
   isUnknownDefinition: boolean;
 }
@@ -121,6 +128,7 @@ export function buildCardView(
       hasBanish: false,
       isUnblockable: false,
       hasTrigger: false,
+      statuses: [],
       isUnknownDefinition: true,
     };
   }
@@ -179,6 +187,7 @@ export function buildCardView(
     hasBanish: hasV2Projection ? v2Banish ?? (def.hasBanish ?? false) : (def.hasBanish ?? false) || hasContinuousKeyword(defs, state, instanceId, 'banish'),
     isUnblockable: hasV2Projection ? v2Unblockable ?? def.isUnblockable : def.isUnblockable || hasContinuousKeyword(defs, state, instanceId, 'unblockable'),
     hasTrigger: def.hasTrigger,
+    statuses: computeCardStatuses(defs, state, instanceId),
     isUnknownDefinition: false,
   };
 }

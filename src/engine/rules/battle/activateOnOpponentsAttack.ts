@@ -13,7 +13,7 @@ import type { ActivateOnOpponentsAttackAction, ValidationResult } from '../../ac
 import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import type { CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
-import { fireOnOpponentsAttack, evaluateGates, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, battleAttackerIsCharacterWithAttribute, resolveEffectProgram, type EffectTemplateRegistry } from '../../effects';
+import { fireOnOpponentsAttack, evaluateGates, canAffordAbilityCost, canPayAbilityCost, payAbilityCost, afterAbilityCostPaid, battleAttackerIsCharacterWithAttribute, resolveEffectProgram, type EffectTemplateRegistry } from '../../effects';
 import type { Ability } from '../../effects/effectIr';
 import type { CardInstance } from '../../state/card';
 
@@ -62,7 +62,14 @@ export function hasAnyUsableOnOpponentsAttack(
     if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, defendingPlayerId, id)) continue;
     if (ability.battlingOpponentAttribute && !battleAttackerIsCharacterWithAttribute(state, defs, ability.battlingOpponentAttribute)) continue;
     if (!abilityConditionMet(ability, source, id, state, defs)) continue;
-    if (ability.cost?.length && canPayAbilityCost(state, id, defendingPlayerId, ability.cost, []).length > 0) continue;
+    // AVAILABILITY only — canAffordAbilityCost, never canPayAbilityCost with an empty
+    // selection. Nobody has chosen which DON!! to return yet at this point (that happens
+    // when the player actually activates), so canPayAbilityCost would report "requires
+    // selecting N DON!! but 0 were supplied" and this function would answer `false` for
+    // EVERY [On Your Opponent's Attack] ability carrying a DON!! -N cost — which is nearly
+    // all of them. declareAttack then skipped the whole Block Step whenever the defender
+    // had no Blocker, so the ability could never be used at all.
+    if (ability.cost?.length && canAffordAbilityCost(state, id, defendingPlayerId, ability.cost).length > 0) continue;
     return true;
   }
   return false;

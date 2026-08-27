@@ -87,7 +87,14 @@ export type BoardSelectionMode =
   | { kind: 'selectActivateSource' }
   | { kind: 'payingActivateEffectCost'; sourceInstanceId: string; cost: number; selectedDonIds: string[] }
   | { kind: 'payingEventMainCost'; handCardInstanceId: string; cardName: string; cost: number; donInstanceIds: string[]; abilityCost: number; candidateInstanceIds: string[]; selectedDonIds: string[] }
-  | { kind: 'selectOnOppAttackSource' }
+  /**
+   * The [On Your Opponent's Attack] window (7-1-1-3). Auto-entered when the Block Step opens
+   * with at least one usable source, re-entered after each activation while sources remain, and
+   * left via skipOnOppAttackWindow() — it is NOT a button the player hunts for any more. Carries
+   * its own candidate set so the board can dim/highlight from the mode alone, exactly like
+   * 'resolvingFieldChoice'.
+   */
+  | { kind: 'selectOnOppAttackSource'; candidateInstanceIds: string[] }
   | { kind: 'payingOnOppAttackCost'; sourceInstanceId: string; cost: number; selectedDonIds: string[] };
 
 const PLAY_ACTION_BY_CATEGORY: Record<'character' | 'stage' | 'event', GameAction['type']> = {
@@ -349,40 +356,136 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
   /** True if the card's curated program exposes an [On Your Opponent's Attack] ability usable now
    *  (7-1-2 Block-Step window, defending player only). */
-  const hasOnOpponentsAttack = (card: CardView): boolean => {
+  /**
+   * Whether `instanceId` can activate its [On Your Opponent's Attack] ability right now.
+   *
+   * Keyed on the instance id rather than a CardView so the window itself (which enumerates the
+   * defender's whole field before any CardView exists for it) and the per-card affordance can
+   * ask the identical question — a second, drifting copy of this predicate is exactly the bug
+   * class this project keeps hitting.
+   */
+  const isOnOppAttackEligible = (instanceId: string): boolean => {
     if (!state || !actingPlayerId) return false;
     const battle = state.currentBattle;
     if (!battle || battle.step !== 'block') return false;
     if (actingPlayerId === state.activePlayerId) return false; // defender only
+    const inst = state.cardsById[instanceId];
+    if (!inst || inst.controllerId !== actingPlayerId) return false;
+    if (inst.currentZone !== 'leaderArea' && inst.currentZone !== 'characterArea' && inst.currentZone !== 'stageArea') return false;
+    if (battle.onOpponentsAttackUsedInstanceIds?.includes(instanceId)) return false;
+
     if (EFFECT_RUNTIME_MODE === 'v2') {
-      const ability = v2StandardAbility(card.cardNumber, 'ON_OPPONENT_ATTACK');
+      const cardNumber = defs[inst.cardDefinitionId]?.cardNumber;
+      const ability = cardNumber ? v2StandardAbility(cardNumber, 'ON_OPPONENT_ATTACK') : undefined;
       if (!ability) return false;
-      const inst = state.cardsById[card.instanceId];
-      if (!inst || inst.controllerId !== actingPlayerId || (inst.currentZone !== 'leaderArea' && inst.currentZone !== 'characterArea' && inst.currentZone !== 'stageArea')) return false;
       if (ability.oncePerTurn && inst.oncePerTurnUsed.includes(ability.abilityId)) return false;
-      if (!v2AbilityConditionsMet(ability, card.instanceId, actingPlayerId)) return false;
-      if (battle.onOpponentsAttackUsedInstanceIds?.includes(card.instanceId)) return false;
-      return true;
+      return v2AbilityConditionsMet(ability, instanceId, actingPlayerId);
     }
-    const ability = resolveEffectProgram(registry, defs, card.cardDefinitionId)?.abilities.find((entry) => entry.timing === 'onOpponentsAttack');
+
+    const ability = resolveEffectProgram(registry, defs, inst.cardDefinitionId)?.abilities.find((entry) => entry.timing === 'onOpponentsAttack');
     if (!ability) return false;
-    const inst = state.cardsById[card.instanceId];
-    if (!inst || inst.controllerId !== actingPlayerId || (inst.currentZone !== 'leaderArea' && inst.currentZone !== 'characterArea' && inst.currentZone !== 'stageArea')) return false;
-    if (ability.oncePerTurn && card.oncePerTurnUsed.includes('onOpponentsAttack')) return false;
-    if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, actingPlayerId, card.instanceId)) return false;
-    if (!abilityConditionMet(ability, inst, card.instanceId, state, defs)) return false;
+    if (ability.oncePerTurn && inst.oncePerTurnUsed.includes('onOpponentsAttack')) return false;
+    if (ability.gate?.length && !evaluateGates(ability.gate, state, defs, actingPlayerId, instanceId)) return false;
+    if (!abilityConditionMet(ability, inst, instanceId, state, defs)) return false;
     if (ability.cost?.length) {
+      // Probe with a real candidate selection: validateAction below (and canPayAbilityCost
+      // directly) demand the exact DON!! ids, which the player has not chosen yet.
       const requiredDon = requiredDonMinusCount(ability.cost);
       const selectedDon = requiredDon > 0 ? donMinusCandidateIds(state, actingPlayerId, ability.cost).slice(0, requiredDon) : [];
-      return canPayAbilityCost(state, card.instanceId, actingPlayerId, ability.cost, selectedDon).length === 0;
+      return canPayAbilityCost(state, instanceId, actingPlayerId, ability.cost, selectedDon).length === 0;
     }
     return validateAction(
       state,
-      { type: 'ACTIVATE_ON_OPPONENTS_ATTACK', actionId: 'ui-preview', playerId: actingPlayerId, sourceInstanceId: card.instanceId, effectId: 'onOpponentsAttack', donInstanceIds: [] },
+      { type: 'ACTIVATE_ON_OPPONENTS_ATTACK', actionId: 'ui-preview', playerId: actingPlayerId, sourceInstanceId: instanceId, effectId: 'onOpponentsAttack', donInstanceIds: [] },
       defs,
       registry,
     ).legal;
   };
+
+  const hasOnOpponentsAttack = (card: CardView): boolean => isOnOppAttackEligible(card.instanceId);
+
+  /**
+   * Every source the defender could still activate this battle, in board order
+   * (Leader, then Characters, then Stage) — the window's candidate set.
+   */
+  const onOppAttackCandidateIds = (): string[] => {
+    if (!state || !actingPlayerId) return [];
+    const player = state.players[actingPlayerId];
+    if (!player) return [];
+    const fieldIds = [
+      ...(player.leaderInstanceId ? [player.leaderInstanceId] : []),
+      ...player.characterArea.cardIds,
+      ...player.stageArea.cardIds,
+    ];
+    return fieldIds.filter((id) => isOnOppAttackEligible(id));
+  };
+
+  // --- The [On Your Opponent's Attack] window -------------------------------
+  //
+  // Rule placement: blueprint section 5 puts [On Your Opponent's Attack] in the ATTACK STEP
+  // (7-1-1-3), ahead of the Block Step, and OPTCG_Canonical_Effect_Structure.md classes it as an
+  // AUTO effect — not a player-declared one like [Activate: Main]. It used to be an
+  // "[On Opponent's Attack]" button sitting beside "Activate Blocker", which both placed it after
+  // the Block Step had already begun and made a rules-automatic window look like an optional
+  // extra the player had to know existed.
+  //
+  // The ENGINE is unchanged: ACTIVATE_ON_OPPONENTS_ATTACK is still validated against
+  // battle.step === 'block' (activateOnOpponentsAttack.ts). What changes here is the client
+  // sequence — the window opens by itself the instant the Block Step starts with a usable source,
+  // re-opens after each activation while sources remain, and closes on Skip, after which the
+  // normal Blocker / Pass controls appear.
+  //
+  // TODO — needs ruling confirmation: 8-1-3-1 makes Auto effects mandatory, but every printed
+  // [On Your Opponent's Attack] carries a DON!! -N cost and the engine models activation as
+  // opt-in, so the window stays skippable rather than force-firing.
+  const skippedOnOppAttackWindowRef = useRef<string | null>(null);
+
+  /**
+   * Identity of the battle a skip applies to. BattleState has no id, and the attacker is rested
+   * by its own declaration, so turn + attacker + original target is unique per declaration —
+   * enough that skipping this battle's window never suppresses the next attack's.
+   */
+  const onOppAttackWindowKey = (): string | null => {
+    const battle = state?.currentBattle;
+    if (!state || !battle) return null;
+    return `${state.turnNumber}:${battle.attackerInstanceId}:${battle.originalTargetInstanceId}`;
+  };
+
+  /** Decline the rest of this battle's window and fall through to Blocker / Counter. */
+  function skipOnOppAttackWindow(): void {
+    skippedOnOppAttackWindowRef.current = onOppAttackWindowKey();
+    setLastError(null);
+    if (mode.kind === 'selectOnOppAttackSource') reset();
+  }
+
+  useEffect(() => {
+    const battle = state?.currentBattle;
+    if (!state || !battle || battle.step !== 'block') return;
+    // A pending choice owns the board while it is up (same rule the donChoice / fieldChoice
+    // effects above follow) — an ability that suspended mid-resolution must finish first.
+    if (state.pendingChoices.length > 0) return;
+    if (skippedOnOppAttackWindowRef.current === onOppAttackWindowKey()) return;
+
+    const candidates = onOppAttackCandidateIds();
+    if (candidates.length === 0) {
+      if (mode.kind === 'selectOnOppAttackSource') reset();
+      return;
+    }
+    // Only ever open OVER idle. A player part-way through picking DON!! for one of these
+    // abilities is in 'payingOnOppAttackCost' and must not be yanked back to the picker.
+    if (mode.kind === 'idle') {
+      setMode({ kind: 'selectOnOppAttackSource', candidateInstanceIds: candidates });
+      return;
+    }
+    if (
+      mode.kind === 'selectOnOppAttackSource' &&
+      (mode.candidateInstanceIds.length !== candidates.length ||
+        mode.candidateInstanceIds.some((id, index) => id !== candidates[index]))
+    ) {
+      setMode({ kind: 'selectOnOppAttackSource', candidateInstanceIds: candidates });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, mode.kind]);
 
   const onOppAttackDonSelectionCost = (card: CardView): number => {
     if (EFFECT_RUNTIME_MODE === 'v2') return v2DonSelectionCostCount(card.cardNumber, 'ON_OPPONENT_ATTACK');
@@ -1037,8 +1140,6 @@ export function useBoardSelection(actingPlayerId: string | null) {
     }));
   }
 
-  const beginActivateOnOppAttack = (): void => { setMode({ kind: 'selectOnOppAttackSource' }); setLastError(null); };
-
   function activateOnOppAttackFromCard(card: CardView): void {
     const donMinusCost = onOppAttackDonSelectionCost(card);
     if (donMinusCost > 0) {
@@ -1189,7 +1290,13 @@ export function useBoardSelection(actingPlayerId: string | null) {
 
       case 'selectAttacker': {
         if (!isOwnCard || (zone !== 'leaderArea' && zone !== 'characterArea')) return;
-        if (card.orientation !== 'active' || card.summoningSick) return;
+        // Was `orientation === 'active' && !summoningSick` — a hand-rolled subset of the real
+        // gate that misses every card-effect attack restriction (7-1-1-1). A "cannot attack"
+        // Character passed it, advanced the flow to selectAttackTarget, and only then had
+        // DECLARE_ATTACK refused, which reads as "targeting is broken" rather than "this card
+        // is locked". canDeclareAttackWith runs the engine's own validateAction over every legal
+        // target shape, so the same card that shows no per-card attack button is also refused here.
+        if (!canDeclareAttackWith(card)) return;
         setMode({ kind: 'selectAttackTarget', attackerInstanceId: card.instanceId, ...(forcedAttackTargetFor(card.instanceId) ? { forcedTargetInstanceId: forcedAttackTargetFor(card.instanceId)! } : {}) });
         return;
       }
@@ -1585,7 +1692,7 @@ export function useBoardSelection(actingPlayerId: string | null) {
     beginDeclareAttack,
     beginActivateBlocker,
     beginActivateMain,
-    beginActivateOnOppAttack,
+    skipOnOppAttackWindow,
     hasActivateMain,
     hasOnOpponentsAttack,
     hasUnusedActivateMain,

@@ -199,8 +199,19 @@ describe('normalizeCardPrintings — battle keyword detection (10-1, 10-2)', () 
     return { ...sampleCharacterPrintings[0], card_text };
   }
 
-  it('detects [Rush: Character] as hasRush too', () => {
-    const { definition } = normalizeCardPrintings([withText('[Rush: Character] This card can attack the turn it is played.')]);
+  // [Rush: Character] is a DIFFERENT keyword from [Rush]: it only lets the card attack
+  // CHARACTERS on the turn it is played, never the Leader. This test used to assert the
+  // opposite ("detects [Rush: Character] as hasRush too"), pinning a bug that granted
+  // unrestricted Rush to all 11 printings of the keyword. The engine models the real
+  // thing as the continuous keyword `canAttackCharactersWhileSummoningSick`, granted by
+  // a curated onEnterPlay ability — see rushCharacterKeyword.test.ts.
+  it('does NOT treat [Rush: Character] as the printed [Rush] keyword', () => {
+    const { definition } = normalizeCardPrintings([withText('[Rush: Character] (This card can attack Characters on the turn in which it is played.)')]);
+    expect(definition.hasRush).toBe(false);
+  });
+
+  it('still detects a real [Rush]', () => {
+    const { definition } = normalizeCardPrintings([withText('[Rush] (This card can attack on the turn in which it is played.)')]);
     expect(definition.hasRush).toBe(true);
   });
 

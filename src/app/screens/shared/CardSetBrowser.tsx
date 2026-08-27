@@ -1,12 +1,12 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { CardLibraryEntry } from '../../../cards/library';
 import { COST_FILTER_MIN, COST_FILTER_MAX, POWER_FILTER_MIN, POWER_FILTER_MAX, POWER_FILTER_STEP } from '../../../cards/library';
 import type { CardCategory, Color } from '../../../engine/state/card';
 import { Button, OpSelect, SetLibrarySelect } from '../../components';
 import { ALL_CARD_COLORS } from '../../lib/cardColors';
 import { formatCardApiError } from '../../lib/formatCardApiError';
-import { useCardLibraryStore, useFilteredCardLibraryCount, useKnownCardLibraryTypes, useVisibleCardLibraryEntries } from '../../store/cardLibraryStore';
+import { CARD_LIBRARY_PAGE_SIZE, useCardLibraryStore, useFilteredCardLibraryCount, useKnownCardLibraryTypes, useVisibleCardLibraryEntries } from '../../store/cardLibraryStore';
 import { CARD_COLOR_TOKENS } from '../../lib/cardColors';
 
 export interface CardSetBrowserProps {
@@ -331,16 +331,81 @@ export function CardSetBrowserResults({ renderEntry, gridClassName, gridStyle }:
   const setErrorById = useCardLibraryStore((state) => state.setErrorById);
   const loadSetCards = useCardLibraryStore((state) => state.loadSetCards);
   const visibleCount = useCardLibraryStore((state) => state.visibleCount);
-  const loadMore = useCardLibraryStore((state) => state.loadMore);
+  const setVisibleCount = useCardLibraryStore((state) => state.setVisibleCount);
 
   const visibleEntries = useVisibleCardLibraryEntries();
   const filteredCount = useFilteredCardLibraryCount();
+  const hasMore = visibleCount < filteredCount;
+
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (selectedSetId && (setStatusById[selectedSetId] === undefined || setStatusById[selectedSetId] === 'idle')) {
       void loadSetCards(selectedSetId);
     }
   }, [loadSetCards, selectedSetId, setStatusById]);
+
+  /**
+   * How many tiles are on one row RIGHT NOW. The grids are `auto-fill`, so the count
+   * depends on the container width and is only knowable from the laid-out DOM —
+   * `gridTemplateColumns` resolves to a space-separated list of concrete pixel tracks.
+   */
+  const columnCount = useCallback((): number => {
+    const el = gridRef.current;
+    if (!el || typeof window === 'undefined') return 1;
+    const template = window.getComputedStyle(el).gridTemplateColumns;
+    const tracks = template ? template.split(' ').filter((part) => part.trim().length > 0).length : 0;
+    return tracks > 0 ? tracks : 1;
+  }, []);
+
+  /** Round the window up to a whole number of rows, so the last row is never ragged. */
+  const snapToFullRows = useCallback(
+    (count: number) => {
+      const columns = columnCount();
+      return Math.ceil(count / columns) * columns;
+    },
+    [columnCount],
+  );
+
+  // A filter/set change resets the window to a flat CARD_LIBRARY_PAGE_SIZE, which is not
+  // generally a multiple of the current column count — snap it before paint so the first
+  // screenful never shows a half-filled final row.
+  useLayoutEffect(() => {
+    if (visibleEntries.length === 0) return;
+    const snapped = Math.min(snapToFullRows(visibleCount), Math.max(filteredCount, CARD_LIBRARY_PAGE_SIZE));
+    if (snapped !== visibleCount) setVisibleCount(snapped);
+  }, [filteredCount, snapToFullRows, setVisibleCount, visibleCount, visibleEntries.length]);
+
+  /**
+   * Infinite scroll. A sentinel below the grid loads the next page as it comes into view,
+   * replacing the old "Load more" button. `rootMargin` starts the fetch a screenful early
+   * so the grid rarely shows a gap, and `root: null` is correct even though the scroller is
+   * an ancestor div: intersection is computed against the viewport CLIPPED by that
+   * ancestor's overflow, which is exactly "has the user scrolled near the end".
+   *
+   * Re-arms on every visibleCount change, which is what makes a short list keep filling:
+   * while the container is not yet tall enough to scroll the sentinel stays visible, the
+   * observer fires again, and it grows until either the container scrolls or every card is
+   * shown. `hasMore` bounds that loop.
+   */
+  useEffect(() => {
+    if (!hasMore) return;
+    const el = sentinelRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        const columns = columnCount();
+        const rowsPerPage = Math.max(1, Math.ceil(CARD_LIBRARY_PAGE_SIZE / columns));
+        setVisibleCount(Math.min(snapToFullRows(visibleCount) + columns * rowsPerPage, filteredCount));
+      },
+      { rootMargin: '400px 0px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [columnCount, filteredCount, hasMore, setVisibleCount, snapToFullRows, visibleCount]);
 
   const selectedSetStatus = selectedSetId ? setStatusById[selectedSetId] : undefined;
   const selectedSetError = selectedSetId ? setErrorById[selectedSetId] : undefined;
@@ -363,13 +428,13 @@ export function CardSetBrowserResults({ renderEntry, gridClassName, gridStyle }:
       ) : (
         <>
           <div className="pr-1">
-            <div className={gridClassName ?? 'grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} style={gridStyle}>{visibleEntries.map(renderEntry)}</div>
+            <div ref={gridRef} className={gridClassName ?? 'grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} style={gridStyle}>{visibleEntries.map(renderEntry)}</div>
           </div>
-          {visibleCount < filteredCount && (
-            <div className="mt-3 flex justify-center">
-              <Button variant="secondary" size="sm" onClick={loadMore}>
-                Load more ({filteredCount - visibleCount} left)
-              </Button>
+          {hasMore && (
+            <div ref={sentinelRef} data-testid="browser-results-sentinel" className="mt-3 flex justify-center py-2" aria-hidden="true">
+              <p className="font-heading text-[10px] font-bold uppercase tracking-[0.16em] text-slate-200/40">
+                Loading more… ({filteredCount - visibleCount} left)
+              </p>
             </div>
           )}
         </>

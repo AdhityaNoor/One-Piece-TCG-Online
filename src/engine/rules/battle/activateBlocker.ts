@@ -10,28 +10,16 @@ import type { ActionExecuteResult } from '../../actions/actionExecuteResult';
 import { createActionLogger } from '../shared/actionLogger';
 import { getDefinition, type CardDefinitionLookup } from '../shared/definitions';
 import { getOpponentId } from '../shared/players';
-import { computeCurrentCost, computeCurrentPower, hasContinuousKeyword } from '../shared/power';
+import { cannotActivateBlocker, hasContinuousKeyword } from '../shared/power';
 import { fireOnBlock, fireRestTransitions, fireOpponentBlockerActivatedReactions, type EffectTemplateRegistry } from '../../effects';
 
+/**
+ * Thin alias for the shared lookup in rules/shared/power.ts. The predicate moved there so the
+ * board projection can surface a "Can't block" status without importing this module (which pulls
+ * in the whole effect-firing graph); the rule itself is unchanged and still lives in one place.
+ */
 function isBlockedByRestriction(state: GameState, blockerInstanceId: string, defs: CardDefinitionLookup): boolean {
-  const battle = state.currentBattle;
-  for (const record of state.continuousEffects) {
-    const restriction = record.blockerRestriction;
-    if (!restriction) continue;
-    if (restriction.appliesToBlockerInstanceId !== undefined) {
-      if (restriction.appliesToBlockerInstanceId === blockerInstanceId) return true;
-      continue;
-    }
-    if (!battle || restriction.appliesToAttackerInstanceId !== battle.attackerInstanceId) continue;
-    if (restriction.blockerPowerAtLeast === undefined && restriction.blockerPowerAtMost === undefined && restriction.blockerMaxCost === undefined) return true;
-    const power = computeCurrentPower(defs, state, blockerInstanceId);
-    const cost = computeCurrentCost(defs, state, blockerInstanceId);
-    if (restriction.blockerPowerAtLeast !== undefined && power < restriction.blockerPowerAtLeast) continue;
-    if (restriction.blockerPowerAtMost !== undefined && power > restriction.blockerPowerAtMost) continue;
-    if (restriction.blockerMaxCost !== undefined && cost > restriction.blockerMaxCost) continue;
-    return true;
-  }
-  return false;
+  return cannotActivateBlocker(state, blockerInstanceId, defs);
 }
 
 /**

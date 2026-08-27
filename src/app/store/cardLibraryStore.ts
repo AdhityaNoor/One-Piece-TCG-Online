@@ -40,6 +40,13 @@ interface CardLibraryState {
   loadSetCards(setId: string): Promise<void>;
   setFilter(filter: CardLibraryFilter): void;
   loadMore(): void;
+  /**
+   * Set the visible window directly. The results grid uses this to keep the window a whole
+   * number of GRID COLUMNS, so the last row is never a ragged half-row — the column count is
+   * only knowable from the laid-out DOM (the grid is `auto-fill`), so the store cannot derive
+   * it and the caller passes the already-rounded total. Never shrinks below one page.
+   */
+  setVisibleCount(count: number): void;
   selectCard(cardNumber: string | null): void;
   searchByCardId(cardId: string): Promise<void>;
 }
@@ -100,6 +107,10 @@ export const useCardLibraryStore = create<CardLibraryState>((set, get) => ({
 
   setFilter: (filter) => set({ filter, visibleCount: CARD_LIBRARY_PAGE_SIZE }),
   loadMore: () => set((state) => ({ visibleCount: state.visibleCount + CARD_LIBRARY_PAGE_SIZE })),
+  setVisibleCount: (count) => set((state) => {
+    const next = Math.max(CARD_LIBRARY_PAGE_SIZE, Math.floor(count));
+    return next === state.visibleCount ? {} : { visibleCount: next };
+  }),
   selectCard: (cardNumber) => set({ selectedCardNumber: cardNumber }),
   searchByCardId: async (cardId) => {
     const normalized = cardId.trim().toUpperCase();

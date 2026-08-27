@@ -2063,10 +2063,16 @@ export const EB_ASSIGNMENTS: CardEffectAssignment[] = [
 
   // EB04-011 (character) Scaled Neptunian —
   //   [Rush: Character] [On Play] Draw per {Neptunian}, trash same number from hand.
+  //   [Rush: Character] is a continuous keyword grant, NOT the definition's hasRush flag —
+  //   that flag means full [Rush] (may also attack the Leader). See
+  //   scripts/renormalize-scrape-keywords.mjs.
+  //   Was `canAttackActive` — that is a DIFFERENT keyword ("can attack active
+  //   Characters/Leader", an attack-restriction lift). This card says nothing about
+  //   attacking active cards; it says it may attack Characters the turn it is played.
   {
     cardNumber: 'EB04-011',
     templates: [
-      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackActive', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent' }] } },
       { templateId: 'ability', params: { timing: 'onPlay', functions: [{ fn: 'drawAndTrashByTypedCharacterCount', typeIncludes: 'Neptunian' }] } },
     ],
   },

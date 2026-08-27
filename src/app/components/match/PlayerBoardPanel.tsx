@@ -126,7 +126,17 @@ export function leaderCharacterSelectable(
 ): boolean {
   switch (mode.kind) {
     case 'selectAttacker':
-      return zone !== 'stageArea' && isOwn && card.orientation === 'active' && !card.summoningSick;
+      // `statuses` carries the engine's own attack-restriction verdict (see cardStatus.ts). This
+      // function is pure over a CardView (the mobile mat shares it), so it cannot run
+      // validateAction itself — reading the projected status is how the restriction reaches both
+      // breakpoints. useBoardSelection's tap handler re-checks with the full validator.
+      return (
+        zone !== 'stageArea' &&
+        isOwn &&
+        card.orientation === 'active' &&
+        !card.summoningSick &&
+        !card.statuses.some((status) => status.key === 'cannotAttack')
+      );
     case 'selectAttackTarget':
       if (!isOpponent) return false;
       // A forced-target effect (OP17-044 Captain John) narrows the legal set to
@@ -169,7 +179,12 @@ export function leaderCharacterSelectable(
  * BoardSelectionMode's 'resolvingFieldChoice' doc comment), it just can't
  * click through it.
  */
-export function fieldChoiceDimmed(mode: BoardSelectionMode, card: CardView): boolean {
+export function fieldChoiceDimmed(mode: BoardSelectionMode, card: CardView, selectable = false): boolean {
+  // The [On Your Opponent's Attack] window is a choice over field cards too, so it gets the same
+  // treatment: everything the player cannot pick right now recedes. `selectable` is passed in
+  // rather than re-derived here so the dim, the ring and the tap all come from the ONE
+  // eligibility predicate (canOnOppAttackCard) instead of three copies that can disagree.
+  if (mode.kind === 'selectOnOppAttackSource') return !selectable;
   if (mode.kind !== 'resolvingFieldChoice') return false;
   // Already picked: never dim — it carries the selected ring instead.
   if (mode.selectedIds.includes(card.instanceId)) return false;
@@ -758,6 +773,10 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode.kind]);
 
+  const leaderSelectable = leaderCard
+    ? leaderCharacterSelectable(mode, isOwn, isOpponent, 'leaderArea', leaderCard, canActivate(leaderCard), canOnOppAttack(leaderCard))
+    : false;
+
   const leaderSlot = leaderCard ? (
     <HoverableFieldCard
       instanceId={leaderCard.instanceId}
@@ -769,10 +788,11 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
       <BoardCardTile
         card={leaderCard}
         size="field"
-        selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'leaderArea', leaderCard, canActivate(leaderCard), canOnOppAttack(leaderCard))}
+        selectable={leaderSelectable}
         selected={attackerSelected.has(leaderCard.instanceId) || fieldChoiceSelected(mode, leaderCard)}
-        dimmed={fieldChoiceDimmed(mode, leaderCard)}
+        dimmed={fieldChoiceDimmed(mode, leaderCard, leaderSelectable)}
         activatable={mode.kind === 'idle' && canActivate(leaderCard)}
+        highlighted={mode.kind === 'selectOnOppAttackSource' && leaderSelectable}
         attackable={mode.kind === 'idle' && canAttack(leaderCard)}
         showBattlePower={battlePowerInstanceIds?.has(leaderCard.instanceId)}
         attachedDonSelectable={attachedDonSelectable(leaderCard)}
@@ -791,13 +811,18 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
     <EmptySlot size="leader" label="Leader" />
   );
 
+  const stageSelectable = stageCard
+    ? leaderCharacterSelectable(mode, isOwn, isOpponent, 'stageArea', stageCard, canActivate(stageCard), canOnOppAttack(stageCard))
+    : false;
+
   const stageSlot = stageCard ? (
     <BoardCardTile
       card={stageCard}
       size="field"
-      selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'stageArea', stageCard, canActivate(stageCard), canOnOppAttack(stageCard))}
-      dimmed={fieldChoiceDimmed(mode, stageCard)}
+      selectable={stageSelectable}
+      dimmed={fieldChoiceDimmed(mode, stageCard, stageSelectable)}
       activatable={mode.kind === 'idle' && canActivate(stageCard)}
+      highlighted={mode.kind === 'selectOnOppAttackSource' && stageSelectable}
       showBattlePower={battlePowerInstanceIds?.has(stageCard.instanceId)}
       onActivate={mode.kind === 'idle' && canActivate(stageCard) ? () => onCardTap(board.playerId, 'stageArea', stageCard) : undefined}
       onSelect={() => onCardTap(board.playerId, 'stageArea', stageCard)}
@@ -831,7 +856,9 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
         data-board-zone="characterArea"
         data-board-player={board.playerId}
       >
-        {board.characterArea.map((card) => (
+        {board.characterArea.map((card) => {
+          const characterSelectable = leaderCharacterSelectable(mode, isOwn, isOpponent, 'characterArea', card, canActivate(card), canOnOppAttack(card));
+          return (
           <HoverableFieldCard
             key={card.instanceId}
             instanceId={card.instanceId}
@@ -843,10 +870,11 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
             <BoardCardTile
               card={card}
               size="field"
-              selectable={leaderCharacterSelectable(mode, isOwn, isOpponent, 'characterArea', card, canActivate(card), canOnOppAttack(card))}
+              selectable={characterSelectable}
               selected={attackerSelected.has(card.instanceId) || fieldChoiceSelected(mode, card)}
-              dimmed={fieldChoiceDimmed(mode, card)}
+              dimmed={fieldChoiceDimmed(mode, card, characterSelectable)}
               activatable={mode.kind === 'idle' && canActivate(card)}
+              highlighted={mode.kind === 'selectOnOppAttackSource' && characterSelectable}
               attackable={mode.kind === 'idle' && canAttack(card)}
               showBattlePower={battlePowerInstanceIds?.has(card.instanceId)}
               attachedDonSelectable={attachedDonSelectable(card)}
@@ -861,7 +889,8 @@ export const PlayerBoardPanel = memo(function PlayerBoardPanel({ board, isOwn, i
               giveDonControls={giveDonControlsFor(card)}
             />
           </HoverableFieldCard>
-        ))}
+          );
+        })}
         {board.characterArea.length === 0 && (
           // Empty-state watermark. data-zone-empty-hint lets styles/index.css
           // pull it out of flow while a hand-drag landing ghost is portalled

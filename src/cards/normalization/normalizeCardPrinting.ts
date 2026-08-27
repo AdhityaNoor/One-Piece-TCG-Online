@@ -171,7 +171,15 @@ export function normalizeCardPrintings(printings: CardPrintingDto[]): NormalizeC
     // Static keyword flags. [Blocker] is a printed keyword ability (leading tags
     // or a trailing keyword clause). Text like "cannot activate [Blocker]" or
     // "gains [Blocker]" does not make this card a static Blocker.
-    hasRush: canonical.card_text.includes('[Rush]') || canonical.card_text.includes('[Rush: Character]'),
+    // [Rush: Character] is a DIFFERENT keyword from [Rush]: it only lets the card
+    // attack CHARACTERS on the turn it is played, never the Leader. Folding it into
+    // hasRush granted unrestricted Rush — strictly more permissive than the card.
+    // The engine models it as the continuous keyword
+    // `canAttackCharactersWhileSummoningSick`, granted by a curated onEnterPlay
+    // ability, so it must NOT be a printed-keyword flag here. Note '[Rush: Character]'
+    // does not contain the substring '[Rush]', so the plain check below is already
+    // correct on its own.
+    hasRush: canonical.card_text.includes('[Rush]'),
     hasBlocker: hasPrintedBlockerKeyword(canonical.card_text),
     hasDoubleAttack: canonical.card_text.includes('[Double Attack]'),
     hasBanish: canonical.card_text.includes('[Banish]'),

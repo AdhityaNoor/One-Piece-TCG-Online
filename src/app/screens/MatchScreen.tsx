@@ -2241,8 +2241,11 @@ function MobileCardZone({
         selected={attackerSelected || fieldChoiceSelected(mode, card)}
         // "Dim, don't hide" the cards a field choice can't target, so the
         // eligible one stands out on the mat — same call the desktop mat makes.
-        dimmed={fieldChoiceDimmed(mode, card)}
+        dimmed={fieldChoiceDimmed(mode, card, selectable)}
         activatable={mode.kind === 'idle' && canActivate}
+        // The [On Your Opponent's Attack] window asks the player to pick one of these — the ring
+        // is what makes the eligible cards findable on a phone-sized mat.
+        highlighted={mode.kind === 'selectOnOppAttackSource' && selectable}
         attackable={mode.kind === 'idle' && canAttack}
         showBattlePower={battlePowerInstanceIds.has(card.instanceId)}
         attachedDonSelectable={attachedDonSelectable}

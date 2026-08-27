@@ -84,12 +84,22 @@ export const ST29_ASSIGNMENTS: CardEffectAssignment[] = [
     ],
   },
 
-  // ST29-014 — [Activate: Main] [Once Per Turn] trash 1 [Trigger] card from hand: draw 1 and give up to 1 rested DON!! to your Leader or 1 Character.
-  { cardNumber: 'ST29-014', templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
-    { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
-    { fn: 'draw', amount: 1, ifPrevious: 'previousSelectedAny' },
-    { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' },
-  ] } },
+  // ST29-014 — [Rush: Character][Activate: Main] [Once Per Turn] trash 1 [Trigger] card from hand:
+  //   draw 1 and give up to 1 rested DON!! to your Leader or 1 Character.
+  //   [Rush: Character] is a continuous keyword grant, NOT the definition's hasRush flag —
+  //   that flag means full [Rush] (may also attack the Leader). See
+  //   scripts/renormalize-scrape-keywords.mjs.
+  {
+    cardNumber: 'ST29-014',
+    templates: [
+      { templateId: 'ability', params: { timing: 'onEnterPlay', functions: [{ fn: 'addKeyword', target: { ref: 'self' }, keyword: 'canAttackCharactersWhileSummoningSick', duration: 'permanent' }] } },
+      { templateId: 'ability', params: { timing: 'activateMain', oncePerTurn: true, functions: [
+        { fn: 'trashTypeFromHand', count: 1, filter: { hasTrigger: true }, optional: true },
+        { fn: 'draw', amount: 1, ifPrevious: 'previousSelectedAny' },
+        { fn: 'giveDon', count: 1, ifPrevious: 'previousMovedAny' },
+      ] } },
+    ],
+  },
 
   // ST29-013 — [Trigger] K.O. up to 1 opp Character cost ≤ combined Life (both players).
   { cardNumber: 'ST29-013', templateId: 'ability', params: { timing: 'lifeTrigger', functions: [{ fn: 'ko', target: { group: 'characters', player: 'opponent', filter: { maxCostFromCombinedLife: true } }, optional: true }] } },

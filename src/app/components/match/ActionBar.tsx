@@ -32,7 +32,7 @@ const INSTRUCTIONS: Record<string, string> = {
   payingActivateEffectCost: 'Tap DON!! in your Cost Area to return for the activation cost, then Confirm.',
   payingEventMainCost: 'Tap DON!! on your field to return for the Event cost, then Confirm.',
   payingCounterEventCost: 'Tap DON!! on your field to return for the Counter Event cost, then Confirm.',
-  selectOnOppAttackSource: "Tap your own Leader, Character, or Stage with an [On Your Opponent's Attack] ability.",
+  selectOnOppAttackSource: "Choose a card to activate [On Your Opponent's Attack]. Its effect resolves, then you may choose another — Skip to move on to Blocker and Counter.",
   payingOnOppAttackCost: 'Tap DON!! in your Cost Area to return for the ability cost, then Confirm.',
 };
 
@@ -160,10 +160,9 @@ export const ActionBar = memo(function ActionBar({ phase, turnNumber, battle, ac
     lastError,
     cancel,
     beginActivateBlocker,
-    beginActivateOnOppAttack,
+    skipOnOppAttackWindow,
     hasActivateMain,
     hasUnusedActivateMain,
-    hasOnOpponentsAttack,
     counterProgress,
     donChoiceProgress,
     confirmDonChoice,
@@ -272,20 +271,59 @@ export const ActionBar = memo(function ActionBar({ phase, turnNumber, battle, ac
     );
   }
 
+  // The [On Your Opponent's Attack] window comes BEFORE Blocker and Counter (blueprint section
+  // 5: it belongs to the Attack Step, 7-1-1-3), so its two modes are matched ahead of the
+  // Block-Step branch below — which returns unconditionally and, until this was added, swallowed
+  // both. 'payingOnOppAttackCost' had NO reachable Confirm button as a result: it IS in
+  // CANCELLABLE_MODE_KINDS, but that branch sits after the Block-Step one and so never ran, which
+  // made every DON!! -N ability a dead end once its card was tapped.
+  if (mode.kind === 'selectOnOppAttackSource') {
+    const remaining = mode.candidateInstanceIds.length;
+    return (
+      <div className="flex flex-col gap-2">
+        {errorBanner}
+        <p className="text-xs text-white/60">{INSTRUCTIONS.selectOnOppAttackSource}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="ghost" size="sm" onClick={skipOnOppAttackWindow}>
+            Skip ({remaining} available)
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode.kind === 'payingOnOppAttackCost') {
+    return (
+      <div className="flex flex-col gap-2">
+        {errorBanner}
+        <p className="text-xs text-white/60">{INSTRUCTIONS.payingOnOppAttackCost}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmOnOppAttackCost}>
+            Activate ({mode.selectedDonIds.length}/{mode.cost} DON!!)
+          </Button>
+          {/* Cancel drops back to idle, which re-opens the window on the next render — so backing
+              out of one card's cost returns you to the picker rather than to Blocker/Pass. */}
+          <Button variant="ghost" size="sm" onClick={cancel}>Cancel</Button>
+        </div>
+      </div>
+    );
+  }
+
   // Battle-step branches are checked ahead of the generic `mode.kind !==
   // 'idle'` block below: the Counter Step auto-enters BoardSelectionMode's
   // 'selectCounterCard' (see useBoardSelection.ts) the instant it starts, so
   // if the generic block ran first it would intercept that mode and hide the
   // real Pass button behind a stale instruction line.
   if (battle && battle.step === 'block') {
+    // Reaching here means the [On Your Opponent's Attack] window is closed (skipped, or nothing
+    // left to activate) — the two branches above return while it is open, so the old
+    // "[On Opponent's Attack]" button has no reason to exist any more.
     const hasEligibleBlocker = actingBoard.characterArea.some((card) => card.orientation === 'active' && card.hasBlocker);
-    const hasEligibleOnOppAttack = [actingBoard.leader, ...actingBoard.characterArea, ...actingBoard.stageArea].filter(isCardView).some((card) => hasOnOpponentsAttack(card));
     return (
       <div className="flex flex-col gap-2">
         {errorBanner}
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" disabled={!hasEligibleBlocker} onClick={beginActivateBlocker}>Activate Blocker</Button>
-          <Button variant="secondary" size="sm" disabled={!hasEligibleOnOppAttack} onClick={beginActivateOnOppAttack}>[On Opponent's Attack]</Button>
           <Button variant="ghost" size="sm" onClick={passStep}>Pass (skip Block)</Button>
         </div>
       </div>
@@ -345,11 +383,6 @@ export const ActionBar = memo(function ActionBar({ phase, turnNumber, battle, ac
           {mode.kind === 'payingCounterEventCost' && (
             <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.abilityCost} onClick={confirmCounterEventCost}>
               Counter {mode.cardName} ({mode.selectedDonIds.length}/{mode.abilityCost} DON!! returned)
-            </Button>
-          )}
-          {mode.kind === 'payingOnOppAttackCost' && (
-            <Button variant="primary" size="sm" disabled={mode.selectedDonIds.length !== mode.cost} onClick={confirmOnOppAttackCost}>
-              Activate ({mode.selectedDonIds.length}/{mode.cost} DON!!)
             </Button>
           )}
           <Button variant="ghost" size="sm" onClick={cancel}>Cancel</Button>
